@@ -5,7 +5,6 @@ import { modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
   allowanceFrom,
-  counts,
   type Allowance,
   type LedgerRow,
   type ModelFeature,
@@ -31,8 +30,8 @@ export class AllowanceSpentError extends Error {
   }
 }
 
-/** The window's rows, filtered by `counts` — one rule, shared with the tests. */
-async function countedTimes(q: Tx | typeof db, userId: string, now: Date): Promise<Date[]> {
+/** The window's reserved and spent rows. `allowanceFrom` applies `counts` — one rule. */
+async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise<LedgerRow[]> {
   const since = new Date(now.getTime() - ALLOWANCE_WINDOW_MS);
   const rows = await q
     .select({ status: modelCalls.status, createdAt: modelCalls.createdAt })
@@ -42,11 +41,11 @@ async function countedTimes(q: Tx | typeof db, userId: string, now: Date): Promi
       gt(modelCalls.createdAt, since),
       inArray(modelCalls.status, ["reserved", "spent"]),
     ));
-  return rows.filter((r) => counts(r as LedgerRow, now)).map((r) => r.createdAt);
+  return rows as LedgerRow[];
 }
 
 export async function readAllowance(userId: string, now: Date = new Date()): Promise<Allowance> {
-  return allowanceFrom(await countedTimes(db, userId, now), now);
+  return allowanceFrom(await ledgerRows(db, userId, now), now);
 }
 
 /**
@@ -63,7 +62,7 @@ export async function reserveModelCall(
   now: Date = new Date(),
 ): Promise<{ id: string } | null> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`model-allowance:${userId}`}, 0))`);
-  const allowance = allowanceFrom(await countedTimes(tx, userId, now), now);
+  const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now);
   if (allowance.used >= allowance.limit) return null;
   const [row] = await tx
     .insert(modelCalls)

@@ -54,23 +54,30 @@ export type Allowance = {
   reopensAt: Date | null;
 };
 
+/** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */
+function expiresAt(row: LedgerRow): number {
+  const ttl = row.status === "reserved" ? RESERVATION_TTL_MS : ALLOWANCE_WINDOW_MS;
+  return row.createdAt.getTime() + ttl;
+}
+
 /**
- * `callTimes` are the created_at of the rows that COUNT — reserved and spent, never refunded.
- * Rows outside the window are ignored here too, so a caller that over-reads cannot over-count.
+ * The allowance at `now`, from the player's ledger rows. Rows that do not count — refunded,
+ * outside the window, a reservation past its TTL — are dropped here, so a caller that
+ * over-reads cannot over-count.
  */
 export function allowanceFrom(
-  callTimes: readonly Date[],
+  rows: readonly LedgerRow[],
   now: Date,
   limit: number = MODEL_DAILY_ALLOWANCE,
 ): Allowance {
-  const since = now.getTime() - ALLOWANCE_WINDOW_MS;
-  const inWindow = callTimes
-    .map((t) => t.getTime())
-    .filter((t) => t > since)
+  const expiries = rows
+    .filter((r) => counts(r, now))
+    .map(expiresAt)
     .sort((a, b) => a - b);
-  const used = inWindow.length;
+  const used = expiries.length;
   if (used < limit) return { used, limit, reopensAt: null };
-  // Spent: the next unit returns when enough of the oldest leave for one to be free — the
-  // (used - limit)th oldest, which is the oldest when the count sits exactly at the limit.
-  return { used, limit, reopensAt: new Date(inWindow[used - limit] + ALLOWANCE_WINDOW_MS) };
+  // Spent: a unit is free once enough rows stop counting that one fewer than `limit` remain —
+  // the (used - limit)th earliest EXPIRY, which is the earliest when the count sits at the
+  // limit. By expiry, not by age: a reservation frees its unit ten minutes in, not a day in.
+  return { used, limit, reopensAt: new Date(expiries[used - limit]) };
 }

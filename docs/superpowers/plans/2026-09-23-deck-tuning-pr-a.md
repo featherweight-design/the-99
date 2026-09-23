@@ -267,8 +267,11 @@ git commit -m "feat(tuning): schema for deck intent, suggestion runs, and the mo
   export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
   export type ModelFeature = "tuning" | "synopsis";
   export type Allowance = { used: number; limit: number; reopensAt: Date | null };
-  /** Takes the times of the rows that count — reserved and spent. */
-  export function allowanceFrom(callTimes: readonly Date[], now: Date, limit?: number): Allowance;
+  export const RESERVATION_TTL_MS = 10 * 60 * 1000; // a reservation past this is stranded, not in flight
+  export type LedgerRow = { status: "reserved" | "spent" | "refunded"; createdAt: Date };
+  export function counts(row: LedgerRow, now: Date): boolean;
+  /** Drops rows that do not count; reopensAt is the relevant EXPIRY (a reservation's TTL, a spent unit's window). */
+  export function allowanceFrom(rows: readonly LedgerRow[], now: Date, limit?: number): Allowance;
 
   // src/lib/model/allowance.ts — server-only, the ledger
   /** Thrown inside the caller's transaction to roll back a run that found the allowance spent. */

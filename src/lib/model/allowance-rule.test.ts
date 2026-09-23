@@ -6,31 +6,51 @@ const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
 
 describe("allowanceFrom", () => {
+  const spent = (createdAt: Date) => ({ status: "spent" as const, createdAt });
+  const reserved = (createdAt: Date) => ({ status: "reserved" as const, createdAt });
+  const minutesAgo = (m: number) => new Date(now.getTime() - m * 60_000);
+
   it("counts only calls inside the rolling window", () => {
-    expect(allowanceFrom([hoursAgo(1), hoursAgo(23.9), hoursAgo(25)], now).used).toBe(2);
+    expect(allowanceFrom([spent(hoursAgo(1)), spent(hoursAgo(23.9)), spent(hoursAgo(25))], now).used).toBe(2);
   });
 
   it("drops a call exactly one window old", () => {
-    expect(allowanceFrom([new Date(now.getTime() - ALLOWANCE_WINDOW_MS)], now).used).toBe(0);
+    expect(allowanceFrom([spent(new Date(now.getTime() - ALLOWANCE_WINDOW_MS))], now).used).toBe(0);
+  });
+
+  it("does not count a refunded unit", () => {
+    expect(allowanceFrom([{ status: "refunded", createdAt: hoursAgo(1) }], now).used).toBe(0);
   });
 
   it("names no reopening time while units remain", () => {
-    const times = Array.from({ length: MODEL_DAILY_ALLOWANCE - 1 }, (_, i) => hoursAgo(i + 1));
-    expect(allowanceFrom(times, now)).toEqual({ used: MODEL_DAILY_ALLOWANCE - 1, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null });
+    const rows = Array.from({ length: MODEL_DAILY_ALLOWANCE - 1 }, (_, i) => spent(hoursAgo(i + 1)));
+    expect(allowanceFrom(rows, now)).toEqual({ used: MODEL_DAILY_ALLOWANCE - 1, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null });
   });
 
   it("reopens when the oldest counted call leaves the window", () => {
     // Given out of order on purpose: the reopening time is the OLDEST, not the first listed.
-    const times = Array.from({ length: MODEL_DAILY_ALLOWANCE }, (_, i) => hoursAgo(20 - i)).reverse();
-    const a = allowanceFrom(times, now);
+    const rows = Array.from({ length: MODEL_DAILY_ALLOWANCE }, (_, i) => spent(hoursAgo(20 - i))).reverse();
+    const a = allowanceFrom(rows, now);
     expect(a.used).toBe(MODEL_DAILY_ALLOWANCE);
     expect(a.reopensAt).toEqual(new Date(hoursAgo(20).getTime() + ALLOWANCE_WINDOW_MS));
   });
 
   it("over the limit, waits for enough units to leave that one is free", () => {
     // Limit 2, three counted (a concurrent reserve landed): one leaving is not enough.
-    const a = allowanceFrom([hoursAgo(20), hoursAgo(10), hoursAgo(5)], now, 2);
+    const a = allowanceFrom([spent(hoursAgo(20)), spent(hoursAgo(10)), spent(hoursAgo(5))], now, 2);
     expect(a.reopensAt).toEqual(new Date(hoursAgo(10).getTime() + ALLOWANCE_WINDOW_MS));
+  });
+
+  it("reopens when a reservation's TTL runs out, not a day later", () => {
+    // Full because one run is in flight: its unit frees at the reservation TTL at the latest.
+    const a = allowanceFrom([spent(hoursAgo(20)), reserved(minutesAgo(2))], now, 2);
+    expect(a.reopensAt).toEqual(new Date(minutesAgo(2).getTime() + RESERVATION_TTL_MS));
+  });
+
+  it("picks the earliest expiry across spent and reserved units", () => {
+    // The spent unit leaves the window a minute from now, before the reservation's TTL.
+    const a = allowanceFrom([spent(new Date(now.getTime() - ALLOWANCE_WINDOW_MS + 60_000)), reserved(minutesAgo(1))], now, 2);
+    expect(a.reopensAt).toEqual(new Date(now.getTime() + 60_000));
   });
 });
 
