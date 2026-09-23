@@ -532,6 +532,31 @@ describe("combo partner (quick-add, option E / G)", () => {
     expect(sramRow.textContent).toContain("×1 owned");
   });
 
+  // The phone row's inline glyph hovers like the clause's does — a narrow window with a mouse.
+  it("names the combo when the inline glyph is hovered with a fine pointer", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: fine"),
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    onTestFinished(() => { vi.unstubAllGlobals(); });
+    const loadComboMap = vi.fn(async () => ({ [RHYSTIC]: BOND.rhystic }));
+    mount({ loadComboMap });
+    fireEvent.focus(field());
+    await search();
+    const rhysticRow = await screen.findByRole("option", { name: /Rhystic Study/ });
+    const inline = await waitFor(() => {
+      const el = rhysticRow.querySelector('[data-testid="combo-partner-inline"]');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    fireEvent.pointerEnter(inline.querySelector('[data-testid="combo-glyph"]')!);
+    await waitFor(() =>
+      expect(inline.textContent).toContain("Completes a two-card combo with Sanguine Bond."),
+    );
+  });
+
   it("a card already in the deck carries no mark", async () => {
     const loadComboMap = vi.fn(async () => ({ [RHYSTIC]: BOND.rhystic }));
     mount({ loadComboMap, deckOracleIds: [RHYSTIC] });

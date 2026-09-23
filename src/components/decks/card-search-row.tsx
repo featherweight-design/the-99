@@ -12,6 +12,7 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";
 import { ComboClause } from "../cards/combo-clause";
 import { ComboGlyph } from "../cards/combo-glyph";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import type { CardFact } from "../../lib/copy/card-mark";
@@ -221,7 +222,10 @@ export function CardSearchRowBody({
               className="inline-flex items-center gap-[4px] min-w-0"
             >
               {joiner}
-              <ComboGlyph />
+              {/* The same hover as the clause's glyph, for a narrow window with a mouse. */}
+              <FactTooltip sentence={comboAwarenessCopy.markerTooltip.completes(comboPartner.name)}>
+                <ComboGlyph />
+              </FactTooltip>
               <span className="truncate min-w-0" style={{ color: "var(--fg-body)" }}>
                 {comboPartner.name}
               </span>

@@ -74,6 +74,13 @@ export const comboAwarenessCopy = {
      */
     ownBothMore: (partner: string, others: number) =>
       `Two-card combo with ${partner}, and ${others} ${others === 1 ? "other" : "others"}.`,
+    /**
+     * States 2 and 3 — the hover on the clause's lemniscate, now that the clause draws no
+     * words (errata §6). Hugh, 2026-09-22: the glyph gets the tooltip the other marks have.
+     * The words are `a11y.completes` sentence-cased and stopped, in this block's register, so
+     * the eye on hover and the ear read the same sentence rather than two paraphrases.
+     */
+    completes: (partner: string) => `Completes a two-card combo with ${partner}.`,
   },
 
   /** The card modal's block — the ONE surface in this feature that enumerates. */

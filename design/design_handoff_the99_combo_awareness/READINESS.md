@@ -181,10 +181,13 @@ phone quick-add row.
 
 On the Consider tile and the top-off list the glyph is glossed `Two-card combo` by the key those
 surfaces mount, and that key is now the ONLY gloss there — worth knowing before anyone removes it.
-**The quick-add row has no key.** It never mounted one, and on desktop `completes with` was the
-only hint it carried, so there the lemniscate is now unglossed for a sighted reader; the phone
-quick-add row has been in that state since §5. Raised with Hugh rather than solved here, because
-where a key would live on that dock is a placement call. The sentence is still heard: the top-off row and the quick-add option speak it through
+**The quick-add row has no key**, and gets none — Hugh, 2026-09-22. Instead the lemniscate carries
+the HOVER every other mark has, `Completes a two-card combo with {partner}.`, through the shared
+`FactTooltip` on every clause host and on the phone row's inline glyph. It is pointer-fine only,
+so a phone shows the symbol alone; Hugh ruled that sufficient there, since the card modal spells
+the combo out. Building it found that `FactTooltip` could only flip vertically: the lemniscate is
+the first mark to LEAD its line, and on the quick-add results a centred bubble began 17px past
+the scroller's left edge. It now aligns to a near left or right edge instead, for every mark. The sentence is still heard: the top-off row and the quick-add option speak it through
 their own labels, and the clause carries it sr-only for the Consider tile, which reads it as
 content. `ownBoth` (`with {partner} — you own both`) is unchanged; no host draws it today.
 

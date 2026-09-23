@@ -33,6 +33,15 @@ export const OPEN_DELAY_MS = 400;
 export const ROOM_ABOVE_PX = 54;
 
 /**
+ * Half the bubble at its 220px cap, plus 4px of air. A mark nearer than this to the left or
+ * right edge of whatever clips it cannot be the bubble's CENTRE without the bubble crossing that
+ * edge, so the bubble is aligned TO the edge instead. Every mark sat right of a card name until
+ * the combo clause's lemniscate, which LEADS its line: on the quick-add results the centred
+ * bubble started 17px past the scroller's left edge and read `ompletes a two-card combo…`.
+ */
+export const HALF_BUBBLE_PX = 114;
+
+/**
  * The top edge of whatever would clip a box drawn above `el`: the nearest ancestor that
  * clips its overflow, or the viewport's top when none does.
  *
@@ -43,13 +52,30 @@ export const ROOM_ABOVE_PX = 54;
  * scroller's top edge, and a bubble drawn above it is clipped in part or whole.
  */
 export function clipTopFor(el: Element): number {
+  return clipBoxFor(el).top;
+}
+
+/** The box that would clip a bubble drawn around `el`: the nearest clipping ancestor's edges,
+ *  or the viewport's when none clips. The same walk `clipTopFor` always did, on all sides. */
+export function clipBoxFor(el: Element): { top: number; left: number; right: number } {
   for (let node = el.parentElement; node; node = node.parentElement) {
     const style = getComputedStyle(node);
     if (style.overflowY !== "visible" || style.overflowX !== "visible") {
-      return node.getBoundingClientRect().top;
+      const r = node.getBoundingClientRect();
+      return { top: r.top, left: r.left, right: r.right };
     }
   }
-  return 0;
+  return { top: 0, left: 0, right: window.innerWidth };
+}
+
+/** Where the bubble sits across its mark. `center` unless an edge is too near for it. */
+export function alignFor(el: Element): "center" | "start" | "end" {
+  const r = el.getBoundingClientRect();
+  const box = clipBoxFor(el);
+  const mid = r.left + r.width / 2;
+  if (mid - box.left < HALF_BUBBLE_PX) return "start";
+  if (box.right - mid < HALF_BUBBLE_PX) return "end";
+  return "center";
 }
 
 /**
@@ -108,6 +134,7 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
   // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
   // scrolled since it mounted, so a side chosen at mount would be a guess about a past scroll.
   const [below, setBelow] = useState(false);
+  const [align, setAlign] = useState<"center" | "start" | "end">("center");
   const anchor = useRef<HTMLSpanElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -128,6 +155,7 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
         timer.current = setTimeout(() => {
           const el = anchor.current;
           setBelow(el ? el.getBoundingClientRect().top - clipTopFor(el) < ROOM_ABOVE_PX : false);
+          setAlign(el ? alignFor(el) : "center");
           setOpen(true);
         }, OPEN_DELAY_MS);
       }}
@@ -140,7 +168,8 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
           // name, and this sentence is the same fact in more words.
           aria-hidden
           data-side={below ? "below" : "above"}
-          className={`pointer-events-none absolute left-1/2 ${below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]"} z-50 w-max max-w-[220px] -translate-x-1/2 rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]`}
+          data-align={align}
+          className={`pointer-events-none absolute ${align === "start" ? "left-0" : align === "end" ? "right-0" : "left-1/2 -translate-x-1/2"} ${below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]"} z-50 w-max max-w-[220px] rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]`}
           style={{
             background: "var(--elevated)",
             border: "1px solid var(--border)",

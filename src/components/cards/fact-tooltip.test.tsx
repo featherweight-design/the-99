@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cardMarkCopy } from "../../lib/copy/card-mark";
-import { FactTooltip, OPEN_DELAY_MS, ROOM_ABOVE_PX } from "./fact-tooltip";
+import { FactTooltip, HALF_BUBBLE_PX, OPEN_DELAY_MS, ROOM_ABOVE_PX } from "./fact-tooltip";
 
 /** jsdom has no matchMedia, so each case states the pointer it is testing. */
 function pointer(fine: boolean) {
@@ -188,5 +188,42 @@ describe("FactTooltip — the side it opens on", () => {
     await waitFor(() => expect(bubble()).toHaveAttribute("data-side", "above"), {
       timeout: OPEN_DELAY_MS + 500,
     });
+  });
+});
+
+// ACROSS, as well as up and down. The bubble is centred on its mark, and a mark near the left
+// or right edge of whatever clips it cannot be centred without crossing that edge — which the
+// combo clause's lemniscate is, since it LEADS its line: on the quick-add results the bubble
+// began 17px past the scroller's edge. jsdom lays nothing out, so the geometry is stated.
+describe("FactTooltip — where it sits across its mark", () => {
+  function mount(markLeft: number) {
+    pointer(true);
+    render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <FactTooltip fact="gameChanger"><i data-testid="mark" /></FactTooltip>
+      </div>,
+    );
+    const scroller = screen.getByTestId("scroller");
+    const anchor = screen.getByTestId("mark").parentElement as HTMLElement;
+    vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue({ top: 0, left: 100, right: 900 } as DOMRect);
+    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: 400, left: markLeft, width: 16 } as DOMRect);
+    fireEvent.pointerEnter(screen.getByTestId("mark"));
+  }
+  const bubble = () => screen.getByText(cardMarkCopy.tooltip.gameChanger);
+  const wait = { timeout: OPEN_DELAY_MS + 500 };
+
+  it("aligns to the left edge when the mark is too near it to centre", async () => {
+    mount(100 + 20);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "start"), wait);
+  });
+
+  it("aligns to the right edge when the mark is too near that one", async () => {
+    mount(900 - 30);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "end"), wait);
+  });
+
+  it("centres when there is room either side", async () => {
+    mount(100 + HALF_BUBBLE_PX + 10);
+    await waitFor(() => expect(bubble()).toHaveAttribute("data-align", "center"), wait);
   });
 });
