@@ -417,14 +417,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm probe:bracket-chip` walks the bracket chip on the deck tile and in the deck header at
   1300x900 and 390x844: the header draws it on a FRESH load, from the stored analysis, before any
   tab is pressed; both copies are the 22px line and share the status pill's line rather than
-  pushing a second one; the tile's copy stays inside its tile; and pressing the header's lands on
-  the Analysis tab. Two traps it hit, both by running it: the tile's footer is NOT inside the
+  pushing a second one (or, on the ~190-230px tiles of the 640-1000px grid, wraps below the
+  pill); nothing paints over the bar, whose track keeps a 40px floor; the tile's copy stays inside
+  its tile; and pressing the header's lands on the Analysis tab. It runs at 1300, 700 and 390,
+  because 700 is the width where the bar collapsed to 0px before the floor. Two traps it hit, both by running it: the tile's footer is NOT inside the
   tile's link, so a chip searched under `a[href]` reads 0; and both header widths stay mounted,
   so `querySelector` returns the hidden desktop copy at 390 and the phone reads 0 chips on a build
   that draws one. It searches every host and keeps the visible ones. With the phone header's chip
-  unmounted, the 390 header check fails. Pressing Analyze writes one `deck_profiles` row, deleted
-  in a `finally` when it did not exist before the run. Point it at `local-dev`, **never
-  production**.
+  unmounted, the 390 header check fails; with the bar's floor reverted, the 700 bar reads 0px.
+  It NEVER EDITS A DECK: the rule that an edit or a change of deck retires the header chip is
+  `use-header-bracket.test.tsx`'s. Pressing Analyze upserts one `deck_profiles` row, which the
+  `finally` puts back as it was, each cleanup step on its own so one failing cannot skip the
+  rest. Point it at `local-dev`, **never production**.
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The

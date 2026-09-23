@@ -16,7 +16,7 @@ import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel, SynopsisSlot } from "./analysis-panel";
 import { useDeckProfile } from "./use-deck-profile";
-import { slotDeck } from "../../lib/bracket/slot";
+import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
@@ -302,38 +302,16 @@ export function BuilderShell({
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
 
-  // THE HEADER'S BRACKET, and the list of cards it describes. Two sources, the newest winning: the
-  // analysis the page was served with, and one the reader pressed for during the visit. Each is
-  // held beside the card list it was read against, and drawn only while the list is still that
-  // one: an edit during the visit retires the chip at once, as it does on the tile and on a
-  // reload, rather than showing a bracket for cards the analysis never read.
-  const cardsKey = useMemo(
-    () => cards.map((c) => `${c.oracleId}:${c.quantity}`).sort().join(","),
-    [cards],
-  );
-  const [bracketSource, setBracketSource] = useState<{ permits: Bracket[]; key: string } | null>(
-    storedPermits ? { permits: storedPermits, key: cardsKey } : null,
-  );
-  const [seenStored, setSeenStored] = useState(storedPermits);
-  const readyProfile = profile.state.kind === "ready" ? profile.state.profile : null;
-  const [seenProfile, setSeenProfile] = useState(readyProfile);
-  // Adjusted during render, React's pattern for state derived from a changed input, so a stale
-  // chip never paints once before being corrected.
-  if (readyProfile !== seenProfile) {
-    setSeenProfile(readyProfile);
-    if (readyProfile) setBracketSource({ permits: slotDeck(readyProfile).permits, key: cardsKey });
-  }
-  if (storedPermits !== seenStored) {
-    // A revalidated page is the server's answer for the deck as it now stands.
-    setSeenStored(storedPermits);
-    setBracketSource(storedPermits ? { permits: storedPermits, key: cardsKey } : null);
-  }
+  // THE HEADER'S BRACKET, retired by an edit or a change of deck; see `useHeaderBracket`.
+  const headerPermits = useHeaderBracket({
+    deckId: deck.id,
+    cards,
+    storedPermits,
+    readyProfile: profile.state.kind === "ready" ? profile.state.profile : null,
+  });
   const headerBracket =
-    analysisEnabled && bracketSource && bracketSource.key === cardsKey
-      ? {
-          permits: bracketSource.permits,
-          answered: chipAnswer(bracketSource.permits, declaration.declared),
-        }
+    analysisEnabled && headerPermits
+      ? { permits: headerPermits, answered: chipAnswer(headerPermits, declaration.declared) }
       : null;
   // Printed CARDS, commanders included — the same figure the `/decks` tile
   // draws, counted here off the rows the page already holds so the two surfaces
