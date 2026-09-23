@@ -109,7 +109,7 @@ export function ModalChrome({
   width,
   backLabel = title,
   ground = "var(--surface-raised)",
-  titleClassName = "text-[15px] md:text-[16px]",
+  titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
   children,
 }: {
   mark?: React.ReactNode;
@@ -120,7 +120,11 @@ export function ModalChrome({
   width: 560 | 700 | 760;
   backLabel?: string;
   ground?: string;
-  /** The title's size. What would have to go draws a sentence there, at 14px on a phone. */
+  /**
+   * The title's size and how it fits. Every title is one truncated line but what would have to
+   * go's, which is a sentence: 14px on a phone and wrapping to a second line inside the pinned
+   * 43px header rather than losing its end, as the 390 frame draws it.
+   */
   titleClassName?: string;
   children: React.ReactNode;
 }) {
@@ -170,7 +174,7 @@ export function ModalChrome({
           {mark}
           <h2
             id={titleId}
-            className={"m-0 min-w-0 truncate font-display font-bold leading-tight " + titleClassName}
+            className={"m-0 min-w-0 font-display font-bold " + titleClassName}
             style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
           >
             {title}

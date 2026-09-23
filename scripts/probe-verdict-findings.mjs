@@ -351,7 +351,8 @@ async function walkUpgradePath(page, label, width) {
       mark: !!h?.querySelector('[data-testid="bracket-mark"]'),
       title: title?.textContent ?? "",
       size: title ? getComputedStyle(title).fontSize : null,
-      clipped: title ? title.scrollWidth > title.clientWidth + 1 : null,
+      clipped: title ? title.scrollWidth > title.clientWidth + 1 || title.scrollHeight > title.clientHeight + 1 : null,
+      titleLines: title ? Math.round(title.getBoundingClientRect().height / parseFloat(getComputedStyle(title).lineHeight)) : null,
       inkInside: [...h.querySelectorAll("h2, [data-testid='bracket-mark']")].every((el) => el.getBoundingClientRect().bottom <= hb.bottom + 0.5),
       height: Math.round(hb.height),
       chips: d.querySelectorAll("[aria-pressed], [role='group']").length,
@@ -364,6 +365,9 @@ async function walkUpgradePath(page, label, width) {
   if (phone) {
     report(`${label}px · the header's sentence is 14px, inside a 43px header`,
       head.size === "14px" && head.height === 43 && head.inkInside, `${head.size}, header ${head.height}px`);
+    // The 390 frame draws the sentence WHOLE, wrapping inside the 43px header, never truncated.
+    report(`${label}px · the header's sentence is whole`, head.clipped === false && head.titleLines <= 2,
+      `clipped ${head.clipped}, ${head.titleLines} lines`);
   }
   report(`${label}px · no target chips and no decklist link`, head.chips === 0 && !head.decklist,
     `${head.chips} chips, decklist ${head.decklist}`);

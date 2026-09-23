@@ -66,7 +66,7 @@ export function UpgradePathSheet({
     <ModalChrome
       mark={<BracketMark bracket={target} px={22} />}
       title={title}
-      titleClassName="text-[14px] md:text-[16px]"
+      titleClassName="line-clamp-2 text-[14px] leading-[1.15] md:truncate md:text-[16px] md:leading-tight"
       closeLabel={deckAnalysisCopy.sheets.closeUpgradePath}
       onClose={onClose}
       width={700}

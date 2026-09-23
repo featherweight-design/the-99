@@ -1,0 +1,173 @@
+{
+  "feature": "Analysis tab, consolidated \u2014 PR A, the sheets",
+  "note": "The four sheets the tab opens, drawn in one ModalChrome at three widths (Analysis tab handoff \u00a73), and a card stacked on a sheet with its way back. Needs a server with ANALYSIS_TAB_ENABLED=true, and ANALYSIS_DECK set to a deck the signed-in account owns that ALREADY holds a stored reading with a game changer and a lower rung (on local-dev, d0000000-0000-4000-8000-00000000cafe once any verdict probe has pressed Analyze on it). Every row reaches the tab by a PRESS: BuilderTabs is client state and has no address. The rows wait on the findings rather than pressing Analyze, because a deck with a stored reading draws it on open and offers no invitation to press.",
+  "rows": [
+    {
+      "id": "receipt-760",
+      "label": "/decks/[id] Analysis \u2014 3a, the receipt: 760 and four across on desktop, a sheet from 52 on the phone",
+      "view": "src/components/decks/findings-block.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='finding-gameChangers'] button",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "receipt-stacked-card",
+      "label": "/decks/[id] Analysis \u2014 a card stacked on the receipt: the \u2190 Game changers pill on desktop, the 96px sheet on the phone",
+      "view": "src/components/decks/receipt-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 900
+        },
+        {
+          "click": "[data-testid='finding-gameChangers'] button",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 400
+        },
+        {
+          "click": "[data-testid='receipt-tile']",
+          "settle": 400
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "upgrade-path-sheet",
+      "label": "/decks/[id] Analysis \u2014 3b, what would have to go: 700, the target's mark and sentence in the header",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "what would have to go",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='upgrade-path']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "upgrade-path-stacked-card",
+      "label": "/decks/[id] Analysis \u2014 a candidate stacked on 3b: \u2190 Core",
+      "view": "src/components/decks/upgrade-path.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "what would have to go",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='upgrade-path']",
+          "settle": 400
+        },
+        {
+          "click": "[data-testid='upgrade-path'] button",
+          "settle": 400
+        },
+        {
+          "wait": "[aria-labelledby='card-modal-title']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "provenance-sheet",
+      "label": "/decks/[id] Analysis \u2014 3c, how we make these decisions: 560, no mark, no aside",
+      "view": "src/components/decks/provenance-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='findings-block']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "How we make these decisions",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='provenance']",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}
