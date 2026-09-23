@@ -23,6 +23,9 @@ the build was settled, all of them engineering's to settle:
 - **C16, which targets.** Every bracket below the reading's FLOOR, nearest first, never 4 or 5.
   u6's own example (a `[1,2]` deck targeting 2) is therefore unreachable from the lower rung. The
   branch is built and unit-tested, and nothing draws it today.
+  **Ruled 2026-09-22 (Hugh): ask once.** A range deck is already asked to declare in the verdict
+  block, so the upgrade path does not repeat that as a "nothing would have to go" panel. u6 stays
+  unreachable by design, and the chips stay below the reading's floor.
 - **C20, the rung caption.** `To downgrade your deck` replaces `to drop to here`.
 - **`CoverageDisclosure` is not reused**, although two audits say it should move out of the
   commanders folder for this. Its copy, its count and its cap are all about role coverage, and

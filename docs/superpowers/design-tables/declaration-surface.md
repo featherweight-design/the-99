@@ -65,7 +65,7 @@ Listed so the sub-line's spacing can be checked against it. This PR does not re-
 | border-radius | 999px | 999px |
 | padding | 2px 12px 2px 4px | 2px 12px 2px 4px |
 | Mark 1 (lo) | 32px (1a live card: 34px), ink `--bracket-{lo}`, opacity 1, `display:block; flex:none` | 30px, same |
-| Mark 2 (hi) | 32px (1a: 34px), ink `--bracket-{hi}`, **opacity 0.45** (1a, 3a, 2a card 4) **or 0.5** (1b, 2a card 3). See contradiction C8 | 30px, opacity 0.45 |
+| Mark 2 (hi) | 32px (1a: 34px), ink `--bracket-{hi}`, **opacity 0.45** (1a, 3a, 2a card 4) **or 0.5** (1b, 2a card 3) on the canvas; built at `DIM_OPACITY` 0.65 (README errata 4, settles C8) | 30px, same |
 | "split" label | mono, 9.5px, letter-spacing 0.12em, uppercase, `--fg-faint` | same |
 | Label copy | literal `split`. **No key in the copy file** (see C11) | same |
 
@@ -162,7 +162,7 @@ Condition: **no** version comparison on screen, the state being viewed is the **
 | | gap | 9px | 9px |
 | Superseded mark | size | **22px** | **22px** (not scaled up at 390) |
 | | ink | `var(--bracket-{declared})` (the superseded declaration's bracket) | same |
-| | opacity | 0.45 | 0.45 |
+| | opacity | 0.45 on the canvas; **built at `DIM_OPACITY` 0.65** (README errata 4) | same |
 | | form | the chip form (§3b), `display:block; flex:none` | same |
 | A5 text | font-size | 12.5px | 12px |
 | | color | `var(--fg-faint)` | `var(--fg-faint)` |
@@ -290,7 +290,7 @@ Condition: the viewed state is a **committed** version whose reading differs fro
 | Property | Desktop | 390 |
 |---|---|---|
 | single reading | one 24px mark, `--bracket-{n}`, opacity 1 | same |
-| range reading | an inner wrapper: display flex, align-items center, **gap 2px**, holding two 24px marks: lo at opacity 1, hi at **opacity 0.5** | same |
+| range reading | an inner wrapper: display flex, align-items center, **gap 2px**, holding two 24px marks: lo at opacity 1, hi at **opacity 0.5** on the canvas, built at `DIM_OPACITY` 0.65 (README errata 4) | same |
 | split pill / "split" label | **— (none in the row)**. The pill appears on the face only | — |
 
 ### E6 · Mark labels
@@ -371,7 +371,7 @@ The HANDOFF and §3c say the row "carries a date". **2a's row draws no date.** O
 - **C5 · Canvas sentences that the copy function cannot produce.** "Version 1 read as Core and was declared Core", "…read as Optimized and was declared Optimized" and "…read as Exhibition and was declared Exhibition" each give v1 a single reading **and** a declaration. A declaration needs a range, so `previous.phrase` would be "Exhibition or Core" / "Optimized or cEDH". Treat these as illustration errors. The function is authoritative.
 - **C6 · The previous-version mark when `previous.declared` is null.** The copy supports an undeclared previous version ("Version n read as X."), but every drawing shows one mark equal to the previous *declared* bracket. It is undefined which mark or marks draw for an undeclared previous version (its reading, possibly a range?). **Not found.**
 - **C7 · Face mark size.** 34px in the 1a live card, 32px in 1b/2a/3a/3c, 30px at 390. README §1 says "the verdict's mark is 36px". The face is Round 2's existing surface, so keep whatever ships there. The canvas itself is inconsistent.
-- **C8 · Split pill second-mark opacity.** 0.45 (1a, 3a, 2a card 4, 1f) vs 0.5 (1b, 2a card 3). The version row's split is consistently 0.5.
+- **C8 · Split pill second-mark opacity.** 0.45 (1a, 3a, 2a card 4, 1f) vs 0.5 (1b, 2a card 3). The version row's split is consistently 0.5. **Settled:** all of them are built at `DIM_OPACITY` 0.65 (README errata 4).
 - **C9 · Description margin-top.** 12px in the 1a live card vs 11px in every other desktop card.
 - **C10 · Skip.** The 1a annotation ("The skip sits on the same line at text weight"), the HANDOFF ask row ("a text-weight `skip this`") and build guardrail #2 ("Do not re-ask after a skip"), and README lines 18, 143 and 158 all still describe a skip. Per STATES and the audit, **there is no skip**. Ignored.
 - **C11 · `split` label copy.** Drawn on every split pill, but no key exists in `declaration - copy strings.ts`. It may already exist in Round 2's verdict copy. Not found in this package.
