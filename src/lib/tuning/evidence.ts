@@ -1,4 +1,4 @@
-import { recommendedMix, type MixRole } from "../decks/mix";
+import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import type { ProfilePlay } from "../profile/play";
 import type { DeckProfile } from "../profile/types";
 
@@ -46,8 +46,6 @@ export type EvidencePack = {
   play: ProfilePlay;
   intent: string | null;
 };
-
-const MIX_ORDER: readonly MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
 export function buildEvidencePack(input: {
   profile: DeckProfile;
@@ -101,7 +99,7 @@ export function buildEvidencePack(input: {
       commander: commanderIds.has(c.oracleId),
     })),
     targets: {
-      roles: MIX_ORDER.map((role) => ({
+      roles: ROLE_ORDER.map((role) => ({
         role,
         have: role === "land" ? profile.roles.counts.land : have[role],
         target: mix.cells[role].target,
