@@ -127,15 +127,8 @@ describe("ComboClause — the lemniscate's tooltip", () => {
     );
   });
 
-  // NOT ON TOUCH. Hugh ruled the symbol sufficient on a phone, and a hover that needs a tap is
-  // a control the reader did not ask for.
-  it("has no tooltip at all on a coarse pointer", async () => {
-    stubPointer(false);
-    render(<ComboClause partnerName="Lithoform Engine" state="completes" />);
-    fireEvent.pointerEnter(screen.getByTestId("combo-glyph"));
-    await new Promise((r) => setTimeout(r, 400));
-    expect(
-      screen.queryByText(comboAwarenessCopy.markerTooltip.completes("Lithoform Engine")),
-    ).toBeNull();
-  });
+  // NOT ON TOUCH is `FactTooltip`'s rule, and it is tested there (`fact-tooltip.test.tsx`), with
+  // waits past `OPEN_DELAY_MS`. A coarse-pointer case HERE measured nothing: with the tooltip
+  // taken out of this component no bubble renders under any pointer, so "no tooltip" held
+  // either way — and its 400ms wait raced the 400ms open timer besides.
 });
