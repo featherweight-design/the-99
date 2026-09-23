@@ -5,7 +5,9 @@ import { modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
   allowanceFrom,
+  counts,
   type Allowance,
+  type LedgerRow,
   type ModelFeature,
 } from "./allowance-rule";
 
@@ -14,7 +16,9 @@ import {
  *
  * A unit is RESERVED when a run starts, SPENT when the run ends with an answer the player sees,
  * and REFUNDED on any failure or Stop. `reserved` counts, because it is a run in flight — not
- * counting it is exactly how two concurrent presses would both take the last unit.
+ * counting it is exactly how two concurrent presses would both take the last unit — but only for
+ * `RESERVATION_TTL_MS`: past that nothing can still be running, and a unit left reserved (a crash,
+ * a deck deleted mid-run, which cascades its run away) stops counting on its own.
  */
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -27,19 +31,18 @@ export class AllowanceSpentError extends Error {
   }
 }
 
-const COUNTED = ["reserved", "spent"] as const;
-
+/** The window's rows, filtered by `counts` — one rule, shared with the tests. */
 async function countedTimes(q: Tx | typeof db, userId: string, now: Date): Promise<Date[]> {
   const since = new Date(now.getTime() - ALLOWANCE_WINDOW_MS);
   const rows = await q
-    .select({ createdAt: modelCalls.createdAt })
+    .select({ status: modelCalls.status, createdAt: modelCalls.createdAt })
     .from(modelCalls)
     .where(and(
       eq(modelCalls.userId, userId),
       gt(modelCalls.createdAt, since),
-      inArray(modelCalls.status, [...COUNTED]),
+      inArray(modelCalls.status, ["reserved", "spent"]),
     ));
-  return rows.map((r) => r.createdAt);
+  return rows.filter((r) => counts(r as LedgerRow, now)).map((r) => r.createdAt);
 }
 
 export async function readAllowance(userId: string, now: Date = new Date()): Promise<Allowance> {

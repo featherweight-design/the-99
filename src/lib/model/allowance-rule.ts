@@ -22,6 +22,29 @@ export const MODEL_DAILY_ALLOWANCE = 5;
 
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * How long a `reserved` unit counts before it is taken to be stranded.
+ *
+ * A reservation counts because it is a run in flight — that is what stops two presses taking
+ * the last unit. But a run cannot be in flight longer than its call's deadline plus the outcome
+ * write, and deck tuning's reaper fails any pending run after five minutes. A reservation older
+ * than this was stranded — its process died, or its deck was deleted and took the run with it —
+ * and nothing is left to settle it. Counting it anyway would charge the player for a call they
+ * never got an answer from, for the rest of the window. Ten minutes is twice the reaper's cutoff.
+ */
+export const RESERVATION_TTL_MS = 10 * 60 * 1000;
+
+export type LedgerRow = { status: "reserved" | "spent" | "refunded"; createdAt: Date };
+
+/** Whether one ledger row counts against the allowance at `now`. */
+export function counts(row: LedgerRow, now: Date): boolean {
+  const age = now.getTime() - row.createdAt.getTime();
+  if (age >= ALLOWANCE_WINDOW_MS) return false;
+  if (row.status === "spent") return true;
+  if (row.status === "reserved") return age < RESERVATION_TTL_MS;
+  return false;
+}
+
 export type ModelFeature = "tuning" | "synopsis";
 
 export type Allowance = {

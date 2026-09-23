@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ALLOWANCE_WINDOW_MS, MODEL_DAILY_ALLOWANCE, allowanceFrom } from "./allowance-rule";
+import { ALLOWANCE_WINDOW_MS, MODEL_DAILY_ALLOWANCE, RESERVATION_TTL_MS, allowanceFrom, counts } from "./allowance-rule";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
@@ -31,5 +31,27 @@ describe("allowanceFrom", () => {
     // Limit 2, three counted (a concurrent reserve landed): one leaving is not enough.
     const a = allowanceFrom([hoursAgo(20), hoursAgo(10), hoursAgo(5)], now, 2);
     expect(a.reopensAt).toEqual(new Date(hoursAgo(10).getTime() + ALLOWANCE_WINDOW_MS));
+  });
+});
+
+describe("counts", () => {
+  const minutesAgo = (m: number) => new Date(now.getTime() - m * 60_000);
+
+  it("counts a spent unit for the whole window, and not after", () => {
+    expect(counts({ status: "spent", createdAt: hoursAgo(23) }, now)).toBe(true);
+    expect(counts({ status: "spent", createdAt: hoursAgo(24) }, now)).toBe(false);
+  });
+
+  it("never counts a refunded unit", () => {
+    expect(counts({ status: "refunded", createdAt: minutesAgo(1) }, now)).toBe(false);
+  });
+
+  it("counts a reservation while a run could still be in flight", () => {
+    expect(counts({ status: "reserved", createdAt: minutesAgo(1) }, now)).toBe(true);
+  });
+
+  it("stops counting a reservation nothing can still be running under", () => {
+    // A deck deleted mid-run cascades its run away, and nothing is left to settle the unit.
+    expect(counts({ status: "reserved", createdAt: new Date(now.getTime() - RESERVATION_TTL_MS) }, now)).toBe(false);
   });
 });
