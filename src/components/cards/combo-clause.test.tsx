@@ -72,6 +72,16 @@ describe("ComboClause", () => {
     expect(clause).toHaveTextContent(comboAwarenessCopy.clause.completes("Isochron Scepter"));
   });
 
+  // THE CLAUSE IS CAPPED AT ITS PARENT, or none of the above ever runs. Two of its three hosts
+  // put it in a BLOCK parent, where an inline-level box sizes to at least its min-content —
+  // and for text that cannot wrap that is the whole sentence, so nothing shrank and the clause
+  // ran into its neighbours (24px into the top-off row's figures at 390, measured). jsdom lays
+  // nothing out, so this pins the cap and the browser numbers in #864's follow-up prove it.
+  it("caps itself at its parent's width, whatever the host's display", () => {
+    render(<ComboClause partnerName="Thassa's Oracle" state="completes" />);
+    expect(screen.getByTestId("combo-clause").className).toMatch(/\bmax-w-full\b/);
+  });
+
   // `ownBoth` NEEDS NONE OF IT: its name sits mid-sentence and the tail is what
   // end-truncation eats first, which is already the rule. Splitting it would be ceremony.
   it("leaves the own-both sentence whole", () => {
