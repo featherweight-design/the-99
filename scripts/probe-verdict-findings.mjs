@@ -21,6 +21,10 @@
 //     reserve (readiness finding 10), so the probe reads the name row's rects against the pill's.
 //     Pressing the pill is the first dismissal on desktop; Escape is the phone's.
 //   · How we make these decisions opens as a SHEET (3c), 560px on desktop, with its four rows.
+//   · What would have to go opens from the climb's lower rung as a SHEET (3b): 700px on desktop,
+//     a 43px header on the phone whose sentence is 14px, the target's mark in that header, no
+//     target chips, no decklist link, and a candidate that stacks a card whose way back is the
+//     target bracket's name.
 //
 // IT FINDS ITS OWN FIXTURE by pressing each of the account's decks until one draws a finding with
 // cards behind it, rather than naming an id that rots — a deck with nothing in it has no receipt
@@ -318,6 +322,74 @@ async function walk(page, label, width) {
   await page.keyboard.press("Escape");
   await sheet.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
   report(`${label}px · Escape closes the provenance sheet`, (await sheet.count()) === 0, `${await sheet.count()} open`);
+
+  await walkUpgradePath(page, label, width);
+}
+
+/** 3b: what would have to go, from the climb's lower rung. */
+async function walkUpgradePath(page, label, width) {
+  const phone = width < 768;
+  const opener = onPageRole(page, "button", /what would have to go/);
+  if (!report(`${label}px · the lower rung offers what would have to go`, (await opener.count()) === 1,
+    `${await opener.count()} openers`)) return;
+  const popup = await opener.getAttribute("aria-haspopup");
+  await opener.click();
+  const sheet = page.locator('[role="dialog"]').filter({ has: page.locator('[data-testid="upgrade-path"]') });
+  await sheet.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
+  const box = await sheet.boundingBox();
+  if (!report(`${label}px · it opens a sheet`, popup === "dialog" && box !== null, `haspopup ${popup}`)) return;
+  if (phone) {
+    report(`${label}px · the path's sheet starts 52px down`, Math.abs(box.y - 52) <= 1, `top ${box.y}`);
+  } else {
+    report(`${label}px · the path's sheet is 700px`, Math.abs(box.width - 700) <= 1, `width ${box.width}`);
+  }
+  const head = await sheet.evaluate((d) => {
+    const h = d.firstElementChild;
+    const title = h?.querySelector("h2");
+    const hb = h.getBoundingClientRect();
+    return {
+      mark: !!h?.querySelector('[data-testid="bracket-mark"]'),
+      title: title?.textContent ?? "",
+      size: title ? getComputedStyle(title).fontSize : null,
+      clipped: title ? title.scrollWidth > title.clientWidth + 1 : null,
+      inkInside: [...h.querySelectorAll("h2, [data-testid='bracket-mark']")].every((el) => el.getBoundingClientRect().bottom <= hb.bottom + 0.5),
+      height: Math.round(hb.height),
+      chips: d.querySelectorAll("[aria-pressed], [role='group']").length,
+      decklist: /open your decklist/i.test(d.textContent ?? ""),
+    };
+  });
+  report(`${label}px · the target's mark heads the sheet`, head.mark, head.mark ? "drawn" : "absent");
+  report(`${label}px · the header names the target and what goes`, /would have to go|not reachable/.test(head.title),
+    `"${head.title}"`);
+  if (phone) {
+    report(`${label}px · the header's sentence is 14px, inside a 43px header`,
+      head.size === "14px" && head.height === 43 && head.inkInside, `${head.size}, header ${head.height}px`);
+  }
+  report(`${label}px · no target chips and no decklist link`, head.chips === 0 && !head.decklist,
+    `${head.chips} chips, decklist ${head.decklist}`);
+
+  // A CANDIDATE STACKS, and the way back is the target's name, the opening words of the header.
+  const candidate = sheet.locator('[data-testid="upgrade-path"] button').first();
+  if (!report(`${label}px · the path lists a candidate to open`, (await candidate.count()) === 1, `${await candidate.count()} found`)) {
+    await page.keyboard.press("Escape");
+    return;
+  }
+  await candidate.click();
+  const card = page.locator('[role="dialog"][aria-labelledby="card-modal-title"]');
+  await card.waitFor({ state: "visible", timeout: 15_000 });
+  report(`${label}px · a candidate stacks on the sheet`, (await sheet.count()) === 1, "sheet stays");
+  if (!phone) {
+    const back = await card.locator('[data-testid="card-modal-back"]').getAttribute("aria-label").catch(() => null);
+    const target = head.title.split(",")[0];
+    report(`${label}px · the card's way back names the target bracket`, back === `Back to ${target}`, `${back ?? "no pill"}`);
+  }
+  await page.keyboard.press("Escape");
+  await card.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+  report(`${label}px · Escape lands back on the path`, (await card.count()) === 0 && (await sheet.count()) === 1,
+    `card ${await card.count()}, sheet ${await sheet.count()}`);
+  await page.keyboard.press("Escape");
+  await sheet.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+  report(`${label}px · a second Escape closes the path`, (await sheet.count()) === 0, `${await sheet.count()} open`);
 }
 
 async function run() {

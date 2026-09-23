@@ -198,6 +198,13 @@ async function walk(page, label, width) {
     });
     report(`${label}px · a tutor opens stacked on the reasoning`, s.up && (!phone || s.headBottom <= s.cardTop),
       `reasoning ${s.up ? "stays" : "gone"}${phone ? `, header to ${s.headBottom}, card from ${s.cardTop}` : ""}`);
+    if (!phone) {
+      // The way back is named for the reasoning: its own title (Analysis tab handoff §3).
+      const title = await modal.locator("h2").innerText();
+      const back = await card.locator('[data-testid="card-modal-back"]').getAttribute("aria-label").catch(() => null);
+      report(`${label}px · the stacked card's way back names the reasoning`, back === `Back to ${title}`,
+        `${back ?? "no pill"}`);
+    }
     await page.keyboard.press("Escape");
     await card.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
     report(`${label}px · Escape lands back on the reasoning`, (await card.count()) === 0 && (await modal.count()) === 1,
