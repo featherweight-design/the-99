@@ -1,4 +1,5 @@
 import type { deckTuningCopy } from "../copy/deck-tuning";
+import { mentionsDate } from "./note-date";
 
 /**
  * The text checks among the nine `suggestionRules`: the ones a string alone can fail. Pure.
@@ -20,18 +21,20 @@ export const NUMBER_WORDS = "none|one|two|three|four|five|six|seven|eight|nine|t
 /**
  * A rationale may not name a bracket (`suggestionRules.noBracketClaim`): the APP flags a swap
  * that moves the bracket, through `slotDeck`, and the model is never shown a bracket figure to be
- * right about. The word itself, and the four bracket names that cannot be ordinary prose. `Core`
- * is left out: "the core of the deck" is a sentence, not a claim.
+ * right about. The word itself in any case, and the four bracket names that cannot be ordinary
+ * prose, capitalized as names are. `Core` is left out: "the core of the deck" is a sentence.
  */
-const BRACKET_CLAIM = /\bbrackets?\b|\b(?:Exhibition|Upgraded|Optimized|cEDH)\b/;
+const BRACKET_WORD = /\bbrackets?\b/i;
+const BRACKET_NAME = /\b(?:Exhibition|Upgraded|Optimized|cEDH)\b/;
 
 /**
  * Nor promise a result (`suggestionRules.noResultClaim`). The list is written down rather than
  * inferred, and deliberately narrow: a PREDICTION about games — a swap that "will win" or "would
  * lose" — and the comparative claims "win more", "lose less" and "stronger". A record already
- * logged ("won 1 of 5") is evidence, not a promise, and passes.
+ * logged ("won 1 of 5") is evidence, not a promise, and passes; so does ordinary prose about how
+ * the deck plays ("a second way to win", "hard to beat"), which predicts nothing.
  */
-const RESULT_CLAIM = /\b(?:will|would|should|could|to)\s+(?:win|lose|beat)\b|\b(?:win|wins|winning)\s+more\b|\blose\s+less\b|\bstronger\b/i;
+const RESULT_CLAIM = /\b(?:will|would|should|could)\s+(?:win|lose|beat)\b|\b(?:win|wins|winning)\s+more\b|\blose\s+less\b|\bstronger\b/i;
 
 /**
  * Something the player wrote that a suggestion may quote. A NOTE carries the date of its game,
@@ -63,7 +66,7 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
     (t, q) => t.split(`"${q.text}"`).join(" ").split(`\u201c${q.text}\u201d`).join(" "),
     text,
   );
-  if (BRACKET_CLAIM.test(ownWords)) broken.push("noBracketClaim");
+  if (BRACKET_WORD.test(ownWords) || BRACKET_NAME.test(ownWords)) broken.push("noBracketClaim");
   if (RESULT_CLAIM.test(ownWords)) broken.push("noResultClaim");
 
   // A counted noun must be preceded by `N of M`. `3 of 5 games` passes; `3 games` does not.
@@ -91,7 +94,7 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
   for (const q of quotable) {
     for (const quoted of [`"${q.text}"`, `\u201c${q.text}\u201d`]) {
       if (!rest.includes(quoted)) continue;
-      const sourced = quotable.some((s) => s.text === q.text && (s.date === null || text.includes(s.date)));
+      const sourced = quotable.some((s) => s.text === q.text && (s.date === null || mentionsDate(text, s.date)));
       if (!sourced) {
         broken.push("quotedNote");
         return broken;

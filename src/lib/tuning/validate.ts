@@ -1,7 +1,7 @@
 import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
-import { noteDate, packYear } from "./note-date";
+import { mentionsDate, noteDate, packYear } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel, oneLine } from "./prompt";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
@@ -157,7 +157,12 @@ export function validateSuggestions(args: {
         // of its figures, since both were stated; a direction, when given, must be the right one.
         const figure = oneFigure(text, "games?");
         if (!figure || figure.m !== count) return false;
-        const directed = HURT.test(text) || WORKED.test(text);
+        // Both directions at once ("worked against you") says neither: refused, never read as
+        // whichever figure happens to match.
+        const hurt = HURT.test(text);
+        const worked = WORKED.test(text);
+        if (hurt && worked) return false;
+        const directed = hurt || worked;
         return gameClaims().some((claim) => claim.n === figure.n
           && claim.words.every((w) => w.test(text) || (!directed && (w === HURT || w === WORKED))));
       }
@@ -168,19 +173,22 @@ export function validateSuggestions(args: {
         const year = packYear(pack.play.games);
         const own = [s.rationale, s.rationaleShort, ...s.evidence.map((e) => e.value)];
         return pack.play.games.some((g) => {
-          if (g.note === null || !c.value.includes(noteDate(g.playedAt, year))) return false;
+          if (g.note === null || !mentionsDate(c.value, noteDate(g.playedAt, year))) return false;
           const note = oneLine(g.note);
           return own.some((t) => t.includes(`"${note}"`) || t.includes(`\u201c${note}\u201d`));
         });
       }
       case "intent": {
         // The player's own words, whole or a part of them (Design cites `win late` out of a
-        // longer line). A part must be at least a word; a citation naming some other purpose is
-        // not evidence of this one.
+        // longer line). A part is whole words of the line, at word boundaries, and at least one
+        // of them a real word: `ate` out of `late` is not a citation. A citation naming some
+        // other purpose is not evidence of this one.
         if (pack.intent === null) return false;
         const intent = oneLine(pack.intent);
-        const words = c.value.trim().replace(/^["\u201c]|["\u201d]$/g, "").trim();
-        return c.value.includes(intent) || (words.length >= 3 && intent.includes(words));
+        const part = c.value.trim().replace(/^["\u201c]|["\u201d]$/g, "").trim();
+        if (c.value.includes(intent)) return true;
+        if (!/[A-Za-z]{2,}/.test(part)) return false;
+        return new RegExp(`(?<![\\w'])${escapeRegExp(part)}(?![\\w'])`).test(intent);
       }
       case "mix": {
         // A target and its figure, as the targets list writes it: `draw 4 of 10`. The cell the

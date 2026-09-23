@@ -19,7 +19,7 @@
 //   8  dismiss, then restore
 //   9  only an answer spends a unit
 //  10  saving the intent clears the seeded flag; an over-cap save writes nothing
-//  11  a commit since the run retires the set and reopens the gate; a moved cut no longer applies
+//  12  a commit since the run retires the set and reopens the gate; a moved cut no longer applies
 // Case 11, the seeding in `createDeck` (and `fillDeck` declining to seed), needs a session and
 // an EDHREC fetch, so it lives in `src/app/decks/actions.test.ts` against the stubbed driver.
 //
@@ -344,7 +344,7 @@ async function run() {
     check("9 · a changed deck is stale and ungated", [moved.stale, gateReason(moved)], [true, null]);
   }
 
-  // 11 · A commit retires the set, and an item the deck has moved past no longer applies.
+  // 12 · A commit retires the set, and an item the deck has moved past no longer applies.
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
@@ -354,20 +354,20 @@ async function run() {
     await insertVersion(1);
     const { itemId } = await answered(u, deck, c, "fp-v");
     const before = await readTuningState(deck, u, "fp-v");
-    check("11 · a set with no commit since reads unretired", before.retired, null);
-    check("11 · and its item applies", before.items.map((i) => i.applies), [true]);
+    check("12 · a set with no commit since reads unretired", before.retired, null);
+    check("12 · and its item applies", before.items.map((i) => i.applies), [true]);
 
     // Committed a moment later, by the database's clock, with the list unchanged.
     await fixture.execute(sql`select pg_sleep(0.05)`);
     await insertVersion(2);
     const after = await readTuningState(deck, u, "fp-v");
-    check("11 · a commit since the run retires the set, naming both versions", after.retired, { from: 1, to: 2 });
-    check("11 · and reopens the gate though the list did not move", [after.stale, gateReason(after)], [false, null]);
+    check("12 · a commit since the run retires the set, naming both versions", after.retired, { from: 1, to: 2 });
+    check("12 · and reopens the gate though the list did not move", [after.stale, gateReason(after)], [false, null]);
 
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.body[0]}::uuid`);
     const moved = await readTuningState(deck, u, "fp-v");
-    check("11 · an item whose cut the deck no longer holds does not apply", moved.items.map((i) => i.applies), [false]);
-    check("11 · and apply refuses it", await applyItem(itemId, u), null);
+    check("12 · an item whose cut the deck no longer holds does not apply", moved.items.map((i) => i.applies), [false]);
+    check("12 · and apply refuses it", await applyItem(itemId, u), null);
   }
 
   // 10 · The intent.

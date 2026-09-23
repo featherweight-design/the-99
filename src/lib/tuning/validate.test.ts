@@ -215,4 +215,30 @@ describe("validateSuggestions", () => {
     expect(intent("go wide").drops[0].rule).toBe("citation");
     expect(intent("a").drops[0].rule).toBe("citation");
   });
+
+  it("refuses a citation naming both directions at once", () => {
+    expect(cite([{ kind: "games", value: "mana worked against you in 3 of 5" }]).drops[0].rule).toBe("citation");
+  });
+
+  it("dates a note citation to its own day, not one that contains it", () => {
+    const two = { ...pack, play: buildPlayGroup([
+      game("g6", { playedAt: new Date("2026-09-06T20:00:00Z"), note: "stuck on lands", hurt: ["mana"] }),
+      game("g16", { playedAt: new Date("2026-09-16T20:00:00Z"), note: "flooded" }),
+    ]) };
+    const quoting = (value: string) => validateSuggestions({ response: { suggestions: [{
+      ...good, rationale: 'Your note from 6 Sep reads "stuck on lands".', rationaleShort: "Mana hurt in 1 of 2 games",
+      evidence: [{ kind: "note", value }],
+    }] }, pack: two, resolveName });
+    expect(quoting("6 Sep").droppedCount).toBe(0);
+    expect(quoting("16 Sep").drops[0].rule).toBe("citation");
+  });
+
+  it("takes an intent part only as whole words", () => {
+    const withIntent = { ...pack, intent: "grind the table out and win late" };
+    const intent = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value }] }] }, pack: withIntent, resolveName,
+    });
+    for (const scrap of ["ate", "d t", "rind"]) expect(intent(scrap).drops[0].rule).toBe("citation");
+    expect(intent("the table").droppedCount).toBe(0);
+  });
 });

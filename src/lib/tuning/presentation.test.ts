@@ -107,5 +107,16 @@ describe("presentationFailures", () => {
     const intent = [{ text: "I want to win late", date: null }];
     expect(presentationFailures("You said \u201cI want to win late\u201d.", intent)).toEqual([]);
   });
-});
 
+  it("holds a quoted note to its own day, not one that contains it", () => {
+    const sept = [{ text: "stuck on lands", date: "6 Sep" }];
+    expect(presentationFailures('On 6 Sep you wrote "stuck on lands".', sept)).toEqual([]);
+    expect(presentationFailures('On 16 Sep you wrote "stuck on lands".', sept)).toContain("quotedNote");
+  });
+
+  it("catches the word bracket at a sentence start, and lets ordinary prose about winning through", () => {
+    expect(presentationFailures("Bracket 3 stays within reach.", [])).toContain("noBracketClaim");
+    expect(presentationFailures("It gives the deck a second way to win.", [])).toEqual([]);
+    expect(presentationFailures("A blocker that is hard to beat.", [])).toEqual([]);
+  });
+});
