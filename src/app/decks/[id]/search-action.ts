@@ -2,8 +2,10 @@
 
 import { and, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "../../../db";
-import { cards, collectionItems, printings } from "../../../db/schema";
+import { cardBracketFlags, cards, collectionItems, printings } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
+import type { CardNoteFacts } from "../../../lib/bracket/card-note";
+import { classifyTutor } from "../../../lib/bracket/tutor-targets";
 import { withinColorIdentity } from "../../../lib/cards/identity-where";
 import type { Availability } from "../../../lib/decks/availability";
 import { loadAvailability } from "../../../lib/decks/availability-query";
@@ -42,6 +44,22 @@ export type SearchResult = {
    * carries the run the player typed, and a second name beside it would be noise.
    */
   flavorName: string | null;
+  /**
+   * What the card note and the fact marks read, or null for a card that carries none of the
+   * four. REQUIRED rather than optional, so a fixture or resolver building a result has to
+   * state it — an optional field is one a stand-in can leave out and still type-check, and
+   * the row would then draw no note on a card that has one.
+   *
+   * Read ON THE SEARCH'S OWN ROW rather than through `loadCandidateFacts`, and that is the
+   * whole of 8c's payload answer. Every one of the four is a property of the CARD: the game
+   * changer is a column already on this row, the tutor reading is `classifyTutor` over the
+   * oracle text this query already selects, and the two flags come off a table of 163 rows by
+   * primary key. Measured on staging: 0.04ms for twenty ids, joined into the statement that
+   * already runs, so no keystroke pays a round trip for it. What `loadCandidateFacts` adds is
+   * `completesCombos` — a question about the DECK, which no keystroke changes and which
+   * `useDeckComboMap` answers once per panel. The note does not read it.
+   */
+  facts: CardNoteFacts | null;
 };
 
 /**
@@ -104,9 +122,15 @@ export async function searchCards(
       oracleText: cards.oracleText, keywords: cards.keywords,
       imageUri: cards.imageUri, manaCost: cards.manaCost, cmc: cards.cmc,
       flavorName: flavorHits.flavorName,
+      gameChanger: cards.gameChanger,
+      // Nullable through the left join: no row means neither flag applies, which is what
+      // the table's absence means everywhere (`flags-read.ts`).
+      massLandDenial: cardBracketFlags.massLandDenial,
+      extraTurn: cardBracketFlags.extraTurn,
     })
     .from(cards)
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
+    .leftJoin(cardBracketFlags, eq(cardBracketFlags.oracleId, cards.oracleId))
     .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
     .where(and(
       // A player typing the name off the front of a Secret Lair card is typing the only
@@ -139,8 +163,14 @@ export async function searchCards(
   // Substring (not prefix) match is intentional: "gravetide" must find
   // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
   const lowerQuery = q.toLowerCase();
-  return rows.map(({ oracleText, keywords, ...row }) => ({
+  return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,
+    facts: noteFacts({
+      gameChanger: gameChanger ?? false,
+      massLandDenial: massLandDenial ?? false,
+      extraTurn: extraTurn ?? false,
+      tutor: classifyTutor(oracleText) !== null,
+    }),
     // Dropped when the title itself matched: the flavor name is there to explain a row
     // whose name does not contain what the player typed, and nothing else.
     flavorName: row.name.toLowerCase().includes(lowerQuery) ? null : row.flavorName,
@@ -149,4 +179,11 @@ export async function searchCards(
     role: primaryRole({ typeLine: row.typeLine, oracleText, keywords }),
     availability: availability?.get(row.oracleId) ?? null,
   }));
+}
+
+/** Null for a card carrying none of the four, which is what the note and the marks draw anyway. */
+function noteFacts(facts: CardNoteFacts): CardNoteFacts | null {
+  return facts.gameChanger || facts.massLandDenial || facts.extraTurn || facts.tutor
+    ? facts
+    : null;
 }

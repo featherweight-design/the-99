@@ -20,6 +20,11 @@ import { SearchField } from "../ui/text-field";
 import { markerAria } from "../ui/availability-marker";
 import { comboClauseSpoken } from "../cards/combo-clause";
 import { CardSearchRowBody } from "./card-search-row";
+import { CardNote, cardNoteSpoken } from "./card-note";
+import { factsFromCandidate } from "../../lib/bracket/facts";
+import type { NoteCounts } from "../../lib/bracket/card-note";
+import type { Bracket } from "../../lib/bracket/types";
+import { cardFactName } from "../../lib/copy/card-mark";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { type CardSearchInput, useCardSearch } from "./use-card-search";
@@ -63,6 +68,14 @@ interface QuickAddBarProps {
   search?: CardSearchInput["search"];
   /** The combo map's read. Defaults to the server action; see `useDeckComboMap`. */
   loadComboMap?: (deckId: string) => Promise<DeckComboMap>;
+  /**
+   * The deck's LIVE declaration, for the card note. Required, like the two hosts that already
+   * draw the note: null is a real answer (unanswered) and a default would let a mount site
+   * forget the prop and draw every note as though nothing had been declared.
+   */
+  declaredBracket: Bracket | null;
+  /** What the deck's list already holds of each kind — the note's ordinals. */
+  noteCounts: NoteCounts;
 }
 
 export function QuickAddBar({
@@ -75,6 +88,8 @@ export function QuickAddBar({
   initialOwnedOnly = true,
   search,
   loadComboMap,
+  declaredBracket,
+  noteCounts,
 }: QuickAddBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
@@ -314,6 +329,8 @@ export function QuickAddBar({
                 deckId={deckId}
                 inDeck={inDeck(r)}
                 selfClaimed={selfClaims(r)}
+                declaredBracket={declaredBracket}
+                noteCounts={noteCounts}
                 active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
@@ -372,6 +389,8 @@ interface QuickAddRowProps {
   inDeck: boolean;
   /** This deck holds a claim the availability read excluded. See QuickAddBar. */
   selfClaimed: boolean;
+  declaredBracket: Bracket | null;
+  noteCounts: NoteCounts;
   active: boolean;
   onActivate: () => void;
   registerAdd?: (fn: (r: SearchResult) => void) => void;
@@ -385,6 +404,8 @@ function QuickAddRow({
   deckId,
   inDeck,
   selfClaimed,
+  declaredBracket,
+  noteCounts,
   active,
   onActivate,
   registerAdd,
@@ -399,6 +420,19 @@ function QuickAddRow({
   // the one clause an add can falsify, so this line is also the instant half of the refresh.
   const comboPartner = applied ? null : comboHit;
   const ownershipShort = result.owned ? addPanelCopy.quickAdd.rowOwnedShort(result.ownedQty) : undefined;
+  // THE CARD NOTE, the third host after the Consider tile and the top-off row. The ordinal
+  // keys on `inDeck` — the COMMITTED list — never on `applied`, which also turns true the
+  // instant this row is pressed. The deck's counts move only when the add lands and the page
+  // revalidates, so gating on `applied` counts the card twice for that beat: the Consider
+  // tile's note did exactly that, "your 4th" dropping to "your 3rd" under the press.
+  const note = {
+    facts: result.facts,
+    declared: declaredBracket,
+    counts: noteCounts,
+    density: "row" as const,
+    inDeck,
+  };
+  const marks = factsFromCandidate(result.facts) ?? [];
 
   // The guard lives here rather than on the click handler alone: Enter reaches
   // the row through registerAdd, which would otherwise re-fire the mutation
@@ -470,6 +504,10 @@ function QuickAddRow({
         // The words the phone row replaces with a glyph, so the ear gets the whole sentence.
         comboPartner ? comboClauseSpoken(comboPartner.name, "completes") : null,
         applied ? addPanelCopy.quickAdd.rowInDeck : null,
+        // The marks, then the note that elaborates them — the top-off row's order, and the
+        // order they are drawn in. Both are drawn aria-hidden, so this is where they are heard.
+        marks.length > 0 ? marks.map(cardFactName).join(", ") : null,
+        cardNoteSpoken(note) || null,
       ]
         .filter(Boolean)
         .join(", ")}
@@ -491,6 +529,7 @@ function QuickAddRow({
         seam="var(--surface)"
         comboPartner={comboPartner}
         ownershipShort={ownershipShort}
+        marks={marks}
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
         trailing={
           applied ? (
@@ -537,6 +576,14 @@ function QuickAddRow({
           )
         }
       />
+
+      {/* Below the row's line, inside its box — §C's host matrix for this row, and NOT indented.
+          The matrix gives the name-column indent to the TOP-OFF row alone and says "atom
+          unchanged" for this one, and the canvas's quick-add artboard (§1c) draws the note flush
+          with the row's own content edge. The top-off row indents because its tick column sits
+          under the note's natural start; this row leads with the card's crop instead, and the
+          note runs the row's full width beneath it. `probe:card-note` asserts the flush edge. */}
+      <CardNote {...note} spokenElsewhere />
 
       {error && <MutationError message={error} />}
     </li>

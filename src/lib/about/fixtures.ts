@@ -1071,6 +1071,10 @@ export const ADD_RESULTS: SearchResult[] = [
     ownedQty: 2,
     availability: AVAILABILITY[0].a,
     flavorName: null,
+    // No card note on any of the three: this entry is about SEARCHING, and a note under
+    // one row would put the bracket rules in a figure whose caption never mentions them —
+    // the same reason `AddCardsFigureBody` passes an empty combo map.
+    facts: null,
   },
   {
     oracleId: "about-add-unowned",
@@ -1093,6 +1097,7 @@ export const ADD_RESULTS: SearchResult[] = [
     ownedQty: 0,
     availability: null,
     flavorName: null,
+    facts: null,
   },
   {
     oracleId: "about-add-held",
@@ -1107,6 +1112,7 @@ export const ADD_RESULTS: SearchResult[] = [
     ownedQty: 1,
     availability: AVAILABILITY[2].a,
     flavorName: null,
+    facts: null,
   },
 ];
 

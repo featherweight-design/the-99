@@ -26,6 +26,33 @@ import { type CardFact, cardMarkCopy } from "../../lib/copy/card-mark";
 export const OPEN_DELAY_MS = 400;
 
 /**
+ * The room the bubble needs above its mark before it may open there: its 6px offset plus two
+ * lines of 11.5px at 1.45 leading, 6px padding either side and its border — the longest
+ * sentence wraps once at the 220px cap. A bubble that cannot fit opens BELOW instead.
+ */
+export const ROOM_ABOVE_PX = 54;
+
+/**
+ * The top edge of whatever would clip a box drawn above `el`: the nearest ancestor that
+ * clips its overflow, or the viewport's top when none does.
+ *
+ * WHY THE TOOLTIP HAS TO ASK. It is `position: absolute` inside its mark, so an ancestor with
+ * `overflow` other than `visible` cuts off any part of it that leaves that ancestor's box —
+ * and two hosts draw marks inside a scroller: the quick-add results (`max-h` + `overflow-y-auto`)
+ * and the top-off list's desktop box. On the first row of either, the mark sits ~23px under the
+ * scroller's top edge, and a bubble drawn above it is clipped in part or whole.
+ */
+export function clipTopFor(el: Element): number {
+  for (let node = el.parentElement; node; node = node.parentElement) {
+    const style = getComputedStyle(node);
+    if (style.overflowY !== "visible" || style.overflowX !== "visible") {
+      return node.getBoundingClientRect().top;
+    }
+  }
+  return 0;
+}
+
+/**
  * `fact` names one of the bracket facts and looks its sentence up; `sentence` supplies one
  * directly, for a mark whose words depend on the CARD rather than on the fact.
  *
@@ -78,6 +105,10 @@ export function FactTooltip({
 
 function FinePointerTooltip({ text, children }: { text: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
+  // scrolled since it mounted, so a side chosen at mount would be a guess about a past scroll.
+  const [below, setBelow] = useState(false);
+  const anchor = useRef<HTMLSpanElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -90,8 +121,16 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
       // wrapped, this span is the flex item its row measures, and an `inline-flex` with
       // the default `flex-shrink: 1` squeezes in a crowded name cell while the `shrink-0`
       // svg inside it keeps its width and overflows.
+      ref={anchor}
       className="relative inline-flex shrink-0"
-      onPointerEnter={() => { cancel(); timer.current = setTimeout(() => setOpen(true), OPEN_DELAY_MS); }}
+      onPointerEnter={() => {
+        cancel();
+        timer.current = setTimeout(() => {
+          const el = anchor.current;
+          setBelow(el ? el.getBoundingClientRect().top - clipTopFor(el) < ROOM_ABOVE_PX : false);
+          setOpen(true);
+        }, OPEN_DELAY_MS);
+      }}
       onPointerLeave={() => { cancel(); setOpen(false); }}
     >
       {children}
@@ -100,7 +139,8 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
           // aria-hidden: the mark it wraps already carries the fact as its accessible
           // name, and this sentence is the same fact in more words.
           aria-hidden
-          className="pointer-events-none absolute left-1/2 bottom-[calc(100%+6px)] z-50 w-max max-w-[220px] -translate-x-1/2 rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]"
+          data-side={below ? "below" : "above"}
+          className={`pointer-events-none absolute left-1/2 ${below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]"} z-50 w-max max-w-[220px] -translate-x-1/2 rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]`}
           style={{
             background: "var(--elevated)",
             border: "1px solid var(--border)",

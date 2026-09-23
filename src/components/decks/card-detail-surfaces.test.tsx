@@ -3,6 +3,8 @@
 // file because the assertion is the same across surfaces; only the component
 // under it changes.
 
+import type { SearchResult } from "../../app/decks/[id]/search-action";
+import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -25,7 +27,11 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
 }));
 
-const { searchCards } = vi.hoisted(() => ({ searchCards: vi.fn() }));
+// Typed, so a hand-built result that leaves out a required field fails typecheck rather than
+// reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
+const { searchCards } = vi.hoisted(() => ({
+  searchCards: vi.fn<(...args: unknown[]) => Promise<SearchResult[]>>(),
+}));
 vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
 
 const deckCard = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
@@ -139,7 +145,8 @@ describe("deck card-detail triggers", () => {
     searchCards.mockResolvedValue([
       {
         oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true, ownedQty: 1,
-        cardTypeGroup: "Artifacts", role: "ramp", imageUri: null,
+        cardTypeGroup: "Artifacts", role: "ramp", imageUri: null, manaCost: "{1}", cmc: 1,
+        flavorName: null, facts: null,
       },
     ]);
     renderInProvider(
@@ -149,6 +156,8 @@ describe("deck card-detail triggers", () => {
         deckOracleIds={[]}
         commanderShortName="Muldrotha"
         commanderOracleId="cmd-muldrotha"
+        declaredBracket={null}
+        noteCounts={EMPTY_NOTE_COUNTS}
       />,
     );
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } });

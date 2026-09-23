@@ -104,6 +104,7 @@ import {
 } from "../collection/issue-inspector-list";
 import { KeyNumeral } from "./numeral";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -900,6 +901,10 @@ export function AddCardsFigureBody() {
       // Same rule for the combo map: an empty one, so the figure draws no partner — this
       // entry is about searching, and the combo entry says what a partner means.
       loadComboMap={NO_COMBOS}
+      // No declaration and nothing counted: every result states `facts: null`, so no note
+      // draws and these two are never read. See `ADD_RESULTS`.
+      declaredBracket={null}
+      noteCounts={EMPTY_NOTE_COUNTS}
     />
   );
 }

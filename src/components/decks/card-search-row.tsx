@@ -12,6 +12,9 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";
 import { ComboClause } from "../cards/combo-clause";
 import { ComboGlyph } from "../cards/combo-glyph";
+import { CardFactMark } from "../cards/card-fact-mark";
+import { FactTooltip } from "../cards/fact-tooltip";
+import type { CardFact } from "../../lib/copy/card-mark";
 
 // The matched run in accent, so a list of eight near-identical names says which
 // part of each one the query actually caught. Case-insensitive and literal:
@@ -75,6 +78,14 @@ interface CardSearchRowBodyProps {
   comboPartner?: { name: string } | null;
   /** The ownership phrase's short form, drawn on the phone meta line only beside a partner. */
   ownershipShort?: string;
+  /**
+   * The card's standing facts, drawn inline after the name — `STATES-push-line.md` §C2's rule
+   * for a card row, the one the top-off row follows. Only the quick-add bar passes them: the
+   * resolution search answers "what was this line?", where the bracket rules are not the
+   * question, which is the same reason it passes no combo partner. `silent`, because the
+   * option's own `aria-label` speaks them.
+   */
+  marks?: readonly CardFact[];
 }
 
 export function CardSearchRowBody({
@@ -88,6 +99,7 @@ export function CardSearchRowBody({
   seam,
   comboPartner = null,
   ownershipShort,
+  marks = [],
 }: CardSearchRowBodyProps) {
   // The state, not the element: the rollup returns figures for every owned card,
   // free ones included, and the marker declines to draw those. Gating the joiner
@@ -145,11 +157,33 @@ export function CardSearchRowBody({
           phone width was the shortcut, and it dropped the one field that
           separates two cards with the same name. */}
       <span className={nameClassName}>
-        <span
-          className="text-[14px] font-semibold truncate"
-          style={{ color: dim ? "var(--fg-muted)" : "var(--fg)" }}
-        >
-          <HighlightedName name={result.name} query={query} dim={dim} />
+        {/* THE NAME AND ITS MARKS ARE ONE LINE, and the name does not grow. "Inline after the
+            name" is about the TEXT: the top-off row put a mark after a name that grew to fill
+            its cell and it landed 535px past the end of the word. Here the name keeps its own
+            width and truncates only when the marks need the room. */}
+        <span className="flex items-center gap-[7px] min-w-0">
+          <span
+            // Named for `probe:card-note`, which measures the marks' gap against this TEXT's
+            // own end rather than against a class string or a constant.
+            data-testid="search-row-name"
+            className="min-w-0 text-[14px] font-semibold truncate"
+            style={{ color: dim ? "var(--fg-muted)" : "var(--fg)" }}
+          >
+            <HighlightedName name={result.name} query={query} dim={dim} />
+          </span>
+          {marks.length > 0 && (
+            <span
+              aria-hidden
+              data-testid="search-row-marks"
+              className="flex-none flex items-center gap-[4px]"
+            >
+              {marks.map((fact) => (
+                <FactTooltip key={fact} fact={fact}>
+                  <CardFactMark fact={fact} silent />
+                </FactTooltip>
+              ))}
+            </span>
+          )}
         </span>
         {/* The marker joins the existing meta line rather than taking a line of
             its own — design 3.1: no column, no extra row height. */}

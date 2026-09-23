@@ -3,11 +3,14 @@
 // The tests that matter here are the keyboard contract and the two states the
 // old SearchPane got wrong: a filter that hides results without saying so, and
 // an in-deck row that looks actionable.
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 
-const searchCards = vi.fn();
+// Typed, so a hand-built result that leaves out a required field fails typecheck rather than
+// reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
+const searchCards = vi.fn<(...args: unknown[]) => Promise<SearchResult[]>>();
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 
 vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
@@ -26,6 +29,7 @@ const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   imageUri: null,
   manaCost: null,
   flavorName: null,
+  facts: null,
   ...over,
 });
 
@@ -41,6 +45,8 @@ function mount(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
       deckOracleIds={[]}
       commanderShortName="Korvold"
       commanderOracleId="cmd-korvold"
+      declaredBracket={null}
+      noteCounts={EMPTY_NOTE_COUNTS}
       {...props}
     />,
   );
@@ -410,7 +416,7 @@ describe("QuickAddBar — availability marker", () => {
     hard: hardDeckNames.length,
     soft: 0,
     free: 0,
-    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false })),
+    claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true, pending: false, commander: false, senior: true })),
   });
 
   it("claims an off-list card another committed deck already holds", async () => {
@@ -547,8 +553,119 @@ describe("combo partner (quick-add, option E / G)", () => {
         commanderShortName="Korvold"
         commanderOracleId="cmd-korvold"
         loadComboMap={loadComboMap}
+        declaredBracket={null}
+        noteCounts={EMPTY_NOTE_COUNTS}
       />,
     );
     await waitFor(() => expect(loadComboMap).toHaveBeenCalledTimes(2));
+  });
+});
+
+// PR 8c. The quick-add row is the note's third host, after the Consider tile and the top-off
+// row, and its facts come off the search's own row rather than a pool read — so what is pinned
+// here is the row's half: what it draws from `result.facts`, where, and what it speaks.
+describe("QuickAddBar — the card note and its marks", () => {
+  const facts = (over: Partial<NonNullable<SearchResult["facts"]>>) => ({
+    gameChanger: false,
+    massLandDenial: false,
+    extraTurn: false,
+    tutor: false,
+    ...over,
+  });
+  const option = () => screen.getByRole("option");
+
+  it("draws the note at row density, inside the option, below the row's line", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", facts: facts({ gameChanger: true }) })]);
+    mount({ noteCounts: { ...EMPTY_NOTE_COUNTS, gameChanger: 3 } });
+    await search();
+
+    const note = within(option()).getByTestId("card-note");
+    expect(note).toHaveTextContent("A game changer, and your 4th.");
+    // Hidden, because the option's own name speaks it — see the next case.
+    expect(note).toHaveAttribute("aria-hidden", "true");
+    // The row's line comes first: the note is the option's LAST child but for an error.
+    expect(option().lastElementChild).toBe(note);
+  });
+
+  it("draws nothing, and reserves nothing, for a card that carries no fact", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", facts: null })]);
+    mount();
+    await search();
+
+    expect(within(option()).queryByTestId("card-note")).toBeNull();
+    expect(within(option()).queryByTestId("search-row-marks")).toBeNull();
+  });
+
+  it("draws the marks inline after the name, before the note that elaborates them", async () => {
+    searchCards.mockResolvedValue([
+      row({ name: "Armageddon Study", facts: facts({ gameChanger: true, massLandDenial: true }) }),
+    ]);
+    mount();
+    await search();
+
+    const marks = within(option()).getByTestId("search-row-marks");
+    expect(marks).toHaveAttribute("aria-hidden", "true");
+    // The name and its marks share one line: the name's span is the marks' sibling.
+    expect(marks.previousElementSibling).toHaveTextContent("Armageddon Study");
+    expect(within(marks).getAllByTestId(/^card-fact-/).map((m) => m.dataset.testid)).toEqual([
+      "card-fact-gameChanger",
+      "card-fact-massLandDenial",
+    ]);
+  });
+
+  it("speaks the marks and then the note in the option's name, in the order they are drawn", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", facts: facts({ gameChanger: true }) })]);
+    mount({ noteCounts: { ...EMPTY_NOTE_COUNTS, gameChanger: 3 } });
+    await search();
+
+    const name = option().getAttribute("aria-label") ?? "";
+    const mark = name.indexOf("game changer,");
+    const note = name.indexOf("A game changer, and your 4th.");
+    expect(mark).toBeGreaterThan(-1);
+    expect(note).toBeGreaterThan(mark);
+  });
+
+  it("states the declared bracket's limit when the deck has declared one", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", facts: facts({ gameChanger: true }) })]);
+    mount({ declaredBracket: 2, noteCounts: { ...EMPTY_NOTE_COUNTS, gameChanger: 3 } });
+    await search();
+
+    expect(within(option()).getByTestId("card-note")).toHaveTextContent(
+      "A game changer, and your 4th. Core allows none.",
+    );
+  });
+
+  it("reads the ordinal as the card's own place when it is already in the deck", async () => {
+    const study = row({ name: "Rhystic Study", facts: facts({ tutor: true }) });
+    searchCards.mockResolvedValue([study]);
+    mount({ deckOracleIds: [study.oracleId], noteCounts: { ...EMPTY_NOTE_COUNTS, tutor: 3 } });
+    await search();
+
+    expect(within(option()).getByTestId("card-note")).toHaveTextContent("A tutor, and your 3rd.");
+  });
+
+  // The same trap the Consider tile fell into: `applied` turns true on the press, the deck's
+  // counts only when the add lands. Keyed on `applied`, the ordinal would count the card twice
+  // for the length of the round trip.
+  it("keeps the ordinal where it was while an add is in flight", async () => {
+    // THE ACTION MUST NOT SETTLE, or the in-flight state is never observed: `useDeckMutation`
+    // holds its override only while the transition is pending.
+    let settle: () => void = () => {};
+    addCardToDeck.mockReturnValue(new Promise<{ ok: true }>((res) => {
+      settle = () => res({ ok: true });
+    }));
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", facts: facts({ gameChanger: true }) })]);
+    mount({ noteCounts: { ...EMPTY_NOTE_COUNTS, gameChanger: 3 } });
+    await search();
+
+    await act(async () => {
+      fireEvent.click(option());
+    });
+    // The row is mid-flight: it already reads as in the deck.
+    expect(option()).toHaveTextContent("✓ In deck");
+    expect(within(option()).getByTestId("card-note")).toHaveTextContent(
+      "A game changer, and your 4th.",
+    );
+    await act(async () => { settle(); });
   });
 });
