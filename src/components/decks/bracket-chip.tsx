@@ -73,10 +73,11 @@ export function SpineBracketChip({
       type="button"
       onClick={onOpen}
       aria-label={deckAnalysisCopy.chip.open(chipName(bracket))}
-      // The chip keeps its drawn height (22px, 24px from `md`); the HIT AREA is 44px tall, per the
+      // The chip keeps its drawn height (22px, 24px from `md`); the HIT AREA is 44px tall at both
+      // (11px either side of 22, 10px either side of 24), per the
       // handoff's own open item ("give it a 44px hit area rather than growing the pill"). The
       // button takes the chip's 6px radius, so its focus ring outlines the plate it wraps.
-      className="relative flex flex-none items-center rounded-[6px] after:absolute after:inset-x-0 after:-inset-y-[11px] after:content-['']"
+      className="relative flex flex-none items-center rounded-[6px] after:absolute after:inset-x-0 after:-inset-y-[11px] md:after:-inset-y-[10px] after:content-['']"
     >
       {chip}
     </button>

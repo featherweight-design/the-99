@@ -115,8 +115,8 @@ Sources, precedence: READINESS-r1-audit.md (findings 2/3/4, "Finding 3, eng's ca
 |---|---|---|
 | Before a first reading | absent (no chip; pill alone in the row) | same |
 | Press | opens the Analysis tab (tab has no URL; client state) | same |
-| Stale (list edited, not re-analyzed) | HOLDS the last bracket (Hugh 2026-09-23; reverses #877 hide-on-edit) | same |
-| Failed re-read over a held reading | the held bracket | same |
+| Stale (list edited, not re-analyzed) | HOLDS the last bracket (Hugh 2026-09-23; reverses #877 hide-on-edit). **Ships in C2**, not PR D: `use-header-bracket` still retires the chip on an edit here | same |
+| Failed re-read over a held reading | the held bracket. **Ships in C2** with the held states | same |
 | /decks tile | draws the same `BracketChip` (audit finding 3 / eng's call); tile not drawn in frames; `probe:bracket-chip` re-run at 390 / 700 / 1300, tile's chip cell wraps at 700, bar keeps 40px floor | same |
 
 ## State coverage
@@ -126,7 +126,7 @@ Sources, precedence: READINESS-r1-audit.md (findings 2/3/4, "Finding 3, eng's ca
 | Single (2g `Upgraded` tovolar; 2h lean `Optimized` kinnan) | one 22px mark + name, e.g. `Upgraded` | same |
 | Range, asking (2e yuriko) | marks 4 then 5 (5 at 0.65), `Optimized or cEDH`, plate/border/ink in bracket-4 | same |
 | Range, answered (2f) | the answer as a single chip: `bandChip(4)` → one mark, `Optimized` | same |
-| Stale (2i), failed-held (2d), yurikoStale | held chip unchanged (2i: `Upgraded`; yurikoStale: answered `Optimized`) | same |
+| Stale (2i), failed-held (2d), yurikoStale | held chip unchanged (2i: `Upgraded`; yurikoStale: answered `Optimized`). **Ships in C2**; PR D still hides the chip on an edit | same |
 | Draft status pill | `To buy`, `--accent` | same |
 | Clean status pill | `Complete`, `--success` | same |
 
