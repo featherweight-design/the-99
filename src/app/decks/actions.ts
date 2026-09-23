@@ -54,6 +54,7 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
@@ -351,7 +352,9 @@ export async function createDeck(
     );
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
-        .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: true })
+        .values({
+          userId, name: deckName, commanderOracleId, partnerOracleId, filled: true,
+        })
         .returning({ id: decks.id });
       // The selection first, then as much of the fill as fits under the body
       // size — 99, or 98 for a pair. The cap sums quantity rather than counting
@@ -375,6 +378,16 @@ export async function createDeck(
       }
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
+
+        // The brief the fill built to, marked as the app's words — and only when the FILL
+        // placed something. The selection comes first in `capped`, so anything past it is the
+        // app's; a deck of the player's own picks alone has no brief to disclose. In the
+        // creating transaction, so no deck the app filled is ever read unseeded.
+        if (capped.length > selected.length) {
+          await tx.update(decks)
+            .set({ intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]), intentSeeded: true })
+            .where(eq(decks.id, deck.id));
+        }
 
         // TWO PASSES, NOT ONE, now that the fill reaches the whole body.
         //
@@ -718,6 +731,10 @@ export async function fillDeck(deckId: string): Promise<void> {
       // sets `filled` below — that column answers "was this ever filled" — but
       // it left the list exactly as it was, and the stamp describes the list.
       await touchDeck(tx, deckId);
+      // NO SEED HERE, unlike the create. This deck already exists, so the player may have
+      // written a line and then cleared it, and a cleared line reads exactly like one never
+      // written (`intent` null, `intent_seeded` false). Seeding over that would bring back the
+      // app's words after the player's first edit, which the chip promises never happens.
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });

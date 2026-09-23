@@ -4,6 +4,41 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+## Build amendments (PR C, 2026-09-23)
+
+What the build changed from the text below, and why. The text is left as written so the
+reasoning stays readable; these override it.
+
+1. **The transactions live where a probe can call them.** `startRun` (the reservation and the
+   pending row), `saveIntent`, `finishRun`, `persistRun` and `cancelRun` are in
+   `src/lib/tuning/run-store.ts`; apply, undo, dismiss and restore are in
+   `src/lib/tuning/verdicts.ts`. Each takes the reader's id. `tuning-actions.ts` adds only the
+   session and the revalidation. The writers return whether they wrote, and the action
+   revalidates only then, rather than taking a `deckId` they never used for the write.
+2. **`isUniqueViolation` is `src/lib/db-error.ts`'s,** not a new one. The one written below reads
+   `err.code`, which Drizzle's wrapper leaves undefined: `probe:tuning-run` case 3 found that a
+   second press threw instead of being refused. The shared helper walks `cause`.
+3. **Case 11 is in `actions.test.ts`,** not the probe. `createDeck` and `fillDeck` need a session
+   and an EDHREC fetch, which a database probe cannot supply; the stubbed describe records the
+   inserts and updates the seeding makes, and both mutations fail it.
+4. **The bracket flag's `after` is built from the head `tuningInputs` read** (the same snapshot the
+   fingerprint hashes), with one copy of the cut out and one of the add in.
+5. **`check:tuning` resolves names through Scryfall's `/cards/named`,** the database-free
+   equivalent of the catalog read a run makes, and takes `--dry-run`. Its fixture is a real
+   99-card deck read from staging (read-only), with five synthetic games, two notes and an intent.
+6. **No live call yet.** Hugh confirmed `TUNING_MODEL` on 2026-09-23. `MODEL_DAILY_ALLOWANCE`
+   stays at its placeholder until `check:tuning` has run live once, behind its workflow's
+   `TUNING_CHECK_ENABLED` flag; the measured usage and the value it sets follow then.
+7. **Only the CREATE seeds, and only when its fill placed cards** (review round 1). `fillDeck`
+   fills a deck that already exists, where a line the player cleared reads exactly like one
+   never written, so seeding there could bring the app's words back after the player's first
+   edit. The chip's promise wins over a seed on the retry path.
+8. **Undo refuses over a deck the player has changed since the apply** (review round 1): it
+   checks the two rows still read as the apply left them, and a snapshot restored over later
+   edits would destroy them. It also takes off a proxy mark the cut did not have.
+9. **Copy owed to `/copy-review`:** `intent.seededBrief`, `intent.tooLong`, `intent.refused`,
+   `run.refused` and the three `card.*Refused` strings are eng-written placeholders.
+
 ---
 
 ### Task 3 (step 6 only): `DeckDetail.intent` — PR C

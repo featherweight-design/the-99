@@ -47,6 +47,27 @@ export const deckTuningCopy = {
     seeded: "from the build",
     seededAria: "This came from the brief The 99 built this deck to",
     maxLength: 120,
+    // PLACEHOLDER, eng-written, owed to /copy-review: the handoff draws the seeded state and not
+    // its sentence. The brief a fill builds to is "around the commander, from what you own", and
+    // that is all it may say: anything more is a guess, and a guess wearing the seeded chip is
+    // the one thing the chip exists to prevent.
+    seededBrief: (commanders: string) => `Built around ${commanders}, from the cards you own.`,
+    seededBriefShort: (commanders: string) => `Built around ${commanders}.`,
+    // PLACEHOLDER refusals, owed to /copy-review. The shipped MutationError draws them.
+    tooLong: "Keep it to one line of 120 characters.",
+    refused: "That did not save. Try again.",
+  },
+
+  // ── The server's own refusals (PLACEHOLDER, owed to /copy-review) ──────
+  // The panel's drawn states replace most of these; they are what a stale tab or a replayed
+  // request is told.
+  run: {
+    refused: "We couldn\u2019t read that deck.",
+  },
+  card: {
+    applyRefused: "We couldn\u2019t make that swap. The deck is unchanged.",
+    undoRefused: "We couldn\u2019t undo that swap. The deck is unchanged.",
+    verdictRefused: "That did not save. Try again.",
   },
 
   // ── The rules a suggestion must obey (validator rule text) ─────────────
