@@ -12,6 +12,7 @@ describe("presentationFailures", () => {
   it("catches a percentage, and a win rate", () => {
     expect(presentationFailures("Mana hurt in 60% of games.", notes)).toContain("noPercentage");
     expect(presentationFailures("Your win rate is low.", notes)).toContain("noPercentage");
+    expect(presentationFailures("This improved the win-rate.", notes)).toContain("noPercentage");
   });
 
   it("catches a bare count with no denominator", () => {
@@ -34,6 +35,16 @@ describe("presentationFailures", () => {
 
   it("accepts a quotation of anything the player wrote, the intent included", () => {
     expect(presentationFailures('For a deck meant to "go wide with tokens", this fits.', [...notes, { text: "go wide with tokens", date: null }])).toEqual([]);
+  });
+
+  it("finds a note with a quotation mark inside it intact, in either outer quotes", () => {
+    const withQuote = [{ text: 'I said "keep lands"', date: "2026-09-02" }];
+    expect(presentationFailures('On 2026-09-02: "I said "keep lands""', withQuote)).toEqual([]);
+    expect(presentationFailures('On 2026-09-02: \u201cI said "keep lands"\u201d', withQuote)).toEqual([]);
+  });
+
+  it("still catches a misquote beside a correct quotation", () => {
+    expect(presentationFailures('On 2026-09-01 "flooded out on turn six", and "never drew".', notes)).toContain("quotedNote");
   });
 
   it("requires a quoted note's date in the same text", () => {

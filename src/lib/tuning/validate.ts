@@ -130,7 +130,9 @@ export function validateSuggestions(args: {
           && (c.value.includes(`"${g.note}"`) || c.value.includes(`\u201c${g.note}\u201d`))
           && c.value.includes(g.playedAt.slice(0, 10)));
       case "intent":
-        return pack.intent !== null;
+        // The player's own words, cited verbatim: a citation that names some other purpose is
+        // not evidence of this one.
+        return pack.intent !== null && c.value.includes(pack.intent);
       case "decklist":
         return true;
     }

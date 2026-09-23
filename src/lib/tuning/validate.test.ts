@@ -96,6 +96,15 @@ describe("validateSuggestions", () => {
     expect(run({ ...good, evidence: [{ kind: "intent", value: "go wide" }] }).drops[0].rule).toBe("citation");
   });
 
+  it("keeps an intent citation only when it cites the intent's own words", () => {
+    const withIntent = { ...pack, intent: "grind it out" };
+    const cite = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value }] }] }, pack: withIntent, resolveName,
+    });
+    expect(cite('"grind it out"').droppedCount).toBe(0);
+    expect(cite("go wide").drops[0].rule).toBe("citation");
+  });
+
   it("keeps a note cited verbatim, in quotation marks, with its date", () => {
     expect(run({ ...good, evidence: [{ kind: "note", value: '2026-09-01: "flooded out on turn six"' }] }).droppedCount).toBe(0);
   });

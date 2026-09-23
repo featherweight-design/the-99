@@ -30,7 +30,7 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
   const broken: RuleKey[] = [];
 
   // A percentage in any spelling, and the proportion a "win rate" is.
-  if (/%|\bper ?cent\b|\bwin ?rate\b/i.test(text)) broken.push("noPercentage");
+  if (/%|\bper ?cent\b|\bwin[ -]?rate\b/i.test(text)) broken.push("noPercentage");
 
   // The word, or a SIGNED integer: `+2`, `-3`, `−1`. A hyphen between words is not a sign, and
   // Magic's own counter notation (`+1/+1`, `-1/-1`, `+2/+0`) is a card's words, not a figure.
@@ -49,18 +49,23 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
   }
 
   // Anything in quotation marks is a quotation of the player (a note, or their stated intent)
-  // and must match one byte for byte. Straight or curly quotes, since the model may use either.
-  //
-  // A note that itself contains a double quote can never be quoted cleanly: the pattern closes on
-  // its inner quote and reads a fragment. That errs toward dropping the suggestion, never toward
-  // accepting a misquote.
-  for (const m of text.matchAll(/["“]([^"”]+)["”]/g)) {
-    const source = quotable.find((q) => q.text === m[1]);
-    if (!source || (source.date !== null && !text.includes(source.date))) {
-      broken.push("quotedNote");
-      break;
+  // and must match one byte for byte. The KNOWN sources are matched first, whole, by their own
+  // text — so a note with a quotation mark inside it (`I said "keep lands"`) is found intact
+  // rather than split at its inner quote — and a quoted note must have its date in the same text.
+  // Whatever is still in quotation marks once they are taken out is a misquote. Straight or
+  // curly outer quotes, since the model may use either.
+  let rest = text;
+  for (const q of quotable) {
+    for (const quoted of [`"${q.text}"`, `\u201c${q.text}\u201d`]) {
+      if (!rest.includes(quoted)) continue;
+      if (q.date !== null && !text.includes(q.date)) {
+        broken.push("quotedNote");
+        return broken;
+      }
+      rest = rest.split(quoted).join(" ");
     }
   }
+  if (/["\u201c][^"\u201d]+["\u201d]/.test(rest)) broken.push("quotedNote");
 
   return broken;
 }
