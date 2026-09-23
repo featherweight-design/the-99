@@ -144,3 +144,16 @@ describe("profileFingerprint after the extraction", () => {
     expect(profileFingerprint(base)).toBe(before);
   });
 });
+
+// The play group is attached at the read and never stored, so carrying it must move neither
+// key: a logged game retiring every cached and stored analysis is exactly what it avoids.
+describe("the play group and the fingerprints", () => {
+  it("moves neither fingerprint when a play group rides along", () => {
+    const withPlay = {
+      ...base,
+      play: { games: [], summary: { count: 3, marked: 1, record: { wins: 1, losses: 2, draws: 0 }, axes: [] } },
+    };
+    expect(profileFingerprint(withPlay)).toBe(profileFingerprint(base));
+    expect(listFingerprint(withPlay)).toBe(listFingerprint(base));
+  });
+});

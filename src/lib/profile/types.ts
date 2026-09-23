@@ -1,5 +1,6 @@
 import type { Role } from "../recs/roles";
 import type { ManaCurve } from "../decks/stats";
+import type { ProfilePlay } from "./play";
 
 /**
  * The Deck Profile — the app's first object for "what is this deck, characterized".
@@ -325,4 +326,13 @@ export type DeckProfile = {
    * unpicked from every consumer. A null reads as absent; a wrong theme list does not.
    */
   themes: ProfileThemes | null;
+  /**
+   * The play-data group (`./play.ts`). NEVER present in the cached or stored document: the
+   * fingerprint is over the deck's cards, so a group filed under it would go stale on the next
+   * logged game. A consumer composes it at the read — `{ ...profile, play: buildPlayGroup(games) }`
+   * — and nothing that builds, caches or stores a profile sets it. Optional, so every existing
+   * profile and every stored row is still one, and it moves neither PROFILE_VERSION nor either
+   * fingerprint.
+   */
+  play?: ProfilePlay | null;
 };
