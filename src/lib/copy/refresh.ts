@@ -202,6 +202,9 @@ export const refreshCopy = {
     // already the third. The same is true of a Draft older than the day it was
     // created, which `detailDraft` cannot describe. Neither may fall back to
     // cardAria with the count repeated: a reader would hear the figure twice.
+    // The bracket chip rides beside the status in the aria-hidden footer, so the link names it
+    // there too, or the chip would be visual-only.
+    statusWithBracket: (status: string, bracket: string) => `${status}, bracket ${bracket}`,
     cardAriaNoDetail: (
       name: string,
       identity: string,

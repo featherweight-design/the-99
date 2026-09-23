@@ -587,6 +587,12 @@ describe("DeckCard — the bracket chip", () => {
     expect(chip.textContent).toContain("Upgraded");
   });
 
+  // The footer is aria-hidden, so the link's name has to carry the chip or it is visual-only.
+  it("names the bracket in the tile link's accessible name", () => {
+    card({ permits: [1, 2], answered: null });
+    expect(screen.getByRole("link", { name: /To buy, bracket Exhibition or Core,/ })).toBeTruthy();
+  });
+
   it("draws a range as one Split chip, and an answered range as the answer", () => {
     const { unmount } = card({ permits: [1, 2], answered: null });
     expect(screen.getByTestId("bracket-chip").textContent).toContain("Split");

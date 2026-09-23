@@ -6,10 +6,11 @@
 // that it stays inside the tile, that the header's copy is served from the STORED analysis on a
 // fresh load before any tab is pressed, and that pressing it lands on the Analysis tab.
 //
-// IT WRITES: pressing Analyze stores this account's analysis of one deck in `deck_profiles`. The
-// row is deleted in a `finally` when it did not exist before the run, and the About gate's
-// `user_prefs` row is raised as `probe:verdict-block` raises it. Point it at `local-dev`, NEVER
-// production.
+// IT WRITES: pressing Analyze upserts this account's analysis of one deck in `deck_profiles`, and
+// the edit check removes one card from that deck. In a `finally`, the row is put back as it was
+// (or deleted when there was none) and the deck's cards and edit stamp are restored, after the
+// removal's own server action has settled. The About gate's `user_prefs` row is raised as
+// `probe:verdict-block` raises it. Point it at `local-dev`, NEVER production.
 //
 //   PROBE_BASE=http://localhost:3047 node scripts/probe-bracket-chip.mjs
 import { readFileSync } from "node:fs";
@@ -132,6 +133,7 @@ async function run() {
   const browser = await chromium.launch();
   let deckId = null;
   let hadRow = true;
+  let priorRow = null;
   /** The fixture deck's cards, captured before the edit check and restored in the `finally`. */
   let savedCards = null;
   let savedEdited = null;
@@ -166,7 +168,10 @@ async function run() {
         PAGE);
         if (!report("a deck to walk", !!href, href ?? "the account has no decks")) break;
         deckId = href.split("/")[2];
-        hadRow = (await sqlc`select 1 from deck_profiles where deck_id = ${deckId}::uuid`).length > 0;
+        // The whole row, not only whether one exists: pressing Analyze UPSERTS it, so a deck that was
+        // already analyzed has its own analysis put back in the `finally` rather than left replaced.
+        priorRow = (await sqlc`select * from deck_profiles where deck_id = ${deckId}::uuid`)[0] ?? null;
+        hadRow = priorRow !== null;
       }
       const href = `/decks/${deckId}`;
 
@@ -244,6 +249,12 @@ async function run() {
         await p.waitForTimeout(600);
         await onPageRole(p, "tab", /^Your deck/).first().click();
         await p.waitForTimeout(400);
+        // The removal's own server action is awaited before anything is restored: a restore that
+        // raced it would be undone by the delete landing after it, leaving the deck a card short.
+        const settled = p.waitForResponse(
+          (r) => r.request().method() === "POST" && r.url().startsWith(`${BASE}${href}`),
+          { timeout: 20_000 },
+        ).catch(() => null);
         const removed = await p.evaluate((scope) => {
           const btn = [...document.querySelector(scope).querySelectorAll("button[aria-label^='Remove ']")]
             .find((b) => b.getClientRects().length > 0 && !b.disabled);
@@ -255,7 +266,8 @@ async function run() {
         report(`${label}px · an edit during the visit retires the header chip`,
           removed !== null && after.length === 0,
           removed === null ? "no Remove control found" : `${after.length} visible after "${removed}"`);
-        await p.waitForTimeout(1500);
+        if (!(await settled)) report(`${label}px · the removal settled before the restore`, false, "no server action response in 20s");
+        await p.waitForTimeout(500);
         await restore();
       }
 
@@ -263,6 +275,14 @@ async function run() {
     }
   } finally {
     await restore();
+    if (deckId && priorRow) {
+      const cols = Object.keys(priorRow);
+      await sqlc.query(
+        `insert into deck_profiles (${cols.map((c) => `"${c}"`).join(",")}) values (${cols.map((_, n) => `$${n + 1}`).join(",")})
+         on conflict (deck_id) do update set ${cols.filter((c) => c !== "deck_id").map((c) => `"${c}" = excluded."${c}"`).join(", ")}`,
+        cols.map((c) => (c === "profile" ? JSON.stringify(priorRow[c]) : priorRow[c])),
+      );
+    }
     if (deckId && !hadRow && !process.env.PROBE_KEEP) await sqlc`delete from deck_profiles where deck_id = ${deckId}::uuid`;
     await browser.close();
   }

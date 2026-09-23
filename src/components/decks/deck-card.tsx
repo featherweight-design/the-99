@@ -14,6 +14,7 @@ import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 import { BracketChip, CHIP_MARK_PX } from "./bracket-chip";
+import { verdictHead } from "../../lib/bracket/verdict-head";
 
 import { proxyCopy } from "../../lib/copy/proxies";
 
@@ -286,19 +287,25 @@ export function DeckCard({
   // commanders: the visible line shortens them to fit and the accessible name
   // never does — truncation is a layout compromise, not an information one.
   const identity = `${deck.partnerName === null ? commanderName : `${commanderName} and ${deck.partnerName}`}, ${colour}`;
+  const spokenStatus = deck.bracket
+    ? refreshCopy.decks.statusWithBracket(
+        deck.statusPill,
+        verdictHead(deck.bracket.permits, deck.bracket.answered).face,
+      )
+    : deck.statusPill;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
           deck.name,
           identity,
-          deck.statusPill,
+          spokenStatus,
           count,
           hasLastPlayed ? lastPlayed : undefined,
         )
       : refreshCopy.decks.cardAria(
           deck.name,
           identity,
-          deck.statusPill,
+          spokenStatus,
           count,
           detail.text,
           hasLastPlayed ? lastPlayed : undefined,
