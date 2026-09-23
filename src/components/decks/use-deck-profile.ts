@@ -35,8 +35,8 @@ export type ProfileState =
  * That also settles STALENESS, which an automatic fetch could not. The shell holds the card list
  * across edits without leaving the route, so a once-per-visit automatic fetch would keep showing
  * a pre-edit profile for the rest of the visit while the server's fingerprint keying sat unused.
- * With the reader asking, an edited deck is re-asked about deliberately — which is Round 4's
- * model, where a determined verdict goes stale and the control invites another pass.
+ * With the reader asking, an edited deck is re-asked about deliberately: an edit in the visit
+ * drops the held reading back to `idle` (see `listKey`), and the tab offers Analyze again.
  *
  * WHAT TAB OPEN MAY DO is `peek`: ask whether an analysis the reader ALREADY pressed for is
  * stored, and show it if so. That computes nothing — a head read and a keyed lookup, and a miss

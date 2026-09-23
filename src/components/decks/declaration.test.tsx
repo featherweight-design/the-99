@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import type { Bracket } from "../../lib/bracket/types";
-import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { declarationCopy } from "../../lib/copy/declaration";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { VerdictBlock } from "./verdict-block";

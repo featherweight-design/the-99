@@ -289,7 +289,7 @@ Out of scope: banner (2d/2i), stale/committed date forms, header chips, all shee
 | Body | 12.5px, line-height 1.6, `var(--fg-muted)`, pretty | same |
 | Card names | `var(--fg)`, dotted `var(--accent)` underline | same |
 | Text | `Your commander is one half of a {A} + {B} two-card infinite combo, and your tutors can find the other, …` (`leanConformed`; finding 16 via /copy-review) | same |
-| Opener | `see the reasoning →`: mono 10px, `var(--accent)`, dotted accent underline, 44px wrapper | `see the reasoning` (no arrow in the frame): mono 10px, `var(--accent)`, dotted underline, margin-top 2px |
+| Opener | `see the reasoning →`: mono 10px, `var(--accent)`, dotted accent underline, 44px wrapper | `see the reasoning →`: the 1300 frame draws no arrow, but HANDOFF §2's "Every opener uses →" rules (conflict 5); mono 10px, `var(--accent)`, dotted underline, margin-top 2px |
 
 ### Declaration ask (2e)
 | Property | Mobile (390) | Desktop (1300) |

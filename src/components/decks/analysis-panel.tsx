@@ -29,7 +29,9 @@ import { VerdictBlock } from "./verdict-block";
  * NO OVERVIEW SECTION, AND NO SPACE RESERVED FOR ONE. The synopsis does not exist until
  * sub-project 6, and the handoff forbids a placeholder (§6.2), so the tab draws nothing where it
  * will go (readiness finding 6). A current reading carries no re-analyze control either: the
- * handoff offers re-analysis only from the banner a changed deck draws.
+ * handoff offers re-analysis only from the banner a changed deck draws. Until that banner exists
+ * an edit drops the reading (`useDeckProfile`'s `listKey`), and the empty state's Analyze is the
+ * way to ask again, which is also what a reload shows.
  */
 export function AnalysisPanel({
   state,
