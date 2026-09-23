@@ -108,7 +108,10 @@ async function tryOnce<T>(
       { signal: controller.signal, timeout: remainingMs, maxRetries: 0 },
     );
     // A refusal or a reply cut off at max_tokens parses to nothing: the shape was not met.
-    if (response.parsed_output == null) return { kind: "retryable", errorClass: "malformed" };
+    if (response.parsed_output == null) {
+      log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
+      return { kind: "retryable", errorClass: "malformed" };
+    }
     return {
       kind: "ok",
       value: response.parsed_output as T,
@@ -131,6 +134,9 @@ function classify<T>(err: unknown, aborted: boolean, log: (line: string) => void
     return { kind: "final", errorClass: "upstream_busy" };
   }
   if (err instanceof Anthropic.RateLimitError || err instanceof Anthropic.InternalServerError || err instanceof Anthropic.APIConnectionError) {
+    // Logged on every attempt, not only the last: a run that fails twice leaves two lines, and
+    // a run that recovers on its retry still shows the upstream was struggling.
+    log(`[model] upstream: ${err.status ?? "connection"} ${err.message}`);
     return { kind: "retryable", errorClass: "upstream_busy" };
   }
   if (err instanceof Anthropic.APIError) {
@@ -140,6 +146,7 @@ function classify<T>(err: unknown, aborted: boolean, log: (line: string) => void
   }
   if (err instanceof Anthropic.AnthropicError) {
     // Thrown by the zod output format when the reply is not JSON or fails the schema.
+    log(`[model] malformed: ${err.message}`);
     return { kind: "retryable", errorClass: "malformed" };
   }
   throw err;

@@ -236,8 +236,8 @@ git commit -m "feat(tuning): schema for deck intent, suggestion runs, and the mo
 **PR A.** Nothing here names tuning. The synopsis (sub-project 6) calls the same two functions with its own model, prompt, schema and feature name.
 
 **Files:**
-- Create: `src/lib/model/client.ts`, `src/lib/model/allowance.ts`
-- Test: `src/lib/model/client.test.ts`, `src/lib/model/allowance.test.ts`
+- Create: `src/lib/model/client.ts`, `src/lib/model/allowance-rule.ts` (pure, client-safe), `src/lib/model/allowance.ts` (the ledger, server-only)
+- Test: `src/lib/model/client.test.ts`, `src/lib/model/allowance-rule.test.ts` (the ledger's SQL is proved by `probe:tuning-run`, PR C)
 - Modify: `.env.example`, `docs/deployment.md`
 
 **Interfaces:**
@@ -255,26 +255,29 @@ git commit -m "feat(tuning): schema for deck intent, suggestion runs, and the mo
       system: string;
       user: string;
       maxTokens: number;
-      schema: z.ZodType<T>;    // the reply is JSON text parsed against this
+      schema: z.ZodType<T>;    // enforced server-side via output_config.format
       deadlineMs: number;      // one deadline across both attempts
     },
-    deps?: { fetch?: typeof fetch; now?: () => number },
+    // The SDK's messages.parse, injected in tests; plus the clock and the log sink.
+    deps?: { messages?: Pick<Anthropic["messages"], "parse">; now?: () => number; log?: (line: string) => void },
   ): Promise<ModelOutcome<T>>;
 
-  // src/lib/model/allowance.ts — server-only
+  // src/lib/model/allowance-rule.ts — pure, client-safe (the gate and a panel read it)
   export const MODEL_DAILY_ALLOWANCE = 5; // placeholder until measured; see the plan's Cost section
   export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
   export type ModelFeature = "tuning" | "synopsis";
   export type Allowance = { used: number; limit: number; reopensAt: Date | null };
+  /** Takes the times of the rows that count — reserved and spent. */
+  export function allowanceFrom(callTimes: readonly Date[], now: Date, limit?: number): Allowance;
+
+  // src/lib/model/allowance.ts — server-only, the ledger
   /** Thrown inside the caller's transaction to roll back a run that found the allowance spent. */
   export class AllowanceSpentError extends Error {}
   /** Inside the caller's transaction: lock, count, insert. Null when spent. */
   export function reserveModelCall(tx: Tx, userId: string, feature: ModelFeature, now: Date): Promise<{ id: string } | null>;
   /** Inside the outcome write's transaction. Only moves a 'reserved' row, so settling twice is a no-op. */
   export function settleModelCall(tx: Tx, callId: string, to: "spent" | "refunded"): Promise<void>;
-  export function readAllowance(userId: string, now: Date): Promise<Allowance>;
-  /** Pure; both readers use it. Takes the times of the rows that count — reserved and spent. */
-  export function allowanceFrom(callTimes: Date[], now: Date): Allowance;
+  export function readAllowance(userId: string, now?: Date): Promise<Allowance>;
   ```
 
 **Why the counter is rows, not a number.** A per-player counter column needs a reset job and loses the history; a ledger row per run is counted over a rolling window by one indexed query, reopens on its own, and says what spent it. `feature` is carried so the cost section's figures can be split later, and for nothing else — the allowance counts both features against one number, which is the ruling.
@@ -285,7 +288,7 @@ git commit -m "feat(tuning): schema for deck intent, suggestion runs, and the mo
 
 - [ ] **Step 1: Write the failing client tests**
 
-`fetch` and `now` are injected, so the whole retry contract is testable with no network.
+The SDK's `messages.parse`, the clock and the log sink are injected, so the whole retry contract is testable with no network. **The examples below predate the SDK amendment and inject `fetch`**; the shipped `src/lib/model/client.test.ts` is the same contract against the injected `messages`, and is authoritative.
 
 ```typescript
 // src/lib/model/client.test.ts
@@ -359,7 +362,7 @@ it("returns the usage the response reported", async () => {
 - [ ] **Step 2: Write the failing allowance tests — the pure half**
 
 ```typescript
-// src/lib/model/allowance.test.ts
+// src/lib/model/allowance-rule.test.ts
 const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
 
@@ -407,7 +410,7 @@ Add `ANTHROPIC_API_KEY=` to `.env.example` with a one-line comment, and a row to
 
 ```bash
 pnpm test src/lib/model
-git add src/lib/model/client.ts src/lib/model/client.test.ts src/lib/model/allowance.ts src/lib/model/allowance.test.ts .env.example docs/deployment.md
+git add src/lib/model/client.ts src/lib/model/client.test.ts src/lib/model/allowance-rule.ts src/lib/model/allowance-rule.test.ts src/lib/model/allowance.ts .env.example docs/deployment.md
 git commit -m "feat(model): one shared model client and a per-player daily allowance"
 ```
 

@@ -120,7 +120,8 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 | File | Responsibility |
 |---|---|
 | `client.ts` | `callModel({ model, system, user, maxTokens, schema, deadlineMs }, deps?)` — the raw `fetch`, one deadline across both attempts, at most two attempts: one retry after a `429`/`529`/`5xx` or a reply failing the caller's zod schema, not one of each. Returns `{ ok: true, value, usage } \| { ok: false, errorClass: "upstream_busy" \| "timeout" \| "malformed" }`. Knows no feature. |
-| `allowance.ts` | `MODEL_DAILY_ALLOWANCE`, `ALLOWANCE_WINDOW_MS`, `AllowanceSpentError`, `reserveModelCall(tx, userId, feature, now)`, `readAllowance(userId, now)` and the pure `allowanceFrom`. The only counter. |
+| `allowance-rule.ts` | Pure, client-safe: `MODEL_DAILY_ALLOWANCE`, `ALLOWANCE_WINDOW_MS`, `ModelFeature`, `Allowance`, `allowanceFrom`. |
+| `allowance.ts` | **Server-only**, the ledger: `AllowanceSpentError`, `reserveModelCall(tx, userId, feature, now)`, `settleModelCall`, `readAllowance`. The only counter. |
 
 **Pure core — `src/lib/tuning/` (no database, no network, client-safe unless noted):**
 

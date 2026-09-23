@@ -7,7 +7,7 @@ import { callModel, type ModelDeps } from "./client";
 const schema = z.object({ answer: z.string() });
 const req = { model: "caller-model", system: "s", user: "u", maxTokens: 100, schema, deadlineMs: 90_000 };
 
-const reply = (value: unknown, usage = { input_tokens: 10, output_tokens: 2 }) => ({ parsed_output: value, usage });
+const reply = (value: unknown, usage = { input_tokens: 10, output_tokens: 2 }) => ({ parsed_output: value, usage, stop_reason: "end_turn" });
 const busy = () => new Anthropic.InternalServerError(529, undefined, "overloaded", new Headers());
 const rateLimited = () => new Anthropic.RateLimitError(429, undefined, "slow down", new Headers());
 const badShape = () => new Anthropic.AnthropicError("Failed to parse structured output");
@@ -58,10 +58,20 @@ describe("callModel", () => {
     expect(calls).toHaveLength(2);
   });
 
-  it("gives up as upstream_busy after the one retry", async () => {
+  it("gives up as upstream_busy after the one retry, leaving a log line for each attempt", async () => {
+    const lines: string[] = [];
     const { messages, calls } = scripted([rateLimited(), busy()]);
-    expect(await callModel(req, { messages, log: quiet })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy" });
     expect(calls).toHaveLength(2);
+    expect(lines).toEqual([expect.stringMatching(/^\[model\] upstream: 429/), expect.stringMatching(/^\[model\] upstream: 529/)]);
+  });
+
+  it("logs a reply that failed the schema", async () => {
+    const lines: string[] = [];
+    const { messages } = scripted([badShape(), badShape()]);
+    await callModel(req, { messages, log: (l) => lines.push(l) });
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(/^\[model\] malformed:/);
   });
 
   it("retries once on a reply that fails the schema, then reports malformed", async () => {
