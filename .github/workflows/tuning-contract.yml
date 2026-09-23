@@ -18,6 +18,12 @@ on:
 permissions:
   contents: read
 
+# One run at a time: every run is a paid model call, so a manual dispatch landing on the daily
+# run must wait rather than pay twice.
+concurrency:
+  group: tuning-contract
+  cancel-in-progress: false
+
 jobs:
   check:
     if: vars.TUNING_CHECK_ENABLED == 'true'
