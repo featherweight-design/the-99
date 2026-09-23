@@ -49,6 +49,17 @@ determined this bracket*. `why` does not say what opens. Settled by a `/copy-rev
 also confirmed this copy has not shipped to `src/` at all — the drift is entirely between two
 files in this folder.
 
+**4 · Every dimmed mark is drawn at `DIM_OPACITY` (0.65), not 0.45 or 0.5.** Recorded
+2026-09-22, after the build. This package draws three faint marks at canvas opacities: the
+superseded declaration beside the returned ask at **0.45** (§B, A5), the split pill's upper
+member at **0.45 or 0.5** (the table's contradiction C8), and the version row's range at
+**0.5** (§E). The verdict addendum's ruling 3 (#861) came after these were drawn: a bracket
+mark is a graphic and holds **3:1** against its surface in every theme, and 0.45 misses that
+in several. `BracketMark`'s `dim` is the one faint strength measured to meet it, and all three
+marks take it, which also settles C8. No Design round is owed, because this applies a ruling
+Design already made. A later round that wants the superseded mark to read fainter than the other
+dimmed marks needs its own contrast measurement.
+
 Everything else in R7 stands.
 
 ---

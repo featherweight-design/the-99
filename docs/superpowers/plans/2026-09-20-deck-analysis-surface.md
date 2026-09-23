@@ -86,9 +86,9 @@ added and the count went from nine to fourteen**, so the dependency history is a
 | **6 — the lean and the reasoning modal** ✅ | The lean line, the modal body, the command-zone `found by` reading, and image resolution **at the draw** rather than in the profile. Mana drawn **as a state** — pips above zero, "No mana needed" at zero — plus the notable-prerequisites line. **Its combo body lands inside 4c's modal chrome**, so it waits on 4c rather than on 4b. **Shipped with 4c's chrome shared**: the reasoning is `ModalChrome` with a third body, 700px on `--elevated`. The combo's mana state and prerequisites landed in 4c's combo body, so this row is the lean, the reasoning body and the command-zone reading. See `gap-report-deck-lean.md`. | 0, 2, **4c** |
 | **7 — the drift row** ✅ | What survives of drift once the "you said" framing is gone — the permitted side can be a single bracket, which needs a reading. Shipped #866 as §E's version comparison. | *shipped* |
 | **8a — the facts payload** ✅ | The profile threaded into the builder shell and the top-off list, and a BATCHED `CandidateFacts` read for the whole pool. Measured above; Round 4's own list does not contain it. | — |
-| **8b — the card note, on the deck's own add surfaces** | The note atom at two densities — the sentence on the top-off row, the clause on the Consider tile — its copy module, and the pure rule that picks which sentence a candidate draws. **The push line this row used to name is withdrawn**; see below. | 8a |
-| **8b-ii — the marks the note leans on** | §C2's three fact glyphs on the Consider tile and the top-off row, the key that glosses them and the lemniscate sub-project 3 left unglossed, and the mass-land-denial note restated as a CONSEQUENCE. Asked for by Hugh against the shipped tile; both questions were real omissions. | 8b |
-| **8c — the card note on the quick-add row** | The search action's own facts read, and the note on the search result row. A different payload question from 8b's: the two deck-page hosts are fed by 8a's batched pool read, and the quick-add row is fed by a live per-keystroke search that loads no facts at all. | 8b |
+| **8b — the card note, on the deck's own add surfaces** ✅ | The note atom at two densities — the sentence on the top-off row, the clause on the Consider tile — its copy module, and the pure rule that picks which sentence a candidate draws. **The push line this row used to name is withdrawn**; see below. Shipped #854. | 8a |
+| **8b-ii — the marks the note leans on** ✅ | §C2's three fact glyphs on the Consider tile and the top-off row, the key that glosses them and the lemniscate sub-project 3 left unglossed, and the mass-land-denial note restated as a CONSEQUENCE. Asked for by Hugh against the shipped tile; both questions were real omissions. Shipped #859. | 8b |
+| **8c — the card note on the quick-add row** ✅ | The search action's own facts read, and the note on the search result row. A different payload question from 8b's: the two deck-page hosts are fed by 8a's batched pool read, and the quick-add row is fed by a live per-keystroke search that loads no facts at all. Shipped #864, read once per panel rather than per keystroke. | 8b |
 | **9 — the upgrade path** ✅ | Candidate sets, never a pick; the `blocked` reading. Shipped #867, on the climb's lower rung. | *shipped* |
 
 ## Where this stands — 2026-09-22
@@ -106,9 +106,8 @@ Tier A. The bracket marks reached `public/` in #837 and the `--bracket-1…5` pa
 findings were split out of 4b as 4c, and 8b was split into 8b and 8c, each for the reason its own
 row gives. **5, 7 and 9 shipped the same day** as #862, #866 and #867 — see *What 5, 7 and 9
 settled* below — beside 4c and 6, which shipped in parallel as #863 and #865. 8b and 8b-ii
-shipped too, as #854 and #859, though their rows above carry no mark. **8c is the one row still
-open**, and it wants the design-review property-table pass, a probe and a contact sheet like the
-rest.
+shipped as #854 and #859, and 8c as #864. **All sixteen rows have shipped.** An earlier revision
+of this paragraph called 8c open; #864 had already merged when it was written.
 
 ---
 

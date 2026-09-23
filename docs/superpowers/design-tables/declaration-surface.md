@@ -65,7 +65,7 @@ Listed so the sub-line's spacing can be checked against it. This PR does not re-
 | border-radius | 999px | 999px |
 | padding | 2px 12px 2px 4px | 2px 12px 2px 4px |
 | Mark 1 (lo) | 32px (1a live card: 34px), ink `--bracket-{lo}`, opacity 1, `display:block; flex:none` | 30px, same |
-| Mark 2 (hi) | 32px (1a: 34px), ink `--bracket-{hi}`, **opacity 0.45** (1a, 3a, 2a card 4) **or 0.5** (1b, 2a card 3). See contradiction C8 | 30px, opacity 0.45 |
+| Mark 2 (hi) | 32px (1a: 34px), ink `--bracket-{hi}`, **opacity 0.45** (1a, 3a, 2a card 4) **or 0.5** (1b, 2a card 3) on the canvas; built at `DIM_OPACITY` 0.65 (README errata 4, settles C8) | 30px, same |
 | "split" label | mono, 9.5px, letter-spacing 0.12em, uppercase, `--fg-faint` | same |
 | Label copy | literal `split`. **No key in the copy file** (see C11) | same |
 
@@ -162,7 +162,7 @@ Condition: **no** version comparison on screen, the state being viewed is the **
 | | gap | 9px | 9px |
 | Superseded mark | size | **22px** | **22px** (not scaled up at 390) |
 | | ink | `var(--bracket-{declared})` (the superseded declaration's bracket) | same |
-| | opacity | 0.45 | 0.45 |
+| | opacity | 0.45 on the canvas; **built at `DIM_OPACITY` 0.65** (README errata 4) | same |
 | | form | the chip form (§3b), `display:block; flex:none` | same |
 | A5 text | font-size | 12.5px | 12px |
 | | color | `var(--fg-faint)` | `var(--fg-faint)` |
@@ -290,7 +290,7 @@ Condition: the viewed state is a **committed** version whose reading differs fro
 | Property | Desktop | 390 |
 |---|---|---|
 | single reading | one 24px mark, `--bracket-{n}`, opacity 1 | same |
-| range reading | an inner wrapper: display flex, align-items center, **gap 2px**, holding two 24px marks: lo at opacity 1, hi at **opacity 0.5** | same |
+| range reading | an inner wrapper: display flex, align-items center, **gap 2px**, holding two 24px marks: lo at opacity 1, hi at **opacity 0.5** on the canvas, built at `DIM_OPACITY` 0.65 (README errata 4) | same |
 | split pill / "split" label | **— (none in the row)**. The pill appears on the face only | — |
 
 ### E6 · Mark labels
