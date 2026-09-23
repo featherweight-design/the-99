@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { deckTuningCopy } from "../copy/deck-tuning";
 import type { DeckGame } from "../decks/games";
@@ -27,6 +27,10 @@ const pack: EvidencePack = {
   play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded out on turn six" }), game("g2", { hurt: ["mana"] })]),
   intent: null,
 };
+
+// Note dates drop the CURRENT year, so the clock is pinned to the fixture's.
+beforeAll(() => { vi.useFakeTimers({ now: new Date("2026-09-23T12:00:00Z"), toFake: ["Date"] }); });
+afterAll(() => { vi.useRealTimers(); });
 
 describe("buildPrompt", () => {
   it("hands the model every rule, verbatim", () => {

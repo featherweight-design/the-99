@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { DeckGame } from "../decks/games";
 import { buildPlayGroup } from "../profile/play";
@@ -50,6 +50,10 @@ const good: TuningSuggestion = {
 };
 const run = (...suggestions: TuningSuggestion[]) =>
   validateSuggestions({ response: { suggestions } as TuningResponse, pack, resolveName });
+
+// Note dates drop the CURRENT year, so the clock is pinned to the fixture's.
+beforeAll(() => { vi.useFakeTimers({ now: new Date("2026-09-23T12:00:00Z"), toFake: ["Date"] }); });
+afterAll(() => { vi.useRealTimers(); });
 
 describe("validateSuggestions", () => {
   it("keeps a grounded suggestion", () => {
@@ -240,5 +244,12 @@ describe("validateSuggestions", () => {
     });
     for (const scrap of ["ate", "d t", "rind"]) expect(intent(scrap).drops[0].rule).toBe("citation");
     expect(intent("the table").droppedCount).toBe(0);
+  });
+
+  it("does not take a note's quotation from another citation", () => {
+    expect(run({ ...good, evidence: [
+      { kind: "note", value: "1 Sep" },
+      { kind: "decklist", value: '"flooded out on turn six" 1 Sep' },
+    ] }).drops[0].rule).toBe("citation");
   });
 });

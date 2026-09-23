@@ -17,6 +17,7 @@ const COUNTED = "(?:games?|times|matches|cards?)";
 
 /** A numerator spelled as a word. `none` is zero; the rest stop at ten, as prose does. */
 export const NUMBER_WORDS = "none|one|two|three|four|five|six|seven|eight|nine|ten";
+const COUNT_WORDS = "two|three|four|five|six|seven|eight|nine|ten";
 
 /**
  * A rationale may not name a bracket (`suggestionRules.noBracketClaim`): the APP flags a swap
@@ -72,7 +73,10 @@ export function presentationFailures(text: string, quotable: readonly Quotable[]
   // A counted noun must be preceded by `N of M`. `3 of 5 games` passes; `3 games` does not.
   // The numerator may be a word (`none of the 9 games`, `one of 11 cards`) and the denominator
   // may be possessed (`4 of your 99 cards`): each still states what it is a share of.
-  const counted = new RegExp(`(\\d+)\\s+${COUNTED}\\b`, "gi");
+  // A count spelled as a word needs its denominator too: `three games` is `3 games`. `one` and
+  // `none` are left out of the counted side only, where they read as "a" and "no" far more often
+  // than as counts ("the one card that", "none of it").
+  const counted = new RegExp(`\\b(\\d+|${COUNT_WORDS})\\s+${COUNTED}\\b`, "gi");
   for (const m of text.matchAll(counted)) {
     const before = text.slice(0, m.index);
     if (!new RegExp(`(?:\\d+|${NUMBER_WORDS})\\s+of\\s+(?:your\\s+|the\\s+)?$`, "i").test(before)) {

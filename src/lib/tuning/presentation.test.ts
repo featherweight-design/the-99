@@ -119,4 +119,11 @@ describe("presentationFailures", () => {
     expect(presentationFailures("It gives the deck a second way to win.", [])).toEqual([]);
     expect(presentationFailures("A blocker that is hard to beat.", [])).toEqual([]);
   });
+
+  it("holds a count spelled as a word to a denominator too", () => {
+    expect(presentationFailures("It lost three games.", [])).toContain("denominator");
+    expect(presentationFailures("It lost three of 5 games.", [])).toEqual([]);
+    expect(presentationFailures("The one card that matters.", [])).toEqual([]);
+  });
 });
+
