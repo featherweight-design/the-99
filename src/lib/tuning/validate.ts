@@ -2,7 +2,7 @@ import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
 import { presentationFailures, type Quotable, type RuleKey } from "./presentation";
-import { oneLine } from "./prompt";
+import { axisLabel, oneLine } from "./prompt";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
 /**
@@ -114,22 +114,39 @@ export function validateSuggestions(args: {
     return null;
   }
 
+  /** Every game figure the prompt states, with the words that name it. */
+  function gameClaims(): { words: RegExp[]; n: number }[] {
+    const { record, marked, axes } = pack.play.summary;
+    return [
+      { words: [/\b(won|wins?)\b/], n: record.wins },
+      { words: [/\b(lost|loss|losses)\b/], n: record.losses },
+      { words: [/\b(drew|draws?)\b/], n: record.draws },
+      { words: [/\bmark/], n: marked },
+      ...axes.flatMap((a) => {
+        const label = new RegExp(escapeRegExp(axisLabel(a.key).toLowerCase()));
+        return [
+          { words: [label, /\bhurt/], n: a.hurt },
+          { words: [label, /\bwork/], n: a.worked },
+        ];
+      }),
+    ];
+  }
+
   function citationHolds(c: TuningCitation): boolean {
     const count = pack.play.summary.count;
     switch (c.kind) {
       case "games": {
         if (count === 0) return false;
-        // Every `N of M games` in it must be about the games actually read — M the count, and N
-        // one of the figures the prompt stated about them. A numerator the pack never gave is a
-        // count the model made up, however plausible.
-        const { record, marked, axes } = pack.play.summary;
-        const stated = new Set([
-          count, record.wins, record.losses, record.draws, marked,
-          ...axes.flatMap((a) => [a.hurt, a.worked]),
-        ]);
-        const figures = [...c.value.matchAll(/(\d+)\s+of\s+(\d+)\s+games?\b/gi)];
+        // Every `N of M games` in it must be about the games actually read — M the count — and N
+        // must be what the prompt stated for a claim the citation NAMES: `Mana hurt in 5 of 5`
+        // is refused when mana hurt in 3, though 5 is the count. A figure no named claim carries
+        // is a count the model made up, however plausible.
+        const text = c.value.toLowerCase();
+        const figures = [...text.matchAll(/(\d+)\s+of\s+(\d+)\s+games?\b/g)];
         if (figures.length === 0) return false;
-        return figures.every((m) => Number(m[2]) === count && stated.has(Number(m[1])));
+        const named = gameClaims().filter((claim) => claim.words.every((w) => w.test(text)));
+        return figures.every((m) => Number(m[2]) === count
+          && named.some((claim) => claim.n === Number(m[1])));
       }
       case "note":
         // `suggestionRules.quotedNote`: the note byte-identical, IN QUOTATION MARKS, WITH ITS DATE,
@@ -146,4 +163,8 @@ export function validateSuggestions(args: {
         return true;
     }
   }
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

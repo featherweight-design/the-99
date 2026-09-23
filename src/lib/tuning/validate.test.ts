@@ -46,7 +46,7 @@ const good: TuningSuggestion = {
   add: "Cultivate", cut: "Grizzly Bears",
   rationale: "Mana was marked as hurting in 3 of 5 games.",
   rationaleShort: "Mana hurt in 3 of 5",
-  evidence: [{ kind: "games", value: "Mana: 3 of 5 games" }],
+  evidence: [{ kind: "games", value: "Mana hurt in 3 of 5 games" }],
 };
 const run = (...suggestions: TuningSuggestion[]) =>
   validateSuggestions({ response: { suggestions } as TuningResponse, pack, resolveName });
@@ -88,6 +88,12 @@ describe("validateSuggestions", () => {
     // Stated: 5 games, lost 5, 3 marked, mana hurt in 3. Nothing was ever 4.
     expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 4 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
     expect(run({ ...good, evidence: [{ kind: "games", value: "Lost 5 of 5 games" }] }).droppedCount).toBe(0);
+  });
+
+  it("drops a games figure the claim it names does not carry, though the pack states it elsewhere", () => {
+    // 5 is the count and the losses; mana hurt in 3.
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana hurt in 5 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "5 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
   });
 
   it("keeps a note quoted in the one-line form the prompt showed it in", () => {

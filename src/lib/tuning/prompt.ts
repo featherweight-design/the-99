@@ -27,6 +27,7 @@ const SYSTEM = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
   `Propose at most ${MAX_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card. Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.`,
   "Ground every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
+  "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\". A figure with no name, or one the section does not give, is discarded.",
   "Name cards exactly as the decklist and the staples list spell them. Never suggest cutting a card marked as a commander.",
   "Rules. A suggestion that breaks any of these is discarded before the player sees it:",
   ...Object.values(deckTuningCopy.suggestionRules).map((rule) => `- ${rule}`),
@@ -98,6 +99,6 @@ function renderPack(pack: EvidencePack): string {
   return lines.join("\n");
 }
 
-function axisLabel(key: string): string {
+export function axisLabel(key: string): string {
   return axisCopy[key as GameAxisKey]?.label ?? key;
 }
