@@ -5,7 +5,7 @@ import { deckProfiles } from "../../db/schema";
 import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { profileFingerprint } from "./fingerprint";
-import { cachedDeckProfile, loadProfileHead } from "./load";
+import { cachedDeckProfile, readProfileHead } from "./load";
 import type { DeckProfile } from "./types";
 
 /**
@@ -50,26 +50,34 @@ export async function readStoredProfile(
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
 ): Promise<DeckProfile | null> {
-  const head = await loadProfileHead(deckId, userId);
-  if (!head) return null;
-  const [catalog, rows] = await Promise.all([
+  const [catalog, row] = await Promise.all([
     deps.generation(),
-    db
-      .select({ profile: deckProfiles.profile, catalog: deckProfiles.catalog })
-      .from(deckProfiles)
-      .where(
-        and(
-          eq(deckProfiles.deckId, deckId),
-          eq(deckProfiles.userId, userId),
-          eq(deckProfiles.fingerprint, profileFingerprint(head)),
-          sql`${deckProfiles.computedAt} > now() - make_interval(days => ${STORED_PROFILE_MAX_AGE_DAYS})`,
-        ),
-      )
-      .limit(1),
+    // ONE SNAPSHOT for the head and the row. Read apart, an edit committing between them pairs
+    // the edited deck with the analysis of the deck before it, which is the thing the
+    // fingerprint exists to refuse.
+    db.transaction(
+      async (tx) => {
+        const head = await readProfileHead(tx, deckId, userId);
+        if (!head) return null;
+        const rows = await tx
+          .select({ profile: deckProfiles.profile, catalog: deckProfiles.catalog })
+          .from(deckProfiles)
+          .where(
+            and(
+              eq(deckProfiles.deckId, deckId),
+              eq(deckProfiles.userId, userId),
+              eq(deckProfiles.fingerprint, profileFingerprint(head)),
+              sql`${deckProfiles.computedAt} > now() - make_interval(days => ${STORED_PROFILE_MAX_AGE_DAYS})`,
+            ),
+          )
+          .limit(1);
+        return rows[0] ?? null;
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    ),
   ]);
   // The catalog is compared here rather than in the WHERE because the generation is itself a
   // cached read, and running it beside the lookup is the point of the `Promise.all`.
-  const row = rows[0];
   return row && row.catalog === catalog ? row.profile : null;
 }
 
@@ -100,23 +108,28 @@ export async function computeAndStoreProfile(
     // deck that no longer exists, so the next reload would find nothing. One head read decides it:
     // a result whose fingerprint is not the deck's current one is returned to its caller, who
     // asked for it, and never written.
-    const now = await loadProfileHead(deckId, userId);
-    if (!now || profileFingerprint(now) !== profile.fingerprint) return profile;
+    // The check and the write share one repeatable-read snapshot. An edit committing after it
+    // leaves a row whose fingerprint the next read refuses; a newer press's write landing after it
+    // makes this upsert fail to serialize, and the catch below keeps that newer row.
     const permits = [...slotDeck(profile).permits].sort((a, b) => a - b);
-    await db
-      .insert(deckProfiles)
-      .values({ deckId, userId, fingerprint: profile.fingerprint, catalog, profile, permits })
-      .onConflictDoUpdate({
-        target: deckProfiles.deckId,
-        set: {
-          userId,
-          fingerprint: profile.fingerprint,
-          catalog,
-          profile,
-          permits,
-          computedAt: sql`now()`,
-        },
-      });
+    await db.transaction(async (tx) => {
+      const now = await readProfileHead(tx, deckId, userId);
+      if (!now || profileFingerprint(now) !== profile.fingerprint) return;
+      await tx
+        .insert(deckProfiles)
+        .values({ deckId, userId, fingerprint: profile.fingerprint, catalog, profile, permits })
+        .onConflictDoUpdate({
+          target: deckProfiles.deckId,
+          set: {
+            userId,
+            fingerprint: profile.fingerprint,
+            catalog,
+            profile,
+            permits,
+            computedAt: sql`now()`,
+          },
+        });
+    }, { isolationLevel: "repeatable read" });
   } catch (error) {
     console.warn("deck profile not stored; the next tab open will offer the press again", error);
   }
