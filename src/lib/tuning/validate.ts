@@ -45,6 +45,8 @@ export function validateSuggestions(args: {
   const { response, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   const notes = pack.play.games.flatMap((g) => (g.note === null ? [] : [g.note]));
+  // Everything the player wrote that a suggestion may quote.
+  const quotable = pack.intent === null ? notes : [...notes, pack.intent];
   const [primary, partner] = pack.commanders;
   const deck = {
     commanderOracleId: primary?.oracleId ?? "",
@@ -102,7 +104,7 @@ export function validateSuggestions(args: {
     }
 
     for (const text of [s.rationale, s.rationaleShort, ...s.evidence.map((c) => c.value)]) {
-      const [broken] = presentationFailures(text, notes);
+      const [broken] = presentationFailures(text, quotable);
       if (broken) return broken;
     }
     return null;
@@ -119,7 +121,11 @@ export function validateSuggestions(args: {
         return figures.every((m) => Number(m[2]) === count && Number(m[1]) <= count);
       }
       case "note":
-        return notes.some((n) => c.value.includes(n));
+        // `suggestionRules.quotedNote`: the note byte-identical, IN QUOTATION MARKS, WITH ITS DATE,
+        // the date of the game it was written about, as the prompt renders it.
+        return pack.play.games.some((g) => g.note !== null
+          && (c.value.includes(`"${g.note}"`) || c.value.includes(`\u201c${g.note}\u201d`))
+          && c.value.includes(g.playedAt.slice(0, 10)));
       case "intent":
         return pack.intent !== null;
       case "decklist":

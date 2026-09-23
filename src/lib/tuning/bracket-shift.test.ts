@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { slotDeck } from "../bracket/slot";
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "../profile/build";
 import type { ComboRef, DetectionCoverage, FlagSource } from "../profile/types";
-import { bracketAfter, type AddFacts } from "./bracket-shift";
+import { bracketAfter } from "./bracket-shift";
 
 const DETECTION: DetectionCoverage = {
   massLandDenial: { methods: ["m"], basis: "t" },
@@ -30,8 +30,6 @@ function profile(over: Partial<ProfileInput> = {}) {
   });
 }
 
-const plain: AddFacts = { oracleId: "plain", name: "Plain Card", gameChanger: false, massLandDenial: null, extraTurn: null };
-
 const combo: ComboRef = {
   variantId: "v1", cards: [{ oracleId: "p1", name: "p1" }, { oracleId: "plain", name: "Plain Card" }],
   produces: ["Infinite mana"], bracketTag: "casual", usesCommander: false,
@@ -40,29 +38,24 @@ const combo: ComboRef = {
 
 describe("bracketAfter", () => {
   it("is null for a swap that moves nothing", () => {
-    expect(bracketAfter({ profile: profile(), declared: 2, add: plain, cutOracleId: "bear", combosAfter: [] })).toBeNull();
+    expect(bracketAfter({ before: profile(), after: profile(), declared: 2 })).toBeNull();
   });
 
-  it("flags an add that is a Game Changer, with the permits the verdict would give", () => {
+  it("flags a swap that adds a Game Changer, with the permits the verdict would give", () => {
     const clean = profile();
-    const out = bracketAfter({ profile: clean, declared: 2, add: { ...plain, gameChanger: true }, cutOracleId: "bear", combosAfter: [] });
     const withGc = profile({ gameChangerIds: new Set(["gc"]) });
-    expect(out).not.toBeNull();
+    const out = bracketAfter({ before: clean, after: withGc, declared: 2 });
     expect(out).toEqual(slotDeck(withGc, 2).permits);
     expect(out).not.toEqual(slotDeck(clean, 2).permits);
   });
 
-  it("flags a swap that completes a two-card combo, through combosAfter", () => {
-    expect(bracketAfter({ profile: profile(), declared: 2, add: plain, cutOracleId: "bear", combosAfter: [combo] })).not.toBeNull();
-  });
-
-  it("flags a cut that takes the deck's only Game Changer away — a move down is still a move", () => {
+  it("flags a move down too: cutting the deck's only Game Changer", () => {
     const withGc = profile({ gameChangerIds: new Set(["gc"]) });
-    const out = bracketAfter({ profile: withGc, declared: 3, add: plain, cutOracleId: "gc", combosAfter: [] });
-    expect(out).toEqual(slotDeck(profile(), 3).permits);
+    expect(bracketAfter({ before: withGc, after: profile(), declared: 3 })).toEqual(slotDeck(profile(), 3).permits);
   });
 
-  it("flags an add that is mass land denial", () => {
-    expect(bracketAfter({ profile: profile(), declared: 2, add: { ...plain, massLandDenial: ["oracle_rule"] }, cutOracleId: "bear", combosAfter: [] })).not.toBeNull();
+  it("reads the combo verdict from the after profile, not a patch of the before", () => {
+    const withCombo = profile({ twoCardCombos: [combo] });
+    expect(bracketAfter({ before: profile(), after: withCombo, declared: 2 })).toEqual(slotDeck(withCombo, 2).permits);
   });
 });

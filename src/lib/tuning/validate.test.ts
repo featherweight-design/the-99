@@ -96,8 +96,13 @@ describe("validateSuggestions", () => {
     expect(run({ ...good, evidence: [{ kind: "intent", value: "go wide" }] }).drops[0].rule).toBe("citation");
   });
 
-  it("keeps a note cited verbatim", () => {
+  it("keeps a note cited verbatim, in quotation marks, with its date", () => {
     expect(run({ ...good, evidence: [{ kind: "note", value: '2026-09-01: "flooded out on turn six"' }] }).droppedCount).toBe(0);
+  });
+
+  it("drops a note citation without its quotation marks or without its date", () => {
+    expect(run({ ...good, evidence: [{ kind: "note", value: "2026-09-01: flooded out on turn six" }] }).drops[0].rule).toBe("citation");
+    expect(run({ ...good, evidence: [{ kind: "note", value: '"flooded out on turn six"' }] }).drops[0].rule).toBe("citation");
   });
 
   it("drops a suggestion that breaks a presentation rule, naming the rule", () => {
@@ -105,9 +110,12 @@ describe("validateSuggestions", () => {
     expect(run({ ...good, rationaleShort: "Mana hurt 3 games" }).drops).toEqual([{ position: 0, rule: "denominator" }]);
   });
 
-  it("drops a second suggestion adding or cutting the same card", () => {
-    const out = run(good, { ...good, cut: "Oxen" });
-    expect(out.drops).toEqual([{ position: 1, rule: "duplicate" }]);
+  it("drops a second suggestion adding the same card", () => {
+    expect(run(good, { ...good, cut: "Oxen" }).drops).toEqual([{ position: 1, rule: "duplicate" }]);
+  });
+
+  it("drops a second suggestion cutting the same card", () => {
+    expect(run(good, { ...good, add: "Rampant Growth" }).drops).toEqual([{ position: 1, rule: "duplicate" }]);
   });
 
   it("renumbers position over the survivors so the card list has no holes", () => {

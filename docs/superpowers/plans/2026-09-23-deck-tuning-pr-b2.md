@@ -13,6 +13,11 @@
 >    `announce.started` while a run is in flight, `announce.unchanged` on unchanged inputs. A time
 >    belongs to the panel, in the reader's own clock, so `gateReason` takes no `now`.
 >    `allowance.spent` is an eng-written placeholder until the placement addendum draws the state.
+> 5. **`bracketAfter` compares two REAL profiles** — `({ before, after, declared })` — and edits
+>    neither. The approximation below (rebuilding `before`'s bracket group from the add's facts
+>    and `combosAfter`) could not rebuild the tutor reaches of a combo the add completes, which
+>    only the loader's classifiers can, so it named the wrong bracket. C builds `after` with the
+>    same loader from the swapped head. `AddFacts` and `combosAfter` are gone.
 > 4. **`Drop` names its rule.** Each drop carries the `suggestionRules` key it broke, or one of
 >    three structural checks no instruction covers (`cardExists`, `addNotLegal`, `duplicate`), so
 >    a run's `dropped_count` can be explained rather than only counted.

@@ -13,14 +13,19 @@ export type RuleKey = keyof typeof deckTuningCopy.suggestionRules;
  *  is a count of cards the deck holds and needs none. */
 const COUNTED = "(?:games?|times|matches)";
 
-export function presentationFailures(text: string, notes: readonly string[]): RuleKey[] {
+/**
+ * `quotable` is everything the player wrote that a suggestion may quote: their game notes and
+ * their stated intent. A quotation matching none of them, byte for byte, is a misquote.
+ */
+export function presentationFailures(text: string, quotable: readonly string[]): RuleKey[] {
   const broken: RuleKey[] = [];
 
   // A percentage in any spelling, and the proportion a "win rate" is.
   if (/%|\bper ?cent\b|\bwin ?rate\b/i.test(text)) broken.push("noPercentage");
 
-  // The word, or a SIGNED integer: `+2`, `-3`, `−1`. A hyphen between words is not a sign.
-  if (/\bnet\b/i.test(text) || /(^|[\s(:])[+\-−]\d/.test(text)) broken.push("noNet");
+  // The word, or a SIGNED integer: `+2`, `-3`, `−1`. A hyphen between words is not a sign, and
+  // Magic's own counter notation (`+1/+1`, `-1/-1`, `+2/+0`) is a card's words, not a figure.
+  if (/\bnet\b/i.test(text) || /(^|[\s(:])[+\-−]\d+(?![\d/])/.test(text)) broken.push("noNet");
 
   // A counted noun must be preceded by `N of M`. `3 of 5 games` passes; `3 games` does not.
   const counted = new RegExp(`(\\d+)\\s+${COUNTED}\\b`, "gi");
@@ -32,10 +37,10 @@ export function presentationFailures(text: string, notes: readonly string[]): Ru
     }
   }
 
-  // Anything in quotation marks is a quotation of the player, and must be one of their notes
-  // byte for byte. Straight or curly quotes, since the model may use either.
+  // Anything in quotation marks is a quotation of the player (a note, or their stated intent)
+  // and must match one byte for byte. Straight or curly quotes, since the model may use either.
   for (const m of text.matchAll(/["“]([^"”]+)["”]/g)) {
-    if (!notes.includes(m[1])) {
+    if (!quotable.includes(m[1])) {
       broken.push("quotedNote");
       break;
     }

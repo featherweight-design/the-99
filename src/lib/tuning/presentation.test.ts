@@ -27,6 +27,15 @@ describe("presentationFailures", () => {
     expect(presentationFailures("Mana sits at -2 across the log.", notes)).toContain("noNet");
   });
 
+  it("does not read a card's counter notation as a signed figure", () => {
+    expect(presentationFailures("Adds another +1/+1 counter payoff.", notes)).toEqual([]);
+    expect(presentationFailures("Shrinks their team with -1/-1 counters.", notes)).toEqual([]);
+  });
+
+  it("accepts a quotation of anything the player wrote, the intent included", () => {
+    expect(presentationFailures('For a deck meant to "go wide with tokens", this fits.', [...notes, "go wide with tokens"])).toEqual([]);
+  });
+
   it("does not read a hyphenated word as a sign", () => {
     expect(presentationFailures("A two-mana ramp spell fits the curve.", notes)).toEqual([]);
   });
