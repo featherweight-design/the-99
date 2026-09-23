@@ -2262,7 +2262,7 @@ git commit -m "feat(tuning): suggestion card with apply, undo, dismiss, and rest
 
 **PR D.** Not started until the placement addendum returns and its readiness audit is approved.
 
-The tuning handoff mounts the panel and the intent control on the **Games** tab. It was drawn before the **Analysis** tab existed (#753), which now reads the same Deck Profile the evidence is built from and already hosts the synopsis slot (`SynopsisSlot`, `src/components/decks/analysis-panel.tsx:211`). Where the panel belongs — Games, Analysis, or split between them — is a design decision, and this plan does not make it.
+The tuning handoff mounts the panel and the intent control on the **Games** tab. It was drawn before the **Analysis** tab existed (#753), which now reads the same Deck Profile the evidence is built from and is where the synopsis (sub-project 6) is headed. (`SynopsisSlot`, `src/components/decks/analysis-panel.tsx:211`, is being removed by the `analysis-tab` lane, so do not plan against it.) Where the panel belongs — Games, Analysis, or split between them — is a design decision, and this plan does not make it.
 
 What the addendum must return, as named asks:
 
