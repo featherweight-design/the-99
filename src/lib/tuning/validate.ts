@@ -1,7 +1,7 @@
 import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
-import { currentYear, mentionsDate, noteDate } from "./note-date";
+import { mentionsDate, noteDate } from "./note-date";
 import { NUMBER_WORDS, presentationFailures, type Quotable, type RuleKey } from "./presentation";
 import { axisLabel, oneLine } from "./prompt";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
@@ -48,7 +48,7 @@ export function validateSuggestions(args: {
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   // Everything the player wrote that a suggestion may quote: each note with its game's date, as
   // the prompt renders it, and the intent, which has none. In the one-line form the prompt showed.
-  const year = currentYear();
+  const year = pack.year;
   const quotable: Quotable[] = [
     ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: oneLine(g.note), date: noteDate(g.playedAt, year) }])),
     ...(pack.intent === null ? [] : [{ text: oneLine(pack.intent), date: null }]),
@@ -170,7 +170,7 @@ export function validateSuggestions(args: {
         // Design's form: the citation names the note's date as the notes list writes it
         // (`26 Aug`), and the suggestion quotes that note — `suggestionRules.quotedNote` then
         // holds the quotation to the byte and to its date wherever it appears.
-        const year = currentYear();
+        const year = pack.year;
         // In the rationale, or in this citation itself — both are drawn on the card. Not in some
         // other citation, where a quotation would be doing a different citation's job.
         const own = [s.rationale, s.rationaleShort, c.value];

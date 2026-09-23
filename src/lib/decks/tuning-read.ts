@@ -15,7 +15,7 @@ import {
 import { readAllowance, settleModelCall } from "../model/allowance";
 import { cacheForUser } from "../cache/user-lists";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
-import { loadDeckProfileFromHead, loadProfileHead, type ProfileHead } from "../profile/load";
+import { loadDeckProfileFromHead, readProfileHead, type ProfileHead } from "../profile/load";
 import { PROFILE_VERSION } from "../profile/version";
 import type { Bracket, DeckProfile } from "../profile/types";
 import { bracketAfter } from "../tuning/bracket-shift";
@@ -42,12 +42,24 @@ export type TuningInputs = {
   intent: string | null;
   declared: Bracket | null;
   fingerprint: string;
+  /** The deck's newest version number in the same snapshot as `head`, or null for none. A run
+   *  records it, and a newer version later retires the set. */
+  readVersion: number | null;
 };
 
 /** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
 export async function tuningInputs(deckId: string, userId: string): Promise<TuningInputs | null> {
-  const head = await loadProfileHead(deckId, userId);
-  if (!head) return null;
+  // The head and the version it belongs to, in ONE snapshot: read apart, a commit landing between
+  // them would pair the list before the commit with the version after it.
+  const snapshot = await db.transaction(async (tx) => {
+    const head = await readProfileHead(tx, deckId, userId);
+    if (!head) return null;
+    const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
+      .where(eq(deckVersions.deckId, deckId));
+    return { head, readVersion: v?.n ?? null };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  if (!snapshot) return null;
+  const { head, readVersion } = snapshot;
   const [games, [deck], [upload]] = await Promise.all([
     listDeckGames(deckId, userId),
     db.select({ intent: decks.intent })
@@ -65,7 +77,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     intent,
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
   });
-  return { head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint };
+  return { head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint, readVersion };
 }
 
 /**
@@ -186,24 +198,19 @@ export async function readTuningState(
 }
 
 /**
- * A version committed after the run means the set was read against an older deck. The run's own
- * version is the newest committed at or before it; the deck's is the newest of all. Derived from
- * `deck_versions.committed_at` against the run's `created_at`, both stamped by the database's
- * clock and compared INSIDE the query, so no column on the run is needed and no timestamp makes
- * a round trip through JavaScript's milliseconds.
+ * A version newer than the one the run read means the set was read against an older deck.
+ * NUMBERS, not clocks: the run stores the version it read, taken in the same snapshot as its
+ * list, and a commit's `committed_at` (its transaction's start) could never say whether the run
+ * saw it. `from` is null for a deck that had no version when the run read it.
  */
 async function readRetired(deckId: string, runId: string): Promise<TuningState["retired"]> {
-  const rows = await db.execute<{ newest: number | null; at_run: number | null; retired: boolean }>(sql`
-    select
-      (select max(v.number) from ${deckVersions} v where v.deck_id = ${deckId}) as newest,
-      (select max(v.number) from ${deckVersions} v
-        where v.deck_id = ${deckId} and v.committed_at <= r.created_at) as at_run,
-      exists (select 1 from ${deckVersions} v
-        where v.deck_id = ${deckId} and v.committed_at > r.created_at) as retired
+  const rows = await db.execute<{ newest: number | null; read_version: number | null }>(sql`
+    select (select max(v.number) from ${deckVersions} v where v.deck_id = ${deckId}) as newest,
+           r.read_version
     from ${deckSuggestionRuns} r where r.id = ${runId}`);
   const [r] = rows.rows;
-  if (!r || !r.retired || r.newest === null) return null;
-  return { from: r.at_run, to: r.newest };
+  if (!r || r.newest === null || r.newest <= (r.read_version ?? 0)) return null;
+  return { from: r.read_version, to: r.newest };
 }
 
 async function readItems(runId: string, deckId: string, userId: string): Promise<TuningItem[]> {

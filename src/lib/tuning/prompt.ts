@@ -3,7 +3,7 @@ import type { GameAxisKey } from "../decks/game-axes";
 import { deckTuningCopy } from "../copy/deck-tuning";
 import type { EvidencePack } from "./evidence";
 import { MAX_SUGGESTIONS } from "./limits";
-import { currentYear, noteDate } from "./note-date";
+import { noteDate } from "./note-date";
 
 /**
  * The evidence pack, rendered as the two messages a tuning run sends. Pure string work.
@@ -80,7 +80,7 @@ function renderPack(pack: EvidencePack): string {
       // can collide with the text breaks the verbatim boundary. Each note is the whole rest of its
       // line; the model is told to quote it in double quotes, with its date.
       lines.push("Notes, one per line after the date and colon, verbatim. Quote a note in double quotation marks, byte for byte, with its date as written here:");
-      const year = currentYear();
+      const year = pack.year;
       for (const g of noted) lines.push(`- ${noteDate(g.playedAt, year)}: ${oneLine(g.note!)}`);
     }
   }

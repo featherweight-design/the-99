@@ -1,0 +1,1 @@
+ALTER TABLE "deck_suggestion_runs" ADD COLUMN "read_version" integer;

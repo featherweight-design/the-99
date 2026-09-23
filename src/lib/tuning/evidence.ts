@@ -1,3 +1,4 @@
+import { currentYear } from "./note-date";
 import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import type { ProfilePlay } from "../profile/play";
 import type { DeckProfile } from "../profile/types";
@@ -45,6 +46,9 @@ export type EvidencePack = {
   staples: { oracleId: string; name: string; commanders: number; commanderTotal: number; owned: boolean }[];
   play: ProfilePlay;
   intent: string | null;
+  /** The year note dates are judged against (`noteDate`), taken ONCE, when the pack is built, so
+   *  the prompt and the validator format a date alike even if the model call crosses a New Year. */
+  year: number;
 };
 
 export function buildEvidencePack(input: {
@@ -52,6 +56,7 @@ export function buildEvidencePack(input: {
   play: ProfilePlay;
   intent: string | null;
   owned: ReadonlySet<string>;
+  now?: Date;
 }): EvidencePack {
   const { profile, play, intent, owned } = input;
   const commanderIds = new Set(profile.commanderOracleIds);
@@ -119,5 +124,6 @@ export function buildEvidencePack(input: {
       })),
     play,
     intent,
+    year: currentYear(input.now),
   };
 }

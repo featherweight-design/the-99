@@ -13,7 +13,7 @@
     {
       "oracleId": "cab092f9-b7ff-43b9-935f-310869a4daf8",
       "name": "Abdel Adrian, Gorion's Ward",
-      "typeLine": "Legendary Creature — Human Warrior",
+      "typeLine": "Legendary Creature \u2014 Human Warrior",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -44,7 +44,7 @@
     {
       "oracleId": "fb220f46-f8b8-4804-baa4-e7d50b4871f7",
       "name": "Aether Channeler",
-      "typeLine": "Creature — Human Wizard",
+      "typeLine": "Creature \u2014 Human Wizard",
       "roles": [
         "draw"
       ],
@@ -55,7 +55,7 @@
     {
       "oracleId": "4cd82c7a-86df-4d29-b578-c009208c0d4b",
       "name": "Agent of Treachery",
-      "typeLine": "Creature — Human Rogue",
+      "typeLine": "Creature \u2014 Human Rogue",
       "roles": [
         "draw"
       ],
@@ -86,7 +86,7 @@
     {
       "oracleId": "a91a3266-cadd-47a0-9b20-160307f14c07",
       "name": "Archaeomancer",
-      "typeLine": "Creature — Human Wizard",
+      "typeLine": "Creature \u2014 Human Wizard",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -117,7 +117,7 @@
     {
       "oracleId": "c48d844c-3976-4fa5-8e0d-3f0e535e7619",
       "name": "Charming Prince",
-      "typeLine": "Creature — Human Noble",
+      "typeLine": "Creature \u2014 Human Noble",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -126,7 +126,7 @@
     {
       "oracleId": "1665ca9f-176d-40f1-a4e9-42da4f1236e9",
       "name": "Circuit Mender",
-      "typeLine": "Artifact Creature — Insect",
+      "typeLine": "Artifact Creature \u2014 Insect",
       "roles": [
         "draw"
       ],
@@ -148,7 +148,7 @@
     {
       "oracleId": "d4ec0df9-a4a3-48cf-a0aa-b1aea5c49142",
       "name": "Clever Impersonator",
-      "typeLine": "Creature — Shapeshifter",
+      "typeLine": "Creature \u2014 Shapeshifter",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -157,7 +157,7 @@
     {
       "oracleId": "f84d1291-1f82-4b67-a26e-b79624b4ce1d",
       "name": "Cloudblazer",
-      "typeLine": "Creature — Human Scout",
+      "typeLine": "Creature \u2014 Human Scout",
       "roles": [
         "draw"
       ],
@@ -206,7 +206,7 @@
     {
       "oracleId": "ebef6d84-b724-4a84-bcde-8eb6dc06717d",
       "name": "Deadeye Navigator",
-      "typeLine": "Creature — Spirit",
+      "typeLine": "Creature \u2014 Spirit",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -235,7 +235,7 @@
     {
       "oracleId": "5ade11c0-41dd-4b6a-9f5b-c5903a3a0d7f",
       "name": "Elesh Norn, Mother of Machines",
-      "typeLine": "Legendary Creature — Phyrexian Praetor",
+      "typeLine": "Legendary Creature \u2014 Phyrexian Praetor",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -244,7 +244,7 @@
     {
       "oracleId": "40c88392-2aa7-4e12-86a4-8d680219e670",
       "name": "Elspeth Conquers Death",
-      "typeLine": "Enchantment — Saga",
+      "typeLine": "Enchantment \u2014 Saga",
       "roles": [
         "removal"
       ],
@@ -295,7 +295,7 @@
     {
       "oracleId": "b23a3d30-6b8e-4aad-890f-db0c3af43ace",
       "name": "Flickerwisp",
-      "typeLine": "Creature — Elemental",
+      "typeLine": "Creature \u2014 Elemental",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -324,7 +324,7 @@
     {
       "oracleId": "f1750962-a87c-49f6-b731-02ae971ac6ea",
       "name": "Hallowed Fountain",
-      "typeLine": "Land — Plains Island",
+      "typeLine": "Land \u2014 Plains Island",
       "roles": [
         "land"
       ],
@@ -346,7 +346,7 @@
     {
       "oracleId": "d646e42b-5635-4798-b633-29c093b66a55",
       "name": "Inspiring Overseer",
-      "typeLine": "Creature — Angel Cleric",
+      "typeLine": "Creature \u2014 Angel Cleric",
       "roles": [
         "draw"
       ],
@@ -357,7 +357,7 @@
     {
       "oracleId": "406eabe2-df62-49e2-bb39-c0227509d875",
       "name": "Irrigated Farmland",
-      "typeLine": "Land — Plains Island",
+      "typeLine": "Land \u2014 Plains Island",
       "roles": [
         "draw",
         "land"
@@ -369,7 +369,7 @@
     {
       "oracleId": "b2c6aa39-2d2a-459c-a555-fb48ba993373",
       "name": "Island",
-      "typeLine": "Basic Land — Island",
+      "typeLine": "Basic Land \u2014 Island",
       "roles": [
         "land"
       ],
@@ -380,7 +380,7 @@
     {
       "oracleId": "8c31fec9-e4b3-4761-990e-7be38eb05604",
       "name": "Karmic Guide",
-      "typeLine": "Creature — Angel Spirit",
+      "typeLine": "Creature \u2014 Angel Spirit",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -400,7 +400,7 @@
     {
       "oracleId": "55df6fa3-3d24-46d5-b325-099336c3f0fd",
       "name": "Lavinia of the Tenth",
-      "typeLine": "Legendary Creature — Human Soldier",
+      "typeLine": "Legendary Creature \u2014 Human Soldier",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -418,7 +418,7 @@
     {
       "oracleId": "b3d81980-76f2-44e2-b1c9-01e30c726312",
       "name": "Loran of the Third Path",
-      "typeLine": "Legendary Creature — Human Artificer",
+      "typeLine": "Legendary Creature \u2014 Human Artificer",
       "roles": [
         "draw"
       ],
@@ -429,7 +429,7 @@
     {
       "oracleId": "ccfb8b4d-651c-418a-aa19-cb23105b3f2f",
       "name": "Meticulous Archive",
-      "typeLine": "Land — Plains Island",
+      "typeLine": "Land \u2014 Plains Island",
       "roles": [
         "land"
       ],
@@ -461,7 +461,7 @@
     {
       "oracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
       "name": "Mulldrifter",
-      "typeLine": "Creature — Elemental",
+      "typeLine": "Creature \u2014 Elemental",
       "roles": [
         "draw"
       ],
@@ -514,7 +514,7 @@
     {
       "oracleId": "0bd67481-6bd9-48d6-92bd-8933b5ea1eae",
       "name": "Peregrine Drake",
-      "typeLine": "Creature — Drake",
+      "typeLine": "Creature \u2014 Drake",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -523,7 +523,7 @@
     {
       "oracleId": "bc71ebf6-2056-41f7-be35-b2e5c34afa99",
       "name": "Plains",
-      "typeLine": "Basic Land — Plains",
+      "typeLine": "Basic Land \u2014 Plains",
       "roles": [
         "land"
       ],
@@ -534,7 +534,7 @@
     {
       "oracleId": "5330e24a-8568-446e-840a-594cd08bd1bc",
       "name": "Prairie Stream",
-      "typeLine": "Land — Plains Island",
+      "typeLine": "Land \u2014 Plains Island",
       "roles": [
         "land"
       ],
@@ -545,7 +545,7 @@
     {
       "oracleId": "232c297d-71b6-429f-99df-39a11dbcea40",
       "name": "Reality Acid",
-      "typeLine": "Enchantment — Aura",
+      "typeLine": "Enchantment \u2014 Aura",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -554,7 +554,7 @@
     {
       "oracleId": "d521a329-a53a-4962-810a-2abed80df260",
       "name": "Recruiter of the Guard",
-      "typeLine": "Creature — Human Soldier",
+      "typeLine": "Creature \u2014 Human Soldier",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -563,7 +563,7 @@
     {
       "oracleId": "5398362d-c45e-4d56-a622-8be1124730b9",
       "name": "Reflector Mage",
-      "typeLine": "Creature — Human Wizard",
+      "typeLine": "Creature \u2014 Human Wizard",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -603,7 +603,7 @@
     {
       "oracleId": "d90af00a-d322-4265-9954-7b1e80702e18",
       "name": "Skyclave Apparition",
-      "typeLine": "Creature — Kor Spirit",
+      "typeLine": "Creature \u2014 Kor Spirit",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -623,7 +623,7 @@
     {
       "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
       "name": "Solemn Simulacrum",
-      "typeLine": "Artifact Creature — Golem",
+      "typeLine": "Artifact Creature \u2014 Golem",
       "roles": [
         "ramp",
         "draw"
@@ -635,7 +635,7 @@
     {
       "oracleId": "92019547-f6db-4ea6-8356-d0a90ace5662",
       "name": "Soulherder",
-      "typeLine": "Creature — Spirit",
+      "typeLine": "Creature \u2014 Spirit",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -644,7 +644,7 @@
     {
       "oracleId": "47a785ed-8095-4685-8daa-02c4e2b0ffcd",
       "name": "Spellseeker",
-      "typeLine": "Creature — Human Wizard",
+      "typeLine": "Creature \u2014 Human Wizard",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -664,7 +664,7 @@
     {
       "oracleId": "9c5f0d91-9d86-4e66-94fd-4af93ad01838",
       "name": "Spirited Companion",
-      "typeLine": "Enchantment Creature — Dog",
+      "typeLine": "Enchantment Creature \u2014 Dog",
       "roles": [
         "draw"
       ],
@@ -675,7 +675,7 @@
     {
       "oracleId": "65368569-68bf-4498-9979-d2935942ca49",
       "name": "Stonehorn Dignitary",
-      "typeLine": "Creature — Rhino Soldier",
+      "typeLine": "Creature \u2014 Rhino Soldier",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -766,7 +766,7 @@
     {
       "oracleId": "0f41cefc-d6ff-4db7-ba35-502b7e081de1",
       "name": "Venser, Shaper Savant",
-      "typeLine": "Legendary Creature — Human Wizard",
+      "typeLine": "Legendary Creature \u2014 Human Wizard",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -775,7 +775,7 @@
     {
       "oracleId": "a8bf8ff8-d924-4fd2-b5ed-05b38f55325a",
       "name": "Venser, the Sojourner",
-      "typeLine": "Legendary Planeswalker — Venser",
+      "typeLine": "Legendary Planeswalker \u2014 Venser",
       "roles": [
         "removal"
       ],
@@ -786,7 +786,7 @@
     {
       "oracleId": "5f601f48-d24b-4883-9fde-b3f620e7c9ea",
       "name": "Wall of Omens",
-      "typeLine": "Creature — Wall",
+      "typeLine": "Creature \u2014 Wall",
       "roles": [
         "draw"
       ],
@@ -797,7 +797,7 @@
     {
       "oracleId": "277aafa6-4270-4d24-a888-cf9e8e635d4b",
       "name": "Watcher for Tomorrow",
-      "typeLine": "Creature — Human Wizard",
+      "typeLine": "Creature \u2014 Human Wizard",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -806,7 +806,7 @@
     {
       "oracleId": "7060f2c8-fca0-4b7a-bddf-37682f434596",
       "name": "Whirler Rogue",
-      "typeLine": "Creature — Human Rogue Artificer",
+      "typeLine": "Creature \u2014 Human Rogue Artificer",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -815,7 +815,7 @@
     {
       "oracleId": "9ad4f730-a18e-4a7c-a468-a926c718c741",
       "name": "Whispersilk Cloak",
-      "typeLine": "Artifact — Equipment",
+      "typeLine": "Artifact \u2014 Equipment",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -824,7 +824,7 @@
     {
       "oracleId": "e15504a7-2b67-4185-b916-172145f10b19",
       "name": "Yorion, Sky Nomad",
-      "typeLine": "Legendary Creature — Bird Serpent",
+      "typeLine": "Legendary Creature \u2014 Bird Serpent",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -833,7 +833,7 @@
     {
       "oracleId": "fcb0c7db-bd07-4c25-b7f8-b6c207e4f6be",
       "name": "Brago, King Eternal",
-      "typeLine": "Legendary Creature — Spirit Noble",
+      "typeLine": "Legendary Creature \u2014 Spirit Noble",
       "roles": [],
       "quantity": 1,
       "owned": true,
@@ -1122,5 +1122,6 @@
       ]
     }
   },
-  "intent": "blink my own permanents for value and win a long game"
+  "intent": "blink my own permanents for value and win a long game",
+  "year": 2026
 }

@@ -1547,6 +1547,11 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   status: text("status").notNull(),
   errorClass: text("error_class"),
   droppedCount: integer("dropped_count").notNull().default(0),
+  /** The deck's newest version number when the run READ the deck, taken in the same snapshot as
+   *  the list it read; null for a deck with no version then, and for runs from before the column.
+   *  A later version retires the set. Numbers rather than clocks: a commit's `committed_at` is its
+   *  transaction's start, so no timestamp can say whether the run saw it. */
+  readVersion: integer("read_version"),
 }, (t) => [
   check(
     "deck_suggestion_runs_status_check",

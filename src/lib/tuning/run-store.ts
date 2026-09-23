@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks } from "../../db/schema";
@@ -42,6 +42,8 @@ export async function startRun(
   userId: string,
   deckId: string,
   fingerprint: string,
+  /** The deck version the run's inputs were read at (`TuningInputs.readVersion`). */
+  readVersion: number | null,
   now: Date = new Date(),
 ): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" }> {
   try {
@@ -51,12 +53,7 @@ export async function startRun(
       const [row] = await tx.insert(deckSuggestionRuns).values({
         deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, profileVersion: PROFILE_VERSION,
-        // The database's clock, as `deck_versions.committed_at` is, since a run is compared with a
-        // commit to know whether it retired the set: a JS clock put a version committed before the
-        // run after it, on any skew at all. `clock_timestamp()` rather than the column default,
-        // which is `now()` — the transaction's START. This transaction can wait on the allowance
-        // lock while a commit lands, and would then be stamped before a commit it read after.
-        createdAt: sql`clock_timestamp()`,
+        readVersion,
         status: "pending",
       }).returning({ id: deckSuggestionRuns.id });
       return row.id;

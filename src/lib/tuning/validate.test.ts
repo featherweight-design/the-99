@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import type { DeckGame } from "../decks/games";
 import { buildPlayGroup } from "../profile/play";
@@ -28,6 +28,7 @@ const pack: EvidencePack = {
     game("g4"), game("g5"),
   ]),
   intent: null,
+  year: 2026,
 };
 
 const CATALOG: Record<string, ResolvedCard> = {
@@ -50,10 +51,6 @@ const good: TuningSuggestion = {
 };
 const run = (...suggestions: TuningSuggestion[]) =>
   validateSuggestions({ response: { suggestions } as TuningResponse, pack, resolveName });
-
-// Note dates drop the CURRENT year, so the clock is pinned to the fixture's.
-beforeAll(() => { vi.useFakeTimers({ now: new Date("2026-09-23T12:00:00Z"), toFake: ["Date"] }); });
-afterAll(() => { vi.useRealTimers(); });
 
 describe("validateSuggestions", () => {
   it("keeps a grounded suggestion", () => {

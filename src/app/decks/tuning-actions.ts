@@ -82,12 +82,12 @@ export async function runTuning(deckId: string, opts: { anyway?: boolean } = {})
 
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
-  const { head, games, intent, declared, fingerprint } = inputs;
+  const { head, games, intent, declared, fingerprint, readVersion } = inputs;
 
   const gate = gateReason(await readTuningState(deckId, userId, fingerprint));
   if (gate && !(gate.kind === "unchanged" && anyway)) return { ok: false, message: gate.message };
 
-  const started = await startRun(userId, deckId, fingerprint);
+  const started = await startRun(userId, deckId, fingerprint, readVersion);
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
   const { runId } = started;
