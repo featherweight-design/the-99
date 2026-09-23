@@ -816,6 +816,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   opened** — `useDialogA11y` ignores a key pressed inside another dialog, and only a real focus
   model says it did.
 
+  **It also walks the tab's other sheets** (Analysis tab handoff §3). The receipt is 760px with
+  four tiles across. On desktop a stacked card's close becomes a `← {sheet}` way back, and the
+  card's name row keeps clear of it by a MEASURED reserve: with the reserve pinned back to 46px,
+  the name row's ink reads 981px against a pill starting at 900. How we make these decisions opens
+  as a 560px sheet. What would have to go opens from the climb's lower rung as a 700px sheet: the
+  target's mark in the header, no chips, and a candidate whose way back names the target bracket.
+  On the phone that header is 43px, and its 14px sentence must be WHOLE. An ellipsized title
+  reads `scrollWidth` only 1px over `clientWidth`, so the width test carries no tolerance. With
+  a pixel of tolerance it passed a truncated build.
+
   It finds its own fixture by pressing the account's decks until one draws a finding with cards
   behind it, and FAILS when none of the first twelve does, because a run over a deck with nothing
   in it reports every receipt check as passing about nothing. Two mutations fail it: the stacked
