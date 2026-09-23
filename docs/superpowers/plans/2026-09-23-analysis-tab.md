@@ -133,6 +133,20 @@ section.
 
 ## PR C1 · the lifecycle: data (about 14 files)
 
+- **The list fingerprint and the shape version are separate (Hugh's condition at approval).**
+  Today `fingerprint.ts` hashes `PROFILE_VERSION` into the fingerprint. So a deploy that bumps it
+  would make every stored analysis read as changed, and every deck would say "your deck has
+  changes" when the player changed nothing. That breaks ruling 6.
+  - The fingerprint covers the list alone: cards and commanders. It decides "same list" and "fresh".
+  - A new `profile_version` column records the shape and rules version the stored JSON was
+    written under.
+  - On a version mismatch, the next read recomputes quietly. That is deterministic, with no model
+    call. It does not set `dirty` and shows no banner.
+  - Changing the fingerprint's inputs changes every stored hash once. The migration therefore
+    recomputes nothing and sets nothing dirty. The first read after deploy finds the version
+    mismatch, recomputes quietly and rewrites the fingerprint.
+  - Tests: a unit case, plus a `probe:profile-store` case in which a bumped version over an
+    unchanged list reads as clean.
 - **No lapse.** `readStoredProfile` stops checking the catalog generation and the 7-day age, and
   `STORED_PROFILE_MAX_AGE_DAYS` goes.
   - The read returns the row with `{ fresh: fingerprint matches && !dirty }` rather than
@@ -212,18 +226,14 @@ section.
 
 ---
 
-## Questions before C1 and C2 (A, B and D do not wait on them)
+## Answered at approval (Hugh, 2026-09-23)
 
-1. **An illegal deck in the Analysis tab is an undrawn state.** Under ruling 1, a deck at 97 of
-   99, or over, cannot be analyzed. What does the tab show?
-   - Engineering's proposal: the 2a empty state with **Analyze** disabled, and one line under
-     it, `Analysis needs a full deck: {built} of {size}.`
-   - The banner on a stale reading of a deck that has since gone illegal would do the same: keep
-     the held reading, and disable **Re-analyze** with that line.
-   - This is copy plus a disabled state, not a layout change, so it can take the proposal
-     unless Hugh wants Design to draw it.
-2. **"Legal" means the body count only**, meaning exactly 99, or 98 with a partner. Colour
-   identity and the singleton rule are not checked today, and this plan does not add them.
+1. **An illegal deck** keeps the 2a empty state, with **Analyze** disabled and the line
+   `Analysis needs a full deck: {built} of {size}.` If the deck held a reading before it went
+   illegal, the reading stays, and **Re-analyze** is disabled with the same line. There is no
+   Design round. The copy goes to `/copy-review`.
+2. **"Legal" means the body count only** (99, or 98 with a partner). A pre-check for banned,
+   off-identity and duplicate cards is a later design pass, and it is not this lane's.
 
 ## Found outside the fence (to be filed on the board, not built)
 
