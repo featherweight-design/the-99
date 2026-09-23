@@ -315,29 +315,39 @@ Nothing here goes back to Design except the About entry's coverage (finding 18),
 
 ## Addendum: the About entries, r2 (finding 18), audited 2026-09-23
 
-**🟢 Green.** Design's r2 `ABOUT-entry.md` answers finding 18 and §6 exactly as Hugh ruled on
-2026-09-23. There are two new entries and one ordinary edit, taking `ABOUT_VERSION` from 9 to
-10:
+**🟢 Green for Design, with engineering corrections for PR F.** Design's r2 `ABOUT-entry.md`
+covers everything Hugh ruled on 2026-09-23. There are two new entries and one ordinary edit,
+taking `ABOUT_VERSION` from 9 to 10 (`about.ts:34`):
 
 - **`deck-analysis`** covers the whole line: the verdict, the declaration, the climb, the
   findings, the upgrade path, the header and tile chip, the version comparison, and the lean (key
-  line 4). Route `/decks` and "opens a deck" conform to the other deck entries, so the retired
-  `/decks/[id]` route is gone. Key line 3 states the lifecycle rulings (the chip holds; the banner
-  is the only place staleness is said). The r1 sentence "Nothing re-reads until you press" is
-  correctly cut, because a commit now runs an analysis.
-- **`card-marks`** gets its own entry, as ruled. Tutor is defined as "a search that can find
-  something other than a land", matching the 2026-09-22 ruling.
-- **`deck-page`** now reads five tabs with Analysis second. That order matches
-  `decksBuilderCopy.tabs` (`src/lib/copy/decks-builder.ts:36-41`).
+  line 4). Key line 3 states the lifecycle rulings. The r1 sentence "Nothing re-reads until you
+  press" is correctly cut, because a commit now runs an analysis.
+- **`card-marks`** gets its own entry, as ruled. Tutor is defined as a search that can find
+  something other than a land (`card-mark.ts:85`, #876).
+- **`deck-page`** now reads five tabs with Analysis second.
 
-**Three notes for PR F (engineering), none blocking:**
+**Corrections, all engineering's in PR F. Nothing goes back to Design.** Two of them correct this
+audit's own finding 18, which r2 followed:
 
-1. **The key's six entries.** The `card-marks` fixture lists `$ to buy · P proxy · game changer ·
-   mass land denial · extra turns · tutor`. PR F confirms that against the shipped `MarkKey`
-   (`src/components/decks/mark-key.tsx`, with the tutor from #876), and that the combo glyph,
-   which carries no About entry per Hugh's earlier ruling, is correctly absent.
-2. **Later surfaces in the same tab.** Deck tuning's *Suggested changes* and the synopsis's
-   Overview both land inside the Analysis tab after this batch was drawn. If the tab launches
-   with either of them, `deck-analysis` takes an ordinary edit naming it. That's decided at
-   launch, not now.
-3. **Copy** is queued for `/copy-review`, as the entry itself says.
+1. **`opens` follows the house pattern for a tab.** Finding 18 said every deck entry uses "opens
+   a deck". The entries for a tab don't: `versions` reads *opens a deck’s Versions tab*
+   (`about.ts:485`), and `log-a-game` reads *opens a deck’s Games tab* (`:616`). So
+   `deck-analysis` keeps route `/decks` and reads **"opens a deck’s Analysis tab"**. r1 had it
+   right. Also, the Analysis tab DOES have an address: `readBuilderView` accepts `?tab=analysis`
+   on arrival. What is true is that nothing in the app produces that link (`builder-view.ts:7-12`).
+2. **The entry count is 39 → 41**, not 34 → 36. `about.test.ts` pins it against
+   `close-out-about-page.md`.
+3. **The mark key follows its cards.** The decklist key is a closed set (`buildMarkKeyEntries`,
+   `decklist.tsx:148-201`), so with the specimen's two owned, unproxied rows it draws three
+   entries: game changer, extra turns and tutor. The fixture's six-entry key contradicts the
+   shipped rule. The specimen renders the real component and shows those three, and the caption
+   must not claim more.
+4. **The deck-page fixture.** Tab order comes from `builderTabSpecs`
+   (`src/lib/decks/builder-tab-specs.ts`), not `builder-tabs.tsx` or a copy module. Analysis has no
+   count, so `about-page.test.tsx:1416-1425` (exactly one uncounted tab, and it is Games) has to
+   change with the fixture.
+5. **Later surfaces in the same tab.** Deck tuning's *Suggested changes* and the synopsis's
+   Overview land inside the Analysis tab after this batch was drawn. If the tab launches with
+   either, `deck-analysis` takes an ordinary edit naming it. That's decided at launch.
+6. **Copy** is queued for `/copy-review`, as the entry itself says.
