@@ -101,6 +101,7 @@
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.128.0",
     "@clerk/nextjs": "^7.5.20",
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
