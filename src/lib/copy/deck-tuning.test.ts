@@ -14,7 +14,12 @@ function allStrings(value: unknown): string[] {
   return [];
 }
 
-const strings = allStrings(deckTuningCopy);
+// `suggestionRules` is the model's INSTRUCTIONS, never drawn for a player — and two of those
+// rules can only be stated by naming what they forbid ("the word \"net\"", "a percentage"). So
+// the rendered-copy guards below read every section but that one, and the rules get their own
+// check: each names the thing it forbids, which is the only way it can be followed.
+const { suggestionRules, ...rendered } = deckTuningCopy;
+const strings = allStrings(rendered);
 
 describe("deckTuningCopy", () => {
   it("has strings to check", () => {
@@ -28,6 +33,12 @@ describe("deckTuningCopy", () => {
 
   it("never says net", () => {
     for (const s of strings) expect(s).not.toMatch(/\bnet\b/i);
+  });
+
+  it("keeps the rule text out of the rendered-copy guards, and nothing else", () => {
+    expect(Object.keys(deckTuningCopy).filter((k) => !(k in rendered))).toEqual(["suggestionRules"]);
+    expect(suggestionRules.noNet).toMatch(/\bnet\b/);
+    expect(suggestionRules.noPercentage).toMatch(/percentage/);
   });
 
   // The readBack line ends on its separator because an emphasised clause follows
