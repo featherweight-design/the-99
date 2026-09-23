@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { isUuid } from "../../lib/uuid";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
@@ -17,6 +18,7 @@ import {
   readTuningState,
   tuningInputs,
   withBracketAfter,
+  EVIDENCE_STEPS,
   type EvidenceStep,
 } from "../../lib/decks/tuning-read";
 import { callModel } from "../../lib/model/client";
@@ -36,6 +38,10 @@ import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
  * every gate the panel applies is re-applied here: a stale tab or a replayed request meets the
  * same rule the button does. The transactions live in `src/lib/tuning/run-store.ts` and
  * `verdicts.ts`, where the probe reaches them; these add the session and the revalidation.
+ *
+ * THE TYPES DO NOT REACH THE WIRE. Every argument is checked for what it claims to be before it
+ * is used: an id that is not a uuid is refused rather than handed to Postgres to throw on, and
+ * `anyway` counts only as the literal `true`, or `{ anyway: "false" }` would pass the gate.
  */
 
 function revalidateDeck(deckId: string): void {
@@ -48,6 +54,7 @@ function revalidateDeck(deckId: string): void {
  */
 export async function saveDeckIntent(deckId: string, formData: FormData): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.intent.refused };
   const raw = formData.get("intent");
   const saved = await saveIntent(deckId, userId, typeof raw === "string" ? raw : "");
   if (saved === "tooLong") return { ok: false, message: deckTuningCopy.intent.tooLong };
@@ -66,13 +73,15 @@ export async function saveDeckIntent(deckId: string, formData: FormData): Promis
  */
 export async function runTuning(deckId: string, opts: { anyway?: boolean } = {}): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
+  const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
 
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
   const { head, games, intent, declared, fingerprint } = inputs;
 
   const gate = gateReason(await readTuningState(deckId, userId, fingerprint));
-  if (gate && !(gate.kind === "unchanged" && opts.anyway)) return { ok: false, message: gate.message };
+  if (gate && !(gate.kind === "unchanged" && anyway)) return { ok: false, message: gate.message };
 
   const started = await startRun(userId, deckId, fingerprint);
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
@@ -124,6 +133,7 @@ export async function runTuning(deckId: string, opts: { anyway?: boolean } = {})
 /** Stop: the run the panel was watching, by id, so a late press cannot cancel the next one. */
 export async function cancelTuningRun(deckId: string, runId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  if (!isUuid(deckId) || !isUuid(runId)) return { ok: true };
   if (await cancelRun(runId, deckId, userId)) revalidateDeck(deckId);
   return { ok: true };
 }
@@ -135,6 +145,7 @@ export async function cancelTuningRun(deckId: string, runId: string): Promise<De
  */
 export async function readTuningPanel(deckId: string): Promise<TuningState | null> {
   const userId = await requireUserId();
+  if (!isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return null;
   return readTuningState(deckId, userId, inputs.fingerprint);
@@ -146,15 +157,18 @@ export async function readTuningPanel(deckId: string): Promise<TuningState | nul
  */
 export async function readTuningEvidence(deckId: string, step: EvidenceStep): Promise<number | null> {
   const userId = await requireUserId();
+  if (!isUuid(deckId) || !EVIDENCE_STEPS.includes(step)) return null;
   return readEvidenceStep(deckId, userId, step);
 }
 
 async function verdict(
+  itemId: string,
   write: (userId: string) => Promise<string | null>,
   refused: string,
   claims: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  if (!isUuid(itemId)) return { ok: false, message: refused };
   const deckId = await write(userId);
   if (!deckId) return { ok: false, message: refused };
   if (claims) revalidateClaims(deckId, userId);
@@ -163,17 +177,17 @@ async function verdict(
 }
 
 export async function applySuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict((u) => applyItem(itemId, u), deckTuningCopy.card.applyRefused, true);
+  return verdict(itemId, (u) => applyItem(itemId, u), deckTuningCopy.card.applyRefused, true);
 }
 
 export async function undoSuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict((u) => undoItem(itemId, u), deckTuningCopy.card.undoRefused, true);
+  return verdict(itemId, (u) => undoItem(itemId, u), deckTuningCopy.card.undoRefused, true);
 }
 
 export async function dismissSuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict((u) => setDismissed(itemId, u, true), deckTuningCopy.card.verdictRefused, false);
+  return verdict(itemId, (u) => setDismissed(itemId, u, true), deckTuningCopy.card.verdictRefused, false);
 }
 
 export async function restoreSuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict((u) => setDismissed(itemId, u, false), deckTuningCopy.card.verdictRefused, false);
+  return verdict(itemId, (u) => setDismissed(itemId, u, false), deckTuningCopy.card.verdictRefused, false);
 }

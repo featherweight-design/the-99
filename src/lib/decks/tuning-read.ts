@@ -231,7 +231,8 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
  * and the panel calls them in sequence so a tick lands on a read that actually finished. The
  * run rebuilds its evidence from scratch: this is disclosure, never input.
  */
-export type EvidenceStep = "games" | "notes" | "decklist" | "intent";
+export const EVIDENCE_STEPS = ["games", "notes", "decklist", "intent"] as const;
+export type EvidenceStep = (typeof EVIDENCE_STEPS)[number];
 
 export async function readEvidenceStep(
   deckId: string,
