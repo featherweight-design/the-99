@@ -84,6 +84,19 @@ describe("validateSuggestions", () => {
     expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 6 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
   });
 
+  it("drops a games citation whose numerator is no figure the pack stated", () => {
+    // Stated: 5 games, lost 5, 3 marked, mana hurt in 3. Nothing was ever 4.
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Mana: 4 of 5 games" }] }).drops).toEqual([{ position: 0, rule: "citation" }]);
+    expect(run({ ...good, evidence: [{ kind: "games", value: "Lost 5 of 5 games" }] }).droppedCount).toBe(0);
+  });
+
+  it("keeps a note quoted in the one-line form the prompt showed it in", () => {
+    const broken = { ...pack, play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded\nagain" })]) };
+    const cite = { ...good, rationale: "Mana was marked as hurting in 1 of 1 games.", rationaleShort: "Mana hurt in 1 of 1",
+      evidence: [{ kind: "note" as const, value: 'On 2026-09-01: "flooded again"' }] };
+    expect(validateSuggestions({ response: { suggestions: [cite] }, pack: broken, resolveName }).droppedCount).toBe(0);
+  });
+
   it("drops a games citation when no games were read", () => {
     const out = validateSuggestions({
       response: { suggestions: [good] }, pack: { ...pack, play: buildPlayGroup([]) }, resolveName,

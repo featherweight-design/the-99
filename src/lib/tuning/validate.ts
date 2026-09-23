@@ -119,16 +119,24 @@ export function validateSuggestions(args: {
     switch (c.kind) {
       case "games": {
         if (count === 0) return false;
-        // Every `N of M games` in it must be about the games actually read.
+        // Every `N of M games` in it must be about the games actually read — M the count, and N
+        // one of the figures the prompt stated about them. A numerator the pack never gave is a
+        // count the model made up, however plausible.
+        const { record, marked, axes } = pack.play.summary;
+        const stated = new Set([
+          count, record.wins, record.losses, record.draws, marked,
+          ...axes.flatMap((a) => [a.hurt, a.worked]),
+        ]);
         const figures = [...c.value.matchAll(/(\d+)\s+of\s+(\d+)\s+games?\b/gi)];
         if (figures.length === 0) return false;
-        return figures.every((m) => Number(m[2]) === count && Number(m[1]) <= count);
+        return figures.every((m) => Number(m[2]) === count && stated.has(Number(m[1])));
       }
       case "note":
         // `suggestionRules.quotedNote`: the note byte-identical, IN QUOTATION MARKS, WITH ITS DATE,
         // the date of the game it was written about, as the prompt renders it.
+        // In the one-line form the prompt showed, which is the only form the model could quote.
         return pack.play.games.some((g) => g.note !== null
-          && (c.value.includes(`"${g.note}"`) || c.value.includes(`\u201c${g.note}\u201d`))
+          && (c.value.includes(`"${oneLine(g.note)}"`) || c.value.includes(`\u201c${oneLine(g.note)}\u201d`))
           && c.value.includes(g.playedAt.slice(0, 10)));
       case "intent":
         // The player's own words, cited verbatim: a citation that names some other purpose is

@@ -34,13 +34,15 @@ const SYSTEM = [
 ].join("\n");
 
 /**
- * The player's text as ONE line: every run of whitespace, line breaks included, is one space.
+ * The player's text as ONE line: each line break becomes a space, and nothing else changes.
  * A note or the intent is rendered as the rest of its own line, so a line break inside it would
- * start what reads as a new instruction or a new note. The validator quotes against this same
- * form, because it is the only form the model was shown.
+ * start what reads as a new instruction or a new note. Both are typed into a one-line `<input>`,
+ * so what a player TYPED holds no line break and passes through byte for byte — only text that
+ * reached the column some other way is changed. The validator quotes against this same form,
+ * because it is the only form the model was shown.
  */
 export function oneLine(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
+  return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
 }
 
 function renderPack(pack: EvidencePack): string {
