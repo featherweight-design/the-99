@@ -17,6 +17,7 @@
     --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
     --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
     --avail-soft:var(--fg-muted); --avail-hard-fg:#D9975C;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
   }
   [data-theme="kamigawa"] {
     --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --display:'Chakra Petch',sans-serif; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
@@ -44,12 +45,201 @@
     <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1.2;color:var(--fg);">Suggested changes, on the Analysis tab: five swaps, every state.</h1>
     <p style="margin:0;font-size:15px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Placement stands from r1: full width at the foot of the Analysis tab, under the mix. r2 changes the panel itself: five suggestions on average, a no-games path, both cards openable, the app's availability marks on the add, <i>Reject</i>, no consequence line, a credit count beside the primary, and the states r1 did not draw. Mobile cards open up.</p>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+      <a href="#E1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--accent);border-radius:6px;padding:5px 10px;">E · r3: bracket flag, intent, phone gaps</a>
       <a href="#A1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">A · results 1300 / 390</a>
       <a href="#B1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">B · the card up close</a>
       <a href="#C1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">C · lifecycle states</a>
       <a href="#D1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">D · no games logged</a>
     </div>
   </header>
+
+  <section style="display:flex;flex-direction:column;gap:26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">E · <span style="color:var(--accent);">r3, after the addendum audit: the bracket flag, the intent line, the phone gaps</span></div>
+
+    <div style="display:flex;align-items:flex-start;gap:48px;">
+      <div id="E1" style="display:flex;flex-direction:column;gap:10px;flex:none;width:900px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E1 · the bracket flag · 1300 · up and down</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ flagCards }}" as="s" hint-placeholder-count="2">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--border),var(--border) 3px,var(--surface-raised) 3px,var(--surface-raised) 6px);border:1px solid var(--border-strong);"></div>
+                <span style="font-size:13px;color:var(--fg-body);text-decoration:line-through;text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ s.cut }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">→</span>
+                <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px solid var(--border-dashed);"></div>
+                <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span>
+                <span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ s.add }}</span>
+                <sc-if value="{{ s.soft }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;transform:rotate(45deg);border:1px solid var(--avail-soft);box-sizing:border-box;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--avail-soft);">{{ s.mark }}</span></span></sc-if>
+              </div>
+              <div style="font-size:12.5px;color:var(--fg-body);line-height:1.5;">{{ s.why }}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:12.5px;color:var(--fg-body);">{{ s.flagText }}</span>{{ s.chipDesk }}</div>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);border-radius:7px;padding:7px 13px;">Apply</span>
+                <span style="font-weight:500;font-size:12.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;padding:7px 12px;">Reject</span>
+                <span style="display:flex;gap:5px;flex-wrap:wrap;margin-left:auto;">
+                  <sc-for list="{{ s.cites }}" as="c" hint-placeholder-count="2">
+                    <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                  </sc-for>
+                </span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div id="E1b" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E1b · the bracket flag · 390</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ flagCards }}" as="s" hint-placeholder-count="2">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 12px;display:flex;flex-direction:column;gap:11px;">
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--border),var(--border) 3px,var(--surface-raised) 3px,var(--surface-raised) 6px);border:1px solid var(--border-strong);"></div>
+                  <span style="font-size:13px;color:var(--fg-body);text-decoration:line-through;text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ s.cut }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px solid var(--border-dashed);"></div>
+                  <span style="display:flex;align-items:center;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">→</span><span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span><span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ s.add }}</span></span>
+                </div>
+              </div>
+              <sc-if value="{{ s.soft }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;height:26px;"><span style="width:6px;height:6px;transform:rotate(45deg);border:1px solid var(--avail-soft);box-sizing:border-box;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--avail-soft);">{{ s.mark }}</span></div></sc-if>
+              <div style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">{{ s.whyShort }}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:12.5px;color:var(--fg-body);">{{ s.flagText }}</span>{{ s.chipPhone }}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <sc-for list="{{ s.cites }}" as="c" hint-placeholder-count="2">
+                  <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <span style="flex:1;height:44px;font-weight:600;font-size:13px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;">Apply</span>
+                <span style="flex:1;height:44px;font-weight:500;font-size:13px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;justify-content:center;">Reject</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">The flag (Hugh, ruled twice)</span>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">One line, only when the bracket would move.</b> Read from the app-computed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">bracket_after</span>; absent when it equals the deck's current reading. No reserved row.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">The chip is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BracketChip</span></b>, the header's and the tile's, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">permits</span> set to the bracket after the swap: plate, mark and name in that bracket's ink, 24px desktop / 22px phone. A range reads unrounded, as the chip already draws it. No new mark, no arrow glyph, no colour for up or down: the verb carries the direction.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Where:</b> between the rationale and the actions, at both widths, so it is read before Apply. On the phone it sits after the marks row, on its own line.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Not a warning, not a reason.</b> Plain <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> sentence. The model's rationale still never names a bracket (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">noBracketClaim</span>, audit finding 7); the flag is the app's, not the model's.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">After Apply</b> the header chip holds the old bracket until Re-analyze (Analysis ruling 4), and the banner offers it. The flag said what the reading will say.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:flex-start;gap:48px;">
+      <div id="E2" style="display:flex;flex-direction:column;gap:10px;flex:none;width:900px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E2 · the intent line in the header · 1300</span>
+        <div style="position:relative;height:288px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:360px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 8px,var(--surface-raised) 8px,var(--surface-raised) 16px);"></div>
+          <div style="position:absolute;left:0;top:0;bottom:0;width:420px;background:linear-gradient(90deg, transparent 0px, transparent 300px, var(--bg) 420px);"></div>
+          <span style="position:absolute;left:14px;top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);background:var(--bg);padding:3px 7px;border-radius:4px;">art wash, as shipped</span>
+          <div style="position:absolute;left:440px;right:24px;bottom:18px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">Gisa Zombies</span><span style="font-size:14px;color:var(--fg-muted);">✎</span></div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px;"><span style="font-size:14px;line-height:1.45;color:var(--fg-body);border-bottom:1px dashed var(--border-strong);">Grind a four-person table out and win late with Gisa.</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">edit</span></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;"><span style="display:flex;gap:3px;"><span style="width:12px;height:12px;border-radius:50%;background:#98748F;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Gisa, Glorious Resurrector · mono-black</span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="height:24px;display:inline-flex;align-items:center;padding:0 9px;border-radius:999px;border:1px solid var(--success);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--success);">Complete</span>{{ chip3Desk }}</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:9px;"><div style="width:170px;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="width:100%;height:100%;background:var(--success);"></div></div><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="E2b" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E2b · the intent line · 390</span>
+        <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="height:120px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 8px,var(--surface-raised) 8px,var(--surface-raised) 16px);position:relative;"><span style="position:absolute;left:12px;top:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);background:var(--bg);padding:3px 7px;border-radius:4px;">art band, as shipped</span></div>
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:var(--display);font-weight:700;font-size:19px;color:var(--fg);">Gisa Zombies</span><span style="font-size:13px;color:var(--fg-muted);">✎</span></div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:5px;"><span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);border-bottom:1px dashed var(--border-strong);">Grind a four-person table out and win late with Gisa.</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);flex:none;">edit</span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;"><span style="width:11px;height:11px;border-radius:50%;background:#98748F;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Gisa, Glorious Resurrector · mono-black</span></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="height:22px;display:inline-flex;align-items:center;padding:0 8px;border-radius:999px;border:1px solid var(--success);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--success);">Complete</span>{{ chip3Phone }}</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:9px;"><div style="flex:1;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="width:100%;height:100%;background:var(--success);"></div></div><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">/ 99</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Intent (audit finding 8)</span>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Second in the order, directly under the deck name:</b> deck name → <b style="color:var(--fg);font-weight:600;">intent</b> → pips + commander · colour → chips row → progress bar, at both widths. The original ruling (under the name, on every tab) holds; only the rows below it changed.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Body ink, not a heading:</b> 14px (12.5 on the phone) <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span>, dashed underline, mono <i>edit</i>. It wraps; it never truncates (cap 120).</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Absent means absent.</b> No intent, no row: the commander line moves up. The seeded case adds the provenance disc and <i>from the build</i> chip on this same line.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">The ask</b> moves with the panel to the Analysis tab: in the panel body above the primary, as drawn in R2.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:flex-start;gap:36px;">
+      <div id="E3" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E3 · Ready, no games logged · 390</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;color:var(--fg);">Suggested changes</div>
+          <div style="font-size:12.5px;color:var(--fg-body);line-height:1.6;margin-top:10px;">{{ noGamesLead }}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px;">
+            <div style="min-height:44px;display:flex;align-items:center;gap:10px;border:1px dashed var(--border-dashed);border-radius:8px;padding:0 12px;">
+              <span style="width:18px;height:18px;flex:none;border-radius:4px;border:1px dashed var(--border-dashed);box-sizing:border-box;"></span>
+              <span style="flex:1;display:flex;flex-direction:column;gap:1px;"><span style="font-size:12.5px;color:var(--fg-faint);">Your games</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">none logged</span></span>
+              <span style="font-size:12.5px;font-weight:600;color:var(--accent);padding:12px 0;">Log a game →</span>
+            </div>
+            <sc-for list="{{ manifestNoGames }}" as="m" hint-placeholder-count="2">
+              <div style="min-height:44px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 12px;">
+                <span style="width:18px;height:18px;flex:none;border-radius:4px;border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+                <span style="font-size:12.5px;color:var(--fg-body);flex:1;line-height:1.35;padding:6px 0;">{{ m.label }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ m.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border);">
+            <span style="height:44px;font-weight:600;font-size:13.5px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;">Suggest changes</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);text-align:center;line-height:1.55;">{{ firstNoteRolling }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="E4" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E4 · credits used up · 390</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;color:var(--fg);">Suggested changes</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:8px;line-height:1.5;">read from 9 games · 2 game notes · 99 cards · your collection</div>
+          <div style="height:64px;margin-top:14px;border:1px dashed var(--border-dashed);border-radius:9px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">whatever the panel held, unchanged</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border);">
+            <span aria-disabled="true" style="height:44px;font-weight:600;font-size:13.5px;color:var(--fg-disabled);border:1px solid var(--border-strong);border-radius:8px;display:flex;align-items:center;justify-content:center;">Suggest again</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);text-align:center;line-height:1.55;">{{ exhaustedRolling }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="E5" style="display:flex;flex-direction:column;gap:10px;flex:none;width:620px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">E5 · Ready, games logged, none marked · 1300</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:19px;color:var(--fg);">Suggested changes</div>
+          <div style="font-size:13.5px;color:var(--fg-body);line-height:1.65;margin-top:11px;">{{ unmarkedLead }}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px;">
+            <sc-for list="{{ manifestUnmarked }}" as="m" hint-placeholder-count="4">
+              <div style="min-height:38px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 12px;">
+                <span style="width:16px;height:16px;flex:none;border-radius:4px;border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+                <span style="font-size:13px;color:var(--fg-body);flex:1;">{{ m.label }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ m.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);min-height:56px;flex-wrap:wrap;">
+            <span style="font-weight:600;font-size:14px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;">Suggest changes</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ firstNoteRolling }}</span>
+          </div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;margin-top:14px;">E5b · the same lead · 390</span>
+        <div style="width:390px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;box-sizing:border-box;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;color:var(--fg);">Suggested changes</div>
+          <div style="font-size:12.5px;color:var(--fg-body);line-height:1.6;margin-top:10px;">{{ unmarkedLead }}</div>
+          <div style="height:44px;margin-top:14px;border:1px dashed var(--border-dashed);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">the four rows above, 44px each, as E3</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Credits roll over 24 hours</b> (ruling 5): the new frames use <i>{n} of {total} left · next one at {time}</i>. Older frames above still show the calendar-day wording; engineering carries that copy change, and they are not redrawn for it.</p>
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">For the synopsis round, not drawn here:</b> when Re-analyze will also rewrite the synopsis, the banner says it uses a credit before the press, in the same form as <i>Suggest changes</i> (ruling 3).</p>
+    </div>
+  </section>
 
   <section style="display:flex;flex-direction:column;gap:22px;">
     <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">A · <span style="color:var(--accent);">results, five swaps, on the tab</span></div>
@@ -88,6 +278,7 @@
                         <sc-if value="{{ s.unowned }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:8px;min-width:124px;height:24px;box-sizing:border-box;padding:0 9px;border-radius:5px;background:color-mix(in oklab, var(--warning) 11%, var(--surface));"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);">buy</span><span style="flex:1;min-width:12px;border-bottom:1px dotted color-mix(in oklab, var(--warning) 35%, transparent);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);font-variant-numeric:tabular-nums;">{{ s.price }}</span></span></sc-if>
                       </div>
                       <div style="font-size:12.5px;color:var(--fg-body);line-height:1.5;max-width:980px;">{{ s.why }}</div>
+                      <sc-if value="{{ s.flag }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:12.5px;color:var(--fg-body);">{{ s.flagText }}</span>{{ s.chipDesk }}</div></sc-if>
                       <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
                         <span style="font-weight:600;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);border-radius:7px;padding:7px 13px;">Apply</span>
                         <span style="font-weight:500;font-size:12.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;padding:7px 12px;">Reject</span>
@@ -146,6 +337,7 @@
                         </div>
                       </sc-if>
                       <div style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">{{ s.whyShort }}</div>
+                      <sc-if value="{{ s.flag }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:12.5px;color:var(--fg-body);">{{ s.flagText }}</span>{{ s.chipPhone }}</div></sc-if>
                       <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <sc-for list="{{ s.cites }}" as="c" hint-placeholder-count="2">
                           <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
@@ -474,7 +666,7 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   renderVals() {
-    const mk = (o) => { const s = Object.assign({ owned: false, unowned: false, soft: false, hard: false, mark: '', price: '' }, o); s.hasMark = s.soft || s.hard || s.unowned; return s; };
+    const mk = (o) => { const s = Object.assign({ owned: false, unowned: false, soft: false, hard: false, mark: '', price: '', flag: false, flagText: '', chipDesk: null, chipPhone: null }, o); s.hasMark = s.soft || s.hard || s.unowned; return s; };
     const sugg = [
       mk({ cut: 'Cemetery Reaper', add: 'Midnight Reaper', owned: true,
         why: 'Cards in hand was marked against you in 7 of 9 games, and 4 of your 99 cards draw anything. Midnight Reaper turns the zombies you were already losing into cards, for the same three mana.',
@@ -488,8 +680,9 @@ class Component extends DCLogic {
         why: 'Two zombies and a buff for five mana did nothing for the axis you marked in 7 of 9 games. Skullclamp turns the 1/1 tokens this deck already makes into cards, for one mana.',
         whyShort: 'Five mana did nothing for the axis you marked in 7 of 9 games. This deck already makes 1/1s.',
         cites: [{ src: 'games', text: 'cards in hand \u00b7 7 of 9' }, { src: 'decklist', text: 'makes 1/1 tokens' }] }),
-      mk({ cut: 'Grimoire of the Dead', add: 'Phyrexian Arena', owned: true, soft: true, mark: '1 in a draft',
-        why: 'Grimoire of the Dead took its full cost in none of the 9 games, and card draw sits at 4 of the mix\u2019s 10. Phyrexian Arena draws every turn from turn three.',
+      mk({ cut: 'Grimoire of the Dead', add: 'Necropotence', owned: true, soft: true, mark: '1 in a draft',
+        flag: true,
+        why: 'Grimoire of the Dead took its full cost in none of the 9 games, and card draw sits at 4 of the mix\u2019s 10. Necropotence refills a hand for three mana.',
         whyShort: 'Card draw is 4 of the mix\u2019s 10, and Grimoire paid off in none of 9 games.',
         cites: [{ src: 'games', text: '0 of 9' }, { src: 'mix', text: 'card draw 4 of 10' }] }),
       mk({ cut: 'Army of the Damned', add: 'Diregraf Colossus', owned: true, hard: true, mark: 'none free',
@@ -506,6 +699,21 @@ class Component extends DCLogic {
         cites: [{ src: 'decklist', text: '11 of 99 at four or more' }] }),
     ];
     const credits = { left: 3, total: 5 };
+    const MARKS = {
+      3: '<path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 8.5 L20 3.2 M31.5 20 L36.8 20 M20 31.5 L20 36.8 M8.5 20 L3.2 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+      4: '<path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 1.2 L21.6 2.8 L20 4.4 L18.4 2.8 Z M37.2 18.4 L38.8 20 L37.2 21.6 L35.6 20 Z M20 35.6 L21.6 37.2 L20 38.8 L18.4 37.2 Z M2.8 18.4 L4.4 20 L2.8 21.6 L1.2 20 Z" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+    };
+    const NAMES = { 3: 'Upgraded', 4: 'Optimized' };
+    const bracketChip = (b, phone) => {
+      const ink = 'var(--bracket-' + b + ')';
+      const svg = '<svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg">' + MARKS[b] + '<text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="17" fill="currentColor" dy="0.5">' + b + '</text></svg>';
+      return React.createElement('span', { 'data-bracket': b, style: { display: 'inline-flex', alignItems: 'center', gap: 5, height: phone ? 22 : 24, flex: 'none', whiteSpace: 'nowrap', borderRadius: 6, border: '1px solid color-mix(in oklab, ' + ink + ' 55%, transparent)', background: 'color-mix(in srgb, ' + ink + ' 12%, var(--bg))', paddingLeft: 2, paddingRight: 8, boxSizing: 'border-box' } },
+        React.createElement('span', { 'aria-hidden': true, style: { width: 22, height: 22, color: ink, display: 'block' }, dangerouslySetInnerHTML: { __html: svg } }),
+        React.createElement('span', { style: { fontFamily: "'IBM Plex Mono',monospace", fontSize: phone ? 10 : 11, color: ink } }, NAMES[b]));
+    };
+    const flagUp = 'Applying it raises the deck\u2019s bracket to';
+    const flagDown = 'Applying it lowers the deck\u2019s bracket to';
+    Object.assign(sugg[3], { flagText: flagUp, chipDesk: bracketChip(4, false), chipPhone: bracketChip(4, true) });
     const fan = (box, w, h, dx, fs) => React.createElement('div', { 'aria-hidden': true, style: { position: 'relative', width: box, height: box, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
       [
         { bg: 'var(--elevated)', bd: 'var(--border-strong)', k: 0 },
@@ -520,6 +728,24 @@ class Component extends DCLogic {
     return {
       theme: this.props.theme ?? 'amonkhet',
       sugg, suggNoGames,
+      flagCards: [
+        Object.assign({}, sugg[3]),
+        mk({ cut: 'Necropotence', add: 'Phyrexian Arena', owned: true, flag: true, flagText: flagDown, chipDesk: bracketChip(3, false), chipPhone: bracketChip(3, true),
+          why: 'Necropotence is the fourth game changer in a deck built to win late, and card draw sits at 4 of the mix\u2019s 10. Phyrexian Arena draws one a turn and is on no list.',
+          whyShort: 'The fourth game changer in a deck built to win late. Card draw is 4 of the mix\u2019s 10.',
+          cites: [{ src: 'intent', text: 'win late' }, { src: 'mix', text: 'card draw 4 of 10' }] }),
+      ],
+      chip3Desk: bracketChip(3, false),
+      chip3Phone: bracketChip(3, true),
+      firstNoteRolling: 'Uses a credit. 4 of 5 left \u00b7 next one at 14:20.',
+      exhaustedRolling: '0 of 5 left \u00b7 next one at 14:20. Synopses and suggestions share these credits.',
+      unmarkedLead: 'Four games logged, and none is marked for what worked or hurt. We will read the results, your game notes, this list and what you own, and suggest up to five swaps. Mark what decided a game and suggestions can point at it.',
+      manifestUnmarked: [
+        { label: 'Your games', count: '4 games \u00b7 no marks' },
+        { label: 'Notes on your games', count: 'on 1 of 4 games' },
+        { label: 'This list, against the recommended mix', count: '99 cards' },
+        { label: 'What you own, and what a card costs', count: 'your collection' },
+      ],
       fanDesk: fan(120, 46, 70, 17, 18),
       fanPhone: fan(96, 38, 58, 14, 15),
       applied: [sugg[0], sugg[1], sugg[3]],
