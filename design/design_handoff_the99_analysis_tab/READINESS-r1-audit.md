@@ -312,3 +312,32 @@ with the retired strings.
 - **F closes the line.**
 
 Nothing here goes back to Design except the About entry's coverage (finding 18), before PR F.
+
+## Addendum: the About entries, r2 (finding 18), audited 2026-09-23
+
+**🟢 Green.** Design's r2 `ABOUT-entry.md` answers finding 18 and §6 exactly as Hugh ruled on
+2026-09-23. There are two new entries and one ordinary edit, taking `ABOUT_VERSION` from 9 to
+10:
+
+- **`deck-analysis`** covers the whole line: the verdict, the declaration, the climb, the
+  findings, the upgrade path, the header and tile chip, the version comparison, and the lean (key
+  line 4). Route `/decks` and "opens a deck" conform to the other deck entries, so the retired
+  `/decks/[id]` route is gone. Key line 3 states the lifecycle rulings (the chip holds; the banner
+  is the only place staleness is said). The r1 sentence "Nothing re-reads until you press" is
+  correctly cut, because a commit now runs an analysis.
+- **`card-marks`** gets its own entry, as ruled. Tutor is defined as "a search that can find
+  something other than a land", matching the 2026-09-22 ruling.
+- **`deck-page`** now reads five tabs with Analysis second. That order matches
+  `decksBuilderCopy.tabs` (`src/lib/copy/decks-builder.ts:36-41`).
+
+**Three notes for PR F (engineering), none blocking:**
+
+1. **The key's six entries.** The `card-marks` fixture lists `$ to buy · P proxy · game changer ·
+   mass land denial · extra turns · tutor`. PR F confirms that against the shipped `MarkKey`
+   (`src/components/decks/mark-key.tsx`, with the tutor from #876), and that the combo glyph,
+   which carries no About entry per Hugh's earlier ruling, is correctly absent.
+2. **Later surfaces in the same tab.** Deck tuning's *Suggested changes* and the synopsis's
+   Overview both land inside the Analysis tab after this batch was drawn. If the tab launches
+   with either of them, `deck-analysis` takes an ordinary edit naming it. That's decided at
+   launch, not now.
+3. **Copy** is queued for `/copy-review`, as the entry itself says.
