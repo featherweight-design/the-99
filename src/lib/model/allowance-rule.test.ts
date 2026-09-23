@@ -41,6 +41,10 @@ describe("allowanceFrom", () => {
     expect(a.reopensAt).toEqual(new Date(hoursAgo(10).getTime() + ALLOWANCE_WINDOW_MS));
   });
 
+  it("names no reopening time, and no invalid one, when the limit is zero and nothing counts", () => {
+    expect(allowanceFrom([], now, 0)).toEqual({ used: 0, limit: 0, reopensAt: null });
+  });
+
   it("reopens when a reservation's TTL runs out, not a day later", () => {
     // Full because one run is in flight: its unit frees at the reservation TTL at the latest.
     const a = allowanceFrom([spent(hoursAgo(20)), reserved(minutesAgo(2))], now, 2);

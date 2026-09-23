@@ -76,6 +76,9 @@ export function allowanceFrom(
     .sort((a, b) => a - b);
   const used = expiries.length;
   if (used < limit) return { used, limit, reopensAt: null };
+  // A limit of 0 with nothing counted: the allowance is shut, and no unit is waiting to expire,
+  // so there is no honest time to name. (Indexing below would read past the end.)
+  if (used === 0) return { used, limit, reopensAt: null };
   // Spent: a unit is free once enough rows stop counting that one fewer than `limit` remain —
   // the (used - limit)th earliest EXPIRY, which is the earliest when the count sits at the
   // limit. By expiry, not by age: a reservation frees its unit ten minutes in, not a day in.
