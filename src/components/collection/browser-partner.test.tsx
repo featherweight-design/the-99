@@ -38,18 +38,21 @@ const CARDS: Record<string, BrowseCard> = {
   approach: detail("approach", "Approach of the Second Sun"),
 };
 
+const fetchCard = async (id: string) => CARDS[id] ?? null;
+
+function tree(cards: BrowseListCard[]) {
+  return (
+    <CardDetailProvider fetchCard={fetchCard}>
+      <CollectionBrowser cards={cards} ownedSets={[]} availabilityOk hasCollection />
+    </CardDetailProvider>
+  );
+}
+
+const LIST = () => [listCard("mystical", "Mystical Tutor"), listCard("brainstorm", "Brainstorm")];
+
 function mount() {
   window.history.replaceState(null, "", "/collection");
-  return render(
-    <CardDetailProvider fetchCard={async (id: string) => CARDS[id] ?? null}>
-      <CollectionBrowser
-        cards={[listCard("mystical", "Mystical Tutor"), listCard("brainstorm", "Brainstorm")]}
-        ownedSets={[]}
-        availabilityOk
-        hasCollection
-      />
-    </CardDetailProvider>,
-  );
+  return render(tree(LIST()));
 }
 
 async function openMysticalThenPartner() {
@@ -71,6 +74,21 @@ describe("CollectionBrowser — a combo partner outside the list", () => {
       expect(screen.getByRole("dialog")).toHaveTextContent("Approach of the Second Sun"),
     );
     // And it is still open a beat later, after every effect the browser runs has run.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+  });
+
+  // A NEW ARRAY OF THE SAME CARDS IS NOT THE LIST MOVING. An art pick patches the list and
+  // hands the browser fresh card objects with the same ids; compared by reference, that reads
+  // as a list change with the partner absent from it, and closes the modal under the reader.
+  it("stays open when the list is rebuilt with the same cards, as an art pick does", async () => {
+    const { rerender } = mount();
+    await openMysticalThenPartner();
+    await waitFor(() =>
+      expect(screen.getByRole("dialog")).toHaveTextContent("Approach of the Second Sun"),
+    );
+    const rebuilt = LIST().map((c) => ({ ...c, imageUri: "https://example.test/new-art.jpg" }));
+    rerender(tree(rebuilt));
     await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByRole("dialog")).not.toBeNull();
   });
