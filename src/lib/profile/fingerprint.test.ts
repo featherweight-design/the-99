@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 
-import { profileFingerprint } from "./fingerprint";
+import { describe, expect, it, vi } from "vitest";
+
+import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { PROFILE_VERSION } from "./version";
 
 const base = {
@@ -90,5 +92,55 @@ describe("profileFingerprint", () => {
   it("ignores fields it was not given — an extra key changes nothing", () => {
     const withExtra = { ...base, cards: base.cards.map((c) => ({ ...c, auto: true })) };
     expect(profileFingerprint(withExtra)).toBe(profileFingerprint(base));
+  });
+});
+
+describe("listFingerprint", () => {
+  it("is 64 lowercase hex chars", () => {
+    expect(listFingerprint(base)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("is stable across card-row order", () => {
+    expect(listFingerprint({ ...base, cards: [...base.cards].reverse() })).toBe(listFingerprint(base));
+  });
+
+  it("moves with a quantity, a card, the commander and the partner", () => {
+    expect(listFingerprint({ ...base, cards: [{ oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 3 }] }))
+      .not.toBe(listFingerprint(base));
+    expect(listFingerprint({ ...base, cards: [...base.cards, { oracleId: "c", quantity: 1 }] }))
+      .not.toBe(listFingerprint(base));
+    expect(listFingerprint({ ...base, commanderOracleId: "c-2" })).not.toBe(listFingerprint(base));
+    expect(listFingerprint({ ...base, partnerOracleId: "p-1" })).not.toBe(listFingerprint(base));
+  });
+
+  it("is not the profile's key — the version is the difference", () => {
+    expect(listFingerprint(base)).not.toBe(profileFingerprint(base));
+  });
+
+  // THE PROPERTY THIS FUNCTION EXISTS FOR: a version bump is not a player's edit. Both
+  // functions are re-imported under a mocked PROFILE_VERSION, and the profile key is asserted
+  // to MOVE beside it — without that half, a mock that failed to apply would pass this test
+  // by changing nothing.
+  it("does not move when PROFILE_VERSION does, while profileFingerprint does", async () => {
+    vi.resetModules();
+    vi.doMock("./version", () => ({ PROFILE_VERSION: PROFILE_VERSION + 1 }));
+    const bumped = await import("./fingerprint");
+    vi.doUnmock("./version");
+    vi.resetModules();
+    expect(bumped.profileFingerprint(base)).not.toBe(profileFingerprint(base));
+    expect(bumped.listFingerprint(base)).toBe(listFingerprint(base));
+  });
+});
+
+// Extracting the shared body must not move the profile key: every stored `deck_profiles` row
+// is filed under it, and a changed hash would retire all of them on deploy — the exact
+// failure listFingerprint exists to stop reading as an edit. Pinned against the literal form
+// the function hashed before the extraction.
+describe("profileFingerprint after the extraction", () => {
+  it("hashes byte-for-byte what it hashed before", () => {
+    const before = createHash("sha256")
+      .update(JSON.stringify({ v: PROFILE_VERSION, commander: "c-1", partner: null, cards: [["a", 1], ["b", 2]] }))
+      .digest("hex");
+    expect(profileFingerprint(base)).toBe(before);
   });
 });

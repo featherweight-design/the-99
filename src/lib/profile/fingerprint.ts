@@ -29,25 +29,46 @@ import { PROFILE_VERSION } from "./version";
  *     here would file one input twice, which is not wrong so much as a second thing to keep
  *     in step with the first.
  */
-export function profileFingerprint(input: {
+export function profileFingerprint(input: ListInput): string {
+  return hash({ v: PROFILE_VERSION, ...listBody(input) });
+}
+
+/**
+ * The player's LIST alone — both commander columns and the (oracleId, quantity) pairs — with
+ * no version in it.
+ *
+ * `profileFingerprint` is a CACHE KEY, and a cache key must move when the code computing the
+ * cached thing changes, so it carries PROFILE_VERSION. That makes it the wrong answer to "has
+ * the player changed this deck": a deploy that bumps the version (1 → 3 over 2026-09-20/21)
+ * reads as an edit on every deck. Hugh ruled on 2026-09-23 that only the player's own edits
+ * count as drift. A drift question should read this one, and compare a version bump as its
+ * own stored column where it needs to know about one. NO CALLER READS IT YET: the tuning
+ * gate (#10) and the analysis tab's staleness read adopt it in their own PRs, and until they
+ * do the stored analysis still retires on a version bump through `profileFingerprint`.
+ *
+ * A separate function rather than a flag on the other, so no caller can pass the wrong
+ * argument. Same input shape, so a `ProfileHead` passes to either. SERVER-ONLY, like the
+ * other.
+ */
+export function listFingerprint(input: ListInput): string {
+  return hash(listBody(input));
+}
+
+type ListInput = {
   commanderOracleId: string;
   partnerOracleId: string | null;
   cards: readonly { oracleId: string; quantity: number }[];
-}): string {
+};
+
+function listBody(input: ListInput) {
   // Sorted, so row order out of the database cannot move the hash. Two decks with the same
   // contents must fingerprint the same however Postgres happened to return them.
   const rows = [...input.cards]
     .sort((a, b) => (a.oracleId < b.oracleId ? -1 : a.oracleId > b.oracleId ? 1 : 0))
     .map((c) => [c.oracleId, c.quantity] as const);
+  return { commander: input.commanderOracleId, partner: input.partnerOracleId, cards: rows };
+}
 
-  return createHash("sha256")
-    .update(
-      JSON.stringify({
-        v: PROFILE_VERSION,
-        commander: input.commanderOracleId,
-        partner: input.partnerOracleId,
-        cards: rows,
-      }),
-    )
-    .digest("hex");
+function hash(body: object): string {
+  return createHash("sha256").update(JSON.stringify(body)).digest("hex");
 }
