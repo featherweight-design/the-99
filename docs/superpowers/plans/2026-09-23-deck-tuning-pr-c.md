@@ -26,9 +26,9 @@ reasoning stays readable; these override it.
 5. **`check:tuning` resolves names through Scryfall's `/cards/named`,** the database-free
    equivalent of the catalog read a run makes, and takes `--dry-run`. Its fixture is a real
    99-card deck read from staging (read-only), with five synthetic games, two notes and an intent.
-6. **No live call yet.** `MODEL_DAILY_ALLOWANCE` stays at its placeholder until Hugh confirms
-   `TUNING_MODEL` and `check:tuning` has run once; the measured usage and the chosen value go in
-   the PR description then.
+6. **No live call yet.** Hugh confirmed `TUNING_MODEL` on 2026-09-23. `MODEL_DAILY_ALLOWANCE`
+   stays at its placeholder until `check:tuning` has run live once, behind its workflow's
+   `TUNING_CHECK_ENABLED` flag; the measured usage and the value it sets follow then.
 7. **Copy owed to `/copy-review`:** `intent.seededBrief`, `intent.tooLong`, `intent.refused`,
    `run.refused` and the three `card.*Refused` strings are eng-written placeholders.
 

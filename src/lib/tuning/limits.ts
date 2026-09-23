@@ -19,9 +19,8 @@ export const MODEL_TIMEOUT_MS = 90_000;
 /**
  * The model a run calls, recorded per run in `deck_suggestion_runs.model`.
  *
- * PENDING HUGH'S CONFIRMATION (2026-09-23): the current Sonnet, chosen for a structured-output
- * task checked by strict validation, at $2 / $10 per MTok against the current Opus's $5 / $25.
- * This PR does not merge until he confirms or names another.
+ * The current Sonnet (Hugh confirmed, 2026-09-23), chosen for a structured-output task checked
+ * by strict validation, at $2 / $10 per MTok against the current Opus's $5 / $25.
  */
 export const TUNING_MODEL = "claude-sonnet-5";
 
