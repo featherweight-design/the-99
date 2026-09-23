@@ -394,6 +394,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Same fixture discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed
   at `local-dev` or a scratch branch, **never production**.
 
+- `pnpm probe:profile-store` proves the stored deck analysis against a real Postgres by calling
+  the real `readStoredProfile` and `computeAndStoreProfile`. Pressing Analyze writes
+  `deck_profiles`; opening the Analysis tab reads it back WITHOUT computing, which is what lets an
+  analysis survive a reload without breaking Round 4's ruling 7 (no auto-run on tab open). A
+  stored row is shown only when three stamps agree: the deck's fingerprint (its cards and
+  commanders), the catalog generation, and `computed_at` inside a week, since the combo and
+  commander indexes refresh without a stamp the row can compare. The probe retires the row each of
+  those ways, proves a second press replaces rather than adds, that another reader reads nothing,
+  and that deleting the deck cascades. Both functions take their two cached reads as injected
+  deps, because `unstable_cache` raises outside a request, so the probe exercises this module's
+  SQL rather than a copy of it. Same fixture discipline as `probe:claims`: a per-run `user_id`
+  deleted in a `finally`, `local-dev` or a scratch branch, **never production**.
 - `pnpm probe:claims` proves the deck claim model against a real Postgres by calling the real
   `loadAvailability` — a committed version holds its cards against every other deck's draft, an
   uncommitted removal still claims, and per-card `since` decides between two committed decks. The

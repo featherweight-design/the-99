@@ -6,6 +6,7 @@ import {
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
 import type { CommanderEngine } from "../lib/recs/engine";
+import type { DeckProfile } from "../lib/profile/types";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -1429,4 +1430,40 @@ export const cardBracketFlags = pgTable("card_bracket_flags", {
   check("card_bracket_flags_source_values_check",
     sql`${t.massLandDenialSources} <@ array['spellbook_sweep', 'oracle_rule']::text[]
         and ${t.extraTurnSources} <@ array['spellbook_sweep', 'oracle_rule']::text[]`),
+]);
+
+/**
+ * The last analysis computed for a deck, so it survives a reload.
+ *
+ * WHY A TABLE AND NOT THE CACHE. `cachedDeckProfile` sits in `unstable_cache`, which computes on
+ * a miss — there is no way to ask it "do you already have one?" without paying for the answer —
+ * expires within an hour, and is retired by any collection write through the user-list tag. The
+ * Analysis tab is on a press (Round 4, ruling 7: no auto-run on tab open), so a reader who
+ * refreshed lost the verdict and had to press again. A row read on tab open is a head read and a
+ * primary-key lookup; nothing is computed.
+ *
+ * FRESHNESS IS THREE STAMPS, and a row failing any of them is not shown: the deck's own
+ * `fingerprint` (its cards and commanders), the `catalog` generation it was built against, and a
+ * `computed_at` inside the week the combo and commander indexes refresh on. See
+ * `src/lib/profile/stored.ts`.
+ *
+ * `permits` is the verdict's permitted range at the time — `slotDeck(profile).permits` — stored
+ * beside the document for the deck tile's bracket chip, which does not read it yet. Sorted
+ * ascending, 1–5. Whatever reads it must apply the same freshness stamps `readStoredProfile`
+ * does, or it draws a bracket for a deck that has since been edited.
+ *
+ * One row per deck, replaced on every analysis. Cascades with the deck.
+ */
+export const deckProfiles = pgTable("deck_profiles", {
+  deckId: uuid("deck_id").primaryKey().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  catalog: text("catalog").notNull(),
+  profile: jsonb("profile").$type<DeckProfile>().notNull(),
+  permits: integer("permits").array().notNull(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  index("deck_profiles_user_idx").on(t.userId),
+  check("deck_profiles_permits_check",
+    sql`cardinality(${t.permits}) between 1 and 2 and ${t.permits} <@ array[1,2,3,4,5]`),
 ]);

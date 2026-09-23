@@ -219,6 +219,12 @@ export function BuilderShell({
   // It fetches on a PRESS, never on tab activation: Round 4's ruling 7 forbids an auto-run on
   // tab open, and it is newer and more specific than the plan's shape-3 choice.
   const profile = useDeckProfile(deck.id);
+  // Opening the Analysis tab shows an analysis already stored for this deck, if one matches it.
+  // It never computes one; see `useDeckProfile`.
+  const peekProfile = profile.peek;
+  useEffect(() => {
+    if (view === "analysis") peekProfile();
+  }, [view, peekProfile]);
   // The deck's declaration for the whole shell: the verdict draws and takes it, and the card
   // note on Consider and the top-off list reads it — one owner, so they cannot disagree.
   const declaration = useDeclaration(deck.id, deck.declaredBracket);
