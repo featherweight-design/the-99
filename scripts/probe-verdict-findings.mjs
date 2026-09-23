@@ -306,6 +306,17 @@ async function walk(page, label, width) {
 
   // PROVENANCE (3c): an opener, and a sheet with four rows, 560 on desktop, closed by Escape.
   const opener = onPageRole(page, "button", /How we make these decisions/);
+  // Desktop: the head row's right end. Phone: under the findings box. One mount either way.
+  const place = await opener.evaluate((b) => {
+    const block = b.closest('[data-testid="findings-block"]');
+    const head = block.querySelector("h3").getBoundingClientRect();
+    const list = block.querySelector("ul").getBoundingClientRect();
+    const r = b.getBoundingClientRect();
+    return { rowGap: Math.abs(r.top + r.height / 2 - (head.top + head.height / 2)), rightGap: Math.round(block.getBoundingClientRect().right - r.right), belowList: r.top >= list.bottom - 1 };
+  });
+  report(`${label}px · the provenance opener sits ${phone ? "under the findings box" : "at the head row's right end"}`,
+    phone ? place.belowList : place.rowGap <= 8 && place.rightGap <= 2,
+    phone ? `below list ${place.belowList}` : `off the head's line by ${Math.round(place.rowGap)}px, ${place.rightGap}px from the right`);
   const popup = await opener.getAttribute("aria-haspopup");
   await opener.click();
   const sheet = page.locator('[role="dialog"]').filter({ has: page.locator('[data-testid="provenance"]') });
