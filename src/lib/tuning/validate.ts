@@ -2,6 +2,7 @@ import { validateCardForDeck } from "../decks/add-validation";
 import type { TuningCitation } from "../../db/schema";
 import type { EvidencePack } from "./evidence";
 import { presentationFailures, type Quotable, type RuleKey } from "./presentation";
+import { oneLine } from "./prompt";
 import type { TuningResponse, TuningSuggestion } from "./response-schema";
 
 /**
@@ -45,10 +46,10 @@ export function validateSuggestions(args: {
   const { response, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
   // Everything the player wrote that a suggestion may quote: each note with its game's date, as
-  // the prompt renders it, and the intent, which has none.
+  // the prompt renders it, and the intent, which has none. In the one-line form the prompt showed.
   const quotable: Quotable[] = [
-    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: g.note, date: g.playedAt.slice(0, 10) }])),
-    ...(pack.intent === null ? [] : [{ text: pack.intent, date: null }]),
+    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: oneLine(g.note), date: g.playedAt.slice(0, 10) }])),
+    ...(pack.intent === null ? [] : [{ text: oneLine(pack.intent), date: null }]),
   ];
   const [primary, partner] = pack.commanders;
   const deck = {
@@ -132,7 +133,7 @@ export function validateSuggestions(args: {
       case "intent":
         // The player's own words, cited verbatim: a citation that names some other purpose is
         // not evidence of this one.
-        return pack.intent !== null && c.value.includes(pack.intent);
+        return pack.intent !== null && c.value.includes(oneLine(pack.intent));
       case "decklist":
         return true;
     }

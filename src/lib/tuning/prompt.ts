@@ -33,6 +33,16 @@ const SYSTEM = [
   "Write the rationale in plain words for the player. rationaleShort is the same point in at most 80 characters.",
 ].join("\n");
 
+/**
+ * The player's text as ONE line: every run of whitespace, line breaks included, is one space.
+ * A note or the intent is rendered as the rest of its own line, so a line break inside it would
+ * start what reads as a new instruction or a new note. The validator quotes against this same
+ * form, because it is the only form the model was shown.
+ */
+export function oneLine(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
 function renderPack(pack: EvidencePack): string {
   const lines: string[] = [];
 
@@ -41,7 +51,9 @@ function renderPack(pack: EvidencePack): string {
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."
-    : `What the deck is for, in the player's words: "${pack.intent}"`);
+    // Unwrapped, like a note: the intent may itself hold a quotation mark, and a delimiter that
+    // can collide with the text lets the player's words close it and continue as instructions.
+    : `What the deck is for, in the player's words, verbatim after the colon: ${oneLine(pack.intent)}`);
 
   lines.push("", "Games:");
   const { summary, games } = pack.play;
@@ -60,7 +72,7 @@ function renderPack(pack: EvidencePack): string {
       // can collide with the text breaks the verbatim boundary. Each note is the whole rest of its
       // line; the model is told to quote it in double quotes, with its date.
       lines.push("Notes, one per line after the date and colon, verbatim. Quote a note in double quotation marks, byte for byte, with its date:");
-      for (const g of noted) lines.push(`- ${g.playedAt.slice(0, 10)}: ${g.note}`);
+      for (const g of noted) lines.push(`- ${g.playedAt.slice(0, 10)}: ${oneLine(g.note!)}`);
     }
   }
 
