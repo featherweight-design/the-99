@@ -189,7 +189,9 @@ export function classifierCollapse(
 
 export type IngestReport = {
   sweep: { batches: number; resolved: number; unresolved: number; notIndexed: number };
-  flags: { mldSweep: number; mldRule: number; etSweep: number; etRule: number; rows: number };
+  // `ClassifierCounts` rather than a second list of the same fields, which is how `tutorRule`
+  // shipped counted and published but missing from this type.
+  flags: ClassifierCounts & { rows: number };
   variants: { kept: number; cards: number; dropped: Record<string, number> };
   gameChangerDisagreements: string[];
 };
