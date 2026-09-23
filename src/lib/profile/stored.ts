@@ -86,10 +86,15 @@ export async function computeAndStoreProfile(
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
 ): Promise<DeckProfile | null> {
+  // THE GENERATION IS READ BEFORE THE BUILD, never after it. `cachedDeckProfile` keys on the
+  // generation it reads itself, and reads are monotonic, so the one read here is never newer than
+  // the catalog the profile was built against. A refresh crossing the build then stamps the row
+  // with the OLDER generation and it retires early — the safe direction. Read after, a profile
+  // built on the old catalog would be stamped with the new one and pass every check for a week.
+  const catalog = await deps.generation();
   const profile = await deps.compute(deckId, userId);
   if (!profile) return null;
   try {
-    const catalog = await deps.generation();
     const permits = [...slotDeck(profile).permits].sort((a, b) => a - b);
     await db
       .insert(deckProfiles)

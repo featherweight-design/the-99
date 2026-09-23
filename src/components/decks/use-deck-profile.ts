@@ -145,9 +145,12 @@ export function useDeckProfile(deckId: string): {
       }
       // Any request made since — a press, or a peek for another deck — owns the state now.
       if (mine !== generation.current || current.current !== deckId) return;
-      if (!result.ok) return;
+      // Only `none` is a miss. `disabled` and `not-found` are answers the panel draws — the
+      // flag switched off mid-visit, or the deck is gone — and the press would lie about both.
+      if (!result.ok && result.reason === "none") return;
       setShownFor(deckId);
-      setState({ kind: "ready", profile: result.profile });
+      if (result.ok) setState({ kind: "ready", profile: result.profile });
+      else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
     })();
   }, [deckId, state.kind]);
 

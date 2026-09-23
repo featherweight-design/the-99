@@ -273,6 +273,17 @@ describe("useDeckProfile peek", () => {
     expect(stub.peeks).toEqual([A, B]);
   });
 
+  it.each([
+    ["disabled", "disabled"],
+    ["not-found", "missing"],
+  ])("reports a %s answer as %s rather than as a miss", async (reason, expected) => {
+    stub.stored = { ok: false, reason };
+    const c = render(<Harness />);
+    await peek(c);
+    expect(kind(c)).toBe(expected);
+    expect(stub.calls).toEqual([]);
+  });
+
   it("treats a failed lookup as a miss", async () => {
     stub.peekThrows = true;
     const c = render(<Harness />);
