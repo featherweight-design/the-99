@@ -139,11 +139,12 @@ Recorded so the round is not asked about them:
 - **Themes.** The profile's theme slot is deliberately `null` (#724). The synopsis names the
   deck's strategy in prose, grounded in the cards it names, and never writes to or reads from a
   theme list.
-- **Cost.** One model call per press, an hourly cap per
-  player, and an unchanged list (under an unchanged contract and stamps, see Storage) returns its stored synopsis instead of paying for new wording of
-  the same facts. No model client exists under `src/` yet (the only caller is
-  `scripts/generate-commander-prose.ts`, with its own `fetch`); whichever of the synopsis and #10
-  deck tuning builds first creates it neutrally, for both.
+- **Cost.** One model call per press, charged to the per-player allowance the synopsis shares
+  with #10 deck tuning (Hugh, 2026-09-23): a rolling 24 hours, and only a successful answer spends
+  a credit. The client and the allowance are built (`src/lib/model/`, #886). When a re-analyze
+  will also rewrite the synopsis, its banner says it uses a credit before the press. An unchanged
+  list (under an unchanged contract and stamps, see Storage) returns its stored synopsis instead
+  of paying for new wording of the same facts.
 - **Storage.** Keyed on the profile fingerprint, beside the stored analysis (#874), and copied
   into the version at commit. **The list fingerprint alone does not make a row reusable.** Each
   row also stores a synopsis contract version (the prompt, the accept contract and the length
