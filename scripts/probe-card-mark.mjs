@@ -407,6 +407,36 @@ async function run() {
         report(`${label}px · ${surface} · every mark is ${SIZE}x${SIZE}`,
           off.length === 0, off.length ? off.join(", ") : `${drawn.length} at ${SIZE}px`);
 
+        // THE SET LINE SITS UNDER THE NAME, WHOLE. On the meta line it shared a row with the
+        // chip and the marks, and a marked card pushed `TLE · uncommon` past the tile's edge
+        // (reported 2026-09-23). Measured on the MARKED tile, since an unmarked one had room
+        // on the old line too and passes either build. `innerText` reads a truncated span
+        // back whole, so the text is judged by `scrollWidth` against `clientWidth`.
+        if (surface === "collection tiles") {
+          const sub = await page.evaluate((scope) => {
+            const mark = [...document.querySelectorAll(`${scope} [data-testid^="card-fact-"]`)]
+              .find((m) => !m.closest('[role="group"]') && m.getBoundingClientRect().width > 0);
+            const tile = mark?.closest("button");
+            const line = tile?.querySelector('[data-testid="tile-sub"]');
+            const name = line?.previousElementSibling?.querySelector("span");
+            if (!tile || !line || !name) return null;
+            const l = line.getBoundingClientRect();
+            const n = name.getBoundingClientRect();
+            const t = tile.getBoundingClientRect();
+            return {
+              text: line.textContent,
+              below: l.top >= n.bottom - 1,
+              aligned: Math.abs(l.left - n.left) <= 1,
+              whole: line.scrollWidth <= line.clientWidth && l.right <= t.right,
+            };
+          }, PAGE);
+          report(`${label}px · ${surface} · SET · rarity sits under the name, left-aligned, uncut`,
+            sub !== null && sub.below && sub.aligned && sub.whole && /·/.test(sub.text ?? ""),
+            sub === null
+              ? "no set line on the marked tile — NOT a pass"
+              : `"${sub.text}" · ${sub.below ? "below" : "NOT below"} the name · ${sub.aligned ? "aligned" : "NOT aligned"} · ${sub.whole ? "whole" : "CUT"}`);
+        }
+
         // THE KEY IS REACHABLE, which is the strongest true statement available here.
         //
         // An earlier version centred the first marked row and demanded the key be visible
@@ -479,6 +509,32 @@ async function run() {
           } else if (label === 1300) {
             report(`${label}px · ${surface} · the mark explains itself on hover`, opened,
               opened ? "a tooltip opened" : "nothing opened after the delay");
+            // THE BUBBLE IS WHOLE AND IN THE PAGE'S FACE, on every host. On /collection's
+            // tiles it was drawn inside an `overflow-hidden` button and cut off at the tile's
+            // edges, and it inherited the caption's mono face while the decklist's read in
+            // sans (reported 2026-09-23). `opened` above counts text and saw neither. The
+            // face is compared with the BODY's, which is what the decklist row inherits.
+            const tip = await page.evaluate(() => {
+              const b = document.querySelector('[data-testid="fact-tooltip"]');
+              if (!b) return null;
+              const r = b.getBoundingClientRect();
+              let clipped = false;
+              for (let n = b.parentElement; n && n !== document.body; n = n.parentElement) {
+                const cs = getComputedStyle(n);
+                if (cs.overflowX !== "visible" || cs.overflowY !== "visible") clipped = true;
+              }
+              return {
+                inView: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+                clipped,
+                face: getComputedStyle(b).fontFamily === getComputedStyle(document.body).fontFamily,
+                font: getComputedStyle(b).fontFamily.split(",")[0],
+              };
+            });
+            report(`${label}px · ${surface} · the tooltip is whole: on screen, under no clipping box`,
+              tip !== null && tip.inView && !tip.clipped,
+              tip === null ? "no bubble found — NOT a pass" : `${tip.inView ? "on screen" : "OFF screen"} · ${tip.clipped ? "inside a clipping box" : "unclipped"}`);
+            report(`${label}px · ${surface} · the tooltip reads in the page's face, not its host's`,
+              tip !== null && tip.face, tip === null ? "no bubble found — NOT a pass" : tip.font);
           } else {
             report(`${label}px · ${surface} · no hover tooltip under a coarse pointer`, !opened,
               opened ? "a tooltip opened on a phone" : "silent, as designed");

@@ -552,8 +552,11 @@ describe("combo partner (quick-add, option E / G)", () => {
       return el!;
     });
     fireEvent.pointerEnter(inline.querySelector('[data-testid="combo-glyph"]')!);
+    // The bubble is portalled to the body, so it is found in the document, not inside the glyph.
     await waitFor(() =>
-      expect(inline.textContent).toContain("Completes a two-card combo with Sanguine Bond."),
+      expect(screen.getByTestId("fact-tooltip").textContent).toContain(
+        "Completes a two-card combo with Sanguine Bond.",
+      ),
     );
   });
 

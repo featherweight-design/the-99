@@ -758,11 +758,16 @@ on this row.
 ### Grid Tile: Caption Area
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| min-height | **56px** | **50px** |
-| layout | two lines: a mono meta line, then the name | same |
+| min-height | **70px** | **65px** |
+| layout | three lines: a mono meta line, the name, then the `SET · rarity` sub-line | same |
 | padding | `8px 9px` | `6px 10px` |
 | line gap | 3px | 3px |
 
+> **Three lines since 2026-09-23**, when the set line moved under the name: `8 + 17 + 3 + 20 + 3 +
+> 11 + 8 = 70` at the phone, `6 + 18 + 3 + 17 + 3 + 12 + 6 = 65` on desktop. That is
+> `CARD_TILE_CAPTION_SUB_H`, a floor of its own, so the fixed height still binds. The deck tile passes
+> no sub-line and keeps the two-line figures below.
+>
 > The two paddings differ so both widths land on a whole figure with the same two
 > lines: `8 + 17 + 3 + 20 + 8 = 56` at the phone, `6 + 18 + 3 + 17 + 6 = 50` on
 > desktop (erratum 12 — the meta line grew with the slot box's padding). Both lines carry an explicit height for the same reason — sized to
@@ -782,7 +787,7 @@ on this row.
 | font-size | 9px | 9.5px |
 | line box | 17px | 18px |
 | gap | 6px | 6px |
-| order | the one slot (availability chip), then `×N`, then the set line right-aligned | same |
+| order | the one slot (availability chip), then the bracket marks, then the combo mark. The set line left this line on 2026-09-23 (see `Set/Rarity Caption`) | same |
 | `×N` | **absent at one copy**, matching the deck tile | same |
 
 ### Grid Tile: Slot Box
@@ -817,6 +822,14 @@ on this row.
 
 ### Grid Tile: Set/Rarity Caption
 
+> **Back under the name, 2026-09-23 (Hugh).** Once a card carried the chip, bracket marks and
+> the combo mark, the meta line had no room left for the set line: a tutor's `TLE ·` was cut at
+> the tile's edge and its rarity never showed. It is now `CardTileCaption`'s `nameSub` line,
+> directly under the name and left-aligned with it: mono 9px / 9.5px, `leading-none`, an
+> 11px / 12px box, `--fg-faint`, truncated. It shows both the set code and the rarity at BOTH
+> widths, because on its own line the phone has room for the rarity. The note below records the
+> previous move.
+
 > **Retired 2026-09-15 — card captions (R1), call A.** It was its own row under the name at mono
 > 9.5/10px with a 2/3px `margin-top`. The set line is now an occupant of the **Meta Line** above,
 > right-aligned, at that line's own 9/9.5px and with no margin of its own — see `Grid Tile: Meta
@@ -826,7 +839,7 @@ on this row.
 ### Copy (caption format)
 | Context | Copy |
 |---------|------|
-| Mobile | `{{ card.set }}` (set code only) |
+| Mobile | `{{ card.set }} · {{ card.rarity }}` |
 | Desktop | `{{ card.set }} · {{ card.rarity }}` |
 
 ---
@@ -2399,7 +2412,7 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | Rarity dot in row | Desktop rows only (not mobile) |
 | Type line as sub-line | Mobile rows only (under name in same column) |
 | Type line as own column | Desktop rows only (4th of 6 columns) |
-| Set+rarity caption (desktop grid) | Both set code and rarity; mobile shows only set code |
+| Set+rarity caption (grid) | Set code and rarity, under the name, at both widths |
 | Printing picker (Set field disclosure) | Only when `card.printings.length > 1` |
 | Region search + finish chips + set group headers | Only when the entry count exceeds 12 |
 | Mobile compact art header (72px) | Only when the region is expanded AND past the overflow threshold |

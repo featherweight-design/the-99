@@ -17,6 +17,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { useMinWidth } from "../ui/use-min-width";
 
@@ -57,6 +58,22 @@ export function clipBoxFor(el: Element): { top: number; bottom: number; left: nu
     }
   }
   return { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+}
+
+/**
+ * The box a bubble is placed against. The bubble is portalled to the body (see
+ * `FinePointerTooltip`), so no ancestor clips it any more, and its width and its left and right
+ * edges are measured against the VIEWPORT. Its side is still judged against the box its mark
+ * belongs to: a bubble drawn above the first quick-add result would otherwise hang over the
+ * search input.
+ *
+ * The /collection tile is why the horizontal half moved. Clamped into the tile, the bubble was
+ * squeezed to the tile's ~170px and laid over the art; Hugh asked for it to read the way the
+ * decklist's does (2026-09-23).
+ */
+export function placementBoxFor(el: Element): { top: number; bottom: number; left: number; right: number } {
+  const clip = clipBoxFor(el);
+  return { top: clip.top, bottom: clip.bottom, left: 0, right: window.innerWidth };
 }
 
 export type BubblePlace = {
@@ -165,6 +182,9 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
   // An estimate on open, then corrected from the bubble's MEASURED size before paint — the
   // second pass matters when the width cap narrows the bubble and its sentence wraps taller.
   const [place, setPlace] = useState<BubblePlace | null>(null);
+  // The mark's rect when the bubble opened. The bubble is `fixed` in the body, so it is placed
+  // in viewport coordinates, and `place.left` is relative to this.
+  const [mark, setMark] = useState<DOMRect | null>(null);
   const anchor = useRef<HTMLSpanElement | null>(null);
   const bubble = useRef<HTMLSpanElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -177,7 +197,7 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
     const b = bubble.current;
     if (!a || !b) return;
     const br = b.getBoundingClientRect();
-    const next = placeBubble(a.getBoundingClientRect(), br, clipBoxFor(a));
+    const next = placeBubble(a.getBoundingClientRect(), br, placementBoxFor(a));
     // Only when something moved, or this would re-run on its own write forever.
     // `Object.is` for the numbers: a rect with a missing field yields NaN, and `NaN !== NaN`
     // would re-run this effect on every commit it causes.
@@ -189,6 +209,20 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
       setPlace(next);
     }
   }, [open, place]);
+
+  // A fixed box does not follow its mark when anything scrolls, so a scroll closes it rather
+  // than leaving a sentence over a different card. Capture phase, because the scroll that
+  // matters is usually an inner scroller's and does not bubble.
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
 
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
 
@@ -205,7 +239,9 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
         timer.current = setTimeout(() => {
           const el = anchor.current;
           if (el) {
-            setPlace(placeBubble(el.getBoundingClientRect(), { width: 0, height: 0 }, clipBoxFor(el)));
+            const rect = el.getBoundingClientRect();
+            setMark(rect);
+            setPlace(placeBubble(rect, { width: 0, height: 0 }, placementBoxFor(el)));
           }
           setOpen(true);
         }, OPEN_DELAY_MS);
@@ -213,27 +249,37 @@ function FinePointerTooltip({ text, children }: { text: string; children: React.
       onPointerLeave={() => { cancel(); setOpen(false); }}
     >
       {children}
-      {open && place && (
-        <span
-          ref={bubble}
-          // aria-hidden: the mark it wraps already carries the fact as its accessible
-          // name, and this sentence is the same fact in more words.
-          aria-hidden
-          data-side={place.below ? "below" : "above"}
-          data-align={place.align}
-          className={`pointer-events-none absolute ${place.below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]"} z-50 w-max rounded-[7px] px-[9px] py-[6px] text-[11.5px] leading-[1.45]`}
-          style={{
-            left: place.left,
-            maxWidth: place.maxWidth,
-            background: "var(--elevated)",
-            border: "1px solid var(--border)",
-            color: "var(--fg-body)",
-            boxShadow: "0 4px 14px color-mix(in srgb, var(--bg) 70%, transparent)",
-          }}
-        >
-          {text}
-        </span>
-      )}
+      {/* PORTALLED TO THE BODY, which fixes two defects. Drawn inside its mark, the bubble
+          was clipped by any ancestor that clips: the /collection tile is an `overflow-hidden`
+          button, so the bubble was cut at the tile's edges or squeezed to its width. And it
+          inherited whatever type its host set, so on a caption's mono meta line it read as
+          code. Under the body it inherits the page's own face, the one the decklist shows. */}
+      {open && place && mark &&
+        createPortal(
+          <span
+            ref={bubble}
+            // aria-hidden: the mark it wraps already carries the fact as its accessible
+            // name, and this sentence is the same fact in more words.
+            aria-hidden
+            data-testid="fact-tooltip"
+            data-side={place.below ? "below" : "above"}
+            data-align={place.align}
+            className="pointer-events-none fixed z-50 w-max rounded-[7px] px-[9px] py-[6px] text-left text-[11.5px] font-normal normal-case tracking-normal leading-[1.45] whitespace-normal"
+            style={{
+              left: mark.left + place.left,
+              top: place.below ? mark.bottom + 6 : mark.top - 6,
+              transform: place.below ? undefined : "translateY(-100%)",
+              maxWidth: place.maxWidth,
+              background: "var(--elevated)",
+              border: "1px solid var(--border)",
+              color: "var(--fg-body)",
+              boxShadow: "0 4px 14px color-mix(in srgb, var(--bg) 70%, transparent)",
+            }}
+          >
+            {text}
+          </span>,
+          document.body,
+        )}
     </span>
   );
 }
