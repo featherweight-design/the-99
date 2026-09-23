@@ -26,11 +26,20 @@
 // second layer removed so the file's own numeral survives under the HTML one (2), and the
 // denominator taken out of the population sentence (2).
 //
-// IT WRITES ONE ROW: the signed-in account's `user_prefs.about_version_seen`, raised with
+// THE TAB AROUND THE BLOCK (Analysis tab handoff §2, PR B). Before a first reading the tab is one
+// empty state: a 150px ring of the five marks at 44px, 1 at twelve o'clock and on clockwise, the
+// heading in the display face, and Analyze with the provenance opener beside it at 1300 and under
+// it at 390. With a reading, the bracket box and the climb share a row at 1300 (2fr / 1fr, the
+// climb on the left) and stack box-first at 390; there is no Overview; the tab's own gutters are
+// 16 / 30 and the mix sits inside them, under a rule. To reach the empty state the run CLEARS the
+// deck's stored reading before each width, and puts the row back as it was in a `finally`.
+//
+// IT WRITES: the signed-in account's `user_prefs.about_version_seen`, raised with
 // `greatest(...)` so it can only ever move forward. That is the convention
 // `probe-card-captions.mjs` set and records the reason for — the flag is true once this has
-// run, and clearing it would re-break every other probe on this account. It touches no deck,
-// no collection and no catalog row. Signs in through Clerk's dev instance — see the local-auth note in memory.
+// run, and clearing it would re-break every other probe on this account. And the walked deck's
+// `deck_profiles` row, deleted and rewritten by the press, then restored as captured. It touches
+// no deck, no collection and no catalog row. Signs in through Clerk's dev instance — see the local-auth note in memory.
 // Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-verdict-block.mjs
@@ -366,6 +375,97 @@ async function walk(page, label, markPx, viewportWidth) {
     subLine ? "a reading is drawn" : "no sub-line matched any of the four readings");
 }
 
+/** 2a, measured: the ring's geometry, the type, and where the opener sits beside Analyze. */
+async function walkEmpty(page, label, width) {
+  const phone = width < 768;
+  const e = await page.evaluate((scope) => {
+    const root = document.querySelector(scope);
+    const empty = root?.querySelector('[data-testid="analysis-empty"]');
+    if (!empty) return null;
+    const ring = empty.querySelector('[data-testid="analysis-ring"]');
+    const rb = ring.getBoundingClientRect();
+    const marks = [...ring.querySelectorAll('[data-testid="bracket-mark"]')].map((m) => {
+      const b = m.getBoundingClientRect();
+      return { n: Number(m.dataset.bracket), w: Math.round(b.width), cx: b.left + b.width / 2 - rb.left, cy: b.top + b.height / 2 - rb.top };
+    });
+    const h2 = empty.querySelector("h2");
+    const cta = [...empty.querySelectorAll("button")].find((b) => !b.hasAttribute("aria-haspopup"));
+    const opener = empty.querySelector('[data-testid="provenance-opener"]');
+    const cb = cta.getBoundingClientRect();
+    const ob = opener.getBoundingClientRect();
+    const probe = document.createElement("span");
+    probe.className = "font-display";
+    document.body.append(probe);
+    const display = getComputedStyle(probe).fontFamily;
+    probe.remove();
+    return {
+      ring: { w: Math.round(rb.width), h: Math.round(rb.height), hidden: ring.getAttribute("aria-hidden") },
+      marks,
+      h2: { size: getComputedStyle(h2).fontSize, family: getComputedStyle(h2).fontFamily, display },
+      cta: { text: cta.textContent, h: Math.round(cb.height) },
+      besides: Math.abs(cb.top + cb.height / 2 - (ob.top + ob.height / 2)) < 4 && ob.left > cb.right,
+      below: ob.top >= cb.bottom - 1,
+      grid: !!root.querySelector('section[aria-label="Your bracket"]'),
+    };
+  }, PAGE);
+  if (!report(`${label}px · before a reading the tab is one empty state`, e !== null && !e.grid,
+    e ? `empty drawn, bracket box ${e.grid ? "drawn beside it" : "withheld"}` : "no empty state")) return;
+  report(`${label}px · the ring is a 150px box and decorative`, e.ring.w === 150 && e.ring.h === 150 && e.ring.hidden === "true",
+    `${e.ring.w}x${e.ring.h}, aria-hidden ${e.ring.hidden}`);
+  // The marks sit on a 50px circle about the ring's centre, 1 at twelve o'clock, and run clockwise.
+  const angles = e.marks.map((m) => Math.atan2(m.cy - 75, m.cx - 75));
+  const onCircle = e.marks.every((m) => Math.abs(Math.hypot(m.cx - 75, m.cy - 75) - 50) <= 1.5);
+  const clockwise = angles.every((a, i) => i === 0 || ((a - angles[i - 1] + 2 * Math.PI) % (2 * Math.PI)) > 0.9);
+  report(`${label}px · five 44px marks, 1 at twelve o'clock, clockwise on a 50px radius`,
+    e.marks.length === 5 && e.marks.every((m) => m.w === 44) && e.marks[0].n === 1 && Math.abs(angles[0] + Math.PI / 2) < 0.05 && onCircle && clockwise,
+    `${e.marks.length} marks at ${e.marks.map((m) => m.w).join("/")}px, first ${e.marks[0]?.n}`);
+  report(`${label}px · the heading is the display face at ${phone ? 21 : 26}px`,
+    e.h2.size === `${phone ? 21 : 26}px` && e.h2.family === e.h2.display, `${e.h2.size}, ${e.h2.family.split(",")[0]}`);
+  report(`${label}px · Analyze is a 44px press with the opener ${phone ? "under" : "beside"} it`,
+    e.cta.text === "Analyze" && e.cta.h >= 44 && (phone ? e.below : e.besides),
+    `"${e.cta.text}", ${e.cta.h}px, opener ${e.besides ? "beside" : e.below ? "under" : "elsewhere"}`);
+}
+
+/** With a reading: the grid, the gutters, the mix inside them, and no Overview. */
+async function walkLayout(page, label, width) {
+  const phone = width < 768;
+  const l = await page.evaluate((scope) => {
+    const root = document.querySelector(scope);
+    const panel = root?.querySelector('[role="tabpanel"]#panel-analysis');
+    const box = panel?.querySelector('section[aria-label="Your bracket"]')?.getBoundingClientRect();
+    const climb = panel?.querySelector('[data-testid="climb-rung"]')?.parentElement?.parentElement?.getBoundingClientRect();
+    const findings = panel?.querySelector('[data-testid="findings-block"]')?.getBoundingClientRect();
+    const mix = panel?.querySelector('section[aria-label="Recommended mix"]');
+    const pb = panel?.getBoundingClientRect();
+    const name = panel?.querySelector('[data-testid="verdict-name"]');
+    return box && climb && findings && mix && pb ? {
+      box: { l: box.left, r: box.right, t: box.top, b: box.bottom, w: box.width },
+      climb: { l: climb.left, r: climb.right, t: climb.top, w: climb.width },
+      gutter: Math.round(findings.left - pb.left),
+      mixLeft: Math.round(mix.getBoundingClientRect().left - findings.left),
+      mixRule: getComputedStyle(mix).borderTopWidth,
+      overview: /\bOverview\b/.test(panel.textContent ?? ""),
+      nameSize: name ? getComputedStyle(name).fontSize : null,
+      analyzed: panel.querySelector('[data-testid="verdict-analyzed"]')?.textContent ?? null,
+    } : null;
+  }, PAGE);
+  if (!report(`${label}px · the reading draws its box, climb, findings and mix`, l !== null, l ? "all four" : "one is missing")) return;
+  if (phone) {
+    report(`${label}px · the box comes first, then the climb`, l.box.b <= l.climb.t + 1, `box ends ${Math.round(l.box.b)}, climb from ${Math.round(l.climb.t)}`);
+  } else {
+    const ratio = l.climb.w / l.box.w;
+    report(`${label}px · the climb and the box share a row, 2fr / 1fr, climb on the left`,
+      l.climb.r <= l.box.l && Math.abs(l.climb.t - l.box.t) <= 2 && ratio > 1.8 && ratio < 2.2,
+      `climb ${Math.round(l.climb.w)}px, box ${Math.round(l.box.w)}px, ratio ${ratio.toFixed(2)}`);
+  }
+  report(`${label}px · the tab's gutter is ${phone ? 16 : 30}px`, l.gutter === (phone ? 16 : 30), `${l.gutter}px`);
+  report(`${label}px · the mix sits inside the gutters, under a rule`, l.mixLeft === 0 && l.mixRule === "1px",
+    `offset ${l.mixLeft}px, rule ${l.mixRule}`);
+  report(`${label}px · no Overview section on a reading`, !l.overview, l.overview ? "drawn" : "absent");
+  report(`${label}px · the name is ${phone ? 19 : 21}px, dated under it`,
+    l.nameSize === `${phone ? 19 : 21}px` && /^analyzed /.test(l.analyzed ?? ""), `${l.nameSize}, "${l.analyzed}"`);
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -384,11 +484,17 @@ async function run() {
       return;
     }
     console.log(`       (walking ${href})`);
+    const deckId = href.split("/")[2];
+    const sql = neon(DATABASE_URL);
+    // Captured BEFORE the first delete, and put back in the `finally` whatever happens.
+    const [saved] = await sql`select * from deck_profiles where deck_id = ${deckId}`;
+    try {
 
     for (const { label, viewport, markPx } of WIDTHS) {
       const ctx = await browser.newContext({ viewport });
       const p = await ctx.newPage();
       await signIn(p);
+      await sql`delete from deck_profiles where deck_id = ${deckId}`;
       await p.goto(`${BASE}${href}`, { waitUntil: "domcontentloaded" });
       const tablist = await p
         .waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 })
@@ -421,17 +527,31 @@ async function run() {
       // which is why the card mark shipped broken into a surface a URL sweep photographed.
       await onPage(p, '[role="tab"]').nth(analysisAt).click();
       await p.waitForTimeout(500);
-      const invite = onPageRole(p, "button", /Analyze this deck/);
+      await onPage(p, '[data-testid="analysis-empty"]').first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      await walkEmpty(p, label, viewport.width);
+      const invite = onPageRole(p, "button", /^Analyze$/);
       if ((await invite.count()) > 0) {
         await invite.first().click();
-        await onPageRole(p, "button", /Analyze again/)
+        await onPage(p, 'section[aria-label="Your bracket"]')
           .first()
           .waitFor({ state: "visible", timeout: 20_000 })
           .catch(() => {});
       }
 
       await walk(p, label, markPx, viewport.width);
+      await walkLayout(p, label, viewport.width);
       await ctx.close();
+    }
+    } finally {
+      // PUT BACK AS IT WAS: the press rewrote the row, and a row that did not exist is removed.
+      if (saved) {
+        await sql`insert into deck_profiles (deck_id, user_id, fingerprint, catalog, profile, permits, computed_at)
+          values (${saved.deck_id}, ${saved.user_id}, ${saved.fingerprint}, ${saved.catalog}, ${saved.profile}, ${saved.permits}, ${saved.computed_at})
+          on conflict (deck_id) do update set user_id = excluded.user_id, fingerprint = excluded.fingerprint,
+            catalog = excluded.catalog, profile = excluded.profile, permits = excluded.permits, computed_at = excluded.computed_at`;
+      } else {
+        await sql`delete from deck_profiles where deck_id = ${deckId}`;
+      }
     }
   } finally {
     await browser.close();
