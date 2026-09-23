@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique, foreignKey,
+  unique, foreignKey, uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
@@ -302,6 +302,18 @@ export const decks = pgTable("decks", {
    * player says otherwise. No surface writes it yet.
    */
   declaredBracket: integer("declared_bracket"),
+  /**
+   * What the player says this deck is FOR, in their words — the standing input deck tuning
+   * (#10) hands the model beside the list and the games. Null until stated, or until a fill
+   * seeds it.
+   */
+  intent: text("intent"),
+  /**
+   * True while the app's seeded sentence stands unedited. A fill writes true when it seeds;
+   * the player's first save writes false. One column carries both the seeded and the edited
+   * state, which is what lets the chip say which it is showing.
+   */
+  intentSeeded: boolean("intent_seeded").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
@@ -334,6 +346,8 @@ export const decks = pgTable("decks", {
       "decks_declared_bracket_range",
       sql`${t.declaredBracket} is null or ${t.declaredBracket} between 1 and 5`,
     ),
+    // Code points, as Postgres's char_length counts them — the app's cap counts the same way.
+    check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 120`),
     check(
       "decks_partner_distinct",
       sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
@@ -1478,4 +1492,110 @@ export const deckProfiles = pgTable("deck_profiles", {
   index("deck_profiles_user_idx").on(t.userId),
   check("deck_profiles_permits_check",
     sql`cardinality(${t.permits}) between 1 and 2 and ${t.permits} <@ array[1,2,3,4,5]`),
+]);
+
+/**
+ * The per-player model allowance's ledger, shared by every model feature (deck tuning, the
+ * deck synopsis). One row per model RUN, never per HTTP attempt.
+ *
+ * A row is `reserved` when a run starts, `spent` when it ends with an answer the player sees,
+ * and `refunded` on any failure or Stop (Hugh, 2026-09-23: only a successful answer spends a
+ * unit). `reserved` and `spent` count against the allowance over a rolling 24 hours; a
+ * `reserved` row counts because it is a run in flight, which is how two concurrent presses are
+ * kept from both taking the last unit. Rows are kept, never deleted: the ledger is also the
+ * record of what was spent. `src/lib/model/allowance.ts` is the only reader and writer.
+ */
+export const modelCalls = pgTable("model_calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  feature: text("feature").notNull(),
+  status: text("status").notNull().default("reserved"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis')`),
+  check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
+  // The allowance's only query: this player's calls inside the window.
+  index("model_calls_user_created_idx").on(t.userId, t.createdAt),
+]);
+
+/**
+ * One generation of deck-tuning suggestions (#10). Written `pending` in its own transaction
+ * BEFORE the model is called, so a run exists as a fact the moment it starts and survives the
+ * player navigating away. Runs are kept, never replaced: the history is the record.
+ */
+export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  /** The player's own inputs (list, games, notes, intent, collection). No version inside. */
+  inputFingerprint: text("input_fingerprint").notNull(),
+  model: text("model").notNull(),
+  // Both versions are STORED, never hashed: a bump reopens the gate as its own reason and
+  // never reads as the player having changed their deck.
+  promptVersion: integer("prompt_version").notNull(),
+  profileVersion: integer("profile_version").notNull(),
+  /** The allowance unit this run holds; its outcome write settles it. */
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  status: text("status").notNull(),
+  errorClass: text("error_class"),
+  droppedCount: integer("dropped_count").notNull().default(0),
+}, (t) => [
+  check(
+    "deck_suggestion_runs_status_check",
+    sql`${t.status} in ('pending', 'ok', 'failed', 'cancelled')`,
+  ),
+  check(
+    "deck_suggestion_runs_error_class_check",
+    sql`${t.errorClass} is null or ${t.errorClass} in ('upstream_busy', 'timeout', 'malformed', 'ungrounded', 'interrupted')`,
+  ),
+  // The constraint that makes a second concurrent run on one deck impossible: the loser of the
+  // race gets a unique violation, not a second run. Partial, so a deck accumulates any number
+  // of finished runs. Same predicate form as printings_flavor_name_idx.
+  uniqueIndex("deck_suggestion_runs_one_pending_idx")
+    .on(t.deckId)
+    .where(sql`${t.status} = 'pending'`),
+  index("deck_suggestion_runs_deck_created_idx").on(t.deckId, t.createdAt),
+  index("deck_suggestion_runs_user_created_idx").on(t.userId, t.createdAt),
+]);
+
+/** What an apply changed, so undo can put back exactly that — not an approximation of it. */
+export type ApplySnapshot = {
+  /** The cut's row before the apply; null when the suggestion had no cut. */
+  cut: { quantity: number; auto: boolean; proxied: boolean } | null;
+  /** The add's row before the apply; quantity 0 when the deck did not hold it. */
+  add: { quantity: number; auto: boolean };
+};
+
+export type TuningCitation = {
+  kind: "games" | "note" | "decklist" | "intent";
+  /** Rendered by the card. Never a percentage, never a net figure. */
+  value: string;
+};
+
+export const deckSuggestionItems = pgTable("deck_suggestion_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => deckSuggestionRuns.id, { onDelete: "cascade" }),
+  // uuid, matching cards.oracleId: a suggestion for a card the catalog does not hold cannot
+  // be stored at all.
+  addOracleId: uuid("add_oracle_id").notNull().references(() => cards.oracleId),
+  cutOracleId: uuid("cut_oracle_id").references(() => cards.oracleId),
+  rationale: text("rationale").notNull(),
+  rationaleShort: text("rationale_short").notNull(),
+  evidence: jsonb("evidence").$type<TuningCitation[]>().notNull(),
+  position: integer("position").notNull(),
+  verdict: text("verdict").notNull().default("pending"),
+  verdictAt: timestamp("verdict_at"),
+  // The deck's permitted brackets with this swap applied, when that differs from its permits
+  // without it; null when the swap moves nothing. Computed by the app through slotDeck, never
+  // by the model. A suggestion that moves the bracket is shown, flagged (Hugh, 2026-09-23).
+  bracketAfter: integer("bracket_after").array(),
+  // Written by the apply, read and cleared by the undo. Null until applied.
+  undoSnapshot: jsonb("undo_snapshot").$type<ApplySnapshot>(),
+}, (t) => [
+  check(
+    "deck_suggestion_items_verdict_check",
+    sql`${t.verdict} in ('pending', 'accepted', 'dismissed')`,
+  ),
+  index("deck_suggestion_items_run_position_idx").on(t.runId, t.position),
 ]);
