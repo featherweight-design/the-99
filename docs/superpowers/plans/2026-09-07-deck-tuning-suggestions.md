@@ -27,6 +27,14 @@
 >    panel on the Games tab and predates the Analysis tab (#753), so no tab is chosen here.
 > 6. **Stale references fixed** against `origin/main` at `67f29274`: line numbers, the
 >    workflow file, test files that do not exist, and the migration head (0052).
+>
+> **Hugh's rulings on this revision, 2026-09-23:**
+> - **A suggestion that would move the deck's bracket is SHOWN, FLAGGED** — not dropped and
+>   not silent. The app computes the flag with the verdict's own `slotDeck`; the model makes
+>   no bracket claim (Task 9b). The flag needs a drawn state, asked of the addendum.
+> - **Only a successful answer spends a unit of the allowance.** A failed, timed-out,
+>   interrupted or stopped run gives its unit back (Task 10). The accepted cost is in *Cost*.
+> - **The allowance window is a rolling 24 hours**, not a fixed daily reset.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -80,11 +88,11 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 - **Model: `claude-sonnet-5`** — the current Sonnet, chosen for a structured-output task that must follow nine presentation rules. It is `TUNING_MODEL` in `src/lib/tuning/limits.ts`, passed to the shared client per call, and recorded per run in `deck_suggestion_runs.model`. Nothing in `src/lib/model/` names a model.
 - **One model run per press.** At most one bounded in-run retry — after an `upstream_busy` or a `malformed` reply, whichever comes first — so at most two HTTP attempts, inside that single run row. A retry never creates a second run.
-- **One per-player DAILY allowance, shared with the synopsis.** `MODEL_DAILY_ALLOWANCE` in `src/lib/model/allowance.ts` is the only number; a run consumes one unit whether it succeeds or fails, because the call was paid for either way, and a refusal before the call consumes none. Its value is a named placeholder until a call's cost is measured (see *Cost*). An exhausted allowance is a stated state with its own copy and the time it reopens — never a silent failure and never a disabled button without a reason.
+- **One per-player DAILY allowance, shared with the synopsis.** `MODEL_DAILY_ALLOWANCE` in `src/lib/model/allowance.ts` is the only number; a unit is RESERVED when a run starts (so two concurrent presses cannot both take the last one), becomes SPENT when the run ends `ok`, and is REFUNDED when it ends `failed` — any class, `interrupted` included — or `cancelled` (Hugh, 2026-09-23). A refusal before the call reserves nothing. The window is a rolling 24 hours. Its value is a named placeholder until a call's cost is measured (see *Cost*). An exhausted allowance is a stated state with its own copy and the time it reopens — never a silent failure and never a disabled button without a reason.
 - **Three suggestions maximum. Fewer is legitimate** — one well-grounded suggestion beats three padded ones, and zero surviving suggestions is the `ungrounded` outcome, not an error.
 - **Six validation rules**, all pure: schema, the card exists, the cut is real, the add is legal (colour identity), the evidence exists, and the nine presentation checks. Every drop increments `dropped_count`.
 - **`PROMPT_VERSION`** is a single integer exported from one module. Bumping it invalidates every tuning fingerprint.
-- **No bracket claim.** The pack carries no bracket figure and the prompt asks for none. `bracketDelta` has no reachable `[3] → [4]` transition, and a suggestion reasoning about one would cite evidence the app cannot produce.
+- **The model makes no bracket claim; the app flags a bracket move.** The pack carries no bracket figure and the prompt asks for none — `bracketDelta` has no reachable `[3] → [4]` transition, and a suggestion reasoning about one would cite evidence the app cannot produce. Instead the app computes, per kept suggestion, the deck's permitted brackets with the swap applied, through `slotDeck` itself (Task 9b), and stores the result on the item when it moves. A suggestion that moves the bracket is **shown, flagged** (Hugh, 2026-09-23), never dropped and never silent.
 
 **Money and formatting.**
 
@@ -123,6 +131,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 | `response-schema.ts` | The zod schema for the model's reply, and the `TuningResponse` type. |
 | `validate.ts` | The six validation rules, as pure predicates over a candidate plus the pack. |
 | `presentation.ts` | The nine `suggestionRules` checks — the sixth validation rule. |
+| `bracket-shift.ts` | `bracketAfter(...)` — the deck's permits with a swap applied, through `slotDeck`. The bracket flag (Hugh, 2026-09-23). |
 | `state.ts` | `TuningState` and `TuningItem` — types only, so `gate.ts` and the panel compile without the server read. |
 | `run-store.ts` | **Server-only.** `finishRun`, `persistRun`, `ErrorClass` — the guarded outcome writes, importable by the probe. |
 | `gate.ts` | `gateReason(state)` and the `GateReason` type — the one answer to "why is the button disabled", shared by the panel and by `runTuning`. No game count. |
@@ -188,8 +197,8 @@ Four PRs, merged in order, none stacked: each branches from `main` after the pre
 | PR | Tasks | Contents | Files (approx.) |
 |---|---|---|---|
 | **A — schema and the shared client** | 1, 10 | Schema + generated migration (4 new objects), `src/lib/model/client.ts` + `allowance.ts` and tests, schema shape test, `ANTHROPIC_API_KEY` docs. | ~12 |
-| **B — the pure core** | 2 (the keys pure code and server refusals read), 5 step 3 (`limits.ts`), 6, 7, 8, 9, 11 steps 1–2 (`reaper.ts`), 12 steps 1–2 (`gate.ts`) | `src/lib/tuning/*` and tests, the copy keys they read, `src/lib/profile/play.ts` + the `play` key on `types.ts` (ownership of that one file sequenced by the orchestrator). No database, no route. | ~20 |
-| **C — the server shell** | 3 step 6, 5 (action + seeding), 11 (actions + probe), 12 (read + `readTuningPanel`), 13 (action), 15 (actions), 17 | `tuning-actions.ts`, `tuning-read.ts`, `DeckDetail.intent`, `fillDeck` seeding, the copy keys a server refusal returns, `probe:tuning-run`, `check:tuning` + workflow step. Callable end to end from a probe; nothing mounted. | ~16 |
+| **B — the pure core** | 2 (the keys pure code and server refusals read), 5 step 3 (`limits.ts`), 6, 7, 8, 9, 9b steps 1–2, 11 steps 1–2 (`reaper.ts`), 12 steps 1–2 (`gate.ts`) | `src/lib/tuning/*` and tests, the copy keys they read, `src/lib/profile/play.ts` + the `play` key on `types.ts` (ownership of that one file sequenced by the orchestrator). No database, no route. | ~20 |
+| **C — the server shell** | 3 step 6, 5 (action + seeding), 9b step 3, 11 (actions + probe), 12 (read + `readTuningPanel`), 13 (action), 15 (actions), 17 | `tuning-actions.ts`, `tuning-read.ts`, `DeckDetail.intent`, `fillDeck` seeding, the copy keys a server refusal returns, `probe:tuning-run`, `check:tuning` + workflow step. Callable end to end from a probe; nothing mounted. | ~16 |
 | **D — the surfaces** | 2 (the keys only a component draws), 5 (component), 13 (component), 14, 15 (component), 16, 18 | **BLOCKED ON DESIGN — placement addendum.** Four components and tests, the mount, `maxDuration`. | ~14 |
 
 The About entry is not in D: this is a multi-round line, and its entries batch at the end of the launch (`AGENTS.md`, *Design pipeline*). The line's plan names that task; D's close-out confirms it is still named.
@@ -198,9 +207,11 @@ The About entry is not in D: this is a multi-round line, and its entries batch a
 
 ## Cost
 
-**Calls per run.** One model run per press. That run makes **one HTTP request normally, two at most** — the second only after a `429`/`529`/`5xx` or a reply that fails the schema. A timeout is not retried. A refusal at the gate (unchanged inputs, run in flight, allowance spent) makes **zero**.
+**Calls per run.** One model run per press. That run makes **one HTTP request normally, two at most** — the second only after a `429`/`529`/`5xx` or a reply that fails the schema. A timeout is not retried. A refusal at the gate (unchanged inputs, run in flight, allowance spent) makes **zero**. The bracket flag (Task 9b) is computed in the app — one combo read per kept suggestion, no model call.
 
-**Worst case per player per day.** `MODEL_DAILY_ALLOWANCE` runs, across tuning and the synopsis together, so at most `2 × MODEL_DAILY_ALLOWANCE` HTTP requests. The allowance is the only thing bounding spend: the fingerprint gate stops a repeat on unchanged inputs, but a player editing one card between presses changes the fingerprint each time, and without the allowance nothing else stops them.
+**Worst case per player per day.** `MODEL_DAILY_ALLOWANCE` SUCCESSFUL runs, across tuning and the synopsis together, so at most `2 × MODEL_DAILY_ALLOWANCE` HTTP requests for answers the player received.
+
+**What that does not bound, accepted by ruling.** A failed run refunds its unit (Hugh, 2026-09-23), and a failed run does not consume the fingerprint gate (spec §6), so a player facing a flaky upstream can press `Try again` repeatedly and each press costs up to two paid requests with no allowance cost. What bounds it is the player's own presses — one run in flight per deck, each held for up to `MODEL_TIMEOUT_MS` — and nothing else. On a personal-use app that is a fair trade for not charging a player for our upstream's failure. If measured spend ever says otherwise, the lever is a hidden per-day attempt ceiling in `allowance.ts`, counted from the same ledger (every reservation row, refunded or not), without touching the player-facing rule.
 
 **Per-call size, to measure rather than assert.** The pack carries ~100 card rows (name, type line, roles), up to the skeleton's staples, the role and land targets, the games with their notes, and the intent. The first `check:tuning` run in PR C records the request's `usage.input_tokens` / `usage.output_tokens` from the response, and **that figure sets `MODEL_DAILY_ALLOWANCE`**: the constant ships in PR A as a named placeholder (`5`) with a comment pointing here, and PR C's description states the measured tokens and the value chosen. The run count is what a player sees; the token figure is what makes it a budget.
 
@@ -304,6 +315,10 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   rationaleShort: text("rationale_short").notNull(),
   evidence: jsonb("evidence").$type<TuningCitation[]>().notNull(),
   position: integer("position").notNull(),
+  // The deck's permitted brackets with this swap applied, when that differs from the
+  // deck's permits without it. Null when the swap moves nothing. Computed by the app
+  // through slotDeck (Task 9b), never by the model.
+  bracketAfter: integer("bracket_after").array(),
   verdict: text("verdict").notNull().default("pending"),
   verdictAt: timestamp("verdict_at"),
 }, (t) => [
@@ -326,15 +341,25 @@ export const modelCalls = pgTable("model_calls", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   feature: text("feature").notNull(),
+  // reserved when the run starts, spent on an ok answer, refunded on any failure or
+  // Stop (Hugh, 2026-09-23). reserved + spent count against the allowance; refunded does not.
+  status: text("status").notNull().default("reserved"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis')`),
+  check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
 ]);
 ```
 
-No foreign key to a run: a synopsis has no run table in this plan, and the ledger must not need one to count.
+No foreign key to a run: a synopsis has no run table in this plan, and the ledger must not need one to count. The link runs the other way — `deck_suggestion_runs.model_call_id` (below) — so the run's guarded outcome write can settle its own unit.
+
+Add to `deckSuggestionRuns`:
+
+```typescript
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+```
 
 - [ ] **Step 5: Write the schema shape test**
 
@@ -1357,6 +1382,8 @@ git commit -m "feat(tuning): schema-constrained prompt and response contract"
     addOracleId: string; cutOracleId: string | null;
     rationale: string; rationaleShort: string;
     evidence: TuningCitation[]; position: number;
+    /** Set by Task 9b after validation; null when the swap moves no bracket. */
+    bracketAfter: Bracket[] | null;
   };
   export function validateSuggestions(args: {
     response: TuningResponse;
@@ -1486,6 +1513,78 @@ git commit -m "feat(tuning): six validation rules, every drop counted"
 
 ---
 
+### Task 9b: The bracket flag
+
+**PR B** (the pure function) **and PR C** (its reads, inside `runTuning`).
+
+**Ruling (Hugh, 2026-09-23):** a suggestion that would move the deck's bracket is **shown, flagged** — not dropped, not silent. The model is not asked and not trusted: the app computes the flag with the same `slotDeck` (`src/lib/bracket/slot.ts:30`) the Analysis tab's verdict uses, so the flag and the verdict can never disagree about what a deck is.
+
+**Files:**
+- Create: `src/lib/tuning/bracket-shift.ts`
+- Test: `src/lib/tuning/bracket-shift.test.ts`
+
+**Interfaces:**
+- Consumes: `DeckProfile`, `slotDeck(profile, declared)` and its `permits`.
+- Produces:
+  ```typescript
+  /** Flags the ADD brings, read the way the profile loader reads them. */
+  export type AddFacts = { oracleId: string; name: string; gameChanger: boolean; massLandDenial: boolean; extraTurn: boolean };
+  /**
+   * The deck's permits with the swap applied, or null when they equal the permits without it.
+   * `combosAfter` is the assembled two-card combos for the post-swap card set, read by the
+   * caller through `loadAssembledCombos` — a combo completed by the add, or broken by the cut,
+   * is the case a per-card flag cannot see.
+   */
+  export function bracketAfter(args: {
+    profile: DeckProfile;
+    declared: Bracket | null;
+    add: AddFacts;
+    cutOracleId: string | null;
+    combosAfter: ComboRef[];
+  }): Bracket[] | null;
+  ```
+
+**How it computes.** It builds the post-swap `brackets` group — the add joins `gameChangers` / `massLandDenial` / `extraTurns` per its facts, the cut leaves every list it is on, `twoCardCombos` is `combosAfter` — and calls `slotDeck` on a profile carrying that group, then compares `permits` with `slotDeck(profile, declared).permits`. It never uses `bracketDelta`, whose `[3] → [4]` transition is unreachable; a direct comparison of two verdicts has no such gap. Everything else on the profile is left as it is: the flag is about the bracket rules, and those read only this group.
+
+- [ ] **Step 1: Write the failing test**
+
+```typescript
+it("flags an add that is a Game Changer", () => {
+  const out = bracketAfter({ profile: cleanB2, declared: 2, add: { ...plain, gameChanger: true }, cutOracleId: null, combosAfter: [] });
+  expect(out).not.toBeNull();
+  expect(out).not.toEqual(slotDeck(cleanB2, 2).permits);
+});
+
+it("flags a swap that completes a two-card combo, through combosAfter", () => {
+  expect(bracketAfter({ profile: cleanB2, declared: 2, add: plain, cutOracleId: null, combosAfter: [aCombo] })).not.toBeNull();
+});
+
+it("is null for a swap that moves nothing", () => {
+  expect(bracketAfter({ profile: cleanB2, declared: 2, add: plain, cutOracleId: someCard, combosAfter: [] })).toBeNull();
+});
+
+it("clears a flag the cut takes away", () => {
+  // Cutting the deck's only Game Changer for a plain card LOWERS the permits: still a move, still flagged.
+  expect(bracketAfter({ profile: oneGcB3, declared: 3, add: plain, cutOracleId: theGc, combosAfter: [] })).not.toBeNull();
+});
+```
+
+- [ ] **Step 2: Run it, implement, run it again, commit**
+
+```bash
+pnpm test src/lib/tuning/bracket-shift.test.ts
+git add src/lib/tuning/bracket-shift.ts src/lib/tuning/bracket-shift.test.ts
+git commit -m "feat(tuning): flag a suggestion that moves the deck's bracket, through slotDeck"
+```
+
+- [ ] **Step 3 (PR C): Compute it in `runTuning`**
+
+After `validateSuggestions`, for each kept suggestion: read the add's facts (`cards.game_changer` and `loadBracketFlags`, `src/lib/bracket/flags-read.ts:45` — the reads `load.ts` already uses), read `combosAfter` through `loadAssembledCombos` over the post-swap id set, and set `ValidatedSuggestion.bracketAfter` from `bracketAfter(...)`. `declared` is the deck's `declared_bracket`, read beside the intent. At most three suggestions, so at most three combo reads, and none when the pack's kept list is empty.
+
+**The drawn state is owed by the addendum** (Task 16, ask 4): the card needs a line for "this swap would take the deck to bracket N", at both widths.
+
+---
+
 ### Task 10: The shared model client and the daily allowance
 
 **PR A.** Nothing here names tuning. The synopsis (sub-project 6) calls the same two functions with its own model, prompt, schema and feature name.
@@ -1525,8 +1624,11 @@ git commit -m "feat(tuning): six validation rules, every drop counted"
   export class AllowanceSpentError extends Error {}
   /** Inside the caller's transaction: lock, count, insert. Null when spent. */
   export function reserveModelCall(tx: Tx, userId: string, feature: ModelFeature, now: Date): Promise<{ id: string } | null>;
+  /** Inside the outcome write's transaction. Only moves a 'reserved' row, so settling twice is a no-op. */
+  export function settleModelCall(tx: Tx, callId: string, to: "spent" | "refunded"): Promise<void>;
   export function readAllowance(userId: string, now: Date): Promise<Allowance>;
-  export function allowanceFrom(callTimes: Date[], now: Date): Allowance; // pure; both of the above use it
+  /** Pure; both readers use it. Takes the times of the rows that count — reserved and spent. */
+  export function allowanceFrom(callTimes: Date[], now: Date): Allowance;
   ```
 
 **Why the counter is rows, not a number.** A per-player counter column needs a reset job and loses the history; a ledger row per run is counted over a rolling window by one indexed query, reopens on its own, and says what spent it. `feature` is carried so the cost section's figures can be split later, and for nothing else — the allowance counts both features against one number, which is the ruling.
@@ -1631,7 +1733,7 @@ it("names no reopening time while units remain", () => {
 });
 ```
 
-The lock, the count and the insert are a transaction's behaviour and are proved in `probe:tuning-run` (Task 11), which races two reservations for one player's last unit and asserts exactly one wins.
+The lock, the count, the insert and the settle are a transaction's behaviour and are proved in `probe:tuning-run` (Task 11): it races two reservations for one player's last unit and asserts exactly one wins, and asserts that each failure path gives its unit back.
 
 - [ ] **Step 3: Run them to verify they fail**
 
@@ -1649,7 +1751,7 @@ Raw `fetch` to `https://api.anthropic.com/v1/messages`, the headers `scripts/gen
 
 - [ ] **Step 5: Implement the allowance**
 
-`allowanceFrom` is the pure arithmetic. `readAllowance` selects the `created_at` of the reader's `model_calls` rows inside the window (`model_calls_user_created_idx`) and hands them to it. `reserveModelCall` locks, counts through the same arithmetic, and returns null when `used >= MODEL_DAILY_ALLOWANCE`, otherwise inserts `{ userId, feature }` and returns the id.
+`allowanceFrom` is the pure arithmetic. `readAllowance` selects the `created_at` of the reader's `model_calls` rows inside the window whose status is `reserved` or `spent` (`model_calls_user_created_idx`) and hands them to it — a `refunded` row never counts (Hugh, 2026-09-23: only a successful answer spends a unit). A `reserved` row counts because it is a run in flight, and not counting it is exactly how two concurrent presses would both take the last unit. `settleModelCall` moves a row from `reserved` to `spent` or `refunded` and nothing else. `reserveModelCall` locks, counts through the same arithmetic, and returns null when `used >= MODEL_DAILY_ALLOWANCE`, otherwise inserts `{ userId, feature }` and returns the id.
 
 - [ ] **Step 6: Document the key**
 
@@ -1734,7 +1836,7 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
 
   // 0. The inputs. The profile is the deck half of the evidence; the play group
   //    is composed onto it here and never cached with it (Task 7).
-  const [profile, games, intent] = await Promise.all([
+  const [profile, games, { intent, declared }] = await Promise.all([
     cachedDeckProfile(deckId, userId),
     listDeckGames(deckId, userId),
     readDeckIntent(deckId, userId),
@@ -1760,7 +1862,7 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
       const unit = await reserveModelCall(tx, userId, "tuning", new Date());
       if (!unit) throw new AllowanceSpentError();
       const [row] = await tx.insert(deckSuggestionRuns).values({
-        deckId, userId, inputFingerprint: fingerprint,
+        deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, status: "pending",
       }).returning({ id: deckSuggestionRuns.id });
       return row.id;
@@ -1805,13 +1907,15 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   if (kept.length === 0) {
     return finishRun(runId, deckId, { status: "failed", errorClass: "ungrounded", droppedCount });
   }
+  // The bracket flag (Task 9b). Shown, never dropped.
+  const flagged = await withBracketAfter(profile, declared, kept);
 
   // 4. Items and outcome in one transaction, both guarded.
-  return persistRun(runId, deckId, kept, droppedCount);
+  return persistRun(runId, deckId, flagged, droppedCount);
 }
 ```
 
-`readDeckIntent` is a one-column read of `decks.intent`, scoped by `user_id`; `readOwnedOracleIds` is one `collection_items` read over the given ids. Both live in `tuning-read.ts`. `cachedDeckProfile` is the loader the Analysis tab's press already warms (`src/lib/profile/load.ts:577`), so a player who analysed the deck first pays nothing for the deck half here. Its key is the profile fingerprint, so a card edited since the analysis reads a fresh profile rather than a stale one.
+`readDeckIntent` reads `decks.intent` and `decks.declared_bracket` in one row, scoped by `user_id`; `withBracketAfter` is Task 9b step 3; `readOwnedOracleIds` is one `collection_items` read over the given ids. Both live in `tuning-read.ts`. `cachedDeckProfile` is the loader the Analysis tab's press already warms (`src/lib/profile/load.ts:577`), so a player who analysed the deck first pays nothing for the deck half here. Its key is the profile fingerprint, so a card edited since the analysis reads a fresh profile rather than a stale one.
 
 Both writers share one shape. `finishRun` writes an outcome and no items; `persistRun` writes the items and the outcome together. They live in **`src/lib/tuning/run-store.ts`** (server-only, not a `"use server"` module), exported, so the probe can call the real functions: exported from `tuning-actions.ts` they would become public server actions taking an arbitrary `runId`. `ErrorClass` is declared there beside them — `ModelErrorClass | "ungrounded" | "interrupted"`, the five values the column's check allows:
 
@@ -1825,12 +1929,18 @@ export async function finishRun(
   deckId: string,
   set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number },
 ): Promise<DeckMutationResult> {
-  const written = await db.update(deckSuggestionRuns)
-    .set(set)
-    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
-    .returning({ id: deckSuggestionRuns.id });
-  // Superseded: the player has already been shown a settled state. Return
-  // quietly and do not revalidate — revalidating would yank it out from under them.
+  // A failed run gives its unit back (Hugh, 2026-09-23), in the same transaction as
+  // the outcome, so the two can never disagree.
+  const written = await db.transaction(async (tx) => {
+    const rows = await tx.update(deckSuggestionRuns)
+      .set(set)
+      .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
+      .returning({ callId: deckSuggestionRuns.modelCallId });
+    for (const r of rows) await settleModelCall(tx, r.callId, "refunded");
+    return rows;
+  });
+  // Superseded: the player has already been shown a settled state — and whoever
+  // superseded it settled the unit. Return quietly and do not revalidate.
   if (written.length === 0) return { ok: true };
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
   return { ok: true };
@@ -1844,11 +1954,13 @@ export async function persistRun(
       const written = await tx.update(deckSuggestionRuns)
         .set({ status: "ok", droppedCount })
         .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
-        .returning({ id: deckSuggestionRuns.id });
+        .returning({ callId: deckSuggestionRuns.modelCallId });
       // Zero rows means the reaper or a Stop got here first. Throwing rolls the
       // items back with it, so a superseded run can never leave items behind.
       if (written.length === 0) throw new RunSupersededError();
       await tx.insert(deckSuggestionItems).values(kept.map((s) => ({ ...s, runId })));
+      // The only path that spends a unit: an answer the player will see.
+      await settleModelCall(tx, written[0].callId, "spent");
     });
   } catch (err) {
     if (err instanceof RunSupersededError) return { ok: true };
@@ -1866,14 +1978,19 @@ The status update comes **before** the item insert inside the transaction, not a
 ```typescript
 export async function cancelTuningRun(deckId: string, runId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  await db.update(deckSuggestionRuns)
-    .set({ status: "cancelled" })
-    .where(and(
-      eq(deckSuggestionRuns.id, runId),
-      eq(deckSuggestionRuns.deckId, deckId),
-      eq(deckSuggestionRuns.userId, userId),
-      eq(deckSuggestionRuns.status, "pending"),
-    ));
+  await db.transaction(async (tx) => {
+    const rows = await tx.update(deckSuggestionRuns)
+      .set({ status: "cancelled" })
+      .where(and(
+        eq(deckSuggestionRuns.id, runId),
+        eq(deckSuggestionRuns.deckId, deckId),
+        eq(deckSuggestionRuns.userId, userId),
+        eq(deckSuggestionRuns.status, "pending"),
+      ))
+      .returning({ callId: deckSuggestionRuns.modelCallId });
+    // A Stop is not an answer: its unit comes back.
+    for (const r of rows) await settleModelCall(tx, r.callId, "refunded");
+  });
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
   return { ok: true };
 }
@@ -1893,6 +2010,7 @@ Four cases, each written so a mutation fails it:
 2. **The player pressed Stop.** Same shape with the row `cancelled`. `cancelled` survives. Mutation: the same guard, on `finishRun`.
 3. **A second concurrent run on one deck** is refused by the partial index (23505), and the loser holds no allowance unit — the unit and the row share the transaction. Mutation: move the reservation out of the pending-row transaction, and the loser keeps a unit it never spent.
 4. **Two presses on two decks race for one player's last allowance unit**, started together on two connections; exactly one reserves. Mutation: remove the advisory lock (it fails on every run, as `probe:arrivals`'s lock case does).
+9. **Only an answer spends a unit.** After an `ok` run the unit reads `spent`; after a `failed` run, a Stop, and a reaped run it reads `refunded` and the allowance's `used` is back where it was. Mutation: settle `spent` in `finishRun`.
 
 Point it at `local-dev` or a scratch Neon branch, **never production**. The script's `report()` counts its own failures and `process.exit` runs after the `finally`, not inside it — the trap three earlier probes fell into.
 
@@ -1942,6 +2060,8 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
     owned: boolean; ownedQuantity: number;
     /** Cents, formatted by the card through formatCents. Null when unpriced. */
     priceCents: number | null;
+    /** The bracket flag (Task 9b): the deck's permits with this swap, or null. */
+    bracketAfter: Bracket[] | null;
   };
   export type TuningState = {
     run: { id: string; status: string; errorClass: string | null; createdAt: Date; droppedCount: number } | null;
@@ -2050,9 +2170,10 @@ It reaps on the way past, in one statement, before reading — **scoped to this 
 ```sql
 update deck_suggestion_runs set status = 'failed', error_class = 'interrupted'
 where deck_id = :deckId and status = 'pending' and created_at < :cutoff
+returning model_call_id
 ```
 
-The spec's §6 writes this unscoped. Scoping it to the deck being read changes nothing about the contract — every deck's read reaps its own — and one player opening a deck no longer writes across other players' rows.
+and refunds each returned unit through `settleModelCall` in the same transaction — an interrupted run is a failure, and a failure gives its unit back. The spec's §6 writes this unscoped. Scoping it to the deck being read changes nothing about the contract — every deck's read reaps its own — and one player opening a deck no longer writes across other players' rows.
 
 Then it reads: the newest run for the deck with its items ordered by `position`, joined to `cards` for the add and cut names and type lines and to the collection and price tables for `owned` / `ownedQuantity` / `priceCents`; the newest run with `status = 'ok'` for `lastOkFingerprint` / `lastOkAt`; the game count; and `readAllowance(userId, now)`.
 
@@ -2299,6 +2420,7 @@ What the addendum must return, as named asks:
 1. **The tab** the panel and the intent control live on, at both widths.
 2. **The zero-evidence *Ready* state** and the retirement of S4 state 1 (Task 14).
 3. **The allowance's exhausted state**, drawn once for both model features.
+4. **The bracket flag on a suggestion card** — "this swap would take the deck to bracket N" (Hugh, 2026-09-23: shown, flagged), and the case where a swap lowers it.
 
 What eng already knows about any answer, so the addendum need not solve it:
 
