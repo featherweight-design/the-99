@@ -6,6 +6,7 @@ import { findings, type Finding } from "../../lib/bracket/findings";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import type { DeckProfile } from "../../lib/profile/types";
 import { FindingMark } from "./finding-mark";
+import { ProvenanceOpener } from "./provenance-panel";
 import { ReceiptModal, type FindingArt } from "./receipt-modal";
 
 const copy = deckAnalysisCopy.findings;
@@ -18,8 +19,9 @@ const NAMES_PHONE = 3;
  * "What is in this deck" — five findings, each with its count and its cards, and the receipt
  * behind every one that has cards.
  *
- * ONE RULE GOVERNS THE TAB: the climb states, the findings open. A present finding's control is
- * the only thing here that opens anything, and a zero draws no control at all.
+ * ONE RULE GOVERNS THE TAB: the climb states, the findings open. A present finding's control
+ * opens its receipt and a zero draws no control at all; the section's only other control is the
+ * head row's `How we make these decisions →`, which is about all five rather than any one.
  *
  * ONE LIST AT BOTH WIDTHS, restyled rather than drawn twice. Desktop lays the five out as tiles
  * in a row; the phone stacks them as rows in one box. Two subtrees would mount every control
@@ -31,15 +33,25 @@ export function FindingsBlock({ profile, art }: { profile: DeckProfile; art: Fin
   const opened = open ? list.find((f) => f.id === open) ?? null : null;
 
   return (
-    <section className="flex flex-col gap-[9px] md:gap-[11px]" data-testid="findings-block">
+    // ONE OPENER for how these are decided, mounted once: at the head row's right end on desktop,
+    // where the grid places it, and under the box at 44px on the phone (handoff §2, row 4).
+    <section
+      className="flex flex-col gap-[9px] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-baseline md:gap-x-3 md:gap-y-[11px]"
+      data-testid="findings-block"
+    >
       <h3
         className="m-0 font-mono font-normal uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em]"
         style={{ color: "var(--fg-faint)" }}
       >
         {copy.heading}
       </h3>
+      {/* In the DOM straight after the heading, so focus meets it where desktop draws it; the phone
+          moves it under the box with `order`. */}
+      <ProvenanceOpener className="self-start max-md:order-last" />
       <ul
         className={
+          "md:col-span-2 "
+          +
           // The phone's box is one surface; the desktop's is the page, with each tile its own.
           "m-0 p-0 list-none flex flex-col overflow-hidden rounded-[11px] border border-[color:var(--border)] "
           + "max-md:bg-[color:var(--surface)] "

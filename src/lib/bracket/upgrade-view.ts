@@ -8,16 +8,16 @@ import { upgradePath, type UpgradeItem, type UpgradePath } from "./upgrade";
  * component holds a second copy of a rule.
  *
  * `upgradePath` is Tier A's and states what a target asks for. What the surface adds is only
- * arithmetic over that answer — which targets to offer, how many things a heading counts, which
- * cards sit in two items, and the nearest target removals CAN reach when this one cannot.
+ * arithmetic over that answer — which target to read, how many things a heading counts, and which
+ * cards sit in two items.
  */
 
 /** The three brackets a deck can be taken down to. Never 4 or 5: those have no card limits. */
 export type Target = 1 | 2 | 3;
 
 /**
- * The targets offered as chips, nearest first: every bracket BELOW the bottom of the deck's
- * reading, up to Upgraded.
+ * The brackets below the deck's reading, nearest first: every bracket BELOW the bottom of the
+ * reading, up to Upgraded. The sheet reads the first, the bracket directly below (3b).
  *
  * Below the BOTTOM, not the top. A `[1,2]` deck already sits inside Core, and the path it would
  * draw there is "nothing would have to go" — which is the declaration's question, asked by the
@@ -63,28 +63,6 @@ export function overlapCount(path: UpgradePath): number {
     for (const id of candidateIds(item)) seen.set(id, (seen.get(id) ?? 0) + 1);
   }
   return [...seen.values()].filter((n) => n > 1).length;
-}
-
-/**
- * The nearest target removals CAN reach, when this one is blocked — and what it asks.
- *
- * ALWAYS ABOVE THE BLOCKED ONE. The targets nest: each lower bracket states every limit the one
- * above it does and more, so whatever a commander puts out of reach at Core is out of reach at
- * Exhibition too. The only place left to look is up, and "nearest" is the lowest reachable
- * target above the blocked one — the smallest step back from what the reader asked for. Null
- * when there is none, and then the line is not drawn.
- */
-export function nearestReachable(
-  profile: DeckProfile,
-  targets: readonly Target[],
-  blocked: Target,
-): { target: Target; path: UpgradePath } | null {
-  const above = targets.filter((t) => t > blocked).sort((a, b) => a - b);
-  for (const target of above) {
-    const path = upgradePath(profile, target);
-    if (!path.blocked) return { target, path };
-  }
-  return null;
 }
 
 /** The count a limit sentence reports: every card holding the rule, commanders included. */

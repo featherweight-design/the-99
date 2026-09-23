@@ -9,7 +9,6 @@ import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
 import { LeanLine } from "./lean-line";
-import { ProvenancePanel } from "./provenance-panel";
 import type { FindingArt } from "./receipt-modal";
 import { VerdictBlock } from "./verdict-block";
 
@@ -33,7 +32,6 @@ export function AnalysisPanel({
   state,
   onRequest,
   declaration,
-  onOpenDecklist,
   synopsis,
   art = EMPTY_ART,
   children,
@@ -42,8 +40,6 @@ export function AnalysisPanel({
   onRequest: () => void;
   /** The player's answer and the control to give one, held by the shell. */
   declaration?: DeclarationControl;
-  /** The upgrade path's `open your decklist`: the tab where a player acts on it. */
-  onOpenDecklist?: () => void;
   /**
    * The art and printed name for every card the findings can name, from the deck page's own
    * rows. See `FindingArt` for why it is resolved here rather than carried on the profile.
@@ -72,7 +68,7 @@ export function AnalysisPanel({
         cached profile and never waits on a rebuild.
       */}
       {state.kind === "ready" ? (
-        <Verdict profile={state.profile} art={art} declaration={declaration} onOpenDecklist={onOpenDecklist} />
+        <Verdict profile={state.profile} art={art} declaration={declaration} />
       ) : null}
       {children}
     </div>
@@ -90,12 +86,10 @@ function Verdict({
   profile,
   art,
   declaration,
-  onOpenDecklist,
 }: {
   profile: import("../../lib/profile/types").DeckProfile;
   art: FindingArt;
   declaration?: DeclarationControl;
-  onOpenDecklist?: () => void;
 }) {
   const verdict = slotDeck(profile);
   return (
@@ -117,9 +111,8 @@ function Verdict({
           ) : null
         }
       />
-      <BracketClimb verdict={verdict} profile={profile} onOpenDecklist={onOpenDecklist} />
+      <BracketClimb verdict={verdict} profile={profile} />
       <FindingsBlock profile={profile} art={art} />
-      <ProvenancePanel />
     </>
   );
 }

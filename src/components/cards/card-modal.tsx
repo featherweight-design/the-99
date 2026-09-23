@@ -6,7 +6,7 @@
 // - Escape closes; focus returns to the previously-focused element on close
 
 import Link from "next/link";
-import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { BrowseCard, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
@@ -419,6 +419,7 @@ export function CardModal({
   onProxyWrite,
   onSelectCard,
   stacked = false,
+  backLabel,
 }: {
   card: BrowseCard;
   /**
@@ -433,6 +434,13 @@ export function CardModal({
    * the backdrop element is still there and still takes the press.
    */
   stacked?: boolean;
+  /**
+   * The sheet underneath, by name. When `stacked` with one, the desktop close becomes a
+   * `← {backLabel}` pill in the same slot and plate (Analysis tab handoff §3): the reader sees
+   * where a dismissal lands before making it. The phone is unchanged, because there the strip of
+   * the sheet behind is already the way back.
+   */
+  backLabel?: string;
   /** The deck this card was opened from, which scopes the proxy control. Null
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
@@ -522,6 +530,30 @@ export function CardModal({
   const heldArtFace = useRef<string | null>(null);
   // The two shipped ✕ buttons, one per breakpoint tree.
   const closeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // THE NAME BLOCK'S RESERVE follows whatever sits in the close slot. The ✕ is 34px, and 46px
+  // clears it; a back pill is as wide as its label, which runs from `Game changers` to `How we
+  // determined bracket 4`, so it is measured rather than assumed (readiness finding 10).
+  const back = stacked && backLabel ? backLabel : null;
+  const backRef = useRef<HTMLButtonElement | null>(null);
+  const [closeReserve, setCloseReserve] = useState(46);
+  useLayoutEffect(() => {
+    const el = backRef.current;
+    if (!back || !el) {
+      setCloseReserve(46);
+      return;
+    }
+    // The ✕ is 34 wide and the name keeps 46, so the reserve is the control's width plus 12.
+    // Observed rather than read once: the pill is `display: none` below `md`, so a modal opened
+    // on a narrow window measures 0 until the window widens.
+    const measure = () => setCloseReserve(el.offsetWidth + 12);
+    measure();
+    // Guarded, as `use-head-collapse.ts` guards its own: an unconditional constructor throws on
+    // mount in any engine without the API. The `measure()` above has already sized the reserve.
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [back]);
   /**
    * Where the dialog puts focus when it opens: the ✕ that has layout.
    *
@@ -1553,17 +1585,33 @@ export function CardModal({
             row sits below it so it stays bottom-aligned whatever the oracle text
             length. */}
         <div inert={zoomed} className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
-          {/* Desktop close button — §Desktop: Close Button */}
-          <button
-            type="button"
-            ref={(el) => { closeRefs.current[1] = el; }}
-            onClick={onClose}
-            aria-label="Close card details"
-            className="hidden md:flex absolute items-center justify-center rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
-            style={{ top: 22, right: 24, width: 34, height: 34, fontSize: 15 }}
-          >
-            ✕
-          </button>
+          {/* Desktop close button — §Desktop: Close Button. Over a sheet that names itself it
+              becomes the way back to that sheet, in the same slot and on the same plate. */}
+          {back ? (
+            <button
+              type="button"
+              ref={(el) => { closeRefs.current[1] = el; backRef.current = el; }}
+              onClick={onClose}
+              aria-label={`Back to ${back}`}
+              data-testid="card-modal-back"
+              className="hidden md:flex absolute items-center gap-[7px] whitespace-nowrap rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] font-mono text-[11px] text-[color:var(--fg)]"
+              style={{ top: 22, right: 24, height: 34, padding: "0 14px 0 12px" }}
+            >
+              <span aria-hidden>←</span>
+              {back}
+            </button>
+          ) : (
+            <button
+              type="button"
+              ref={(el) => { closeRefs.current[1] = el; }}
+              onClick={onClose}
+              aria-label="Close card details"
+              className="hidden md:flex absolute items-center justify-center rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
+              style={{ top: 22, right: 24, width: 34, height: 34, fontSize: 15 }}
+            >
+              ✕
+            </button>
+          )}
 
           <div className="flex-1 overflow-auto p-[20px] md:p-[30px_32px]">
             {/* Name + type + mana pips — §Mobile: Name + Type Header.
@@ -1586,7 +1634,10 @@ export function CardModal({
                 BOTH widths. The name block is in this row on a phone too — the
                 art header only takes it when `compactArt` is true, and that wants
                 the printing picker expanded. */}
-            <div className="flex flex-wrap items-start justify-between gap-[12px] md:pr-[46px]">
+            <div
+              className="flex flex-wrap items-start justify-between gap-[12px] md:pr-[var(--close-reserve)]"
+              style={{ "--close-reserve": `${closeReserve}px` } as React.CSSProperties}
+            >
               {/* The tag survives the collapse and moves out of the art (card-detail R2,
                   table rows 2.1-2.2): a 72px thumb has no room beneath it. It lands
                   beside the mana cost, which is the one thing still drawn in this row on

@@ -61,6 +61,7 @@ export function ReceiptModal({
   return (
     <ModalChrome
       mark={<FindingMark id={finding.id} />}
+      width={760}
       title={label}
       aside={finding.count}
       closeLabel={copy.receipt.closeAria(label)}
@@ -72,7 +73,7 @@ export function ReceiptModal({
         ))
       ) : (
         <ul
-          className="m-0 list-none grid grid-cols-2 md:grid-cols-5 gap-[11px] md:gap-[9px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]"
+          className="m-0 list-none grid grid-cols-2 md:grid-cols-4 gap-x-[11px] gap-y-[14px] md:gap-x-[12px] md:gap-y-[18px] px-[16px] py-[14px] md:px-[20px] md:pt-[18px] md:pb-[22px]"
           data-testid="receipt-grid"
         >
           {finding.cards.map((card) => (
@@ -87,12 +88,17 @@ export function ReceiptModal({
 }
 
 /**
- * The modal's chrome, shared by every body the Analysis tab opens: the receipt's card list and
- * combo, and the reasoning behind a lean. Glyph, title, an aside (a count, or a qualifier), close.
+ * The sheet every body the Analysis tab opens is drawn in: the receipt, the reasoning behind a
+ * lean, what would have to go, and how we make these decisions. An optional mark, a title, an
+ * optional aside (a count, or a qualifier), and close.
  *
- * `wide` is the reasoning modal's 700px, which its two 100×140 plates need side by side; the
- * receipt is 560. `ground` is the reasoning's `--elevated` against the receipt's
- * `--surface-raised`, as each is drawn.
+ * THREE WIDTHS, one per body (Analysis tab handoff §3): 760 for the receipt's four tiles across,
+ * 700 for the reasoning's two plates and for what would have to go, 560 for how we make these
+ * decisions. `ground` is the reasoning's `--elevated` against everyone else's `--surface-raised`.
+ *
+ * `backLabel` is what a card stacked on this sheet calls it: `← {backLabel}` in the card's close
+ * slot. It defaults to the title, which is right for every sheet but what would have to go,
+ * whose title is a sentence and whose way back is the target bracket's name.
  */
 export function ModalChrome({
   mark,
@@ -100,24 +106,33 @@ export function ModalChrome({
   aside,
   closeLabel,
   onClose,
-  wide = false,
+  width,
+  backLabel = title,
   ground = "var(--surface-raised)",
+  titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
   children,
 }: {
-  mark: React.ReactNode;
+  mark?: React.ReactNode;
   title: string;
-  aside: React.ReactNode;
+  aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
-  wide?: boolean;
+  width: 560 | 700 | 760;
+  backLabel?: string;
   ground?: string;
+  /**
+   * The title's size and how it fits. Every title is one truncated line but what would have to
+   * go's, which is a sentence: 14px on a phone and wrapping to a second line inside the pinned
+   * 43px header rather than losing its end, as the 390 frame draws it.
+   */
+  titleClassName?: string;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { registerSheet, openOracleId } = useCardDetail();
   useDialogA11y(ref, onClose);
-  useEffect(() => registerSheet(), [registerSheet]);
+  useEffect(() => registerSheet(backLabel), [registerSheet, backLabel]);
 
   // The card in front of this one. The sheet steps down a ground behind it, which is the second
   // half of what lets a reader see where a dismissal lands.
@@ -143,7 +158,7 @@ export function ModalChrome({
           // stacked card sheet leaves visible. Desktop: centered.
           "flex flex-col w-full h-[calc(100%-52px)] rounded-t-[14px] border-t "
           + "md:h-auto md:max-h-[85vh] md:rounded-[14px] md:border overflow-hidden "
-          + (wide ? "md:w-[700px] " : "md:w-[560px] ")
+          + WIDTH_CLASS[width]
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.
           + (behind ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)]")
         }
@@ -159,14 +174,16 @@ export function ModalChrome({
           {mark}
           <h2
             id={titleId}
-            className="m-0 min-w-0 truncate font-display font-bold text-[15px] md:text-[16px] leading-tight"
+            className={"m-0 min-w-0 font-display font-bold " + titleClassName}
             style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
           >
             {title}
           </h2>
-          <span className="min-w-0 truncate font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>
-            {aside}
-          </span>
+          {aside != null ? (
+            <span className="min-w-0 truncate font-mono text-[11.5px] md:text-[12px]" style={{ color: "var(--fg-faint)" }}>
+              {aside}
+            </span>
+          ) : null}
           {/* 44px to press. The header around it is pinned to 43px on the phone, because the
               stacked card sheet starts at 96 and this sheet at 52 behind a 1px border: a header
               any taller is cut along its bottom edge by the sheet that exists to show it. The
@@ -181,11 +198,22 @@ export function ModalChrome({
             ×
           </button>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
+        {/* Behind a card the body steps down further than the header (0.35 against 0.55): the
+            header is the strip that says where a dismissal lands, and the body is only context. */}
+        <div className="flex-1 min-h-0 overflow-y-auto" style={{ opacity: behind ? 0.35 : undefined }}>
+          {children}
+        </div>
       </div>
     </div>
   );
 }
+
+// Literal class strings, so Tailwind sees each one.
+const WIDTH_CLASS = {
+  560: "md:w-[560px] ",
+  700: "md:w-[700px] ",
+  760: "md:w-[760px] ",
+} as const;
 
 /** A card: its art, its name under it, and a press that opens the card modal on top. */
 export function ReceiptTile({
@@ -208,18 +236,21 @@ export function ReceiptTile({
       name={name}
       siblings={siblings}
       testId="receipt-tile"
-      className="flex w-full flex-col items-stretch gap-[5px] md:gap-[6px] text-left"
+      // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
+      className={"flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]")}
       style={width ? { width } : undefined}
     >
       <span
-        className="block w-full rounded-[6px] border border-[color:var(--border-strong)] bg-cover bg-center"
+        className={"block w-full border border-[color:var(--border-strong)] bg-cover bg-center " + (width ? "rounded-[6px]" : "rounded-[8px]")}
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
           backgroundImage: drawn?.imageUri ? cssUrl(drawn.imageUri) : undefined,
         }}
       />
-      <span className="text-[11px] md:text-[10.5px] leading-[1.3]" style={{ color: "var(--fg-body)" }}>
+      {/* 11.5 / 12px in the receipt's grid, where a tile is ~172px at both widths; the combo body's
+          fixed 96px plates keep the smaller name, since that body is unchanged. */}
+      <span className={(width ? "text-[11px] md:text-[10.5px]" : "text-[11.5px] md:text-[12px]") + " leading-[1.3]"} style={{ color: "var(--fg-body)" }}>
         {name}
       </span>
     </CardDetailTrigger>
