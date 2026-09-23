@@ -7,8 +7,9 @@ Round 0 section (~:2116-2130), which deferred the synopsis's *content* design to
 **Chrome to reuse:** `ModalChrome` in `src/components/decks/receipt-modal.tsx`, which already carries
 three bodies: the card list and the combo (#863) and the reasoning (#865)
 
-**Verified against `origin/main` at `c476c931`.** The slot exists today as `SynopsisSlot` in
-`src/components/decks/analysis-panel.tsx:211`, drawing its absent reading only.
+**Verified against `origin/main` at `c476c931`; updated at `4ba8df85`.** The slot's placeholder,
+`SynopsisSlot`, was deleted by #887 (finding 6 of the Analysis-tab audit): until this feature
+ships, the tab draws no Overview section at all rather than a placeholder.
 
 This round asks: **what does a read-back of a finished deck look like, and how long is it?**
 
@@ -145,7 +146,8 @@ Recorded so the round is not asked about them:
   will also rewrite the synopsis, its banner says it uses a credit before the press. An unchanged
   list (under an unchanged contract version, see Storage) returns its stored synopsis instead of
   paying for new wording of the same facts.
-- **Storage.** Beside the stored analysis (#874), and copied into the version at commit. Reuse
+- **Storage.** Beside the stored analysis (#874). A commit never GENERATES a synopsis; it copies the
+  stored one into the version only when that synopsis was written for the exact list committed. Reuse
   is keyed on two things: the LIST fingerprint (`listFingerprint`,
   `src/lib/profile/fingerprint.ts:53-55`, the one `deck_profiles.fingerprint` stores) and a
   synopsis contract version (the prompt, the accept contract and the length budgets). A row
