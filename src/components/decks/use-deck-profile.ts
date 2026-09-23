@@ -86,8 +86,11 @@ export function useDeckProfile(deckId: string): {
    * newest is dropped.
    */
   const generation = useRef(0);
-  /** The deck a peek was last made for, so reopening the tab does not look again. */
-  const peekedFor = useRef<string | null>(null);
+  /**
+   * Every deck a peek has been made for in this mount, so reopening the tab does not look again.
+   * A SET rather than the last deck: A, then B, then A again would otherwise look for A twice.
+   */
+  const peeked = useRef(new Set<string>());
   /**
    * The deck currently on screen, readable from an async continuation.
    *
@@ -132,8 +135,10 @@ export function useDeckProfile(deckId: string): {
   }, [deckId]);
 
   const peek = useCallback(() => {
-    if (peekedFor.current === deckId || state.kind !== "idle") return;
-    peekedFor.current = deckId;
+    // A press for this deck still in flight outranks any stored copy: a reader who left and came
+    // back before it resolved would otherwise see the stored one painted over the pending press.
+    if (peeked.current.has(deckId) || state.kind !== "idle" || inFlightFor.current === deckId) return;
+    peeked.current.add(deckId);
     const mine = generation.current;
     void (async () => {
       let result: StoredProfileFetch;

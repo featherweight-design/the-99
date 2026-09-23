@@ -271,6 +271,22 @@ describe("useDeckProfile peek", () => {
     c.rerender(<Harness deckId={B} />);
     await peek(c);
     expect(stub.peeks).toEqual([A, B]);
+    // Back to A: already looked for in this mount.
+    c.rerender(<Harness deckId={A} />);
+    await peek(c);
+    expect(stub.peeks).toEqual([A, B]);
+  });
+
+  // A press still in flight for this deck outranks a stored copy, even after the shell moved away
+  // and back, which resets the state to idle while the press is pending.
+  it("makes no peek while a press for the same deck is in flight", async () => {
+    stub.gate = () => {};
+    const c = render(<Harness />);
+    await ask(c);
+    c.rerender(<Harness deckId={B} />);
+    c.rerender(<Harness deckId={A} />);
+    await peek(c);
+    expect(stub.peeks).toEqual([]);
   });
 
   it.each([

@@ -152,6 +152,27 @@ async function run() {
     values (${deck.id}::uuid, ${body[5].oracle_id}::uuid, 1)`);
   check("a card added after the press retires the row", await readStoredProfile(deck.id, USER, deps), null);
 
+  // 7b · A result that no longer describes the deck is not stored. Two presses from two tabs can
+  // finish out of order; the deck is edited between this build and its write, as the older press
+  // would see it, and the row must keep what it held.
+  {
+    const [before] = await rows<{ fingerprint: string }>(sql`
+      select fingerprint from deck_profiles where deck_id = ${deck.id}::uuid`);
+    const late: StoredProfileDeps = {
+      generation: deps.generation,
+      compute: async (id, user) => {
+        const built = await loadDeckProfile(id, user);
+        await fixture.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid
+          and oracle_id = ${body[0].oracle_id}::uuid`);
+        return built;
+      },
+    };
+    await computeAndStoreProfile(deck.id, USER, late);
+    const [after] = await rows<{ fingerprint: string }>(sql`
+      select fingerprint from deck_profiles where deck_id = ${deck.id}::uuid`);
+    check("a result overtaken by an edit is not written over the row", after?.fingerprint, before?.fingerprint);
+  }
+
   // 8 · The check constraint.
   try {
     await fixture.execute(sql`

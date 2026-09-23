@@ -95,6 +95,13 @@ export async function computeAndStoreProfile(
   const profile = await deps.compute(deckId, userId);
   if (!profile) return null;
   try {
+    // STORED ONLY IF IT STILL DESCRIBES THE DECK. Two presses from two tabs can finish out of
+    // order, and an older result landing last would replace the newer one with an analysis of a
+    // deck that no longer exists, so the next reload would find nothing. One head read decides it:
+    // a result whose fingerprint is not the deck's current one is returned to its caller, who
+    // asked for it, and never written.
+    const now = await loadProfileHead(deckId, userId);
+    if (!now || profileFingerprint(now) !== profile.fingerprint) return profile;
     const permits = [...slotDeck(profile).permits].sort((a, b) => a - b);
     await db
       .insert(deckProfiles)
