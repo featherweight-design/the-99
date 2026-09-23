@@ -251,17 +251,16 @@ string. The strings file's dashes are all in comments.
 The design tables `declaration-surface.md` and `upgrade-path.md` quote them and must be swept
 in the same PR, or `check:copy-drift` goes red.
 
-## 8 · The open calls
+## 8 · HANDOFF §4's three calls, decided
 
 1. **The climb in the left column** (§4.1). **Eng decides: as drawn.** Hugh signed off 2a–2i,
    which draw it there. Until sub-project 6 the Overview is absent (finding 6), so the climb *is*
    the top of the left column. The fallback is not needed.
 2. **A stale range withholds its chips** (§4.2). **Eng decides: withhold, and keep any existing
    answer.** It is the only defensible option (finding 12).
-3. **The ledger out of the tab** (§4.3). **Hugh.** The question for him: *"The deck's curve and
-   color counts were going to sit under the mix. This round moves them out, and nothing is drawn
-   for them anywhere else yet, since deck stats is paused. Are you happy for them to wait for
-   that round?"*
+3. **The ledger out of the tab** (§4.3). **Settled by Hugh on 2026-09-22:** the deck's curve and
+   color counts wait for deck stats to be scoped as its own round, and nothing is drawn for them
+   until then.
 
 **Findings 1, 2 and 5 were settled by Hugh on 2026-09-23** (the rulings section at the top).
 **Still his: the About coverage in finding 18:**
