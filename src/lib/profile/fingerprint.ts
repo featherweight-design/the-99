@@ -41,8 +41,10 @@ export function profileFingerprint(input: ListInput): string {
  * cached thing changes, so it carries PROFILE_VERSION. That makes it the wrong answer to "has
  * the player changed this deck": a deploy that bumps the version (1 → 3 over 2026-09-20/21)
  * reads as an edit on every deck. Hugh ruled on 2026-09-23 that only the player's own edits
- * count as drift, so every drift question reads this one, and a version bump is compared as
- * its own stored column where anything needs to know about it.
+ * count as drift. A drift question should read this one, and compare a version bump as its
+ * own stored column where it needs to know about one. NO CALLER READS IT YET: the tuning
+ * gate (#10) and the analysis tab's staleness read adopt it in their own PRs, and until they
+ * do the stored analysis still retires on a version bump through `profileFingerprint`.
  *
  * A separate function rather than a flag on the other, so no caller can pass the wrong
  * argument. Same input shape, so a `ProfileHead` passes to either. SERVER-ONLY, like the
