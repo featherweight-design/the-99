@@ -1591,7 +1591,7 @@ export function CardModal({
               onClick={onClose}
               aria-label={`Back to ${back}`}
               data-testid="card-modal-back"
-              className="hidden md:flex absolute items-center gap-[6px] whitespace-nowrap rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] font-mono text-[11px] text-[color:var(--fg)]"
+              className="hidden md:flex absolute items-center gap-[7px] whitespace-nowrap rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] font-mono text-[11px] text-[color:var(--fg)]"
               style={{ top: 22, right: 24, height: 34, padding: "0 14px 0 12px" }}
             >
               <span aria-hidden>←</span>

@@ -74,7 +74,7 @@ export function UpgradePathSheet({
     >
       <div
         data-testid="upgrade-path"
-        className="flex flex-col gap-[11px] px-[16px] py-[14px] md:gap-[13px] md:px-[18px] md:py-4"
+        className="flex flex-col gap-[11px] px-[16px] py-[14px] md:gap-[13px] md:px-[18px] md:pt-4 md:pb-[18px]"
       >
         {path.blocked ? (
           <Blocked path={path} profile={profile} />
@@ -82,7 +82,7 @@ export function UpgradePathSheet({
           <Satisfied target={target} verdict={verdict} />
         ) : (
           <>
-            <div className="flex flex-col gap-[11px] md:gap-[9px]">
+            <div className="flex flex-col gap-[11px] md:gap-[13px]">
               {path.items.map((item) => (
                 <Item key={item.rule} item={item} target={target} profile={profile} />
               ))}

@@ -332,6 +332,16 @@ async function walkUpgradePath(page, label, width) {
   const opener = onPageRole(page, "button", /what would have to go/);
   if (!report(`${label}px · the lower rung offers what would have to go`, (await opener.count()) === 1,
     `${await opener.count()} openers`)) return;
+  if (phone) {
+    // Its own row at the rung's right edge, and a 44px target (the 390 frame).
+    const geo = await opener.evaluate((b) => {
+      const rung = b.closest('[data-testid="climb-rung"]').getBoundingClientRect();
+      const r = b.getBoundingClientRect();
+      return { h: Math.round(r.height), gapRight: Math.round(rung.right - r.right) };
+    });
+    report(`${label}px · the rung's opener is a 44px target at the rung's right`,
+      geo.h >= 44 && geo.gapRight <= 14, `${geo.h}px tall, ${geo.gapRight}px from the rung's right`);
+  }
   const popup = await opener.getAttribute("aria-haspopup");
   await opener.click();
   const sheet = page.locator('[role="dialog"]').filter({ has: page.locator('[data-testid="upgrade-path"]') });

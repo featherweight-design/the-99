@@ -191,14 +191,20 @@ function Rung({
       <span className="flex flex-col gap-1.5">
         <RungBody bracket={bracket} role={role} declares={declares} verdict={verdict} profile={profile} />
         {path ? (
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            onClick={path.onOpen}
-            className="ml-[7px] w-fit border-b border-dotted border-[color:var(--accent)] font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:ml-0"
-          >
-            {upgradePathCopy.open} <span aria-hidden="true">→</span>
-          </button>
+          // Phone: its own row, pushed to the rung's right edge, a 44px target pulled back into
+          // the rung's padding. Desktop: under the body, at its left.
+          <span className="-mt-[6px] -mb-[8px] flex min-h-[44px] items-center justify-end md:m-0 md:block md:min-h-0">
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={path.onOpen}
+              className="flex min-h-[44px] items-center font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:min-h-0"
+            >
+              <span className="border-b border-dotted border-[color:var(--accent)]">
+                {upgradePathCopy.open} <span aria-hidden="true">→</span>
+              </span>
+            </button>
+          </span>
         ) : null}
       </span>
     </div>

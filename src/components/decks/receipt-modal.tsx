@@ -73,7 +73,7 @@ export function ReceiptModal({
         ))
       ) : (
         <ul
-          className="m-0 list-none grid grid-cols-2 md:grid-cols-4 gap-[11px] md:gap-[9px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]"
+          className="m-0 list-none grid grid-cols-2 md:grid-cols-4 gap-x-[11px] gap-y-[14px] md:gap-x-[12px] md:gap-y-[18px] px-[16px] py-[14px] md:px-[20px] md:pt-[18px] md:pb-[22px]"
           data-testid="receipt-grid"
         >
           {finding.cards.map((card) => (
@@ -236,20 +236,21 @@ export function ReceiptTile({
       name={name}
       siblings={siblings}
       testId="receipt-tile"
-      className="flex w-full flex-col items-stretch gap-[5px] md:gap-[6px] text-left"
+      // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
+      className={"flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]")}
       style={width ? { width } : undefined}
     >
       <span
-        className="block w-full rounded-[6px] border border-[color:var(--border-strong)] bg-cover bg-center"
+        className={"block w-full border border-[color:var(--border-strong)] bg-cover bg-center " + (width ? "rounded-[6px]" : "rounded-[8px]")}
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
           backgroundImage: drawn?.imageUri ? cssUrl(drawn.imageUri) : undefined,
         }}
       />
-      {/* 12px in the receipt's grid, where a tile is ~172px at both widths; the combo body's
+      {/* 11.5 / 12px in the receipt's grid, where a tile is ~172px at both widths; the combo body's
           fixed 96px plates keep the smaller name, since that body is unchanged. */}
-      <span className={(width ? "text-[11px] md:text-[10.5px]" : "text-[12px]") + " leading-[1.3]"} style={{ color: "var(--fg-body)" }}>
+      <span className={(width ? "text-[11px] md:text-[10.5px]" : "text-[11.5px] md:text-[12px]") + " leading-[1.3]"} style={{ color: "var(--fg-body)" }}>
         {name}
       </span>
     </CardDetailTrigger>

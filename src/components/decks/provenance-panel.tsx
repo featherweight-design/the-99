@@ -38,7 +38,7 @@ export function ProvenanceOpener({ className = "" }: { className?: string }) {
         onClick={() => setOpen(true)}
         data-testid="provenance-opener"
         className={
-          "inline-flex min-h-[44px] md:min-h-0 items-center gap-[6px] bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg-faint)] "
+          "inline-flex min-h-[44px] md:min-h-0 items-center gap-[8px] bg-transparent border-0 p-0 font-mono text-[10px] cursor-pointer text-[color:var(--fg-faint)] "
           + className
         }
       >
@@ -77,7 +77,7 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       width={560}
     >
-      <div data-testid="provenance" className="flex flex-col gap-[12px] px-[16px] py-[14px] md:px-[18px] md:py-[16px] text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-muted)" }}>
+      <div data-testid="provenance" className="flex flex-col gap-[11px] md:gap-[12px] px-[16px] py-[14px] md:px-[18px] md:pt-[16px] md:pb-[18px] text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-muted)" }}>
         <p className="m-0" style={{ color: "var(--fg-body)" }}>{copy.provenance.lead}</p>
         <dl className="m-0 flex flex-col gap-[10px]">
           {rows.map((row) => (
