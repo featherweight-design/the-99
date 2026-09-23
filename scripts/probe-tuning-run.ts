@@ -285,6 +285,20 @@ async function run() {
     check("7 · undo takes off a proxy mark added after the apply", await proxied(deck, cut), false);
     check("7 · and the cut is back at two copies", await cardRow(deck, cut), { quantity: 2, auto: false });
 
+    // The player keeps the cut's remaining copy after applying: a provenance edit, refused too.
+    {
+      const u2 = newUser();
+      const deck2 = await makeDeck(u2, c);
+      await fixture.execute(sql`
+        update deck_cards set quantity = 2, auto = true where deck_id = ${deck2}::uuid and oracle_id = ${cut}::uuid`);
+      const kept = await answered(u2, deck2, c, "fp", cut);
+      await applyItem(kept.itemId, u2);
+      await fixture.execute(sql`
+        update deck_cards set auto = false where deck_id = ${deck2}::uuid and oracle_id = ${cut}::uuid`);
+      check("7 · undo after the player kept the cut's copy is refused", await undoItem(kept.itemId, u2), null);
+      check("7 · and the kept copy stays kept", await cardRow(deck2, cut), { quantity: 1, auto: false });
+    }
+
     // The player edits the add after applying: undo would destroy that edit, so it refuses.
     await applyItem(itemId, u);
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.add}::uuid`);

@@ -162,9 +162,14 @@ export async function undoItem(itemId: string, userId: string): Promise<string |
     // item stays accepted and the deck is untouched.
     const add = await readRow(tx, deckId, addOracleId);
     const cut = await readRow(tx, deckId, cutOracleId);
+    // Quantity AND provenance: the apply inserts a new add at `auto: false` and leaves an existing
+    // row's flag alone, and a `keep` pressed since is an edit like any other.
     const cutLeft = snap.cut ? snap.cut.quantity - 1 : null;
-    const addAsApplied = add?.quantity === snap.add.quantity + 1;
-    const cutAsApplied = cutLeft === null || (cutLeft === 0 ? cut === null : cut?.quantity === cutLeft);
+    const addAuto = snap.add.quantity === 0 ? false : snap.add.auto;
+    const addAsApplied = add?.quantity === snap.add.quantity + 1 && add.auto === addAuto;
+    const cutAsApplied = !snap.cut || (cutLeft === 0
+      ? cut === null
+      : cut?.quantity === cutLeft && cut.auto === snap.cut.auto);
     if (!addAsApplied || !cutAsApplied) return null;
 
     if (snap.add.quantity === 0) {
