@@ -145,7 +145,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 | File | Responsibility |
 |---|---|
-| `src/lib/profile/play.ts` | `ProfilePlay` and `buildPlayGroup(games)` — pure. The play-data group `types.ts:12-14` names, built from `DeckGame[]`. |
+| `src/lib/profile/play.ts` | `ProfilePlay` and `buildPlayGroup(games)` — server-only in practice (it calls `summarizeGames`, whose module imports the db); `types.ts` imports only its type, so the profile stays client-safe. The play-data group `types.ts:12-14` names, built from `DeckGame[]`. |
 | `src/lib/profile/types.ts` | **Shared surface.** Gains `play?: ProfilePlay \| null` on `DeckProfile`, documented as never present in the cached document. |
 
 **Server shell:**

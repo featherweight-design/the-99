@@ -144,3 +144,18 @@ describe("profileFingerprint after the extraction", () => {
     expect(profileFingerprint(base)).toBe(before);
   });
 });
+
+// What this pins is narrower than the play group and is stated as such: both fingerprints hash
+// the list and nothing else they are handed. That is the property that keeps a `play` key from
+// moving them — a hash over the whole input object would fail here. Whether a builder or a cache
+// ever SETS `play` is pinned in play.test.ts.
+describe("the play group and the fingerprints", () => {
+  it("moves neither fingerprint when a play group rides along", () => {
+    const withPlay = {
+      ...base,
+      play: { games: [], summary: { count: 3, marked: 1, record: { wins: 1, losses: 2, draws: 0 }, axes: [] } },
+    };
+    expect(profileFingerprint(withPlay)).toBe(profileFingerprint(base));
+    expect(listFingerprint(withPlay)).toBe(listFingerprint(base));
+  });
+});

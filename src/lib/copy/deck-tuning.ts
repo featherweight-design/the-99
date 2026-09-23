@@ -28,6 +28,27 @@ export function countCharacters(value: string): number {
 }
 
 export const deckTuningCopy = {
+  // ── What this deck is for (Surface 3) ─────────────────────────────────
+  // Transcribed from the handoff's copy strings; the one dash in `ask` and `skip` is set as
+  // a colon here, per the 2026-09-13 em-dash sweep. `maxLength` is read by the intent cap in
+  // `src/lib/tuning/limits.ts`, which counts code points the way the column's check does.
+  intent: {
+    askLabel: "What is this deck for?",
+    ask: (axis: string, count: string) =>
+      `One line, and the suggestions get sharper. Without it we can only read the games: ${count} of them say ${axis} is the problem, and we would guess at whether you want to fix that by drawing more or by winning sooner.`,
+    placeholder: "e.g. grind a four-person table out and win late with Gisa",
+    save: "Save this",
+    // Skippable, and it says so. An intent gate on a feature the player already waited for is
+    // a paywall made of typing.
+    skip: "or skip it: the suggestions still run",
+    edit: "edit",
+    editAria: "Edit what this deck is for",
+    // App-seeded. The chip is an authorship statement, removed PERMANENTLY on first edit.
+    seeded: "from the build",
+    seededAria: "This came from the brief The 99 built this deck to",
+    maxLength: 120,
+  },
+
   // ── The game note (Surface 1, amends #9's form) ────────────────────────
   note: {
     label: "Note",

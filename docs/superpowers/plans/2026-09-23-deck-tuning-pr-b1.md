@@ -2,6 +2,22 @@
 
 > Part of the deck tuning plan. **Read the index first:** [`2026-09-07-deck-tuning-suggestions.md`](2026-09-07-deck-tuning-suggestions.md) — the Global Constraints, File Structure, PR boundaries and Cost there apply to every task below. Task numbers are shared across all six files.
 
+> **Amended 2026-09-23, during the build.** Four changes, each to keep a string or a function from
+> shipping ahead of the thing that uses it, or to keep the plan honest about the code:
+> 1. **Copy keys arrive with their first caller**, which is what `deck-tuning.ts`'s own header
+>    already requires. B1 adds `intent` alone (`limits.ts` reads `maxLength`). `panel.generating`,
+>    `panel.unchanged`, `allowance` and `suggestionRules` go to B2 with the gate and the prompt;
+>    `panel.refused` and the intent refusal go to C with the actions.
+> 2. **`intentRefusal` is `intentTooLong`, a boolean.** The plan had it return
+>    `gameLogCopy.form.refused`, which reads "We couldn't save that game" — wrong for an intent.
+>    The refusal sentence is new copy and ships in C through `/copy-review`.
+> 3. **`seededIntent` moves to C** beside `createDeck` and `fillDeck`, its callers. The handoff
+>    draws the seeded state but writes no seeded sentence, so that sentence is authorship and goes
+>    through `/copy-review` with a picture.
+> 4. **`EvidencePack.targets` carries the five mix cells, land included, each with its own
+>    `measured` flag**, rather than a separate `lands` field and one flag: `recommendedMix` already
+>    puts land in the same shape, and resolves the roles and the land count independently.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 ---
@@ -331,7 +347,8 @@ git commit -m "feat(tuning): a fingerprint of the player's own changes, versions
 - Consumes: `DeckProfile` (`src/lib/profile/types.ts:292`) — `cards`, `commanderOracleIds`, `colours.identity`, `counts`, `roles`, `skeleton` (its `roleTargets`, `composition`, `staples`, `thinCondition`); `recommendedMix(skeleton, hasPartner)` (`src/lib/decks/mix.ts:107`) for the per-role targets and their `advisory` flag; `DeckGame` and `summarizeGames` (`src/lib/decks/games.ts:7`, `:138`).
 - Produces:
   ```typescript
-  // src/lib/profile/play.ts — pure, client-safe
+  // src/lib/profile/play.ts — server-only in practice: summarizeGames lives in games.ts, which
+  // imports the db. types.ts takes only the TYPE, so the profile itself stays client-safe.
   export type ProfilePlay = {
     games: { id: string; result: "win" | "loss" | "draw"; podSize: number; playedAt: string; worked: string[]; hurt: string[]; note: string | null }[];
     summary: {
@@ -350,8 +367,8 @@ git commit -m "feat(tuning): a fingerprint of the player's own changes, versions
     colorIdentity: string[];
     cards: { oracleId: string; name: string; typeLine: string; roles: string[]; quantity: number; owned: boolean; commander: boolean }[];
     targets: {
-      roles: { role: string; have: number; target: number; advisory: boolean }[];
-      lands: { have: number; target: number } | null;
+      /** The five mix cells, land included, each with its own `measured` (amendment 4). */
+      roles: { role: MixRole; have: number; target: number; advisory: boolean; measured: boolean }[];
       /** The skeleton's own honesty flag: targets taken over too few decks. */
       thin: boolean;
     };
@@ -458,7 +475,7 @@ pnpm test src/lib/profile/play.test.ts src/lib/tuning/evidence.test.ts
 `buildEvidencePack` reads, and never recomputes, what the profile holds:
 
 - **`cards`** is `profile.cards`, each tagged with every role `profile.roles.cards` files it under (a card can hold several) and `commander: true` for `commanderOracleIds`.
-- **`targets.roles`** pairs the deck's role counts with `recommendedMix(profile.skeleton, commanderOracleIds.length > 1).cells`, carrying `advisory` through so the prompt can say a gap is a guide and not a gate. **Which counts depends on which target**, exactly as `fitSkeleton` decides it (`src/lib/profile/fit.ts:219-222`): `profile.roles.excludingCommanders` when `skeleton.roleTargets.of !== "flat"` — the measured targets come from EDHREC support lists, which never contain the commander — and `profile.roles.counts` only against the flat fallback. Comparing full counts to a measured target reports a phantom surplus on every deck led by a card that classifies as a role, and sends the model a wrong gap. `targets.lands` is `counts.land` against `skeleton.composition?.targets.land`, null when the skeleton has no composition. `thin` is `skeleton.thinCondition`.
+- **`targets.roles`** pairs the deck's role counts with `recommendedMix(profile.skeleton, commanderOracleIds.length > 1).cells`, carrying `advisory` through so the prompt can say a gap is a guide and not a gate. **Which counts depends on which target**, as `recommendedMix` decides whether they are measured (`of !== "flat"` and every target finite): `profile.roles.excludingCommanders` against a measured target — the measured targets come from EDHREC support lists, which never contain the commander — and `profile.roles.counts` only against the flat fallback. Comparing full counts to a measured target reports a phantom surplus on every deck led by a card that classifies as a role, and sends the model a wrong gap. The land cell is `counts.land` against the mix's land target, `measured` only when `landTarget` actually used the composition (a composition, a finite land average, and every role target finite). `thin` is `skeleton.thinCondition`.
 - **`staples`** is `skeleton.staples` minus every deck card, in the skeleton's own rank order, with `commanders` / `commanderTotal` forwarded and the ranking figures dropped.
 - **`play`** and **`intent`** pass through.
 
