@@ -48,15 +48,15 @@ export const EDGE_PX = 4;
  * scroller's top edge, and a bubble drawn above it is clipped in part or whole. The collection
  * grid's tiles are a third clipping box, and a narrow one: see `placeBubble`.
  */
-export function clipBoxFor(el: Element): { top: number; left: number; right: number } {
+export function clipBoxFor(el: Element): { top: number; bottom: number; left: number; right: number } {
   for (let node = el.parentElement; node; node = node.parentElement) {
     const style = getComputedStyle(node);
     if (style.overflowY !== "visible" || style.overflowX !== "visible") {
       const r = node.getBoundingClientRect();
-      return { top: r.top, left: r.left, right: r.right };
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
     }
   }
-  return { top: 0, left: 0, right: window.innerWidth };
+  return { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
 }
 
 export type BubblePlace = {
@@ -78,16 +78,18 @@ export type BubblePlace = {
  * - IT IS CENTRED ON ITS MARK, THEN CLAMPED INTO THE BOX. Centring alone crossed an edge the
  *   moment a mark LED its line, which the combo lemniscate does: on the quick-add results the
  *   bubble began 17px past the scroller and read `ompletes a two-card combo…`.
- * - IT OPENS BELOW WHEN IT DOES NOT FIT ABOVE, judged on its own measured height, so a sentence
- *   that wraps to three lines at a narrow cap flips as readily as a two-line one.
+ * - IT OPENS ON THE SIDE THAT FITS, judged on its own measured height, so a sentence that wraps
+ *   to three lines at a narrow cap flips as readily as a two-line one. Above by default; below
+ *   only when above does not fit AND below has more room — a mark near the foot of a short box
+ *   that fits neither way takes the roomier side rather than being sent over the bottom edge.
  *
  * A bubble with no measured size yet (jsdom lays nothing out) is taken at its widest and at
  * `ROOM_ABOVE_PX` tall, which is the size the flip and the clamp were first written against.
  */
 export function placeBubble(
-  mark: { top: number; left: number; width: number },
+  mark: { top: number; left: number; width: number; height?: number },
   bubble: { width: number; height: number },
-  box: { top: number; left: number; right: number },
+  box: { top: number; bottom?: number; left: number; right: number },
 ): BubblePlace {
   const maxWidth = Math.max(0, Math.min(MAX_BUBBLE_PX, box.right - box.left - 2 * EDGE_PX));
   const w = Math.min(bubble.width || maxWidth, maxWidth);
@@ -98,7 +100,11 @@ export function placeBubble(
   const hi = box.right - EDGE_PX - w;
   const at = Math.min(Math.max(wanted, lo), hi);
   const align = at > wanted + 0.5 ? "start" : at < wanted - 0.5 ? "end" : "center";
-  return { below: mark.top - box.top < h + 6, left: at - mark.left, maxWidth, align };
+  // A missing bottom (a caller that stated only three edges) is an unbounded one.
+  const roomAbove = mark.top - box.top;
+  const roomBelow = (box.bottom ?? Number.POSITIVE_INFINITY) - (mark.top + (mark.height ?? 0));
+  const below = roomAbove < h + 6 && roomBelow > roomAbove;
+  return { below, left: at - mark.left, maxWidth, align };
 }
 
 /**

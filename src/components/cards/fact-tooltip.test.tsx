@@ -269,6 +269,21 @@ describe("placeBubble", () => {
     expect(p.left).toBe(8 - 110);
   });
 
+  // THE FOOT OF A SHORT BOX. Too little room above is not enough reason to open below: a mark
+  // near the bottom of a box that fits the bubble NEITHER way takes the roomier side.
+  it("opens above near the foot of a short box when above has more room", () => {
+    const box = { top: 100, bottom: 160, left: 0, right: 1300 };
+    const mark = { top: 140, left: 600, width: 16, height: 16 };
+    // 40px above, 4px below, a 48px bubble: fits neither, so the side with more room.
+    expect(placeBubble(mark, { width: 170, height: 48 }, box).below).toBe(false);
+  });
+
+  it("opens below when above does not fit and below does", () => {
+    const box = { top: 100, bottom: 600, left: 0, right: 1300 };
+    const mark = { top: 120, left: 600, width: 16, height: 16 };
+    expect(placeBubble(mark, { width: 170, height: 48 }, box).below).toBe(true);
+  });
+
   // A sentence wrapped to three lines by a narrow cap is TALLER than the two-line estimate, and
   // the flip below has to use the height it actually has.
   it("opens below on its measured height, not a two-line guess", () => {
