@@ -60,12 +60,16 @@ carries a group for bracket rules changes (§2.3).
 3. **Five kinds of change qualify:**
    - a card **becoming, or ceasing to be, a Game Changer** (`cards.game_changer`, Scryfall's own
      boolean, refreshed weekly by the catalog job: `src/db/schema.ts:60-71`);
-   - a change to a card's **bracket flags**: mass land denial, extra turns, tutor
-     (`card_bracket_flags`, `schema.ts:1427-1459`, written by the weekly Combo refresh);
+   - a change to a card's **bracket flags**: mass land denial or extra turns
+     (`card_bracket_flags`, `schema.ts:1427-1459`, written by the weekly Combo refresh). The
+     table's `tutor` flag is not a trigger: the verdict classifies tutors from oracle text, so a
+     tutor-flag diff cannot move a stored analysis. A change to that classifier is a bracket rules
+     change and notifies as one (§6);
    - a Commander Spellbook **combo added or removed** that involves the deck's cards
      (`spellbook_variants` / `spellbook_variant_cards`, `schema.ts:1327` and `:1401-1416`);
-   - a **bracket rules change**, modeled as a rules-version bump (the limits live in
-     `src/lib/bracket/rules.ts`, e.g. `GAME_CHANGER_LIMIT` at `:14`);
+   - a **bracket rules change**, modeled as a bump of a bracket-rules version kept apart from
+     the profile builder's version (the limits live in `src/lib/bracket/rules.ts`, e.g.
+     `GAME_CHANGER_LIMIT` at `:14`; the classifiers that feed the verdict are listed in §6);
    - a **legality change**: a card that stops being Commander-legal after it was added.
 4. **A deck is notified only when a change touches its own cards.** Spellbook adds combos between
    long-existing cards every week, not only with new sets, so this filter is what keeps notices
@@ -97,10 +101,12 @@ analyzed and so has no chip. The placement has to work for both.
 ### 3.2 The what-changed list
 
 What the notice opens. Grouped by kind, in whatever order Design calls: **Game Changers, bracket
-flags, combos, rules, legality**. Only groups with something in them are drawn. **Every entry
-names its cards**, and every card name opens the card, as a name in a receipt does. Changes run
+flags, combos, rules, legality**. Only groups with something in them are drawn. **Every
+card-scoped entry names its cards**, and every card name opens the card, as a name in a receipt
+does. Changes run
 both ways and the list says which: a card that joined the Game Changers list and one that left it,
-a combo Spellbook added and one it removed. A rules entry states the rule that moved, in words.
+a combo Spellbook added and one it removed. A rules entry is not card-scoped: it names the rule that moved and what it now says, in words,
+and never lists the deck's cards.
 
 **Candidate container:** `ModalChrome` in `src/components/decks/receipt-modal.tsx`, which already
 carries the receipt, the combo and the reasoning, and is taking the synopsis as a fourth body. A
@@ -174,7 +180,8 @@ offered (§4.6).
 - **Not sources:** price updates, a new set with nothing bracket-relevant in it, the monthly
   commander index (it moves the recommended mix and the population line, not the verdict's
   limits), and the synopsis's own prose.
-- **Every entry names cards**; a count alone is never an entry.
+- **Every card-scoped entry names its cards**; a count alone is never an entry. A rules entry
+  names the rule that moved and what it now says, never a list of the whole deck.
 - **The add refusals stand.** A notice never replaces a refusal, and never blocks an edit.
 
 ## §6 What engineering owns (not for Design)
@@ -195,15 +202,29 @@ Recorded so the round is not asked about them. All of it is deterministic; no mo
   by nothing today (`:1473-1474`). Neither can serve as the mark, because the quiet rebuild below
   moves both. The row should also record the log's high-water sequence at compute time. **A
   deck's notices are the log entries after that mark that intersect its cards and commanders.**
-- **The card ingest is not transactional.** `seedCards` upserts in batches of 500 as it streams
-  (`src/lib/scryfall/seed.ts:15-48`), so the diff of `game_changer` and `commander_legal` needs the
-  before-values captured first and the entries written once the run completes.
-- **The combo ingest publishes twice, and a refused publish writes no entries.** Flags publish in
-  their own transaction (`src/lib/spellbook/seed.ts:300`) before the bulk; variants in a second
-  (`:388`). The classifier floors refuse before either (`:289-292`), and the variant and field
-  floors refuse after the flags have published (`:362-363`, `:373-375`). So each diff is written
-  inside its own publish transaction: a run can log flag changes and no combo changes, and a
-  refused publish logs nothing.
+- **The card ingest is not transactional, so its entries are written per batch.** `seedCards`
+  streams the bulk file and flushes each 500-row batch as its own upsert statement
+  (`src/lib/scryfall/seed.ts:15-40`, flushed at `:46` and `:48`), with no transaction around the
+  run. A run can fail after earlier batches have committed. A log written only at the end of the
+  run would then leave `game_changer` or `commander_legal` changed with no entry, and the next
+  run's before-values would already hold the new state, so that transition would never be logged.
+  **Each batch's entries are written in the same transaction as that batch's upsert:** read the
+  batch's current `game_changer` and `commander_legal` for its oracle ids, upsert, and insert the
+  entries for the rows that moved, then commit all three together. A batch either lands with its
+  entries or not at all, and a failed run leaves every committed change logged.
+- **The combo ingest publishes twice, and each diff is written inside its own publish.** Flags
+  publish in their own transaction (`src/lib/spellbook/seed.ts:300`) before the bulk; variants in
+  a second (`:388`). The flag diff (mass land denial and extra turns only, per ruling 3) is
+  written in the first transaction and the combo diff in the second. Which entries survive
+  depends on where a run stops:
+  - **Refused before the flag publish** (the classifier floors, `:289-292`): nothing is
+    published and **no entries are written**. The previous flags and variants stand.
+  - **Refused or failed after the flag publish** (the variant floor, `:362-363`; the field
+    floors, `:374-376`; or a bulk download or variant transaction that throws): the flags are
+    already live, as the ingest intends, so **the flag entries are committed and kept**. The
+    variant transaction never commits, so **that run writes no combo entries**, and the previous
+    variants stand. The next run that publishes variants diffs against those previous variants,
+    so no combo change is lost.
 - **Which combos count: the verdict's own rule, assembled only.** The profile counts two-card,
   template-free variants whose pieces the deck holds under §4.3b's three rules
   (`src/lib/profile/load.ts:119-155`) and whose output passes `isInfiniteOrGameEnding` (`:176`).
@@ -212,17 +233,37 @@ Recorded so the round is not asked about them. All of it is deterministic; no mo
   `pairsWithOnePiece` at `:72`, `loadCompletionPartners` at `:227`); there is no general
   all-but-one read for larger combos. A one-away combo moves no figure in a stored analysis, so it
   is **not** a notice source.
-- **Tutors are not read from the flag table.** The profile classifies tutors from oracle text at
-  load (`load.ts:374`, `classifySearches`); `card_bracket_flags.tutor` feeds other surfaces. So a
-  tutor-flag diff moves no stored analysis, and a tutor change reaches a deck only through a
-  classifier change, which is a rules-version bump. Mass land denial and extra turns do come from
-  the flag table (`load.ts:358-363`).
-- **A rules version, kept apart from the list.** `rules.ts` carries no version today.
-  `deck_profiles.fingerprint` stores `listFingerprint`, the list alone with no version in it
-  (`src/lib/profile/fingerprint.ts:53-55`), and `PROFILE_VERSION` (`src/lib/profile/version.ts:12`)
-  is its own column, `profile_version` (`schema.ts:1493`). So a builder bump is already not the
-  player's edit, as ruling 1 requires. A rules or builder bump writes one log entry, stated in
-  words, that applies to every deck analyzed before it.
+- **Tutors are not read from the flag table, so a tutor-flag diff is not logged.** The profile
+  classifies tutors from oracle text at load (`load.ts:373`, `classifySearches` at
+  `src/lib/bracket/tutor-targets.ts:280`, which calls `classifyTutor` at `:197`);
+  `card_bracket_flags.tutor` feeds other surfaces. So a tutor-flag diff moves no stored analysis
+  and is not a notice trigger (ruling 3). A tutor change reaches a deck only through a change to
+  that classifier, which is a bracket-rules bump (below). Mass land denial and extra turns do come
+  from the flag table (`load.ts:358-363`), and those two diffs are logged.
+- **A bracket-rules version, kept apart from `PROFILE_VERSION`.** `rules.ts` carries no version
+  today, and `PROFILE_VERSION` (`src/lib/profile/version.ts:12`) cannot stand in for one: its
+  bumps are builder changes, and the ones on record are a land-capable fact group (version 2) and
+  a role-classification fix (version 3, `:15-32`), neither of which touches the verdict. Logging
+  every profile bump as a rules notice would tell players a rule moved when none did. So a
+  separate **bracket-rules version** lives beside `rules.ts` and is bumped only when logic that
+  can move the verdict changes:
+  - the limits and policies in `src/lib/bracket/rules.ts` (`GAME_CHANGER_LIMIT` at `:14`,
+    `MASS_LAND_DENIAL_LIMIT` at `:24`, `EXTRA_TURN_LIMIT_BRACKET_1` at `:34`, `COMBO_POLICY` at
+    `:48`, `permitsFor` at `:91`, `comboLandsEarly` at `:120`);
+  - the tutor classifier the verdict reads (`classifyTutor` and `classifySearches`, above);
+  - the combo rule the verdict applies: `isInfiniteOrGameEnding`
+    (`src/lib/spellbook/combo-features.ts:33`) and the §4.3b piece rules in
+    `src/lib/profile/load.ts:119-155`.
+
+  The mass-land-denial and extra-turn oracle classifiers (`isMassLandDenial` and `isExtraTurn`,
+  `src/lib/bracket/oracle-rules.ts:125` and `:144`) run inside the combo ingest
+  (`src/lib/spellbook/seed.ts:5`) and land in `card_bracket_flags`, so a change to them reaches
+  decks as card-scoped flag entries at the next Combo refresh and needs no rules bump.
+  A bracket-rules bump writes one rules entry, stated in words, that applies to every deck
+  analyzed before it. `deck_profiles.fingerprint` stores `listFingerprint`, the list alone with
+  no version in it (`src/lib/profile/fingerprint.ts:53-55`), and `PROFILE_VERSION` is its own
+  column, `profile_version` (`schema.ts:1493`), so neither bump is the player's edit, as ruling 1
+  requires.
 - **The quiet rebuild must not swallow a notice.** `readStoredReading` recomputes a row an older
   `PROFILE_VERSION` wrote, on a clean, legal deck whose list is unchanged, against the current
   catalog, without the player asking (`stored.ts:140-149`). The upsert that stores it rewrites
@@ -233,11 +274,15 @@ Recorded so the round is not asked about them. All of it is deterministic; no mo
     replaced row held, the way it already keeps the replaced row's version pin (`rebuildOf`,
     `stored.ts:146-147` and `:239`). A rebuild that advanced the mark would swallow every pending
     notice on the deck before the player had read one.
-  - **A rebuild that moves the bracket is exactly what a notice is for.** The rebuild reads the
-    current catalog and the current rules, so it can land the deck in a different bracket with
-    no edit of the player's. So every rules or `PROFILE_VERSION` bump writes the rules-version
-    log entry above, and the deck's notice shows it. The player learns from the notice why the
-    held bracket moved.
+  - **A profile-only bump rebuilds quietly and writes no notice.** A `PROFILE_VERSION` bump
+    with no bracket-rules bump changes how the builder describes the deck, not the rules it is
+    held to, so it writes no entry. Because the rebuild keeps the old mark, any data entries
+    already pending on the deck (a Game Changer, a flag, a combo, a ban) stay pending and still
+    reach the player, which is what explains a bracket the rebuild moved against the current
+    catalog.
+  - **A bracket-rules bump writes a rules entry.** When the same deploy also bumps
+    `PROFILE_VERSION` and so triggers the rebuild, the rules entry is what tells the player why
+    the held bracket moved.
 - **Legality: where illegal cards come from.** Hand adds refuse a not-legal, off-identity or
   commander card (`src/lib/decks/add-validation.ts:46-63`, called at `src/app/decks/actions.ts:502-506`),
   and a repeat add of a singleton is a no-op rather than a refusal (`:485-493`). The bulk paths run
