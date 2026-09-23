@@ -21,12 +21,12 @@ note, rolling credits), which closes the two Copilot comments declined on #893.
 ## Engineering notes (PR D and the C-fix PR)
 
 1. **What "raises" and "lowers" mean for a range.** `bracket_after` and the current reading are
-   both permit SETS (`[3]`, `[3,4]`), so a swap can widen or narrow a range as well as move it. Rule
+   both permit SETS, and `permitsFor` returns only `[1,2] | [2] | [3] | [4] | [4,5]` (`src/lib/bracket/verdict-head.ts:28`), so a swap can widen or narrow a range as well as move it. Rule
    for the build: compare the LOWEST permitted bracket. Higher reads *raises*, lower reads
-   *lowers*, and an equal lowest with a different set (for example `[3]` → `[3,4]`) still draws the
+   *lowers*, and an equal lowest with a different set (the reachable cases are `[4]` ↔ `[4,5]`; `[2]` → `[1,2]` lowers the lowest, so it reads *lowers*) still draws the
    flag with the chip carrying the new range, worded *changes the deck's bracket to*. That third
    string goes through `/copy-review` with the two drawn ones.
-2. **The time in the credit line** is drawn as `14:20`. The app's audience reads 12-hour times, so
+2. **The time in the credit line** is drawn as `14:20`, a 24-hour placeholder in the mock. The app's audience reads 12-hour times (`2:20 PM`), so
    format it with the app's existing time formatting, through `/copy-review`, not as a literal.
 3. **The intent line lives in the shipped deck header** (`spine-desktop.tsx`, `spine-mobile.tsx`,
    from #889). The analysis-tab lane that built it has closed, so PR D takes those two files, with
