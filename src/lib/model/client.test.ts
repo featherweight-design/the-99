@@ -107,6 +107,14 @@ describe("callModel", () => {
     expect(lines[0]).toMatch(/^\[model\] request:/);
   });
 
+  it("turns an error of no known kind into a terminal outcome, logged, not a throw", async () => {
+    const lines: string[] = [];
+    const { messages, calls } = scripted([new TypeError("fetch failed oddly"), reply({ answer: "x" })]);
+    expect(await callModel(req, { messages, log: (l) => lines.push(l) })).toEqual({ ok: false, errorClass: "upstream_busy" });
+    expect(calls).toHaveLength(1);
+    expect(lines[0]).toMatch(/^\[model\] unexpected: TypeError/);
+  });
+
   it("makes no request without a key, logs configuration, and does not throw", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "");
     const lines: string[] = [];

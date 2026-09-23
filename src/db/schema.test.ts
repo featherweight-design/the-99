@@ -1,5 +1,5 @@
 import { getTableName } from "drizzle-orm";
-import { getTableConfig } from "drizzle-orm/pg-core";
+import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import { deckGames, decks, deckSuggestionItems, deckSuggestionRuns, modelCalls } from "./schema";
@@ -17,7 +17,11 @@ describe("deck tuning schema", () => {
     const unique = getTableConfig(deckSuggestionRuns).indexes.filter((i) => i.config.unique);
     expect(unique).toHaveLength(1);
     expect(unique[0].config.name).toBe("deck_suggestion_runs_one_pending_idx");
-    expect(unique[0].config.where).toBeDefined();
+    // Rendered, not merely present: an index filtered on any other status would let two
+    // pending runs coexist and still pass a presence check.
+    const where = unique[0].config.where;
+    expect(where).toBeDefined();
+    expect(new PgDialect().sqlToQuery(where!).sql).toBe(`"deck_suggestion_runs"."status" = 'pending'`);
   });
 
   it("ties both of an item's card columns to the catalog, and a run to its allowance unit", () => {

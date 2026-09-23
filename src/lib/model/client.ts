@@ -16,7 +16,7 @@ import type { z } from "zod";
  *  - AT MOST ONE RETRY, spent on whichever retryable condition comes first: an overloaded or
  *    unreachable upstream (429, 5xx, 529, a dropped connection) or a reply that fails the
  *    caller's schema. A timeout is never retried.
- *  - IT NEVER THROWS for an upstream or configuration fault. A bad key, a retired model id or a
+ *  - IT NEVER THROWS for an upstream, configuration or unexpected fault. A bad key, a retired model id or a
  *    malformed request comes back as `upstream_busy` with a server-side log line naming it, so
  *    the caller always reaches a terminal outcome (and refunds the allowance unit) rather than
  *    leaving a run pending for the reaper.
@@ -149,5 +149,9 @@ function classify<T>(err: unknown, aborted: boolean, log: (line: string) => void
     log(`[model] malformed: ${err.message}`);
     return { kind: "retryable", errorClass: "malformed" };
   }
-  throw err;
+  // Anything else — a transport fault outside the SDK's classes, a bug in schema conversion.
+  // Still a terminal outcome rather than a throw, so the caller writes its failure and refunds
+  // the unit; the log line is what says it was none of the expected kinds.
+  log(`[model] unexpected: ${err instanceof Error ? `${err.name} ${err.message}` : String(err)}`);
+  return { kind: "final", errorClass: "upstream_busy" };
 }
