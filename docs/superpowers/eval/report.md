@@ -177,6 +177,26 @@ read.
 
 Medium effort differs from the setting Hugh rated in round 3, so it is his call.
 
+### Hugh's blind read, round 4 (8 decks)
+
+**Registered before any answer was generated.** S at `effort: "medium"` on the strategy prompt with
+the rationale rules (notes exempt), against round 3's STORED S answers on the plain strategy prompt
+at default effort: the answers Hugh already preferred over sonnet-low. The page tab is "Suggested
+swaps, round 4 (8 decks)".
+
+- **Decks:** 8 of the 15 held-out decks, picked by a seeded shuffle (seed 20260923 + 4000) and fixed
+  before any output: Kratos, Avatar Aang, Wizards, Yuriko, Soldiers, Scrappy Survivors, Mutant
+  Menace, Eldrazi. On Scrappy Survivors the stored S answer was malformed, so medium's answer stands
+  against the app's failed state, which is what a player would have seen.
+- **Pass rule**, the round 1 rule scaled from 15 decks to 8: S-default preferred on no more than 3
+  of 8, and on no more than 2 more decks than medium.
+- **The confound, stated:** the candidate changes two things at once, the prompt (the rationale
+  rules) and the effort. A pass says the pair is at least as good as what won round 3; it cannot
+  say which change carried it. The prompt change is the one Hugh asked for, so the effort is the
+  part this round actually tests.
+
+Result: pending Hugh's read.
+
 ## Overview
 
 S truncates or malforms a third of its answers. Its median attempt hits the 8,000 ceiling: 69 of
