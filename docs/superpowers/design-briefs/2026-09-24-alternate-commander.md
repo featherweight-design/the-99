@@ -185,10 +185,10 @@ All of it is deterministic, with no model call.
 
 ## §7 Sequence
 
-This brief waits for Hugh's approval before it goes to Design. It depends on the shared universal-staple
+Hugh approved this brief on 2026-09-24. It depends on the shared universal-staple
 definition (ruling 5), which the orchestrator is sequencing. The commander write, the draft's commander
 entry and the candidate query are Tier A and can build before the handoff. The surfaces wait for
 READINESS. The About entry is batched with the rest of the analysis line's entries at launch.
 
-Design ticket #221's row (`design-pipeline-status.md:315`) still describes the audit framing, and this
-lane passes that to the orchestrator.
+Design ticket #221's row (`design-pipeline-status.md:315`) is updated in the same PR to the action
+framing.
