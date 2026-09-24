@@ -7,6 +7,8 @@
  * `Synopsis Sheet` canvas and the Analysis-tab frames otherwise; owed to `/copy-review` with the
  * credit strings.
  */
+const landsOf = (n: number) => `${n} ${n === 1 ? "land" : "lands"}`;
+
 export const synopsisCopy = {
   label: "Overview",
   entry: "View full overview",
@@ -69,6 +71,15 @@ export const synopsisCopy = {
     primer: { strategy: "Core strategy", mulligan: "Mulligan", tips: "Key tips" },
     keep: "Keep",
     sendBack: "Send back",
+    /**
+     * The land range, drawn by the app as each box's first line; the model never writes it
+     * (contract 6, the-99-d9's copy, 2026-09-24).
+     */
+    lands: {
+      keep: (low: number, high: number) => (low === high ? landsOf(low) : `${low} to ${high} lands`),
+      sendBack: (none: number, under: number, over: number) =>
+        `${under - none === 1 ? `${none} or ${under}` : `${none} to ${under}`} lands, or ${over} or more`,
+    },
     stale: "Your deck has changes since this was written, so parts of it might not match your list.",
   },
 } as const;

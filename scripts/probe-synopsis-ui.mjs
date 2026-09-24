@@ -37,6 +37,33 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
 ]);
 const ABOUT_VERSION_FILE = new URL("../src/lib/copy/about.version.json", import.meta.url);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+
+/**
+ * The Mulligan's fixed land line (contract 6): the FIRST line of each box, in the generated lines'
+ * own row, so its glyph and text start where theirs do. Measured, because a row that did not
+ * compile would still read correctly as text.
+ */
+async function landLine(modal, label) {
+  const g = await modal.evaluate((el) => {
+    const fixed = [...el.querySelectorAll('[data-testid="synopsis-land-range"]')];
+    return fixed.map((row) => {
+      const box = row.parentElement;
+      const next = row.nextElementSibling;
+      const x = (e) => Math.round(e.getBoundingClientRect().left);
+      return {
+        text: row.lastElementChild?.textContent ?? "",
+        first: row.previousElementSibling === box.firstElementChild && row.previousElementSibling.tagName === "SPAN",
+        glyphX: x(row.firstElementChild), textX: x(row.lastElementChild),
+        nextGlyphX: next ? x(next.firstElementChild) : null, nextTextX: next ? x(next.lastElementChild) : null,
+      };
+    });
+  });
+  report(`${label}px · the land range opens both Mulligan boxes`,
+    g.length === 2 && /^\d+( to \d+)? lands?$/.test(g[0].text) && /^\d+ (or|to) \d+ lands, or \d+ or more$/.test(g[1].text) && g.every((r) => r.first),
+    JSON.stringify(g.map((r) => r.text)));
+  report(`${label}px · …in the generated lines' own row`,
+    g.length === 2 && g.every((r) => r.nextGlyphX === null || (r.glyphX === r.nextGlyphX && r.textX === r.nextTextX)), JSON.stringify(g));
+}
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 const sql = neon(DATABASE_URL);
@@ -173,9 +200,14 @@ async function run() {
     let href = null;
     for (const candidate of (await deckHrefs(page)).slice(0, 12)) {
       const [{ n }] = await sql`select count(*)::int as n from deck_synopses where deck_id = ${candidate.split("/")[2]}::uuid`;
-      if (n === 0) { href = candidate; break; }
+      // Enough distinct spells for the stub to write a WHOLE overview: a deck padded with one basic
+      // gives it too few cards to name, its primer is refused, and the Mulligan (and its fixed
+      // land line) never draws.
+      const [{ k }] = await sql`select count(distinct c.oracle_id)::int as k from deck_cards c join cards x using (oracle_id)
+        where c.deck_id = ${candidate.split("/")[2]}::uuid and x.type_line not ilike '%Land%'`;
+      if (n === 0 && k >= 5) { href = candidate; break; }
     }
-    if (!report("a deck with no overview", href !== null, href ?? "every one of the first 12 decks has one")) return;
+    if (!report("a deck with no overview, and spells enough for a whole one", href !== null, href ?? "none of the first 12 decks qualifies")) return;
     const deckId = href.split("/")[2];
     walked = deckId;
     walkStart = await nowAt();
@@ -241,6 +273,7 @@ async function run() {
       headings: [...el.querySelectorAll("h3")].map((h) => h.textContent),
     }));
     report("1300px · the modal is 700 wide", m.width === 700, `${m.width}px`);
+    await landLine(modal, "1300");
     report("1300px · four sections, in order",
       m.headings.join("|").toLowerCase() === "overview|primer|key cards|weaknesses", m.headings.join(" | "));
     const names = modal.locator('[data-testid="synopsis-card"]');
@@ -363,6 +396,7 @@ async function run() {
     await pm.waitFor({ state: "visible", timeout: 10_000 });
     const pw = await pm.evaluate((el) => Math.round(el.getBoundingClientRect().width));
     report("390px · the modal takes the width", pw >= 380, `${pw}px`);
+    await landLine(pm, "390");
     // The title whole, with no tolerance: an ellipsized title reads `scrollWidth` 1px over. And
     // the aside drawn ONCE, opening the body, rather than squeezing the title in the header.
     const head = await pm.evaluate((el) => {

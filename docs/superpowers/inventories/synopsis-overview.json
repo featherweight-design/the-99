@@ -7,9 +7,20 @@
       "label": "/decks/[id] Analysis: the Overview heading the left column over the climb at 1300, first on the phone",
       "view": "src/components/decks/synopsis-overview.tsx",
       "steps": [
-        { "goto": "/decks/${OVERVIEW_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
-        { "wait": "[data-testid='synopsis-overview']", "settle": 900 }
+        {
+          "goto": "/decks/${OVERVIEW_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 900
+        }
       ]
     },
     {
@@ -17,11 +28,63 @@
       "label": "/decks/[id] Analysis: the full overview, 700 wide on desktop, a sheet on the phone",
       "view": "src/components/decks/synopsis-body.tsx",
       "steps": [
-        { "goto": "/decks/${OVERVIEW_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
-        { "wait": "[data-testid='synopsis-overview']", "settle": 900 },
-        { "clickRole": "button", "name": "View full overview", "settle": 300 },
-        { "wait": "[data-testid='receipt-modal']", "settle": 500 }
+        {
+          "goto": "/decks/${OVERVIEW_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "View full overview",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "overview-mulligan",
+      "label": "/decks/[id] Analysis: the full overview's Mulligan, opened by the fixed land line (contract 6)",
+      "view": "src/components/decks/synopsis-body.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${OVERVIEW_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "View full overview",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-testid='synopsis-land-range']",
+          "settle": 400
+        }
       ]
     },
     {
@@ -29,9 +92,20 @@
       "label": "/decks/[id] Analysis: Write one, with its credit note, over a fresh reading and no overview",
       "view": "src/components/decks/synopsis-overview.tsx",
       "steps": [
-        { "goto": "/decks/${ABSENT_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
-        { "wait": "[data-testid='synopsis-overview']", "settle": 1500 }
+        {
+          "goto": "/decks/${ABSENT_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 1500
+        }
       ]
     }
   ]

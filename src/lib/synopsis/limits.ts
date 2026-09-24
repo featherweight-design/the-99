@@ -15,7 +15,9 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 // 4: contract B: one automatic repair of the refused sections, in the same write.
 // 5: Hugh's rating (2026-09-24): a universal staple is never a Key card, and the deck's colors
 //    are named (Gruul), never written as mana letters.
-export const SYNOPSIS_CONTRACT_VERSION = 5;
+// 6: the Mulligan's land range is a fixed line the model does not write; a generated line may not
+//    state a land count, hold the commander in hand, or open with its heading's word.
+export const SYNOPSIS_CONTRACT_VERSION = 6;
 
 /** A pending run older than this was abandoned; the read-time reaper fails it as `interrupted`
  *  and refunds its unit. Below `RESERVATION_TTL_MS`, so the reap always lands while the unit
@@ -75,8 +77,10 @@ export const SYNOPSIS_MAX_TOKENS = 3_000;
  */
 export const SECTION_COUNTS = {
   strategy: { min: 3, max: 5 },
-  keep: { min: 2, max: 3 },
-  sendBack: { min: 2, max: 3 },
+  // 1-2 since the land range became a fixed line (Hugh, 2026-09-24): each generated line says
+  // something the range cannot, so fewer of them.
+  keep: { min: 1, max: 2 },
+  sendBack: { min: 1, max: 2 },
   tips: { min: 2, max: 4 },
   keyCards: { min: 5, max: 8 },
   weaknesses: { min: 1, max: 3 },

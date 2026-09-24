@@ -190,8 +190,22 @@ export function SynopsisSections({
             </Sub>
             <Sub title={synopsisCopy.modal.primer.mulligan}>
               <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[12px]">
-                <Hand label={synopsisCopy.modal.keep} glyph="+" lines={content.primer.mulligan.keep} render={text} />
-                <Hand label={synopsisCopy.modal.sendBack} glyph="−" lines={content.primer.mulligan.sendBack} render={text} />
+                <Hand
+                  label={synopsisCopy.modal.keep}
+                  glyph="+"
+                  fixed={content.lands ? synopsisCopy.modal.lands.keep(content.lands.keep.low, content.lands.keep.high) : null}
+                  lines={content.primer.mulligan.keep}
+                  render={text}
+                />
+                <Hand
+                  label={synopsisCopy.modal.sendBack}
+                  glyph="−"
+                  fixed={content.lands
+                    ? synopsisCopy.modal.lands.sendBack(content.lands.sendBack.none, content.lands.sendBack.under, content.lands.sendBack.over)
+                    : null}
+                  lines={content.primer.mulligan.sendBack}
+                  render={text}
+                />
               </div>
             </Sub>
             <Sub title={synopsisCopy.modal.primer.tips}>
@@ -271,16 +285,25 @@ function Sub({ title, children }: { title: string; children: React.ReactNode }) 
 }
 
 function Hand({
-  label, glyph, lines, render,
+  label, glyph, fixed, lines, render,
 }: {
   label: string;
   glyph: string;
+  /** The land range, drawn by the app ahead of the model's lines; null on an overview written
+   *  before it existed. The same row as a generated line: it is one more thing to check a hand for. */
+  fixed: string | null;
   lines: string[];
   render: (t: string) => React.ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-[8px] rounded-[9px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[14px] py-[12px]">
       <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[var(--fg-body)]">{label}</span>
+      {fixed && (
+        <div data-testid="synopsis-land-range" className="grid grid-cols-[14px_minmax(0,1fr)] items-baseline text-[13px] leading-[1.55] text-[var(--fg-body)]">
+          <span aria-hidden className="font-mono text-[11px] text-[var(--fg-faint)]">{glyph}</span>
+          <span>{fixed}</span>
+        </div>
+      )}
       {lines.map((line, i) => (
         <div key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-baseline text-[13px] leading-[1.55] text-[var(--fg-body)]">
           <span aria-hidden className="font-mono text-[11px] text-[var(--fg-faint)]">{glyph}</span>

@@ -43,8 +43,8 @@ function good(): SynopsisResponse {
         "Cast [[Blasphemous Act]] and swing.",
       ],
       mulligan: {
-        keep: ["Keep a seven with 2 to 4 lands.", "Keep a hand with [[Sol Ring]]."],
-        sendBack: ["Send back a hand with no ramp.", "Send back a hand with no lands."],
+        keep: ["A hand with [[Sol Ring]] gets you ahead early."],
+        sendBack: ["A hand with no ramp falls behind the table."],
       },
       tips: [
         { cards: ["Goblin Bombardment", "Impact Tremors"], text: "Sacrifice tokens to [[Goblin Bombardment]] after [[Impact Tremors]] triggers." },
@@ -201,10 +201,10 @@ describe("a card's name is not a claim the prose makes", () => {
 
   it("reads no figure in a card's name", () => {
     const reply = good();
-    reply.primer.mulligan.keep[1] = "Keep a hand with [[Three Visits]].";
+    reply.primer.mulligan.keep[0] = "A hand with [[Three Visits]] is fine.";
     expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "primer").status).toBe("ok");
     const digits = good();
-    digits.primer.mulligan.keep[1] = "Keep a hand with [[Room 101]].";
+    digits.primer.mulligan.keep[0] = "A hand with [[Room 101]] is fine.";
     expect(verdictOf(validateSynopsis(digits, facts, CATALOG), "primer").status).toBe("ok");
   });
 
@@ -394,5 +394,47 @@ describe("validateSynopsis — universal staples and mana letters", () => {
     reply.overview = overview;
     const facts = { ...IZZET, cards: [...IZZET.cards, { ...IZZET.cards[0], oracleId: "id-UR", name: "UR", categories: [] }] };
     expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "overview").status).toBe("ok");
+  });
+});
+
+// Hugh's rating, 2026-09-24: the Mulligan.
+describe("validateSynopsis — the Mulligan", () => {
+  const withKeep = (line: string) => {
+    const reply = good();
+    reply.primer.mulligan.keep = [line, "A hand with [[Sol Ring]] gets you ahead early."];
+    return validateSynopsis(reply, FACTS, CATALOG);
+  };
+
+  it.each([
+    ["a land range", "A hand with 2 to 4 lands and early ramp is fine.", "land_count"],
+    ["a single land count", "A hand with only one land falls behind.", "land_count"],
+    ["no lands", "A hand with no lands goes back.", "land_count"],
+    ["an all-spell hand", "All-spell hands stall badly.", "land_count"],
+    ["the commander in hand", "A hand with [[Kratos]] and a ramp piece is ideal.", "commander_in_hand"],
+    ["the commander in the opening hand", "Having [[Kratos]] in your opening hand is ideal.", "commander_in_hand"],
+    ["the heading's word", "Keep a hand with [[Gamble]] early.", "heading_prefix"],
+    ["a hyphenated count", "A one-land hand falls behind the table.", "land_count"],
+    ["a hyphenated figure", "A 2-land hand needs early ramp.", "land_count"],
+    ["a landless hand", "A landless hand stalls badly.", "land_count"],
+    ["the commander later in the hand", "A hand with [[Sol Ring]] and [[Kratos]] is ideal.", "commander_in_hand"],
+  ])("drops a line stating %s", (_label, line, reason) => {
+    const r = withKeep(line);
+    expect(verdictOf(r, "primer").status).toBe("ok");
+    expect(r.primer!.mulligan.keep).toEqual(["A hand with [[Sol Ring]] gets you ahead early."]);
+    const alone = good();
+    alone.primer.mulligan.keep = [line];
+    expect(verdictOf(validateSynopsis(alone, FACTS, CATALOG), "primer")).toMatchObject({ status: "refused", reason });
+  });
+
+  // The-99-d9's condition: the two good lines that NAME the commander as a thing to cast.
+  it.each([
+    ["the Kratos line's shape", "A hand that can develop mana toward [[Kratos]]'s attacks is ideal."],
+    ["the Yuriko line's shape", "A hand that can cast [[Kratos]] via ninjutsu soon is ideal."],
+  ])("keeps a line naming the commander to cast (%s)", (_label, line) => {
+    expect(withKeep(line).primer!.mulligan.keep).toContain(line);
+  });
+
+  it("carries the land range from the facts, for the fixed line", () => {
+    expect(validateSynopsis(good(), FACTS, CATALOG).lands).toEqual({ keep: FACTS.keep, sendBack: FACTS.sendBack });
   });
 });

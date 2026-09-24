@@ -44,6 +44,13 @@ export const REFUSAL_REASONS = [
   "universal_staple",
   /** The deck's colors written as mana letters (RG, BUG) rather than their identity name. */
   "mana_letters",
+  /** A Mulligan line stating a land count, which the fixed land line above it already gives. */
+  "land_count",
+  /** A Mulligan line treating the commander as a card in the opening hand; it starts in the
+   *  command zone (Hugh's one No, 2026-09-24). */
+  "commander_in_hand",
+  /** A Mulligan line opening with its own heading's word ("Keep", "Send back"). */
+  "heading_prefix",
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 
@@ -79,8 +86,13 @@ export type SectionVerdict =
  * What is stored and shown: every section's verdict, and the content of the ones that passed. A
  * refused section's content is never stored, so no partial sentence can ever reach a reader.
  */
+/** The land range the Mulligan draws as its fixed first line, from the facts, never the model. */
+export type LandRange = { keep: { low: number; high: number }; sendBack: { none: number; under: number; over: number } };
+
 export type CheckedSynopsis = {
   verdicts: SectionVerdict[];
+  /** Absent on an overview written before the fixed line existed (contract 6), which draws none. */
+  lands?: LandRange;
   overview: string | null;
   primer: Primer | null;
   keyCards: KeyCard[] | null;
