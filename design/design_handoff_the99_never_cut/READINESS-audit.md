@@ -229,7 +229,7 @@ asked is answered. What remains is engineering (T1 to T6).
 | Asked (F3) | Answered | Checked against |
 |---|---|---|
 | Position | Yes. The last child of cluster 2, left of the hairline | `group-toggle.tsx:176-222`, `:240-245`. The cluster is one flex child, so the row still wraps between clusters |
-| Phone height | Yes. 44px, from `BULK_BUTTON_CLASS` verbatim. It matches Keep and Clear beside it (already 44px), not the 27px pills | `clear-auto.tsx:33-34`; pills 27px, `design_handoff_the99_decklist_sort/README.md:207` |
+| Phone height | Yes. 44px, from `BULK_BUTTON_CLASS` verbatim. It matches Keep and Clear beside it (already 44px), not the 27px pills | `clear-auto.tsx:33-34`; pills 27px, `design_handoff_the99_decklist_sort/README.md:208` |
 | Done | Yes. `min-w-[116px]` holds the box; Keep and Clear stay in place, disabled at 50% | `clear-auto.tsx:34` (`disabled:opacity-50`), `:104` |
 | Shopping hides it | Yes. Absent, and switching to Shopping ends the mode | `group-toggle.tsx:331-346` is the same rule for the view well |
 | The mode's line vs the key | Yes. It takes the key's wrapper, above the receipt and the groups | `decklist.tsx:807-809` (the wrapper, `empty:hidden`), `:825-829` (the receipt) |
@@ -248,12 +248,13 @@ not reproduced, but it leaves 82px to spare.
 **1300.** The box is 1300 − 62 (the rail, `nav.tsx:148`) − 52 (`group-toggle.tsx:121`) = **1186**. The builder
 is one column (`builder-shell.tsx:887-895`). The decklist-sort figure of record, 1006 of 1008, was measured in a
 frame with a 240px sidebar the app does not have (decklist-sort `README.md:203`). The same widest state plus
-Lock cards and its 8px gap is **1130 of 1186**. With the draft note in place of the kept note (26 characters at
-11.5px against 22 at 11px, about +34) it is **about 1164, 22 spare**. The row is one line at 1300. It wraps
-between clusters below about 1244 wide (1278 with a draft note), where today it wraps below about 1120. That is a
+Lock cards and its 8px gap is **1130 of 1186**. With the draft note in place of the kept note (26 or 27 characters
+at 11.5px, by version, against 22 at 11px: +34 to +41) it is **1164 to 1171, 15 to 22 spare**. The row is one line
+at 1300. It wraps between clusters below about 1244 wide (1278 to 1285 with a draft note), where today it wraps
+below about 1120. That is a
 second desktop line, which Design accepts ("wraps whole clusters, as it does today"), not the phone's fourth. The
-canvas's desktop frame is 1248 wide with no rail (`Toolbar.dc.html:220-221`), and Design gives no desktop
-figure. These are computed, not measured (T1).
+canvas's desktop frame is 1300 wide with no rail, so its bar's content box is 1248, 62 more than the app's
+(`Toolbar.dc.html:220-221`). Design gives no desktop figure. These are computed, not measured (T1).
 
 ### Tokens, target, copy
 
@@ -263,7 +264,7 @@ figure. These are computed, not measured (T1).
 - **Done ink.** The label is `--accent` text on `--bg`, so its bar is 4.5:1: **4.51** (phyrexia) to 9.42
   (ixalan), 5.08 kaldheim. It passes, by 0.01 in phyrexia. With no fill it keeps `group-toggle.tsx:127-132`
   (no accent ground; accent tints a border). `view-toggle.tsx:71-73` says the bar "spends accent on nothing",
-  and that comment becomes untrue.
+  which the Shopping pill's ring already contradicts (`group-toggle.tsx:154`); `Done` is a second exception.
 - **Copy.** The mode's line and count match `mode.line` and `mode.count` in the copy file. The three L3 strings
   use `recommendations.ts:25`'s `plural` shape. They contain no em dash and no apostrophe. The receipt counts the
   locked cards the sweep left, as L3 asks.
@@ -272,8 +273,8 @@ figure. These are computed, not measured (T1).
 
 | # | Sev | Evidence | Finding and correction | Owner |
 |---|---|---|---|---|
-| T1 | Low | §Width; `scripts/probe-deck-sort.mjs:1-21` | **The 1300 budget is computed**, and decklist-sort's first computed figure was 53px wrong. **Correction:** `probe:deck-sort` measures the draft-note state with Lock cards at 1300 and 1280, and asserts one line. If a width wraps, spend the fallbacks readiness-decklist-sort already names | eng |
-| T2 | Low | `clear-auto.tsx:237-239` | **The receipt wraps at 390 with two-digit counts.** The text slot is about 290 (358 − 26 − 2 − 10 − the ~30px `Undo`), and the two-clause string is about 296 at 11px mono. The break falls inside `2 locked / cards stayed`. **Correction:** make each clause `whitespace-nowrap`, with the separator inside the second clause, so the line breaks at the middot (the `probe:commander-row` rule) | eng |
+| T1 | Low | §Width; `scripts/probe-deck-sort.mjs:16-21` | **The 1300 budget is computed**, and decklist-sort's first computed figure was 53px wrong. `probe:deck-sort` cannot settle it as it stands: its fixture copies whatever deck the account has, and its own header says the auto cluster is narrower than the worst case, so it reports one line either way. **Correction:** a fixture built to the worst case (two-digit auto and kept counts, a draft note at v10 or later), measured with Lock cards at 1300, asserting one line. 1280 is recorded, not asserted: the worst case there is about 5px over, and the row wraps between clusters by design. If 1300 wraps, spend the fallbacks readiness-decklist-sort already names | eng |
+| T2 | Low | `clear-auto.tsx:237-239` | **The receipt wraps at 390 with two-digit counts.** The text slot is about 290 (358 − 26 − 2 − 10 − the ~30px `Undo`), and the two-clause string is about 296 at 11px mono. Only `stayed` crosses, so the line breaks as `2 locked cards / stayed`. **Correction:** make each clause `whitespace-nowrap`, with the separator inside the second clause, so the line breaks at the middot (the `probe:commander-row` rule) | eng |
 | T3 | Low | `builder-shell.tsx:699`; `decklist.tsx:369`; F1 | **The addendum does not state the unit of `lockedAutoCount`.** `autoCount` and the swept count are copies, and a lock is one per oracle id. **Correction:** `lockedAutoCount` and the receipt clause count copies, so `auto − lockedAuto` subtracts like from like. `mode.count` counts locked cards. Say so in the copy comments | eng |
 | T4 | Low | F5; `actions.ts:816-830`, `:1096-1115` | **L3 replaces F5's "locking clears `auto`".** Keep all counts locked auto cards and the receipt names them, so a lock leaves `auto` alone. **Correction:** the sweep skips locks with a `not exists` inside its delete, after the deck row lock `clearAutoCards` already takes, so a lock committed first is seen. `undoFillPass` is the other `auto` sweep and takes the same skip. It already reports a card as staying | eng |
 | T5 | Low | `clear-auto.tsx:84-88`, `:99`, `:104`, `:186-187` | **`ClearAutoButton` has one count and no mode.** **Correction:** Keep keys on `autoCount`, and Clear on the clearable count. The confirm's reset stays on `autoCount`. `busy` takes the mode, and the `:186-187` note is rewritten, as Design asks | eng |
