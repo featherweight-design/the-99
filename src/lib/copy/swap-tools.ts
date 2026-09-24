@@ -15,7 +15,7 @@ export const swapToolsCopy = {
     save: "Save",
     cancel: "cancel",
     fieldAria: "Limit per card, in dollars",
-    tooLow: "Use a whole dollar figure of 1 or more.",
+    invalid: "Use a whole dollar figure from 1 to 100,000.",
     overCount: (n: number) => `${n} over`,
     noneOver: (figure: string) => `none over ${figure}`,
   },

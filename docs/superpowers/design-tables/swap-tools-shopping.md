@@ -135,7 +135,7 @@
 | Replaces | The figure button and the chip or reset | same |
 | aria-label key | `swapToolsCopy.limit.fieldAria` | same |
 | Input rule | Whole dollars, 1 or more | same |
-| Validation copy key | `swapToolsCopy.limit.tooLow` (not drawn) | same |
+| Validation copy key | `swapToolsCopy.limit.invalid` (not drawn) | same |
 | display | inline-flex | inline-flex |
 | align-items | center | center |
 | gap | 4px | 4px |
@@ -289,7 +289,7 @@
 | Limit null (default) | `decks.shopping_limit_cents` is null, which reads as 1000 | Figure `$10` + `default` chip | Marked at > $10 |
 | Limit set | Column is non-null (whole dollars, ≥ 1) | Figure at the set value + `reset` control, no chip | Marked at > the set value |
 | Editing | The figure button is pressed | Figure and chip/reset are replaced by the `$` field, Save and cancel. Separator, count and key stay | Unchanged until save |
-| Validation refused | The field holds < 1 or a non-whole value | `limit.tooLow` (not drawn; the placement is not specified) | — |
+| Validation refused | The field holds < 1, > 100,000 or a non-whole value | `limit.invalid` (not drawn; the placement is not specified) | — |
 | Zero over | No row's drawn price exceeds the limit | Count renders `limit.noneOver(figure)` | No ⇄ or ring on any row. Desktop has a 22px slot on every row |
 | Some over | ≥ 1 row over | Count renders `limit.overCount(n)` | Over rows: ring + `over` meta + ⇄ |
 | No price feed | No provenance, so `PriceStrip` returns null | Still renders, as the strip's sibling. The count reads `noneOver` | No row is over. Desktop: 22px slot on every row |
@@ -302,6 +302,6 @@
 ### States the design does not draw (recorded, not invented)
 - **Hover, focus, pressed on the over-limit ⇄.** The child draws a rest state only. R1's "lifts on hover like the ✕" applied to the under-limit `--border-dashed` ink, which R2 removed.
 - **Hover, focus, pressed** on the figure button, reset, Save and cancel.
-- **Placement of `limit.tooLow`.**
+- **Placement of `limit.invalid`** (named `tooLow` in the handoff; renamed when the field gained its $100,000 ceiling, the wording owed to /copy-review).
 - **A Save pending state.**
 - **The width cost (F12).** At 390 an over row spends a net 35px (44 − 9) of name width, and on desktop every row spends 22px. Design says Plateau keeps "about 131px" of name at 390. The audit requires a probe of the name's width at 390 and at the narrowest 2-up desktop width, with the `over` meta inline.

@@ -57,7 +57,7 @@ describe("the Shopping limit line", () => {
     fireEvent.change(screen.getByRole("textbox", { name: copy.limit.fieldAria }), { target: { value: "2.50" } });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.limit.save })); });
     expect(setShoppingLimitAction).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent(copy.limit.tooLow);
+    expect(screen.getByRole("alert")).toHaveTextContent(copy.limit.invalid);
   });
 
   it("resets a set limit to the default", async () => {

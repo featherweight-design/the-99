@@ -33,6 +33,7 @@ describe("the Shopping limit", () => {
   it("takes whole dollars of 1 or more, and nothing else", () => {
     expect(parseLimitDollars("25")).toBe(2500);
     expect(parseLimitDollars(" 7 ")).toBe(700);
-    for (const bad of ["0", "", "2.5", "1,000", "-3", "ten", "$5"]) expect(parseLimitDollars(bad), bad).toBeNull();
+    expect(parseLimitDollars("100000")).toBe(10_000_000);
+    for (const bad of ["0", "", "2.5", "1,000", "-3", "ten", "$5", "100001", "21474837"]) expect(parseLimitDollars(bad), bad).toBeNull();
   });
 });

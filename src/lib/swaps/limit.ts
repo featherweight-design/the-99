@@ -7,6 +7,12 @@ import { priceOf, priceState, type PriceFact } from "../decks/price";
 /** The default, in cents. The copy's `reset` names it, so it is one constant. */
 export const DEFAULT_LIMIT_CENTS = 1000;
 
+/**
+ * The highest limit the field takes: $100,000, above any card's price and well inside the column's
+ * `integer` range. The field and the server action refuse past it alike.
+ */
+export const MAX_LIMIT_CENTS = 10_000_000;
+
 /** The limit a deck marks against: its own, or the default when it has none. */
 export function effectiveLimit(stored: number | null): number {
   return stored ?? DEFAULT_LIMIT_CENTS;
@@ -29,12 +35,13 @@ export function formatLimit(cents: number): string {
 }
 
 /**
- * What the `$` field holds, as cents, or null when it is not a whole dollar of at least 1. Digits
- * only: a comma or a decimal point is refused rather than guessed at.
+ * What the `$` field holds, as cents, or null when it is not a whole dollar from 1 to 100,000.
+ * Digits only: a comma or a decimal point is refused rather than guessed at.
  */
 export function parseLimitDollars(input: string): number | null {
   const trimmed = input.trim();
   if (!/^\d+$/.test(trimmed)) return null;
   const dollars = Number(trimmed);
-  return dollars >= 1 && Number.isSafeInteger(dollars * 100) ? dollars * 100 : null;
+  const cents = dollars * 100;
+  return dollars >= 1 && cents <= MAX_LIMIT_CENTS ? cents : null;
 }

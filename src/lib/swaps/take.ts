@@ -15,6 +15,7 @@ import { cards, deckSwaps, decks } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { touchDeck } from "../decks/touch";
 import { applySwap, planSwap, restoreSwap, type SwapRefusal } from "./draft-swap";
+import { MAX_LIMIT_CENTS } from "./limit";
 import { freeAfterTake } from "./stand-ins";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -87,12 +88,6 @@ export async function undoSwap(swapId: string, userId: string): Promise<string |
     return swap.deckId;
   });
 }
-
-/**
- * The highest limit the field takes: $100,000, above any card's price and well inside the column's
- * `integer` range, so an absurd figure is refused here rather than thrown by Postgres.
- */
-export const MAX_LIMIT_CENTS = 10_000_000;
 
 /** A limit the field can hold: whole dollars, $1 to $100,000. Null is the $10 default. */
 export function validLimit(cents: number | null): boolean {

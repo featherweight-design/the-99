@@ -136,7 +136,7 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
       </form>
       {invalid ? (
         <p id={errorId} role="alert" className="m-0 font-mono text-[10px]" style={{ color: "var(--warning)" }}>
-          {copy.limit.tooLow}
+          {copy.limit.invalid}
         </p>
       ) : null}
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>
