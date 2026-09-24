@@ -345,6 +345,32 @@ async function run() {
   check("a synopsis written after the commit is not copied into it",
     await pinSynopsisToVersion(deck.id, USER, { versionId: v3.id, list: committedList }), false);
 
+  // 11b · `lastRefused`, read from the database rather than handed in: the NEWEST run, refused in
+  // EVERY section, newer than the overview on screen, its counts summed over the sections.
+  const verdicts = (ok: boolean) => (["overview", "primer", "keyCards", "weaknesses"] as const).map((section, i) =>
+    ok && i > 0 ? { section, status: "ok", failed: 0, total: 3 }
+      : { section, status: "refused", reason: "unknown_card", failed: i + 1, total: 4 });
+  const refusedContent = (ok: boolean) => JSON.stringify({
+    verdicts: verdicts(ok), overview: null, primer: null, keyCards: null, weaknesses: null, cards: {},
+  });
+  const [anyCall] = await rows<{ model_call_id: string }>(sql`select model_call_id from deck_synopses where deck_id = ${deck.id}::uuid limit 1`);
+  const refusedRun = (ok: boolean, offset: string) => fixture.execute(sql`
+    insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content, created_at)
+    values (${deck.id}::uuid, ${USER}, ${list()}, ${SYNOPSIS_CONTRACT_VERSION}, 'probe-stub', ${anyCall.model_call_id}::uuid,
+      'done', 'refused', ${refusedContent(ok)}::jsonb, now() + ${offset}::interval)`);
+  const shownBefore = (await state()).synopsis?.id ?? null;
+  check("with no newer refusal, lastRefused is null", (await state()).lastRefused, null);
+  await refusedRun(false, "2 seconds");
+  check("a newer run refused everywhere sums its sections", (await state()).lastRefused, { failed: 10, total: 16 });
+  check("…and the overview on screen stays", (await state()).synopsis?.id ?? null, shownBefore);
+  await refusedRun(true, "3 seconds");
+  check("a newer PARTIAL refusal is not lastRefused", (await state()).lastRefused, null);
+  await fixture.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid`);
+  await refusedRun(false, "0 seconds");
+  check("with no overview ever shown, a refused-everywhere run still reads", (await state()).lastRefused, { failed: 10, total: 16 });
+  check("…with nothing on screen", (await state()).synopsis, null);
+  await fixture.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid`);
+
   // 12 · The allowance: spent, the write says so, the analysis is untouched.
   await swap(body[1]); // left the deck in section 5
   await analyze(deck.id);

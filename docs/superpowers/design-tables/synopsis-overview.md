@@ -38,9 +38,16 @@ strings below are recorded structurally (which key renders), never compared as w
 | Bracket box | third block, after Overview (`--surface`, 1px `--border`, radius 11, padding 15px 15px) | right column (1fr) (`--surface`, 1px `--border`, radius 12, padding 18px 20px) |
 | Climb | fourth block, after the bracket box | left column, under the Overview (26px gap) |
 
-### Pre-reading (2a–2c) — Overview label over the empty state
+### Pre-reading (2a–2c)
 | Property | Mobile (390) | Desktop (1300) |
 |---|---|---|
+| Overview | — (not drawn before a reading: no label, no paragraph, no link, no write row) | — |
+
+> Ruled in `gap-report-synopsis-overview.md`: 2a's "Overview empty state" names the tab's own empty
+> state (the ring and Analyze), neither frame draws a label there, and HANDOFF §2 forbids reserved
+> space.
+
+---|---|---|
 | Grid | withheld (full width) | withheld (full width) |
 | Section | flex column, gap 7px | flex column, gap 8px |
 | Label | the Overview section label (see §2) | the Overview section label (see §2) |
@@ -210,7 +217,7 @@ strings below are recorded structurally (which key renders), never compared as w
 | Font family | `--font-mono` | `--font-mono` |
 | Font size | 10.5px | 10.5px |
 | Color | `--fg-faint` | `--fg-faint` |
-| Content | key: failed-claims count (`{n} of {m} claims failed checking`) | same |
+| Content | key: failed-cards count (`{n} of {m} cards failed checking`): the validator counts the card names it checked (`SectionVerdict.failed` / `total`) | same |
 
 ### Try again row
 | Property | Mobile (390) | Desktop (1300) |
@@ -495,4 +502,4 @@ strings below are recorded structurally (which key renders), never compared as w
 | S10 | **Credits spent** (7g; 7b/7e for Analyze/Re-analyze) | allowance at 0 and the press would write | Write one / Try again disabled (`--fg-disabled` on `--border-strong`) + used-up string; Analyze / Re-analyze stay enabled with the "bracket only" lead | modal banner's note takes the used-up form (finding 5) |
 | S11 | **No-write press** (7d) | stored overview fingerprint equals the live list | no credit note on any press | no note |
 | S12 | **Version** (6e) | a committed version with a stored overview, opened from the Versions panel | — | aside = version; record line; no write control; never stale |
-| S13 | **Pre-reading** (2a–2c) | no reading yet | Overview label over the empty state; no paragraph, no link | — |
+| S13 | **Pre-reading** (2a–2c) | no reading yet | nothing: no Overview section until a reading exists (ruled, see §1) | — |
