@@ -1,6 +1,6 @@
 # Design Brief: Change commander (sub-project 7, #215)
 
-**Date:** 2026-09-24 · **Branch:** `docs/alt-commander-brief` (held for Hugh's approval; not yet a PR)
+**Date:** 2026-09-24 · **Branch:** `docs/alt-commander-brief` (approved by Hugh, 2026-09-24)
 **Rulings:** Hugh, 2026-09-24, in the scoping conversation for this brief (§2). Ruling 5 is his
 standing instruction for sub-projects 7 and 8, relayed by the orchestrator the same day.
 **Specs:**
@@ -49,14 +49,16 @@ play, and it swaps the leader as an ordinary draft edit.
    creates a brand new deck".
 3. **Like for like.** A single-commander deck sees single commanders. A partner-pair deck sees pairs
    whose combined identity equals the deck's. The body never changes size.
-4. **Each candidate shows how much of this deck its own decks run** ("41 of 99 are in its decks"), and
+4. **Each candidate shows how much of this deck its own decks run** ("41 of 62 are in its decks"), and
    the list is ordered by that figure. Candidates the player owns come first, marked free. Unowned
-   candidates follow with a buy tag and price.
+   candidates follow with a buy tag and price. An owned commander whose every copy another deck
+   claims shows the usual held mark, not free.
 5. **Universal staples do not count toward the figure.** Every commander's decks run Sol Ring, so it
    says nothing about fit. The app is getting one shared definition of a universal staple, derived from
    `format_staples` (a staple in at least 12 of 16 conditions; today Sol Ring, Arcane Signet,
    Swiftfoot Boots, Reliquary Tower and Rogue's Passage). This feature reads that definition and keeps no
-   list of its own. With the universal staples removed from both sides, the figure reads "41 of 94".
+   list of its own. Basic lands are left out the same way. The figure counts the deck's distinct
+   non-basic cards other than universal staples, so a typical deck reads something like "41 of 62".
 6. **Taking one swaps in place, as a draft change.** A confirm step comes first, and the swap then lands
    in the draft like any edit. Each version already stores its own commander (`src/db/schema.ts:455-456`).
 7. **The door is on the deck page's commander:** a "Change commander" action in the header. It is not
@@ -76,7 +78,7 @@ commander and on a pair.
 
 Each row shows:
 - the commander, or the pair, whose name opens the card as names do everywhere;
-- the figure: "41 of 94 are in its decks";
+- the figure: "41 of 62 are in its decks";
 - ownership: free, a held mark when every copy the player owns is claimed by another deck (the usual
   availability marks), or a buy tag and price.
 
@@ -156,8 +158,8 @@ All of it is deterministic, with no model call.
   - A brew has no version to discard back to. There, the confirm step says the swap can only be undone by
     changing commander again, and that is the only behaviour this brief asks for on a brew.
 - **Claims.** Other decks see a committed deck's claim through its newest version's commander
-  (`src/lib/decks/availability-query.ts:64-84`), so a swap moves that claim at commit. The deck's own
-  draft ask and a brew's claim read the live columns and move at once. The new leader's `commander_since`
+  (the newest-version read at `src/lib/decks/availability-query.ts:49-58`, the commander arms at `:92-97`), so a swap moves that claim at commit. The deck's own
+  draft ask and a brew's claim (`:107-115`) read the live columns and move at once. The new leader's `commander_since`
   (`schema.ts:460`) starts at that commit.
 - **Candidates:**
   - **Singles:** `cards.commander_legal` (`schema.ts:43`) and a legal-commander type. The identity is
@@ -172,8 +174,9 @@ All of it is deterministic, with no model call.
 - **The figure** is the deck's cards, less the universal staples, that appear in the candidate's
   `commander_support_cards` rows (`schema.ts:992`), or in `commander_pair_support_cards` (`:1071`) for a
   pair.
-  - It counts distinct cards. A basic land counts once and never in the numerator, because support lists
-    exclude basics.
+  - It counts distinct cards, and it drops basic lands from both sides explicitly. Support lists do
+    hold basics (on staging, `commander_support_cards` carries more than 1,000 rows for each basic
+    type), so a query that forgets this credits nearly every candidate with the deck's basics.
   - **Known bias:** a heavily indexed commander has a longer support list, so it can reach a higher figure.
     This brief accepts that as the cost of reporting a plain count. Hugh may overrule it.
 - **Price:** the cheapest printing stocked now, the same rule as the stand-ins brief
