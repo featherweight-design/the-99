@@ -9,12 +9,20 @@
  * first write, and one line is appended naming each refused section's reason. The merge is the
  * app's `mergeRetry`, which keeps every passing section byte for byte. Both calls are charged to
  * the answer, so "per accepted answer" includes the repair.
+ *
+ * It reports all four contracts from the one run: shipped, (A) drop the line under Design's
+ * minimums, (B) this repair, and A+B. A+B is DERIVED rather than sent: a section passes when the
+ * drop-line rule passes it on the first answer, or it was repaired and passes on the repair. That
+ * is an approximation in one direction worth naming — B's repair asks for every section the
+ * SHIPPED rule refused, a superset of what A+B would ask for — and A+B charges a repair only to
+ * answers the drop-line rule still fails.
  */
 import "../lib/env.mjs";
 
 import { appendFileSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
+import { DESIGN_MINIMUMS, dropLineRule, type SectionPass } from "./lib/line-rule.mjs";
 import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
@@ -84,9 +92,9 @@ const run = await runRequests({
 if (!run) process.exit(args["dry-run"] ? 0 : 2);
 
 const out = new URL("rows.jsonl", run.dir);
-let passedBefore = 0;
-let passedAfter = 0;
-let usd = 0;
+const tally = { shipped: [0, 0], a: [0, 0], b: [0, 0], ab: [0, 0] } as Record<string, [number, number]>;
+const add = (k: string, passed: boolean, usdOfAnswer: number) => { tally[k][0] += passed ? 1 : 0; tally[k][1] += usdOfAnswer; };
+const allPass = (p: SectionPass) => Object.values(p).every(Boolean);
 const repaired = new Map<string, { answer: Parameters<typeof commonRow>[1]; customId: string }>();
 for (const [customId, answer] of run.answers) repaired.set(`${keys.get(customId)!.row.deckId}|${keys.get(customId)!.row.trial}`, { answer, customId });
 for (const f of firsts) {
@@ -95,25 +103,37 @@ for (const f of firsts) {
   let after = before;
   let mergedVerdicts = f.checked?.verdicts ?? [];
   let repairRow: Record<string, unknown> = {};
+  const facts = factsOf.get(f.row.deckId)!;
+  const firstDrop = f.row.reply ? dropLineRule(f.row.reply, facts, await app.catalog(f.row.reply, facts), DESIGN_MINIMUMS) : null;
+  let repairDrop: SectionPass | null = null;
   if (rep) {
     repairRow = commonRow(cell, rep.answer, false, app.maxTokens);
     if (rep.answer.value) {
-      const facts = factsOf.get(f.row.deckId)!;
       const value = rep.answer.value as Reply;
-      const fresh = app.validate(value, facts, await app.catalog(value, facts));
+      const catalog = await app.catalog(value, facts);
+      const fresh = app.validate(value, facts, catalog);
+      repairDrop = dropLineRule(value, facts, catalog, DESIGN_MINIMUMS);
       const merged = mergeRetry(f.checked!, fresh, f.refused).content;
       mergedVerdicts = merged.verdicts;
       after = merged.verdicts.every((v) => v.status === "ok");
     }
   }
-  passedBefore += before ? 1 : 0;
-  passedAfter += after ? 1 : 0;
-  usd += f.row.usdRealtime + ((repairRow.usdRealtime as number | undefined) ?? 0);
+  const firstUsd = f.row.usdRealtime;
+  const repairUsd = (repairRow.usdRealtime as number | undefined) ?? 0;
+  const aPass = !!firstDrop && allPass(firstDrop);
+  const abPass = aPass || (!!firstDrop && (Object.keys(firstDrop) as SectionId[]).every((s) => firstDrop[s] || (f.refused.includes(s) && !!repairDrop?.[s])));
+  add("shipped", before, firstUsd);
+  add("a", aPass, firstUsd);
+  add("b", after, firstUsd + repairUsd);
+  add("ab", abPass, firstUsd + (aPass ? 0 : repairUsd));
   appendFileSync(out, `${JSON.stringify({
     runId: run.runId, feature: "synopsis-repair", from: args.from, cell: args.cell, variant: args.variant, set: f.row.set,
     deckId: f.row.deckId, trial: f.row.trial, firstUsdRealtime: f.row.usdRealtime, repair: repairRow,
-    passedBefore: before, passedAfter: after, verdictsAfter: mergedVerdicts,
+    passedBefore: before, passedAfter: after, verdictsAfter: mergedVerdicts, dropLineFirst: firstDrop, dropLineRepair: repairDrop, passedA: aPass, passedAB: abPass,
   })}\n`);
 }
-log(`all four sections: ${passedBefore} of ${firsts.length} before repair, ${passedAfter} after; $${(usd / Math.max(1, passedAfter)).toFixed(4)} per accepted answer at real-time prices, repair included`);
+for (const [k, name] of [["shipped", "shipped"], ["a", "(A) drop the line"], ["b", "(B) repair"], ["ab", "(A+B)"]] as const) {
+  const [n, u] = tally[k];
+  log(`${name}: all four sections on ${n} of ${firsts.length} (${Math.round((100 * n) / firsts.length)}%); $${(u / Math.max(1, n)).toFixed(4)} per accepted answer at real-time prices`);
+}
 process.exit(0);

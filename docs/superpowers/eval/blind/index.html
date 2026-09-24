@@ -1,0 +1,236 @@
+<title>Which Answer Reads Better?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #eef1f3;
+    --surface: #ffffff;
+    --sunken: #e3e8ec;
+    --ink: #1a2128;
+    --muted: #5b6874;
+    --rule: #cfd7de;
+    --accent: #2b6a9e;
+    --accent-ink: #ffffff;
+    --picked: #dcebf7;
+    --cut: #9a3b2e;
+    --add: #2f6b3d;
+    --display: "Cinzel", "Trajan Pro", Georgia, serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #11161b; --surface: #182029; --sunken: #0d1217; --ink: #e4e9ee; --muted: #93a2af;
+      --rule: #2a3540; --accent: #79b0de; --accent-ink: #0d1217; --picked: #1d3346; --cut: #e0907f; --add: #8fcf9c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #11161b; --surface: #182029; --sunken: #0d1217; --ink: #e4e9ee; --muted: #93a2af;
+    --rule: #2a3540; --accent: #79b0de; --accent-ink: #0d1217; --picked: #1d3346; --cut: #e0907f; --add: #8fcf9c;
+  }
+  body { background: var(--ground); color: var(--ink); font: 15px/1.55 var(--sans); padding-inline: 16px; padding-block: 20px 48px; }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  h1 { font: 600 22px/1.2 var(--display); letter-spacing: 0.04em; margin: 0; text-wrap: balance; }
+  .lede { margin: 0; color: var(--muted); max-width: 68ch; }
+  .label { font: 500 11px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .tabs, .strip { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tab { border: 1px solid var(--rule); background: var(--surface); padding: 6px 12px; border-radius: 999px; font: 500 13px var(--sans); }
+  .tab[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .chip { width: 34px; height: 30px; border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; font: 500 12px var(--mono); font-variant-numeric: tabular-nums; }
+  .chip.done { background: var(--picked); border-color: var(--accent); }
+  .chip[aria-current="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .deck { display: grid; gap: 4px; }
+  .deck h2 { margin: 0; font: 600 20px/1.25 var(--sans); text-wrap: balance; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .side { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: grid; gap: 14px; align-content: start; }
+  .side h3 { margin: 0; font: 600 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+  .swap { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--rule); }
+  .swap:first-of-type { border-top: 0; padding-top: 0; }
+  .names { display: flex; flex-wrap: wrap; gap: 4px 10px; font-weight: 600; }
+  .names .cut { color: var(--cut); }
+  .names .add { color: var(--add); }
+  .names .k { font: 500 10px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+  .why { margin: 0; max-width: 65ch; }
+  .cites { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cite { font: 12px/1.4 var(--mono); background: var(--sunken); padding: 3px 7px; border-radius: 4px; }
+  .cite b { font-weight: 500; color: var(--muted); margin-right: 6px; }
+  .empty { color: var(--muted); font-style: italic; margin: 0; }
+  .prose p, .prose li { max-width: 65ch; }
+  .prose h4 { margin: 8px 0 2px; font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .prose ul { margin: 0; padding-left: 18px; }
+  .verdict { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+  .picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .pick { border: 1px solid var(--rule); background: var(--ground); padding: 12px 8px; border-radius: 8px; font-weight: 600; }
+  .pick[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  textarea { width: 100%; box-sizing: border-box; min-height: 64px; font: inherit; color: var(--ink); background: var(--ground); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .nav { border: 1px solid var(--rule); background: var(--surface); padding: 8px 14px; border-radius: 8px; }
+  .status { font: 12px var(--mono); color: var(--muted); }
+  .notice { background: var(--sunken); border-radius: 8px; padding: 12px 14px; margin: 0; }
+  @media (prefers-reduced-motion: no-preference) { .pick, .chip, .tab { transition: background-color 120ms, border-color 120ms; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div style="display:grid;gap:6px">
+      <span class="label">The 99 · deck analysis · blind read</span>
+      <h1>Which answer reads better?</h1>
+      <p class="lede">Each deck shows two answers to the same question, written by two different setups. Which is which is hidden, and the sides are shuffled per deck. Pick the one you'd rather get as a player, or Same if neither is better. Your picks save as you go.</p>
+    </div>
+    <div class="tabs" role="group" aria-label="Round" id="tabs"></div>
+  </header>
+
+  <div style="display:grid;gap:8px">
+    <div class="row"><span class="label" id="progress">Loading…</span></div>
+    <div class="strip" id="strip" role="group" aria-label="Decks"></div>
+  </div>
+
+  <main id="main" style="display:grid;gap:16px">
+    <p class="notice" id="notice">Loading the decks…</p>
+  </main>
+</div>
+
+<script>
+// A round is one comparison: the same held-out decks, one setup against another. Rounds are listed
+// in the order they were added, and each keeps its own place.
+const state = { round: null, index: 0, pairs: [], answers: {}, db: null, writable: true };
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return n;
+};
+
+function rounds() {
+  const seen = new Map();
+  for (const p of state.pairs) if (!seen.has(p.round)) seen.set(p.round, p.roundTitle || p.round);
+  return [...seen].sort((a, b) => a[0].localeCompare(b[0]));
+}
+function visible() { return state.pairs.filter((p) => p.round === state.round).sort((a, b) => a.order - b.order); }
+
+/** Where to resume: the first deck in this round without a pick. */
+function firstOpen() {
+  const i = visible().findIndex((p) => !state.answers[p.id]);
+  return i === -1 ? 0 : i;
+}
+
+function renderTabs() {
+  const tabs = $("tabs"); tabs.replaceChildren();
+  for (const [id, title] of rounds()) {
+    tabs.append(el("button", { class: "tab", "aria-pressed": String(state.round === id), onclick: () => { state.round = id; state.index = firstOpen(); render(); } }, title));
+  }
+}
+
+function renderStrip(list) {
+  const strip = $("strip"); strip.replaceChildren();
+  list.forEach((p, i) => strip.append(el("button", {
+    class: `chip${state.answers[p.id] ? " done" : ""}`, "aria-current": String(i === state.index),
+    "aria-label": `Deck ${i + 1}${state.answers[p.id] ? ", answered" : ""}`, onclick: () => { state.index = i; render(); },
+  }, i + 1)));
+  const done = list.filter((p) => state.answers[p.id]).length;
+  $("progress").textContent = `${done} of ${list.length} decks read`;
+}
+
+function tuningSide(a) {
+  if (!a || a.status !== "suggestions" || !a.items?.length) {
+    return [el("p", { class: "empty" }, a?.status === "failed" ? "This setup failed to answer. A player would see an error and keep their allowance." : "No suggestions survived checking. A player would be told nothing was found worth changing.")];
+  }
+  return a.items.map((s) => el("div", { class: "swap" },
+    el("div", { class: "names" },
+      el("span", { class: "cut" }, el("span", { class: "k" }, "Cut"), s.cut),
+      el("span", { class: "add" }, el("span", { class: "k" }, "Add"), s.add)),
+    el("p", { class: "why" }, s.rationale),
+    el("div", { class: "cites" }, (s.citations ?? []).map((c) => el("span", { class: "cite" }, el("b", {}, c.kind), c.value)))));
+}
+
+function synopsisSide(a) {
+  if (!a || !a.sections) return [el("p", { class: "empty" }, "This setup failed to answer.")];
+  const strip = (t) => String(t).replace(/\[\[([^\]]+)\]\]/g, "$1");
+  const out = [];
+  for (const s of a.sections) {
+    out.push(el("h4", {}, s.title));
+    if (s.refused) out.push(el("p", { class: "empty" }, "This section failed checking and would not be shown."));
+    else if (s.paragraph) out.push(el("p", {}, strip(s.paragraph)));
+    else out.push(el("ul", {}, s.items.map((t) => el("li", {}, strip(t)))));
+  }
+  return [el("div", { class: "prose" }, out)];
+}
+
+async function choose(pair, pick) {
+  const note = $("note")?.value ?? "";
+  const prev = state.answers[pair.id];
+  state.answers[pair.id] = { pick, note, at: new Date().toISOString() };
+  render();
+  try {
+    await state.db.doc(`answers/${pair.id}`).set({ pick, note, at: state.answers[pair.id].at });
+    $("saved").textContent = "Saved";
+  } catch (err) {
+    state.answers[pair.id] = prev;
+    render();
+    $("saved").textContent = "Not saved. Check your connection and pick again.";
+  }
+}
+
+async function saveNote(pair) {
+  const a = state.answers[pair.id];
+  if (!a) return;
+  const note = $("note").value;
+  if (note === a.note) return;
+  a.note = note;
+  try { await state.db.doc(`answers/${pair.id}`).set({ ...a }); $("saved").textContent = "Note saved"; }
+  catch { $("saved").textContent = "Note not saved. Check your connection."; }
+}
+
+function render() {
+  renderTabs();
+  const list = visible();
+  renderStrip(list);
+  const main = $("main"); main.replaceChildren();
+  if (list.length === 0) { main.append(el("p", { class: "notice" }, "No decks are loaded yet.")); return; }
+  const pair = list[Math.min(state.index, list.length - 1)];
+  const side = pair.feature === "tuning" ? tuningSide : synopsisSide;
+  const answer = state.answers[pair.id];
+  main.append(
+    el("section", { class: "deck" }, el("span", { class: "label" }, `Deck ${state.index + 1} of ${list.length}`), el("h2", {}, pair.deckName), el("span", { class: "status" }, pair.commander)),
+    el("section", { class: "pair" },
+      el("article", { class: "side", "aria-label": "Answer A" }, el("h3", {}, "Answer A"), ...side(pair.left)),
+      el("article", { class: "side", "aria-label": "Answer B" }, el("h3", {}, "Answer B"), ...side(pair.right))),
+    el("section", { class: "verdict" },
+      el("span", { class: "label" }, "Which would you rather get?"),
+      el("div", { class: "picks" },
+        [["left", "A is better"], ["same", "Same"], ["right", "B is better"]].map(([k, t]) =>
+          el("button", { class: "pick", "aria-pressed": String(answer?.pick === k), disabled: state.writable ? null : "", onclick: () => choose(pair, k) }, t))),
+      el("label", { class: "label", for: "note" }, "Why, if you want to say (optional)"),
+      el("textarea", { id: "note", onblur: () => saveNote(pair) }, answer?.note ?? ""),
+      el("div", { class: "row" },
+        el("button", { class: "nav", onclick: () => { state.index = Math.max(0, state.index - 1); render(); } }, "← Previous deck"),
+        el("span", { class: "status", id: "saved", "aria-live": "polite" }, state.writable ? "" : "You can read these, but only the owner's picks are recorded."),
+        el("button", { class: "nav", onclick: () => { state.index = Math.min(list.length - 1, state.index + 1); render(); } }, "Next deck →"))),
+  );
+}
+
+(async () => {
+  const db = await window.claude?.use?.("db");
+  if (!db) { $("notice").textContent = "This page needs its saved decks, and they could not be reached from this view. Open it on claude.ai."; $("progress").textContent = ""; return; }
+  state.db = db;
+  const user = await window.claude.use("user");
+  const can = user ? await user.can("data.write") : null;
+  if (can === false) state.writable = false;
+  const [pairs, answers] = await Promise.all([db.collection("pairs").get(), db.collection("answers").get()]);
+  state.pairs = pairs.docs.map((d) => ({ id: d.id, ...d.data() }));
+  for (const d of answers.docs) state.answers[d.id] = { ...d.data() };
+  state.round = rounds()[0]?.[0] ?? null;
+  state.index = firstOpen();
+  render();
+})();
+</script>
