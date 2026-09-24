@@ -576,7 +576,10 @@ async function live(fixtureDeck: string) {
   }
   // Sonnet list prices per million tokens, input and output; an estimate, never a bill.
   const [IN, OUT] = [3, 15];
-  for (let i = 0; i < max; i++) {
+  // `--max-calls` counts MODEL CALLS, not writes: since contract B a write can make two (the first
+  // answer and its repair), and a call past the cap is refused here rather than sent.
+  let made = 0;
+  for (let i = 0; i < max && made < max; i++) {
     await fixture.execute(sql`update model_calls set created_at = now() - interval '25 hours' where user_id = ${userId}`);
     await fixture.execute(sql`delete from deck_version_synopses where synopsis_id in (select id from deck_synopses where deck_id = ${deckId}::uuid)`);
     await fixture.execute(sql`delete from deck_synopses where deck_id = ${deckId}::uuid`);
@@ -584,7 +587,14 @@ async function live(fixtureDeck: string) {
     const started = Date.now();
     const liveDeps = defaultDeps();
     const debug = process.argv.includes("--debug");
+    let callsThisWrite = 0;
     const result = await writeSynopsisFor(deckId, userId, { ...liveDeps, profile: profileDeps, model: async (req, facts) => {
+      if (made >= max) {
+        console.log(`CAP  call ${made + 1} not sent (--max-calls=${max})`);
+        return { ok: false, errorClass: "upstream_busy" };
+      }
+      made += 1;
+      callsThisWrite += 1;
       const out = await liveDeps.model(req, facts);
       // --debug: what the refusals were ABOUT, which the stored run keeps only for passing sections.
       if (debug && out.ok) {
@@ -602,8 +612,12 @@ async function live(fixtureDeck: string) {
       select outcome, input_tokens, output_tokens, content from deck_synopses where deck_id = ${deckId}::uuid
       order by created_at desc limit 1`);
     const cost = ((r?.input_tokens ?? 0) * IN + (r?.output_tokens ?? 0) * OUT) / 1e6;
-    console.log(`LIVE ${i + 1}/${max}  ${result.kind} ${r?.outcome}  in ${r?.input_tokens} out ${r?.output_tokens}  ~$${cost.toFixed(4)}  ${seconds}s`);
+    const [unit] = await rows<{ status: string }>(sql`
+      select status from model_calls where user_id = ${userId} order by created_at desc limit 1`);
+    console.log(`LIVE write ${i + 1} (${callsThisWrite} call${callsThisWrite === 1 ? "" : "s"}, ${made}/${max})  ${result.kind} ${r?.outcome}  unit ${unit?.status}  in ${r?.input_tokens} out ${r?.output_tokens}  ~$${cost.toFixed(4)}  ${seconds}s`);
     if (r?.content) console.log(JSON.stringify((r.content as { verdicts: unknown }).verdicts));
+    // A write that made no call cannot make one next time either (no reading, a spent allowance).
+    if (callsThisWrite === 0) break;
   }
 }
 
