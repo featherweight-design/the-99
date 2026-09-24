@@ -139,6 +139,8 @@ async function run() {
   let walked = null;
   let walkStart = null;
   let userId = null;
+  /** The version this probe pinned its overview to, for 6e; unpinned in the `finally`. */
+  let pinned = null;
   const ours = [];
   const fills = [];
   const nowAt = async () => (await sql`select now() as at`)[0].at;
@@ -374,10 +376,89 @@ async function run() {
     report("390px · the modal's title is whole", !head.clipped, head.clipped ? "truncated" : "whole");
     report("390px · the aside is drawn once, in the body", head.asides === 1, `${head.asides} drawn`);
     await phone.close();
+
+    // 6e: a version's overview, from its EXPANDED panel. A version is pinned only at commit, and
+    // the walked deck may have no version at all, so the probe COPIES this run's overview onto the
+    // deck whose version it pins: a pin whose overview came from another deck is a state no commit
+    // can produce, and the sheet would name that other deck's cards. The copy joins `ours`, so the
+    // `finally` deletes it and the pin goes with it (the pin cascades on its overview).
+    const [target] = await sql`select v.id as "versionId", v.number, v.deck_id as "deckId" from deck_versions v
+      join decks d on d.id = v.deck_id
+      where d.user_id = ${userId}
+        and v.number = (select max(number) from deck_versions w where w.deck_id = v.deck_id)
+        and not exists (select 1 from deck_version_synopses p where p.version_id = v.id)
+      -- A version with a predecessor first: its header carries stat boxes and a larger margin,
+      -- which is the layout a fixed offset got wrong. A v1 is measured only when none exists.
+      order by (v.number > 1) desc, v.deck_id limit 1`;
+    const pinnable = ours.find((r) => r.status === "done") ?? ours[0];
+    if (report("6e: a version to pin an overview to", Boolean(target && pinnable), target ? `v${target.number}` : "no deck with a version")) {
+      pinned = target.versionId;
+      const [copy] = await sql`insert into deck_synopses
+          (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
+        select ${target.deckId}::uuid, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content
+        from deck_synopses where id = ${pinnable.id}::uuid
+        returning id, model, status`;
+      // First in `ours`, and with no call of its own: it borrows the original's ledger row, so it
+      // has to be deleted before `dropOurs` deletes that row with the original.
+      ours.unshift({ ...copy, model_call_id: null });
+      await sql`insert into deck_version_synopses (version_id, synopsis_id) values (${target.versionId}::uuid, ${copy.id}::uuid)`;
+      for (const [label, viewport] of [["1300", DESKTOP], ["390", PHONE]]) {
+        const vctx = await browser.newContext({ viewport });
+        const v = await vctx.newPage();
+        await signIn(v);
+        await v.goto(`${BASE}/decks/${target.deckId}`, { waitUntil: "domcontentloaded" });
+        await v.waitForSelector(`${PAGE} [role="tablist"]`, { timeout: 20_000 });
+        await v.waitForTimeout(500);
+        await onPageRole(v, "tab", /versions/i).first().click();
+        const row = onPage(v, 'button[aria-expanded="false"]').first();
+        await row.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        // The link draws only after a server read, so a count taken at once would read 0 on a
+        // build that drew it on the collapsed row. Wait out a round trip first.
+        await v.waitForTimeout(2500);
+        const collapsed = await onPage(v, '[data-testid="synopsis-version-link"]').count();
+        report(`${label}px · 6e: no link on the collapsed row`, collapsed === 0, `${collapsed} drawn`);
+        await row.click();
+        const link = onPage(v, '[data-testid="synopsis-version-link"]');
+        await link.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        const g = await v.evaluate(() => {
+          const l = document.querySelector('[data-testid="synopsis-version-link"]');
+          const panel = l?.closest('[id]');
+          const r = document.querySelector('button[aria-expanded="true"]');
+          if (!l || !panel || !r) return null;
+          const lr = l.getBoundingClientRect();
+          const pr = panel.getBoundingClientRect();
+          // The note on desktop is the panel header's paragraph; on the phone, the row's own.
+          const note = [...panel.querySelectorAll("h3 + p")].find((e) => e.getBoundingClientRect().width > 0);
+          const nr = note?.getBoundingClientRect();
+          return {
+            height: Math.round(lr.height),
+            belowNote: nr ? Math.round(lr.top - nr.bottom) : null,
+            belowRow: Math.round(lr.top - r.getBoundingClientRect().bottom),
+            firstInPanel: Math.round(lr.top - pr.top),
+          };
+        });
+        if (label === "1300") {
+          report("1300px · 6e: the link sits 10px under the panel's note", g !== null && g.belowNote !== null && Math.abs(g.belowNote - 10) <= 1,
+            JSON.stringify(g));
+        } else {
+          report("390px · 6e: the link opens the panel, directly under the row, as a 44px target",
+            g !== null && g.height >= 44 && g.firstInPanel <= 2 && g.belowRow >= 0 && g.belowRow <= 12, JSON.stringify(g));
+        }
+        await link.click();
+        const vm = v.locator('[data-testid="receipt-modal"]');
+        await vm.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+        const body = await vm.innerText().catch(() => "");
+        const writes = await vm.getByRole("button", { name: /Write|Try again|Re-analyze/ }).count();
+        report(`${label}px · 6e: the version's sheet opens with its record line and no write control`,
+          /Written for version \d+ when it was committed\./.test(body) && writes === 0, `record ${/Written for version/.test(body)}, writes ${writes}`);
+        await vctx.close();
+      }
+    }
   } finally {
     // The overview this run's press wrote, and the credit it spent, so a run leaves neither
     // behind. Found again here rather than trusted from the walk, so a write that landed after a
     // check failed is cleared too.
+    if (pinned) await sql`delete from deck_version_synopses where version_id = ${pinned}::uuid`.catch((e) => report("unpin the version", false, e.message));
     // A press whose check failed may have written after the walk last looked: claim it too.
     if (walked) while (await claim(walkStart).catch(() => null));
     await dropOurs().catch((e) => report("delete the written overviews", false, e.message));

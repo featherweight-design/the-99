@@ -23,6 +23,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
 import { CostTrack } from "../ui/cost-pips";
 import { DecklistGroupHeader } from "./decklist-group-header";
+import { VersionOverviewLink } from "./synopsis-version";
 
 const copy = deckVersioningCopy.history;
 
@@ -276,16 +277,19 @@ export function VersionDiff({
       }
     >
       <div
-        className={`hidden md:flex items-baseline justify-between gap-[12px] flex-wrap ${
-          initial ? "mb-[14px]" : "mb-[16px]"
+        // DESKTOP'S HEADER, and on the phone only the version's overview link, which is the one
+        // thing in it the phone draws (6e): the note it sits under is the row's there, above the
+        // panel. So the link is one mount at both widths, in the note's own column at 1300.
+        className={`flex md:items-baseline md:justify-between md:gap-[12px] md:flex-wrap ${
+          initial ? "md:mb-[14px]" : "md:mb-[16px]"
         }`}
       >
         <div>
-          <h3 className="m-0 font-display font-bold text-[18px] text-[color:var(--fg)]">
+          <h3 className="hidden md:block m-0 font-display font-bold text-[18px] text-[color:var(--fg)]">
             {`v${version.number} · ${formatDeckDate(version.committedAt)}`}
           </h3>
           <p
-            className={`m-0 mt-[5px] text-[13px] ${
+            className={`hidden md:block m-0 mt-[5px] text-[13px] ${
               version.note === null
                 ? "italic text-[color:var(--fg-faint)]"
                 : "text-[color:var(--fg-body)]"
@@ -293,11 +297,12 @@ export function VersionDiff({
           >
             {version.note ?? copy.noNote}
           </p>
+          <VersionOverviewLink versionId={version.id} />
         </div>
         {initial ? (
           // The v1 header carries its figures as text rather than as stat boxes:
           // there is no before for an arrow to point away from.
-          <div className="font-mono text-[10px] leading-[1.5] text-right text-[color:var(--fg-locked)]">
+          <div className="hidden md:block font-mono text-[10px] leading-[1.5] text-right text-[color:var(--fg-locked)]">
             {copy.cardCount(version.cardCount)}
             {manaAfter !== null && ` · ${copy.manaValue(manaAfter.toFixed(2))}`}
             {version.gamesHeld > 0 && (
@@ -308,7 +313,7 @@ export function VersionDiff({
             )}
           </div>
         ) : (
-          <div className="flex gap-[10px]">
+          <div className="hidden md:flex gap-[10px]">
             {/* Keyed on the after figure alone, with the before half optional.
                 `averageManaValue` answers null for a list with nothing to average,
                 so a version that came off an all-land predecessor has a real curve
