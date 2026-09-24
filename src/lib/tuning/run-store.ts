@@ -44,13 +44,19 @@ export async function startRun(
   fingerprint: string,
   /** The deck version the run's inputs were read at (`TuningInputs.readVersion`). */
   readVersion: number | null,
-  now: Date = new Date(),
+  /**
+   * `runId` is the id the panel chose for this press, so its Stop can cancel exactly the run it
+   * started and never another tab's (the row's default makes one when absent).
+   */
+  opts: { runId?: string; now?: Date } = {},
 ): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" }> {
+  const now = opts.now ?? new Date();
   try {
     const runId = await db.transaction(async (tx) => {
       const unit = await reserveModelCall(tx, userId, "tuning", now);
       if (!unit) throw new AllowanceSpentError();
       const [row] = await tx.insert(deckSuggestionRuns).values({
+        ...(opts.runId ? { id: opts.runId } : {}),
         deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, profileVersion: PROFILE_VERSION,
         readVersion,

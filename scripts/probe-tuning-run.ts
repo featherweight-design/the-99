@@ -34,6 +34,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 
 import { readAllowance } from "../src/lib/model/allowance";
 import { MODEL_DAILY_ALLOWANCE } from "../src/lib/model/allowance-rule";
@@ -173,12 +174,16 @@ async function run() {
     check("1 · no items were written", await itemCount(started.runId), 0);
   }
 
-  // 2 · The player pressed Stop.
+  // 2 · The player pressed Stop. The panel names its run, so Stop cancels that id and no other;
+  // a Stop that beats the row writes nothing, and the row then lands under the named id.
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const started = await startRun(u, deck, "fp", null);
+    const chosen = randomUUID();
+    check("2 · a Stop before the row exists finds nothing", await cancelRun(chosen, deck, u), false);
+    const started = await startRun(u, deck, "fp", null, { runId: chosen });
     if (started.kind !== "started") return fail("case 2 start", started.kind);
+    check("2 · the run is written under the id the panel chose", started.runId, chosen);
     check("2 · the Stop lands", await cancelRun(started.runId, deck, u), true);
     const wrote = await finishRun(started.runId, { status: "failed", errorClass: "timeout" });
     check("2 · a late failure after the Stop reports superseded", wrote, false);

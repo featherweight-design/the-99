@@ -48,7 +48,7 @@ import { SuggestionCard, type CardActions } from "./suggestion-card";
  */
 export type TuningDeps = {
   read: (deckId: string) => Promise<TuningState | null>;
-  run: (deckId: string, opts?: { anyway?: boolean }) => Promise<DeckMutationResult>;
+  run: (deckId: string, opts?: { anyway?: boolean; runId?: string }) => Promise<DeckMutationResult>;
   cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
   evidence: (deckId: string, step: EvidenceStep) => Promise<number | null>;
   saveIntent: (deckId: string, formData: FormData) => Promise<DeckMutationResult>;
@@ -108,6 +108,9 @@ export function TuningPanel({
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
+  // The id this panel gave the run its press started, until that press settles. Stop cancels this
+  // run and no other: the pending row a read turns up may be another tab's.
+  const ownRun = useRef<string | null>(null);
 
   // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
   // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
@@ -163,10 +166,12 @@ export function TuningPanel({
     }
     setUnchangedShown(false);
     const mine = ++token.current;
+    const runId = crypto.randomUUID();
+    ownRun.current = runId;
     setCounts({});
     setAnnounced(deckTuningCopy.announce.started);
     // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
-    const running = deps.run(deckId, anyway ? { anyway: true } : {}).catch(
+    const running = deps.run(deckId, anyway ? { anyway: true, runId } : { runId }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
     );
     // The manifest ticks on reads that genuinely land, one after another. A read that fails
@@ -178,7 +183,12 @@ export function TuningPanel({
     }
     const result = await running;
     if (token.current !== mine) return;
-    const next = await reread();
+    ownRun.current = null;
+    // Token-checked AFTER the read too: a Stop pressed while this read is in flight owns the panel
+    // from then on, and this press must not draw or announce over it.
+    const next = await deps.read(deckId).catch(() => null);
+    if (token.current !== mine) return;
+    if (next) setState(next);
     setCounts(null);
     if (!result.ok) {
       setRefused(result.message);
@@ -192,35 +202,26 @@ export function TuningPanel({
 
   async function stop() {
     token.current += 1;
-    // A press can land before the run's pending row exists, so look for it a few times rather
-    // than once: a Stop that found nothing to cancel would let the run spend its credit while
-    // telling the reader none was used.
-    // The run this Stop is about: the one on screen when it was pressed, or, when the press beat the
-    // pending row, the first one that appears. Only that id is ever cancelled, so a Stop never
-    // reaches a run another tab started after this one settled.
-    let target = state?.run?.status === "pending" ? state.run.id : null;
+    // The run this Stop is about: the one this panel's own press started, by the id it gave it,
+    // or else the pending run already on screen, started elsewhere. Only that id is ever
+    // cancelled, so a Stop never reaches a run another tab started.
+    const own = ownRun.current;
+    ownRun.current = null;
+    const target = own ?? (state?.run?.status === "pending" ? state.run.id : null);
     let cancelled = false;
-    for (let attempt = 0; attempt < STOP_TRIES && !cancelled; attempt += 1) {
-      const current = await deps.read(deckId).catch(() => null);
-      const run = current?.run ?? null;
-      if (run?.status === "pending" && (target === null || run.id === target)) {
-        target = run.id;
-        await deps.cancel(deckId, target).catch(() => null);
-        // `cancelTuningRun` answers ok whether or not its guarded update matched: a run that
-        // settled between the read and the cancel was not stopped, and its credit may be spent.
-        // So the answer is read back, and only a run that now reads cancelled was stopped.
-        const after = await deps.read(deckId).catch(() => null);
-        cancelled = after?.run?.id === target && after.run.status === "cancelled";
-        // Try again only while THIS run is still pending (the cancel itself failed); a run that
-        // settled, or a different run now current, is past stopping.
-        if (cancelled || !(after?.run?.id === target && after.run.status === "pending")) break;
-        await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
-      } else if (target !== null) {
-        // The watched run settled, or another run is now current: nothing here to stop.
-        break;
-      } else if (attempt < STOP_TRIES - 1) {
-        await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
-      }
+    for (let attempt = 0; target !== null && attempt < STOP_TRIES; attempt += 1) {
+      await deps.cancel(deckId, target).catch(() => null);
+      // `cancelTuningRun` answers ok whether or not its guarded update matched: a run that
+      // settled before the cancel reached it was not stopped, and its credit may be spent. So the
+      // answer is read back, and only a run that now reads cancelled was stopped.
+      const after = await deps.read(deckId).catch(() => null);
+      const seen = after?.run?.id === target ? after.run : null;
+      cancelled = seen?.status === "cancelled";
+      // A run that settled is past stopping. One not seen at all can still be on its way in only
+      // when this panel started it (the press can land before its row exists); a watched run
+      // that is gone from the read is over.
+      if (cancelled || (seen !== null && seen.status !== "pending") || (seen === null && own === null)) break;
+      if (attempt < STOP_TRIES - 1) await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
     }
     setCounts(null);
     await reread();
@@ -404,7 +405,7 @@ export function TuningPanel({
           <>
             <button
               type="button"
-              onClick={() => (spent ? undefined : void press(unchangedShown))}
+              onClick={() => (spent ? undefined : void press(unchangedShown || failure !== null))}
               aria-disabled={spent || undefined}
               className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${spent ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"}`}
             >

@@ -90,7 +90,7 @@ describe("TuningPanel", () => {
     const d = deps([fresh, results]);
     await draw(d);
     await press(copy.suggest);
-    expect(d.run).toHaveBeenCalledWith("d1", {});
+    expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
     expect(d.evidence).toHaveBeenCalledTimes(readSteps(facts, "go wide").length);
     expect(screen.getByRole("heading", { name: copy.heading })).toBeInTheDocument();
     expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
@@ -104,13 +104,13 @@ describe("TuningPanel", () => {
     expect(screen.getByTestId("tuning-unchanged")).toBeInTheDocument();
     expect(d.run).not.toHaveBeenCalled();
     await press(copy.unchangedCta);
-    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true });
+    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
   });
 
   it("offers Stop only while a run is pending, and Stop cancels the pending run", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
     const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
-    const d = deps([pending, pending, cancelled]);
+    const d = deps([pending, cancelled]);
     await draw(d);
     expect(screen.getByRole("button", { name: copy.stop })).toBeInTheDocument();
     await press(copy.stop);
@@ -127,7 +127,7 @@ describe("TuningPanel", () => {
       const cancel = vi.fn()
         .mockRejectedValueOnce(new Error("network"))
         .mockResolvedValue({ ok: true });
-      const d = deps([pending, pending, pending, pending, cancelled], { cancel });
+      const d = deps([pending, pending, cancelled], { cancel });
       await draw(d);
       await press(copy.stop);
       await act(async () => {
@@ -143,16 +143,17 @@ describe("TuningPanel", () => {
   it("never cancels a different run that became current after the watched one", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
     const other: TuningState = { ...fresh, run: { ...okRun, id: "r3", status: "pending" } };
-    const d = deps([pending, other, other]);
+    const d = deps([pending, other]);
     await draw(d);
     await press(copy.stop);
-    expect(d.cancel).not.toHaveBeenCalled();
+    expect(d.cancel).toHaveBeenCalledTimes(1);
+    expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
     expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
   });
 
   it("claims no stop when the run settled before the cancel reached it", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-    const d = deps([pending, pending, { ...results, run: { ...okRun, id: "r2" } }]);
+    const d = deps([pending, { ...results, run: { ...okRun, id: "r2" } }]);
     await draw(d);
     await press(copy.stop);
     expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
@@ -229,21 +230,53 @@ describe("TuningPanel", () => {
     expect(screen.getByText(creditsCopy.spent(5, back))).toBeInTheDocument();
   });
 
-  it("claims nothing when Stop finds no run to cancel", async () => {
+  it("cancels the run its own press started, by the id it gave it, and never another tab's", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-      const d = deps([pending, fresh]);
+      // Another tab won the deck's one pending slot: every read shows its run, never this press's.
+      const theirs: TuningState = { ...fresh, run: { ...okRun, id: "r3", status: "pending" } };
+      const d = deps([fresh, theirs], { run: vi.fn(() => new Promise<never>(() => {})) });
       await draw(d);
+      await press(copy.suggest);
+      const mine = (d.run as ReturnType<typeof vi.fn>).mock.calls[0][1].runId as string;
       await press(copy.stop);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2000);
       });
-      expect(d.cancel).not.toHaveBeenCalled();
+      expect(d.cancel).toHaveBeenCalledWith("d1", mine);
+      expect(d.cancel).not.toHaveBeenCalledWith("d1", "r3");
       expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("lets a Stop pressed during the closing read own the panel", async () => {
+    let release: (s: TuningState) => void = () => {};
+    const reads = [
+      async () => fresh,
+      () => new Promise<TuningState>((r) => { release = r; }),
+      async () => fresh,
+    ];
+    let n = 0;
+    const d = deps([fresh], { read: vi.fn(() => reads[Math.min(n++, reads.length - 1)]()) });
+    await draw(d);
+    await press(copy.suggest);
+    // The run answered; its closing read is still in flight when Stop lands.
+    await press(copy.stop);
+    await act(async () => {
+      release(results);
+    });
+    expect(screen.queryByText("Rhystic Study")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.ready(1));
+  });
+
+  it("retries a failed run over a kept set as an explicit anyway", async () => {
+    const d = deps([{ ...results, run: { ...okRun, id: "r2", status: "failed", errorClass: "timeout" } }, results]);
+    await draw(d);
+    await press(deckTuningCopy.failure.retry);
+    expect(screen.queryByTestId("tuning-unchanged")).not.toBeInTheDocument();
+    expect(d.run).toHaveBeenCalledWith("d1", { anyway: true, runId: expect.any(String) });
   });
 
   it("leaves the reading state with a refusal when the run or a read rejects", async () => {
