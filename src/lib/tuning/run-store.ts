@@ -3,8 +3,8 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
-import { AllowanceSpentError, reserveModelCall, settleModelCall } from "../model/allowance";
-import type { ModelErrorClass, ModelUsage } from "../model/client";
+import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
+import type { ModelErrorClass } from "../model/client";
 import { PROFILE_VERSION } from "../profile/version";
 import { intentTooLong, TUNING_MODEL } from "./limits";
 import { PROMPT_VERSION } from "./prompt-version";
@@ -31,8 +31,23 @@ export type ErrorClass = ModelErrorClass | "ungrounded" | "interrupted";
 
 class RunSupersededError extends Error {}
 
-/** What a run's call was billed for, when it got a response: recorded on the unit as it settles. */
-export type Billed = { model: string; usage: ModelUsage };
+export type { Billed };
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * A LATE OUTCOME still records its bill. When a Stop or the reaper settled the run first, the
+ * outcome write matches no pending run and changes nothing about the run or the credit — but the
+ * upstream call billed all the same, and until its meters land its unit counts toward the month at
+ * its worst case. So the meters go onto the run's unit anyway (`recordModelUsage` writes them only
+ * while none are recorded, so this never counts a call twice).
+ */
+async function recordLate(tx: Tx, runId: string, billed: Billed | undefined): Promise<void> {
+  if (!billed) return;
+  const [run] = await tx.select({ callId: deckSuggestionRuns.modelCallId })
+    .from(deckSuggestionRuns).where(eq(deckSuggestionRuns.id, runId));
+  if (run) await recordModelUsage(tx, run.callId, billed);
+}
 
 /**
  * ONE transaction: reserve an allowance unit, then insert the pending row. Committed before any
@@ -109,6 +124,7 @@ export async function finishRun(
       .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
       .returning({ callId: deckSuggestionRuns.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, "refunded", billed);
+    if (rows.length === 0) await recordLate(tx, runId, billed);
     return rows;
   });
   return written.length > 0;
@@ -149,7 +165,11 @@ export async function persistRun(
       await settleModelCall(tx, written[0].callId, "spent", billed);
     });
   } catch (err) {
-    if (err instanceof RunSupersededError) return false;
+    if (err instanceof RunSupersededError) {
+      // The transaction above rolled back; the bill is recorded in one of its own.
+      await db.transaction((tx) => recordLate(tx, runId, billed));
+      return false;
+    }
     throw err;
   }
   return true;

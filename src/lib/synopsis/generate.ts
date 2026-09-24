@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
-import { AllowanceSpentError, reserveModelCall, settleModelCall } from "../model/allowance";
+import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall } from "../model/allowance";
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
@@ -279,6 +279,13 @@ export async function finishRun(
       .where(and(eq(deckSynopses.id, runId), eq(deckSynopses.status, "pending")))
       .returning({ callId: deckSynopses.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, set.charge, set.billed, now);
+    if (rows.length === 0 && set.billed) {
+      // A LATE OUTCOME: the reaper settled this run first, so nothing about the run or the credit
+      // moves, but the call billed all the same and its unit counts at its worst case until its
+      // meters land. `recordModelUsage` writes them only while none are recorded.
+      const [late] = await tx.select({ callId: deckSynopses.modelCallId }).from(deckSynopses).where(eq(deckSynopses.id, runId));
+      if (late) await recordModelUsage(tx, late.callId, set.billed, now);
+    }
     return rows.length > 0;
   });
 }

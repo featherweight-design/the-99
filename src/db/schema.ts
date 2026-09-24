@@ -1520,10 +1520,11 @@ export const modelCalls = pgTable("model_calls", {
   status: text("status").notNull().default("reserved"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // THE SPEND CAP'S METERS (migration 0057). `model` is written at reserve, so a reservation in
-  // flight can be priced at its worst case; the rest at settle, whenever the call returned usage,
-  // refunded or spent. Null on every row from before the cap, and on a settle with no usage (a
-  // reaper, a Stop). `cost_micro_usd` is integer micro-dollars from `src/lib/model/prices.ts`;
-  // only a `spent` row's cost counts toward the month's spend.
+  // flight can be priced at its worst case; the rest by `recordModelUsage` whenever the call
+  // returned usage, spent or refunded, including an outcome landing after a Stop or the reaper.
+  // Null on every row from before the cap, and on a call that got no response. `cost_micro_usd`
+  // is integer micro-dollars from `src/lib/model/prices.ts`; every recorded cost counts toward the
+  // month's spend, refunded or not (credits count successes; dollars count everything billed).
   inputTokens: integer("input_tokens"),
   outputTokens: integer("output_tokens"),
   cacheReadTokens: integer("cache_read_tokens"),

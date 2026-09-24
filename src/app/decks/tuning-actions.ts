@@ -104,8 +104,9 @@ export async function runTuning(
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
 
   const { runId } = started;
-  // What the call was billed for, once it returned: every settle after that records it, a failed
-  // one included, since a refund still burned the tokens.
+  // What the call was billed for, once it returned. Every outcome write after that records it: a
+  // failed one, since a refund still burned the tokens, and a late one that finds the run already
+  // Stopped or reaped, since the call billed all the same (`run-store.ts`, `recordLate`).
   let billed: Billed | undefined;
   const fail = async (errorClass: Parameters<typeof finishRun>[1]["errorClass"], droppedCount?: number) => {
     if (await finishRun(runId, { status: "failed", errorClass, droppedCount }, billed)) revalidateDeck(deckId);

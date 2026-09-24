@@ -5,12 +5,20 @@ import { featureWorstCaseMicroUsd } from "./prices";
  * The app-wide MODEL SPEND CAP, as arithmetic. Pure and client-safe; `allowance.ts` runs the SQL
  * and calls these.
  *
- * Spend is counted per UTC CALENDAR MONTH, because that is how the bill arrives. Month-to-date is
- * the cost of every `spent` call created this month, plus the WORST CASE of every reservation
- * still in flight (inside `RESERVATION_TTL_MS`): a call in flight has not been billed yet, and
- * counting it at nothing is how a burst of presses would all pass a check none of them could
- * afford together. REFUNDED calls never count, even though their tokens were billed: the cap
- * guards the app's own bugs and a runaway, and a refund is neither.
+ * Spend is counted per UTC CALENDAR MONTH, because that is how the bill arrives.
+ *
+ * CREDITS COUNT SUCCESSES; DOLLARS COUNT EVERYTHING BILLED (orchestrator ruling, 2026-09-24). The
+ * per-player allowance (`allowance-rule.ts`) still ignores refunded calls. Month-to-date SPEND does
+ * not: it is
+ *  - the recorded `cost_micro_usd` of EVERY call created this month, `spent` and `refunded` alike,
+ *    because a refunded call's tokens were billed all the same; plus
+ *  - the WORST CASE of every call this month with NO recorded cost that is still inside
+ *    `RESERVATION_TTL_MS`, `reserved` or `refunded`. A reservation in flight has not been billed
+ *    yet, and a STOPPED call is refunded at once while its upstream request keeps billing until its
+ *    outcome lands — so until its meters arrive it counts at its worst case. Counting either at
+ *    nothing is how a burst of presses would all pass a check none of them could afford together.
+ *    Past the TTL nothing can still be running, and a row that never got meters (the call got no
+ *    response, or was never made) stops counting.
  */
 
 /** Past this, every model call in the app is refused until the 1st: a bug guard, not a budget. */
@@ -36,20 +44,29 @@ export function nextMonthStartUtc(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 }
 
-export type LiveReservation = { feature: ModelFeature; model: string | null; createdAt: Date };
+/** A ledger row with NO recorded cost: priced, if it counts at all, at its worst case. */
+export type UnpricedCall = {
+  status: "reserved" | "spent" | "refunded";
+  feature: ModelFeature;
+  model: string | null;
+  createdAt: Date;
+};
 
 /**
- * The worst case of the reservations still in flight at `now`, this month. A reservation past its
- * TTL was stranded and is not counted; one from last month belongs to last month's spend.
+ * Whether an unpriced call counts at its worst case at `now`: reserved or refunded, this month,
+ * and still inside its TTL. A `spent` row with no cost predates the meters, and was never a call
+ * still billing.
  */
-export function reservedWorstCaseMicro(rows: readonly LiveReservation[], now: Date): number {
-  const start = monthStartUtc(now).getTime();
+export function countsAtWorstCase(row: UnpricedCall, now: Date): boolean {
+  const t = row.createdAt.getTime();
+  if (t < monthStartUtc(now).getTime() || now.getTime() - t >= RESERVATION_TTL_MS) return false;
+  return row.status === "reserved" || row.status === "refunded";
+}
+
+/** The worst case of every unpriced call that still counts at `now`. */
+export function unpricedWorstCaseMicro(rows: readonly UnpricedCall[], now: Date): number {
   let total = 0;
-  for (const r of rows) {
-    const t = r.createdAt.getTime();
-    if (t < start || now.getTime() - t >= RESERVATION_TTL_MS) continue;
-    total += featureWorstCaseMicroUsd(r.feature, r.model);
-  }
+  for (const r of rows) if (countsAtWorstCase(r, now)) total += featureWorstCaseMicroUsd(r.feature, r.model);
   return total;
 }
 

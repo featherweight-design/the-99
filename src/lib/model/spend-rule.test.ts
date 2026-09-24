@@ -10,7 +10,8 @@ import {
   monthStartUtc,
   nextMonthStartUtc,
   OWNER_SHARE_USD,
-  reservedWorstCaseMicro,
+  countsAtWorstCase,
+  unpricedWorstCaseMicro,
   spendRefusal,
   usdToMicro,
 } from "./spend-rule";
@@ -39,24 +40,39 @@ describe("the month", () => {
   });
 });
 
-describe("reservedWorstCaseMicro", () => {
+describe("unpricedWorstCaseMicro", () => {
   const minutesAgo = (m: number) => new Date(now.getTime() - m * 60_000);
 
   it("counts a reservation in flight at its feature's worst case", () => {
-    expect(reservedWorstCaseMicro([
-      { feature: "tuning", model: "claude-sonnet-5", createdAt: minutesAgo(1) },
-      { feature: "synopsis", model: null, createdAt: minutesAgo(2) },
+    expect(unpricedWorstCaseMicro([
+      { status: "reserved", feature: "tuning", model: "claude-sonnet-5", createdAt: minutesAgo(1) },
+      { status: "reserved", feature: "synopsis", model: null, createdAt: minutesAgo(2) },
     ], now)).toBe(featureWorstCaseMicroUsd("tuning") + featureWorstCaseMicroUsd("synopsis"));
   });
 
-  it("drops a reservation past its TTL, and one from last month", () => {
-    expect(reservedWorstCaseMicro([
-      { feature: "tuning", model: null, createdAt: new Date(now.getTime() - RESERVATION_TTL_MS) },
+  it("counts a Stopped call, refunded with no meters yet, at its worst case too", () => {
+    expect(unpricedWorstCaseMicro([
+      { status: "refunded", feature: "tuning", model: null, createdAt: minutesAgo(1) },
+    ], now)).toBe(featureWorstCaseMicroUsd("tuning"));
+  });
+
+  it("drops an unpriced call past its TTL, whether reserved or refunded", () => {
+    const aged = new Date(now.getTime() - RESERVATION_TTL_MS);
+    expect(unpricedWorstCaseMicro([
+      { status: "reserved", feature: "tuning", model: null, createdAt: aged },
+      { status: "refunded", feature: "tuning", model: null, createdAt: aged },
     ], now)).toBe(0);
+  });
+
+  it("drops one from last month", () => {
     const firstMinute = new Date("2026-10-01T00:01:00Z");
-    expect(reservedWorstCaseMicro([
-      { feature: "tuning", model: null, createdAt: new Date("2026-09-30T23:59:00Z") },
+    expect(unpricedWorstCaseMicro([
+      { status: "reserved", feature: "tuning", model: null, createdAt: new Date("2026-09-30T23:59:00Z") },
     ], firstMinute)).toBe(0);
+  });
+
+  it("never prices a spent row with no cost: it predates the meters", () => {
+    expect(countsAtWorstCase({ status: "spent", feature: "tuning", model: null, createdAt: minutesAgo(1) }, now)).toBe(false);
   });
 });
 

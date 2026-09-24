@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { modelCalls } from "../../db/schema";
@@ -21,9 +21,9 @@ import {
   microToUsd,
   monthStartUtc,
   nextMonthStartUtc,
-  reservedWorstCaseMicro,
   spendRefusal,
-  type LiveReservation,
+  unpricedWorstCaseMicro,
+  type UnpricedCall,
   type SpendRefusal,
 } from "./spend-rule";
 
@@ -65,30 +65,39 @@ function isOwner(userId: string): boolean {
 }
 
 /**
- * Month-to-date spend, app-wide and this player's, in micro-dollars: `spent` cost this UTC month
- * plus the worst case of every reservation still in flight. Refunded rows are never read.
+ * Month-to-date spend, app-wide and this player's, in micro-dollars.
+ *
+ * CREDITS COUNT SUCCESSES; DOLLARS COUNT EVERYTHING BILLED. The allowance ignores refunded rows;
+ * this does not. It is the recorded cost of EVERY call this UTC month, spent or refunded, plus the
+ * worst case of every call this month with no recorded cost still inside its TTL, reserved or
+ * refunded — a Stopped call is refunded at once but keeps billing until its outcome lands.
+ * `spend-rule.ts` holds the rule for the second half (`countsAtWorstCase`); the SQL here only
+ * narrows the rows it is asked about.
  */
 async function monthSpend(q: Tx | typeof db, userId: string, now: Date): Promise<{ app: number; user: number }> {
   const start = monthStartUtc(now);
-  const [spent] = await q
+  const [priced] = await q
     .select({
       app: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}), 0)`,
       user: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}) filter (where ${modelCalls.userId} = ${userId}), 0)`,
     })
     .from(modelCalls)
-    .where(and(eq(modelCalls.status, "spent"), gte(modelCalls.createdAt, start)));
-  const live = await q
-    .select({ userId: modelCalls.userId, feature: modelCalls.feature, model: modelCalls.model, createdAt: modelCalls.createdAt })
+    .where(and(isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, start)));
+  const unpriced = await q
+    .select({
+      userId: modelCalls.userId, status: modelCalls.status, feature: modelCalls.feature,
+      model: modelCalls.model, createdAt: modelCalls.createdAt,
+    })
     .from(modelCalls)
     .where(and(
-      eq(modelCalls.status, "reserved"),
+      isNull(modelCalls.costMicroUsd),
       gte(modelCalls.createdAt, start),
       gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS)),
     ));
-  const rows = live as (LiveReservation & { userId: string })[];
+  const rows = unpriced as (UnpricedCall & { userId: string })[];
   return {
-    app: Number(spent.app) + reservedWorstCaseMicro(rows, now),
-    user: Number(spent.user) + reservedWorstCaseMicro(rows.filter((r) => r.userId === userId), now),
+    app: Number(priced.app) + unpricedWorstCaseMicro(rows, now),
+    user: Number(priced.user) + unpricedWorstCaseMicro(rows.filter((r) => r.userId === userId), now),
   };
 }
 
@@ -190,44 +199,62 @@ export async function settleModelCall(
   callId: string,
   to: "spent" | "refunded",
   /**
-   * What the call was billed for, when it got a response back: written on a spent AND on a
-   * refunded settle, since a refund still burned the tokens. Only a `spent` row's cost counts
-   * toward the month. Undefined for a settle that knows nothing — a reaper, a Stop.
+   * What the call was billed for, when it got a response back: recorded on a spent AND on a
+   * refunded settle, since a refund still burned the tokens (and its cost counts toward the
+   * month). Undefined for a settle that knows nothing: a reaper, a Stop. Their row counts at its
+   * worst case until the late outcome records its meters (`recordModelUsage`).
    */
-  billed: { model: string; usage: ModelUsage } | undefined,
+  billed: Billed | undefined,
   now: Date = new Date(),
 ): Promise<void> {
   const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
-  const meters = billed
-    ? {
+  await tx
+    .update(modelCalls)
+    .set({ status: to === "spent" ? sql`case when ${live} then 'spent' else 'refunded' end` : "refunded" })
+    .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")));
+  if (billed) await recordModelUsage(tx, callId, billed, now);
+}
+
+export type Billed = { model: string; usage: ModelUsage };
+
+/**
+ * Write what a call was billed for onto its ledger row, and report an alarm line it carried the
+ * month over. The one writer of the meters: `settleModelCall` calls it, and so does an outcome
+ * that arrives LATE, after a Stop or the reaper already settled the row, since that call billed
+ * all the same and its row counts at its worst case until this lands.
+ *
+ * ONLY WHILE THE ROW HAS NO COST, so two writes — a settle and a late outcome, or a retried write —
+ * record one call once and never count it twice. Whatever the row's status: meters are a fact
+ * about the bill, not about whether the player was charged a credit.
+ */
+export async function recordModelUsage(tx: Tx, callId: string, billed: Billed, now: Date = new Date()): Promise<void> {
+  const [row] = await tx
+    .update(modelCalls)
+    .set({
       model: billed.model,
       inputTokens: billed.usage.inputTokens,
       outputTokens: billed.usage.outputTokens,
       cacheReadTokens: billed.usage.cacheReadTokens,
       cacheWriteTokens: billed.usage.cacheWriteTokens,
       costMicroUsd: costMicroUsd(billed.model, billed.usage),
-    }
-    : {};
-  const [row] = await tx
-    .update(modelCalls)
-    .set({ status: to === "spent" ? sql`case when ${live} then 'spent' else 'refunded' end` : "refunded", ...meters })
-    .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")))
-    .returning({ status: modelCalls.status, createdAt: modelCalls.createdAt, cost: modelCalls.costMicroUsd });
-  if (row?.status === "spent" && row.cost && row.createdAt >= monthStartUtc(now)) await alarm(tx, row.cost, now);
+    })
+    .where(and(eq(modelCalls.id, callId), isNull(modelCalls.costMicroUsd)))
+    .returning({ createdAt: modelCalls.createdAt, cost: modelCalls.costMicroUsd });
+  if (row?.cost && row.createdAt >= monthStartUtc(now)) await alarm(tx, row.cost, now);
 }
 
 /**
- * Whether the settle that just spent `cost` carried the month's app-wide spend over an alarm
- * line. Read inside the settle's own transaction, so `after` includes this row and `before` is
- * the same sum without it. Two settles committing at the same moment can each miss the other's
+ * Whether the meters just recorded (`cost`) carried the month's app-wide BILLED spend — every
+ * recorded cost this month, spent or refunded — over an alarm line. Read inside the write's own
+ * transaction, so `after` includes this row and `before` is the same sum without it. Two settles committing at the same moment can each miss the other's
  * row, and one crossing may then be reported twice or not at all: this is a log line, not a gate.
  */
 async function alarm(tx: Tx, cost: number, now: Date): Promise<void> {
   const [sum] = await tx
-    .select({ spent: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}), 0)` })
+    .select({ billed: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}), 0)` })
     .from(modelCalls)
-    .where(and(eq(modelCalls.status, "spent"), gte(modelCalls.createdAt, monthStartUtc(now))));
-  const after = Number(sum.spent);
+    .where(and(isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, monthStartUtc(now))));
+  const after = Number(sum.billed);
   for (const pct of crossedAlarms(after - cost, after)) {
     reportSpendThreshold({
       env: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "unknown",
