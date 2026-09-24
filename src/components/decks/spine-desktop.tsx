@@ -23,6 +23,7 @@ import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
 import { FirstCommitOffer } from "./first-commit-offer";
 import { StatusPillBadge } from "./status-pill";
 import { SpineBracketChip } from "./bracket-chip";
+import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
@@ -90,6 +91,12 @@ export interface SpineBandProps {
   bracket?: TileBracket | null;
   /** Pressing the chip lands on the Analysis tab. */
   onOpenBracket?: () => void;
+  /**
+   * The deck's notice (deck notices HANDOFF §1), drawn after the chip, or in the chip's slot when
+   * there is none. Null draws nothing. Pressing it opens Notices.
+   */
+  notice?: HeaderNotice | null;
+  onOpenNotices?: () => void;
 }
 
 /** §B16 — the field's box, identical in all four editing states. Declared
@@ -123,6 +130,8 @@ export function SpineDesktop({
   offerFirstCommit,
   bracket = null,
   onOpenBracket,
+  notice = null,
+  onOpenNotices,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
@@ -469,6 +478,7 @@ export function SpineDesktop({
               className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
             />
             <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
+            {notice && onOpenNotices ? <HeaderNoticeTag notice={notice} onOpen={onOpenNotices} /> : null}
           </div>
 
           {/* The bar and its figure on ONE row, the figure to the bar's right:

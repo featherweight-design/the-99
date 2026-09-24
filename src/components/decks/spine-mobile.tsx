@@ -24,6 +24,16 @@ import { FirstCommitOffer } from "./first-commit-offer";
 import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { SpineBracketChip } from "./bracket-chip";
+import { HeaderNoticeTag } from "./notice-tag";
+import { verdictHead } from "../../lib/bracket/verdict-head";
+
+/**
+ * F18's yield on the phone header: below this row width a range beside a notice draws its marks
+ * alone. MEASURED by `probe:notices-sheet` from the widest forms the code produces (`Unresolved`,
+ * `Exhibition or Core`, `● 99 notices`), never derived.
+ */
+const F18_FACED = "@max-[344px]:hidden";
+const F18_MARKS = "hidden @max-[344px]:contents";
 import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -41,6 +51,8 @@ export function SpineMobile({
   offerFirstCommit,
   bracket = null,
   onOpenBracket,
+  notice = null,
+  onOpenNotices,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   // No measurement, and no clamp. `-webkit-line-clamp` requires
@@ -76,8 +88,14 @@ export function SpineMobile({
   // THE CHIPS ROW (Analysis tab handoff §1): the status pill, then the bracket chip, under the
   // commander line, in the order desktop draws. It WRAPS: the chip takes a second line before it
   // squeezes anything.
+  // F18 (deck notices readiness): once the notice joins the row, a RANGE yields its name before the
+  // row wraps, as the tile's does. The row is its own container, so the twin shown is decided by the
+  // width the row actually has.
+  const yieldsFace = Boolean(bracket && notice && verdictHead(bracket.permits, bracket.answered).split);
   const chipsRow = (
-    <div data-spine-chips className="flex flex-wrap items-center" style={{ gap: 8 }}>
+    // `w-full`, because a container's inline size ignores its content: under a parent that sizes it
+    // by content the row would collapse to 0px while its chips still draw.
+    <div data-spine-chips className="@container flex w-full flex-wrap items-center" style={{ gap: 8 }}>
       <StatusPillBadge
         status={status}
         // `h-[22px]`, the settled chip height, rather than vertical padding over
@@ -85,7 +103,19 @@ export function SpineMobile({
         // pixel past the ramp keyed to it.
         className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]"
       />
-      <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
+      {yieldsFace ? (
+        <>
+          <span className={`contents ${F18_FACED}`}>
+            <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
+          </span>
+          <span className={`contents ${F18_MARKS}`}>
+            <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} face={false} />
+          </span>
+        </>
+      ) : (
+        <SpineBracketChip bracket={bracket} onOpen={onOpenBracket} />
+      )}
+      {notice && onOpenNotices ? <HeaderNoticeTag notice={notice} onOpen={onOpenNotices} /> : null}
     </div>
   );
 

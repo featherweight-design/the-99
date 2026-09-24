@@ -112,8 +112,11 @@ export function AnalysisPanel({
     <div className="flex flex-col gap-[22px] px-[16px] pt-[18px] pb-[32px] md:gap-[28px] md:px-[30px] md:pt-6 md:pb-10">
       {held ? (
         <>
-          {/* THE BANNER, the one place staleness is said (2i, 2d), over a reading that stays. */}
-          {state.kind === "failed" || state.kind === "loading" || state.kind === "illegal" || !held.fresh ? (
+          {/* THE BANNER, the one place staleness is said (2i, 2d), over a reading that stays. Only
+              over a STALE reading (deck notices readiness F2): a press over a fresh one, which is
+              the Notices foot's, shows busy and failure on its own button, and a banner reading
+              "your deck has changes" would merge the notices' signal into the player's own. */}
+          {state.kind === "illegal" || !held.fresh ? (
             <AnalysisBanner
               mode={state.kind === "failed" || (state.kind === "loading" && state.retry) ? "failed" : "stale"}
               busy={state.kind === "loading"}

@@ -161,6 +161,17 @@ describe("AnalysisPanel", () => {
     expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
   });
 
+  // F2 (deck notices readiness): the Notices foot re-analyzes a FRESH reading, and its busy and
+  // failure are said on its own button. The banner speaks only for the player's own edits.
+  it("draws no banner while a press over a fresh reading loads or fails", () => {
+    const { unmount } = draw({ kind: "loading", held: reading({ fresh: true }) });
+    expect(banner()).toBeNull();
+    unmount();
+    draw({ kind: "failed", held: reading({ fresh: true }) });
+    expect(banner()).toBeNull();
+    expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+  });
+
   // A reading pinned to a version names it; a stale one never does.
   it("names the version a fresh reading is pinned to", () => {
     draw(ready({ versionNumber: 3 }));

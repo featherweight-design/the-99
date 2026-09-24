@@ -80,6 +80,12 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
 import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { proxiedCardCount } from "../../lib/decks/proxy-count";
+import { NoticesBody } from "./notices-body";
+import { headerNotice } from "./notice-tag";
+import { deckNoticesCopy } from "../../lib/copy/notices";
+import { deckIdentity } from "../../lib/decks/format";
+import { openNotices, peekNotices } from "../../lib/notices/actions";
+import type { DeckNotices } from "../../lib/notices/read";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -175,6 +181,9 @@ interface BuilderShellProps {
   /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab AND moves the
    *  Recommended mix strip into it. Off is today's layout, exactly. */
   analysisEnabled?: boolean;
+  /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
+   *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
+  noticesEnabled?: boolean;
   /** The stored analysis's permitted range, for the header's bracket chip; null when unread. */
   storedPermits?: Bracket[] | null;
 }
@@ -214,6 +223,7 @@ export function BuilderShell({
   versions = [],
   initialView = "deck",
   analysisEnabled = false,
+  noticesEnabled = false,
   storedPermits = null,
 }: BuilderShellProps) {
   // UI state
@@ -376,6 +386,75 @@ export function BuilderShell({
     analysisEnabled && headerPermits
       ? { permits: headerPermits, answered: chipAnswer(headerPermits, declaration.declared) }
       : null;
+
+  // DECK NOTICES (plan PR 6). Read after mount by `peekNotices`, so the page's loader pays nothing
+  // for them, and read again whenever a reading lands (a re-analysis clears data notices). Opening
+  // the sheet marks what it showed as read (`openNotices`); the tag goes quiet at once rather than
+  // on the next read.
+  const [notices, setNotices] = useState<DeckNotices | null>(null);
+  const [noticesShown, setNoticesShown] = useState<DeckNotices | null>(null);
+  // Whether the foot pressed the reading now in flight or on screen: its busy and failed states are
+  // DERIVED from the profile's own state while that holds, so a failure from the tab's Analyze is the
+  // tab's to say. Cleared when the sheet closes.
+  const [footPressed, setFootPressed] = useState(false);
+  // All of it belongs to ONE deck. The shell is kept across a move between decks, so the tag and an
+  // open sheet from the deck just left are dropped during render, before the next deck paints.
+  const [noticesDeck, setNoticesDeck] = useState(deck.id);
+  if (noticesDeck !== deck.id) {
+    setNoticesDeck(deck.id);
+    setNotices(null);
+    setNoticesShown(null);
+    setFootPressed(false);
+  }
+  const readingAt = reading?.analyzedAt ?? null;
+  useEffect(() => {
+    if (!analysisEnabled || !noticesEnabled) return;
+    let live = true;
+    // An open sheet takes the new read too: after the foot's Re-analyze the entries the new reading
+    // absorbed leave the list at once, rather than on the next open.
+    void peekNotices(deck.id).then((n) => {
+      if (!live) return;
+      setNotices(n);
+      setNoticesShown((shown) => (shown && n ? n : shown));
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [analysisEnabled, noticesEnabled, deck.id, readingAt, listKey]);
+  // Which deck's sheet is open NOW (null: none), readable from the reply's continuation:
+  // `openNotices` answers after the sheet draws, and a reply landing after a close, or after a move
+  // to another deck, must not draw the sheet or the tag again.
+  const noticesOpenFor = useRef<string | null>(null);
+  const deckNow = useRef(deck.id);
+  useEffect(() => {
+    deckNow.current = deck.id;
+    noticesOpenFor.current = null;
+  }, [deck.id]);
+  const openNoticesSheet = () => {
+    const id = deck.id;
+    noticesOpenFor.current = id;
+    if (notices) setNoticesShown(notices);
+    void openNotices(id).then((n) => {
+      if (!n || deckNow.current !== id) return;
+      // The reply carries what the open RECORDED, so the tag takes it even after a close: quiet,
+      // except for a legality set the server refused because the cards moved while it opened.
+      setNotices(n);
+      if (noticesOpenFor.current === id) setNoticesShown(n);
+    }).catch(() => {});
+  };
+  const closeNoticesSheet = () => {
+    noticesOpenFor.current = null;
+    setNoticesShown(null);
+    setFootPressed(false);
+  };
+  const headerNoticeTag = notices ? headerNotice(notices) : null;
+  // The foot's Re-analyze recomputes the BRACKET only (D12): it never sets `pressWrites`, so no
+  // overview is written and no credit is spent.
+  const reanalyzeFromNotices = () => {
+    pressWrites.current = false;
+    setFootPressed(true);
+    profile.request();
+  };
+  const footBusy = footPressed && profile.state.kind === "loading";
+  const footFailed = footPressed && profile.state.kind === "failed";
   // Printed CARDS, commanders included — the same figure the `/decks` tile
   // draws, counted here off the rows the page already holds so the two surfaces
   // cannot disagree about one deck. Distinct marks, never copies: one mark on a
@@ -920,6 +999,8 @@ export function BuilderShell({
               status={serverStatus}
               bracket={headerBracket}
               onOpenBracket={() => setView("analysis")}
+              notice={headerNoticeTag}
+              onOpenNotices={openNoticesSheet}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //
@@ -1518,6 +1599,29 @@ export function BuilderShell({
           </div>
 
           {/* Export dialog — Task 10 */}
+          {noticesShown && (
+            <NoticesBody
+              notices={noticesShown}
+              deckName={deck.name}
+              commanders={{
+                names: [deck.commander.name, ...(deck.partner ? [deck.partner.name] : [])],
+                identity: deckIdentity(deck.commander.colorIdentity, deck.partner?.colorIdentity ?? null),
+              }}
+              foot={
+                !noticesShown.analyzedAt
+                  ? { kind: "none" }
+                  : noticesShown.readingStale
+                    ? { kind: "toTab", onPress: () => { closeNoticesSheet(); setView("analysis"); } }
+                    : {
+                        kind: "reanalyze",
+                        busy: footBusy,
+                        failed: footFailed ? deckNoticesCopy.sheet.foot.failed : null,
+                        onPress: reanalyzeFromNotices,
+                      }
+              }
+              onClose={closeNoticesSheet}
+            />
+          )}
           {exportOpen && (
             <ExportDialog
               deckName={deck.name}

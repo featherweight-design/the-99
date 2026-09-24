@@ -68,13 +68,16 @@ export function BracketChip({
 export function SpineBracketChip({
   bracket,
   onOpen,
+  face = true,
 }: {
   bracket: { permits: Bracket[]; answered: Bracket | null } | null;
   onOpen?: () => void;
+  /** Passed straight to `BracketChip`: false draws the marks alone (the phone header's F18 yield). */
+  face?: boolean;
 }) {
   if (!bracket) return null;
   const chip = (
-    <BracketChip permits={bracket.permits} answered={bracket.answered} />
+    <BracketChip permits={bracket.permits} answered={bracket.answered} face={face} />
   );
   if (!onOpen) return chip;
   return (
