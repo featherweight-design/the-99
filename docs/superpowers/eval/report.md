@@ -77,8 +77,8 @@ Sonnet-low on such a prompt, asked for 4 to 5 suggestions, is the untested path 
 
 ## Overview
 
-S truncates or malforms a third of its answers. Its median output hits the 8,000 ceiling (125 of
-131 answers), and its p50 latency is 72 s. Under the shipped contract S renders all four sections
+S truncates or malforms a third of its answers. Its median attempt hits the 8,000 ceiling: 69 of
+131 attempts stopped there, and 125 ran past 3,000. Its p50 latency is 72 s. Under the shipped contract S renders all four sections
 on 2% of held-out answers, at $6.13 per accepted answer. **S failed on viability, not on
 quality.** So the overview blind read departs from the pre-registered rule: it becomes Hugh's
 absolute read of sonnet-low under A+B, the contract he picked: "would you show this to your pod".
@@ -179,8 +179,8 @@ The owner's line is capped separately by the owner's $5 share: at full use the o
 around day 10 ($0.49 a day), before the shared stop.
 
 At that pace the $10 alarm fires on day 8 and the **$20 hard stop is reached on day 15. It pauses
-everyone for the rest of that month.** At tuning's cost alone ($0.0165), the same use comes to
-$13.86 a month. Hugh accepted this knowing there is no real usage yet: staging's `model_calls`
+everyone for the rest of that month.** At tuning's cost alone, on S as ruled ($0.0415 per
+answer), the same use comes to $34.86 a month. Hugh accepted this knowing there is no real usage yet: staging's `model_calls`
 holds 0 rows, so every figure here is a worst case, not a forecast.
 
 **Revisit when** `model_calls` shows real monthly spend passing $10.
