@@ -13,7 +13,7 @@ Costs are at real-time prices per answer, with the app's one retry included, unl
 | feature | model and prompt | held-out result | $/accepted |
 |---|---|---|---|
 | Tuning | **Sonnet 5 as shipped (S)**: sonnet-low passed every automatic gate and failed Hugh's blind read, 5–9–1 | survived 98%, 2.80 kept per run | $0.0425 |
-| Overview | Sonnet 5 at `effort: "low"`, `budgets-plus` prompt, contract A+B (Hugh's ruling) | all four sections: 96% under A+B | $0.051 (S: $6.13) |
+| Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget, with the app's repair | all four sections: 98%, universal staples 0, 78% specific Mulligan lines | $0.051 (S: $6.13) |
 
 The overview contract (A+B) was Hugh's ruling. The synopsis lane ships the prompt as measured, verified byte-for-byte against the 15 first writes and 37 repair calls. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
 
@@ -199,6 +199,49 @@ Each checked against the data:
 **Trim** (reminder text stripped from the facts) saves about 3% per answer and loses on A (31%
 against 44%). Not worth it.
 
+### The overview after Hugh's fixes (contract v6) and the Mulligan budget
+
+Hugh approved every overview fix from round 2, and the synopsis lane shipped them:
+- universal staples kept off the Key cards (#926);
+- the identity by name (#926);
+- the land range as a fixed line (#930);
+- 1 to 2 specific Mulligan lines per side (#930);
+- refusals for a restated land count, the commander in hand, and a heading prefix (#930).
+
+The app also makes its own repair call now. So from here the figures are the app's own verdicts:
+the first write, then the write plus its repair, judged by `validateSynopsis` and merged by
+`mergeRetry`.
+
+Held-out, 3 trials, sonnet-low:
+
+| | v2 (A+B) | v6 as shipped | v6 + Mulligan budget |
+|---|---|---|---|
+| all four sections, after the repair | 96% (43 of 45) | 89% (40 of 45) | **98% (44 of 45)** |
+| first write alone, all four | 18% | 33% | 53% |
+| answers needing the repair | 37 | 30 | 21 |
+| $ per accepted answer | $0.051 | $0.063 | $0.051 |
+| universal staples as Key cards | 12 of 15 overviews | 0 of 333 | 0 of 328 |
+| specific Mulligan lines | 21% (round 2) | 71% | 78% |
+
+After the repair, v6 as shipped rendered each section as follows: overview 96%, primer 93%, Key
+cards 100%, weaknesses 100%. With the Mulligan budget: overview 98%, primer 100%, Key cards 100%,
+weaknesses 100%. The v2 per-section figures are approximate.
+
+**Why v6 lost points: the Mulligan lines.** A specific line names cards and runs long. In the v6
+first writes the lines ran a median 75 characters against their 80, and 58 of 180 were over. The
+shipped prompt already said "aim for about 55", so the fix states the budget in other forms:
+- a word target, 8 to 12 words;
+- one card or one curve point per line, never neither;
+- the fixed land line does not count toward any line;
+- two worked lines, both naming a card or a curve point.
+
+The first version, whose second example named nothing, held the budget on the dev decks but let
+the specific share fall from 77% to 56%. The second version is the one measured on held-out, and
+it went to the synopsis lane as a patch. It is verified byte for byte: with it, the app's own
+builder reproduces all 15 held-out first-write prompts and all 21 repair prompts the measurement
+sent. One note travels with it: its worked lines contain number words ("two-drop", "three-mana").
+No run hit an `uncomputed_figure` refusal, but they must change if that check ever tightens.
+
 ## Allowances
 
 **Ruling (Hugh):** keep today's daily allowance: the owner 10 units and each friend 3, with the
@@ -223,6 +266,10 @@ answer), the same use comes to $34.86 a month. Hugh accepted this knowing there 
 holds 0 rows, so every figure here is a worst case, not a forecast.
 
 **Revisit when** `model_calls` shows real monthly spend passing $10.
+
+The overview's cost per answer under v6 with the Mulligan budget is $0.050 ($0.051 per accepted
+answer, 44 of 45 accepted), against the $0.049 these figures use. That is a cent, and it moves no
+whole allowance.
 
 For reference, these are the largest whole allowances the pre-registered rule
 (30 × (6F + H) × c within the cap, and H's share within $5) would have given:
