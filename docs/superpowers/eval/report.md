@@ -12,7 +12,7 @@ Costs are at real-time prices per answer, with the app's one retry included, unl
 
 | feature | model and prompt | held-out result | $/accepted |
 |---|---|---|---|
-| Tuning | **Sonnet 5 as shipped (S)**: sonnet-low passed every automatic gate and failed Hugh's blind read, 5–9–1 | survived 98%, 2.80 kept per run | $0.0425 |
+| Tuning | **Sonnet 5 at `effort: "medium"` on the strategy prompt with the rationale rules**: sonnet-low failed Hugh's blind reads in rounds 1 and 3; this passed round 4, 7–0, against S-default | 8 of 8 answered, 4.00 kept per answer, ~48s | $0.0489 per answer |
 | Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget's second version, with the app's repair | all four sections: 100%, 12% of Mulligan lines dropped (v6: 17%), universal staples 0, 71% specific Mulligan lines | $0.044 (S: $6.13) |
 
 The overview contract (A+B) was Hugh's ruling. The first Mulligan budget went to the synopsis lane as #934 and was held when its pre-open pass found it dropping lines; the second version replaces it. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
@@ -142,7 +142,7 @@ What the notes add to round 1's:
 3. **The strategy prompt is his best-rated answer yet** (Gods, S). With round 3's automatic
    metrics above, it moves S toward his round 1 notes.
 
-**Recommendation for tuning:** S on the `strategy` prompt, plus the repeated-opening rule. The
+**Recommendation for tuning (as of round 3; round 4 below supersedes it):** S on the `strategy` prompt, plus the repeated-opening rule. The
 tuning lane should also look at the two malformed answers before it ships, since a player would see
 each as a failed run. The cost is under Allowances.
 
@@ -195,7 +195,29 @@ swaps, round 4 (8 decks)".
   say which change carried it. The prompt change is the one Hugh asked for, so the effort is the
   part this round actually tests.
 
-Result: pending Hugh's read.
+**Result: medium passes, 7 to 0.** Hugh preferred S-medium with the rationale rules on all 7 decks
+he rated; Scrappy Survivors went unrated, as designed, since its other side was the failed state.
+Both clauses pass, and would still pass if the unrated deck were scored for S. His one note:
+
+- **HD - Avatar Aang** (medium): "I like that the first cut is aware of the second cut, this is really interesting and helps me to feel like the recommendations are holistic versus siloed"
+
+Per deck, with the time estimated at 80 output tokens a second, retries included:
+
+| deck | preferred | S-default kept / time / $ | S-medium kept / time / $ |
+|---|---|---|---|
+| Kratos | medium | 4 / ~96s / $0.086 | 4 / ~17s / $0.023 |
+| Avatar Aang | medium | 1 / ~87s / $0.078 | 2 / ~32s / $0.034 |
+| Wizards | medium | 5 / ~25s / $0.030 | 4 / ~18s / $0.024 |
+| Yuriko | medium | 4 / ~36s / $0.039 | 5 / ~46s / $0.047 |
+| Soldiers | medium | 4 / ~66s / $0.062 | 4 / ~32s / $0.036 |
+| Scrappy Survivors | (unrated) | failed / ~181s / $0.164 | 4 / ~57s / $0.055 |
+| Mutant Menace | medium | 1 / ~81s / $0.074 | 4 / ~70s / $0.065 |
+| Eldrazi | medium | 1, on its retry / ~196s / $0.175 | 5, on its retry / ~111s / $0.107 |
+| **mean** | | **2.50 / ~96s / $0.0885** | **4.00 / ~48s / $0.0489** |
+
+Medium keeps more suggestions, at about half the time and cost. One latency caveat for the build:
+an answer that needs its retry can still pass the app's 110s model timeout (Eldrazi, ~111s), so
+how that timeout applies across the retry is the tuning build's to check.
 
 ## Overview
 
@@ -393,7 +415,7 @@ holds 0 rows, so every figure here is a worst case, not a forecast.
 
 **Revisit when** `model_calls` shows real monthly spend passing $10.
 
-**Tuning on the strategy prompt doubles its line.** Round 3's recommendation, S on the
+**Tuning on the strategy prompt, at default effort, doubles its line.** Round 3's recommendation, S on the
 `strategy` prompt, costs $0.0828 per answer ($0.0956 per accepted answer, 13 of 15), against
 $0.0415 on the base prompt:
 
@@ -402,6 +424,10 @@ $0.0415 on the base prompt:
 | S, base prompt | $1.16 | $34.86 | day 9 | day 18 |
 | S, strategy prompt | $2.32 | $69.55 | day 5 | day 9 |
 | the owner alone, S, strategy prompt | $0.83 | $24.84 | | owner's $5 share on day 7 |
+
+Round 4's winner, S at medium effort with the rationale rules, costs $0.0489 per answer on its 8
+held-out decks: $1.37 a full day, $41.08 over 30 days, the $10 alarm on day 8 and the $20 stop on
+day 15; the owner alone reaches his $5 share on day 11.
 
 Still a worst case with no usage behind it; it is here so the allowance ruling is made knowing
 it.
@@ -457,7 +483,7 @@ For reference, these are the largest whole allowances the pre-registered rule
 
 ## Spend
 
-**$23.22 of $25**, from `ledger.jsonl`: 94 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+**$23.41 of $25**, from `ledger.jsonl`: 98 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
 
 | stage | $ | running total |
 |---|---|---|
@@ -466,3 +492,4 @@ For reference, these are the largest whole allowances the pre-registered rule
 | overview under contract v6, and the first Mulligan budget | $2.95 | $21.30 |
 | overview, the Mulligan budget's second version (dev, held-out, repair) | $1.17 | $22.47 |
 | tuning round 4, the rationale rules and effort (3 dev checks) | $0.75 | $23.22 |
+| tuning round 4, the blind round (8 held-out decks, medium) | $0.19 | $23.41 |
