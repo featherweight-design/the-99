@@ -365,6 +365,12 @@ describe("validateSynopsis — universal staples and mana letters", () => {
     expect(verdictOf(validateSynopsis(reply, IZZET, CATALOG), "overview")).toMatchObject({ status: "refused", reason: "mana_letters" });
   });
 
+  it("reads letters beside an apostrophe as prose, not as a quotation", () => {
+    const reply = good();
+    reply.overview = "This UR deck's plan lets [[Kratos]] turn every spell into damage.";
+    expect(verdictOf(validateSynopsis(reply, IZZET, CATALOG), "overview")).toMatchObject({ status: "refused", reason: "mana_letters" });
+  });
+
   it("drops a weakness that uses the letters, keeping the others", () => {
     const reply = good();
     reply.weaknesses = ["The RU mana base stumbles on a slow start.", "Slow starts leave you exposed."];
@@ -377,6 +383,8 @@ describe("validateSynopsis — universal staples and mana letters", () => {
     ["lowercase letters", "[[Kratos]] turns every ur spell into damage."],
     ["letters that are not the deck's colors", "[[Kratos]] turns every spell into damage, like a WR aggro list."],
     ["a quotation", "[[Kratos]] reads \"UR\" on the card and turns spells into damage."],
+    ["a single-quoted run", "[[Kratos]] is no 'UR' deck, and turns spells into damage."],
+    ["a curly single-quoted run", "[[Kratos]] is no \u2018UR\u2019 deck, and turns spells into damage."],
     ["a card mark", "[[Kratos]] turns every spell into damage, and [[UR]] helps."],
   ])("passes %s", (_label, overview) => {
     const reply = good();

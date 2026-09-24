@@ -462,7 +462,9 @@ async function run() {
   check("the universal staples are the cards staple in three quarters of the conditions",
     [...universal].sort(), independent.map((r) => r.oracle_id).sort());
   const [staple] = universal.size === 0 ? [] : await rows<{ oracle_id: string }>(sql`
-    select c.oracle_id from cards c where c.oracle_id in (${sql.join([...universal].map((id) => sql`${id}::uuid`), sql`, `)}) and c.type_line not ilike '%Land%'
+    select c.oracle_id from cards c
+    where not exists (select 1 from deck_cards d where d.deck_id = ${deck.id}::uuid and d.oracle_id = c.oracle_id)
+      and c.oracle_id in (${sql.join([...universal].map((id) => sql`${id}::uuid`), sql`, `)}) and c.type_line not ilike '%Land%'
     order by c.oracle_id limit 1`);
   if (!staple) {
     fail("a universal staple that is not a land", `the set holds ${universal.size}`);

@@ -80,7 +80,11 @@ const STRENGTH = [
 export function manaLetters(text: string, identity: readonly string[]): string[] {
   if (identity.length < 2) return [];
   const own = [...identity].sort().join("");
-  const outside = unmarked(text).replace(/["\u201c][^"\u201d]*["\u201d]/g, " ");
+  // Double quotes pair anywhere; a single quote only at a word's edge, so an apostrophe inside a
+  // word ("deck's", "don't") never opens a quotation.
+  const outside = unmarked(text)
+    .replace(/["\u201c][^"\u201d]*["\u201d]/g, " ")
+    .replace(/(^|[\s(\[])['\u2018][^'\u2018\u2019]*['\u2019](?=$|[\s).,;:!?\]])/g, "$1 ");
   return [...outside.matchAll(/\b([WUBRG]{2,5})\b/g)]
     .map((m) => m[1])
     .filter((run) => new Set(run).size === run.length && [...run].sort().join("") === own);
