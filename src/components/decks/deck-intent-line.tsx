@@ -160,7 +160,7 @@ export function DeckIntentLine({
         {/* The shipped disc (the fill ledger's), as the handoff names it, not the base canvas's copy. */}
         {isSeeded ? <ProvenanceDisc label={copy.seededAria} className="self-center" /> : null}
         <span
-          className={desktop ? "min-w-0 text-[14px] leading-[1.45]" : "min-w-0 text-[12.5px] leading-[1.5]"}
+          className={desktop ? "min-w-0 text-[14px] leading-[1.45] [overflow-wrap:anywhere]" : "min-w-0 text-[12.5px] leading-[1.5] [overflow-wrap:anywhere]"}
           style={{ color: "var(--fg-body)", borderBottom: "1px dashed var(--border-strong)" }}
         >
           {line}

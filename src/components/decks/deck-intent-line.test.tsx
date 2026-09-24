@@ -23,6 +23,12 @@ describe("DeckIntentLine", () => {
     expect(container.textContent).toBe("");
   });
 
+  // A line with no spaces (a pasted link) has no word break to wrap at; it must still wrap.
+  it("lets an unbroken line wrap anywhere rather than run under the controls", () => {
+    draw("https://example.com/a-very-long-decklist-address-with-no-spaces-in-it-at-all");
+    expect(screen.getByText(/^https:/).className).toContain("[overflow-wrap:anywhere]");
+  });
+
   it("draws the line whole, with its edit control", () => {
     draw("grind a four-person table out and win late");
     expect(screen.getByText("grind a four-person table out and win late")).toBeInTheDocument();
