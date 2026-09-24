@@ -55,32 +55,37 @@ export type DeckNotices = {
 
 /** The deck notices for `deckId`, or null when it is not the reader's deck. */
 export async function loadDeckNotices(deckId: string, userId: string): Promise<DeckNotices | null> {
-  const [deck] = await db
-    .select({
-      commander: decks.commanderOracleId,
-      partner: decks.partnerOracleId,
-      legalSeen: decks.noticesLegalSeen,
-    })
-    .from(decks)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  if (!deck) return null;
+  // The deck, its reading and its cards from ONE snapshot: read apart, an edit or an analysis
+  // committing between them pairs a reading's marks with a list it never described.
+  const snapshot = await db.transaction(async (tx) => {
+    const [deck] = await tx
+      .select({
+        commander: decks.commanderOracleId,
+        partner: decks.partnerOracleId,
+        legalSeen: decks.noticesLegalSeen,
+      })
+      .from(decks)
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+    if (!deck) return null;
+    const [reading] = await tx
+      .select({
+        seenSeq: deckProfiles.seenSeq,
+        rulesVersion: deckProfiles.rulesVersion,
+        analyzed: deckProfiles.analyzedOracleIds,
+        readSeq: deckProfiles.noticesReadSeq,
+        computedAt: deckProfiles.computedAt,
+      })
+      .from(deckProfiles)
+      .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+    const cardRows = await tx
+      .select({ oracleId: deckCards.oracleId })
+      .from(deckCards)
+      .where(eq(deckCards.deckId, deckId));
+    return { deck, reading, cardRows };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  if (!snapshot) return null;
+  const { deck, reading, cardRows } = snapshot;
   const commanderIds = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
-
-  const [reading] = await db
-    .select({
-      seenSeq: deckProfiles.seenSeq,
-      rulesVersion: deckProfiles.rulesVersion,
-      analyzed: deckProfiles.analyzedOracleIds,
-      readSeq: deckProfiles.noticesReadSeq,
-      computedAt: deckProfiles.computedAt,
-    })
-    .from(deckProfiles)
-    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
-
-  const cardRows = await db
-    .select({ oracleId: deckCards.oracleId })
-    .from(deckCards)
-    .where(eq(deckCards.deckId, deckId));
   const currentIds = [...new Set([...commanderIds, ...cardRows.map((r) => r.oracleId)])];
 
   // DATA: only for a deck with a reading. An EMPTY analyzed list is a legacy row (schema note on

@@ -39,13 +39,19 @@ export async function overviewDataMoved(
  * H1 read it; taken as stored it would hold no card and nothing would ever move.
  */
 export async function overviewDataMovedFor(deckId: string, userId: string, overviewSeen: number): Promise<boolean> {
-  const [row] = await db
-    .select({ seenSeq: deckProfiles.seenSeq, analyzed: deckProfiles.analyzedOracleIds })
-    .from(deckProfiles)
-    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
-  if (!row || overviewSeen >= row.seenSeq) return false;
-  const head = await db.transaction((tx) => readProfileHead(tx, deckId, userId));
-  if (!head) return false;
+  // The reading's marks and the deck's list from ONE snapshot: read apart, an edit or an analysis
+  // committing between them pairs a reading with a list it never described.
+  const read = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ seenSeq: deckProfiles.seenSeq, analyzed: deckProfiles.analyzedOracleIds })
+      .from(deckProfiles)
+      .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+    if (!row || overviewSeen >= row.seenSeq) return null;
+    const head = await readProfileHead(tx, deckId, userId);
+    return head ? { row, head } : null;
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  if (!read) return false;
+  const { row, head } = read;
   return overviewDataMoved(overviewSeen, row.seenSeq, {
     analyzed: row.analyzed.length > 0 ? row.analyzed : analyzedOracleIds(head),
     commanders: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
