@@ -1,0 +1,108 @@
+import { describe, expect, it } from "vitest";
+
+import { swapToolsCopy } from "../copy/swap-tools";
+import type { StandInsRead } from "./gather";
+import { listWords, loadingStatus, sheetModel } from "./sheet-model";
+import type { CardRow, StandIn } from "./stand-ins";
+
+const copy = swapToolsCopy.sheet;
+const card = (name: string, typeLine = "Instant", oracleText = "", cmc = 2): CardRow =>
+  ({ oracleId: `id-${name}`, name, typeLine, oracleText, keywords: [], cmc, imageUri: null });
+const standIn = (name: string, over: Partial<StandIn> = {}): StandIn => ({
+  card: card(name), free: false, soft: 0, owned: 0, cents: 300, foilOnly: false, inclusion: null,
+  isUniversal: false, shared: ["removal"], drawbacks: [], givesUp: [], ...over,
+} as StandIn);
+const read = (over: Partial<StandInsRead>): StandInsRead => ({
+  job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
+  free: [], cheapest: [], byCommander: [], unlisted: [],
+  original: card("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: new Date(), ...over,
+} as StandInsRead);
+
+describe("the stand-ins sheet's model", () => {
+  it("joins words the way the copy reads them", () => {
+    expect(listWords(["white"], "and")).toBe("white");
+    expect(listWords(["white", "red"], "and")).toBe("white and red");
+    expect(listWords(["Plains", "Island", "Swamp"], "or")).toBe("Plains, Island or Swamp");
+  });
+
+  it("orders a spell's groups free, then by the commander, then unlisted, with the figure on listed rows", () => {
+    const m = sheetModel(read({
+      free: [standIn("Swords", { free: true })],
+      byCommander: [standIn("Path", { inclusion: 41.6 })],
+      unlisted: [standIn("Chaos Warp")],
+    }));
+    expect(m.groups.map((g) => g.heading)).toEqual([
+      copy.groupFree, copy.groupByCommander("Gishath"), copy.groupUnlisted("Gishath"),
+    ]);
+    expect(m.groups[1].rows[0].facts).toEqual(["removal", copy.mv(2), copy.figure("42", "Gishath")]);
+    expect(m.groups[2].rows[0].facts).toEqual(["removal", copy.mv(2)]);
+    expect(m.lead).toBe(copy.leadSpells("removal", 2, "Gishath"));
+    expect(m.foot).toBe(true);
+  });
+
+  it("names a pair as A + B, and drops the order clause when nothing is listed for it (F14)", () => {
+    const m = sheetModel(read({ commanders: ["Tymna", "Thrasios"], unlisted: [standIn("Chaos Warp")] }));
+    expect(m.groups.map((g) => g.heading)).toEqual([copy.groupUnlisted("Tymna + Thrasios")]);
+    expect(m.lead).toBe(copy.leadSpellsUnlisted("removal", 2));
+  });
+
+  it("gives a land its colors, drawbacks and what each stand-in gives up (H3)", () => {
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W", "R"] },
+      original: card("Plateau", "Land — Mountain Plains"),
+      cheapest: [
+        standIn("Sacred Foundry", { drawbacks: [{ kind: "entersTappedUnless", condition: "you pay 2 life" }] }),
+        standIn("Rugged Prairie", { givesUp: [{ kind: "named", label: "uncounterable creatures" }] }),
+        standIn("Battlefield Forge", { givesUp: [{ kind: "quoted", text: "Target player draws…" }] }),
+        standIn("Clifftop Retreat"),
+      ],
+    }));
+    expect(m.job).toBe(copy.jobColors("white and red"));
+    expect(m.lead).toBe(copy.leadLands("white and red"));
+    expect(m.groups.map((g) => g.heading)).toEqual([copy.groupCheapest]);
+    const facts = m.groups[0].rows.map((r) => r.facts);
+    expect(facts[0]).toEqual([copy.drawback.entersTappedUnless("you pay 2 life")]);
+    expect(facts[1]).toEqual([copy.givesUp("uncounterable creatures")]);
+    expect(facts[2]).toEqual([copy.givesUp("“Target player draws…”")]);
+    // `gives up nothing` only where nothing else was said.
+    expect(facts[3]).toEqual([copy.givesUpNothing]);
+  });
+
+  it("reads a fetch by the types it finds", () => {
+    const m = sheetModel(read({
+      job: { kind: "fetch", types: ["mountain", "forest"], basicOnly: false },
+      original: card("Wooded Foothills", "Land", "{T}, Pay 1 life, Sacrifice Wooded Foothills: Search your library for a Mountain or Forest card"),
+      cheapest: [standIn("Evolving Wilds", { drawbacks: [{ kind: "basicOnly" }, { kind: "entersTapped" }] })],
+    }));
+    expect(m.job.startsWith(copy.jobFinds("Mountain or Forest"))).toBe(true);
+    expect(m.lead).toBe(copy.leadFetch("Mountain or Forest"));
+    expect(m.groups[0].rows[0].facts).toEqual([copy.drawback.basicOnly, copy.drawback.entersTapped]);
+  });
+
+  it("says why there are no stand-ins for a card with no role, spell or land", () => {
+    expect(sheetModel(read({ job: { kind: "none" }, original: card("Smothering Tithe", "Enchantment") })).sentence)
+      .toBe(copy.noRole("Smothering Tithe"));
+    const land = sheetModel(read({ job: { kind: "none" }, original: card("Strip Mine", "Land") }));
+    expect(land.sentence).toBe(copy.noRoleLand("Strip Mine"));
+    expect(land).toMatchObject({ lead: null, groups: [], foot: false, job: copy.jobNoRole });
+  });
+
+  it("says nothing cheaper, citing the original's price, when every group is empty", () => {
+    expect(sheetModel(read({})).sentence).toBe(copy.nothingCheaper("removal", 2, "Gishath", "$15.00"));
+    const land = sheetModel(read({ job: { kind: "land", colors: ["G"] }, original: card("Gaea's Cradle", "Legendary Land") }));
+    expect(land.sentence).toBe(copy.nothingCheaperLand("green", "$15.00"));
+  });
+
+  it("lists free copies only for a sold-out original, and cites no price when there are none (F5)", () => {
+    const some = sheetModel(read({ originalCents: null, free: [standIn("Swords", { free: true })] }));
+    expect(some.lead).toBe(copy.leadSoldOut);
+    expect(some.groups.map((g) => g.heading)).toEqual([copy.groupFree]);
+    expect(sheetModel(read({ originalCents: null })).sentence).toBe(copy.soldOutNone("Anguished Unmaking"));
+  });
+
+  it("names a spell's job while loading, and waits for the read on a land", () => {
+    expect(loadingStatus("ramp")).toBe(copy.loadingSpells("ramp"));
+    expect(loadingStatus("land")).toBeNull();
+    expect(loadingStatus("other")).toBeNull();
+  });
+});

@@ -12,6 +12,8 @@ import { effectiveLimit } from "./limit";
 
 export type SwapTools = {
   deckId: string;
+  /** The deck's name, for the stand-ins sheet's `replacing, in {deck}`. */
+  deckName: string;
   /** The deck's own limit, in cents; null for the $10 default. */
   storedLimitCents: number | null;
   /** The limit rows are marked against: the stored one, or the default. */
@@ -22,15 +24,17 @@ const SwapToolsContext = createContext<SwapTools | null>(null);
 
 export function SwapToolsProvider({
   deckId,
+  deckName,
   storedLimitCents,
   children,
 }: {
   deckId: string;
+  deckName: string;
   storedLimitCents: number | null;
   children: ReactNode;
 }) {
   return (
-    <SwapToolsContext.Provider value={{ deckId, storedLimitCents, limitCents: effectiveLimit(storedLimitCents) }}>
+    <SwapToolsContext.Provider value={{ deckId, deckName, storedLimitCents, limitCents: effectiveLimit(storedLimitCents) }}>
       {children}
     </SwapToolsContext.Provider>
   );
