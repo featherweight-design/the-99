@@ -68,7 +68,8 @@ const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 const SYNERGY_KEY = ["deck-synergy", "2"];
 
 // Suggested changes runs as a Server Action invoked from this page, so the page's limit bounds
-// it: a model call's 90s deadline (MODEL_TIMEOUT_MS) plus the outcome write.
+// it: a model call's 110s deadline (MODEL_TIMEOUT_MS) plus the reads and writes either side of it.
+// `src/lib/tuning/limits.test.ts` fails if the deadline stops fitting under this figure.
 export const maxDuration = 120;
 
 export default async function DeckBuilderPage({

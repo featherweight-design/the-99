@@ -14,8 +14,21 @@ export const MAX_SUGGESTIONS = 5;
 /** A pending run older than this was abandoned, and the read-time reaper fails it. */
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 
-/** One deadline across both attempts of a run's model call. */
-export const MODEL_TIMEOUT_MS = 90_000;
+/**
+ * One deadline across both attempts of a run's model call: the schema-fail retry runs inside it.
+ *
+ * 110s, up from 90 (the-99-d9's harness latency, 2026-09-24). With `TUNING_MAX_TOKENS` at 8,000
+ * the timed attempts ran p50 36s, p90 56s, max 60s, but the slowest answer that needed its retry
+ * took 82.9s of the 90, and one batch answer reached the full 8,000 output tokens, about 100s at
+ * ~80 tokens a second. At 90s those runs time out.
+ *
+ * It has to fit under the deck page's `maxDuration` of 120s, since that bounds the Server Action.
+ * Everything else a run does fits in the ~10s left, measured on local-dev against three whole
+ * decks: the inputs read, the gate read and `startRun`'s reserve before the call; the name read,
+ * the five bracket-after profiles and `persistRun`'s settle after it. The worst deck took 3.0s
+ * in total, most of it the five profiles (1.8s). `limits.test.ts` pins the ordering.
+ */
+export const MODEL_TIMEOUT_MS = 110_000;
 
 /**
  * The model a run calls, recorded per run in `deck_suggestion_runs.model`.
