@@ -173,6 +173,37 @@ describe("TuningPanel", () => {
     expect(screen.queryByText(deckTuningCopy.intent.askLabel)).toBeNull();
   });
 
+  it("says a run failed even over a set retired by a commit", async () => {
+    const failed = { ...okRun, id: "r2", status: "failed" as const, errorClass: "timeout" };
+    await draw(deps([{ ...results, run: failed, retired: { from: 1, to: 2 } }]));
+    expect(screen.getByTestId("tuning-failure")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: deckTuningCopy.failure.retry })).toBeInTheDocument();
+  });
+
+  it("names when a credit comes back, not when the first counted one leaves", async () => {
+    const first = new Date("2026-09-24T09:05:00Z");
+    const back = new Date("2026-09-24T15:40:00Z");
+    await draw(deps([{ ...fresh, allowance: { used: 6, limit: 5, reopensAt: back, nextAt: first } }]));
+    expect(screen.getByText(creditsCopy.spent(5, back))).toBeInTheDocument();
+  });
+
+  it("claims nothing when Stop finds no run to cancel", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+      const d = deps([pending, fresh]);
+      await draw(d);
+      await press(copy.stop);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(d.cancel).not.toHaveBeenCalled();
+      expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows the refusal and keeps the panel when the server refuses the run", async () => {
     const d = deps([fresh, fresh], { run: vi.fn(async () => ({ ok: false as const, message: "no" })) });
     await draw(d);

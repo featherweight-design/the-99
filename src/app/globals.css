@@ -669,13 +669,12 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* Sinusoidal in-out rather than the default cubic ease-in-out: cubic dwells
-   near both extremes (peak:mean velocity 1.85x vs 1.57x), and a dwell is the
-   very thing being fixed here. */
 /* Suggested changes, reading: three cards shuffle through one another (placement addendum v2,
    canvas :30-37). `--fan-dx` is each card's offset, set by `FanShuffle` for its size; each card
-   runs a third of the cycle behind the one before it. Not a progress figure: it runs until the
-   last manifest row lands, and the heading beside it is the live region. */
+   runs a third of the cycle behind the one before it. Not a progress figure: it runs while the run
+   is in flight, until the answer lands (the manifest's reads land in well under a second, and a
+   fan that stopped with them would sit still through the model call), and the live region is
+   the panel's own. */
 @keyframes fan-shuffle {
   0%, 24% { transform: translateX(calc(-1 * var(--fan-dx))) rotate(-18deg); z-index: 1; }
   33%, 57% { transform: translateX(0) rotate(0); z-index: 2; }
@@ -685,6 +684,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 
 .anim-fan-shuffle { animation: fan-shuffle 2.4s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
+/* Sinusoidal in-out rather than the default cubic ease-in-out: cubic dwells
+   near both extremes (peak:mean velocity 1.85x vs 1.57x), and a dwell is the
+   very thing being fixed here. */
 .anim-bob {
   animation: bob var(--bob-duration, 3s) cubic-bezier(0.37, 0, 0.63, 1) infinite;
   will-change: transform;

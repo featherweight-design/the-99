@@ -81,6 +81,9 @@ const copy = deckTuningCopy.panel;
 const manifest = deckTuningCopy.manifest;
 /** How often a run begun elsewhere (another tab, a reload mid-run) is re-read until it settles. */
 const WATCH_MS = 3000;
+/** How long Stop looks for a run's pending row that its press may have beaten to the database. */
+const STOP_TRIES = 5;
+const STOP_WAIT_MS = 300;
 
 export function TuningPanel({
   deckId,
@@ -174,11 +177,22 @@ export function TuningPanel({
 
   async function stop() {
     token.current += 1;
-    const current = await deps.read(deckId);
-    if (current?.run?.status === "pending") await deps.cancel(deckId, current.run.id);
+    // A press can land before the run's pending row exists, so look for it a few times rather
+    // than once: a Stop that found nothing to cancel would let the run spend its credit while
+    // telling the reader none was used.
+    let cancelled = false;
+    for (let attempt = 0; attempt < STOP_TRIES && !cancelled; attempt += 1) {
+      const current = await deps.read(deckId);
+      if (current?.run?.status === "pending") {
+        await deps.cancel(deckId, current.run.id);
+        cancelled = true;
+      } else if (attempt < STOP_TRIES - 1) {
+        await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
+      }
+    }
     setCounts(null);
     await reread();
-    setAnnounced(deckTuningCopy.announce.stopped);
+    if (cancelled) setAnnounced(deckTuningCopy.announce.stopped);
   }
 
   async function settled(announce: string) {
@@ -216,8 +230,11 @@ export function TuningPanel({
       </>
     );
   } else if (state.retired) {
+    // A failed run after a commit still says it failed, over the retired lead.
+    if (failure) primary = { label: deckTuningCopy.failure.retry, again: false };
     body = (
       <>
+        {failure ? <Failure failure={failure} /> : null}
         <Lead>{copy.retiredLead(state.retired.from, state.retired.to)}</Lead>
         <ManifestRows rows={neverRunRows} onLogGame={onLogGame} />
       </>
@@ -284,7 +301,9 @@ export function TuningPanel({
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
   const credit = spent
-    ? creditsCopy.spent(state.allowance.limit, state.allowance.nextAt)
+    // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with more
+    // counted than the limit the reader still has none left at that time.
+    ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
     : primary.again
       ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
       : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);

@@ -74,9 +74,21 @@ describe("SuggestionCard", () => {
     expect(open).toHaveBeenLastCalledWith("add", ["cut", "add"]);
   });
 
-  it("draws the buy tag for an add the player does not own, and no mark for a free one", () => {
+  it("draws the buy tag for an add the player does not own", () => {
     draw({ ...item, owned: false, ownedQuantity: 0, availability: null });
     expect(screen.getAllByText("buy").length).toBeGreaterThan(0);
+  });
+
+  it("draws no mark for an owned add with a free copy, and the hard mark for a contested one", () => {
+    const { unmount } = render(
+      <SuggestionCard item={item} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />,
+    );
+    expect(screen.queryByText(/none free/)).toBeNull();
+    unmount();
+    const claim = { id: "d2", name: "Other", quantity: 1, mature: true, pending: false, commander: false };
+    const contested: TuningItem = { ...item, availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] } };
+    render(<SuggestionCard item={contested} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />);
+    expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
   });
 
   it("flags a swap that raises the bracket, worded against the reading on screen", () => {
