@@ -268,7 +268,7 @@ export function build(React, state, phone, art = {}) {
     failedLine: "We could not finish reading this deck. The mix below is counted from your list and is true now.",
   });
 
-  const ready = (o) => ({ ...base, ready: true, hasBand: true, ...o });
+  const ready = (o) => ({ ...base, ready: true, hasBand: true, overviewPresent: true, overviewAbsent: false, overviewRefused: false, writeEnabled: true, ...o });
   S.rangeAsk = ready({
     deck: decks.yuriko, ...trig("outlined", "Analyze again"),
     provenance: "determined against all 99 · 2 minutes ago",
@@ -281,7 +281,7 @@ export function build(React, state, phone, art = {}) {
     ...yurikoPop, climb: climbs.yuriko, findings: findings.yuriko, mix: mixes.yuriko,
   });
   S.rangeAnswered = ready({
-    ...S.rangeAsk, ask: false, answered: true,
+    ...S.rangeAsk, ask: false, answered: true, hasSubline: false,
     provenance: "determined against all 99 · 21 Sept", analyzed: "analyzed 21 Sept", band: bandChip(4),
     face: "Optimized", ...chip(4),
     subline: "Your cards permit Optimized or cEDH: the two have no card limits between them.",
@@ -343,6 +343,42 @@ export function build(React, state, phone, art = {}) {
     failedLine: "We could not finish reading this deck. The mix below is counted from your list and is true now.",
   });
 
+  // ---------- credits (the shared string with the tuning panel; 12-hour time, never "today") ----------
+  const CR = { n: 4, total: 5, time: "2:20 PM" };
+  const left = `${CR.n} of ${CR.total} left \u00b7 next one at ${CR.time}`;
+  const spent = `0 of ${CR.total} left \u00b7 next one at ${CR.time}. Synopses and suggestions share these credits.`;
+  const note = {
+    analyze: `Also writes the overview, using a credit. ${left}.`,
+    analyzeSpent: `Reads the bracket only; the overview waits for a credit. ${spent}`,
+    reanalyzeSpent: `Reads the bracket only; the overview stays as it was. ${spent}`,
+    write: `Uses a credit. ${left}.`,
+    writeSpent: spent,
+  };
+  // 2a / 2c: Analyze and its retry write the overview. 2b: nothing to press.
+  S.idle = { ...S.idle, emptyNote: note.analyze };
+  S.failed = { ...S.failed, emptyNote: note.analyze };
+  S.idleSpent = { ...S.idle, emptyNote: note.analyzeSpent };
+  // 2i / 2d: the list changed, so the press writes the overview.
+  S.stale = { ...S.stale, bannerNote: note.analyze };
+  S.yurikoStale = { ...S.yurikoStale, bannerNote: note.analyze };
+  S.failedHeld = { ...S.failedHeld, bannerNote: note.analyze };
+  S.staleSpent = { ...S.stale, bannerNote: note.reanalyzeSpent };
+  // Unchanged for the overview: it was already written for this list, so Re-analyze returns it.
+  S.staleOverviewCurrent = { ...S.stale, bannerNote: "" };
+  // The Overview's own controls: Round 0's state 2 and state 4.
+  S.overviewAbsent = { ...S.rangeAnswered, overviewPresent: false, overviewAbsent: true, overviewNote: note.write };
+  S.overviewAbsentSpent = { ...S.overviewAbsent, writeEnabled: false, overviewNote: note.writeSpent };
+  S.overviewRefused = { ...S.rangeAnswered, overviewPresent: false, overviewRefused: true, overviewNote: note.write };
+
+  // Fetching the stored reading on tab open: says nothing about whether one exists.
+  const fetchRow = h("span", { "aria-hidden": true, style: { display: "flex", alignItems: "center", gap: 10 } },
+    [1, 2, 3, 4, 5].map((b, i) => h("span", { key: b, style: { opacity: 0.22, animation: `at-wave 1.6s ease-in-out ${i * 0.16}s infinite` } }, mark(b, 22))));
+  S.fetching = { ...base, deck: decks.yuriko, fetching: true, fetchRow, mix: mixes.yuriko };
+
   const v = S[state] || S.idle;
-  return { ...v, notReady: !v.ready, hasBody2: !!v.emptyBody2 };
+  return {
+    ...v, notReady: !v.ready, hasBody2: !!v.emptyBody2, notFetching: !v.fetching,
+    hasEmptyNote: !!v.emptyNote, hasBannerNote: !!v.bannerNote, hasOverviewNote: !!v.overviewNote,
+    writeDisabled: v.writeEnabled === false,
+  };
 }

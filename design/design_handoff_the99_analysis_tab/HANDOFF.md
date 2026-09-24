@@ -111,13 +111,22 @@ action. The one addition is the way back:
 2. **Reserved space.** No skeleton rungs, tiles or prose placeholders; absent until there is content.
 3. **A sheet opening a sheet**, or a new card body instead of `CardModal`.
 
+## Addendum — the credit note
+
+`CREDITS-overview.md` and canvas §7: the note on every press that writes the overview, and the used-up states. Audited on its own.
+
+## Addendum — opening the tab (canvas §8)
+
+While the stored reading is fetched, the tab draws **only** a neutral loader: the five chip marks (22) in a row with the `at-wave` light, and *Loading…* in mono 11 / 10.5 `--fg-faint`. It does **not** draw the Overview, the empty-state ring, the bracket box, the banner, the mix or the header chip. Shown after 150ms, held at least 400ms, 420 / 320px block, `role="status"` + `aria-busy`. Reduced motion: static at 0.5. Preferred fix: load the stored reading server-side with the page, since the header chip needs it anyway; then this shows only on a slow client refetch.
+
 ## 7 · Files
 
 - `The 99 - Analysis Tab.dc.html` — the canvas: §1 order, §2 nine states × two widths, §3 sheets,
-  §4 ledger call, §5 About entry, §6 the synopsis.
+  §4 ledger call, §5 About entry, §6 the synopsis, §7 the credit note, §8 opening the tab.
 - `Analysis Tab 1300.dc.html`, `Analysis Tab 390.dc.html`, `Synopsis Sheet.dc.html` — the frames.
 - `analysis-fixtures.js` — every figure and string on the frames.
 - `STATES-analysis-tab.md` — the matrix. `SYNOPSIS-modal.md` — the synopsis addendum.
+- `CREDITS-overview.md` — the credit-note addendum.
 - `analysis-tab - copy strings.ts` — new and conformed strings only.
 - `ABOUT-entry.md` — the filled §G template. `READINESS.md` — open items. `README.md` — R1 rationale.
 - `assets/` — ten bracket marks (Round 0, verbatim) and five fact glyphs (paths from the glyph

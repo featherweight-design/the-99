@@ -13,7 +13,13 @@ status and pending-banner modules, `card-modal.tsx` (render, both ✕, Prev/Next
 the glyph modules, and the three copy modules. The synopsis brief was read from Hugh's upload (the
 `docs/synopsis-brief` path was not visible to the repo tool).
 
+## Signed off since
+
+§7 credit note (7a–7h) and §8 opening-the-tab loader (8a), Hugh 2026-09-23.
+
 ## Open, none blocking
+
+0. `CREDITS-overview.md` open items: 12-hour time in the tuning panel, *Synopses* vs *overview*, and an overview older than the list after a used-up Re-analyze.
 
 1. HANDOFF §4.1 — the climb in the left column.
 2. HANDOFF §4.2 — a stale range withholds its chips (undrawn).

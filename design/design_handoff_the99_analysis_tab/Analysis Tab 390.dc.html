@@ -105,10 +105,17 @@
       <div role="status" style="display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:14px 15px;border-radius:11px;background:var(--surface-rail);border:1px solid var(--border-strong);">
         <p style="margin:0;font-size:13px;line-height:1.5;color:var(--fg-body);">{{ bannerLine }}</p>
         <span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;flex:none;white-space:nowrap;">{{ bannerCta }}</span>
+        <sc-if value="{{ hasBannerNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.55;color:var(--fg-faint);text-align:center;">{{ bannerNote }}</span></sc-if>
       </div>
     </sc-if>
 
 
+    <sc-if value="{{ fetching }}" hint-placeholder-val="{{ false }}">
+      <div role="status" aria-busy="true" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:320px;">
+        {{ fetchRow }}
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--fg-faint);">Loading…</span>
+      </div>
+    </sc-if>
     <sc-if value="{{ preAnalysis }}" hint-placeholder-val="{{ false }}">
       <section style="display:flex;flex-direction:column;gap:7px;">
         <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Overview</h3>
@@ -122,6 +129,7 @@
               <sc-if value="{{ ctaAnalyze }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;cursor:pointer;align-self:stretch;">Analyze</span></sc-if>
               <sc-if value="{{ ctaRetry }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;cursor:pointer;align-self:stretch;">Try again</span></sc-if>
               <sc-if value="{{ ctaBusy }}" hint-placeholder-val="{{ false }}"><span aria-disabled="true" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--elevated);color:var(--fg-faint);font-weight:600;font-size:14px;align-self:stretch;">Analyze</span></sc-if>
+              <sc-if value="{{ hasEmptyNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.55;color:var(--fg-faint);text-align:center;max-width:320px;">{{ emptyNote }}</span></sc-if>
               <span style="display:inline-flex;align-items:center;min-height:44px;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);cursor:pointer;"><span style="border-bottom:1px dotted var(--accent);">How we make these decisions</span><span>→</span></span>
             </div>
           </div>
@@ -131,8 +139,25 @@
     <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}">
     <section style="display:flex;flex-direction:column;gap:7px;">
       <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Overview</h3>
-      <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><sc-for list="{{ summary }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></p></sc-if>
-          <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}"><span style="display:flex;min-height:44px;align-items:center;"><span style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);cursor:pointer;"><span style="border-bottom:1px dotted var(--accent);">View full synopsis</span><span>→</span></span></span></sc-if>
+      <sc-if value="{{ overviewPresent }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><sc-for list="{{ summary }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></p></sc-if>
+          <sc-if value="{{ overviewPresent }}" hint-placeholder-val="{{ false }}"><span style="display:flex;min-height:44px;align-items:center;"><span style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);cursor:pointer;"><span style="border-bottom:1px dotted var(--accent);">View full synopsis</span><span>→</span></span></span></sc-if>
+          <sc-if value="{{ overviewAbsent }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-faint);">No overview has been written for this deck yet.</p>
+            <div style="margin-top:4px;display:flex;flex-direction:column;align-items:stretch;gap:9px;">
+              <sc-if value="{{ writeEnabled }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;">Write one</span></sc-if>
+              <sc-if value="{{ writeDisabled }}" hint-placeholder-val="{{ false }}"><span aria-disabled="true" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-disabled);font-weight:500;font-size:13px;">Write one</span></sc-if>
+              <sc-if value="{{ hasOverviewNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.55;color:var(--fg-faint);text-align:center;">{{ overviewNote }}</span></sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ overviewRefused }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:2px 8px;">not written</span></span>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">We wrote an overview and it did not check out against your list, so we are not showing it. Nothing about your deck changed.</p>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2 of 3 claims failed checking</span>
+            <div style="margin-top:4px;display:flex;flex-direction:column;align-items:stretch;gap:9px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;">Try again</span>
+              <sc-if value="{{ hasOverviewNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.55;color:var(--fg-faint);text-align:center;">{{ overviewNote }}</span></sc-if>
+            </div>
+          </sc-if>
     </section>
 
     <section style="background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:15px 15px;display:flex;flex-direction:column;min-width:0;">
@@ -269,6 +294,7 @@
       </section>
     </sc-if>
 
+    <sc-if value="{{ notFetching }}" hint-placeholder-val="{{ true }}">
     <section style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;">
         <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Recommended mix</span>
@@ -285,6 +311,7 @@
         </sc-for>
       </div>
     </section>
+    </sc-if>
 
   </div>
 </div>
