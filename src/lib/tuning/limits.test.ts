@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { intentTooLong, seededIntent } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, intentTooLong, seededIntent } from "./limits";
+
+describe("TUNING_MAX_TOKENS", () => {
+  it("holds the schema's worst-case answer and room for adaptive thinking over it", () => {
+    // The schema's caps, per suggestion: add, cut, rationale, short rationale, four citations.
+    const chars = 200 + 200 + 400 + 80 + 4 * 160;
+    // About four characters a token, and about 60 tokens of JSON keys and punctuation.
+    const perSuggestion = Math.ceil(chars / 4) + 60;
+    expect(ANSWER_TOKENS_WORST_CASE).toBeGreaterThanOrEqual(perSuggestion * MAX_SUGGESTIONS);
+    expect(TUNING_MAX_TOKENS).toBeGreaterThanOrEqual(ANSWER_TOKENS_WORST_CASE + THINKING_HEADROOM_TOKENS);
+  });
+});
 
 describe("intentTooLong", () => {
   it("accepts an intent at the cap and refuses one over it", () => {

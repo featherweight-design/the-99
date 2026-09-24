@@ -119,6 +119,27 @@ describe("TuningPanel", () => {
     expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.stopped);
   });
 
+  it("tries the cancel again while the same run is still pending", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
+      const cancel = vi.fn()
+        .mockRejectedValueOnce(new Error("network"))
+        .mockResolvedValue({ ok: true });
+      const d = deps([pending, pending, pending, pending, cancelled], { cancel });
+      await draw(d);
+      await press(copy.stop);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(cancel).toHaveBeenCalledTimes(2);
+      expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.stopped);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("claims no stop when the run settled before the cancel reached it", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
     const d = deps([pending, pending, { ...results, run: { ...okRun, id: "r2" } }]);

@@ -206,7 +206,10 @@ export function TuningPanel({
         // So the answer is read back, and only a run that now reads cancelled was stopped.
         const after = await deps.read(deckId).catch(() => null);
         cancelled = after?.run?.id === runId && after.run.status === "cancelled";
-        break;
+        // Try again only while THIS run is still pending (the cancel itself failed); a run that
+        // settled, or a different run now current, is past stopping.
+        if (cancelled || !(after?.run?.id === runId && after.run.status === "pending")) break;
+        await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
       } else if (attempt < STOP_TRIES - 1) {
         await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
       }
