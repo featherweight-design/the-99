@@ -42,13 +42,14 @@ describe("pressNote", () => {
     const until = new Date("2026-10-01T00:00:00Z");
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze")!;
     expect(n.writes).toBe(false);
-    expect(n.text).toBe(creditsCopy.paused(until));
+    // The lead first: the press still reads the bracket, and only the overview is withheld.
+    expect(n.text).toBe(`Reads the bracket only; the overview waits for a credit. ${creditsCopy.paused(until)}`);
     expect(n.text).not.toMatch(/uses a credit/i);
   });
 
   it("says the owner's share is used, and writes nothing", () => {
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }), "reanalyze")!;
     expect(n.writes).toBe(false);
-    expect(n.text).toMatch(/testing share/);
+    expect(n.text).toMatch(/^Reads the bracket only; the overview stays as it was\. .*testing share/);
   });
 });
