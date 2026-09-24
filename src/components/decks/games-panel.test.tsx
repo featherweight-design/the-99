@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { GamesPanel } from "./games-panel";
 import { summarizeGames, type DeckGame } from "../../lib/decks/games";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 vi.mock("../../app/decks/actions", () => ({
   logGame: async () => ({ ok: true }),
@@ -185,5 +186,32 @@ describe("GamesPanel — empty", () => {
     mount([]);
     expect(screen.queryByText(/What to do about it stays your call/i)).toBeNull();
     expect(Object.keys(gameLogCopy.empty)).not.toContain("scope");
+  });
+});
+
+// The pointer to Suggested changes (addendum r1, C1/C2), over a reading and a game to read.
+describe("the Suggested changes pointer", () => {
+  const draw = (games: DeckGame[], tuned: boolean, onOpenAnalysis = vi.fn()) => {
+    render(
+      <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} tuned={tuned} onOpenAnalysis={onOpenAnalysis} />,
+    );
+    return onOpenAnalysis;
+  };
+
+  it("points at the Analysis tab, and pressing it opens the tab", () => {
+    const open = draw([game()], true);
+    expect(screen.getByText(deckTuningCopy.gamesLine.lead, { exact: false })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: deckTuningCopy.gamesLine.link }));
+    expect(open).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws nothing without a reading", () => {
+    draw([game()], false);
+    expect(screen.queryByText(deckTuningCopy.gamesLine.lead, { exact: false })).toBeNull();
+  });
+
+  it("draws nothing with no game to read", () => {
+    draw([], true);
+    expect(screen.queryByText(deckTuningCopy.gamesLine.lead, { exact: false })).toBeNull();
   });
 });

@@ -9,12 +9,17 @@ import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
 import { GameHistoryRow } from "./game-history-row";
 import { GameLogForm, type GameResult } from "./game-log-form";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
 export interface GamesPanelProps {
   deckId: string;
   games: DeckGame[];
   summary: GameSummary;
+  /** Suggested changes is on this deck: the Analysis tab exists and holds a reading. */
+  tuned?: boolean;
+  /** Presses the Analysis tab, for the pointer line. */
+  onOpenAnalysis?: () => void;
 }
 
 type GameRecord = GameSummary["record"];
@@ -187,7 +192,7 @@ export function GameFindings({ summary }: { summary: GameSummary }) {
   );
 }
 
-export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
 
@@ -229,6 +234,7 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
           <div className="mt-[20px] md:mt-[22px]">
             <GameLogForm
               deckId={deckId}
+              tuned={tuned}
               isFirstGame
               onAnnounce={setAnnouncement}
               onSaved={() => setAnnouncement(gameLogCopy.announce.savedFirst)}
@@ -283,6 +289,7 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
           view exists for, and burying it under the readings hides it. */}
       <GameLogForm
         deckId={deckId}
+        tuned={tuned}
         isFirstGame={games.length === 0}
         onAnnounce={setAnnouncement}
         onSaved={(isFirst, result) =>
@@ -297,7 +304,18 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
 
       <GameFindings summary={summary} />
 
-      <div className="flex items-baseline gap-[10px] mt-[22px] mb-[10px]">
+      {/* The pointer to what reads these games (addendum r1, C1/C2): only over a reading, and
+          only with a game to read. */}
+      {tuned && games.length > 0 && onOpenAnalysis ? (
+        <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
+          {deckTuningCopy.gamesLine.lead}{" "}
+          <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent)] hover:underline">
+            {deckTuningCopy.gamesLine.link}
+          </button>
+        </p>
+      ) : null}
+
+      <div className={`flex items-baseline gap-[10px] mb-[10px] ${tuned && games.length > 0 && onOpenAnalysis ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
         <h2 className="font-mono uppercase text-[10px] tracking-[0.14em] text-fg-faint">
           {gameLogCopy.history.heading}
         </h2>

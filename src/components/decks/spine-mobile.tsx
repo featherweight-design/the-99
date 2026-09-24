@@ -11,6 +11,7 @@ import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
+import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
@@ -436,6 +437,14 @@ export function SpineMobile({
                   </button>
                 </span>
               </div>
+              {/* SECOND in the order (placement addendum r3, E2b), on the art like the name. */}
+              <DeckIntentLine
+                key={deck.id}
+                deckId={deck.id}
+                intent={deck.intent ?? null}
+                seeded={deck.intentSeeded ?? false}
+                width="phone"
+              />
               {metaRow(true)}
               {chipsRow}
             </>
