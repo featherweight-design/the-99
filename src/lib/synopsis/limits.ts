@@ -10,7 +10,9 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
  * the eval harness can tell the contracts' outcomes apart.
  */
 // 2: the Mulligan's figures gained the send-back bounds and the commanders' mana values.
-export const SYNOPSIS_CONTRACT_VERSION = 2;
+// 3: contract A (Hugh, 2026-09-24): a list section drops a failing line and renders when its
+//    minimum survives; prose still fails whole.
+export const SYNOPSIS_CONTRACT_VERSION = 3;
 
 /** A pending run older than this was abandoned; the read-time reaper fails it as `interrupted`
  *  and refunds its unit. Below `RESERVATION_TTL_MS`, so the reap always lands while the unit
@@ -37,19 +39,23 @@ export const SYNOPSIS_DEADLINE_MS = 110_000;
 export const SYNOPSIS_ANSWER_TOKENS_WORST_CASE = 2_000;
 
 /**
- * Room for ADAPTIVE THINKING. `callModel` sends no `thinking` field, so Sonnet 5 thinks adaptively,
- * and that thinking counts inside `max_tokens`. Tuning's ceiling, sized for its answer alone at
- * 3,000, truncated on 2 of 4 decks even after the client's retry, with one reply that was all
- * thinking (eval harness, 2026-09-24). This one was sized the same way and would do the same.
+ * Room for the model's reasoning at `effort: "low"` (`SYNOPSIS_EFFORT`), which counts inside
+ * `max_tokens`. Full Sonnet with adaptive thinking is NOT viable here: at an 8,000-token ceiling
+ * it truncated or timed out a third of its answers (eval harness, 2026-09-24).
  */
-export const SYNOPSIS_THINKING_HEADROOM_TOKENS = 6_000;
+export const SYNOPSIS_REASONING_HEADROOM_TOKENS = 1_000;
 
 /**
- * The output ceiling: the answer's worst case plus the thinking headroom. A STOPGAP, mirroring
- * tuning's (#902): effort and thinking settings are the eval harness's call (sub-project 10), and
- * none is set here. `limits.test.ts` pins the ceiling above the sum.
+ * The most output any measured answer used: sonnet-low's maximum over 176 answers (eval harness,
+ * 2026-09-24). The ceiling must hold it, or a reply the harness accepted is cut off here.
  */
-export const SYNOPSIS_MAX_TOKENS = 8_000;
+export const SYNOPSIS_OBSERVED_MAX_OUTPUT_TOKENS = 2_240;
+
+/**
+ * The output ceiling (the-99-d9, relaying Hugh's ruling, 2026-09-24): the answer's worst case plus
+ * the reasoning headroom, and above the measured maximum. `limits.test.ts` pins both.
+ */
+export const SYNOPSIS_MAX_TOKENS = 3_000;
 
 /**
  * Counts per section (`SYNOPSIS-modal.md` §4.2). Checked by the validator, never by the schema:
