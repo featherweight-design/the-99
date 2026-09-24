@@ -265,6 +265,8 @@ async function run() {
   }
 }
 
-await run();
+// A throw is a failure the report must SAY: with the climb laid over the overview the press is
+// intercepted and Playwright times out, and that run has to read as failed rather than as a crash.
+await run().catch((e) => report("the walk completed", false, e.message.split("\n")[0]));
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exitCode = failures === 0 ? 0 : 1;
