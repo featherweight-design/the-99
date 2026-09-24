@@ -59,6 +59,15 @@ describe("callModel", () => {
     });
   });
 
+  // The eval harness joins every text block before parsing; the app reads a reply the same way.
+  it("parses a reply whose JSON arrives across two text blocks", async () => {
+    const split = { content: [{ type: "text", text: '{"answer":' }, { type: "text", text: ' "x"}' }], usage: u10, stop_reason: "end_turn" };
+    const { messages, calls } = scripted([split]);
+    const out = await callModel(req, { messages, log: quiet });
+    expect(out.ok && out.value).toEqual({ answer: "x" });
+    expect(calls).toHaveLength(1);
+  });
+
   it("sends the caller's model, and turns the SDK's own retries off", async () => {
     const { messages, calls } = scripted([reply({ answer: "x" })]);
     await callModel(req, { messages, log: quiet });

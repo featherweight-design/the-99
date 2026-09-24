@@ -172,13 +172,14 @@ async function tryOnce<T>(
 
   // The reply is here and billed: every outcome from now on carries its usage.
   const usage = usageOf(response.usage);
-  // The first text block, as the SDK's own parser reads it. None at all — a refusal, or a reply
-  // that was all thinking when it hit max_tokens — is the shape not met.
-  const text = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
+  // Every text block, joined, as the eval harness reads a reply (`scripts/eval/lib/request.mts`), so
+  // the app and the harness judge one reply the same way. No text at all (a refusal, or a reply
+  // that was all thinking when it hit max_tokens) is the shape not met.
+  const text = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
   let parsed: T | null = null;
-  if (text) {
+  if (text.length > 0) {
     try {
-      parsed = format.parse(text.text) as T;
+      parsed = format.parse(text) as T;
     } catch (err) {
       // The zod output format throws when the reply is not JSON or fails the schema.
       log(`[model] malformed: ${err instanceof Error ? err.message : String(err)}`);
