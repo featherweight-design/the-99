@@ -6,6 +6,7 @@ import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall } from "../model/allowance";
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
+import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_REPAIR_MIN_MS } from "./limits";
 import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
@@ -214,7 +215,7 @@ export async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]
     .select({ oracleId: cards.oracleId, oracleText: cards.oracleText })
     .from(cards)
     .where(inArray(cards.oracleId, ids));
-  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])));
+  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples());
 }
 
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
