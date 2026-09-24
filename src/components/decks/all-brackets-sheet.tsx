@@ -152,8 +152,8 @@ function Note({
             </span>
           ) : null}
         </span>
-        {reading ? <p className="m-0 text-[12px] leading-[1.55] text-[color:var(--fg-muted)]">{reading}</p> : null}
-        <p data-testid="brackets-sheet-quote" className="m-0 text-[11.5px] italic leading-[1.5] text-[color:var(--fg-body)] md:text-[12px]">
+        {reading ? <p className="m-0 text-pretty text-[12px] leading-[1.55] text-[color:var(--fg-muted)]">{reading}</p> : null}
+        <p data-testid="brackets-sheet-quote" className="m-0 text-pretty text-[11.5px] italic leading-[1.5] text-[color:var(--fg-body)] md:text-[12px]">
           {`“${quote.text}”`}
           <span className="ml-[8px] whitespace-nowrap font-mono text-[9px] not-italic tracking-[0.04em] text-[color:var(--fg-faint)] md:text-[9.5px]">
             {copy.quoteTag[quote.source]}
@@ -177,7 +177,7 @@ export function AllBracketsSheet({ onClose }: { onClose: () => void }) {
   return (
     <ModalChrome title={copy.title} closeLabel={copy.close} onClose={onClose} width={700}>
       <div data-testid="brackets-sheet" className="flex flex-col gap-[12px] px-[16px] pb-[24px] pt-[14px] md:gap-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
-        <p className="m-0 flex-none text-[12.5px] leading-[1.6] text-[color:var(--fg-body)]">{copy.lead}</p>
+        <p className="m-0 flex-none text-pretty text-[12.5px] leading-[1.6] text-[color:var(--fg-body)]">{copy.lead}</p>
         <WideTable />
         <NarrowTable />
         <div className="flex flex-none flex-col">
