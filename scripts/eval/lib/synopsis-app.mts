@@ -65,6 +65,9 @@ export async function openSynopsis() {
     nameOf: new Map(deckRows.map((d) => [d.id, d.name])),
     prepare,
     score,
+    /** The app's own catalog read for names Weaknesses uses, for re-scoring a stored reply. */
+    catalog: (reply: SynopsisResponse, facts: SynopsisFacts) => catalogFor(reply, facts),
+    validate: validateSynopsis,
     schema: synopsisResponseSchema,
     maxTokens: SYNOPSIS_MAX_TOKENS,
     model: SYNOPSIS_MODEL,
