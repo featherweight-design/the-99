@@ -324,8 +324,18 @@ export async function computeAndStoreProfile(
       const now = await readProfileHead(tx, deckId, userId);
       if (!now || profileFingerprint(now) !== profile.fingerprint) return;
       const fingerprint = listFingerprint(now);
+      // An EMPTY analyzed list is a legacy row, never a real one (every deck holds its commander):
+      // a pre-0058 deployment still serving during the cutover writes readings with the columns'
+      // defaults, which the migration's backfill ran too early to see. A rebuild fills the list
+      // from the list it was guarded to (the same list, `rebuildOf.list`) rather than carrying
+      // an empty one forward, which would match no card-scoped entry ever again.
       const marks = rebuildOf
-        ? rebuildOf.marks
+        ? {
+            ...rebuildOf.marks,
+            analyzedOracleIds: rebuildOf.marks.analyzedOracleIds.length > 0
+              ? rebuildOf.marks.analyzedOracleIds
+              : analyzedOracleIds(now),
+          }
         : { seenSeq, rulesVersion: BRACKET_RULES_VERSION, analyzedOracleIds: analyzedOracleIds(now) };
       const [written] = await tx
         .insert(deckProfiles)

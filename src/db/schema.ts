@@ -1547,6 +1547,11 @@ export const deckProfiles = pgTable("deck_profiles", {
    * describes, not the draft (a card added since is `dirty`'s to report). A quiet rebuild keeps
    * all three, and `computed_at`, so it never swallows a notice (brief §6, readiness F4).
    *
+   * An EMPTY `analyzed_oracle_ids` marks a legacy row, since every deck holds at least its
+   * commander: a pre-0058 deployment still serving during the cutover writes readings with these
+   * columns' defaults after the backfill has run. A rebuild fills it rather than carrying it, and
+   * the notices read (plan PR 4) takes the deck's current list in its place.
+   *
    * `notices_read_seq` is the last entry the player opened the notices at. Reading quiets data
    * notices (the handoff's §3). A re-analysis that RECOMPUTES moves `seen_seq` past them; a press
    * on an unchanged list answers from the store (ruling 5) and moves nothing, until the plan's

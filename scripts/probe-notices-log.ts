@@ -8,7 +8,8 @@
 //
 // It calls the REAL `upsertCardBatch` (one batch of `seedCards`, without the bulk download) and
 // the real `readStoredReading`. It writes to the shared catalog, so every card it touches is
-// captured first and upserted back in a `finally`, the log entries it wrote are deleted, and the
+// captured first and upserted back in a `finally`, the log entries it wrote are deleted (only
+// entries after its start about a card it touched), and the
 // one reading it rebuilds is held on disk by `scripts/lib/profile-hold.mjs`.
 //
 // It refuses the staging and production branches before its first write, by the Neon branch the
@@ -163,6 +164,15 @@ async function main() {
     check("5 · it kept the rules version", after.rules, 0);
     check("5 · it kept the analyzed list", after.ids, [SENTINEL_ID]);
     check("5 · it kept the analysis date", after.at, stamp);
+    // 5b · A LEGACY row (the columns' defaults, written by a pre-0058 deployment during the
+    //      cutover) has an empty analyzed list. A rebuild fills it rather than carrying it.
+    await db.execute(sql`
+      update deck_profiles set analyzed_oracle_ids = '{}'::uuid[], profile_version = ${PROFILE_VERSION - 1}
+      where deck_id = ${reading.deck_id}::uuid`);
+    await readStoredReading(reading.deck_id, reading.user_id, deps);
+    const [legacy] = await rows<{ n: number }>(sql`
+      select cardinality(analyzed_oracle_ids) as n from deck_profiles where deck_id = ${reading.deck_id}::uuid`);
+    check("5b · a rebuild fills a legacy row's empty analyzed list", legacy.n > 0, true);
     check("5 · and reports that date to the reader",
       rebuilt?.analyzedAt.toISOString().slice(0, 19), "2026-01-02T03:04:05");
   } finally {
@@ -175,7 +185,11 @@ async function main() {
       await upsertCardBatch([card], false, emptyLogReport())
         .catch((e) => { failures += 1; console.error(`card ${card.oracleId} not restored`, e); });
     }
-    await db.execute(sql`delete from deck_data_changes where seq > ${startHead}`)
+    // ONLY what this run could have written: after its start AND about a card it touched. A
+    // concurrent ingest's entries about other cards are left alone.
+    await db.execute(sql`
+      delete from deck_data_changes
+      where seq > ${startHead} and oracle_ids && ${`{${originals.map((c) => c.oracleId).join(",")}}`}::uuid[]`)
       .catch((e) => { failures += 1; console.error("probe entries not deleted", e); });
     if (release) await release().catch((e: unknown) => { failures += 1; console.error("reading not restored", e); });
   }
