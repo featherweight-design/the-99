@@ -130,24 +130,44 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   const holds = [];
-  /** The ONE run this probe's press created, found as the first stub run by this account on the
-   *  walked deck after the press began. Cleanup deletes that row and its ledger row and nothing
-   *  else: a write from anywhere else during the run is not this probe's to erase. */
+  /**
+   * The runs THIS probe's presses created, each found right after its press as the first stub run
+   * by this account on the walked deck since that press began, and the spent rows it inserted to
+   * reach the used-up form. Cleanup deletes exactly these and nothing else: a write from anywhere
+   * else during the run is not this probe's to erase.
+   */
   let walked = null;
+  let walkStart = null;
   let userId = null;
-  let pressedAt = null;
-  const mine = async () => (walked && pressedAt
-    ? (await sql`select id, model_call_id from deck_synopses
-        where deck_id = ${walked}::uuid and user_id = ${userId} and model = 'stub' and created_at >= ${pressedAt}
-        order by created_at limit 1`)[0] ?? null
-    : null);
-  let ours = null;
+  const ours = [];
+  const fills = [];
+  const nowAt = async () => (await sql`select now() as at`)[0].at;
+  const claim = async (since) => {
+    const taken = ours.map((r) => r.id);
+    const [row] = await sql`select id, model, status, model_call_id from deck_synopses
+      where deck_id = ${walked}::uuid and user_id = ${userId} and model = 'stub' and created_at >= ${since}
+        and not (id = any(${taken}::uuid[]))
+      order by created_at limit 1`;
+    if (row) ours.push(row);
+    return row ?? null;
+  };
+  const dropOurs = async () => {
+    for (const row of ours.splice(0)) {
+      await sql`delete from deck_synopses where id = ${row.id}::uuid`;
+      if (row.model_call_id) await sql`delete from model_calls where id = ${row.model_call_id}::uuid`;
+    }
+  };
+  const ledger = async () => (await sql`select count(*)::int as n from model_calls where user_id = ${userId}`)[0].n;
+  const runsOn = async (deckId) => (await sql`select count(*)::int as n from deck_synopses where deck_id = ${deckId}::uuid`)[0].n;
+  const noteIn = (page, scope) => onPage(page, `${scope} [data-testid="press-note"]`);
+  const empty = '[data-testid="analysis-empty"]';
+  const banner = '[data-testid="analysis-banner"]';
   try {
     const ctx = await browser.newContext({ viewport: DESKTOP });
     const page = await ctx.newPage();
     userId = await signIn(page);
 
-    // A deck with no overview at all, so `Write one` is what the tab offers.
+    // A deck with no overview at all, so the first Analyze writes one.
     let href = null;
     for (const candidate of (await deckHrefs(page)).slice(0, 12)) {
       const [{ n }] = await sql`select count(*)::int as n from deck_synopses where deck_id = ${candidate.split("/")[2]}::uuid`;
@@ -156,6 +176,7 @@ async function run() {
     if (!report("a deck with no overview", href !== null, href ?? "every one of the first 12 decks has one")) return;
     const deckId = href.split("/")[2];
     walked = deckId;
+    walkStart = await nowAt();
     holds.push(await holdProfile(sql, deckId));
     await sql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
     console.log(`       (walking ${href})`);
@@ -165,33 +186,34 @@ async function run() {
     await page.waitForTimeout(800);
     report("1300px · no overview before a reading", (await visibleOverviews(page)) === 0, `${await visibleOverviews(page)} drawn`);
 
-    // The reading, by a press. The Overview arrives with it, offering `Write one`.
-    await onPageRole(page, "button", /^Analyze$/).first().click();
-    await page.waitForSelector(`${PAGE} [data-testid="findings-block"]`, { timeout: 30_000 });
-    const writeOne = onPage(page, '[data-testid="synopsis-overview"]').getByRole("button", { name: "Write one" });
-    await writeOne.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
-    // The Overview is read before the reading settles and again after it: wait for the second
-    // answer, which is the one that enables the press, before reading what it says.
-    await page.waitForFunction(() => {
-      const b = [...document.querySelectorAll('[data-testid="synopsis-overview"] button')].find((e) => e.textContent === "Write one");
-      return b && b.getAttribute("aria-disabled") !== "true";
-    }, null, { timeout: 15_000 }).catch(() => {});
-    if (!report("1300px · Write one is offered over the fresh reading", (await writeOne.count()) === 1, `${await writeOne.count()} found`)) return;
-    // Read AT the moment the press enables, never after a wait: an enabled press with no note
-    // beside it is the defect this check found, a state read for the reading before.
-    const note = await onPage(page, '[data-testid="synopsis-overview"]').innerText();
-    report("1300px · the press names the credit it spends", /Uses a credit/.test(note), note.replace(/\s+/g, " ").slice(0, 120));
+    // 7a: the note beside Analyze, read BEFORE the press. A button never spends without its note.
+    await noteIn(page, empty).waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+    const before = await noteIn(page, empty).innerText().catch(() => "");
+    report("1300px · Analyze names the credit before it is pressed", /^Also writes the overview, using a credit\./.test(before), before || "no note");
+    const analyze = onPageRole(page, "button", /^Analyze$/).first();
+    const described = await analyze.getAttribute("aria-describedby");
+    const noteId = await noteIn(page, empty).getAttribute("id").catch(() => null);
+    report("1300px · …and the note describes the press", described !== null && described === noteId, `${described} / ${noteId}`);
+    const ng = await page.evaluate((scope) => {
+      const b = [...document.querySelectorAll(`${scope} button`)].find((e) => e.textContent === "Analyze");
+      const n = document.querySelector(`${scope} [data-testid="press-note"]`);
+      if (!b || !n) return null;
+      const br = b.getBoundingClientRect();
+      const nr = n.getBoundingClientRect();
+      return { bTop: Math.round(br.top), nTop: Math.round(nr.top), bRight: Math.round(br.right), nLeft: Math.round(nr.left) };
+    }, `${PAGE} ${empty}`);
+    report("1300px · …in the button's row, after it", ng !== null && ng.nLeft >= ng.bRight && Math.abs(ng.nTop - ng.bTop) <= 14, JSON.stringify(ng));
 
-    // The write, by the Overview's own press.
-    [{ pressedAt }] = await sql`select now() as "pressedAt"`;
-    await writeOne.click();
+    // The press writes the overview too (synopsis PR 4), with no second press.
+    let since = await nowAt();
+    await analyze.click();
+    await page.waitForSelector(`${PAGE} [data-testid="findings-block"]`, { timeout: 30_000 });
     const entry = onPage(page, '[data-testid="synopsis-overview"]').getByRole("button", { name: /View full overview/ });
     await entry.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
-    ours = await mine();
-    const rows = await sql`select id, model, status, model_call_id from deck_synopses where deck_id = ${deckId}::uuid`;
-    report("the write stored one finished run", rows.length === 1 && rows[0].status === "done", JSON.stringify(rows.map((r) => r.status)));
-    report("the model was the stub", rows.every((r) => r.model === "stub"),
-      `${rows.map((r) => r.model).join(", ")} — restart the server without SYNOPSIS_LIVE`);
+    const first = await claim(since);
+    report("Analyze wrote one finished run", first !== null && first.status === "done", JSON.stringify(first && { status: first.status }));
+    report("the model was the stub", first !== null && first.model === "stub",
+      `${first?.model ?? "none"}: restart the server without SYNOPSIS_LIVE`);
     if (!report("1300px · the overview is drawn, with its entry point", (await entry.count()) === 1, `${await entry.count()} entry points`)) return;
     const marks = await onPage(page, '[data-testid="synopsis-overview"] p').first().innerText();
     report("1300px · no raw [[mark]] reaches the reader", !marks.includes("[["), marks.slice(0, 100));
@@ -237,14 +259,95 @@ async function run() {
         z ? `preview z ${z.box}, sheet z ${z.sheet}` : "no preview (the card may have no art)");
     }
     await page.keyboard.press("Escape");
+
+    // 7d, reached by a revert (finding 6): the list is the one its overview describes, but the
+    // reading is marked changed, as an edit and its undo leave it. The banner shows; the press
+    // returns the saved overview, so it names no cost, and pressing it spends and writes nothing.
+    await sql`update deck_profiles set dirty = true where deck_id = ${deckId}::uuid`;
+    await openAnalysis(page, href);
+    await page.waitForSelector(`${PAGE} ${banner}`, { timeout: 20_000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    report("1300px · 7d: no note over a list that already has its overview", (await noteIn(page, banner).count()) === 0,
+      `${await noteIn(page, banner).count()} notes`);
+    const runsBefore = await runsOn(deckId);
+    const ledgerBefore = await ledger();
+    await onPage(page, banner).getByRole("button").click();
+    await page.waitForSelector(`${PAGE} ${banner}`, { state: "detached", timeout: 30_000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    const runsAfter = await runsOn(deckId);
+    const ledgerAfter = await ledger();
+    report("…and the press writes nothing and spends nothing", runsAfter === runsBefore && ledgerAfter === ledgerBefore,
+      `runs ${runsBefore} to ${runsAfter}, ledger ${ledgerBefore} to ${ledgerAfter}`);
+
+    // Ruling A: a current reading with no overview offers Write one, with its note (7f).
+    await dropOurs();
+    await openAnalysis(page, href);
+    const writeOne = onPage(page, '[data-testid="synopsis-overview"]').getByRole("button", { name: "Write one" });
+    await page.waitForFunction(() => {
+      const b = [...document.querySelectorAll('[data-testid="synopsis-overview"] button')].find((e) => e.textContent === "Write one");
+      return b && b.getAttribute("aria-disabled") !== "true";
+    }, null, { timeout: 20_000 }).catch(() => {});
+    // Read AT the moment the press enables: an enabled press with no note is a state read for the
+    // reading before (the defect PR 3's probe found).
+    const wnote = await onPage(page, '[data-testid="synopsis-overview"]').innerText().catch(() => "");
+    report("1300px · Write one names the credit it spends", (await writeOne.count()) === 1 && /Uses a credit/.test(wnote), wnote.replace(/\s+/g, " ").slice(0, 120));
+    since = await nowAt();
+    await writeOne.click();
+    await entry.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+    report("…and writes the overview", (await claim(since)) !== null, `${ours.length} run(s) of ours`);
+
+    // 7b, 7e, 7g: every credit out. Analyze and Re-analyze stay enabled (the bracket is free) and
+    // say the overview waits; Write one is disabled. Reached by filling the ledger with rows this
+    // probe owns and deletes in the `finally`.
+    await dropOurs();
+    const filled = await sql`insert into model_calls (user_id, feature, status)
+      select ${userId}, 'synopsis', 'spent' from generate_series(1, 30) returning id`;
+    fills.push(...filled.map((r) => r.id));
+    await openAnalysis(page, href);
+    await page.waitForTimeout(1500);
+    const spentOne = onPage(page, '[data-testid="synopsis-overview"]').getByRole("button", { name: "Write one" });
+    const spentAria = await spentOne.getAttribute("aria-disabled").catch(() => "none");
+    report("1300px · 7g: Write one is disabled with every credit out", spentAria === "true", `aria-disabled ${spentAria}`);
+    await sql`update deck_profiles set dirty = true where deck_id = ${deckId}::uuid`;
+    await openAnalysis(page, href);
+    await page.waitForSelector(`${PAGE} ${banner}`, { timeout: 20_000 }).catch(() => {});
+    await noteIn(page, banner).waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+    const used = await noteIn(page, banner).innerText().catch(() => "");
+    const reOn = await onPage(page, banner).getByRole("button").getAttribute("aria-disabled");
+    report("1300px · 7e: Re-analyze stays enabled and says the overview stays as it was",
+      reOn !== "true" && /^Reads the bracket only; the overview stays as it was\. 0 of/.test(used), `${reOn ?? "enabled"}: ${used}`);
+    await sql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
+    await openAnalysis(page, href);
+    await noteIn(page, empty).waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+    const waits = await noteIn(page, empty).innerText().catch(() => "");
+    const anOn = await onPageRole(page, "button", /^Analyze$/).first().getAttribute("aria-disabled");
+    report("1300px · 7b: Analyze stays enabled and says the overview waits for a credit",
+      anOn !== "true" && /^Reads the bracket only; the overview waits for a credit\. 0 of/.test(waits), waits || "no note");
+    await sql`delete from model_calls where id = any(${fills.splice(0)}::uuid[])`;
     await ctx.close();
 
     // 390: one column, overview first, then the box, then the climb.
     const phone = await browser.newContext({ viewport: PHONE });
     const p = await phone.newPage();
     await signIn(p);
+    // 7a at 390: centred under the full-width button. The deck has no reading and no overview here.
     await openAnalysis(p, href);
-    await p.waitForSelector(`${PAGE} [data-testid="synopsis-overview"]`, { timeout: 20_000 }).catch(() => {});
+    await noteIn(p, empty).waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+    const pn = await p.evaluate((scope) => {
+      const b = [...document.querySelectorAll(`${scope} button`)].find((e) => e.textContent === "Analyze");
+      const n = document.querySelector(`${scope} [data-testid="press-note"]`);
+      if (!b || !n) return null;
+      const br = b.getBoundingClientRect();
+      const nr = n.getBoundingClientRect();
+      return { under: nr.top >= br.bottom, centred: Math.abs((nr.left + nr.right) / 2 - (br.left + br.right) / 2) <= 2, size: getComputedStyle(n).fontSize };
+    }, `${PAGE} ${empty}`);
+    report("390px · the note sits centred under the full-width Analyze, at 9.5px",
+      pn !== null && pn.under && pn.centred && pn.size === "9.5px", JSON.stringify(pn));
+    const since390 = await nowAt();
+    await onPageRole(p, "button", /^Analyze$/).first().click();
+    await onPage(p, '[data-testid="synopsis-overview"]').getByRole("button", { name: /View full overview/ })
+      .waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+    report("390px · Analyze writes the overview too", (await claim(since390)) !== null, `${ours.length} run(s) of ours`);
     const q = await cells(p);
     report("390px · drawn once", (await visibleOverviews(p)) === 1, `${await visibleOverviews(p)} visible`);
     report("390px · overview, then box, then climb",
@@ -275,15 +378,10 @@ async function run() {
     // The overview this run's press wrote, and the credit it spent, so a run leaves neither
     // behind. Found again here rather than trusted from the walk, so a write that landed after a
     // check failed is cleared too.
-    ours = ours ?? (await mine().catch(() => null));
-    if (ours) {
-      for (const row of [ours]) {
-        await sql`delete from deck_synopses where id = ${row.id}::uuid`.catch((e) => report("delete the written overview", false, e.message));
-        if (row.model_call_id) {
-          await sql`delete from model_calls where id = ${row.model_call_id}::uuid`.catch((e) => report("delete its ledger row", false, e.message));
-        }
-      }
-    }
+    // A press whose check failed may have written after the walk last looked: claim it too.
+    if (walked) while (await claim(walkStart).catch(() => null));
+    await dropOurs().catch((e) => report("delete the written overviews", false, e.message));
+    if (fills.length) await sql`delete from model_calls where id = any(${fills}::uuid[])`.catch((e) => report("delete the filled ledger", false, e.message));
     for (const restore of holds) await restore().catch((e) => report("put back the analysis", false, e.message));
     await browser.close();
   }
