@@ -360,4 +360,46 @@ describe("AnalysisPanel", () => {
       expect(screen.queryByText("the overview")).toBeNull();
     });
   });
+  // The credit note beside a press that also writes the overview (CREDITS-overview.md 7a to 7e).
+  describe("the press note", () => {
+    const NOTES = { analyze: "Also writes the overview, using a credit. 2 of 3 left.", reanalyze: "reanalyze note" };
+    const withNotes = (state: ProfileState, legality?: { built: number; size: number }) =>
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={state} onRequest={onRequest} pressNote={NOTES} legality={legality}>
+            <div>{MIX}</div>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+
+    it("draws beside Analyze, and describes it", () => {
+      withNotes({ kind: "idle" });
+      const note = screen.getByTestId("press-note");
+      expect(note.textContent).toBe(NOTES.analyze);
+      expect(screen.getByRole("button", { name: copy.idle.cta }).getAttribute("aria-describedby")).toBe(note.id);
+    });
+
+    it("draws beside Re-analyze on the banner, after the button in the DOM and before it at md", () => {
+      withNotes(ready({ fresh: false }));
+      const banner = screen.getByTestId("analysis-banner");
+      const note = within(banner).getByTestId("press-note");
+      const button = within(banner).getByRole("button");
+      expect(note.textContent).toBe(NOTES.reanalyze);
+      expect(button.getAttribute("aria-describedby")).toBe(note.id);
+      expect(button.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(note.className).toMatch(/md:order-2/);
+      expect(button.className).toMatch(/md:order-3/);
+    });
+
+    // Finding 10b: a blocked press writes nothing, so it names no cost.
+    it("draws no note over a deck that is not whole", () => {
+      withNotes({ kind: "idle" }, { built: 60, size: 99 });
+      expect(screen.queryByTestId("press-note")).toBeNull();
+    });
+
+    it("draws no note where none was handed in", () => {
+      draw({ kind: "idle" });
+      expect(screen.queryByTestId("press-note")).toBeNull();
+    });
+  });
 });

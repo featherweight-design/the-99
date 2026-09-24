@@ -54,7 +54,7 @@ export function SynopsisOverview({
   onRetry: (synopsisId: string) => void;
   /** The banner's Re-analyze, for the modal over a reading that is itself stale (6d), held
    *  exactly as the tab's banner holds it: a short deck or a read in flight cannot press it. */
-  reanalyze: { onPress: () => void; disabled: boolean };
+  reanalyze: { onPress: () => void; disabled: boolean; note: string | null };
 }) {
   const [open, setOpen] = useState(false);
   // The page's art covers the deck; the read's covers every card the overview names, which is how
@@ -167,7 +167,7 @@ export function SynopsisOverview({
           action={stale
             ? readingFresh
               ? { label: synopsisCopy.writeNew, line: null, note, disabled: !canWrite || spent, onPress: onWrite }
-              : { label: deckAnalysisCopy.banner.reanalyze, line: null, note: null, disabled: reanalyze.disabled, onPress: reanalyze.onPress }
+              : { label: deckAnalysisCopy.banner.reanalyze, line: null, note: reanalyze.note, disabled: reanalyze.disabled, onPress: reanalyze.onPress }
             : null}
           onRetry={canWrite && !stale ? () => onRetry(synopsis.id) : null}
           retryNote={retryNote}
