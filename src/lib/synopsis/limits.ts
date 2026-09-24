@@ -23,10 +23,11 @@ if (SYNOPSIS_REAPER_CUTOFF_MS >= RESERVATION_TTL_MS) {
 }
 
 /**
- * One budget across the client's two attempts. 110s, as tuning's (#902): at an 8,000-token ceiling
- * adaptive thinking plus the in-deadline retry runs 83-100s, and `probe:synopsis --live` timed out
- * three calls of five at 90s. The action runs from the deck page, whose `maxDuration` (120s, set by
- * tuning D1) must stay above this or the platform kills the call before it can refund.
+ * One budget across the client's two attempts. 110s, as tuning's (#902). It was sized when the
+ * synopsis ran adaptive thinking at an 8,000-token ceiling (83-100s with the in-deadline retry);
+ * at `effort: "low"` and 3,000 tokens a call runs far shorter, and the budget is kept so the
+ * repair call (contract B) shares it. The action runs from the deck page, whose `maxDuration`
+ * (120s, set by tuning D1) must stay above this or the platform kills the call before it can refund.
  */
 export const SYNOPSIS_DEADLINE_MS = 110_000;
 /**
