@@ -33,6 +33,7 @@ export function AnalysisEmpty({
   onRequest,
   blocked = null,
   note = null,
+  see = null,
 }: {
   phase: "idle" | "loading" | "failed";
   onRequest: () => void;
@@ -47,6 +48,8 @@ export function AnalysisEmpty({
    * under the full-width button at 390. None over a blocked deck (finding 10b).
    */
   note?: string | null;
+  /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
+  see?: { label: string; onPress: () => void } | null;
 }) {
   const noteId = useId();
   const shownNote = blocked === null ? note : null;
@@ -109,11 +112,25 @@ export function AnalysisEmpty({
             </button>
             {shownNote ? (
               <p
-                id={noteId}
                 data-testid="press-note"
                 className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:max-w-[340px] md:text-left md:text-[11px]"
               >
-                {shownNote}
+                {/* The button's description is the note's TEXT: a control inside it would be read as
+                    part of the description, so the id sits on the words alone. */}
+                <span id={noteId}>{shownNote}</span>
+                {see ? (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      onClick={see.onPress}
+                      data-testid="press-note-see"
+                      className="cursor-pointer whitespace-nowrap border-b border-dotted border-[color:var(--accent)] text-[color:var(--accent)] hover:border-[color:var(--accent-hover)] hover:text-[color:var(--accent-hover)]"
+                    >
+                      {see.label} <span aria-hidden="true">→</span>
+                    </button>
+                  </>
+                ) : null}
               </p>
             ) : null}
             {/* With a note in the row, the opener takes its own line under the pair (7a). */}

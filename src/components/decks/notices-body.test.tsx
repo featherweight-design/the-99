@@ -102,6 +102,15 @@ describe("the Notices body", () => {
     expect(within(foot).getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 
+  it("carries the overview check's note on the foot while a legality entry stands, without See which", () => {
+    const note = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+    const { container } = draw({ kind: "reanalyze", busy: false, failed: null, note, onPress: () => {} });
+    const foot = container.querySelector<HTMLElement>("[data-notices-foot='reanalyze']")!;
+    const press = within(foot).getByRole("button", { name: "Re-analyze" });
+    expect(document.getElementById(press.getAttribute("aria-describedby")!)?.textContent).toBe(note);
+    expect(within(foot).queryByRole("button", { name: /See which/ })).toBeNull();
+  });
+
   it("offers the Analysis tab and no second Re-analyze when dirty", () => {
     const { container } = draw({ kind: "toTab", onPress: () => {} });
     const foot = container.querySelector<HTMLElement>("[data-notices-foot='toTab']")!;

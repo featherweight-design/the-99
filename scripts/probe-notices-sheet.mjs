@@ -94,7 +94,7 @@ async function refuseSharedDatabase() {
 // What the run wrote, held ON DISK before each write: the rows it adds, the entries it plants, and
 // the marks and flags it moves (put back as they were).
 const HOLD = path.join(os.tmpdir(), "the99-probe-notices-sheet-hold.json");
-const held = { cards: [], removed: [], seqs: [], marks: null };
+const held = { cards: [], removed: [], seqs: [], marks: null, synopses: [], calls: [] };
 const hold = () => writeFileSync(HOLD, JSON.stringify(held));
 
 /**
@@ -124,6 +124,9 @@ async function restoreHeld() {
       insert into deck_cards (deck_id, oracle_id, quantity) values (${c.deckId}::uuid, ${c.oracleId}::uuid, ${c.quantity})
       on conflict (deck_id, oracle_id) do update set quantity = excluded.quantity`),
     ...(prior.seqs.length ? [() => sql`delete from deck_data_changes where seq = any(${prior.seqs}::bigint[])`] : []),
+    // The planted overview first, then the call it names (its foreign key).
+    ...(prior.synopses?.length ? [() => sql`delete from deck_synopses where id = any(${prior.synopses}::uuid[])`] : []),
+    ...(prior.calls?.length ? [() => sql`delete from model_calls where id = any(${prior.calls}::uuid[])`] : []),
     ...(prior.marks
       ? [
           () => sql`update decks set notices_legal_seen = ${prior.marks.legalSeen}::uuid[] where id = ${prior.marks.deckId}::uuid`,
@@ -204,6 +207,35 @@ async function buildFixture(userId) {
   return { id: deck.id, card: deck.commander_oracle_id };
 }
 
+/**
+ * A SAVED overview on the fixture deck, for the warning line (H3, Q4): the content of an overview
+ * already in the database, stamped for this deck's current list and reading so it reads current,
+ * or with `older` for a list the deck no longer holds, so it reads stale.
+ * Its call is a refunded row, so the allowance does not count it. Both are held before they are
+ * written.
+ */
+async function plantOverview(deckId, userId, { older = false } = {}) {
+  const [source] = await sql`select 1 from deck_synopses where status = 'done' and content is not null limit 1`;
+  if (!source) return false;
+  const [call] = await sql`insert into model_calls (user_id, feature, status) values (${userId}, 'synopsis', 'refunded') returning id`;
+  held.calls.push(call.id);
+  hold();
+  const [row] = await sql`
+    insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content, seen_seq)
+    select ${deckId}::uuid, ${userId}, coalesce(${older ? "probe-older-list" : null}::text, p.fingerprint), s.contract_version, 'probe', ${call.id}::uuid, 'done', s.outcome, s.content, p.seen_seq
+    from deck_profiles p, lateral (
+      select contract_version, outcome, content from deck_synopses
+      where status = 'done' and content is not null order by created_at desc limit 1
+    ) s
+    where p.deck_id = ${deckId}::uuid
+    returning id`;
+  held.synopses.push(row.id);
+  hold();
+  return true;
+}
+
+const CHECK_NOTE = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+
 /** The visible header's chips row: its boxes in order, whether it is one line, and the tag. */
 const READ_HEADER = () => {
   const rows = [...document.querySelectorAll("main [data-spine-chips]")].filter((r) => r.getBoundingClientRect().width > 0);
@@ -275,6 +307,8 @@ async function main() {
         // Each width starts unread.
         await sql`update deck_profiles set notices_read_seq = ${held.marks.readSeq}, dirty = false where deck_id = ${fixture.id}::uuid`;
         await sql`update decks set notices_legal_seen = null where id = ${fixture.id}::uuid`;
+        // The previous width's Re-analyze absorbed every entry planted so far, so this width gets its own.
+        await plant(fixture.card);
       }
       await page.goto(`${BASE}/decks/${fixture.id}`, { waitUntil: "networkidle" });
       await page.waitForFunction(() => [...document.querySelectorAll("main [data-notice-tag]")].some((t) => t.getBoundingClientRect().width > 0), null, { timeout: 20_000 });
@@ -384,6 +418,85 @@ async function main() {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(2500);
       check(`${vp.label} · a sheet closed before its read lands stays closed`, await body.isVisible(), false);
+
+      // 6 · The check before the overview (HANDOFF §6, plan D10). The deck holds the banned card and
+      //     its reading is dirty, so the tab draws the banner, whose note slot reads the check.
+      await onPage(page, '[role="tab"]').filter({ hasText: /analysis/i }).first().click();
+      const banner = onPage(page, "[data-testid='analysis-banner']").filter({ visible: true }).first();
+      await banner.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+      await onPage(page, "[data-testid='overview-withheld']").filter({ visible: true }).first()
+        .waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+      const note = await banner.locator("[data-testid='press-note']").evaluate((p) => ({
+        text: p.querySelector("span[id]")?.textContent ?? null,
+        described: document.querySelector(`[aria-describedby="${p.querySelector("span[id]")?.id}"]`)?.textContent ?? null,
+        see: !!p.querySelector("[data-testid='press-note-see']"),
+      })).catch(() => null);
+      check(`${vp.label} · the banner's note slot reads the check, with See which`, note && [note.text, note.see], [CHECK_NOTE, true]);
+      check(`${vp.label} · the Overview is withheld, with Write one disabled`,
+        await onPage(page, "[data-testid='overview-withheld'] [aria-disabled='true']").filter({ visible: true }).count(), 1);
+      await banner.locator("[data-testid='press-note-see']").click();
+      await body.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      check(`${vp.label} · See which opens Notices`, await body.isVisible(), true);
+      await page.keyboard.press("Escape");
+      await body.waitFor({ state: "hidden" });
+      const spend = async () => (await sql`
+        select (select count(*) from deck_synopses where deck_id = ${fixture.id}::uuid)::int as overviews,
+               (select count(*) from model_calls mc join decks d on d.user_id = mc.user_id where d.id = ${fixture.id}::uuid)::int as calls`)[0];
+      const before6 = await spend();
+      await banner.getByRole("button", { name: "Re-analyze" }).click();
+      await page.waitForFunction(() => ![...document.querySelectorAll("main [data-testid='analysis-banner']")].some((b) => b.getBoundingClientRect().width > 0), null, { timeout: 30_000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+      check(`${vp.label} · Re-analyze on the illegal deck reads the bracket and spends nothing`, await spend(), before6);
+
+      // A SAVED overview stays, whole, under the warning line (H3, Q4). Planted for an OLDER list:
+      // over a fresh reading that is the one state that would otherwise draw ruling D's write, so
+      // "no write" below measures the gate rather than an overview that never offered one.
+      if (await plantOverview(fixture.id, await page.evaluate(() => window.Clerk.user.id), { older: true })) {
+        await page.reload({ waitUntil: "networkidle" });
+        await onPage(page, '[role="tab"]').filter({ hasText: /analysis/i }).first().click();
+        const warning = onPage(page, "[data-testid='overview-warning']").filter({ visible: true }).first();
+        await warning.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        const drawn = await page.evaluate(() => {
+          const w = [...document.querySelectorAll("main [data-testid='overview-warning']")].find((e) => e.getBoundingClientRect().width > 0);
+          const section = w?.closest("[data-testid='synopsis-overview']");
+          const para = section && [...section.querySelectorAll("p")].find((p) => !w.contains(p) && p.textContent.length > 40);
+          return { warning: !!w, above: !!(w && para && w.getBoundingClientRect().bottom <= para.getBoundingClientRect().top + 1),
+            write: section ? [...section.querySelectorAll("button")].some((b) => /Write a new overview/.test(b.textContent)) : null };
+        });
+        check(`${vp.label} · a saved overview stays drawn, under the warning line, with no write`, [drawn.warning, drawn.above, drawn.write], [true, true, false]);
+        await sql`delete from deck_synopses where id = any(${held.synopses}::uuid[])`;
+        await sql`delete from model_calls where id = any(${held.calls}::uuid[])`;
+        held.synopses = []; held.calls = []; hold();
+      } else {
+        failures += 1;
+        console.error(`${vp.label} · no saved overview in the database to plant; the warning line was not measured`);
+      }
+
+      // F13: a SHORT deck holding the card draws `blocked`, and no check note under it.
+      // One COPY leaves the largest row, so a deck padded with one basic row shortens as readily as
+      // a deck of singletons. The row's ORIGINAL quantity is held once: the swap may already hold it.
+      const [short] = await sql`
+        select oracle_id, quantity from deck_cards where deck_id = ${fixture.id}::uuid
+          and oracle_id <> all(${held.cards.map((c) => c.oracleId)}::uuid[])
+        order by quantity desc, oracle_id limit 1`;
+      const heldBefore = held.removed.some((r) => r.oracleId === short.oracle_id);
+      if (!heldBefore) held.removed.push({ deckId: fixture.id, oracleId: short.oracle_id, quantity: short.quantity });
+      hold();
+      if (short.quantity > 1) await sql`update deck_cards set quantity = quantity - 1 where deck_id = ${fixture.id}::uuid and oracle_id = ${short.oracle_id}::uuid`;
+      else await sql`delete from deck_cards where deck_id = ${fixture.id}::uuid and oracle_id = ${short.oracle_id}::uuid`;
+      await page.reload({ waitUntil: "networkidle" });
+      await onPage(page, '[role="tab"]').filter({ hasText: /analysis/i }).first().click();
+      await onPage(page, "[data-testid='analysis-banner']").filter({ visible: true }).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+      const blocked = await page.evaluate(() => {
+        const b = [...document.querySelectorAll("main [data-testid='analysis-banner']")].find((e) => e.getBoundingClientRect().width > 0);
+        return b ? { blocked: !!b.querySelector("button[aria-disabled='true']"), note: !!b.querySelector("[data-testid='press-note']") } : null;
+      });
+      check(`${vp.label} · F13: a short deck draws blocked and no check note`, blocked, { blocked: true, note: false });
+      await sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${fixture.id}::uuid, ${short.oracle_id}::uuid, ${short.quantity})
+        on conflict (deck_id, oracle_id) do update set quantity = excluded.quantity`;
+      if (!heldBefore) held.removed = held.removed.filter((r) => r.oracleId !== short.oracle_id);
+      hold();
       await context.close();
     }
   } finally {

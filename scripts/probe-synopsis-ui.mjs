@@ -18,17 +18,23 @@
 //
 // WRITES, all undone in the `finally`: the walked deck's `deck_profiles` row is held on disk and
 // put back (`profile-hold.mjs`); the overview it writes and the ledger row that paid for it are
-// deleted, so a run neither leaves an overview behind nor spends the account's credit; and the
-// About row `probe:verdict-block` writes. Point it at `local-dev`, never production.
+// deleted, so a run neither leaves an overview behind nor spends the account's credit; the walked
+// deck's cards a legality notice stands for, and any overview it already held, set aside and put
+// back (held on disk first, so a killed run is repaired by the next); and the About row
+// `probe:verdict-block` writes. Point it at `local-dev`, never production.
 //
-//   PROBE_BASE=http://localhost:3010 node scripts/probe-synopsis-ui.mjs
-import { readFileSync } from "node:fs";
+//   PROBE_BASE=http://localhost:3010 pnpm probe:synopsis-ui
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
+// The real rule, not a restatement: run under tsx so a pure module of the app can be imported.
+import { offendingIds, rulesViolations } from "../src/lib/notices/rules-violations.ts";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -115,6 +121,58 @@ async function signIn(page) {
   return userId;
 }
 
+/**
+ * THE FIXTURE HOLD, ON DISK. The walked deck's lifted cards, its Wastes pad and any overview it
+ * already held are written here BEFORE each write that moves them, so a run killed part-way (whose
+ * `finally` never runs) leaves a file the next run restores before it touches anything. Every
+ * restore is idempotent, since a write the file records may never have happened.
+ */
+const HOLD = path.join(os.tmpdir(), "probe-synopsis-ui-hold.json");
+let fixtureHold = { deckId: null, lifted: [], synopses: [], padded: null };
+const saveHold = () => writeFileSync(HOLD, JSON.stringify(fixtureHold));
+
+async function restoreHold() {
+  let prior;
+  try {
+    prior = JSON.parse(readFileSync(HOLD, "utf8"));
+  } catch {
+    return;
+  }
+  const { deckId, lifted, synopses, padded } = prior;
+  const steps = [
+    ["put back the held overviews", () => synopses.length && sql`insert into deck_synopses
+      select * from json_populate_recordset(null::deck_synopses, ${JSON.stringify(synopses)}::json) on conflict (id) do nothing`],
+    ["take back the Wastes pad", () => padded && (padded.quantity === null
+      ? sql`delete from deck_cards where deck_id = ${deckId}::uuid and oracle_id = ${padded.wastes}::uuid`
+      : sql`update deck_cards set quantity = ${padded.quantity} where deck_id = ${deckId}::uuid and oracle_id = ${padded.wastes}::uuid`)],
+    ["put back the lifted cards", () => lifted.length && sql`insert into deck_cards
+      select * from json_populate_recordset(null::deck_cards, ${JSON.stringify(lifted)}::json) on conflict (deck_id, oracle_id) do nothing`],
+  ];
+  let ok = true;
+  // Each on its own: one failing must not skip the rest.
+  for (const [label, step] of steps) {
+    try {
+      await step();
+    } catch (e) {
+      ok = false;
+      report(label, false, e.message);
+    }
+  }
+  if (ok) rmSync(HOLD, { force: true });
+}
+
+/** The cards a legality notice stands for in this deck, by the notices' own rule. */
+async function offending(deckId) {
+  const rows = await sql`select x.oracle_id, x.commander_legal, x.color_identity,
+      (x.oracle_id in (d.commander_oracle_id, d.partner_oracle_id)) as is_commander
+    from decks d join cards x on x.oracle_id in (d.commander_oracle_id, d.partner_oracle_id)
+      or x.oracle_id in (select oracle_id from deck_cards where deck_id = d.id)
+    where d.id = ${deckId}::uuid`;
+  const card = (r) => ({ oracleId: r.oracle_id, commanderLegal: r.commander_legal, colorIdentity: r.color_identity ?? [] });
+  const ids = offendingIds(rulesViolations(rows.filter((r) => !r.is_commander).map(card), rows.filter((r) => r.is_commander).map(card)));
+  return { ids, commander: rows.some((r) => r.is_commander && ids.includes(r.oracle_id)) };
+}
+
 async function deckHrefs(page) {
   await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1200);
@@ -195,25 +253,69 @@ async function run() {
     const ctx = await browser.newContext({ viewport: DESKTOP });
     const page = await ctx.newPage();
     userId = await signIn(page);
+    // A run killed part-way left its hold on disk: put that deck back before choosing one.
+    await restoreHold();
 
-    // A deck with no overview at all, so the first Analyze writes one.
+    // A deck with no overview at all, so the first Analyze writes one. A deck with only UNPINNED
+    // overviews serves too: they are held for the run below and put back, since a pinned one would
+    // lose its pin to the delete's cascade. An empty deck is still preferred.
     let href = null;
-    for (const candidate of (await deckHrefs(page)).slice(0, 12)) {
+    let fallback = null;
+    for (const candidate of await deckHrefs(page)) {
       const [{ n }] = await sql`select count(*)::int as n from deck_synopses where deck_id = ${candidate.split("/")[2]}::uuid`;
       // Enough distinct spells for the stub to write a WHOLE overview: a deck padded with one basic
       // gives it too few cards to name, its primer is refused, and the Mulligan (and its fixed
       // land line) never draws.
       const [{ k }] = await sql`select count(distinct c.oracle_id)::int as k from deck_cards c join cards x using (oracle_id)
         where c.deck_id = ${candidate.split("/")[2]}::uuid and x.type_line not ilike '%Land%'`;
-      if (n === 0 && k >= 5) { href = candidate; break; }
+      // And a commander no legality notice stands for: the body's offending cards are lifted below,
+      // but a commander cannot be.
+      // A WHOLE deck, or Analyze is refused (analysis ruling 1): 99 cards beside one commander, 98
+      // beside a pair. The account holds other lanes' short fixtures too.
+      const [{ whole }] = await sql`select coalesce(sum(c.quantity), 0) + 1 + (d.partner_oracle_id is not null)::int = 100 as whole
+        from decks d left join deck_cards c on c.deck_id = d.id where d.id = ${candidate.split("/")[2]}::uuid group by d.id`;
+      if (k < 5 || !whole || (await offending(candidate.split("/")[2])).commander) continue;
+      if (n === 0) { href = candidate; break; }
+      const [{ pins }] = await sql`select count(*)::int as pins from deck_version_synopses v join deck_synopses s on s.id = v.synopsis_id
+        where s.deck_id = ${candidate.split("/")[2]}::uuid`;
+      if (pins === 0) fallback ??= candidate;
     }
-    if (!report("a deck with no overview, and spells enough for a whole one", href !== null, href ?? "none of the first 12 decks qualifies")) return;
+    href ??= fallback;
+    if (!report("a deck with no overview, and spells enough for a whole one", href !== null, href ?? "no deck on the account qualifies")) return;
     const deckId = href.split("/")[2];
     walked = deckId;
     walkStart = await nowAt();
     holds.push(await holdProfile(sql, deckId));
     await sql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
     console.log(`       (walking ${href})`);
+    // With notices on, a deck holding a card a legality notice stands for withholds a new overview
+    // (deck notices HANDOFF §6), and every check below would measure the refusal instead. Most
+    // fixture decks carry an off-identity card, so those rows are LIFTED for the run: captured into
+    // the cleanup handle BEFORE the delete, and put back in the `finally`.
+    fixtureHold = { deckId, lifted: [], synopses: [], padded: null };
+    fixtureHold.synopses = await sql`select * from deck_synopses where deck_id = ${deckId}::uuid`;
+    saveHold();
+    if (fixtureHold.synopses.length) {
+      await sql`delete from deck_synopses where deck_id = ${deckId}::uuid`;
+      console.log(`       (held ${fixtureHold.synopses.length} overview(s) already on the deck)`);
+    }
+    const { ids: illegal } = await offending(deckId);
+    if (illegal.length) {
+      fixtureHold.lifted = await sql`select * from deck_cards where deck_id = ${deckId}::uuid and oracle_id = any(${illegal}::uuid[])`;
+      saveHold();
+      await sql`delete from deck_cards where deck_id = ${deckId}::uuid and oracle_id = any(${illegal}::uuid[])`;
+      // Padded back to whole with Wastes, or the press is refused (analysis ruling 1). Wastes is
+      // colorless and moves no bracket or legality fact. Its standing row, if any, is captured
+      // first so the `finally` restores that quantity exactly.
+      const [{ oracle_id: wastes }] = await sql`select oracle_id from cards where name = 'Wastes' limit 1`;
+      const [standing] = await sql`select quantity from deck_cards where deck_id = ${deckId}::uuid and oracle_id = ${wastes}::uuid`;
+      fixtureHold.padded = { wastes, quantity: standing?.quantity ?? null };
+      saveHold();
+      const copies = fixtureHold.lifted.reduce((n, r) => n + r.quantity, 0);
+      await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${wastes}::uuid, ${copies})
+        on conflict (deck_id, oracle_id) do update set quantity = deck_cards.quantity + ${copies}`;
+      console.log(`       (lifted ${fixtureHold.lifted.length} row(s) a legality notice stands for)`);
+    }
 
     // Before a reading: no Overview, and no space for one (§6.2).
     await openAnalysis(page, href);
@@ -226,8 +328,14 @@ async function run() {
     report("1300px · Analyze names the credit before it is pressed", /^Also writes the overview, using a credit\./.test(before), before || "no note");
     const analyze = onPageRole(page, "button", /^Analyze$/).first();
     const described = await analyze.getAttribute("aria-describedby");
-    const noteId = await noteIn(page, empty).getAttribute("id").catch(() => null);
-    report("1300px · …and the note describes the press", described !== null && described === noteId, `${described} / ${noteId}`);
+    // The description is the note's own text, on a span inside it, so the See which control the
+    // check note carries is never read as part of it.
+    const describedText = described === null ? null
+      : await noteIn(page, empty).evaluate((note, id) => {
+          const el = document.getElementById(id);
+          return el && note.contains(el) ? el.textContent : null;
+        }, described).catch(() => null);
+    report("1300px · …and the note describes the press", describedText !== null && describedText === before, `${described} / ${describedText}`);
     const ng = await page.evaluate((scope) => {
       const b = [...document.querySelectorAll(`${scope} button`)].find((e) => e.textContent === "Analyze");
       const n = document.querySelector(`${scope} [data-testid="press-note"]`);
@@ -497,6 +605,7 @@ async function run() {
     if (walked) while (await claim(walkStart).catch(() => null));
     await dropOurs().catch((e) => report("delete the written overviews", false, e.message));
     if (fills.length) await sql`delete from model_calls where id = any(${fills}::uuid[])`.catch((e) => report("delete the filled ledger", false, e.message));
+    await restoreHold();
     for (const restore of holds) await restore().catch((e) => report("put back the analysis", false, e.message));
     await browser.close();
   }

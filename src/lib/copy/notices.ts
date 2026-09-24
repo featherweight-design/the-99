@@ -54,4 +54,13 @@ export const deckNoticesCopy = {
       failed: "We couldn’t re-analyze. Your bracket holds as it was.",
     },
   },
+  /** The check before the overview (HANDOFF §6, plan D10): a new overview is withheld while any
+   *  legality entry stands. `warning` is the one line no frame draws (Q4): built from `withheld`'s
+   *  form over a SAVED overview (H3), and its wording goes to /copy-review with the PR's shots. */
+  check: {
+    note: "Reads the bracket only. The overview waits until every card is legal in this deck.",
+    seeWhich: "See which",
+    withheld: "No overview while this deck holds cards that aren’t legal in it.",
+    warning: "This deck holds cards that aren’t legal in it right now. This overview was written before; a new one waits until every card is legal.",
+  },
 } as const;

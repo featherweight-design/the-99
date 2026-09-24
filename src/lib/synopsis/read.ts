@@ -10,6 +10,8 @@ import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { reapSynopses } from "./reaper";
 import { overviewDataMovedFor } from "../notices/overview";
+import { noticesEnabled } from "../notices/flag";
+import { liveOffendingIds } from "../notices/read";
 import type { CheckedSynopsis, SynopsisOutcome } from "./types";
 
 /**
@@ -60,6 +62,12 @@ export type SynopsisState = {
   art: Record<string, string | null>;
   /** A run is in flight on this deck. */
   pending: boolean;
+  /**
+   * The deck holds a card a legality notice stands for (deck notices HANDOFF §6, plan D10). A new
+   * overview is withheld: the write refuses before its reservation, so nothing would spend. A
+   * saved overview stays shown under a warning line (H3).
+   */
+  illegal: boolean;
 };
 
 const FAILED: readonly SynopsisOutcome[] = ["upstream_busy", "timeout", "malformed", "interrupted"];
@@ -77,6 +85,8 @@ export function synopsisStatus(input: {
   allowance: Allowance;
   /** A run in flight: a press now is refused as `in_flight` and writes nothing. */
   pending: boolean;
+  /** The deck holds a card a legality notice stands for: the write refuses, so nothing would spend. */
+  illegal?: boolean;
 }): { stale: boolean; wouldSpend: boolean } {
   const { reading, synopsis, allowance, pending } = input;
   const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list || !!input.dataMoved);
@@ -85,7 +95,8 @@ export function synopsisStatus(input: {
   const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list && !input.dataMoved;
   // Paused (the app-wide cap) or the owner's share used: the reservation refuses, so nothing would spend.
   const refused = !!allowance.paused || !!allowance.ownerShare;
-  const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && allowance.used < allowance.limit;
+  const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && !input.illegal
+    && allowance.used < allowance.limit;
   return { stale, wouldSpend };
 }
 
@@ -107,11 +118,15 @@ export async function readSynopsisState(
   // THE LIVE LIST AND ITS OVERVIEW, from ONE read-only repeatable-read snapshot. The list is two
   // reads (the deck row and its cards), and the overview shown is the one written for that list:
   // read apart, an edit landing between them pairs list A with A's overview while the deck is
-  // already B, and the press note would describe a list that is no longer live.
-  const { live, synopsis } = await db.transaction(async (tx) => {
+  // already B, and the press note would describe a list that is no longer live. Whether that list
+  // holds an illegal card is read in the same snapshot, so the warning never describes another list.
+  // Behind the notices switch: off, no note, withheld form or warning line draws.
+  const { live, synopsis, illegal } = await db.transaction(async (tx) => {
     const head = await readProfileHead(tx, deckId, userId);
     const list = head ? listFingerprint(head) : null;
-    return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx) };
+    const illegal = !!head && noticesEnabled()
+      && (await liveOffendingIds(tx, deckId, [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])])).length > 0;
+    return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx), illegal };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
   const [reading, row, newest, allowance] = await Promise.all([
     readStoredReading(deckId, userId, deps),
@@ -129,6 +144,7 @@ export async function readSynopsisState(
     synopsis,
     allowance,
     pending: newest?.status === "pending",
+    illegal,
   });
   // WHAT BECAME OF THE LAST WRITE describes the list it was written for. Once the list has moved
   // and been analyzed again, that run is history: its failure or refusal is not this list's.
@@ -145,6 +161,7 @@ export async function readSynopsisState(
   return {
     synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRefused, art,
     pending: newest?.status === "pending",
+    illegal,
   };
 }
 

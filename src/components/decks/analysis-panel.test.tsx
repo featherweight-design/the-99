@@ -387,7 +387,10 @@ describe("AnalysisPanel", () => {
       withNotes({ kind: "idle" });
       const note = screen.getByTestId("press-note");
       expect(note.textContent).toBe(NOTES.analyze);
-      expect(screen.getByRole("button", { name: copy.idle.cta }).getAttribute("aria-describedby")).toBe(note.id);
+      // The description is the note's text alone, never the See which control beside it.
+      const described = screen.getByRole("button", { name: copy.idle.cta }).getAttribute("aria-describedby");
+      expect(document.getElementById(described!)?.textContent).toBe(NOTES.analyze);
+      expect(note.contains(document.getElementById(described!))).toBe(true);
     });
 
     it("draws beside Re-analyze on the banner, after the button in the DOM and before it at md", () => {
@@ -396,7 +399,7 @@ describe("AnalysisPanel", () => {
       const note = within(banner).getByTestId("press-note");
       const button = within(banner).getByRole("button");
       expect(note.textContent).toBe(NOTES.reanalyze);
-      expect(button.getAttribute("aria-describedby")).toBe(note.id);
+      expect(document.getElementById(button.getAttribute("aria-describedby")!)?.textContent).toBe(NOTES.reanalyze);
       expect(button.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(note.className).toMatch(/md:order-2/);
       expect(button.className).toMatch(/md:order-3/);

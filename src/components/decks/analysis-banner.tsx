@@ -27,6 +27,7 @@ export function AnalysisBanner({
   blocked,
   onRequest,
   note = null,
+  see = null,
 }: {
   mode: "stale" | "failed";
   busy: boolean;
@@ -34,6 +35,8 @@ export function AnalysisBanner({
   blocked: string | null;
   onRequest: () => void;
   note?: string | null;
+  /** The overview check's *See which →*, after the note (deck notices HANDOFF §6). */
+  see?: { label: string; onPress: () => void } | null;
 }) {
   const copy = deckAnalysisCopy.banner;
   const noteId = useId();
@@ -66,11 +69,25 @@ export function AnalysisBanner({
       </button>
       {shownNote ? (
         <p
-          id={noteId}
           data-testid="press-note"
           className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:order-2 md:max-w-[340px] md:text-right md:text-[11px]"
         >
-          {shownNote}
+          {/* The button's description is the note's TEXT: a control inside it would be read as
+              part of the description, so the id sits on the words alone. */}
+          <span id={noteId}>{shownNote}</span>
+          {see ? (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={see.onPress}
+                data-testid="press-note-see"
+                className="cursor-pointer whitespace-nowrap border-b border-dotted border-[color:var(--accent)] text-[color:var(--accent)] hover:border-[color:var(--accent-hover)] hover:text-[color:var(--accent-hover)]"
+              >
+                {see.label} <span aria-hidden="true">→</span>
+              </button>
+            </>
+          ) : null}
         </p>
       ) : null}
     </div>

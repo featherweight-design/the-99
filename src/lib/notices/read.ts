@@ -169,6 +169,24 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
 }
 
 /**
+ * Whether the deck holds a card a legality notice stands for: not legal in Commander, or outside the
+ * commanders' colors (HANDOFF §6, plan D10). Live, from the deck's current cards, by the rule the
+ * sheet lists them with (`rulesViolations`). The overview's write refuses on it before any
+ * reservation, and the Overview withholds a new one or warns over a saved one. Null when the deck
+ * is not the reader's.
+ */
+export async function holdsIllegalCard(deckId: string, userId: string): Promise<boolean | null> {
+  return db.transaction(async (tx) => {
+    const [deck] = await tx
+      .select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+      .from(decks)
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+    if (!deck) return null;
+    return (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0;
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
+/**
  * The log entries that touch a reading, oldest first. The SQL narrows by the reading's marks (the
  * GIN index serves `<@`); `touches` then applies the whole rule, including the commander-piece
  * clause SQL cannot see, so the read and H1's recompute share one definition.

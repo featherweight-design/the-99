@@ -50,6 +50,7 @@ export function AnalysisPanel({
   opening = "off",
   overview,
   pressNote,
+  pressSee,
   children,
 }: {
   state: ProfileState;
@@ -80,6 +81,9 @@ export function AnalysisPanel({
   /** The credit note beside Analyze (the empty state) and Re-analyze (the banner), when the press
    *  also writes the overview; null where it writes nothing (`synopsis-note.ts`). */
   pressNote?: { analyze: string | null; reanalyze: string | null };
+  /** The overview check's *See which →* after that note, opening Notices (deck notices HANDOFF §6);
+   *  null when the note is the credit note, which carries none. */
+  pressSee?: { label: string; onPress: () => void } | null;
   children: ReactNode;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
@@ -123,6 +127,7 @@ export function AnalysisPanel({
               blocked={blocked}
               onRequest={onRequest}
               note={pressNote?.reanalyze ?? null}
+              see={pressSee ?? null}
             />
           ) : null}
           {/* THE VERDICT IS DRAWN FROM THE READING THE READER ASKED FOR, current or held. `slotDeck`
@@ -144,6 +149,7 @@ export function AnalysisPanel({
           onRequest={onRequest}
           blocked={blocked}
           note={pressNote?.analyze ?? null}
+          see={pressSee ?? null}
         />
       ) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
