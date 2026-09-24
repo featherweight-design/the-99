@@ -58,8 +58,14 @@ for (const run of args.runs.split(",")) {
     groups.set(k, g);
     g.answers += 1;
     g.usd += r.usdRealtime;
-    const kept = r.outcome === "survived" && r.reply && r.keptPositions ? r.keptPositions.map((i) => r.reply!.suggestions[i]) : [];
-    const keyCards = new Set((input.decks[r.deckId]?.keyCards ?? []).map((n) => n.toLowerCase()));
+    // Fail rather than measure nothing: a survived row without its kept positions (a run the
+    // rescorer never saw), or a deck the strategy input has no overview for, would each read as
+    // zero violations.
+    if (r.outcome === "survived" && r.reply && !r.keptPositions) throw new Error(`${run} ${r.deckId} t${r.trial}: a survived row has no keptPositions; run eval:rescore over it first`);
+    const deckInput = input.decks[r.deckId];
+    if (!deckInput) throw new Error(`deck ${r.deckId} has no stored overview in strategy-overviews.json; run eval:strategy-input first`);
+    const kept = r.outcome === "survived" && r.reply ? r.keptPositions!.map((i) => r.reply!.suggestions[i]) : [];
+    const keyCards = new Set(deckInput.keyCards.map((n) => n.toLowerCase()));
     const fills = new Map<string, { n: number; gap: number }>();
     for (const s of kept) {
       g.kept += 1;

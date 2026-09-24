@@ -37,10 +37,12 @@ for (const round of args.reads.split(",")) {
 const db = await connectStaging();
 const { sql } = await import("drizzle-orm");
 const min = Number(args["universal-min"]);
-const universal = ((await db.execute(sql`
+// Qualified per ORACLE card, since `format_staples` is keyed by oracle id and catalog names are not
+// unique; the names are deduplicated only afterwards, for the prompt.
+const universal = [...new Set(((await db.execute(sql`
   select c.name from format_staples fs join cards c on c.oracle_id = fs.oracle_id
-  group by c.name having count(distinct fs.condition) >= ${min} order by c.name
-`)).rows as { name: string }[]).map((r) => r.name);
+  group by fs.oracle_id, c.name having count(distinct fs.condition) >= ${min}
+`)).rows as { name: string }[]).map((r) => r.name))].sort();
 
 const out: StrategyInput = { universal, decks };
 // `runs/` is untracked, so a clean checkout has none until something writes one.
