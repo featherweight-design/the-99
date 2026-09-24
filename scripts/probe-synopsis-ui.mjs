@@ -130,15 +130,22 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   const holds = [];
-  /** The walked deck, and the database instant the walk began: the rows this run may clear are
-   *  the stub's, on that deck, written since. Never every row on the deck: a write from anywhere
-   *  else during the run is not this probe's to erase. */
+  /** The ONE run this probe's press created, found as the first stub run by this account on the
+   *  walked deck after the press began. Cleanup deletes that row and its ledger row and nothing
+   *  else: a write from anywhere else during the run is not this probe's to erase. */
   let walked = null;
-  let since = null;
+  let userId = null;
+  let pressedAt = null;
+  const mine = async () => (walked && pressedAt
+    ? (await sql`select id, model_call_id from deck_synopses
+        where deck_id = ${walked}::uuid and user_id = ${userId} and model = 'stub' and created_at >= ${pressedAt}
+        order by created_at limit 1`)[0] ?? null
+    : null);
+  let ours = null;
   try {
     const ctx = await browser.newContext({ viewport: DESKTOP });
     const page = await ctx.newPage();
-    await signIn(page);
+    userId = await signIn(page);
 
     // A deck with no overview at all, so `Write one` is what the tab offers.
     let href = null;
@@ -149,7 +156,6 @@ async function run() {
     if (!report("a deck with no overview", href !== null, href ?? "every one of the first 12 decks has one")) return;
     const deckId = href.split("/")[2];
     walked = deckId;
-    [{ since }] = await sql`select now() as since`;
     holds.push(await holdProfile(sql, deckId));
     await sql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
     console.log(`       (walking ${href})`);
@@ -177,9 +183,11 @@ async function run() {
     report("1300px · the press names the credit it spends", /Uses a credit/.test(note), note.replace(/\s+/g, " ").slice(0, 120));
 
     // The write, by the Overview's own press.
+    [{ pressedAt }] = await sql`select now() as "pressedAt"`;
     await writeOne.click();
     const entry = onPage(page, '[data-testid="synopsis-overview"]').getByRole("button", { name: /View full overview/ });
     await entry.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+    ours = await mine();
     const rows = await sql`select id, model, status, model_call_id from deck_synopses where deck_id = ${deckId}::uuid`;
     report("the write stored one finished run", rows.length === 1 && rows[0].status === "done", JSON.stringify(rows.map((r) => r.status)));
     report("the model was the stub", rows.every((r) => r.model === "stub"),
@@ -264,13 +272,12 @@ async function run() {
     report("390px · the aside is drawn once, in the body", head.asides === 1, `${head.asides} drawn`);
     await phone.close();
   } finally {
-    // The overview this run wrote, and the credit it spent, so a run leaves neither behind.
-    // Read from the database rather than from what the run saw, so a write that landed after a
-    // check failed is cleared too, and scoped to this run's own stub writes.
-    if (walked) {
-      const rows = await sql`select id, model_call_id from deck_synopses
-        where deck_id = ${walked}::uuid and model = 'stub' and created_at >= ${since}`.catch(() => []);
-      for (const row of rows) {
+    // The overview this run's press wrote, and the credit it spent, so a run leaves neither
+    // behind. Found again here rather than trusted from the walk, so a write that landed after a
+    // check failed is cleared too.
+    ours = ours ?? (await mine().catch(() => null));
+    if (ours) {
+      for (const row of [ours]) {
         await sql`delete from deck_synopses where id = ${row.id}::uuid`.catch((e) => report("delete the written overview", false, e.message));
         if (row.model_call_id) {
           await sql`delete from model_calls where id = ${row.model_call_id}::uuid`.catch((e) => report("delete its ledger row", false, e.message));

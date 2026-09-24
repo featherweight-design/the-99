@@ -77,7 +77,7 @@ export async function readSynopsisState(
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
     readShownSynopsis(deckId, userId),
-    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content })
+    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
       .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
     readAllowance(userId, now),
@@ -89,10 +89,13 @@ export async function readSynopsisState(
     allowance,
     pending: newest?.status === "pending",
   });
-  const lastFailed = !!newest && newest.status === "done"
+  // WHAT BECAME OF THE LAST WRITE describes the list it was written for. Once the list has moved
+  // and been analyzed again, that run is history: its failure or refusal is not this list's.
+  const forThisList = !!newest && !!row && newest.fingerprint === row.list;
+  const lastFailed = forThisList && newest!.status === "done"
     && FAILED.includes(newest.outcome as SynopsisOutcome)
     && (!synopsis || newest.createdAt > synopsis.createdAt);
-  const newer = !!newest && (!synopsis || newest.createdAt > synopsis.createdAt);
+  const newer = forThisList && (!synopsis || newest!.createdAt > synopsis.createdAt);
   const lastRefused = newer && newest!.status === "done" && newest!.outcome === "refused" && newest!.content
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })

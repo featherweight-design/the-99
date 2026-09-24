@@ -364,6 +364,16 @@ async function run() {
   await refusedRun(false, "1 second", "someone-else");
   check("another principal's newer run is not the reader's lastRefused", (await state()).lastRefused, null);
   await fixture.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid and user_id = 'someone-else'`);
+  // Tied to the list: a newer run written for ANOTHER list, failed or refused, is history.
+  await fixture.execute(sql`
+    insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content, created_at)
+    values (${deck.id}::uuid, ${USER}, 'an-older-list', ${SYNOPSIS_CONTRACT_VERSION}, 'probe-stub', ${anyCall.model_call_id}::uuid,
+      'done', 'refused', ${refusedContent(false)}::jsonb, now() + interval '1 second')`);
+  check("a refusal written for another list is not this list's lastRefused", (await state()).lastRefused, null);
+  await fixture.execute(sql`update deck_synopses set outcome = 'timeout', content = null
+    where deck_id = ${deck.id}::uuid and fingerprint = 'an-older-list'`);
+  check("…nor is a failure written for another list this list's lastFailed", (await state()).lastFailed, false);
+  await fixture.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid and fingerprint = 'an-older-list'`);
   await refusedRun(false, "2 seconds");
   check("a newer run refused everywhere sums its sections", (await state()).lastRefused, { failed: 10, total: 16 });
   check("…and the overview on screen stays", (await state()).synopsis?.id ?? null, shownBefore);
