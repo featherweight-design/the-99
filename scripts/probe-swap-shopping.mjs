@@ -16,7 +16,11 @@
  * price so the bands are known: HIGH above $25, MID between $10 and $25, LOW at $10 or under. An
  * unowned card is a Shopping row. A card is taken only when EVERY printing's live non-foil price
  * falls in its band, so the figure the row draws lands in that band whichever printing it reads.
- * The deck is deleted in a `finally`; its `deck_cards` cascade. Needs a server with
+ * The deck is deleted in a `finally`; its `deck_cards` cascade.
+ *
+ * Three mutations fail it: the ring dropped from `BuyTag` (24 checks), the stored limit not read by
+ * the page (the reload never finds `reset to $10`), and the row's desktop `over $X` drawn at every
+ * width (every phone row reads it twice). Needs a server with
  * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
  */
 import { readFileSync } from "node:fs";
