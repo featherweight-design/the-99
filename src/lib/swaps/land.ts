@@ -239,20 +239,22 @@ export function quote(sentence: string, cardName: string): string {
  * Empty means the stand-in gives up nothing, and that is the only way it can say so.
  */
 export function givesUp(original: LandText, standIn: LandText): GivenUp[] {
-  const kept = new Set(
-    nonManaAbilities(standIn)
-      .map((s) => nameAbility(s, standIn.name))
-      .filter((g): g is { kind: "named"; label: string } => g.kind === "named")
-      .map((g) => g.label),
-  );
+  // An ability is the same on both cards when it names the same, or, unnamed, when its words are
+  // the same once each card's own name is set aside: two lands that both "put a storage counter on
+  // this land" share it, and neither gives it up. Keyed on the whole sentence, never the trimmed
+  // quote, so two long abilities that happen to open alike are not taken for one.
+  const key = (sentence: string, name: string) => {
+    const g = nameAbility(sentence, name);
+    return g.kind === "named" ? `named:${g.label}` : `quoted:${sentence.replaceAll(name.toLowerCase(), "this card")}`;
+  };
+  const kept = new Set(nonManaAbilities(standIn).map((s) => key(s, standIn.name)));
   const out: GivenUp[] = [];
   const seen = new Set<string>();
   for (const sentence of nonManaAbilities(original)) {
-    const g = nameAbility(sentence, original.name);
-    const key = g.kind === "named" ? g.label : g.text;
-    if (seen.has(key) || (g.kind === "named" && kept.has(g.label))) continue;
-    seen.add(key);
-    out.push(g);
+    const k = key(sentence, original.name);
+    if (seen.has(k) || kept.has(k)) continue;
+    seen.add(k);
+    out.push(nameAbility(sentence, original.name));
   }
   return out;
 }

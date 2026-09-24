@@ -191,4 +191,13 @@ describe("givesUp (H3)", () => {
   it("keeps an ability the stand-in shares", () => {
     expect(givesUp(FACTORY, FACTORY)).toEqual([]);
   });
+
+  it("keeps a QUOTED ability the stand-in shares, and still gives up one it does not", () => {
+    const ring = L("Mage-Ring Network", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
+    const twin = L("Storage Twin", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
+    expect(givesUp(ring, twin)).toEqual([]);
+    expect(givesUp(ring, L("Wastes", "Basic Land", "({T}: Add {C}.)"))).toEqual([
+      { kind: "quoted", text: "{1}, {t}: put a storage counter on this land" },
+    ]);
+  });
 });

@@ -167,6 +167,18 @@ async function main() {
     cavernList.length > 0 && cavernList.every((s) => s.givesUp.some((g) => g.kind === "named" && g.label === "uncounterable spells")),
     `${cavernList.length}: ${names(cavernList).slice(0, 5).join(", ")}`);
 
+  // 4b. A basic already in the draft is still offered: a deck runs many of one, so the draft
+  //     guard exempts basics, and a basic is always free.
+  const cradle = await card("Gaea's Cradle");
+  const forest = await card("Forest");
+  await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${forest.oracle_id}::uuid, 5), (${deckId}::uuid, ${cradle.oracle_id}::uuid, 1)`);
+  const cradles = await loadStandIns(deckId, USER, cradle.oracle_id);
+  const forestRow = cradles!.free.find((s) => s.card.oracleId === forest.oracle_id);
+  check("basics: a Forest already in the draft is offered for Gaea's Cradle, free, giving up its extra mana",
+    !!forestRow && forestRow.givesUp.some((g) => g.kind === "named" && g.label === "its extra mana"),
+    `free: ${names(cradles!.free).slice(0, 6).join(", ")}`);
+  await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}::uuid and oracle_id in (${forest.oracle_id}::uuid, ${cradle.oracle_id}::uuid)`);
+
   // 5. No job: no stand-in and no guess.
   const none = await loadStandIns(deckId, USER, roleless.oracle_id);
   check("no role: nothing offered", none!.job.kind === "none" && all(none!).length === 0, JSON.stringify(none!.job));

@@ -2,7 +2,8 @@
  * The stand-ins for one card on one deck, read from the database and ranked by `rankStandIns`.
  *
  * GUARDS FIRST, IN SQL (brief §5): every candidate is legal in Commander, inside the commanders'
- * color identity, and not already in the draft. What a candidate is FOR (its colors, the types it
+ * color identity, and not already in the draft. A basic is the exception: a deck runs many of one,
+ * so a Forest already in the draft is still a Forest a take can add (and it is always free). What a candidate is FOR (its colors, the types it
  * finds, its roles) is decided in `stand-ins.ts` over its text, never here.
  *
  * THE SPELL POOL IS BOUNDED, and that is a cost decision rather than a rule. Roughly 19,000 legal
@@ -20,17 +21,29 @@ import { db } from "../../db";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../decks/price-query";
 import { loadUniversalStaples } from "../staples/universal";
-import { jobOf, rankStandIns, type Candidate, type CardRow, type StandInGroups } from "./stand-ins";
+import { jobOf, rankStandIns, type Candidate, type CardRow, type SpellRole, type StandInGroups } from "./stand-ins";
 
 /** How many of the cheapest unlisted spells are read before roles are checked. */
 export const UNLISTED_POOL = 600;
 
 /**
- * A superset of every role's words, for choosing the unlisted pool only. `classifyRoles` decides
- * membership; this keeps the pool from spending its places on cards that could never match.
- * `stand-ins-pool.test.ts` asserts it admits every text `classifyRoles` gives a role.
+ * Each role's words, for choosing the unlisted pool only: `classifyRoles` decides membership, and
+ * these keep the pool's places for cards of the ORIGINAL's roles. Postgres word boundaries (`\m`,
+ * `\M`), because a bare `get` is inside every "target" and a bare `counter` inside every
+ * "+1/+1 counter". `stand-ins-pool.test.ts` asserts each admits every text `classifyRoles` gives
+ * that role, and refuses the near misses.
  */
-export const ROLE_WORDS = "(add|search your library|draw|destroy|exile|counter|damage|get)";
+export const ROLE_WORDS: Record<SpellRole, string> = {
+  ramp: "\\madds?\\M|search your library for [^.]*\\mland",
+  draw: "\\mdraws? (a|one|two|three|four|x) cards?\\M",
+  removal: "\\m(destroy|exile|counter) target\\M|damage to (any target|target creature)|\\mtarget creature gets [-−]",
+  wipes: "\\m(destroy|exile) all\\M|\\mall creatures get [-−]",
+};
+
+/** The pool's words for a set of roles, as one Postgres regular expression. */
+export function roleWords(roles: readonly SpellRole[]): string {
+  return roles.map((r) => `(${ROLE_WORDS[r]})`).join("|");
+}
 
 type Row = {
   oracle_id: string;
@@ -89,7 +102,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const job = jobOf(original);
   const candidates: Row[] = job.kind === "none" ? [] : (await db.execute<Row>(
     job.kind === "spell"
-      ? spellPool({ deck, userId, identity, draft, mv: job.mv, cut: cutOracleId })
+      ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId })
       : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
   )).rows;
 
@@ -162,13 +175,13 @@ function landPool(a: PoolArgs) {
     where c.commander_legal
       and c.color_identity <@ ${a.identity}::text[]
       and c.type_line ~* '^[^/]*\\mland\\M'
-      and c.oracle_id <> all(${a.draft}::uuid[])
+      and (c.oracle_id <> all(${a.draft}::uuid[]) or c.type_line ~* '\\mbasic\\M')
       and c.oracle_id <> ${a.cut}::uuid
   `;
 }
 
 /** The commander's list, the player's own copies, and the cheapest unlisted cards (header). */
-function spellPool(a: PoolArgs & { mv: number }) {
+function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[] }) {
   const guards = (alias: string) => sql.raw(`
     ${alias}.commander_legal
     and ${alias}.type_line !~* '^[^/]*\\mland\\M'
@@ -185,9 +198,11 @@ function spellPool(a: PoolArgs & { mv: number }) {
         and u.color_identity <@ ${a.identity}::text[]
         and u.cmc <= ${a.mv}
         and u.oracle_id <> all(${a.draft}::uuid[])
-        and u.oracle_text ~* ${ROLE_WORDS}
+        and u.oracle_text ~* ${roleWords(a.roles)}
       group by p.oracle_id
-      order by min(coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched)) asc, p.oracle_id
+      -- Ties broken by NAME, the order the sheet draws within a price, so the pool is the first
+      -- rows the sheet would show rather than a uuid-ordered slice of a large tie at the floor.
+      order by min(coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched)) asc, min(u.name)
       limit ${UNLISTED_POOL}
     )
     select ${COLUMNS}
@@ -197,7 +212,7 @@ function spellPool(a: PoolArgs & { mv: number }) {
     where ${guards("c")}
       and c.color_identity <@ ${a.identity}::text[]
       and c.cmc <= ${a.mv}
-      and c.oracle_id <> all(${a.draft}::uuid[])
+      and (c.oracle_id <> all(${a.draft}::uuid[]) or c.type_line ~* '\\mbasic\\M')
       and c.oracle_id <> ${a.cut}::uuid
       and (s.oracle_id is not null or coalesce(o.owned, 0) > 0 or c.oracle_id in (select oracle_id from unlisted))
   `;

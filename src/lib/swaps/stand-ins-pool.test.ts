@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { classifyRoles } from "../recs/roles";
-import { ROLE_WORDS } from "./gather";
+import { ROLE_WORDS, roleWords } from "./gather";
 
 // One text per pattern in `classifyRoles` (roles.ts), each shaped the way the catalog words it. The
 // unlisted pool is chosen by `ROLE_WORDS` in SQL before roles are read, so a role the words miss is
@@ -21,12 +21,25 @@ const TEXTS = [
   "Target creature gets -3/-3 until end of turn.",
 ];
 
+// Postgres word boundaries, spelled for a JavaScript test.
+const js = (pg: string) => new RegExp(pg.replaceAll("\\m", "\\b").replaceAll("\\M", "\\b"), "i");
+
 describe("ROLE_WORDS", () => {
-  it("admits every text classifyRoles gives a role", () => {
-    const words = new RegExp(ROLE_WORDS, "i");
+  it("admits every text classifyRoles gives a role, under that role's own words", () => {
     for (const text of TEXTS) {
-      expect(classifyRoles({ typeLine: "Instant", oracleText: text, keywords: [] }).length, text).toBeGreaterThan(0);
-      expect(words.test(text), text).toBe(true);
+      const roles = classifyRoles({ typeLine: "Instant", oracleText: text, keywords: [] }).filter((r) => r !== "land");
+      expect(roles.length, text).toBeGreaterThan(0);
+      for (const role of roles) expect(js(ROLE_WORDS[role]).test(text), `${role}: ${text}`).toBe(true);
+    }
+  });
+
+  it("refuses the near misses a bare word admitted", () => {
+    for (const text of [
+      "Target creature you control gains flying.",
+      "As an additional cost to cast this spell, discard a card.",
+      "Put a +1/+1 counter on each creature you control.",
+    ]) {
+      expect(js(roleWords(["ramp", "draw", "removal", "wipes"])).test(text), text).toBe(false);
     }
   });
 });
