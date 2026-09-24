@@ -140,6 +140,16 @@ describe("TuningPanel", () => {
     }
   });
 
+  it("never cancels a different run that became current after the watched one", async () => {
+    const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+    const other: TuningState = { ...fresh, run: { ...okRun, id: "r3", status: "pending" } };
+    const d = deps([pending, other, other]);
+    await draw(d);
+    await press(copy.stop);
+    expect(d.cancel).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
+  });
+
   it("claims no stop when the run settled before the cancel reached it", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
     const d = deps([pending, pending, { ...results, run: { ...okRun, id: "r2" } }]);

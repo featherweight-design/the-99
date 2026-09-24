@@ -195,21 +195,29 @@ export function TuningPanel({
     // A press can land before the run's pending row exists, so look for it a few times rather
     // than once: a Stop that found nothing to cancel would let the run spend its credit while
     // telling the reader none was used.
+    // The run this Stop is about: the one on screen when it was pressed, or, when the press beat the
+    // pending row, the first one that appears. Only that id is ever cancelled, so a Stop never
+    // reaches a run another tab started after this one settled.
+    let target = state?.run?.status === "pending" ? state.run.id : null;
     let cancelled = false;
     for (let attempt = 0; attempt < STOP_TRIES && !cancelled; attempt += 1) {
       const current = await deps.read(deckId).catch(() => null);
-      if (current?.run?.status === "pending") {
-        const runId = current.run.id;
-        await deps.cancel(deckId, runId).catch(() => null);
+      const run = current?.run ?? null;
+      if (run?.status === "pending" && (target === null || run.id === target)) {
+        target = run.id;
+        await deps.cancel(deckId, target).catch(() => null);
         // `cancelTuningRun` answers ok whether or not its guarded update matched: a run that
         // settled between the read and the cancel was not stopped, and its credit may be spent.
         // So the answer is read back, and only a run that now reads cancelled was stopped.
         const after = await deps.read(deckId).catch(() => null);
-        cancelled = after?.run?.id === runId && after.run.status === "cancelled";
+        cancelled = after?.run?.id === target && after.run.status === "cancelled";
         // Try again only while THIS run is still pending (the cancel itself failed); a run that
         // settled, or a different run now current, is past stopping.
-        if (cancelled || !(after?.run?.id === runId && after.run.status === "pending")) break;
+        if (cancelled || !(after?.run?.id === target && after.run.status === "pending")) break;
         await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
+      } else if (target !== null) {
+        // The watched run settled, or another run is now current: nothing here to stop.
+        break;
       } else if (attempt < STOP_TRIES - 1) {
         await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
       }
