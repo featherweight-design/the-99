@@ -17,7 +17,8 @@
  * price so the bands are known: HIGH above $25, MID between $10 and $25, LOW at $10 or under. An
  * unowned card is a Shopping row. A card is taken only when EVERY printing's live non-foil price
  * falls in its band, so the figure the row draws lands in that band whichever printing it reads.
- * The deck is deleted in a `finally`; its `deck_cards` cascade.
+ * The deck is deleted in a `finally`; its `deck_cards` cascade. The account's `user_prefs` About
+ * row, raised to clear the gate, is put back as the run found it in that same `finally`.
  *
  * Four mutations fail it: the separator split from the count into its own flex item (the phone's
  * editing state then leaves `·` at the end of the first line), the ring dropped from `BuyTag` (24 checks), the stored limit not read by
@@ -58,6 +59,8 @@ const WIDTHS = [
 ];
 
 let failures = 0;
+/** The About row as the run found it, so the `finally` can put it back. */
+let aboutPrior = null;
 function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   if (!ok) failures += 1;
@@ -94,7 +97,10 @@ async function signIn(page) {
   const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
   if (!userId) throw new Error("Signed in but Clerk reports no user.");
   // Clear the About gate: below the current version `proxy.ts` redirects every route to /about.
+  // What was there is captured first and put back in the `finally`.
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
+  const prior = await pool.query(`select about_version_seen from user_prefs where user_id = $1`, [userId]);
+  aboutPrior = { userId, existed: prior.rowCount > 0, value: prior.rows[0]?.about_version_seen ?? null };
   await pool.query(
     `insert into user_prefs (user_id, about_version_seen) values ($1, $2)
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
@@ -328,6 +334,22 @@ try {
   } catch (error) {
     failures += 1;
     console.error(` FAIL  could not delete fixture deck ${deckId}; remove it by hand (${error?.message ?? error})`);
+  }
+  try {
+    if (aboutPrior) {
+      if (aboutPrior.existed) {
+        await pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`, [
+          aboutPrior.userId,
+          aboutPrior.value,
+        ]);
+      } else {
+        await pool.query(`delete from user_prefs where user_id = $1`, [aboutPrior.userId]);
+      }
+      console.log("About row restored");
+    }
+  } catch (error) {
+    failures += 1;
+    console.error(` FAIL  could not restore the About row (${error?.message ?? error})`);
   } finally {
     try {
       if (browser) await browser.close();

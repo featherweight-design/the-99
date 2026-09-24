@@ -6,7 +6,7 @@
 3. `Shopping View.dc.html` (the JSX `renderVals` and the markup), for exact values.
 4. `swap-tools · copy strings.ts`, for which key each element renders.
 
-**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300, applies from `md`, 768px, up).
+**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300, applies from `md`, 768px, up). **One exception, F12 ruling (b):** a row's `over $X` meta takes the phone's own-line form from `md` up to `lg` (768 to 1023px), and is inline only from `lg`. The row tables below give the `lg` form as Desktop and note the band.
 "same" means the value is identical at both widths. Copy is recorded as the **key rendered**, never as its words.
 
 **R1 → R2 overrides applied in this table:**
@@ -118,7 +118,10 @@
 | white-space | nowrap | nowrap |
 | Rendered while editing | Yes, at the saved limit's count | same |
 
-### Key line (under the line row)
+### Key line (under the line row): DEFERRED to PR 4a
+
+Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the stand-ins sheet in 4a, so `swapToolsCopy.limit.key` does not exist yet. The rows below are the contract 4a builds to.
+
 | Property | Mobile | Desktop |
 |---|---|---|
 | Copy key | Glyph `⇄` + `swapToolsCopy.limit.key` | same |
@@ -210,7 +213,7 @@
 | Property | Mobile | Desktop |
 |---|---|---|
 | Name block layout | Column, justify center, gap 3px, `flex: 1 1 auto`, min-width 0 | Row, align center, gap 6px, `flex: 1 1 auto`, min-width 0 |
-| Meta placement | Second line under the name | Inline on the name's line |
+| Meta placement | Second line under the name | Inline on the name's line (the `over` item alone drops to its own line from `md` to `lg`; see below) |
 | Meta container | flex, align center, gap 5px, min-width 0, `flex: none` | same |
 | Meta items, under | pips · `·` · figure | figure |
 | Meta items, over | pips · `·` · figure · `·` · over | figure · `·` · over |
@@ -228,6 +231,7 @@
 | color | `--warning` | `--warning` |
 | white-space | nowrap | nowrap |
 | Rule amended | The meta line gains a third item beyond the cost and the figure | same |
+| Placement, `md` to `lg` (768–1023px) | — | F12 ruling (b): on its own line under the name, with no preceding `·`. Only an over row wraps; its figure stays beside the name |
 
 ### BuyTag (over-limit ring)
 | Property | Mobile | Desktop |
@@ -304,4 +308,4 @@
 - **Hover, focus, pressed** on the figure button, reset, Save and cancel.
 - **Placement of `limit.invalid`** (named `tooLow` in the handoff; renamed when the field gained its $100,000 ceiling, the wording owed to /copy-review).
 - **A Save pending state.**
-- **The width cost (F12).** At 390 an over row spends a net 35px (44 − 9) of name width, and on desktop every row spends 22px. Design says Plateau keeps "about 131px" of name at 390. The audit requires a probe of the name's width at 390 and at the narrowest 2-up desktop width, with the `over` meta inline.
+- **The width cost (F12).** At 390 an over row spends a net 35px (44 − 9) of name width, and on desktop every row spends 22px. Design says Plateau keeps "about 131px" of name at 390. The audit requires a probe of the name's width at 390 and at the narrowest 2-up desktop width, with the `over` meta inline. Ruled (b): the probe found the inline meta costing the name at 768, so it takes its own line up to `lg`; `probe:swap-shopping` reads the cost at 390, 768, 1024 and 1300.
