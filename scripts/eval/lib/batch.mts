@@ -84,7 +84,7 @@ export async function sendBatch(requests: Sent[], log: (line: string) => void): 
     else if (entry.result.type === "errored") {
       // `ErrorResponse` nests the object (`{ type: "error", error: { type } }`); read the outer
       // type too, so an unexpected shape is classed rather than thrown mid-collection.
-      const e = entry.result.error as { type?: string; error?: { type?: string } };
+      const e = (entry.result.error ?? {}) as { type?: string; error?: { type?: string } };
       const type = e.error?.type ?? e.type ?? "unknown";
       results.push({ customId: entry.custom_id, ok: false, reason: `batch errored: ${type}`, retry: RETRYABLE_ERROR_TYPES.has(type) });
     } else results.push({ customId: entry.custom_id, ok: false, reason: `batch ${entry.result.type}`, retry: true });
