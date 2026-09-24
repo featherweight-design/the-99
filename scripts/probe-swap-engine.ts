@@ -91,10 +91,10 @@ async function main() {
     select oracle_id, name, type_line, oracle_text, keywords, cmc from cards
     where commander_legal and color_identity <@ array['R','G','W'] and type_line ~* 'enchantment' and type_line !~* 'land'
     order by name limit 200`);
-  const roleless = pool.find((c) => jobOf({ oracleId: c.oracle_id, name: c.name, typeLine: c.type_line, oracleText: c.oracle_text, keywords: c.keywords, cmc: Number(c.cmc), imageUri: null }).kind === "none");
-  if (!roleless) throw new Error("no role-less enchantment among the first 200");
-  const roleless = { oracle_id: roleless.oracle_id, color_identity: [] as string[] };
-  console.log(`no-role fixture: ${roleless.name}`);
+  const rolelessRow = pool.find((c) => jobOf({ oracleId: c.oracle_id, name: c.name, typeLine: c.type_line, oracleText: c.oracle_text, keywords: c.keywords, cmc: Number(c.cmc), imageUri: null }).kind === "none");
+  if (!rolelessRow) throw new Error("no role-less enchantment among the first 200");
+  const roleless = { oracle_id: rolelessRow.oracle_id, color_identity: [] as string[] };
+  console.log(`no-role fixture: ${rolelessRow.name}`);
   const deckId = await makeDeck("probe swap engine", commander.oracle_id,
     [plateau.oracle_id, foothills.oracle_id, vault.oracle_id, cavern.oracle_id, roleless.oracle_id]);
   // One owned Command Tower, spoken for by no one: free after a take.
