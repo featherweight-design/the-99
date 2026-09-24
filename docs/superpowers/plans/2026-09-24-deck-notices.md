@@ -43,8 +43,9 @@ These are engineering's, recorded so review does not re-ask them.
   - `kind`: `gameChanger | massLandDenial | extraTurns | combo | rules | notLegal`;
   - `direction`: `added | removed | moved`;
   - `oracle_ids` (uuid[]): every card a deck must hold for the entry to touch it. It is empty for `rules`;
-  - `detail` (jsonb): a combo keeps its card names, `produces` and which piece `must_be_commander` (F16); a rules entry
-    keeps its rule name, what the rule now reads and its version under the JSON key `rulesVersion`;
+  - `detail` (jsonb): a combo keeps its card names (`names`), `produces`, and the pieces that must be the commander
+    under the JSON key `mustBeCommander` (F16; the column it is read from is `spellbook_variant_cards.must_be_commander`);
+    a rules entry keeps its rule name, what the rule now reads and its version under the JSON key `rulesVersion`;
   - `published_at`.
 
   A GIN index covers `oracle_ids`. A unique partial index on `(detail->>'rulesVersion')` where `kind = 'rules'` makes a
@@ -65,7 +66,7 @@ These are engineering's, recorded so review does not re-ask them.
   player's press, never a deploy's rebuild.
 - **D5. How an entry matches a deck.** An entry touches a deck when `entry.oracle_ids <@ profile.analyzed_oracle_ids`
   (every card, so a combo needs every piece) and `entry.seq > profile.seen_seq`. For a combo whose `detail` names a
-  `must_be_commander` piece, that piece must be one of the deck's commanders. Where no GIN form exists, that check runs in
+  `mustBeCommander` piece, that piece must be one of the deck's commanders. Where no GIN form exists, that check runs in
   the TypeScript read. The list is the one the reading ANALYZED: a card added since is the dirty flag's job, and reporting
   it twice would merge the two signals.
 - **D6. Legality is derived live** from the deck's current cards, checked against `commander_legal` and the commanders'
