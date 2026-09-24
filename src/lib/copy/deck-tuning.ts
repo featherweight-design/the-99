@@ -79,12 +79,14 @@ export const deckTuningCopy = {
     noNet: 'No rationale or citation may contain a signed integer or the word "net".',
     denominator:
       'Every count in a rationale or citation must appear with its denominator in the same element: "7 of 9", not "7 games".',
-    citation: "Every suggestion must carry at least one citation naming one of the four read sources.",
+    citation: "Every suggestion must carry at least one citation naming what it read: the games, a note, the decklist, the intent, or the mix.",
     quotedNote: "A quoted note must be byte-identical to what the player typed, in quotation marks, with its date.",
     colourIdentity: "The added card must be legal in the commander\u2019s colour identity.",
     cutInDeck: "The cut card must currently be in the deck.",
     onePair: "Every suggestion is exactly one cut and one add: the deck count never changes.",
     ownershipNotRanking: "Ownership and price may not affect which cards are suggested or their order.",
+    noBracketClaim: "No rationale or citation may name a bracket. The app says when a swap moves one.",
+    noResultClaim: "No rationale or citation may promise a result: not that a swap will win, lose, or make the deck stronger.",
   },
 
   // ── The live region, and the reason beside a refused press ─────────────

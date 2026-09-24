@@ -19,6 +19,7 @@
 //   8  dismiss, then restore
 //   9  only an answer spends a unit
 //  10  saving the intent clears the seeded flag; an over-cap save writes nothing
+//  12  a commit since the run retires the set and reopens the gate; a moved cut no longer applies
 // Case 11, the seeding in `createDeck` (and `fillDeck` declining to seed), needs a session and
 // an EDHREC fetch, so it lives in `src/app/decks/actions.test.ts` against the stubbed driver.
 //
@@ -36,7 +37,7 @@ import { sql } from "drizzle-orm";
 
 import { readAllowance } from "../src/lib/model/allowance";
 import { MODEL_DAILY_ALLOWANCE } from "../src/lib/model/allowance-rule";
-import { readTuningState } from "../src/lib/decks/tuning-read";
+import { readTuningState, tuningInputs } from "../src/lib/decks/tuning-read";
 import { gateReason } from "../src/lib/tuning/gate";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../src/lib/tuning/run-store";
 import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
@@ -142,8 +143,10 @@ function suggestion(c: Catalog, cut = c.body[0]): ValidatedSuggestion {
 }
 
 /** A run that answered, as `runTuning` writes one: started, then persisted. */
-async function answered(userId: string, deckId: string, c: Catalog, fingerprint = "fp", cut?: string) {
-  const started = await startRun(userId, deckId, fingerprint);
+async function answered(
+  userId: string, deckId: string, c: Catalog, fingerprint = "fp", cut?: string, readVersion: number | null = null,
+) {
+  const started = await startRun(userId, deckId, fingerprint, readVersion);
   if (started.kind !== "started") throw new Error(`startRun refused: ${started.kind}`);
   await persistRun(started.runId, [suggestion(c, cut)], 0);
   const [item] = await rows<{ id: string }>(sql`
@@ -160,7 +163,7 @@ async function run() {
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const started = await startRun(u, deck, "fp");
+    const started = await startRun(u, deck, "fp", null);
     if (started.kind !== "started") return fail("case 1 start", started.kind);
     await readTuningState(deck, u, "fp", future(10));
     const wrote = await persistRun(started.runId, [suggestion(c)], 0);
@@ -174,7 +177,7 @@ async function run() {
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const started = await startRun(u, deck, "fp");
+    const started = await startRun(u, deck, "fp", null);
     if (started.kind !== "started") return fail("case 2 start", started.kind);
     check("2 · the Stop lands", await cancelRun(started.runId, deck, u), true);
     const wrote = await finishRun(started.runId, { status: "failed", errorClass: "timeout" });
@@ -188,14 +191,14 @@ async function run() {
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const first = await startRun(u, deck, "fp");
-    const second = await startRun(u, deck, "fp");
+    const first = await startRun(u, deck, "fp", null);
+    const second = await startRun(u, deck, "fp", null);
     check("3 · a second run on the deck is refused as in flight", [first.kind, second.kind], ["started", "in_flight"]);
     check("3 · the loser holds no unit", await units(u), ["reserved"]);
 
     const u2 = newUser();
     const deck2 = await makeDeck(u2, c);
-    const raced = await Promise.all([startRun(u2, deck2, "fp"), startRun(u2, deck2, "fp")]);
+    const raced = await Promise.all([startRun(u2, deck2, "fp", null), startRun(u2, deck2, "fp", null)]);
     check("3 · started together, exactly one starts",
       raced.map((r) => r.kind).sort(), ["in_flight", "started"]);
     check("3 · and exactly one unit is held", await units(u2), ["reserved"]);
@@ -209,7 +212,7 @@ async function run() {
     await fixture.execute(sql`
       insert into model_calls (user_id, feature, status)
       select ${u}, 'tuning', 'spent' from generate_series(1, ${MODEL_DAILY_ALLOWANCE - 1})`);
-    const raced = await Promise.all([startRun(u, deckA, "fp"), startRun(u, deckB, "fp")]);
+    const raced = await Promise.all([startRun(u, deckA, "fp", null), startRun(u, deckB, "fp", null)]);
     check("4 · exactly one of two decks takes the last unit",
       raced.map((r) => r.kind).sort(), ["allowance", "started"]);
     const allowance = await readAllowance(u);
@@ -326,7 +329,7 @@ async function run() {
     const u = newUser();
     const deck = await makeDeck(u, c);
     const before = (await readAllowance(u)).used;
-    const failed = await startRun(u, deck, "fp");
+    const failed = await startRun(u, deck, "fp", null);
     if (failed.kind !== "started") return fail("case 9 start", failed.kind);
     await finishRun(failed.runId, { status: "failed", errorClass: "malformed" });
     check("9 · a failed run gives its unit back", (await runRow(failed.runId))!.unit, "refunded");
@@ -341,6 +344,47 @@ async function run() {
     check("9 · an unchanged deck gates as unchanged", gateReason(same)?.kind ?? null, "unchanged");
     const moved = await readTuningState(deck, u, "fp-2");
     check("9 · a changed deck is stale and ungated", [moved.stale, gateReason(moved)], [true, null]);
+  }
+
+  // 12 · A commit retires the set, and an item the deck has moved past no longer applies.
+  {
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    const insertVersion = (n: number) => fixture.execute(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id)
+      values (${deck}::uuid, ${n}, ${c.legend}::uuid)`);
+    await insertVersion(1);
+    const read = await tuningInputs(deck, u);
+    check("12 · the inputs carry the version they were read at", read?.readVersion ?? null, 1);
+    const { itemId } = await answered(u, deck, c, "fp-v", undefined, read!.readVersion);
+    const before = await readTuningState(deck, u, "fp-v");
+    check("12 · a set with no commit since reads unretired", before.retired, null);
+    check("12 · and its item applies", before.items.map((i) => i.applies), [true]);
+
+    await insertVersion(2);
+    const after = await readTuningState(deck, u, "fp-v");
+    check("12 · a commit since the run retires the set, naming both versions", after.retired, { from: 1, to: 2 });
+    check("12 · and reopens the gate though the list did not move", [after.stale, gateReason(after)], [false, null]);
+
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.body[0]}::uuid`);
+    const moved = await readTuningState(deck, u, "fp-v");
+    check("12 · an item whose cut the deck no longer holds does not apply", moved.items.map((i) => i.applies), [false]);
+    check("12 · and apply refuses it", await applyItem(itemId, u), null);
+  }
+
+  // 12 · A commit landing BETWEEN the read and the run's start still retires the set: the run
+  // records the version it read, not the moment it began.
+  {
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    await fixture.execute(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id) values (${deck}::uuid, 1, ${c.legend}::uuid)`);
+    const read = await tuningInputs(deck, u);
+    await fixture.execute(sql`
+      insert into deck_versions (deck_id, number, commander_oracle_id) values (${deck}::uuid, 2, ${c.legend}::uuid)`);
+    await answered(u, deck, c, "fp-race", undefined, read!.readVersion);
+    check("12 · a commit between the read and the start retires the set",
+      (await readTuningState(deck, u, "fp-race")).retired, { from: 1, to: 2 });
   }
 
   // 10 · The intent.

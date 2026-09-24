@@ -14,7 +14,7 @@ const spent: Allowance = { used: MODEL_DAILY_ALLOWANCE, limit: MODEL_DAILY_ALLOW
 // A deck that has never generated, and has no games: neither is a reason to refuse.
 const fresh: TuningState = {
   run: null, items: [], lastOkFingerprint: null, lastOkAt: null,
-  stale: true, versionMoved: false, allowance: open, gameCount: 0,
+  stale: true, modelVersionMoved: false, retired: null, allowance: open, gameCount: 0,
 };
 const settled: TuningState = { ...fresh, run: run("ok"), lastOkFingerprint: "fp", lastOkAt: at, stale: false };
 
@@ -36,9 +36,15 @@ describe("gateReason", () => {
   });
 
   it("reopens after a prompt or profile version bump, without calling the deck changed", () => {
-    const bumped = { ...settled, versionMoved: true };
+    const bumped = { ...settled, modelVersionMoved: true };
     expect(gateReason(bumped)).toBeNull();
     expect(bumped.stale).toBe(false);
+  });
+
+  // Design's "retired by a commit": a commit with an unchanged list is a new baseline, and its
+  // `Suggest changes` must not be refused as "nothing changed".
+  it("reopens after a deck version is committed, even over an unchanged list", () => {
+    expect(gateReason({ ...settled, retired: { from: 2, to: 3 } })).toBeNull();
   });
 
   it("does not refuse when the last run failed or was cancelled", () => {

@@ -6,6 +6,29 @@
 
 ---
 
+## What C-fix changed under D (2026-09-23)
+
+The placement addendum's audit (`design/design_handoff_the99_deck_tuning/READINESS-addendum-audit.md`,
+findings 3, 4, 6 and 7) landed its engineering half before D. D builds against this contract:
+
+- **Up to five swaps.** `MAX_SUGGESTIONS = 5` (Hugh, 2026-09-23); the panel's copy says "up to five".
+- **A fifth citation kind, `mix`:** `draw 4 of 10`, checked against the pack's own cell.
+- **`TuningState.retired`**, `{ from, to }` or null. A deck version was committed since the newest ok
+  run, which is Design's "retired by a commit" state, so the gate reopens though the list did not
+  move. **`TuningItem.applies`**: the deck still holds the cut and not the add. That is the
+  `no longer applies` row, and the apply refuses one that does not.
+- **`versionMoved` is now `modelVersionMoved`**, named for what moved: the prompt or the profile.
+- **Note dates are quoted in the game log's form** (`26 Aug`), in the prompt and the validator
+  alike. A note citation names the date, and the rationale carries the quotation.
+- **Two more rules**: a rationale may not name a bracket (the app flags one), or promise a result.
+
+**Finding 12 still applies to this file:** r2 removed the consequence and ownership atoms, so the
+card test below asserting `card.notOwned`, the `Complete` status test, and `statusPill` as a
+dependency are retired when D is built. They are left in the text until then, so this diff stays
+about the contract.
+
+---
+
 ### Task 2 (continued): the component-only copy keys — PR D
 
 Add the keys only a component draws — `panel` (`heading`, `ready*`, `stop`, `results*`, `again*`, `tally*`, `unchangedCta`, `improved`), `card`, `announce`, `manifestCopy` — transcribed as Task 2 in the PR B1 file describes, through `/copy-review`, and enable the guard-test cases marked PR D.

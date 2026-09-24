@@ -10,11 +10,12 @@ import {
   deckSuggestionItems,
   deckSuggestionRuns,
   decks,
+  deckVersions,
 } from "../../db/schema";
 import { readAllowance, settleModelCall } from "../model/allowance";
 import { cacheForUser } from "../cache/user-lists";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
-import { loadDeckProfileFromHead, loadProfileHead, type ProfileHead } from "../profile/load";
+import { loadDeckProfileFromHead, readProfileHead, type ProfileHead } from "../profile/load";
 import { PROFILE_VERSION } from "../profile/version";
 import type { Bracket, DeckProfile } from "../profile/types";
 import { bracketAfter } from "../tuning/bracket-shift";
@@ -41,12 +42,24 @@ export type TuningInputs = {
   intent: string | null;
   declared: Bracket | null;
   fingerprint: string;
+  /** The deck's newest version number in the same snapshot as `head`, or null for none. A run
+   *  records it, and a newer version later retires the set. */
+  readVersion: number | null;
 };
 
 /** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
 export async function tuningInputs(deckId: string, userId: string): Promise<TuningInputs | null> {
-  const head = await loadProfileHead(deckId, userId);
-  if (!head) return null;
+  // The head and the version it belongs to, in ONE snapshot: read apart, a commit landing between
+  // them would pair the list before the commit with the version after it.
+  const snapshot = await db.transaction(async (tx) => {
+    const head = await readProfileHead(tx, deckId, userId);
+    if (!head) return null;
+    const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
+      .where(eq(deckVersions.deckId, deckId));
+    return { head, readVersion: v?.n ?? null };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  if (!snapshot) return null;
+  const { head, readVersion } = snapshot;
   const [games, [deck], [upload]] = await Promise.all([
     listDeckGames(deckId, userId),
     db.select({ intent: decks.intent })
@@ -64,7 +77,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     intent,
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
   });
-  return { head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint };
+  return { head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint, readVersion };
 }
 
 /**
@@ -153,6 +166,7 @@ export async function readTuningState(
     }).from(deckSuggestionRuns).where(and(runOf, mine))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     db.select({
+      id: deckSuggestionRuns.id,
       fingerprint: deckSuggestionRuns.inputFingerprint,
       createdAt: deckSuggestionRuns.createdAt,
       promptVersion: deckSuggestionRuns.promptVersion,
@@ -174,7 +188,8 @@ export async function readTuningState(
     lastOkFingerprint: lastOk?.fingerprint ?? null,
     lastOkAt: lastOk?.createdAt ?? null,
     stale: lastOk ? lastOk.fingerprint !== fingerprint : false,
-    versionMoved: lastOk
+    retired: lastOk ? await readRetired(deckId, lastOk.id) : null,
+    modelVersionMoved: lastOk
       ? lastOk.promptVersion !== PROMPT_VERSION || lastOk.profileVersion !== PROFILE_VERSION
       : false,
     allowance,
@@ -182,12 +197,28 @@ export async function readTuningState(
   };
 }
 
+/**
+ * A version newer than the one the run read means the set was read against an older deck.
+ * NUMBERS, not clocks: the run stores the version it read, taken in the same snapshot as its
+ * list, and a commit's `committed_at` (its transaction's start) could never say whether the run
+ * saw it. `from` is null for a deck that had no version when the run read it.
+ */
+async function readRetired(deckId: string, runId: string): Promise<TuningState["retired"]> {
+  const rows = await db.execute<{ newest: number | null; read_version: number | null }>(sql`
+    select (select max(v.number) from ${deckVersions} v where v.deck_id = ${deckId}) as newest,
+           r.read_version
+    from ${deckSuggestionRuns} r where r.id = ${runId}`);
+  const [r] = rows.rows;
+  if (!r || r.newest === null || r.newest <= (r.read_version ?? 0)) return null;
+  return { from: r.read_version, to: r.newest };
+}
+
 async function readItems(runId: string, deckId: string, userId: string): Promise<TuningItem[]> {
   const rows = await db.execute<{
     id: string; add_oracle_id: string; add_name: string; add_type_line: string;
     cut_oracle_id: string; cut_name: string; rationale: string; rationale_short: string;
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
-    bracket_after: number[] | null; owned_quantity: number;
+    bracket_after: number[] | null; owned_quantity: number; applies: boolean;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
@@ -195,7 +226,13 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
            coalesce((
              select sum(ci.quantity) from ${collectionItems} ci
              where ci.user_id = ${userId} and ci.oracle_id = i.add_oracle_id
-           ), 0)::int as owned_quantity
+           ), 0)::int as owned_quantity,
+           -- The swap can still be made: the cut is in the deck, and the add is not (a basic
+           -- may be held already; the apply adds a copy). The apply checks the same rule.
+           (exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
+             and (a.type_line like '%Basic%' or not exists (
+               select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)))
+             as applies
     from ${deckSuggestionItems} i
     join ${cards} a on a.oracle_id = i.add_oracle_id
     join ${cards} c on c.oracle_id = i.cut_oracle_id
@@ -222,6 +259,7 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
       ownedQuantity: r.owned_quantity,
       priceCents: fact ? priceOf(fact, priceState(fact, newestAsOf)) : null,
       bracketAfter: r.bracket_after,
+      applies: r.applies,
     };
   });
 }

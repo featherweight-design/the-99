@@ -42,6 +42,8 @@ export async function startRun(
   userId: string,
   deckId: string,
   fingerprint: string,
+  /** The deck version the run's inputs were read at (`TuningInputs.readVersion`). */
+  readVersion: number | null,
   now: Date = new Date(),
 ): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" }> {
   try {
@@ -51,7 +53,8 @@ export async function startRun(
       const [row] = await tx.insert(deckSuggestionRuns).values({
         deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
         model: TUNING_MODEL, promptVersion: PROMPT_VERSION, profileVersion: PROFILE_VERSION,
-        status: "pending", createdAt: now,
+        readVersion,
+        status: "pending",
       }).returning({ id: deckSuggestionRuns.id });
       return row.id;
     });

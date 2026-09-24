@@ -3,6 +3,7 @@ import type { GameAxisKey } from "../decks/game-axes";
 import { deckTuningCopy } from "../copy/deck-tuning";
 import type { EvidencePack } from "./evidence";
 import { MAX_SUGGESTIONS } from "./limits";
+import { noteDate } from "./note-date";
 
 /**
  * The evidence pack, rendered as the two messages a tuning run sends. Pure string work.
@@ -27,7 +28,11 @@ const SYSTEM = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
   `Propose at most ${MAX_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card. Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.`,
   "Ground every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
-  "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\". One figure per citation. A figure with no name, or one the section does not give, is discarded.",
+  "Cite with one of five kinds: games, note, decklist, intent, mix. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.",
+  "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
+  "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",
+  "An intent citation quotes the player's own words, whole or a part of them.",
+  "A mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".",
   "Name cards exactly as the decklist and the staples list spell them. Never suggest cutting a card marked as a commander.",
   "Rules. A suggestion that breaks any of these is discarded before the player sees it:",
   ...Object.values(deckTuningCopy.suggestionRules).map((rule) => `- ${rule}`),
@@ -74,8 +79,9 @@ function renderPack(pack: EvidencePack): string {
       // NOT wrapped in quotation marks here: a note may itself contain one, and a delimiter that
       // can collide with the text breaks the verbatim boundary. Each note is the whole rest of its
       // line; the model is told to quote it in double quotes, with its date.
-      lines.push("Notes, one per line after the date and colon, verbatim. Quote a note in double quotation marks, byte for byte, with its date:");
-      for (const g of noted) lines.push(`- ${g.playedAt.slice(0, 10)}: ${oneLine(g.note!)}`);
+      lines.push("Notes, one per line after the date and colon, verbatim. Quote a note in double quotation marks, byte for byte, with its date as written here:");
+      const year = pack.year;
+      for (const g of noted) lines.push(`- ${noteDate(g.playedAt, year)}: ${oneLine(g.note!)}`);
     }
   }
 

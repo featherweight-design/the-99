@@ -28,6 +28,7 @@ const pack: EvidencePack = {
     game("g4"), game("g5"),
   ]),
   intent: null,
+  year: 2026,
 };
 
 const CATALOG: Record<string, ResolvedCard> = {
@@ -106,8 +107,8 @@ describe("validateSuggestions", () => {
 
   it("keeps a note quoted in the one-line form the prompt showed it in", () => {
     const broken = { ...pack, play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded\nagain" })]) };
-    const cite = { ...good, rationale: "Mana was marked as hurting in 1 of 1 games.", rationaleShort: "Mana hurt in 1 of 1",
-      evidence: [{ kind: "note" as const, value: 'On 2026-09-01: "flooded again"' }] };
+    const cite = { ...good, rationale: 'Your note from 1 Sep reads "flooded again".', rationaleShort: "Mana hurt in 1 of 1 games",
+      evidence: [{ kind: "note" as const, value: "1 Sep" }] };
     expect(validateSuggestions({ response: { suggestions: [cite] }, pack: broken, resolveName }).droppedCount).toBe(0);
   });
 
@@ -133,12 +134,22 @@ describe("validateSuggestions", () => {
   });
 
   it("keeps a note cited verbatim, in quotation marks, with its date", () => {
-    expect(run({ ...good, evidence: [{ kind: "note", value: '2026-09-01: "flooded out on turn six"' }] }).droppedCount).toBe(0);
+    expect(run({ ...good, evidence: [{ kind: "note", value: '1 Sep: "flooded out on turn six"' }] }).droppedCount).toBe(0);
   });
 
-  it("drops a note citation without its quotation marks or without its date", () => {
-    expect(run({ ...good, evidence: [{ kind: "note", value: "2026-09-01: flooded out on turn six" }] }).drops[0].rule).toBe("citation");
+  // Design's form: the citation names the date, and the rationale carries the quotation.
+  it("keeps a note cited by its date when the rationale quotes it", () => {
+    expect(run({
+      ...good,
+      rationale: 'Your note from 1 Sep reads \u201cflooded out on turn six\u201d.',
+      evidence: [{ kind: "note", value: "1 Sep" }],
+    }).droppedCount).toBe(0);
+  });
+
+  it("drops a note citation that quotes nothing, or names no noted game's date", () => {
+    expect(run({ ...good, evidence: [{ kind: "note", value: "1 Sep: flooded out on turn six" }] }).drops[0].rule).toBe("citation");
     expect(run({ ...good, evidence: [{ kind: "note", value: '"flooded out on turn six"' }] }).drops[0].rule).toBe("citation");
+    expect(run({ ...good, evidence: [{ kind: "note", value: 'ISO 2026-09-01: "flooded out on turn six"' }] }).drops[0].rule).toBe("citation");
   });
 
   it("drops a suggestion that breaks a presentation rule, naming the rule", () => {
@@ -158,5 +169,84 @@ describe("validateSuggestions", () => {
     const out = run(good, { ...good, add: "Nonesuch" }, { ...good, add: "Rampant Growth", cut: "Oxen" });
     expect(out.kept.map((s) => [s.addOracleId, s.position])).toEqual([["cult", 0], ["rg", 1]]);
     expect(out.droppedCount).toBe(1);
+  });
+
+  // ── The addendum's forms (C-fix, audit finding 6) ──────────────────────────────────────
+  const cite = (evidence: TuningSuggestion["evidence"], over: Partial<TuningSuggestion> = {}) =>
+    run({ ...good, ...over, evidence });
+
+  it("keeps a games citation that leaves `games` implied, as Design's `cards in hand · 7 of 9` does", () => {
+    expect(cite([{ kind: "games", value: "mana · 3 of 5" }]).droppedCount).toBe(0);
+    expect(cite([{ kind: "games", value: "mana marked against you in 3 of 5" }]).droppedCount).toBe(0);
+  });
+
+  it("still drops an undirected figure no stated claim carries, and a wrong direction", () => {
+    expect(cite([{ kind: "games", value: "mana · 4 of 5" }]).drops[0].rule).toBe("citation");
+    expect(cite([{ kind: "games", value: "mana worked in 3 of 5" }]).drops[0].rule).toBe("citation");
+    // Design's `0 of 9`, for one card's history the pack never carries: named by nothing.
+    expect(cite([{ kind: "games", value: "0 of 5" }]).drops[0].rule).toBe("citation");
+  });
+
+  it("reads a word numerator as its number", () => {
+    expect(cite([{ kind: "games", value: "won none of the 5 games" }]).droppedCount).toBe(0);
+    expect(cite([{ kind: "games", value: "won one of the 5 games" }]).drops[0].rule).toBe("citation");
+  });
+
+  it("keeps a mix citation that names a target and its exact figure", () => {
+    const withMix = { ...pack, targets: { roles: [
+      { role: "draw" as const, have: 4, target: 10, advisory: false, measured: true },
+    ], thin: false } };
+    const mix = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "mix", value }] }] }, pack: withMix, resolveName,
+    });
+    expect(mix("card draw 4 of 10").droppedCount).toBe(0);
+    expect(mix("card draw 5 of 10").drops[0].rule).toBe("citation");
+    expect(mix("ramp 4 of 10").drops[0].rule).toBe("citation");
+  });
+
+  it("keeps an intent cited in part, as Design cites `win late`", () => {
+    const withIntent = { ...pack, intent: "grind the table out and win late" };
+    const intent = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value }] }] }, pack: withIntent, resolveName,
+    });
+    expect(intent("win late").droppedCount).toBe(0);
+    // In quotation marks it is a QUOTATION, and a quotation is the player's whole line or a
+    // misquote: a part is cited unquoted, as Design cites it.
+    expect(intent("\u201cwin late\u201d").drops[0].rule).toBe("quotedNote");
+    expect(intent("go wide").drops[0].rule).toBe("citation");
+    expect(intent("a").drops[0].rule).toBe("citation");
+  });
+
+  it("refuses a citation naming both directions at once", () => {
+    expect(cite([{ kind: "games", value: "mana worked against you in 3 of 5" }]).drops[0].rule).toBe("citation");
+  });
+
+  it("dates a note citation to its own day, not one that contains it", () => {
+    const two = { ...pack, play: buildPlayGroup([
+      game("g6", { playedAt: new Date("2026-09-06T20:00:00Z"), note: "stuck on lands", hurt: ["mana"] }),
+      game("g16", { playedAt: new Date("2026-09-16T20:00:00Z"), note: "flooded" }),
+    ]) };
+    const quoting = (value: string) => validateSuggestions({ response: { suggestions: [{
+      ...good, rationale: 'Your note from 6 Sep reads "stuck on lands".', rationaleShort: "Mana hurt in 1 of 2 games",
+      evidence: [{ kind: "note", value }],
+    }] }, pack: two, resolveName });
+    expect(quoting("6 Sep").droppedCount).toBe(0);
+    expect(quoting("16 Sep").drops[0].rule).toBe("citation");
+  });
+
+  it("takes an intent part only as whole words", () => {
+    const withIntent = { ...pack, intent: "grind the table out and win late" };
+    const intent = (value: string) => validateSuggestions({
+      response: { suggestions: [{ ...good, evidence: [{ kind: "intent", value }] }] }, pack: withIntent, resolveName,
+    });
+    for (const scrap of ["ate", "d t", "rind"]) expect(intent(scrap).drops[0].rule).toBe("citation");
+    expect(intent("the table").droppedCount).toBe(0);
+  });
+
+  it("does not take a note's quotation from another citation", () => {
+    expect(run({ ...good, evidence: [
+      { kind: "note", value: "1 Sep" },
+      { kind: "decklist", value: '"flooded out on turn six" 1 Sep' },
+    ] }).drops[0].rule).toBe("citation");
   });
 });

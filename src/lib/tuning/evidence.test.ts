@@ -119,4 +119,11 @@ describe("buildEvidencePack", () => {
     expect(pack.play.summary.count).toBe(0);
     expect(pack.intent).toBe("grind it out");
   });
+
+  // The prompt and the validator both read this one figure, so a call crossing a New Year cannot
+  // format a note's date one way and check it another.
+  it("takes the note year once, from the clock it is given", () => {
+    expect(buildEvidencePack({ ...input(), now: new Date("2027-01-01T00:00:01Z") }).year).toBe(2027);
+  });
 });
+
