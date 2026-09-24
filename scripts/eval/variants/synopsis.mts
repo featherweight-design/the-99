@@ -1,4 +1,5 @@
 import type { SynopsisFacts } from "../../../src/lib/synopsis/facts";
+import { CHAR_BUDGETS } from "../../../src/lib/synopsis/limits";
 
 /**
  * Overview variants, each a TRANSFORM of the app's own work and never a copy of it: `facts` runs
@@ -34,6 +35,27 @@ export const SYNOPSIS_VARIANTS: Record<string, SynopsisVariant> = {
       })),
     }),
   },
+};
+
+/**
+ * Round 1 (plan step 2b, applied to every model because the failure is not model-specific). On the
+ * four DEVELOPMENT decks, 12 of 12 calibration answers had Key cards refused `over_budget`: the job
+ * line ran 65 characters at the median against its 60, with 50 of 87 over. The primer failed on
+ * mulligan lines (11 of 55 over 80) and tips (5 of 44 over 176). The budgets are read from
+ * `CHAR_BUDGETS`, never restated, and are never loosened here: this asks for shorter text.
+ */
+const BUDGET_RULES = [
+  "Lengths are counted in characters as the text renders ([[Name]] counts as the name alone). One item over its limit refuses its whole section, so stay well under:",
+  `- a Key card's job: at most ${CHAR_BUDGETS.job} characters; write one short clause of about ${CHAR_BUDGETS.job - 20}. For example: "Ramps two lands a turn off the top." (35).`,
+  `- a mulligan line: at most ${CHAR_BUDGETS.mulligan}; aim for about ${CHAR_BUDGETS.mulligan - 25}.`,
+  `- a tip: at most ${CHAR_BUDGETS.tip}; aim for about ${CHAR_BUDGETS.tip - 50}.`,
+  "Before you answer, count each job, mulligan line and tip, and shorten any that is near or over its limit.",
+].join("\n");
+
+SYNOPSIS_VARIANTS.budgets = {
+  id: "budgets",
+  reason: "Round 1: the character budgets restated with targets under each limit and one worked example. From the dev-deck calibration.",
+  prompt: (m) => ({ system: `${m.system}\n${BUDGET_RULES}`, user: m.user }),
 };
 
 export function applySynopsisVariant(variant: SynopsisVariant, facts: SynopsisFacts, build: (f: SynopsisFacts) => Messages) {
