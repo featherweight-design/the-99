@@ -1,0 +1,60 @@
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
+
+/**
+ * The running spend, kept on disk so it survives every run and every process.
+ *
+ * THE CAP IS CHECKED BEFORE A BATCH IS SENT, against that batch's worst case (`worstCaseUsd`),
+ * never after. A batch is billed whether or not anyone reads its results, so a guard that only
+ * looked at recorded spend would learn it had crossed $25 after the money was gone.
+ *
+ * Two thresholds, from the lane brief: $25 is the hard stop; $15 reached before the run plan is
+ * half done is a stop-and-ask. The second needs the plan's progress, which the caller supplies.
+ */
+export const HARD_CAP_USD = 25;
+export const ASK_AT_USD = 15;
+
+export type LedgerEntry = {
+  at: string;
+  runId: string;
+  /** The batch id, or `realtime:<n>` for a real-time call. */
+  source: string;
+  usd: number;
+  requests: number;
+};
+
+export type Ledger = { entries: LedgerEntry[] };
+
+/**
+ * One JSON line per entry, APPENDED: two runs finishing together each add their line, where a
+ * read-modify-write of one document could drop whichever wrote first.
+ */
+export function readLedger(path: string): Ledger {
+  if (!existsSync(path)) return { entries: [] };
+  return { entries: readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as LedgerEntry) };
+}
+
+export function spent(ledger: Ledger): number {
+  return ledger.entries.reduce((n, e) => n + e.usd, 0);
+}
+
+export function record(path: string, entry: LedgerEntry): Ledger {
+  mkdirSync(dirname(path), { recursive: true });
+  appendFileSync(path, `${JSON.stringify(entry)}\n`);
+  return readLedger(path);
+}
+
+/**
+ * Whether a batch whose worst case is `worstUsd` may be sent. `planDone` is the share of the
+ * approved run plan already complete, 0 to 1. Returns a reason to stop, or null to proceed.
+ */
+export function refusal(ledger: Ledger, worstUsd: number, planDone: number): string | null {
+  const now = spent(ledger);
+  if (now + worstUsd > HARD_CAP_USD) {
+    return `spent $${now.toFixed(2)}; this batch could cost up to $${worstUsd.toFixed(2)}, which would cross the $${HARD_CAP_USD} cap`;
+  }
+  if (now >= ASK_AT_USD && planDone < 0.5) {
+    return `spent $${now.toFixed(2)} with the run plan ${(planDone * 100).toFixed(0)}% done: stop and ask the orchestrator`;
+  }
+  return null;
+}

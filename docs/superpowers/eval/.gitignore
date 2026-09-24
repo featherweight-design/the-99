@@ -1,0 +1,4 @@
+# Raw runs hold every model reply, usage meter and pack. They are local evidence, regenerated
+# by the harness and summarised in metrics-*.md; the ledger and the reports are committed.
+runs/
+ledger.json

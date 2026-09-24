@@ -102,7 +102,10 @@
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
-    "check:tuning": "tsx scripts/check-tuning.ts"
+    "check:tuning": "tsx scripts/check-tuning.ts",
+    "eval:tuning": "tsx scripts/eval/tuning.mts",
+    "eval:report": "tsx scripts/eval/report.mts",
+    "eval:rescore": "tsx scripts/eval/rescore.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
