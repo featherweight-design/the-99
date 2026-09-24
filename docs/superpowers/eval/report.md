@@ -13,9 +13,9 @@ Costs are at real-time prices per answer, with the app's one retry included, unl
 | feature | model and prompt | held-out result | $/accepted |
 |---|---|---|---|
 | Tuning | **Sonnet 5 as shipped (S)**: sonnet-low passed every automatic gate and failed Hugh's blind read, 5–9–1 | survived 98%, 2.80 kept per run | $0.0425 |
-| Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget, with the app's repair | all four sections: 98%, universal staples 0, 78% specific Mulligan lines | $0.051 (S: $6.13) |
+| Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget's second version, with the app's repair | all four sections: 100%, 12% of Mulligan lines dropped (v6: 17%), universal staples 0, 71% specific Mulligan lines | $0.044 (S: $6.13) |
 
-The overview contract (A+B) was Hugh's ruling. The synopsis lane ships the prompt as measured, verified byte-for-byte against the 15 first writes and 37 repair calls. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
+The overview contract (A+B) was Hugh's ruling. The first Mulligan budget went to the synopsis lane as #934 and was held when its pre-open pass found it dropping lines; the second version replaces it. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
 
 ## Tuning
 
@@ -272,8 +272,50 @@ The first version, whose second example named nothing, held the budget on the de
 the specific share fall from 77% to 56%. The second version is the one measured on held-out, and
 it went to the synopsis lane as a patch. It is verified byte for byte: with it, the app's own
 builder reproduces all 15 held-out first-write prompts and all 21 repair prompts the measurement
-sent. One note travels with it: its worked lines contain number words ("two-drop", "three-mana").
-No run hit an `uncomputed_figure` refusal, but they must change if that check ever tightens.
+sent.
+
+**The patch dropped lines no verdict showed.** The synopsis lane's pre-open pass on #934 noticed
+that its worked lines carry number words, and the figures rule reads "three" inside "three-drop".
+Under contract A a mulligan line that fails is DROPPED, and the section still passes while its
+minimum survives, so the all-four verdict never saw it: 21 held-out mulligan lines naming a figure
+the deck lacks were dropped, against none under v6. An earlier draft of this section said no run
+hit an `uncomputed_figure` refusal, which was true of sections and false of lines. From here every
+overview row reports DROPPED LINES per section, read with the validator's own reasons (the lane's
+line checks now restate all of v6's, and `eval:rescore-lines` holds them to `validateSynopsis` on
+every stored answer).
+
+Counted that way, the patch did not raise the drop rate. v6 as shipped already drops 17% of the
+mulligan lines in rendered sections, nearly all for running over budget; the patch drops 15%, most
+for a figure. It changed why lines drop, not how many. #934 was held while a second version was
+measured.
+
+**The second version (`primer-budget-c`)** keeps the budget and fixes the wording:
+- its worked lines carry no number ("[[Sol Ring]] with nothing to cast after it stalls out.");
+- it names "a line of play" again, as the shipped prompt does, instead of narrowing a line to a card
+  or a curve point;
+- its one length target is the app's own, read from `CHAR_BUDGETS`, where the first version said
+  50 beside the prompt's 55.
+
+The bar was set before the run: all four at 95% or better, dropped Mulligan lines at v6's level or
+below, and a specific share above 60%. Held-out, 3 trials, sonnet-low:
+
+| | v6 as shipped | first patch | second version |
+|---|---|---|---|
+| all four sections, after the repair | 89% (40 of 45) | 98% (44 of 45) | **100% (45 of 45)** |
+| first write alone, all four | 33% | 53% | 69% |
+| answers needing the repair | 30 | 21 | 14 |
+| $ per accepted answer | $0.063 | $0.051 | **$0.044** |
+| Mulligan lines dropped, rendered sections | 17% (28 of 168) | 15% (27 of 179) | 12% (22 of 178) |
+| ... of which for a figure the deck lacks | 0 | 21 | 0 |
+| specific Mulligan lines, as drawn | 71% | 78% | 71% |
+| Key-card lines dropped | 6% | 8% | 8% |
+| tips / weaknesses dropped | 4% / 4% | 2% / 5% | 0% / 6% |
+| universal staples as Key cards | 0 of 333 | 0 of 328 | 0 of 330 |
+
+**It passes on all three**, and it is the cheapest of the three, because fewer answers need the
+repair. The dev check before it ($0.19) read the same way: 13% of Mulligan lines dropped, against
+38% on v6 and 23% on the first patch. It went to the synopsis lane to replace #934's text. The
+held-out run and its repair cost $0.98.
 
 ## Allowances
 
