@@ -13,7 +13,7 @@ const standIn = (name: string, free: boolean) => ({
 });
 const READ = {
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
-  free: [standIn("Swords to Plowshares", true)], cheapest: [], byCommander: [], unlisted: [standIn("Chaos Warp", false)],
+  free: [{ ...standIn("Swords to Plowshares", true), soft: 1 }], cheapest: [], byCommander: [], unlisted: [standIn("Chaos Warp", false)],
   original: cardRow("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: asOf,
 } as unknown as StandInsRead;
 
@@ -57,6 +57,10 @@ describe("StandInsSheet", () => {
     const headings = within(sheet).getAllByRole("heading", { level: 4 }).map((h) => h.textContent);
     expect(headings).toEqual([swapToolsCopy.sheet.groupFree, swapToolsCopy.sheet.groupUnlisted("Gishath")]);
     expect(within(sheet).getByText(swapToolsCopy.sheet.free)).toBeInTheDocument();
+    // The free copy a draft holds carries the shipped marker; the row to buy carries none.
+    const swords = within(sheet).getByText("Swords to Plowshares").closest("li")!;
+    expect(swords.textContent).toMatch(/1 in a draft/);
+    expect(within(sheet).getByText("Chaos Warp").closest("li")!.textContent).not.toMatch(/in a draft/);
     expect(within(sheet).getByText(swapToolsCopy.sheet.leadSpellsUnlisted("removal", 2))).toBeInTheDocument();
     expect(within(sheet).getByText(/Cheapest printing of each, from ManaPool/)).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();

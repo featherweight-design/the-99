@@ -21,6 +21,7 @@ import { useSwapTools } from "../../lib/swaps/context";
 import type { StandInsRead } from "../../lib/swaps/gather";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { loadingStatus, sheetModel, type SheetRow } from "../../lib/swaps/sheet-model";
+import { AvailabilityMarker } from "../ui/availability-marker";
 import { Crown } from "../ui/crown";
 import { BuyTag } from "./buy-tag";
 import { ModalChrome } from "./receipt-modal";
@@ -67,6 +68,10 @@ function StandInRow({ row, newestAsOf }: { row: SheetRow; newestAsOf: Date | nul
           >
             {row.name}
           </span>
+          {/* A free copy a draft holds: the shipped marker, read as `soft` (free, owned, held). */}
+          {row.free && row.soft > 0 ? (
+            <AvailabilityMarker availability={{ owned: 1, hard: 0, soft: row.soft, free: 1, claims: [] }} seam="var(--surface-raised)" />
+          ) : null}
         </div>
         <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
           {row.facts.join(" · ")}
