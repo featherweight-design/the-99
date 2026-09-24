@@ -85,14 +85,18 @@ async function main() {
   check("take: bought, one copy out and one in", { ok: bought.ok, free: bought.ok && bought.addWasFree, left: bought.ok && bought.cutLeft },
     { ok: true, free: false, left: 0 });
   check("take: the deck after", await state(deck, plateau, foundry), { cut: null, add: [1, false], proxied: false });
-  check("take: one deck_swaps row, not undone", (await rows(sql`select undone_at from deck_swaps where deck_id = ${deck}::uuid`)).length, 1);
+  check("take: one deck_swaps row, not undone",
+    (await rows<{ undone: boolean }>(sql`select undone_at is not null as undone from deck_swaps where deck_id = ${deck}::uuid`)).map((r) => r.undone),
+    [false]);
 
   // 2. Undo swap puts back exactly what was there, proxy mark included, once.
   if (bought.ok) {
+    // Another reader first, while the swap still stands: after the owner's undo it would read null
+    // for being undone, whoever asked, and prove nothing about ownership.
+    check("undo: another reader cannot", await undoSwap(bought.swapId, "someone-else"), null);
     check("undo: returns the deck", await undoSwap(bought.swapId, USER), deck);
     check("undo: the deck exactly as before", await state(deck, plateau, foundry), before);
     check("undo: a second press does nothing", await undoSwap(bought.swapId, USER), null);
-    check("undo: another reader cannot", await undoSwap(bought.swapId, "someone-else"), null);
   }
 
   // 2b. An undone swap's id stays spent, even when the same take is made again: without that, the
@@ -127,6 +131,8 @@ async function main() {
   // 6. Refusals write nothing, and say why.
   const swapsBefore = await swapCount(deck);
   check("refused: a non-basic the deck already holds", await takeStandIn(deck, USER, vault, sol), { ok: false, reason: "addHeld" });
+  check("refused: a basic in place of itself", await takeStandIn(deck, USER, forest, forest), { ok: false, reason: "addHeld" });
+  check("refused: that basic untouched", await state(deck, forest, forest), { cut: [5, false], add: [5, false], proxied: false });
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${vault}::uuid`);
   check("refused: the cut left in another tab", await takeStandIn(deck, USER, vault, tower), { ok: false, reason: "cutGone" });
   check("refused: another reader's deck", await takeStandIn(deck, "someone-else", plateau, foundry), { ok: false, reason: "notFound" });

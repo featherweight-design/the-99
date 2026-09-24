@@ -53,6 +53,9 @@ async function readRow(tx: Tx, deckId: string, oracleId: string) {
  * suggestion first: an undo can only ever read the deck as it was before this very apply).
  */
 export async function planSwap(tx: Tx, deckId: string, cutOracleId: string, addOracleId: string): Promise<SwapPlan> {
+  // A card cannot stand in for itself. For a basic it would pass every check below, delete the
+  // cut's row and then update a row that is no longer there, leaving a snapshot no undo can match.
+  if (cutOracleId === addOracleId) return { ok: false, reason: "addHeld" };
   const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
     .from(decks).where(eq(decks.id, deckId));
   const cut = await readRow(tx, deckId, cutOracleId);
