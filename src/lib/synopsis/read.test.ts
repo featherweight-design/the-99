@@ -4,8 +4,9 @@ vi.mock("../../db", () => ({ db: {} }));
 
 import { synopsisStatus } from "./read";
 
-const left = { used: 1, limit: 5, reopensAt: null };
-const spent = { used: 5, limit: 5, reopensAt: new Date() };
+// \`nextAt\` follows the allowance rule: set whenever a credit is in use, whether or not any are left.
+const left = { used: 1, limit: 5, reopensAt: null, nextAt: new Date() };
+const spent = { used: 5, limit: 5, reopensAt: new Date(), nextAt: new Date() };
 
 describe("synopsisStatus", () => {
   it("reads a synopsis for the analyzed list as current, and spends nothing to press", () => {
