@@ -46,6 +46,26 @@ export async function openSynopsis() {
     return out;
   }
 
+  /**
+   * The facts a stored run was scored against, rebuilt from staging with the CURRENT `factsFor`, so
+   * a stored answer can be re-validated after a facts fix with no new model call. Each rebuilt
+   * deck is compared to the stored one field by field, and every field that moved is named: a
+   * fix to `figures` should move `figures` alone, and anything else moving means the deck itself
+   * changed on staging since the run, which the caller reports rather than hides.
+   */
+  async function freshFacts(stored: ReadonlyMap<string, SynopsisFacts>, variant: SynopsisVariant) {
+    const facts = new Map<string, SynopsisFacts>();
+    const moved = new Map<string, number>();
+    for (const p of await prepare([...stored.keys()], variant)) {
+      facts.set(p.deckId, p.facts);
+      const before = stored.get(p.deckId) as Record<string, unknown>;
+      for (const [k, v] of Object.entries(p.facts)) {
+        if (JSON.stringify(v) !== JSON.stringify(before[k])) moved.set(k, (moved.get(k) ?? 0) + 1);
+      }
+    }
+    return { facts, moved };
+  }
+
   /** The accept contract, with the app's own catalog read for names Weaknesses uses. */
   async function score(facts: SynopsisFacts, reply: SynopsisResponse) {
     const checked = validateSynopsis(reply, facts, await catalogFor(reply, facts));
@@ -64,6 +84,7 @@ export async function openSynopsis() {
     split: splitDecks(deckRows.map((d) => d.id)),
     nameOf: new Map(deckRows.map((d) => [d.id, d.name])),
     prepare,
+    freshFacts,
     score,
     /** The app's own catalog read for names Weaknesses uses, for re-scoring a stored reply. */
     catalog: (reply: SynopsisResponse, facts: SynopsisFacts) => catalogFor(reply, facts),

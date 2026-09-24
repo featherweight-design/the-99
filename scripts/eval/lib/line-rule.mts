@@ -107,3 +107,10 @@ export function dropLineRule(reply: SynopsisResponse, facts: SynopsisFacts, cata
     weaknesses: reply.weaknesses.length <= SECTION_COUNTS.weaknesses.max && reply.weaknesses.filter(c.weakness).length >= min.weaknesses,
   };
 }
+
+/** Mulligan lines naming a figure the facts do not carry: the lines `uncomputed_figure` refuses. */
+export function mulliganFigureFailures(reply: SynopsisResponse, facts: SynopsisFacts): number {
+  const allowed = new Set(facts.figures);
+  const { keep, sendBack } = reply.primer.mulligan;
+  return [...keep, ...sendBack].filter((t) => !figuresIn(t).every((n) => allowed.has(n))).length;
+}

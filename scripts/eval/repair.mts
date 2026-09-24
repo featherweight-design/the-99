@@ -16,15 +16,20 @@
  * is an approximation in one direction worth naming — B's repair asks for every section the
  * SHIPPED rule refused, a superset of what A+B would ask for — and A+B charges a repair only to
  * answers the drop-line rule still fails.
+ *
+ * `--rescore <repairRunId>` sends nothing: it re-reads that run's stored repair replies and scores
+ * everything again, and with `--fresh-facts` against facts rebuilt by the CURRENT `factsFor`, so a
+ * facts fix is measured on all four contracts for free.
  */
 import "../lib/env.mjs";
 
-import { appendFileSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import { DESIGN_MINIMUMS, dropLineRule, type SectionPass } from "./lib/line-rule.mjs";
-import { buildParams } from "./lib/request.mjs";
-import { commonRow, parseCell, ROOT, runRequests } from "./lib/run.mjs";
+import type { Got } from "./lib/batch.mjs";
+import { buildParams, parseReply } from "./lib/request.mjs";
+import { commonRow, parseCell, ROOT, runRequests, type Answer } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
 import { applySynopsisVariant, SYNOPSIS_VARIANTS } from "./variants/synopsis.mjs";
 
@@ -35,6 +40,8 @@ const { values: args } = parseArgs({
     variant: { type: "string", default: "base" },
     "dry-run": { type: "boolean", default: false },
     "plan-done": { type: "string", default: "0.9" },
+    rescore: { type: "string" },
+    "fresh-facts": { type: "boolean", default: false },
   },
 });
 if (!args.from || !args.cell) throw new Error("eval:repair needs --from <runId> and --cell");
@@ -48,8 +55,14 @@ type Reply = import("../../src/lib/synopsis/response-schema").SynopsisResponse;
 type SectionId = import("../../src/lib/synopsis/types").SectionId;
 
 const dir = new URL(`runs/${args.from}/`, ROOT);
-const factsOf = new Map((JSON.parse(readFileSync(new URL("prepared.json", dir), "utf8")) as { deckId: string; facts: Facts }[]).map((p) => [p.deckId, p.facts]));
+let factsOf = new Map((JSON.parse(readFileSync(new URL("prepared.json", dir), "utf8")) as { deckId: string; facts: Facts }[]).map((p) => [p.deckId, p.facts]));
 const variant = SYNOPSIS_VARIANTS[args.variant!];
+if (args["fresh-facts"]) {
+  if (!args.rescore) throw new Error("eval:repair: --fresh-facts only re-scores (--rescore); a new repair is always sent against the facts the first write saw");
+  const fresh = await app.freshFacts(factsOf, variant);
+  log(`facts rebuilt with the current factsFor; fields that moved: ${[...fresh.moved].map(([k, n]) => `${k} on ${n} decks`).join(", ") || "none"}`);
+  factsOf = fresh.facts;
+}
 const cell = parseCell(args.cell, app.model);
 type Row = { deckId: string; trial: number; cell: string; variant: string; reply: Reply | null; usdRealtime: number; set: string };
 const rows = readFileSync(new URL("rows.jsonl", dir), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row)
@@ -77,7 +90,44 @@ const first = toRepair.map((f, i) => {
 });
 log(`${toRepair.length} of ${rows.length} answers had a refused section and get one repair call`);
 
-const run = await runRequests({
+/**
+ * A stored repair run's replies, parsed as the run parsed them: first attempt, then the retry.
+ * Keyed through that run's OWN prepared list, since custom ids are positions in the list of
+ * answers repaired then, and fresh facts can change which answers would be repaired now.
+ */
+function storedAnswers(runId: string) {
+  const runDir = new URL(`runs/${runId}/`, ROOT);
+  const attempts = new Map<string, Got[]>();
+  for (const pass of ["a1", "a2"]) {
+    const f = new URL(`raw-${pass}.jsonl`, runDir);
+    if (!existsSync(f)) continue;
+    for (const g of readFileSync(f, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Got)) {
+      const id = g.customId.replace(/-r$/, "");
+      attempts.set(id, [...(attempts.get(id) ?? []), g]);
+    }
+  }
+  const sent = JSON.parse(readFileSync(new URL("prepared.json", runDir), "utf8")) as { deckId: string; trial: number; refused: SectionId[] }[];
+  const answers = new Map<string, Answer<Reply>>();
+  const byAnswer = new Map<string, { answer: Answer<Reply>; refused: SectionId[] }>();
+  sent.forEach((p, i) => {
+    const customId = `repair-d${String(i).padStart(3, "0")}`;
+    const tries = attempts.get(customId) ?? [];
+    let value: Reply | null = null;
+    let malformed: string | null = "no reply";
+    for (const t of tries) {
+      if (!t.ok) { malformed = `upstream: ${t.reason}`; continue; }
+      const p = parseReply(app.schema, t.message);
+      if (p.ok) { value = p.value; malformed = null; break; }
+      malformed = p.reason;
+    }
+    answers.set(customId, { attempts: tries, value, malformed });
+    byAnswer.set(`${p.deckId}|${p.trial}`, { answer: { attempts: tries, value, malformed }, refused: p.refused });
+  });
+  return { runId, dir: runDir, answers, byAnswer };
+}
+
+const stored = args.rescore ? storedAnswers(args.rescore) : null;
+const run = stored ?? await runRequests({
   feature: "synopsis",
   label: `repair-${args.cell}-${args.variant}`,
   first,
@@ -91,12 +141,18 @@ const run = await runRequests({
 });
 if (!run) process.exit(args["dry-run"] ? 0 : 2);
 
-const out = new URL("rows.jsonl", run.dir);
+// A re-score writes nothing: the run's own rows stay what was measured when it was sent.
+const out = args.rescore ? null : new URL("rows.jsonl", run.dir);
 const tally = { shipped: [0, 0], a: [0, 0], b: [0, 0], ab: [0, 0] } as Record<string, [number, number]>;
 const add = (k: string, passed: boolean, usdOfAnswer: number) => { tally[k][0] += passed ? 1 : 0; tally[k][1] += usdOfAnswer; };
 const allPass = (p: SectionPass) => Object.values(p).every(Boolean);
-const repaired = new Map<string, { answer: Parameters<typeof commonRow>[1]; customId: string }>();
-for (const [customId, answer] of run.answers) repaired.set(`${keys.get(customId)!.row.deckId}|${keys.get(customId)!.row.trial}`, { answer, customId });
+// Each repaired answer, with the sections its repair was asked for.
+const repaired = new Map<string, { answer: Answer<unknown>; refused: SectionId[] }>();
+if (stored) for (const [k, v] of stored.byAnswer) repaired.set(k, v);
+else for (const [customId, answer] of run.answers) {
+  const f = keys.get(customId)!;
+  repaired.set(`${f.row.deckId}|${f.row.trial}`, { answer, refused: f.refused });
+}
 for (const f of firsts) {
   const before = !!f.checked && f.refused.length === 0;
   const rep = repaired.get(`${f.row.deckId}|${f.row.trial}`);
@@ -108,12 +164,15 @@ for (const f of firsts) {
   let repairDrop: SectionPass | null = null;
   if (rep) {
     repairRow = commonRow(cell, rep.answer, false, app.maxTokens);
+    // Only a section refused now AND repaired then takes the repair's version: under fresh facts a
+    // section the repair rewrote may pass on the first answer, and that one is kept.
+    const retaken = rep.refused.filter((s) => f.refused.includes(s));
     if (rep.answer.value) {
       const value = rep.answer.value as Reply;
       const catalog = await app.catalog(value, facts);
       const fresh = app.validate(value, facts, catalog);
       repairDrop = dropLineRule(value, facts, catalog, DESIGN_MINIMUMS);
-      const merged = mergeRetry(f.checked!, fresh, f.refused).content;
+      const merged = mergeRetry(f.checked!, fresh, retaken).content;
       mergedVerdicts = merged.verdicts;
       after = merged.verdicts.every((v) => v.status === "ok");
     }
@@ -121,12 +180,12 @@ for (const f of firsts) {
   const firstUsd = f.row.usdRealtime;
   const repairUsd = (repairRow.usdRealtime as number | undefined) ?? 0;
   const aPass = !!firstDrop && allPass(firstDrop);
-  const abPass = aPass || (!!firstDrop && (Object.keys(firstDrop) as SectionId[]).every((s) => firstDrop[s] || (f.refused.includes(s) && !!repairDrop?.[s])));
+  const abPass = aPass || (!!firstDrop && (Object.keys(firstDrop) as SectionId[]).every((s) => firstDrop[s] || (!!rep?.refused.includes(s) && !!repairDrop?.[s])));
   add("shipped", before, firstUsd);
   add("a", aPass, firstUsd);
   add("b", after, firstUsd + repairUsd);
   add("ab", abPass, firstUsd + (aPass ? 0 : repairUsd));
-  appendFileSync(out, `${JSON.stringify({
+  if (out) appendFileSync(out, `${JSON.stringify({
     runId: run.runId, feature: "synopsis-repair", from: args.from, cell: args.cell, variant: args.variant, set: f.row.set,
     deckId: f.row.deckId, trial: f.row.trial, firstUsdRealtime: f.row.usdRealtime, repair: repairRow,
     passedBefore: before, passedAfter: after, verdictsAfter: mergedVerdicts, dropLineFirst: firstDrop, dropLineRepair: repairDrop, passedA: aPass, passedAB: abPass,
