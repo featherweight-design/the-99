@@ -12,30 +12,47 @@
 //   c  with the variable unset, the would-be owner gets 3
 //   d  the hard stop: app-wide month-to-date one worst case under $20 still reserves; that
 //      reservation reaches $20, and the next press, anyone's, is refused `paused`
-//   e  a refunded call does not count: a $50 refund leaves the app unpaused
+//   i  a STOPPED call (refunded at once, no meters yet) still counts at its worst case, since its
+//      upstream call keeps billing; a refunded row with no cost stops counting past its TTL
+//   j  a LATE OUTCOME writes its meters onto the refunded row, its real bill replaces its worst
+//      case, and a second write changes nothing
+//   e  a refunded call's RECORDED cost counts toward the month and can pause the app: credits
+//      count successes, dollars count everything billed
 //   f  the owner's share: the owner is refused `ownerShare` while a friend still reserves
-//   g  a settle writes tokens, model and cost; a refund writes them too, and its cost counts for
-//      nothing; a settle with no usage writes no meters
-//   h  the alarm: a settle carrying app-wide spend over a line reports it exactly once, and a
-//      settle that crosses nothing reports nothing
+//   g  a settle writes tokens, model and cost; a refund writes them too, and its cost is counted;
+//      a settle with no usage writes no meters
+//   h  the alarm: a settle carrying app-wide billed spend over a line reports it exactly once, and
+//      a settle that crosses nothing reports nothing
+// The tuning and synopsis LATE-OUTCOME paths (an outcome landing after a Stop or the reaper) are
+// proved where those writers are: `probe:tuning-run` cases 1 and 2, `probe:synopsis` 8b.
 //
 // MONTH-TO-DATE IS APP-WIDE, so every row on the database counts, not only this run's. The
 // seeded cases read the current figure first and seed RELATIVE to it, and every seeded row is
-// deleted as soon as its case ends, again in the `finally`.
+// deleted as soon as its case ends, again in the `finally`. A second process writing
+// `model_calls` on the same database while this runs moves the figure under it; run it alone.
 //
-// Five mutations, each run against this probe (file copied to the scratchpad, broken by an exact
-// replace, run, restored by copying back), and each fails it:
+// Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
+// restored by copying back), and each fails it:
 //   - the friend/owner limit (`dailyLimitFor` returns the friend's 3 for everyone): fails
 //     b "the owner's ten reserve" and b "and reads a limit of ten".
 //   - the hard stop (`spendRefusal` never returns "paused"): fails d "the next press is refused
-//     paused" and d "readAllowance says paused".
-//   - excluding refunded rows (the month's spent sum in `monthSpend` reads `refunded` too): fails
-//     e "a $50 refund does not pause the app", d "one worst case under $20 still reserves" and
-//     d "refunding the reservation reopens it".
+//     paused", d "readAllowance says paused", and every i and e check that expects `paused`.
+//   - a refunded call's recorded cost counted (`monthSpend`'s priced sum back to `spent` rows
+//     only): fails e "a refunded call's recorded cost counts toward the month".
+//   - a refunded call with no cost counted at worst case (`countsAtWorstCase` admits `reserved`
+//     alone): fails i "a Stopped call ... still counts at its worst case" (and, downstream, j, i
+//     and e, since the reservation it let through is never settled).
+//   - the null guard (`recordModelUsage` writes whatever the row holds): fails j "and a second
+//     write does not change them" (and the checks after it, on the inflated bill).
+//   - settle sharing the meter writer (`settleModelCall` never calls `recordModelUsage`): fails
+//     g's three meter checks and h "reports it exactly once".
 //   - the owner share (`spendRefusal` ignores `ownerMonthMicro`): fails f "then the owner is
 //     refused ownerShare" and f "readAllowance says ownerShare for the owner".
 //   - the alarm crossing (`crossedAlarms` drops its `before < line` half): fails h "a settle past
 //     the line reports nothing".
+// And in the writers' own probes: `finishRun`'s late record removed fails probe:tuning-run
+// "2 · and still records what it billed on the unit"; `persistRun`'s fails "1 · and still records
+// ..."; the synopsis `finishRun`'s fails probe:synopsis "…and still records the late call's meters".
 //
 // It writes `model_calls` rows under per-run `user_id`s and deletes them in a `finally`. Point it
 // at `local-dev` or a scratch Neon branch, NEVER staging or production: it refuses staging's branch.
@@ -49,17 +66,18 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
-import { dailyLimitFor, readAllowance, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
+import { dailyLimitFor, readAllowance, recordModelUsage, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
 import type { ModelUsage } from "../src/lib/model/client";
 import { costMicroUsd, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
 import {
   HARD_STOP_USD,
   monthStartUtc,
   OWNER_SHARE_USD,
-  reservedWorstCaseMicro,
+  unpricedWorstCaseMicro,
   usdToMicro,
-  type LiveReservation,
+  type UnpricedCall,
 } from "../src/lib/model/spend-rule";
+import { RESERVATION_TTL_MS } from "../src/lib/model/allowance-rule";
 import { TUNING_MODEL } from "../src/lib/tuning/limits";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
@@ -97,7 +115,7 @@ const refundAll = (userId: string) => fixture.execute(sql`
   update model_calls set status = 'refunded' where user_id = ${userId} and status = 'reserved'`);
 
 /** A row the probe writes directly, this month. Returns its id so the case can delete it. */
-async function seed(userId: string, status: "spent" | "refunded", costMicro: number): Promise<string> {
+async function seed(userId: string, status: "spent" | "refunded", costMicro: number | null): Promise<string> {
   const [row] = await rows<{ id: string }>(sql`
     insert into model_calls (user_id, feature, status, model, cost_micro_usd)
     values (${userId}, 'tuning', ${status}, ${TUNING_MODEL}, ${costMicro}) returning id`);
@@ -107,24 +125,25 @@ const unseed = (ids: string[]) => ids.length
   ? fixture.execute(sql`delete from model_calls where id in (${sql.join(ids.map((id) => sql`${id}::uuid`), sql`, `)})`)
   : Promise.resolve();
 
-/** App-wide spent cost this month, micro-dollars. */
-async function spentMonth(): Promise<number> {
+/** App-wide BILLED cost this month, micro-dollars: every recorded cost, spent or refunded. */
+async function billedMonth(): Promise<number> {
   const [r] = await rows<{ s: string }>(sql`
     select coalesce(sum(cost_micro_usd), 0)::text as s from model_calls
-    where status = 'spent' and created_at >= ${monthStartUtc(new Date()).toISOString()}::timestamp`);
+    where cost_micro_usd is not null and created_at >= ${monthStartUtc(new Date()).toISOString()}::timestamp`);
   return Number(r.s);
 }
 
-/** App-wide month-to-date as the cap reads it: spent cost plus live reservations' worst case. */
+/** App-wide month-to-date as the cap reads it: billed cost plus the unpriced calls' worst case,
+ *  through the real rule (`unpricedWorstCaseMicro`), so a seed relative to it lands where meant. */
 async function monthToDate(): Promise<number> {
   const now = new Date();
-  const live = await rows<{ feature: "tuning" | "synopsis"; model: string | null; created_at: string }>(sql`
-    select feature, model, created_at::text from model_calls
-    where status = 'reserved' and created_at >= ${monthStartUtc(now).toISOString()}::timestamp`);
-  const reservations: LiveReservation[] = live.map((r) => ({
-    feature: r.feature, model: r.model, createdAt: new Date(`${r.created_at.replace(" ", "T")}Z`),
+  const live = await rows<{ status: "reserved" | "spent" | "refunded"; feature: "tuning" | "synopsis"; model: string | null; created_at: string }>(sql`
+    select status, feature, model, created_at::text from model_calls
+    where cost_micro_usd is null and created_at >= ${monthStartUtc(now).toISOString()}::timestamp`);
+  const unpriced: UnpricedCall[] = live.map((r) => ({
+    status: r.status, feature: r.feature, model: r.model, createdAt: new Date(`${r.created_at.replace(" ", "T")}Z`),
   }));
-  return (await spentMonth()) + reservedWorstCaseMicro(reservations, now);
+  return (await billedMonth()) + unpricedWorstCaseMicro(unpriced, now);
 }
 
 const W = featureWorstCaseMicroUsd("tuning");
@@ -190,12 +209,13 @@ async function run() {
 
     const refunded = await reserve(u);
     if (!("id" in refunded)) throw new Error(`g · reserve refused: ${refunded.refused}`);
-    const before = await spentMonth();
+    const before = await billedMonth();
     await settle(refunded.id, "refunded", usage);
     const m = await meters(refunded.id);
     check("g · a refund writes tokens and cost too", [m.status, m.input_tokens, m.cost],
       ["refunded", 4_000, String(costMicroUsd(TUNING_MODEL, usage))]);
-    check("g · and its cost moves no month-to-date", await spentMonth(), before);
+    check("g · and its cost IS counted toward the month's billed spend", await billedMonth() - before,
+      costMicroUsd(TUNING_MODEL, usage));
 
     const bare = await reserve(u);
     if (!("id" in bare)) throw new Error(`g · reserve refused: ${bare.refused}`);
@@ -209,7 +229,7 @@ async function run() {
     const u = newUser();
     const seeded: string[] = [];
     try {
-      const s = await spentMonth();
+      const s = await billedMonth();
       const line = [5, 8].map(usdToMicro).find((l) => l > s);
       if (line === undefined) {
         check("h · local-dev's month-to-date leaves an alarm line to cross", s < usdToMicro(8), true);
@@ -243,28 +263,66 @@ async function run() {
     }
   }
 
-  // d + e · The hard stop, and a refund that does not count toward it.
+  // d, i, j, e · The hard stop; a Stopped call counting at its worst case until its TTL or its
+  // meters; a late outcome's meters; and a refund's recorded cost counting toward the month.
   {
     const payer = newUser();
     const [first, second] = [newUser(), newUser()];
     const seeded: string[] = [];
+    // Room for one call and SLACK more: a late outcome's small bill must still leave one call's room.
+    const SLACK = 1_000;
+    const tiny: ModelUsage = { inputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    const meterOf = async (id: string) => (await rows<{ status: string; output_tokens: number | null; cost: string | null }>(sql`
+      select status, output_tokens, cost_micro_usd::text as cost from model_calls where id = ${id}::uuid`))[0];
     try {
       const m = await monthToDate();
       const stop = usdToMicro(HARD_STOP_USD);
-      const fill = stop - m - W;
+      const fill = stop - m - W - SLACK;
       if (fill < 0) throw new Error(`d · local-dev's month-to-date (${m}) already leaves no room under $${HARD_STOP_USD}`);
       seeded.push(await seed(payer, "spent", fill));
-      // e · A refund far past the stop, which must count for nothing.
-      seeded.push(await seed(payer, "refunded", usdToMicro(50)));
-      check("e · a $50 refund does not pause the app", (await readAllowance(first)).paused, undefined);
-      check("d · one worst case under $20 still reserves", kindOf(await reserve(first)), "reserved");
+
+      const held = await reserve(first);
+      check("d · one worst case under $20 still reserves", kindOf(held), "reserved");
+      if (!("id" in held)) throw new Error("d · the fixture reservation was refused");
       check("d · that reservation reaches $20: the next press is refused paused", kindOf(await reserve(second)), "paused");
       const read = await readAllowance(second);
       check("d · readAllowance says paused, until the 1st of next month", read.paused?.until.toISOString() ?? null,
         new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString());
-      await refundAll(first);
-      check("d · refunding the reservation reopens it", kindOf(await reserve(second)), "reserved");
-      await refundAll(second);
+
+      // i · A Stop refunds the credit at once, with no meters: the call is still billing.
+      await settle(held.id, "refunded");
+      check("i · a Stopped call, refunded with no meters, still counts at its worst case",
+        kindOf(await reserve(second)), "paused");
+
+      // j · Its outcome lands late, and records what it billed.
+      await db.transaction((tx) => recordModelUsage(tx, held.id, { model: TUNING_MODEL, usage: tiny }));
+      check("j · a late outcome writes its meters onto the refunded row", await meterOf(held.id),
+        { status: "refunded", output_tokens: 10, cost: String(costMicroUsd(TUNING_MODEL, tiny)) });
+      await db.transaction((tx) => recordModelUsage(tx, held.id, {
+        model: TUNING_MODEL, usage: { inputTokens: 9_000, outputTokens: 8_000, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      }));
+      check("j · and a second write does not change them", await meterOf(held.id),
+        { status: "refunded", output_tokens: 10, cost: String(costMicroUsd(TUNING_MODEL, tiny)) });
+      const reopened = await reserve(second);
+      check("j · with its real bill in place of its worst case, the app reopens", kindOf(reopened), "reserved");
+      if ("id" in reopened) await settle(reopened.id, "refunded", tiny);
+
+      // i · A Stopped call with no meters counts only inside its TTL.
+      const stopped = await seed(payer, "refunded", null);
+      seeded.push(stopped);
+      check("i · a refunded row with no cost, inside its TTL, pauses the app", kindOf(await reserve(second)), "paused");
+      await fixture.execute(sql`
+        update model_calls set created_at = created_at - (${RESERVATION_TTL_MS + 60_000} || ' milliseconds')::interval
+        where id = ${stopped}::uuid`);
+      const aged = await reserve(second);
+      check("i · past its TTL it stops counting", kindOf(aged), "reserved");
+      if ("id" in aged) await settle(aged.id, "refunded", tiny);
+
+      // e · A refunded call's RECORDED cost counts: credits count successes, dollars everything billed.
+      check("e · before the refund's cost, the app is not paused", (await readAllowance(first)).paused, undefined);
+      seeded.push(await seed(payer, "refunded", SLACK * 2));
+      check("e · a refunded call's recorded cost counts toward the month", kindOf(await reserve(first)), "paused");
+      check("e · and readAllowance says paused", (await readAllowance(first)).paused !== undefined, true);
     } finally {
       await unseed(seeded);
       await fixture.execute(sql`delete from model_calls where user_id in (${first}, ${second})`);

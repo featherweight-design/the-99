@@ -235,6 +235,13 @@ async function run() {
   };
   check("a run reaped mid-call reports superseded", (await writeSynopsisFor(deck.id, USER, reapingModel)).kind, "superseded");
   check("…and charges nothing", (await ledger()).find((r) => r.status === "spent"), undefined);
+  // …but records what the call billed on its unit: a late outcome still writes its meters, since
+  // until they land the unit counts toward the month's spend at its worst case. The stub bills
+  // nothing, so its cost is a recorded 0, never the null of a call with no meters.
+  const [lateUnit] = await rows<{ model: string | null; cost: string | null }>(sql`
+    select m.model, m.cost_micro_usd::text as cost from deck_synopses s join model_calls m on m.id = s.model_call_id
+    where s.deck_id = ${deck.id}::uuid and s.outcome = 'interrupted' order by s.created_at desc limit 1`);
+  check("…and still records the late call's meters on its unit", lateUnit, { model: STUB_MODEL, cost: "0" });
 
   // 8c · A throw AFTER the reservation (here, a reply the checks cannot read) settles the run as a
   // refunded upstream failure at once, rather than leaving it pending for the reaper.

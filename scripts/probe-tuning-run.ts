@@ -107,6 +107,14 @@ const runRow = async (runId: string) =>
     from deck_suggestion_runs r join model_calls m on m.id = r.model_call_id
     where r.id = ${runId}::uuid`))[0] ?? null;
 
+/** The unit's meters, as a late outcome records them (`recordLate` in `run-store.ts`). */
+const unitMeters = async (runId: string) =>
+  (await rows<{ output_tokens: number | null; cost: string | null }>(sql`
+    select m.output_tokens, m.cost_micro_usd::text as cost
+    from deck_suggestion_runs r join model_calls m on m.id = r.model_call_id
+    where r.id = ${runId}::uuid`))[0] ?? null;
+const lateBill = { model: "claude-sonnet-5", usage: { inputTokens: 1_000, outputTokens: 500, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+
 const itemCount = async (runId: string) =>
   (await rows<{ n: number }>(sql`
     select count(*)::int as n from deck_suggestion_items where run_id = ${runId}::uuid`))[0].n;
@@ -166,8 +174,12 @@ async function run() {
     const started = await startRun(u, deck, "fp", null);
     if (started.kind !== "started") return fail("case 1 start", started.kind);
     await readTuningState(deck, u, "fp", future(10));
-    const wrote = await persistRun(started.runId, [suggestion(c)], 0);
+    const wrote = await persistRun(started.runId, [suggestion(c)], 0, lateBill);
     check("1 · a late success after the reaper reports superseded", wrote, false);
+    // The call billed all the same: its meters land on the refunded unit (credits count
+    // successes; dollars count everything billed).
+    check("1 · and still records what it billed on the unit", await unitMeters(started.runId),
+      { output_tokens: 500, cost: "7000" });
     check("1 · the run still reads failed/interrupted, unit refunded",
       await runRow(started.runId), { status: "failed", error_class: "interrupted", unit: "refunded" });
     check("1 · no items were written", await itemCount(started.runId), 0);
@@ -184,8 +196,10 @@ async function run() {
     if (started.kind !== "started") return fail("case 2 start", started.kind);
     check("2 · the run is written under the id the panel chose", started.runId, chosen);
     check("2 · the Stop lands", await cancelRun(started.runId, deck, u), true);
-    const wrote = await finishRun(started.runId, { status: "failed", errorClass: "timeout" });
+    const wrote = await finishRun(started.runId, { status: "failed", errorClass: "timeout" }, lateBill);
     check("2 · a late failure after the Stop reports superseded", wrote, false);
+    check("2 · and still records what it billed on the unit", await unitMeters(started.runId),
+      { output_tokens: 500, cost: "7000" });
     check("2 · cancelled survives, unit refunded",
       await runRow(started.runId), { status: "cancelled", error_class: null, unit: "refunded" });
     check("2 · a second Stop finds nothing to stop", await cancelRun(started.runId, deck, u), false);
