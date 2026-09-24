@@ -146,6 +146,37 @@ What the notes add to round 1's:
 tuning lane should also look at the two malformed answers before it ships, since a player would see
 each as a failed run. The cost is under Allowances.
 
+### Hugh's ruling on round 3, and the rationale rules (round 4)
+
+Hugh ruled to ship the `strategy` prompt on S, with two rules from his notes: never open two
+rationales on the same role count, and never restate a figure the card already shows as a
+citation chip ("mix removal: 5 of 6"), saying "one short on removal" instead and spending the words
+on the card. Both were measured on the 4 development decks, one trial each. This is not a blind
+read.
+
+| S, 8,000 ceiling | malformed | kept per answer | chip restatements | repeated openings | output tokens per answer | $/answer |
+|---|---|---|---|---|---|---|
+| strategy prompt | 1 of 4 | 2.50 | 5 of 10 | 2 | 7,584 | $0.088 |
+| + rationale rules, first wording | 1 of 4 | 1.75 | 0 of 7 | 0 | 8,313 | $0.096 |
+| + rationale rules, notes exempt, default effort | 1 of 4 | 2.50 | 0 of 10 | 1 | 13,404 | $0.152 |
+| + rationale rules, notes exempt, `effort: "medium"` | **0 of 4** | **3.50** | **0 of 14** | **0** | 2,545 | **$0.036** |
+
+- **The rules work.** Chip restatements fall from half of all kept rationales to none, and the
+  rationales talk about the card instead ("Rogue's Passage lets Gishath attack unblocked so its
+  cascade off combat damage actually happens").
+- **The first wording cost a deck.** It listed "a note's date" among the chips, so the model
+  paraphrased a game note the contract requires it to quote, and every suggestion on that deck was
+  dropped for its citation. The second wording exempts a note by name.
+- **S's malformed answers are its thinking, not the prompt.** On the plain strategy prompt the same
+  deck failed on both attempts with all 8,000 output tokens spent thinking, and which deck fails
+  moves from run to run. At default effort every first attempt in the last run reached the ceiling.
+- **That is also a latency problem the batch hides.** At about 80 output tokens a second, 8,000
+  tokens is about 100s, against the app's 110s model timeout and the page's 120s limit, so an
+  answer that needs its retry cannot finish in the app. Medium effort ran 19 to 49s.
+- A 16,000 ceiling was ruled out for the same reason: about 200s.
+
+Medium effort differs from the setting Hugh rated in round 3, so it is his call.
+
 ## Overview
 
 S truncates or malforms a third of its answers. Its median attempt hits the 8,000 ceiling: 69 of
@@ -406,4 +437,12 @@ For reference, these are the largest whole allowances the pre-registered rule
 
 ## Spend
 
-**$18.35 of $25**, from `ledger.jsonl`: 60 entries, none left pending. $16.94 of that was spent before the round 3 re-test, which cost $1.41. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+**$23.22 of $25**, from `ledger.jsonl`: 94 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+
+| stage | $ | running total |
+|---|---|---|
+| the plan's rounds, through tuning round 1 and overview round 2 | $16.94 | $16.94 |
+| tuning round 3 re-test (the `strategy` prompt) | $1.41 | $18.35 |
+| overview under contract v6, and the first Mulligan budget | $2.95 | $21.30 |
+| overview, the Mulligan budget's second version (dev, held-out, repair) | $1.17 | $22.47 |
+| tuning round 4, the rationale rules and effort (3 dev checks) | $0.75 | $23.22 |
