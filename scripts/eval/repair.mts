@@ -17,9 +17,11 @@
  * SHIPPED rule refused, a superset of what A+B would ask for — and A+B charges a repair only to
  * answers the drop-line rule still fails.
  *
+ * `--fresh-facts` rebuilds every deck's facts with the CURRENT `factsFor` first, so the first
+ * answers are judged, and the repair is asked for and judged, under the contract as it now ships
+ * (a facts fix landing after the first write, measured on the path production would take).
  * `--rescore <repairRunId>` sends nothing: it re-reads that run's stored repair replies and scores
- * everything again, and with `--fresh-facts` against facts rebuilt by the CURRENT `factsFor`, so a
- * facts fix is measured on all four contracts for free.
+ * everything again.
  */
 import "../lib/env.mjs";
 
@@ -58,7 +60,6 @@ const dir = new URL(`runs/${args.from}/`, ROOT);
 let factsOf = new Map((JSON.parse(readFileSync(new URL("prepared.json", dir), "utf8")) as { deckId: string; facts: Facts }[]).map((p) => [p.deckId, p.facts]));
 const variant = SYNOPSIS_VARIANTS[args.variant!];
 if (args["fresh-facts"]) {
-  if (!args.rescore) throw new Error("eval:repair: --fresh-facts only re-scores (--rescore); a new repair is always sent against the facts the first write saw");
   const fresh = await app.freshFacts(factsOf, variant);
   log(`facts rebuilt with the current factsFor; fields that moved: ${[...fresh.moved].map(([k, n]) => `${k} on ${n} decks`).join(", ") || "none"}`);
   factsOf = fresh.facts;

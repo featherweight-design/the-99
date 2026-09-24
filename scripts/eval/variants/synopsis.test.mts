@@ -12,7 +12,9 @@ const facts: SynopsisFacts = {
   lands: 36,
   ramp: 12,
   keep: { low: 2, high: 4 },
-  figures: [2, 4, 7, 12, 36],
+  sendBack: { none: 0, under: 1, over: 5 },
+  commanderManaValues: [6],
+  figures: [0, 1, 2, 4, 5, 6, 7, 12, 36],
   cards: [
     { oracleId: "o", name: "Omnath, Locus of Rage", typeLine: "Legendary Creature", quantity: 1, categories: ["commander"], oracleText: "Landfall — Whenever a land you control enters, create a 5/5 red and green Elemental creature token." },
     { oracleId: "f", name: "Forest", typeLine: "Basic Land — Forest", quantity: 20, categories: ["land"], oracleText: "({T}: Add {G}.)" },
