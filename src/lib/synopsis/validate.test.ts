@@ -217,7 +217,8 @@ describe("every deck name is marked", () => {
   it("refuses a deck card named without its mark", () => {
     const reply = good();
     reply.overview = "Play Sol Ring early, then [[Impact Tremors]].";
-    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview")).toMatchObject({ reason: "unmarked_card" });
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview"))
+      .toEqual({ section: "overview", status: "refused", reason: "unmarked_card", failed: 1, total: 2 });
   });
 
   it("does not read a one-word name, a lowercase phrase or a marked name as unmarked", () => {

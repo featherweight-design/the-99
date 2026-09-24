@@ -183,7 +183,11 @@ function escapeRegExp(s: string): string {
 /** The rules every item of prose keeps, and its marks resolved. */
 function prose(r: Resolver, text: string, budget: number): void {
   if (!endsSentence(text)) r.refuse("partial_sentence");
-  if (unmarkedNames(text, r.names).length > 0) r.refuse("unmarked_card");
+  // An unmarked name is a name the section states and fails to check, so it counts in the figure.
+  const bare = unmarkedNames(text, r.names);
+  r.total += bare.length;
+  r.failed += bare.length;
+  if (bare.length > 0) r.refuse("unmarked_card");
   if (rendered(text).trim().length > budget) r.refuse("over_budget");
   if (strengthClaim(unmarked(text))) r.refuse("strength_claim");
   r.marks(text);
