@@ -12,13 +12,17 @@
  */
 
 /**
- * Model runs per player per rolling 24 hours, across every feature.
+ * Model runs per player per rolling 24 hours, across every feature, shared by tuning and the
+ * synopsis.
  *
- * Five, Hugh's ruling of 2026-09-23: five per player on a rolling 24 hours, shared by tuning and
- * the synopsis. Ten was weighed and refused, because its worst case ran past his $100 a month
- * ceiling; five puts that worst case near $52.
+ * Owner 10, friends 3: Hugh, via the orchestrator, 2026-09-24. It replaced a flat five (2026-09-23)
+ * when the app-wide spend cap arrived (`spend-rule.ts`): the cap bounds the month's dollars, so
+ * the per-player number only has to share the budget fairly, and the owner — who tests every
+ * change — gets more presses than a friend. Which account is the owner is `MODEL_OWNER_USER_ID`,
+ * read once in `allowance.ts` (`dailyLimitFor`); unset, everyone gets the friend's three.
  */
-export const MODEL_DAILY_ALLOWANCE = 5;
+export const MODEL_OWNER_DAILY_ALLOWANCE = 10;
+export const MODEL_FRIEND_DAILY_ALLOWANCE = 3;
 
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -55,6 +59,11 @@ export type Allowance = {
   /** When the NEXT counted unit leaves the window, spent or not: the credit line's "next one at"
    *  while credits remain as well as once they are gone. Null when nothing counts. */
   nextAt: Date | null;
+  /** Present while the app-wide spend cap refuses every call: until the 1st of next UTC month.
+   *  OPTIONAL, so an Allowance written without it (every fixture) still type-checks. */
+  paused?: { until: Date };
+  /** True for the owner once his month's testing share cannot fit one more call. */
+  ownerShare?: boolean;
 };
 
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */
@@ -71,7 +80,7 @@ function expiresAt(row: LedgerRow): number {
 export function allowanceFrom(
   rows: readonly LedgerRow[],
   now: Date,
-  limit: number = MODEL_DAILY_ALLOWANCE,
+  limit: number = MODEL_FRIEND_DAILY_ALLOWANCE,
 ): Allowance {
   const expiries = rows
     .filter((r) => counts(r, now))

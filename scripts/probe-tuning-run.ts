@@ -36,8 +36,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
-import { readAllowance } from "../src/lib/model/allowance";
-import { MODEL_DAILY_ALLOWANCE } from "../src/lib/model/allowance-rule";
+import { dailyLimitFor, readAllowance } from "../src/lib/model/allowance";
 import { readTuningState, tuningInputs } from "../src/lib/decks/tuning-read";
 import { gateReason } from "../src/lib/tuning/gate";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../src/lib/tuning/run-store";
@@ -216,13 +215,13 @@ async function run() {
     // Every unit but one already spent, inside the window.
     await fixture.execute(sql`
       insert into model_calls (user_id, feature, status)
-      select ${u}, 'tuning', 'spent' from generate_series(1, ${MODEL_DAILY_ALLOWANCE - 1})`);
+      select ${u}, 'tuning', 'spent' from generate_series(1, ${dailyLimitFor(u) - 1})`);
     const raced = await Promise.all([startRun(u, deckA, "fp", null), startRun(u, deckB, "fp", null)]);
     check("4 · exactly one of two decks takes the last unit",
       raced.map((r) => r.kind).sort(), ["allowance", "started"]);
     const allowance = await readAllowance(u);
     check("4 · the allowance reads full, not over", [allowance.used, allowance.limit],
-      [MODEL_DAILY_ALLOWANCE, MODEL_DAILY_ALLOWANCE]);
+      [dailyLimitFor(u), dailyLimitFor(u)]);
   }
 
   // 5–7 · Apply and undo, on a cut held at two copies, auto, and proxied.

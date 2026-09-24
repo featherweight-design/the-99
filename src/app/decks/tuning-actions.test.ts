@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
-const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown }));
+const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight" }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -28,7 +28,7 @@ vi.mock("../../lib/tuning/run-store", () => ({
   startRun: async (...args: unknown[]) => {
     calls.started += 1;
     calls.startOpts = args[4];
-    return { kind: "in_flight" };
+    return { kind: calls.startKind };
   },
   finishRun: async () => true,
   persistRun: async () => true,
@@ -40,6 +40,8 @@ vi.mock("../../lib/tuning/verdicts", () => ({
   setDismissed: async () => "deck",
 }));
 
+import { creditsCopy } from "../../lib/copy/credits";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { applySuggestion, readTuningEvidence, runTuning, saveDeckIntent } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
@@ -49,6 +51,20 @@ beforeEach(() => {
   calls.started = 0;
   calls.applied = 0;
   calls.saved = 0;
+  calls.startKind = "in_flight";
+});
+
+describe("runTuning's refused reservation", () => {
+  it("names the spend cap's pause, the owner's share and the spent allowance apart", async () => {
+    const said = async (kind: string) => {
+      calls.startKind = kind;
+      const result = await runTuning(DECK, { anyway: true });
+      return result.ok ? null : result.message;
+    };
+    expect(await said("paused")).toBe(creditsCopy.pausedServer);
+    expect(await said("ownerShare")).toBe(creditsCopy.ownerShare(new Date()));
+    expect(await said("allowance")).toBe(deckTuningCopy.allowance.spent);
+  });
 });
 
 describe("runTuning's `anyway`", () => {

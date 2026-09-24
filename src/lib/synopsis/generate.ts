@@ -4,7 +4,7 @@ import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, reserveModelCall, settleModelCall } from "../model/allowance";
-import { callModel, type ModelOutcome } from "../model/client";
+import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS } from "./limits";
@@ -48,7 +48,11 @@ export type WriteResult =
   | { kind: "reused"; synopsis: SynopsisRow }
   /** No reading, or a stale one: a write needs a fresh analysis of the list it describes. */
   | { kind: "no_reading" }
+  /** Refused at the reservation: the player's allowance (`allowance`), the app-wide spend cap
+   *  (`paused`) or the owner's testing share (`ownerShare`). Nothing was called or charged. */
   | { kind: "allowance" }
+  | { kind: "paused" }
+  | { kind: "ownerShare" }
   | { kind: "in_flight" }
   /** The reaper failed this run as `interrupted` before its answer landed; the answer was discarded
    *  and nothing was charged. */
@@ -207,15 +211,15 @@ async function startRun(
   retryOf: string | null,
   /** False on a retry, which rewrites the synopsis for this very list on purpose. */
   checkReuse: boolean,
-): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
+): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
   try {
     const runId = await db.transaction(async (tx) => {
-      const unit = await reserveModelCall(tx, userId, "synopsis", now);
-      if (!unit) throw new AllowanceSpentError();
+      const unit = await reserveModelCall(tx, userId, "synopsis", model, now);
+      if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
       // read "no synopsis" before either wrote; if the first finished before the second got here,
       // the one-pending index is clear again and only this check stops a second, charged write.
@@ -235,7 +239,7 @@ async function startRun(
     });
     return { kind: "started", runId };
   } catch (err) {
-    if (err instanceof AllowanceSpentError) return { kind: "allowance" };
+    if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
       const synopsis = await readShownSynopsis(deckId, userId);
       if (synopsis) return { kind: "reused", synopsis };
@@ -258,6 +262,8 @@ export async function finishRun(
     content: CheckedSynopsis | null;
     usage: { inputTokens: number; outputTokens: number } | null;
     charge: "spent" | "refunded";
+    /** What the call was billed for, when it got a response; written on the unit as it settles. */
+    billed?: { model: string; usage: ModelUsage };
   },
   now: Date = new Date(),
 ): Promise<boolean> {
@@ -272,7 +278,7 @@ export async function finishRun(
       })
       .where(and(eq(deckSynopses.id, runId), eq(deckSynopses.status, "pending")))
       .returning({ callId: deckSynopses.modelCallId });
-    for (const r of rows) await settleModelCall(tx, r.callId, set.charge, now);
+    for (const r of rows) await settleModelCall(tx, r.callId, set.charge, set.billed, now);
     return rows.length > 0;
   });
 }
@@ -322,7 +328,8 @@ async function run(
     }
 
     if (!outcome.ok) {
-      const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded" }, deps.now());
+      const billed = outcome.usage ? { model: deps.modelName, usage: outcome.usage } : undefined;
+      const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed }, deps.now());
       return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
     }
 
@@ -335,7 +342,11 @@ async function run(
       charge = merged.anyRetriedPassed ? "spent" : "refunded";
     }
     const result = outcomeOf(content.verdicts);
-    const written = await finishRun(started.runId, { outcome: result, content, usage: outcome.usage, charge }, deps.now());
+    const written = await finishRun(
+      started.runId,
+      { outcome: result, content, usage: outcome.usage, charge, billed: { model: deps.modelName, usage: outcome.usage } },
+      deps.now(),
+    );
     if (!written) return { kind: "superseded" };
     return {
       kind: "written",

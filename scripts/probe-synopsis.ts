@@ -35,7 +35,7 @@ import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/li
 import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
 import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
-import { stubReply, type StubMode } from "../src/lib/synopsis/stub";
+import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_REAPER_CUTOFF_MS } from "../src/lib/synopsis/limits";
 
 neonConfig.webSocketConstructor = ws;
@@ -69,7 +69,9 @@ let calls = 0;
 let queue: StubMode[] = [];
 let delayMs = 0;
 const deps: GenerateDeps = {
-  modelName: "probe-stub",
+  // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
+  // and pricing refuses to guess one.
+  modelName: STUB_MODEL,
   model: async (_req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
     calls += 1;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
@@ -133,7 +135,7 @@ async function run() {
   check("…is charged as spent", await ledger(), [{ status: "spent", n: 1 }]);
   const [stored] = await rows<{ model: string; contract_version: number; fingerprint: string }>(sql`
     select model, contract_version, fingerprint from deck_synopses where deck_id = ${deck.id}::uuid`);
-  check("…records the model that wrote it", stored.model, "probe-stub");
+  check("…records the model that wrote it", stored.model, STUB_MODEL);
   check("…and the list it describes", stored.fingerprint, list());
   {
     // Every card the shown overview names carries its preview art in the read, including any a

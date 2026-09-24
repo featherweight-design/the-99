@@ -18,6 +18,7 @@ Production stack: **Vercel** (Next.js hosting) + **Neon** (serverless Postgres) 
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API keys | `pk_live_…` for production |
 | `CLERK_SECRET_KEY` | Clerk dashboard → API keys | `sk_live_…` for production |
 | `ANTHROPIC_API_KEY` | Anthropic Console → API keys | Read by the one model client (`src/lib/model/client.ts`) for deck tuning and the deck synopsis. Sensitive, **Production and Preview** — unlike `MIGRATE_DATABASE_URL`, a preview serves the builder and would otherwise record every run as a failure. Without it the client makes no request, returns `upstream_busy` and logs `[model] configuration`; the feature calling it records that as a failed run, and a failed run's allowance unit is refunded by that feature's outcome write (deck tuning's server PR). The `Commander prose` workflow reads its own copy as a repository secret |
+| `MODEL_OWNER_USER_ID` | Clerk dashboard → Users → the owner's user id (`user_…`) | Read in one place, `dailyLimitFor` in `src/lib/model/allowance.ts`. That account gets 10 model runs (tuning and the synopsis together) per rolling 24 hours, and is refused once its own month-to-date spend would pass its $5 testing share; every other account gets 3 and no share. **Unset or empty, no account is the owner and everyone gets 3** — the limit fails closed. Not sensitive. The app-wide $20-a-month hard stop (`src/lib/model/spend-rule.ts`) applies to everyone either way |
 
 `.env.example` mirrors this list for local setup.
 

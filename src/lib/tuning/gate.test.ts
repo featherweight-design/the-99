@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MODEL_DAILY_ALLOWANCE, type Allowance } from "../model/allowance-rule";
+import { MODEL_FRIEND_DAILY_ALLOWANCE, type Allowance } from "../model/allowance-rule";
 import { gateReason } from "./gate";
 import type { TuningRun, TuningState } from "./state";
 
@@ -8,8 +8,8 @@ const at = new Date("2026-09-07T10:00:00Z");
 const run = (status: TuningRun["status"], errorClass: string | null = null): TuningRun => ({
   id: "run_1", status, errorClass, createdAt: at, droppedCount: 0,
 });
-const open: Allowance = { used: 0, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null, nextAt: null };
-const spent: Allowance = { used: MODEL_DAILY_ALLOWANCE, limit: MODEL_DAILY_ALLOWANCE, reopensAt: at, nextAt: at };
+const open: Allowance = { used: 0, limit: MODEL_FRIEND_DAILY_ALLOWANCE, reopensAt: null, nextAt: null };
+const spent: Allowance = { used: MODEL_FRIEND_DAILY_ALLOWANCE, limit: MODEL_FRIEND_DAILY_ALLOWANCE, reopensAt: at, nextAt: at };
 
 // A deck that has never generated, and has no games: neither is a reason to refuse.
 const fresh: TuningState = {
