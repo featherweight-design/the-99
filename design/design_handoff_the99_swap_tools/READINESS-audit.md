@@ -5,6 +5,20 @@
 **Package:** this folder, committed as delivered. `README.md` R2–R4 supersede its R1 sections, as it says itself. Design's own `READINESS.md` is answered in §5 below.
 **Measured on `staging`** (read-only, Neon branch `br-polished-pond-a6e63y0b`), per AGENTS.md.
 
+## Hugh's rulings (2026-09-24)
+
+Hugh approved this audit on 2026-09-24 and ruled on all three §4 questions.
+
+- **H1: Add from Fits your decks with no spare copy adds the card as a buy**, with a buy tag, like every other
+  Add in the app. There is no hard stop.
+- **H2: `Undo swap` in both the swap tools and tuning.** Tuning's shipped `Put it back` (`deck-tuning.ts:206`)
+  is renamed to match. `Put back` stays for a removed card on the review page, which is a different action (F10).
+- **H3: a utility land's stand-in says what it gives up**, for example *gives up: uncounterable creatures*
+  for Cavern of Souls. It never claims *gives up nothing* unless that is true. This answers F2.
+
+**F1, the staple read in Fits your decks, is with Design as an addendum.** The picker waits on it; the
+stand-ins sheet builds now, as the verdict below says.
+
 ## Verdict: Orange
 
 Build the swap tools (canvas 1a–1e) now, with the engineering corrections below. Design answered all seven §4
@@ -145,6 +159,7 @@ Design's checks claim.
 | F12 | Low | `decklist-row.tsx:511-516`, `:49-58` | **The ⇄ spends width the row already lacks.** On the phone it adds a net 35px (44px less the 9px overlap) to a row the code already calls tight at 390. On desktop every row pays the 22px slot inside the 2-up grid. **Correction:** probe the name's width at 390 and at the narrowest 2-up desktop width, over the longest staging Shopping names, with `over $10` inline | eng |
 | F13 | Low | README §4.4, "Also called", Components, State list; copy file; `Fits Your Decks.dc.html:170, 173` | **Stale R1 text and canvas-to-copy drift.** README's R1 sections still say `Put it back`, and still describe an always-open Fits block, the excluded-decks foot, and the not-legal and no-decks states. The copy file keeps R1-only strings (`excludedOne`, `excludedMany`, `hardStop`, and `fits.add`, which R4's `addUsesFree` replaces; `fits.added`, `in the draft`, is still drawn in the `added` state and stays). The canvas's `allHold` drops "They’re listed above.", and its colors sentence reads "neither of your commanders is" where the file has "none". **Correction:** R2–R4 win. The copy file is the source, R1-only strings are dropped unless Hugh keeps the hard stop, and `/copy-review` settles the drift | eng |
 | F14 | Low | `commander_pair_support` on staging: 1 row | **A pair the index does not hold lists nothing.** Every stand-in then falls to `not listed · cheapest first`, and `leadSpells` still promises an order by the pair's decks. **Correction:** when nothing is listed, the lead drops its second clause (`/copy-review`). Fits shows a pair's chip as the pair's figure, in the drawn chip | eng |
+| F15 | Low | `Fits Your Decks.dc.html:177`, `:181`; README R4 | **Two canvas-only drifts in the picker.** (a) The R4 copy line under the head is set only in `several`, `loading` and `added`, so `allhold` and `colors` draw none, though both states know the card's copies. (b) The picker's loading crown carries an inline animation with no reduced-motion stop. **Correction:** draw the copy line in every picker state that knows ownership, and build the loading state from the shipped `LoadingScreen`, which already stops under reduced motion (§2, Surfaces) | eng |
 
 ### Engineering notes, not findings
 
