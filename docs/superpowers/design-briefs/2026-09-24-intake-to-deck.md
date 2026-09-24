@@ -1,6 +1,6 @@
 # Design Brief: Help me choose (sub-project 8, intake to deck)
 
-**Date:** 2026-09-24 · **Branch:** `docs/intake-brief` (held for Hugh's approval; not yet a PR)
+**Date:** 2026-09-24 · **Branch:** `docs/intake-brief` (approved by Hugh, 2026-09-24)
 **Rulings:** Hugh, 2026-09-24, in the scoping conversation for this brief (§2). The universal-staple
 rule (§5) is his standing instruction for sub-projects 7 and 8, which the orchestrator relayed the same
 day.
@@ -95,8 +95,10 @@ These follow from the rulings. Hugh has not ruled on them one by one, and he may
   admits every identity, including five-color.
 - **The free match** is against exact theme tag labels, card names from the whole catalog (a card the
   player does not own can be a build-around card), dollar figures, and "bracket N".
-- **A build-around card is placed in the deck** when it is created, and priced against the budget like
-  any card the player would buy.
+- **A build-around card is always placed in the deck** when it is created, because the player asked
+  for it. If they don't own it, its price is counted first against the budget, and the fill caps what
+  remains. A commander whose own price plus the card's exceeds the budget is not shown, and the
+  too-narrow state names the budget.
 - **Brackets 4 and 5** carry no stated limits (`src/lib/bracket/rules.ts:13`), so as a filter they
   admit everything. The row and the fill say nothing different for them.
 - **The budget prices an owned copy** that committed decks already claim as a buy, the same rule the
@@ -174,8 +176,9 @@ The way into the intake from Discover's filters, at both widths.
   cards, a budget and a bracket. A chip that names nothing real is dropped. Every commander comes from a
   query, and every card comes from the catalog.
 - **No score.** A row is ordered by one named figure, or by the weakest of several figures of the same
-  kind (ruling 5). Colors and bracket are pass/fail, the budget is a cap, and ownership is shown and
-  never weighed.
+  unit, "% of its decks" (ruling 5). Colors and bracket are pass/fail, and the budget is a cap.
+  Ownership is shown and never weighed against fit. It orders the list only when no theme or card was
+  given, because Hugh ruled that case (ruling 5).
 - **Never loosen an answer silently.**
 - **No credit is spent without the player choosing it,** and the cost is named first.
 - **Universal staples are ordinary cards here.** The fill places them like any other card: counted as
@@ -208,13 +211,16 @@ The way into the intake from Discover's filters, at both widths.
     - The commander counts against them.
     - At brackets 1 and 2, the fill never places a card that completes a two-card infinite combo with a
       card already placed. That makes it a pairwise check during the fill, not a per-card filter.
-    - Bracket 3 permits combos, because lateness is not computable (`:36-46`).
+    - At bracket 3 the fill may place combos, since lateness is not computable (`:36-46`). It must
+      never produce a deck that `permitsFor` (`:91`) moves above 3, though. That happens when
+      `comboLandsEarly` (`:120`) holds: tutors that reach both pieces, or reach one piece with the
+      other as commander. A tutor that would complete that reach is skipped.
   - `PlanFillArgs` (`src/lib/decks/fill.ts:73`) and `buildFillPlan` (`actions.ts:81`) take both, and
     `createDeck` (`:253`) passes them, along with the build-around card in `selectedOracleIds`.
 - **The trial fill per row** produces only that row's ownership figures, and it runs for rows on screen.
   Nothing filters on it, so no commander is ever dropped by a fill the player never saw.
-- **The too-narrow count** re-runs the pass/fail filters (colors, bracket, the commander's own price
-  against the budget, theme and card presence) with each answer removed in turn. It runs no fills.
+- **The too-narrow count** re-runs the pass/fail filters (colors, bracket, the commander's own price, plus
+  an unowned build-around card's, against the budget, theme and card presence) with each answer removed in turn. It runs no fills.
 - **The model read** is a new `ModelFeature` beside `"tuning"` and `"synopsis"`. That touches:
   - the union (`src/lib/model/allowance-rule.ts:52`);
   - `FEATURE_CALLS` (`src/lib/model/prices.ts:74`);
