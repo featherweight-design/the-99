@@ -39,6 +39,8 @@ export type TuningItem = {
    *  hold the add (a basic excepted). Design's `no longer applies` row; apply refuses one that
    *  does not, whatever the panel drew. */
   applies: boolean;
+  /** Which half of `applies` failed, for the row's sentence: the cut left, or the add is in. */
+  cutInDeck: boolean;
 };
 
 export type TuningRun = {

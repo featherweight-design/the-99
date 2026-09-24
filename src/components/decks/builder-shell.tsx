@@ -15,6 +15,8 @@ import { isShoppingCard } from "../../lib/decks/shopping";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
+import { HoverPreviewProvider } from "./hover-preview";
+import { TuningPanel } from "./tuning-panel";
 import { useDeckProfile } from "./use-deck-profile";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
@@ -1100,6 +1102,9 @@ export function BuilderShell({
                     rather than replacing it. The strip is counted from the list and is true in
                     every profile state, which is what makes a failed read a delay rather than an
                     outage. */}
+                {/* ONE hover preview for the whole tab: the suggestion cards use it today, and the
+                    synopsis's card names will borrow it rather than mount a second. */}
+                <HoverPreviewProvider>
                 <AnalysisPanel
                   state={profile.state}
                   onRequest={profile.request}
@@ -1129,6 +1134,21 @@ export function BuilderShell({
                     refused: declaration.refused,
                   }}
                   art={findingArt}
+                  tuning={(permits) => (
+                    <TuningPanel
+                      deckId={deck.id}
+                      permits={permits}
+                      facts={{
+                        gameCount: gameSummary.count,
+                        noteCount: games.filter((g) => g.note !== null).length,
+                        fix: gameSummary.fix[0] ? { key: gameSummary.fix[0].key, hurt: gameSummary.fix[0].hurt } : null,
+                        marked: gameSummary.marked,
+                        cards: built,
+                        intent: deck.intent,
+                      }}
+                      onLogGame={() => setView("games")}
+                    />
+                  )}
                 >
                 {/* The strip in its new home. It is REAL analysis content rather than a
                     placeholder — Round 0 moves it here on purpose — which is why this panel
@@ -1144,6 +1164,7 @@ export function BuilderShell({
                   inset
                 />
                 </AnalysisPanel>
+                </HoverPreviewProvider>
               </div>
             ) : view === "games" ? (
               <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">

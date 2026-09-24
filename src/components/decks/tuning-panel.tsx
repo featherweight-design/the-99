@@ -1,0 +1,539 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+
+import {
+  applySuggestion,
+  cancelTuningRun,
+  dismissSuggestion,
+  readTuningEvidence,
+  readTuningPanel,
+  restoreSuggestion,
+  runTuning,
+  saveDeckIntent,
+  undoSuggestion,
+} from "../../app/decks/tuning-actions";
+import { creditsCopy } from "../../lib/copy/credits";
+import { numberWord } from "../../lib/copy/deck-analysis";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { axisCopy } from "../../lib/copy/game-log";
+import type { EvidenceStep } from "../../lib/decks/tuning-read";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import type { Bracket } from "../../lib/profile/types";
+import { gateReason } from "../../lib/tuning/gate";
+import type { TuningItem, TuningState } from "../../lib/tuning/state";
+import { DeckIntentAsk } from "./deck-intent";
+import { FanShuffle } from "./fan-shuffle";
+import { ManifestRows, type ManifestRow } from "./manifest-rows";
+import { MutationError } from "./mutation-error";
+import { SuggestionCard, type CardActions } from "./suggestion-card";
+
+/**
+ * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
+ * over a reading. It reads its own state on mount, as the tab's first open reads a stored
+ * analysis, and never spends a credit without a press.
+ *
+ * Its states, off `TuningState` and what the reader just pressed:
+ *  - never run: with marked games (C1), with no games (D1, E3), with games and no marks (E5);
+ *  - reading: the manifest ticking as each read lands, the fan shuffling, Stop (C2);
+ *  - results, five or fewer (A1, A2, D2); part answered (C3); all answered (C4);
+ *  - retired by a commit (C5): the set is cleared and the gate reopens;
+ *  - nothing changed (state 5): drawn when a press finds the gate `unchanged`, with Suggest
+ *    again anyway;
+ *  - the five failures (6a-6e), and credits spent (C6, E4), which disables the primary and keeps
+ *    the body.
+ * The action row is one band across every state, so the panel does not jump as it changes.
+ *
+ * The server actions are injectable, so every state is testable without a request.
+ */
+export type TuningDeps = {
+  read: (deckId: string) => Promise<TuningState | null>;
+  run: (deckId: string, opts?: { anyway?: boolean }) => Promise<DeckMutationResult>;
+  cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
+  evidence: (deckId: string, step: EvidenceStep) => Promise<number | null>;
+  saveIntent: (deckId: string, formData: FormData) => Promise<DeckMutationResult>;
+  card: CardActions;
+};
+
+const SERVER: TuningDeps = {
+  read: readTuningPanel,
+  run: runTuning,
+  cancel: cancelTuningRun,
+  evidence: readTuningEvidence,
+  saveIntent: saveDeckIntent,
+  card: { apply: applySuggestion, undo: undoSuggestion, reject: dismissSuggestion, restore: restoreSuggestion },
+};
+
+/** What the page already knows about the evidence, for the copy and the unchecked manifest. */
+export type TuningFacts = {
+  gameCount: number;
+  noteCount: number;
+  /** The strongest axis marked against the deck, and in how many games. Null with no marks. */
+  fix: { key: string; hurt: number } | null;
+  marked: number;
+  cards: number;
+  intent: string | null;
+};
+
+type Counts = Partial<Record<EvidenceStep, number | null>>;
+
+const copy = deckTuningCopy.panel;
+const manifest = deckTuningCopy.manifest;
+/** How often a run begun elsewhere (another tab, a reload mid-run) is re-read until it settles. */
+const WATCH_MS = 3000;
+
+export function TuningPanel({
+  deckId,
+  permits,
+  facts,
+  onLogGame,
+  deps = SERVER,
+}: {
+  deckId: string;
+  permits: readonly Bracket[];
+  facts: TuningFacts;
+  onLogGame: () => void;
+  deps?: TuningDeps;
+}) {
+  const [state, setState] = useState<TuningState | null>(null);
+  // Reading: the counts that have landed, by step; null before a press.
+  const [counts, setCounts] = useState<Counts | null>(null);
+  const [unchangedShown, setUnchangedShown] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
+  const [announced, setAnnounced] = useState("");
+  const [intent, setIntent] = useState(facts.intent);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // Each press takes a token, so a run the reader stopped cannot land over what they did next.
+  const token = useRef(0);
+
+  const reread = useCallback(async () => {
+    const next = await deps.read(deckId);
+    setState(next);
+    return next;
+  }, [deps, deckId]);
+
+  useEffect(() => {
+    let live = true;
+    void deps.read(deckId).then((next) => {
+      if (live) setState(next);
+    });
+    return () => {
+      live = false;
+    };
+  }, [deps, deckId]);
+
+  // A run already in flight when the panel opened: tick what can be read and watch it settle.
+  const pendingElsewhere = state?.run?.status === "pending" && counts === null;
+  useEffect(() => {
+    if (!pendingElsewhere) return;
+    const id = setInterval(() => void reread(), WATCH_MS);
+    return () => clearInterval(id);
+  }, [pendingElsewhere, reread]);
+
+  if (state === null) return null;
+
+  const steps = readSteps(facts, intent);
+  const reading = counts !== null || state.run?.status === "pending";
+  const gate = gateReason(state);
+  const spent = gate?.kind === "allowance";
+  const left = Math.max(0, state.allowance.limit - state.allowance.used);
+  const hasOk = state.lastOkFingerprint !== null;
+  const showResults = !reading && state.run?.status === "ok" && !state.retired && state.items.length > 0;
+
+  async function press(anyway = false) {
+    if (!state) return;
+    setRefused(null);
+    if (!anyway && gateReason(state)?.kind === "unchanged") {
+      setUnchangedShown(true);
+      setAnnounced(deckTuningCopy.announce.unchanged);
+      return;
+    }
+    setUnchangedShown(false);
+    const mine = ++token.current;
+    setCounts({});
+    setAnnounced(deckTuningCopy.announce.started);
+    const running = deps.run(deckId, anyway ? { anyway: true } : {});
+    // The manifest ticks on reads that genuinely land, one after another.
+    for (const step of steps) {
+      const n = await deps.evidence(deckId, step);
+      if (token.current !== mine) return;
+      setCounts((c) => (c === null ? c : { ...c, [step]: n }));
+    }
+    const result = await running;
+    if (token.current !== mine) return;
+    const next = await reread();
+    setCounts(null);
+    if (!result.ok) {
+      setRefused(result.message);
+      setAnnounced(result.message);
+      return;
+    }
+    const failure = next?.run?.status === "failed" ? failureCopy(next.run.errorClass) : null;
+    setAnnounced(failure ? failure.heading : deckTuningCopy.announce.ready(next?.items.length ?? 0));
+    headingRef.current?.focus();
+  }
+
+  async function stop() {
+    token.current += 1;
+    const current = await deps.read(deckId);
+    if (current?.run?.status === "pending") await deps.cancel(deckId, current.run.id);
+    setCounts(null);
+    await reread();
+    setAnnounced(deckTuningCopy.announce.stopped);
+  }
+
+  async function settled(announce: string) {
+    setAnnounced(announce);
+    await reread();
+  }
+
+  // ── The body ──────────────────────────────────────────────────────────
+  let body: ReactNode;
+  let primary: { label: string; again: boolean } = { label: copy.suggest, again: false };
+  let note: string | null = null;
+
+  const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
+  const neverRunRows = manifestRows(facts, intent, null, steps);
+
+  if (reading) {
+    body = (
+      <>
+        <div className="mt-[14px] flex flex-col items-center gap-[10px] text-center md:mt-[12px] md:flex-row md:items-center md:gap-[20px] md:text-left">
+          <span className="md:hidden"><FanShuffle size="phone" /></span>
+          <span className="hidden md:inline-flex"><FanShuffle size="desktop" /></span>
+          <span className="flex flex-1 flex-col gap-[6px]">
+            <span className="font-display text-[15px] font-semibold md:text-[16px]" style={{ color: "var(--fg)" }}>
+              {copy.loadingHeading}
+            </span>
+            <span className="text-[12.5px] leading-[1.55] md:text-[13.5px] md:leading-[1.6]" style={{ color: "var(--fg-body)" }}>
+              {copy.loadingLead}
+            </span>
+          </span>
+        </div>
+        <ManifestRows rows={manifestRows(facts, intent, counts ?? {}, steps)} />
+      </>
+    );
+  } else if (failure) {
+    body = <Failure failure={failure} />;
+    primary = { label: deckTuningCopy.failure.retry, again: hasOk };
+  } else if (state.retired) {
+    body = (
+      <>
+        <Lead>{copy.retiredLead(state.retired.from, state.retired.to)}</Lead>
+        <ManifestRows rows={neverRunRows} onLogGame={onLogGame} />
+      </>
+    );
+  } else if (showResults) {
+    const total = state.items.length;
+    const applied = state.items.filter((i) => i.verdict === "accepted").length;
+    const rejected = state.items.filter((i) => i.verdict === "dismissed").length;
+    const answered = applied + rejected === total;
+    const dropped = state.run?.droppedCount ?? 0;
+    primary = { label: copy.again, again: true };
+    body = (
+      <>
+        <ReadFrom state={state} facts={facts} />
+        {unchangedShown ? (
+          <Unchanged state={state} intent={intent} />
+        ) : (
+          <Lead desktopOnly={!answered}>
+            {answered
+              ? copy.allDoneLead(numberWord(total), applied, rejected)
+              : dropped > 0
+                ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
+                : total === 1 ? copy.resultsLeadOne : copy.resultsLead(cap(numberWord(total)))}
+          </Lead>
+        )}
+        <ul className="mt-[14px] flex flex-col gap-[12px] md:gap-[8px]">
+          {state.items.map((item: TuningItem) => (
+            <li key={item.id}>
+              <SuggestionCard
+                item={item}
+                permits={permits}
+                newestPriceAsOf={state.newestPriceAsOf}
+                actions={deps.card}
+                onSettled={settled}
+              />
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+    if (applied + rejected > 0 && !answered) note = copy.tally(applied, total, rejected);
+  } else {
+    // Never run, or cleared by a Stop: the lead the evidence supports, and what will be read.
+    body = (
+      <>
+        <Lead>
+          {facts.gameCount === 0
+            ? copy.noGamesLead
+            : facts.fix === null
+              ? copy.unmarkedLead(cap(numberWord(facts.gameCount)))
+              : copy.readyLead(cap(numberWord(facts.gameCount)), axisName(facts.fix.key), facts.fix.hurt, facts.gameCount)}
+        </Lead>
+        <ManifestRows rows={neverRunRows} onLogGame={onLogGame} />
+      </>
+    );
+  }
+
+  const credit = spent
+    ? creditsCopy.spent(state.allowance.limit, state.allowance.nextAt)
+    : primary.again
+      ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
+      : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
+  const noteLine = note ? `${note} · ${credit}` : credit;
+
+  return (
+    <section
+      aria-labelledby="tuning-heading"
+      aria-busy={reading || undefined}
+      className="rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]"
+      style={{
+        background: "var(--surface-sunken)",
+        border: `1px solid ${reading ? "var(--accent)" : "var(--border)"}`,
+      }}
+    >
+      <h2
+        id="tuning-heading"
+        ref={headingRef}
+        tabIndex={-1}
+        className="font-display text-[17px] font-semibold outline-none md:text-[19px]"
+        style={{ color: "var(--fg)" }}
+      >
+        {copy.heading}
+      </h2>
+      {body}
+      {!reading && intent === null ? (
+        <DeckIntentAsk
+          deckId={deckId}
+          fix={facts.fix ? { axis: axisName(facts.fix.key), hurt: facts.fix.hurt, games: facts.gameCount } : null}
+          save={deps.saveIntent}
+          onSaved={(line) => {
+            setIntent(line);
+            setAnnounced(deckTuningCopy.announce.intentSaved);
+          }}
+        />
+      ) : null}
+
+      {/* THE ACTION ROW: one band in every state, the one primary first. */}
+      <div
+        className="mt-[16px] flex flex-col gap-[9px] pt-[15px] md:mt-[18px] md:min-h-[56px] md:flex-row md:flex-wrap md:items-center md:gap-[16px] md:pt-[16px]"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
+        {reading ? (
+          <>
+            <div className="flex gap-[8px] md:contents">
+              <span
+                aria-disabled="true"
+                className="flex h-[44px] flex-[2] items-center justify-center rounded-[8px] text-[13.5px] font-semibold md:h-auto md:flex-none md:px-[20px] md:py-[11px] md:text-[14px]"
+                style={{ color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }}
+              >
+                {copy.reading}
+              </span>
+              <button
+                type="button"
+                onClick={() => void stop()}
+                className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-auto md:flex-none md:px-[14px] md:py-[10px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+              >
+                {copy.stop}
+              </button>
+            </div>
+            <span className="text-center font-mono text-[9.5px] md:text-left md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+              {manifest.progress(steps.filter((s) => counts?.[s] != null).length, steps.length)}
+            </span>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => (spent ? undefined : void press(unchangedShown))}
+              aria-disabled={spent || undefined}
+              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${spent ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"}`}
+            >
+              {unchangedShown ? copy.unchangedCta : primary.label}
+            </button>
+            <span
+              className="text-center font-mono text-[9.5px] leading-[1.55] md:max-w-[380px] md:text-left md:text-[11px] md:leading-[1.5]"
+              style={{ color: "var(--fg-faint)" }}
+            >
+              {noteLine}
+            </span>
+          </>
+        )}
+      </div>
+      {refused ? <MutationError message={refused} /> : null}
+      <p role="status" className="sr-only">{announced}</p>
+    </section>
+  );
+}
+
+// ── The pieces ──────────────────────────────────────────────────────────
+
+function Lead({ children, desktopOnly = false }: { children: ReactNode; desktopOnly?: boolean }) {
+  return (
+    <p
+      className={`${desktopOnly ? "hidden md:block" : ""} mt-[10px] text-[12.5px] leading-[1.6] md:mt-[11px] md:max-w-[680px] md:text-[13.5px] md:leading-[1.65]`}
+      style={{ color: "var(--fg-body)" }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) {
+  const parts =
+    state.gameCount === 0
+      ? [manifest.readCards(facts.cards), manifest.readMix, manifest.readCollection]
+      : [
+          manifest.readGames(state.gameCount),
+          ...(facts.noteCount > 0 ? [manifest.readNotes(facts.noteCount)] : []),
+          manifest.readCards(facts.cards),
+          manifest.readMix,
+          manifest.readCollection,
+        ];
+  return (
+    <p className="mt-[8px] font-mono text-[9.5px] leading-[1.5] md:mt-[9px] md:text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+      {manifest.readFrom(parts)}
+      {state.gameCount === 0 ? (
+        <>
+          {" · "}
+          <span style={{ color: "var(--fg-body)" }}>{manifest.readNoGames}</span>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+function Unchanged({ state, intent }: { state: TuningState; intent: string | null }) {
+  const when = state.lastOkAt ? state.lastOkAt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  const rows: [string, string][] = [
+    [copy.unchangedReasonGamesKey, copy.unchangedReasonGames(state.gameCount, when)],
+    [copy.unchangedReasonIntentKey, intent === null ? copy.unchangedReasonIntentEmpty : copy.unchangedReasonIntent],
+  ];
+  return (
+    <div data-testid="tuning-unchanged">
+      <Lead>{copy.unchanged(when)}</Lead>
+      <ul className="mt-[12px] flex flex-col gap-[6px]">
+        {rows.map(([key, value]) => (
+          <li
+            key={key}
+            className="flex min-h-[34px] items-baseline gap-[11px] rounded-[8px] px-[12px] py-[8px]"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            <span className="w-[98px] flex-none font-mono text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>
+              {key}
+            </span>
+            <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{value}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-[12px] text-[13px] leading-[1.6]" style={{ color: "var(--fg-faint)" }}>{copy.unchangedTail}</p>
+    </div>
+  );
+}
+
+type FailureCopy = { tag: string; heading: string; body: string; kept: string; note: string };
+
+function failureCopy(errorClass: string | null): FailureCopy {
+  const f = deckTuningCopy.failure;
+  switch (errorClass) {
+    case "upstream_busy": return f.unavailable;
+    case "timeout": return f.timeout;
+    case "malformed": return f.malformed;
+    case "ungrounded": return f.ungrounded;
+    default: return f.interrupted;
+  }
+}
+
+function Failure({ failure }: { failure: FailureCopy }) {
+  return (
+    <div data-testid="tuning-failure" className="mt-[12px]">
+      <div className="flex flex-wrap items-baseline gap-[10px]">
+        <span
+          className="rounded-full px-[9px] py-[3px] font-mono text-[9.5px] uppercase tracking-[0.14em]"
+          style={{ color: "var(--danger)", background: "color-mix(in oklab, var(--danger) 12%, transparent)" }}
+        >
+          {failure.tag}
+        </span>
+        <span className="font-display text-[17px] font-semibold" style={{ color: "var(--fg)" }}>{failure.heading}</span>
+      </div>
+      <p className="mt-[11px] max-w-[660px] text-[13.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>{failure.body}</p>
+      <p className="mt-[9px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{failure.kept}</p>
+      <p className="mt-[6px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{failure.note}</p>
+    </div>
+  );
+}
+
+// ── Pure helpers ────────────────────────────────────────────────────────
+
+/** The reads a run discloses, in manifest order. Games and notes only when there are games. */
+export function readSteps(facts: TuningFacts, intent: string | null): EvidenceStep[] {
+  return [
+    ...(facts.gameCount > 0 ? (["games", "notes"] as const) : []),
+    "decklist",
+    ...(intent !== null ? (["intent"] as const) : []),
+    "collection",
+  ];
+}
+
+/** The manifest's rows: with `counts` null, the page's own figures and nothing ticked. */
+export function manifestRows(
+  facts: TuningFacts,
+  intent: string | null,
+  counts: Counts | null,
+  steps: readonly EvidenceStep[],
+): ManifestRow[] {
+  const rows: ManifestRow[] = facts.gameCount === 0 ? [{ kind: "noGames", key: "games" }] : [];
+  for (const step of steps) {
+    const landed = counts === null ? undefined : counts[step];
+    const n = counts === null ? known(facts, intent, step) : landed ?? null;
+    rows.push({
+      kind: "read",
+      key: step,
+      label: labelOf(step),
+      count: n === null ? null : countOf(step, n, facts),
+      done: counts !== null && landed != null,
+    });
+  }
+  return rows;
+}
+
+function known(facts: TuningFacts, intent: string | null, step: EvidenceStep): number | null {
+  switch (step) {
+    case "games": return facts.gameCount;
+    case "notes": return facts.noteCount;
+    case "decklist": return facts.cards;
+    case "intent": return intent === null ? 0 : 1;
+    // Worded without a figure, so the unchecked row reads the same before and after its read.
+    case "collection": return 0;
+  }
+}
+
+function labelOf(step: EvidenceStep): string {
+  switch (step) {
+    case "games": return manifest.games;
+    case "notes": return manifest.notes;
+    case "decklist": return manifest.list;
+    case "intent": return manifest.intent;
+    case "collection": return manifest.collection;
+  }
+}
+
+function countOf(step: EvidenceStep, n: number, facts: TuningFacts): string {
+  switch (step) {
+    case "games": return facts.fix === null && facts.marked === 0 ? manifest.gamesUnmarked(n) : manifest.gamesCount(n);
+    case "notes": return manifest.notesCount(n, facts.gameCount);
+    case "decklist": return manifest.listCount(n);
+    case "intent": return manifest.intentCount;
+    case "collection": return manifest.collectionCount;
+  }
+}
+
+function axisName(key: string): string {
+  const label = axisCopy[key as keyof typeof axisCopy]?.label ?? key;
+  return label.toLowerCase();
+}
+
+function cap(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}

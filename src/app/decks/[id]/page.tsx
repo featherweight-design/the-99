@@ -67,6 +67,10 @@ const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
 // branch invisible after deploy.
 const SYNERGY_KEY = ["deck-synergy", "2"];
 
+// Suggested changes runs as a Server Action invoked from this page, so the page's limit bounds
+// it: a model call's 90s deadline (MODEL_TIMEOUT_MS) plus the outcome write.
+export const maxDuration = 120;
+
 export default async function DeckBuilderPage({
   params,
   searchParams,

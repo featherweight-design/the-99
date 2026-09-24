@@ -12,6 +12,7 @@ import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
 import { LeanLine } from "./lean-line";
 import type { FindingArt } from "./receipt-modal";
+import type { Bracket } from "../../lib/profile/types";
 import { VerdictBlock } from "./verdict-block";
 
 /**
@@ -39,6 +40,7 @@ export function AnalysisPanel({
   declaration,
   art = EMPTY_ART,
   legality,
+  tuning,
   children,
 }: {
   state: ProfileState;
@@ -53,6 +55,12 @@ export function AnalysisPanel({
    * rows. See `FindingArt` for why it is resolved here rather than carried on the profile.
    */
   art?: FindingArt;
+  /**
+   * Suggested changes, drawn last and only over a reading (placement addendum v2): tuning follows
+   * the analysis, and a deck with no reading gets no suggestions. Handed the permits on screen,
+   * current or held, so its bracket flag is worded against the reading the reader sees.
+   */
+  tuning?: (permits: readonly Bracket[]) => ReactNode;
   children: ReactNode;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
@@ -109,6 +117,11 @@ export function AnalysisPanel({
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
       {children}
+      {held && tuning ? (
+        <div className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+          {tuning(slotDeck(held.profile).permits)}
+        </div>
+      ) : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
   );
