@@ -156,7 +156,9 @@ the pair's.
 
 ### 3.4 After a take
 
-The swap lands in the draft (ruling 7). The original leaves the list. The stand-in joins the list
+The swap lands in the draft (ruling 7). It cuts one copy at a time
+(`src/lib/tuning/verdicts.ts:132-143`), so the original leaves the list only when that was the last
+copy it asked to buy. A row buying more than one copy stays, one copy fewer. The stand-in joins the list
 if it has to be bought, and does not if it was a free copy. Draw where Put it back lives once the
 row it came from has changed or gone. Draw what the price strip's total shows: the new total alone,
 or the new total with what the swap saved.
@@ -164,7 +166,8 @@ or the new total with what the swap saved.
 ### 3.5 Fits your decks (card modal)
 
 A section in the card modal listing the player's decks the card could join. A deck qualifies when
-its commander's color identity allows the card and the deck does not already hold it. The decks
+the card is legal in Commander (`cards.commanderLegal`, `src/db/schema.ts:43`), its commander's
+color identity allows the card, and the deck does not already hold it. The decks
 that already hold it are listed by `AvailabilityDetail` already.
 
 Each deck row shows:
@@ -172,7 +175,11 @@ Each deck row shows:
 - **the commander fact:** how often this commander's decks run the card, or that the index does
   not list it for this commander;
 - **the need fact:** this deck's count of the card's role against its target ("removal 5 of 8"), or
-  nothing if the card has no role.
+  nothing if the card has no role. It is also omitted when the deck's role targets are not
+  measured: `recommendedMix` falls back to asserted flat targets when the skeleton carries no
+  usable role figures (`rolesUsable`, `src/lib/decks/mix.ts:112-114`, local and not returned
+  today), and a flat target is not a fit claim. The mix's own `measured` flag is stricter than
+  this needs, since it also requires the land count.
 
 States: several decks; every deck that could play it already holds it; no deck can play it (the
 colors rule them all out); the card is not legal in Commander; and no decks at all.
