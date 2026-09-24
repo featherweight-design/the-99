@@ -30,6 +30,13 @@ if (SYNOPSIS_REAPER_CUTOFF_MS >= RESERVATION_TTL_MS) {
  * (120s, set by tuning D1) must stay above this or the platform kills the call before it can refund.
  */
 export const SYNOPSIS_DEADLINE_MS = 110_000;
+
+/**
+ * The least of that budget worth sending the repair with (contract B). The measured repair runs
+ * about 18s at the median (eval harness, 2026-09-24); one sent with less than this would mostly
+ * time out, and a timed-out call is still billed. Below it the first answer stands as checked.
+ */
+export const SYNOPSIS_REPAIR_MIN_MS = 30_000;
 /**
  * The answer's worst case, from the contract's own counts and budgets (below), since a reply past
  * them is refused anyway. At every section's maximum: overview 576, strategy 5 × 144, mulligan

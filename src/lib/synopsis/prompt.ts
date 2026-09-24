@@ -62,6 +62,13 @@ function plusRules(facts: SynopsisFacts): string {
   ].join("\n");
 }
 
+const REPAIR_LEAD = "Those sections failed checking for these reasons; fix exactly these:";
+
+/** Whether a user message asks for refused sections again: the repair, or the player's Try again. */
+export function isRepair(user: string): boolean {
+  return user.includes(REPAIR_LEAD);
+}
+
 function range(r: { min: number; max: number }): string {
   return `${r.min} to ${r.max}`;
 }
@@ -107,7 +114,7 @@ export function buildSynopsisPrompt(
       v.status === "refused" && retry.refused.includes(v.section)
         ? [`${v.section}: ${v.reason}${v.failed ? ` (${v.failed} of ${v.total} cards failed checking)` : ""}`]
         : []);
-    lines.push(`Those sections failed checking for these reasons; fix exactly these: ${reasons.join("; ")}.`);
+    lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
   }
 
   return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}`, user: lines.join("\n") };
