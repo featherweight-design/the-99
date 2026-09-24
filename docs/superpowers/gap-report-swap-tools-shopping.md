@@ -33,12 +33,13 @@ figure, none over, some over, no price feed, empty Shopping, the All tab, and a 
   `·` was its own flex item, so it ended the first line with the count below it. It now travels
   with the count, and `probe:swap-shopping` reads it by geometry. Reverting the fix fails the
   probe at 390, where the two sit 43px apart.
-- **F12 at 768** (the narrowest two-column width). Every name in the grid is cut there, marked or
+- **F12 at 768**, the narrowest two-column width. Every name in the grid is cut there, marked or
   not, and the grid overflows the viewport. That predates this PR and is logged in the board's
-  `found` collection as `swap-decklist-768-overflow`. The inline `over $10` costs a name about 10px
-  more at that width. With PR 4a's 22px ⇄ still to come, the placement question went to the
-  orchestrator for a Design ruling. At 390 the line sits on the second row and costs the name
-  nothing (184px of room, against Design's 131px). At 1300 no name is cut.
+  `found` collection as `swap-decklist-768-overflow`. An inline `over $10` cost a name about 10px
+  more. The orchestrator ruled **(b)**: up to `lg`, `over $X` takes a line of its own under the
+  name (the phone's form), and it is drawn inline from 1024. `probe:swap-shopping` now reads 0px of
+  cost at 390 and 768 and no cut name at 1024 and 1300. A mutation that draws it inline from `md`
+  with no wrap fails at 768 with a 10px cost.
 
 ## Copy
 
