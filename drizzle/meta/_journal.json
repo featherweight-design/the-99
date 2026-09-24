@@ -414,6 +414,13 @@
       "when": 1790262922910,
       "tag": "0058_deck_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1790283438800,
+      "tag": "0059_swap_tools",
+      "breakpoints": true
     }
   ]
 }

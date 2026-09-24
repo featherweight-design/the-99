@@ -322,6 +322,13 @@ export const decks = pgTable("decks", {
    * state, which is what lets the chip say which it is showing.
    */
   intentSeeded: boolean("intent_seeded").notNull().default(false),
+  /**
+   * The Shopping view's per-card limit, in cents (swap tools, ruling 4): a Shopping row whose card
+   * costs more is marked, and its cheaper stand-ins are a press away. Remembered per deck. Null is
+   * the $10 default, never "off": the limit always applies. Whole dollars of at least 1, which is
+   * what the field accepts.
+   */
+  shoppingLimitCents: integer("shopping_limit_cents"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
@@ -356,6 +363,10 @@ export const decks = pgTable("decks", {
     ),
     // Code points, as Postgres's char_length counts them — the app's cap counts the same way.
     check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 120`),
+    check(
+      "decks_shopping_limit_check",
+      sql`${t.shoppingLimitCents} is null or (${t.shoppingLimitCents} >= 100 and ${t.shoppingLimitCents} % 100 = 0)`,
+    ),
     check(
       "decks_partner_distinct",
       sql`${t.partnerOracleId} is null or ${t.partnerOracleId} <> ${t.commanderOracleId}`,
@@ -1688,6 +1699,32 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
     sql`${t.verdict} in ('pending', 'accepted', 'dismissed')`,
   ),
   index("deck_suggestion_items_run_position_idx").on(t.runId, t.position),
+]);
+
+/**
+ * One stand-in taken in the Shopping view (swap tools, sub-project 4), so it can be undone.
+ *
+ * Tuning keeps its undo on the suggestion row it applied, and a Shopping take has no such row, so a
+ * take writes one here. It is the same act as tuning's Apply (ruling 7), through the same body
+ * (`src/lib/swaps/draft-swap.ts`): cut one copy, add one, and the snapshot of the two rows as they
+ * were, which Undo swap restores only over the deck the take left.
+ *
+ * `add_was_free` is the TAKE's own read of whether the added copy was spare, not the list's: the
+ * receipt says "your free copy" about the copy the take actually used.
+ */
+export const deckSwaps = pgTable("deck_swaps", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  cutOracleId: uuid("cut_oracle_id").notNull().references(() => cards.oracleId),
+  addOracleId: uuid("add_oracle_id").notNull().references(() => cards.oracleId),
+  addWasFree: boolean("add_was_free").notNull(),
+  snapshot: jsonb("snapshot").$type<ApplySnapshot>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  /** Set by Undo swap. A swap undone once cannot be undone again. */
+  undoneAt: timestamp("undone_at"),
+}, (t) => [
+  index("deck_swaps_deck_idx").on(t.deckId),
 ]);
 
 /**

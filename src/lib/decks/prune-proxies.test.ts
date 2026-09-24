@@ -17,7 +17,7 @@ const FILES = [
   "src/app/decks/actions.ts",
   "src/app/decks/update-actions.ts",
   "src/lib/decks/versions.ts",
-  "src/lib/tuning/verdicts.ts",
+  "src/lib/swaps/draft-swap.ts",
 ];
 
 /**

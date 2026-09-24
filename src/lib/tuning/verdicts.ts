@@ -1,19 +1,9 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import {
-  cards,
-  deckCards,
-  deckProxies,
-  deckSuggestionItems,
-  deckSuggestionRuns,
-  decks,
-  type ApplySnapshot,
-} from "../../db/schema";
-import { validateCardForDeck } from "../decks/add-validation";
-import { isBasicLand } from "../decks/grouping";
-import { pruneOrphanProxies } from "../decks/prune-proxies";
+import { deckSuggestionItems, deckSuggestionRuns, decks } from "../../db/schema";
 import { touchDeck } from "../decks/touch";
+import { applySwap, planSwap, restoreSwap } from "../swaps/draft-swap";
 
 /**
  * A suggestion's four verdicts, as transactions. SERVER-ONLY. Each takes the reader's id and
@@ -66,17 +56,9 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
   await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
 }
 
-const rowOf = (deckId: string, oracleId: string) =>
-  and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
-
-async function readRow(tx: Tx, deckId: string, oracleId: string) {
-  const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto })
-    .from(deckCards).where(rowOf(deckId, oracleId)).for("update");
-  return row ?? null;
-}
-
 /**
- * Cut one copy, add one, in one transaction, with the verdict and the snapshot undo reads.
+ * Cut one copy, add one, in one transaction, with the verdict and the snapshot undo reads. The swap
+ * itself is `draft-swap.ts`, shared with the swap tools' Take (brief ruling 7: one act, not two).
  *
  * Refused when the deck no longer holds the cut, when the add is a non-basic it already holds,
  * or when the add no longer fits the deck's commanders — the deck may have moved since the run.
@@ -87,69 +69,24 @@ export async function applyItem(itemId: string, userId: string): Promise<string 
     if (!item || item.verdict !== "pending" || item.cutOracleId === null) return null;
     const { deckId, addOracleId, cutOracleId } = item;
 
-    const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
-      .from(decks).where(eq(decks.id, deckId));
-    const cut = await readRow(tx, deckId, cutOracleId);
-    const add = await readRow(tx, deckId, addOracleId);
-    if (!deck || !cut) return null;
-
-    const facts = await tx.select({
-      oracleId: cards.oracleId, typeLine: cards.typeLine,
-      colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
-    }).from(cards).where(inArray(cards.oracleId, [
-      addOracleId, deck.commander, ...(deck.partner ? [deck.partner] : []),
-    ]));
-    const card = facts.find((f) => f.oracleId === addOracleId);
-    const commander = facts.find((f) => f.oracleId === deck.commander);
-    const partner = facts.find((f) => f.oracleId === deck.partner);
-    if (!card || !commander) return null;
-    if (add && !isBasicLand(card.typeLine)) return null;
-    const rejection = validateCardForDeck(
-      { oracleId: addOracleId, commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity },
-      {
-        commanderOracleId: deck.commander,
-        commanderColorIdentity: commander.colorIdentity,
-        partnerOracleId: deck.partner,
-        partnerColorIdentity: partner?.colorIdentity ?? null,
-        built: 0,
-      },
-    );
-    if (rejection) return null;
-
-    const [proxy] = await tx.select({ oracleId: deckProxies.oracleId }).from(deckProxies)
-      .where(and(eq(deckProxies.deckId, deckId), eq(deckProxies.oracleId, cutOracleId)));
-    const snapshot: ApplySnapshot = {
-      cut: { quantity: cut.quantity, auto: cut.auto, proxied: proxy !== undefined },
-      add: { quantity: add?.quantity ?? 0, auto: add?.auto ?? false },
-    };
+    const plan = await planSwap(tx, deckId, cutOracleId, addOracleId);
+    if (!plan.ok) return null;
 
     // The verdict and the snapshot first, before the deck changes: undo can only ever read a
     // snapshot of the deck as it was before this very apply.
     await tx.update(deckSuggestionItems)
-      .set({ verdict: "accepted", verdictAt: new Date(), undoSnapshot: snapshot })
+      .set({ verdict: "accepted", verdictAt: new Date(), undoSnapshot: plan.snapshot })
       .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionItems.verdict, "pending")));
 
-    if (cut.quantity > 1) {
-      await tx.update(deckCards).set({ quantity: cut.quantity - 1 }).where(rowOf(deckId, cutOracleId));
-    } else {
-      await tx.delete(deckCards).where(rowOf(deckId, cutOracleId));
-      // The slot is gone, so the deck's statement about it goes with it.
-      await pruneOrphanProxies(tx, deckId);
-    }
-    if (add) {
-      await tx.update(deckCards).set({ quantity: add.quantity + 1 }).where(rowOf(deckId, addOracleId));
-    } else {
-      await tx.insert(deckCards).values({ deckId, oracleId: addOracleId, quantity: 1, auto: false });
-    }
+    await applySwap(tx, deckId, cutOracleId, addOracleId, plan.snapshot);
     await touchDeck(tx, deckId);
     return deckId;
   });
 }
 
 /**
- * The deck exactly as it was before the apply, for the two rows the apply moved: the cut at its
- * snapshotted quantity, `auto` flag and proxy mark, the add back to its snapshotted quantity —
- * gone when that was 0. The item returns to pending and its snapshot is cleared.
+ * The deck exactly as it was before the apply (`restoreSwap`), and only over the deck the apply
+ * left. The item returns to pending and its snapshot is cleared.
  */
 export async function undoItem(itemId: string, userId: string): Promise<string | null> {
   return db.transaction(async (tx) => {
@@ -157,49 +94,8 @@ export async function undoItem(itemId: string, userId: string): Promise<string |
     if (!item || item.verdict !== "accepted" || !item.undoSnapshot || item.cutOracleId === null) return null;
     const { deckId, addOracleId, cutOracleId, undoSnapshot: snap } = item;
 
-    // Only over the deck the apply left. If the player has since changed either card, the
-    // snapshot no longer describes what to undo, and writing it would destroy their edit: the
-    // item stays accepted and the deck is untouched.
-    const add = await readRow(tx, deckId, addOracleId);
-    const cut = await readRow(tx, deckId, cutOracleId);
-    // Quantity AND provenance: the apply inserts a new add at `auto: false` and leaves an existing
-    // row's flag alone, and a `keep` pressed since is an edit like any other.
-    const cutLeft = snap.cut ? snap.cut.quantity - 1 : null;
-    const addAuto = snap.add.quantity === 0 ? false : snap.add.auto;
-    const addAsApplied = add?.quantity === snap.add.quantity + 1 && add.auto === addAuto;
-    const cutAsApplied = !snap.cut || (cutLeft === 0
-      ? cut === null
-      : cut?.quantity === cutLeft && cut.auto === snap.cut.auto);
-    if (!addAsApplied || !cutAsApplied) return null;
+    if (!(await restoreSwap(tx, deckId, cutOracleId, addOracleId, snap))) return null;
 
-    if (snap.add.quantity === 0) {
-      await tx.delete(deckCards).where(rowOf(deckId, addOracleId));
-      // A proxy mark put on the add while it was in the deck leaves with it.
-      await pruneOrphanProxies(tx, deckId);
-    } else {
-      await tx.insert(deckCards)
-        .values({ deckId, oracleId: addOracleId, quantity: snap.add.quantity, auto: snap.add.auto })
-        .onConflictDoUpdate({
-          target: [deckCards.deckId, deckCards.oracleId],
-          set: { quantity: snap.add.quantity, auto: snap.add.auto },
-        });
-    }
-    if (snap.cut) {
-      await tx.insert(deckCards)
-        .values({ deckId, oracleId: cutOracleId, quantity: snap.cut.quantity, auto: snap.cut.auto })
-        .onConflictDoUpdate({
-          target: [deckCards.deckId, deckCards.oracleId],
-          set: { quantity: snap.cut.quantity, auto: snap.cut.auto },
-        });
-      // Its mark exactly as it was: back if it had one, and gone if it did not — a mark put on
-      // the card after the apply is not part of the deck this restores.
-      if (snap.cut.proxied) {
-        await tx.insert(deckProxies).values({ deckId, oracleId: cutOracleId }).onConflictDoNothing();
-      } else {
-        await tx.delete(deckProxies)
-          .where(and(eq(deckProxies.deckId, deckId), eq(deckProxies.oracleId, cutOracleId)));
-      }
-    }
     await tx.update(deckSuggestionItems)
       .set({ verdict: "pending", verdictAt: null, undoSnapshot: null })
       .where(and(eq(deckSuggestionItems.id, itemId), eq(deckSuggestionItems.verdict, "accepted")));

@@ -904,7 +904,7 @@ answered) draws inline "✓ applied" and `9px 12px`. Both are recorded. No 390 f
 | add | not drawn | `<b>`, var(--fg), 600 | same | V2:484 / V2:510 |
 | verdict / shopping clause | — | — | — | R:82 |
 
-### "Put it back"
+### "Undo swap"
 
 | Property | 390 | 1300 | Source |
 |---|---|---|---|
@@ -954,7 +954,7 @@ answered) draws inline "✓ applied" and `9px 12px`. Both are recorded. No 390 f
 
 | Property | 390 | 1300 | Source |
 |---|---|---|---|
-| style | not drawn | as "Put it back": margin-left auto, 500 12px, var(--fg-muted), 1px solid var(--border-strong), radius 7px, padding 6px 11px | V2:490 |
+| style | not drawn | as "Undo swap": margin-left auto, 500 12px, var(--fg-muted), 1px solid var(--border-strong), radius 7px, padding 6px 11px | V2:490 |
 
 ---
 
@@ -1334,7 +1334,7 @@ logged games; `markedCount` stands for games carrying a worked/hurt mark.
 | No flag | `bracketAfter == null` or equal to current set | no row, nothing reserved | — | V2:124 |
 | Applying | Apply pressed, write pending | "Applying…" non-interactive, Reject disabled, nothing unmounts | pending flag | ST:62 |
 | Apply refused | write refused | MutationError under the card's action row | error | R:400 |
-| Applied | `verdict == 'applied'` | Applied row (success border, stamp, pair, Put it back) | cut, add | C3, C4 |
+| Applied | `verdict == 'applied'` | Applied row (success border, stamp, pair, Undo swap) | cut, add | C3, C4 |
 | Put back refused | undo refused | MutationError, `card.undoRefused` | error | DC |
 | Rejected | `verdict == 'rejected'` | Rejected row (sunken, "rejected", faint pair, Show it again) | cut, add | C3, C4 |
 | No longer applies (cut gone) | `applies == false` because `cutInDeck == false` | row with "no longer applies" + brokenLine; no button; Apply refused server-side | cut name | C5 draft row |
