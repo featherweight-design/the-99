@@ -37,6 +37,19 @@ describe("useDeckSynopsis", () => {
     expect(actions.writeSynopsis).not.toHaveBeenCalled();
   });
 
+  // Until the read for a new key lands, what the state says about a write is about the list or
+  // reading before; the tab offers no press over it.
+  it("is not current until the read for the key on screen lands", async () => {
+    let second!: (v: unknown) => void;
+    const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d1", true, key), { initialProps: { key: "a" } });
+    await waitFor(() => expect(result.current.view.kind === "ready" && result.current.view.current).toBe(true));
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { second = r; }));
+    rerender({ key: "b" });
+    expect(result.current.view.kind === "ready" && result.current.view.current).toBe(false);
+    await act(async () => second(synopsisState({ wouldSpend: true })));
+    expect(result.current.view.kind === "ready" && result.current.view.current).toBe(true);
+  });
+
   it("drops an answer overtaken by a newer read", async () => {
     let first!: (v: unknown) => void;
     actions.fetchSynopsis

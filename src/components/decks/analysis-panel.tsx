@@ -182,7 +182,7 @@ function Verdict({
           the second row takes any slack, so a tall box never opens a gap under the overview. */}
       <div className="flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[30px] md:gap-y-[26px]">
         {overview ? <div className="min-w-0 md:col-start-1 md:row-start-1">{overview}</div> : null}
-        <div className={`min-w-0 md:col-start-2 md:row-start-1 ${overview ? "md:row-span-2" : ""}`}>
+        <div data-testid="verdict-cell" className={`min-w-0 md:col-start-2 md:row-start-1 ${overview ? "md:row-span-2" : ""}`}>
           <VerdictBlock
             verdict={verdict}
             profile={profile}
@@ -204,7 +204,7 @@ function Verdict({
             }
           />
         </div>
-        <div className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
+        <div data-testid="climb-cell" className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
           <BracketClimb verdict={verdict} profile={profile} />
         </div>
       </div>

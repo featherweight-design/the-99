@@ -44,7 +44,7 @@ export function SynopsisText({
 export function CardName({ oracleId, name, imageUri }: { oracleId: string; name: string; imageUri: string | null }) {
   const preview = usePreviewRow(imageUri);
   return (
-    <span {...preview} className="inline">
+    <span {...preview} className="inline" data-testid="synopsis-card">
       <CardDetailTrigger
         oracleId={oracleId}
         name={name}

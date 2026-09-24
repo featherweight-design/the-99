@@ -108,7 +108,7 @@ export function SynopsisOverview({
   }
 
   return (
-    <section aria-labelledby="synopsis-overview-label" className="flex flex-col gap-[7px] md:gap-[8px]">
+    <section aria-labelledby="synopsis-overview-label" data-testid="synopsis-overview" className="flex flex-col gap-[7px] md:gap-[8px]">
       <h3 id="synopsis-overview-label" className="font-mono uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em] text-[var(--fg-faint)]">
         {synopsisCopy.label}
       </h3>
