@@ -14,6 +14,13 @@ import { dirname } from "node:path";
 export const HARD_CAP_USD = 25;
 export const ASK_AT_USD = 15;
 
+/**
+ * An entry is either SETTLED (what a batch actually cost, from its usage meters) or PENDING (a
+ * batch's worst case, written BEFORE it is submitted). A settled entry names the pending one it
+ * closes. So a process that dies after paying for a batch and before settling it leaves its
+ * pending entry standing, and every later run counts that worst case as spent: the cap stays hard
+ * across a crash rather than best-effort.
+ */
 export type LedgerEntry = {
   at: string;
   runId: string;
@@ -21,6 +28,9 @@ export type LedgerEntry = {
   source: string;
   usd: number;
   requests: number;
+  /** Present on a pending entry: its id, which the settling entry names in `settles`. */
+  pending?: string;
+  settles?: string;
 };
 
 export type Ledger = { entries: LedgerEntry[] };
@@ -34,8 +44,10 @@ export function readLedger(path: string): Ledger {
   return { entries: readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as LedgerEntry) };
 }
 
+/** Settled spend, plus the worst case of every pending entry no settled entry has closed. */
 export function spent(ledger: Ledger): number {
-  return ledger.entries.reduce((n, e) => n + e.usd, 0);
+  const settled = new Set(ledger.entries.flatMap((e) => (e.settles ? [e.settles] : [])));
+  return ledger.entries.reduce((n, e) => n + (e.pending && settled.has(e.pending) ? 0 : e.usd), 0);
 }
 
 export function record(path: string, entry: LedgerEntry): Ledger {

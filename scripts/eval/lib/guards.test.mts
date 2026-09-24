@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { refusal } from "./ledger.mjs";
+import { refusal, spent } from "./ledger.mjs";
 import { costUsd, worstCaseUsd } from "./pricing.mjs";
 import { DEV_COUNT, OVERLAY_COUNT, splitDecks } from "./split.mjs";
 
@@ -57,5 +57,14 @@ describe("acquireRunLock", () => {
     const ledger = join(mkdtempSync(join(tmpdir(), "eval-lock-")), "ledger.jsonl");
     acquireRunLock(ledger);
     expect(() => acquireRunLock(ledger)).toThrow(/another run holds the ledger lock/);
+  });
+});
+
+describe("spent", () => {
+  const e = (over: object) => ({ at: "", runId: "r", source: "s", usd: 0, requests: 1, ...over });
+  it("counts a pending batch's worst case until it settles, then only what it cost", () => {
+    const pending = e({ usd: 5, pending: "r/a1" });
+    expect(spent({ entries: [pending] })).toBe(5);
+    expect(spent({ entries: [pending, e({ usd: 1.25, settles: "r/a1" })] })).toBe(1.25);
   });
 });

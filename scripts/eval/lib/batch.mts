@@ -67,7 +67,9 @@ export async function sendRealtime(requests: Sent[], log: (line: string) => void
   for (const r of requests) {
     const start = performance.now();
     try {
-      const message = await anthropic().messages.create(r.params);
+      // No SDK retries on the call itself: `callModel` sends with `maxRetries: 0` and owns the one
+      // retry, which the runner reproduces. SDK retries here would hide a failure and bill twice.
+      const message = await anthropic().messages.create(r.params, { maxRetries: 0 });
       out.push({ customId: r.customId, ok: true, message, elapsedMs: Math.round(performance.now() - start) });
     } catch (err) {
       out.push({ customId: r.customId, ok: false, reason: err instanceof Error ? err.message : String(err) });
