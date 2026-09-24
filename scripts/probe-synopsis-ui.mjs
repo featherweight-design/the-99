@@ -130,8 +130,11 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   const holds = [];
-  /** The walked deck, which held no overview when the run began: every row on it is this run's. */
+  /** The walked deck, and the database instant the walk began: the rows this run may clear are
+   *  the stub's, on that deck, written since. Never every row on the deck: a write from anywhere
+   *  else during the run is not this probe's to erase. */
   let walked = null;
+  let since = null;
   try {
     const ctx = await browser.newContext({ viewport: DESKTOP });
     const page = await ctx.newPage();
@@ -146,6 +149,7 @@ async function run() {
     if (!report("a deck with no overview", href !== null, href ?? "every one of the first 12 decks has one")) return;
     const deckId = href.split("/")[2];
     walked = deckId;
+    [{ since }] = await sql`select now() as since`;
     holds.push(await holdProfile(sql, deckId));
     await sql`delete from deck_profiles where deck_id = ${deckId}::uuid`;
     console.log(`       (walking ${href})`);
@@ -262,9 +266,10 @@ async function run() {
   } finally {
     // The overview this run wrote, and the credit it spent, so a run leaves neither behind.
     // Read from the database rather than from what the run saw, so a write that landed after a
-    // check failed is cleared too. The deck held none when the run began.
+    // check failed is cleared too, and scoped to this run's own stub writes.
     if (walked) {
-      const rows = await sql`select id, model_call_id from deck_synopses where deck_id = ${walked}::uuid`.catch(() => []);
+      const rows = await sql`select id, model_call_id from deck_synopses
+        where deck_id = ${walked}::uuid and model = 'stub' and created_at >= ${since}`.catch(() => []);
       for (const row of rows) {
         await sql`delete from deck_synopses where id = ${row.id}::uuid`.catch((e) => report("delete the written overview", false, e.message));
         if (row.model_call_id) {
