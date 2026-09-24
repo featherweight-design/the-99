@@ -33,7 +33,6 @@ const { values: args } = parseArgs({
     "dry-run": { type: "boolean", default: false },
     "plan-done": { type: "string", default: "0" },
     label: { type: "string", default: "run" },
-    /** `<runId>:<batchId>`: attach to a first pass an earlier process submitted and died waiting on. */
   },
 });
 

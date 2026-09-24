@@ -119,13 +119,14 @@ export function mulliganFigureFailures(reply: SynopsisResponse, facts: SynopsisF
  * Names the answer gives that resolve to no card, counted over EVERY mark and named card in every
  * section, independent of which refusal a section reports first: `validateSynopsis` names one
  * reason per section, so a section refused for its length hides an out-of-deck mark from a count
- * read off `unknown_card` refusals. A name resolves when it is in the deck (either face of a
- * two-faced card) or in the catalog read the app does for the answer.
+ * read off `unknown_card` refusals. A name resolves when the deck's name index or the catalog read
+ * the app does for the answer knows it.
  */
 export function outsideMarks(reply: SynopsisResponse, facts: SynopsisFacts, catalog: Catalog): number {
   const deck = deckNameIndex(facts.cards);
-  const faces = new Set([...deck.values()].flatMap((c) => c.name.split(" // ").map(normalizeName)));
-  const known = (n: string) => deck.has(normalizeName(n)) || faces.has(normalizeName(n)) || catalog.has(normalizeName(n));
+  // `deckNameIndex` already answers to each face, and leaves out a face two deck cards share, which
+  // resolves to neither card and so counts here as it is refused there.
+  const known = (n: string) => deck.has(normalizeName(n)) || catalog.has(normalizeName(n));
   const { strategy, mulligan, tips } = reply.primer;
   const texts = [reply.overview, ...strategy, ...mulligan.keep, ...mulligan.sendBack, ...tips.map((t) => t.text), ...reply.keyCards.map((k) => k.job), ...reply.weaknesses];
   // A card FIELD written as a mark (`[[Sol Ring]]`) is a formatting fault the section's own refusal
