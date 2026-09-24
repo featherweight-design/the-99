@@ -250,13 +250,22 @@ async function run() {
     ...deps,
     model: async (req, facts) => {
       const out = await deps.model(req, facts);
-      return out.ok ? { ...out, value: { ...out.value, weaknesses: null as unknown as string[] } } : out;
+      // A reply that came back (and was billed: a usage the stub never reports, so the probe can
+      // see it land) but that the checks cannot read.
+      return out.ok
+        ? { ...out, value: { ...out.value, weaknesses: null as unknown as string[] }, usage: { ...out.usage, inputTokens: 1_234 } }
+        : out;
     },
   };
   const threw = await writeSynopsisFor(deck.id, USER, throwingModel);
   check("a throw after the reservation ends as a refunded upstream failure",
     [threw.kind === "written" && threw.outcome, (await ledger()).find((r) => r.status === "refunded")?.n, (await state()).pending],
     ["upstream_busy", 1, false]);
+  // …and that fallback settle still records what the returned call billed.
+  const [threwUnit] = await rows<{ input_tokens: number | null; cost: string | null }>(sql`
+    select m.input_tokens, m.cost_micro_usd::text as cost from model_calls m
+    where m.user_id = ${USER} and m.status = 'refunded' and m.created_at > now() - interval '24 hours'`);
+  check("…and records the billed call's meters on its unit", threwUnit, { input_tokens: 1_234, cost: "0" });
 
   // 9 · THE REAPER, on both paths: a run a crash left pending is failed, refunded, and frees the
   // deck, whether the next thing to arrive is a write or a read. Each path is proved on its own

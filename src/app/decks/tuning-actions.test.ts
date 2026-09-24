@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
-const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight" }));
+const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
+  reachModel: false, finished: [] as unknown[][] }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -20,7 +21,10 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   }),
   readEvidenceStep: async () => 1,
   readOwnedOracleIds: async () => new Set(),
-  profileOfHead: async () => { throw new Error("stop after the gate"); },
+  profileOfHead: async () => {
+    if (!calls.reachModel) throw new Error("stop after the gate");
+    return { cards: [], skeleton: { staples: [] } };
+  },
   withBracketAfter: async () => [],
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
@@ -28,11 +32,23 @@ vi.mock("../../lib/tuning/run-store", () => ({
   startRun: async (...args: unknown[]) => {
     calls.started += 1;
     calls.startOpts = args[4];
-    return { kind: calls.startKind };
+    return calls.startKind === "started" ? { kind: "started", runId: "run_1" } : { kind: calls.startKind };
   },
-  finishRun: async () => true,
+  finishRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
   persistRun: async () => true,
   cancelRun: async () => true,
+}));
+vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
+vi.mock("../../lib/tuning/evidence", () => ({ buildEvidencePack: () => ({ cards: [] }) }));
+vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", user: "u" }) }));
+// A reply that came back, billed, and names cards: the catalog read after it is what throws here,
+// since `db` is a stub.
+vi.mock("../../lib/model/client", () => ({
+  callModel: async () => ({
+    ok: true,
+    value: { suggestions: [{ add: "Sol Ring", cut: "Island" }] },
+    usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
+  }),
 }));
 vi.mock("../../lib/tuning/verdicts", () => ({
   applyItem: async () => { calls.applied += 1; return "deck"; },
@@ -52,6 +68,21 @@ beforeEach(() => {
   calls.applied = 0;
   calls.saved = 0;
   calls.startKind = "in_flight";
+  calls.reachModel = false;
+  calls.finished = [];
+});
+
+describe("runTuning after the call returned", () => {
+  it("settles a throw past the reply with the usage the reply billed", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    await expect(runTuning(DECK, { anyway: true })).rejects.toThrow();
+    expect(calls.finished).toEqual([[
+      "run_1",
+      { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
+      { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 } },
+    ]]);
+  });
 });
 
 describe("runTuning's refused reservation", () => {

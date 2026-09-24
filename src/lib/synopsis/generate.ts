@@ -325,6 +325,11 @@ async function run(
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
   // read, the checks, the store) is settled as a refunded upstream failure, so the unit comes
   // straight back and the one-pending index does not hold the deck until the reaper.
+  //
+  // `billed` is in scope for the WHOLE block for the same reason: once the call has returned, every
+  // settle records what it cost, the fallback in the `catch` included. A throw in the catalog read
+  // or the checks comes after a reply that was billed all the same.
+  let billed: { model: string; usage: ModelUsage } | undefined;
   try {
     let outcome: ModelOutcome<SynopsisResponse>;
     try {
@@ -334,8 +339,9 @@ async function run(
       outcome = { ok: false, errorClass: "upstream_busy" };
     }
 
+    if (outcome.usage) billed = { model: deps.modelName, usage: outcome.usage };
+
     if (!outcome.ok) {
-      const billed = outcome.usage ? { model: deps.modelName, usage: outcome.usage } : undefined;
       const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed }, deps.now());
       return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
     }
@@ -351,7 +357,7 @@ async function run(
     const result = outcomeOf(content.verdicts);
     const written = await finishRun(
       started.runId,
-      { outcome: result, content, usage: outcome.usage, charge, billed: { model: deps.modelName, usage: outcome.usage } },
+      { outcome: result, content, usage: outcome.usage, charge, billed },
       deps.now(),
     );
     if (!written) return { kind: "superseded" };
@@ -364,7 +370,7 @@ async function run(
     };
   } catch (error) {
     console.error("synopsis write failed after its reservation", error);
-    const settled = await finishRun(started.runId, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded" }, deps.now());
+    const settled = await finishRun(started.runId, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded", billed }, deps.now());
     return settled ? { kind: "written", outcome: "upstream_busy", synopsis: null } : { kind: "superseded" };
   }
 }
