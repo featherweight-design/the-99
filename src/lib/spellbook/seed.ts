@@ -5,6 +5,11 @@ import { cardBracketFlags, cards, spellbookVariantCards, spellbookVariants } fro
 import { isMassLandDenial, isExtraTurn } from "../bracket/oracle-rules";
 import { isTutor } from "../bracket/tutor-targets";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
+import {
+  diffCombos, diffFlags, emptyLogReport, logTableExists, writeEntries,
+  type CountedCombo, type FlagFacts, type LogReport,
+} from "../notices/log";
+import { isCountedCombo } from "../profile/load";
 import { streamVariants } from "./bulk";
 import { sweepCardFlags, unionFlagRows, type SweepFetcher, type SweepCard } from "./sweep";
 import { toVariantRows, type DropReason } from "./transform";
@@ -194,6 +199,8 @@ export type IngestReport = {
   flags: ClassifierCounts & { rows: number };
   variants: { kept: number; cards: number; dropped: Record<string, number> };
   gameChangerDisagreements: string[];
+  /** The deck notices entries this run wrote and lost; losses never fail the run (plan D13). */
+  notices: LogReport;
 };
 
 function defaultSweepFetcher(): SweepFetcher {
@@ -225,6 +232,8 @@ export async function ingestCombos(opts: {
   fetchBulk?: () => Promise<ReadableStream<Uint8Array>>;
   floors?: IngestFloors;
   log?: (line: string) => void;
+  /** The notices report to fill; a caller that needs the entries' sequence numbers passes its own. */
+  notices?: LogReport;
 } = {}): Promise<IngestReport> {
   const log = opts.log ?? ((l: string) => console.log(l));
   const floors = opts.floors ?? FLOORS;
@@ -297,12 +306,11 @@ export async function ingestCombos(opts: {
 
   // ---- 5 · publish the FLAGS, in their own transaction, before the bulk ---------------
   const flagRows = unionFlagRows(swept.flags, ruled);
-  await db.transaction(async (tx) => {
-    await tx.delete(cardBracketFlags);
-    for (let i = 0; i < flagRows.length; i += CHUNK) {
-      await tx.insert(cardBracketFlags).values(flagRows.slice(i, i + CHUNK));
-    }
-  });
+  // The deck notices log (brief §6): asked once whether it exists; each diff is written inside the
+  // publish it describes, in a savepoint, and a failed write never fails the run (`writeEntries`).
+  const logging = await logTableExists(db);
+  const notices = opts.notices ?? emptyLogReport();
+  await publishFlags(flagRows, logging, notices);
   log(`flags: published ${flagRows.length} rows (before the bulk, so a bulk failure cannot cost them)`);
 
   // ---- 6 · the bulk ------------------------------------------------------------------
@@ -385,16 +393,20 @@ export async function ingestCombos(opts: {
 
 
   // ---- 7 · publish the VARIANTS, second transaction -----------------------------------
-  await db.transaction(async (tx) => {
-    // The child cascades from the parent, so one delete clears both.
-    await tx.delete(spellbookVariants);
-    for (let i = 0; i < variantRows.length; i += CHUNK) {
-      await tx.insert(spellbookVariants).values(variantRows.slice(i, i + CHUNK));
+  // Names from the WHOLE catalog, not the legal one above: a combo REMOVED because one of its
+  // pieces became illegal names that piece, and the entry must carry its name once the variant
+  // row is gone. Only read when the log is being written.
+  // Non-fatal like the rest of the log: a failed read costs the entries their names (they keep the
+  // oracle ids) and never the variant publish.
+  let names = new Map<string, string>();
+  if (logging) {
+    try {
+      names = new Map((await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)).map((c) => [c.oracleId, c.name]));
+    } catch (error) {
+      log(`notices: card names unread, entries keep oracle ids (${error instanceof Error ? error.message : String(error)})`);
     }
-    for (let i = 0; i < cardRows.length; i += CHUNK) {
-      await tx.insert(spellbookVariantCards).values(cardRows.slice(i, i + CHUNK));
-    }
-  });
+  }
+  await publishVariants(variantRows, cardRows, logging, notices, (id) => names.get(id) ?? id);
   log(`variants: published`);
 
   // ---- 8 · retire cached readers -----------------------------------------------------
@@ -413,5 +425,141 @@ export async function ingestCombos(opts: {
     flags: { ...counts, rows: flagRows.length },
     variants: { kept: variantRows.length, cards: cardRows.length, dropped },
     gameChangerDisagreements: swept.gameChangerDisagreements,
+    notices,
   };
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+type FlagRowInsert = typeof cardBracketFlags.$inferInsert;
+type VariantInsert = typeof spellbookVariants.$inferInsert;
+type MemberInsert = typeof spellbookVariantCards.$inferInsert;
+
+/**
+ * Step 5's publish: the flags, cleared and refilled in one transaction (the #704 pattern). With
+ * `logging`, the mass land denial and extra-turn flags it replaces are read in that transaction and
+ * their diff is written in a savepoint inside it. Exported for `probe:notices-log`.
+ */
+export async function publishFlags(flagRows: readonly FlagRowInsert[], logging: boolean, notices: LogReport) {
+  await db.transaction(async (tx) => {
+    // Never tutor: the verdict classifies tutors from oracle text, so a tutor flag moves nothing.
+    const previous: Map<string, FlagFacts> | null = logging
+      ? await readBefore(tx, "flags", async (sp) => new Map(
+          (await sp
+            .select({ oracleId: cardBracketFlags.oracleId, massLandDenial: cardBracketFlags.massLandDenial, extraTurn: cardBracketFlags.extraTurn })
+            .from(cardBracketFlags)).map((r) => [r.oracleId, r]),
+        ))
+      : null;
+    await tx.delete(cardBracketFlags);
+    for (let i = 0; i < flagRows.length; i += CHUNK) {
+      await tx.insert(cardBracketFlags).values(flagRows.slice(i, i + CHUNK));
+    }
+    if (previous) {
+      const next = flagRows.map((r) => ({ oracleId: r.oracleId, massLandDenial: r.massLandDenial ?? false, extraTurn: r.extraTurn ?? false }));
+      await writeEntries(tx, diffFlags(previous, next), notices);
+    }
+  });
+}
+
+/**
+ * Step 7's publish: the variants and their members, in one transaction. With `logging`, the
+ * COUNTED combos it replaces are read in that transaction (plan D7), and the diff against the
+ * counted combos it publishes is written in a savepoint inside it. Exported for `probe:notices-log`.
+ */
+export async function publishVariants(
+  variantRows: readonly VariantInsert[],
+  cardRows: readonly MemberInsert[],
+  logging: boolean,
+  notices: LogReport,
+  nameOf: (oracleId: string) => string,
+) {
+  await db.transaction(async (tx) => {
+    const previous = logging ? await readBefore(tx, "combos", async (sp) => countedCombos(await readCombosBefore(sp))) : null;
+    // The child cascades from the parent, so one delete clears both.
+    await tx.delete(spellbookVariants);
+    for (let i = 0; i < variantRows.length; i += CHUNK) {
+      await tx.insert(spellbookVariants).values(variantRows.slice(i, i + CHUNK));
+    }
+    for (let i = 0; i < cardRows.length; i += CHUNK) {
+      await tx.insert(spellbookVariantCards).values(cardRows.slice(i, i + CHUNK));
+    }
+    if (previous) await writeEntries(tx, diffCombos(previous, countedCombos(combosOf(variantRows, cardRows)), nameOf), notices);
+  });
+}
+
+/**
+ * A publish's "before" read, in a SAVEPOINT of the publish's own transaction, so the log's contract
+ * holds from its first statement: a failed read rolls back to the savepoint, the publish goes on,
+ * and that publish writes no entries. Never an empty map in its place, which would log every row as
+ * added.
+ */
+async function readBefore<T>(
+  tx: Tx,
+  what: string,
+  read: (sp: Tx) => Promise<T>,
+): Promise<T | null> {
+  try {
+    return await tx.transaction((sp) => read(sp));
+  } catch (error) {
+    console.warn(`notices: the ${what} before this publish were unread, so it writes no entries (${error instanceof Error ? error.message : String(error)})`);
+    return null;
+  }
+}
+
+/** A variant with its pieces, before the counting rule is applied. */
+type ComboCandidate = {
+  variantId: string; cardCount: number; requiresTemplateIds: readonly unknown[]; produces: string[];
+  pieces: { oracleId: string; mustBeCommander: boolean }[];
+};
+
+/** The counted combos among `candidates`, keyed by variant (`isCountedCombo`, plan D7). */
+function countedCombos(candidates: readonly ComboCandidate[]): Map<string, CountedCombo> {
+  const out = new Map<string, CountedCombo>();
+  for (const c of candidates) {
+    const pieces = [...new Set(c.pieces.map((p) => p.oracleId))].sort();
+    if (!isCountedCombo({ cardCount: c.cardCount, requiresTemplateIds: c.requiresTemplateIds, pieces, produces: c.produces })) continue;
+    out.set(c.variantId, {
+      variantId: c.variantId,
+      pieces,
+      mustBeCommander: [...new Set(c.pieces.filter((p) => p.mustBeCommander).map((p) => p.oracleId))].sort(),
+      produces: c.produces,
+    });
+  }
+  return out;
+}
+
+/** The rows this run is about to publish, as candidates. */
+function combosOf(
+  variants: readonly (typeof spellbookVariants.$inferInsert)[],
+  members: readonly (typeof spellbookVariantCards.$inferInsert)[],
+): ComboCandidate[] {
+  const byVariant = new Map<string, { oracleId: string; mustBeCommander: boolean }[]>();
+  for (const m of members) {
+    const list = byVariant.get(m.variantId) ?? [];
+    list.push({ oracleId: m.oracleId, mustBeCommander: m.mustBeCommander ?? false });
+    byVariant.set(m.variantId, list);
+  }
+  return variants.map((v) => ({
+    variantId: v.variantId, cardCount: v.cardCount, requiresTemplateIds: v.requiresTemplateIds,
+    produces: v.produces, pieces: byVariant.get(v.variantId) ?? [],
+  }));
+}
+
+/** The published variants that COULD count, narrowed in SQL to two-card, template-free ones so the
+ *  read is a few thousand rows rather than the whole index; `countedCombos` applies the rule. */
+async function readCombosBefore(tx: Tx): Promise<ComboCandidate[]> {
+  const rows = (await tx.execute(sql`
+    select v.variant_id, v.card_count, v.requires_template_ids, v.produces,
+           json_agg(json_build_object('oracleId', vc.oracle_id, 'mustBeCommander', vc.must_be_commander)) as pieces
+    from ${spellbookVariants} v
+    join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+    group by v.variant_id`)).rows as {
+      variant_id: string; card_count: number; requires_template_ids: number[]; produces: string[];
+      pieces: { oracleId: string; mustBeCommander: boolean }[];
+    }[];
+  return rows.map((r) => ({
+    variantId: r.variant_id, cardCount: r.card_count, requiresTemplateIds: r.requires_template_ids,
+    produces: r.produces, pieces: r.pieces,
+  }));
 }

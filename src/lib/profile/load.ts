@@ -109,6 +109,28 @@ export async function readProfileHead(
 }
 
 /**
+ * Whether the verdict COUNTS a combo, as far as the combo itself can say: two cards, no template
+ * piece, two distinct pieces (§4.3b's deck-independent half), and a result `isInfiniteOrGameEnding`
+ * accepts. The deck-dependent half (a `must_be_commander` piece must BE a commander, the rest must
+ * be held) is `assembledCombosQuery`'s, and the deck notices apply it on read.
+ *
+ * ONE RULE, TWO CALLERS: the loader below filters its rows through it, and the Combo refresh diffs
+ * the counted set with it (deck notices plan D7), so a notice cannot describe a combo the verdict
+ * would not count. The query's SQL already enforces the first three clauses for the loader.
+ */
+export function isCountedCombo(v: {
+  cardCount: number;
+  requiresTemplateIds: readonly unknown[];
+  pieces: readonly string[];
+  produces: readonly string[];
+}): boolean {
+  return v.cardCount === 2
+    && v.requiresTemplateIds.length === 0
+    && new Set(v.pieces).size === 2
+    && isInfiniteOrGameEnding(v.produces);
+}
+
+/**
  * The assembled-combo query, extracted so its emitted SQL can be pinned.
  *
  * All three of §4.3b's rules live in this text rather than in any TypeScript a unit test
@@ -173,7 +195,9 @@ export async function loadAssembledCombos(
 
   // CARD COUNT IS NEVER THE TEST. A two-card variant producing "infinite squirrels" is not a
   // combo this system counts; `isInfiniteOrGameEnding` reads what it produces.
-  const kept = rows.filter((r) => isInfiniteOrGameEnding(r.produces));
+  // The query admitted only two-card, template-free, two-piece rows, so those are stated as such.
+  const kept = rows.filter((r) =>
+    isCountedCombo({ cardCount: 2, requiresTemplateIds: [], pieces: r.pieces, produces: r.produces }));
   if (kept.length === 0) return [];
 
   const names = await nameMap(kept.flatMap((r) => r.pieces));

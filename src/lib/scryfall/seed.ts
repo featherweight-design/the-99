@@ -48,12 +48,20 @@ export async function upsertCardBatch(rows: CardRow[], logging: boolean, log: Lo
     return;
   }
   await db.transaction(async (tx) => {
-    const before = await tx
-      .select({ oracleId: cards.oracleId, gameChanger: cards.gameChanger, commanderLegal: cards.commanderLegal })
-      .from(cards)
-      .where(inArray(cards.oracleId, rows.map((r) => r.oracleId)));
+    // The before-read in a SAVEPOINT, as the combo publishes take theirs: a failed read rolls back
+    // to it, the batch still upserts, and this batch writes no entries. Never an empty "before",
+    // which would log every card as newly flagged.
+    let before: { oracleId: string; gameChanger: boolean; commanderLegal: boolean }[] | null = null;
+    try {
+      before = await tx.transaction((sp) => sp
+        .select({ oracleId: cards.oracleId, gameChanger: cards.gameChanger, commanderLegal: cards.commanderLegal })
+        .from(cards)
+        .where(inArray(cards.oracleId, rows.map((r) => r.oracleId))));
+    } catch (error) {
+      console.warn(`notices: a card batch's prior state was unread, so it writes no entries (${error instanceof Error ? error.message : String(error)})`);
+    }
     await upsert(tx, rows);
-    await writeEntries(tx, diffCardBatch(new Map(before.map((b) => [b.oracleId, b])), rows), log);
+    if (before) await writeEntries(tx, diffCardBatch(new Map(before.map((b) => [b.oracleId, b])), rows), log);
   });
 }
 
