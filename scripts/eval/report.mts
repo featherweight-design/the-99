@@ -142,6 +142,43 @@ if (args.feature === "synopsis") {
     detail.push(`- **${set} / ${cell} / ${variant}**: refusals ${[...reasons].sort((a, b) => b[1] - a[1]).map(([rsn, c]) => `${rsn} ${c}`).join(", ") || "none"}. Key-card job line: median ${jobs.length ? q(jobs, 0.5) : "–"}, p90 ${jobs.length ? q(jobs, 0.9) : "–"}, ${jobs.filter((l) => l > CHAR_BUDGETS.job).length} of ${jobs.length} over ${CHAR_BUDGETS.job}. Mulligan line: median ${mull.length ? q(mull, 0.5) : "–"}, ${mull.filter((l) => l > CHAR_BUDGETS.mulligan).length} of ${mull.length} over ${CHAR_BUDGETS.mulligan}.`);
   }
   lines.push("", "## Refusals by section, and the budgeted lines", "", ...detail, "");
+
+  // The decision rule, as the plan wrote it: held-out decks, against S = `--baseline`.
+  const S = args.baseline!;
+  const stat = (key: string) => {
+    const g = groups.get(`heldOut|${key}`) ?? [];
+    const n = g.length;
+    const verdicts = (r: Row) => ((r as unknown as { verdicts?: Verdict[] }).verdicts ?? []);
+    const survived = g.filter((r) => r.outcome === "survived").length;
+    return {
+      n,
+      survived: n ? survived / n : 0,
+      section: (sec: string) => (n ? g.filter((r) => verdicts(r).some((v) => v.section === sec && v.status === "ok")).length / n : 0),
+      malformed: n ? g.filter((r) => r.outcome === "malformed").length / n : 0,
+      outside: n ? g.filter((r) => (r.outsideNames ?? 0) > 0).length / n : 0,
+      perAccepted: survived ? g.reduce((a, r) => a + r.usdRealtime, 0) / survived : Infinity,
+    };
+  };
+  const base = stat(S);
+  if (base.n > 0) {
+    const money = (x: number) => (Number.isFinite(x) ? `$${x.toFixed(4)}` : "no accepted answer");
+    lines.push("## The decision rule", "", `Baseline S = \`${S.replace("|", " / ")}\`: held-out all four ${(100 * base.survived).toFixed(0)}%, ${money(base.perAccepted)} per accepted answer.`, "");
+    lines.push("| candidate | cheaper | all four ≥ S−10 | every section ≥ S−5 | malformed ≤ 5% | outside ≤ S+5 | eligible |", "|---|---|---|---|---|---|---|");
+    const keys = [...new Set([...groups.keys()].filter((k) => k.startsWith("heldOut|")).map((k) => k.slice("heldOut|".length)))].filter((k) => k !== S).sort();
+    for (const k of keys) {
+      const c = stat(k);
+      const gates = [
+        c.perAccepted < base.perAccepted,
+        c.survived >= base.survived - 0.1,
+        SECTIONS.every((sec) => c.section(sec) >= base.section(sec) - 0.05),
+        c.malformed <= 0.05,
+        c.outside <= base.outside + 0.05,
+      ];
+      const mark = (b: boolean) => (b ? "yes" : "**no**");
+      lines.push(`| \`${k.replace("|", " / ")}\` (${money(c.perAccepted)}) | ${gates.map(mark).join(" | ")} | ${gates.every(Boolean) ? "**eligible**" : "no"} |`);
+    }
+    lines.push("");
+  }
 }
 
 // ---- The decision rule, as the plan wrote it before any result (plan, "The decision rule") ----
