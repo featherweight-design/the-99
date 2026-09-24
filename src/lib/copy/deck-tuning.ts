@@ -76,7 +76,7 @@ export const deckTuningCopy = {
     // A counted word, as the canvas writes it: "Nine games in, and cards in hand has been marked
     // against you in 7 of 9."
     readyLead: (gamesWord: string, axis: string, marked: number, games: number) =>
-      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read what you have played and suggest up to five swaps, each a card out, a card in, and the reason.`,
+      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five swaps, each a card out, a card in, and the reason.`,
     noGamesLead:
       "No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five swaps. Log a game and suggestions can also cite how the deck played.",
     unmarkedLead: (gamesWord: string) =>
@@ -97,6 +97,8 @@ export const deckTuningCopy = {
       `One swap this time. ${droppedWord} more did not hold up to checking.`,
     allDoneLead: (totalWord: string, applied: number, rejected: number) =>
       `All ${totalWord} answered: ${applied} applied, ${rejected} rejected. Suggest again for a new set, read from the deck as it is now.`,
+    allDoneLeadOne: (applied: boolean) =>
+      `Answered: ${applied ? "applied" : "rejected"}. Suggest again for a new set, read from the deck as it is now.`,
     // Eng-written for a deck with no version when the set was read.
     retiredLead: (from: number | null, to: number) =>
       from === null
@@ -106,7 +108,7 @@ export const deckTuningCopy = {
       rejected > 0 ? `${applied} of ${total} applied · ${rejected} rejected` : `${applied} of ${total} applied`,
     // State 5, rewritten count-neutral. A successful run with an honest answer, in ordinary ink.
     unchanged: (when: string) =>
-      `Same suggestions as last time. Nothing has changed since ${when}: no new game, no edit to the list or to what this deck is for. We would only be repeating ourselves.`,
+      `Nothing has changed since ${when}: no new game, no edit to the list or to what this deck is for, so a new run would only repeat these.`,
     unchangedReasonGamesKey: "games",
     unchangedReasonGames: (n: number, when: string) =>
       n === 0 ? "none logged yet" : `${n} of ${n} already read, none logged since ${when}`,
@@ -154,7 +156,7 @@ export const deckTuningCopy = {
     unavailable: {
       tag: "unavailable",
       heading: "We couldn\u2019t reach the service",
-      body: "The service that writes these did not answer. It is not something you did, and it is usually back within a few minutes.",
+      body: "It is not something you did, and it is usually back within a few minutes.",
       kept: "Your games, your notes and your list are untouched. Nothing was changed and no credit was used.",
       note: "or come back later: the button will be here",
     },
@@ -168,23 +170,23 @@ export const deckTuningCopy = {
     malformed: {
       tag: "unusable answer",
       heading: "We couldn\u2019t use that answer",
-      body: "An answer came back that we could not make sense of, so we are not going to show you a guess at what it meant.",
+      body: "We are not going to show you a guess at what it meant.",
       kept: "Your games, your notes and your list are untouched, nothing was applied, and no credit was used.",
       note: "this one is on us",
     },
     ungrounded: {
       tag: "nothing held up",
       heading: "None of the swaps held up",
-      body: "Swaps came back and none of them stood up to checking: a card outside the deck\u2019s colors, a cut the deck does not hold, or a reason with nothing countable behind it. We would rather show you none than one we cannot back.",
-      kept: "Nothing was applied and your list is untouched.",
+      body: "Each failed a check: a card outside the deck\u2019s colors, a cut the deck does not hold, or a reason with nothing countable behind it. We would rather show you none than one we cannot back.",
+      kept: "Nothing was applied, your list is untouched, and no credit was used.",
       note: "log another game and there is more to go on",
     },
     interrupted: {
       tag: "interrupted",
       heading: "That run did not finish",
-      body: "It stopped partway, before an answer came back. Nothing you did caused it.",
+      body: "Nothing you did caused it.",
       kept: "Nothing was applied and no credit was used.",
-      note: "try again when you are ready",
+      note: "",
     },
   },
 
@@ -216,11 +218,6 @@ export const deckTuningCopy = {
     verdictRefused: "That did not save. Try again.",
   },
 
-  // ── The Games tab's pointer (addendum r1 C1/C2) ────────────────────────
-  gamesLine: {
-    lead: "Suggested changes reads these games.",
-    link: "It is on the Analysis tab \u2192",
-  },
 
   // ── The rules a suggestion must obey (validator rule text) ─────────────
   // Handed to the model VERBATIM as its instructions, and named by the validator for each drop,
@@ -247,7 +244,7 @@ export const deckTuningCopy = {
     started: "Reading your deck",
     unchanged: "No new suggestions. Nothing has changed since the last run.",
     ready: (n: number) => (n === 1 ? "One suggested swap is ready." : `${n} suggested swaps are ready.`),
-    stopped: "Stopped. Nothing was read and no credit was used.",
+    stopped: "Stopped. No credit was used.",
     applied: (cut: string, add: string) => `Applied. ${add} is in the deck and ${cut} is out.`,
     undone: (cut: string) => `Put back. ${cut} is in the deck again.`,
     rejected: "Rejected.",
@@ -260,7 +257,7 @@ export const deckTuningCopy = {
   // request is told, where there is no clock of the reader's to name a time in. PLACEHOLDER,
   // owed to /copy-review.
   allowance: {
-    spent: "Every credit is in use. The next one comes back within a day.",
+    spent: "No credits left. The next one comes back within a day.",
   },
 
   // ── The game note (Surface 1, amends #9's form) ────────────────────────

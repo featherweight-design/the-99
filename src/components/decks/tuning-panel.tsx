@@ -137,7 +137,6 @@ export function TuningPanel({
   const gate = gateReason(state);
   const spent = gate?.kind === "allowance";
   const left = Math.max(0, state.allowance.limit - state.allowance.used);
-  const hasOk = state.lastOkFingerprint !== null;
   const showResults = !reading && state.run?.status === "ok" && !state.retired && state.items.length > 0;
 
   async function press(anyway = false) {
@@ -215,7 +214,8 @@ export function TuningPanel({
     );
   } else if (failure) {
     body = <Failure failure={failure} />;
-    primary = { label: deckTuningCopy.failure.retry, again: hasOk };
+    // No set is on screen after a failure, so the press replaces nothing: the first-run note.
+    primary = { label: deckTuningCopy.failure.retry, again: false };
   } else if (state.retired) {
     body = (
       <>
@@ -238,7 +238,7 @@ export function TuningPanel({
         ) : (
           <Lead desktopOnly={!answered}>
             {answered
-              ? copy.allDoneLead(numberWord(total), applied, rejected)
+              ? total === 1 ? copy.allDoneLeadOne(applied === 1) : copy.allDoneLead(numberWord(total), applied, rejected)
               : dropped > 0
                 ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
                 : total === 1 ? copy.resultsLeadOne : copy.resultsLead(cap(numberWord(total)))}
@@ -459,7 +459,9 @@ function Failure({ failure }: { failure: FailureCopy }) {
       </div>
       <p className="mt-[11px] max-w-[660px] text-[13.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>{failure.body}</p>
       <p className="mt-[9px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{failure.kept}</p>
-      <p className="mt-[6px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{failure.note}</p>
+      {failure.note ? (
+        <p className="mt-[6px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{failure.note}</p>
+      ) : null}
     </div>
   );
 }
