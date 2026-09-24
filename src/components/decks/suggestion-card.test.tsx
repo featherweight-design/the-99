@@ -85,7 +85,7 @@ describe("SuggestionCard", () => {
     );
     expect(screen.queryByText(/none free/)).toBeNull();
     unmount();
-    const claim = { id: "d2", name: "Other", quantity: 1, mature: true, pending: false, commander: false };
+    const claim = { id: "d2", name: "Other", quantity: 1, mature: true, pending: false, commander: false, senior: true };
     const contested: TuningItem = { ...item, availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] } };
     render(<SuggestionCard item={contested} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />);
     expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
