@@ -20,8 +20,8 @@
  * and a model drifting off the decklist would pass so long as one proposal survived.
  *
  * Card names resolve through Scryfall's `/cards/named`, the database-free equivalent of the
- * catalog read `runTuning` makes. It prints the call's token usage, which is the figure
- * `MODEL_DAILY_ALLOWANCE` is derived from.
+ * catalog read `runTuning` makes. It prints the call's token usage, which is the figure the
+ * spend cap's input ceiling (`FEATURE_CALLS` in `src/lib/model/prices.ts`) is measured against.
  *
  *   pnpm check:tuning             # one live call
  *   pnpm check:tuning --dry-run   # builds the prompt and prints its size; calls nothing

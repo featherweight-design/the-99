@@ -1,7 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db";
-import { deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
+import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
@@ -36,6 +36,17 @@ export type SynopsisState = {
    * only right after this deck's own write failed, never otherwise.
    */
   lastFailed: boolean;
+  /**
+   * The deck's newest run was refused in EVERY section, after the overview on screen was written:
+   * Round 0's refused state, with the count summed over its sections. Null otherwise.
+   */
+  lastRefused: { failed: number; total: number } | null;
+  /**
+   * The preview art for every card the shown overview names, by oracle id. The page's own art
+   * covers the deck; Weaknesses may name a card the deck does not hold, resolved against the
+   * catalog, and its name must preview like any other.
+   */
+  art: Record<string, string | null>;
   /** A run is in flight on this deck. */
   pending: boolean;
 };
@@ -72,8 +83,8 @@ export async function readSynopsisState(
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
     readShownSynopsis(deckId, userId),
-    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt })
-      .from(deckSynopses).where(eq(deckSynopses.deckId, deckId))
+    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
+      .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
     readAllowance(userId, now),
   ]);
@@ -84,10 +95,23 @@ export async function readSynopsisState(
     allowance,
     pending: newest?.status === "pending",
   });
-  const lastFailed = !!newest && newest.status === "done"
+  // WHAT BECAME OF THE LAST WRITE describes the list it was written for. Once the list has moved
+  // and been analyzed again, that run is history: its failure or refusal is not this list's.
+  const forThisList = !!newest && !!row && newest.fingerprint === row.list;
+  const lastFailed = forThisList && newest!.status === "done"
     && FAILED.includes(newest.outcome as SynopsisOutcome)
     && (!synopsis || newest.createdAt > synopsis.createdAt);
-  return { synopsis, ...status, allowance, lastFailed, pending: newest?.status === "pending" };
+  const newer = forThisList && (!synopsis || newest!.createdAt > synopsis.createdAt);
+  const lastRefused = newer && newest!.status === "done" && newest!.outcome === "refused" && newest!.content
+    && !newest!.content.verdicts.some((v) => v.status === "ok")
+    ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
+    : null;
+  const named = synopsis ? [...new Set(Object.values(synopsis.content.cards).map((c) => c.oracleId))] : [];
+  const art = named.length === 0 ? {} : Object.fromEntries(
+    (await db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)))
+      .map((r) => [r.oracleId, r.imageUri]),
+  );
+  return { synopsis, ...status, allowance, lastFailed, lastRefused, art, pending: newest?.status === "pending" };
 }
 
 /** A version's synopsis, as copied at its commit, or null. Never stale (`SYNOPSIS-modal.md` §4.4). */

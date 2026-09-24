@@ -3,8 +3,8 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
-import { AllowanceSpentError, reserveModelCall, settleModelCall } from "../model/allowance";
-import { callModel, type ModelOutcome } from "../model/client";
+import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall } from "../model/allowance";
+import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS } from "./limits";
@@ -48,7 +48,11 @@ export type WriteResult =
   | { kind: "reused"; synopsis: SynopsisRow }
   /** No reading, or a stale one: a write needs a fresh analysis of the list it describes. */
   | { kind: "no_reading" }
+  /** Refused at the reservation: the player's allowance (`allowance`), the app-wide spend cap
+   *  (`paused`) or the owner's testing share (`ownerShare`). Nothing was called or charged. */
   | { kind: "allowance" }
+  | { kind: "paused" }
+  | { kind: "ownerShare" }
   | { kind: "in_flight" }
   /** The reaper failed this run as `interrupted` before its answer landed; the answer was discarded
    *  and nothing was charged. */
@@ -207,15 +211,15 @@ async function startRun(
   retryOf: string | null,
   /** False on a retry, which rewrites the synopsis for this very list on purpose. */
   checkReuse: boolean,
-): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
+): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
   try {
-    const runId = await db.transaction(async (tx) => {
-      const unit = await reserveModelCall(tx, userId, "synopsis", now);
-      if (!unit) throw new AllowanceSpentError();
+    const handle = await db.transaction(async (tx) => {
+      const unit = await reserveModelCall(tx, userId, "synopsis", model, now);
+      if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
       // read "no synopsis" before either wrote; if the first finished before the second got here,
       // the one-pending index is clear again and only this check stops a second, charged write.
@@ -231,11 +235,11 @@ async function startRun(
         deckId, userId, fingerprint: list, contractVersion: SYNOPSIS_CONTRACT_VERSION,
         model, modelCallId: unit.id, status: "pending", retryOf, createdAt: now,
       }).returning({ id: deckSynopses.id });
-      return row.id;
+      return { runId: row.id, callId: unit.id };
     });
-    return { kind: "started", runId };
+    return { kind: "started", ...handle };
   } catch (err) {
-    if (err instanceof AllowanceSpentError) return { kind: "allowance" };
+    if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
       const synopsis = await readShownSynopsis(deckId, userId);
       if (synopsis) return { kind: "reused", synopsis };
@@ -250,14 +254,20 @@ class AlreadyWrittenError extends Error {}
 /**
  * The outcome and the unit, together. Guarded on `pending`, so a run the reaper already failed
  * changes nothing here, and its late result is discarded. False when superseded.
+ *
+ * The run arrives with its unit's id (`callId`), held by the caller since the start, so the bill
+ * reaches the ledger even when the run row is GONE: `deck_synopses.deck_id` cascades on a deck
+ * delete while `model_calls` is kept.
  */
 export async function finishRun(
-  runId: string,
+  { runId, callId }: { runId: string; callId: string },
   set: {
     outcome: SynopsisOutcome;
     content: CheckedSynopsis | null;
     usage: { inputTokens: number; outputTokens: number } | null;
     charge: "spent" | "refunded";
+    /** What the call was billed for, when it got a response; written on the unit as it settles. */
+    billed?: { model: string; usage: ModelUsage };
   },
   now: Date = new Date(),
 ): Promise<boolean> {
@@ -272,7 +282,15 @@ export async function finishRun(
       })
       .where(and(eq(deckSynopses.id, runId), eq(deckSynopses.status, "pending")))
       .returning({ callId: deckSynopses.modelCallId });
-    for (const r of rows) await settleModelCall(tx, r.callId, set.charge, now);
+    for (const r of rows) await settleModelCall(tx, r.callId, set.charge, set.billed, now);
+    if (rows.length === 0 && set.billed) {
+      // A LATE OUTCOME: the reaper settled this run first, or its deck was deleted and took the run
+      // row with it, so nothing about the run or the credit moves, but the call billed all the
+      // same and its unit counts at its worst case until its meters land. Reached by the unit's
+      // own id, never through the run row. `recordModelUsage` writes them only while none are
+      // recorded.
+      await recordModelUsage(tx, callId, set.billed, now);
+    }
     return rows.length > 0;
   });
 }
@@ -312,6 +330,11 @@ async function run(
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
   // read, the checks, the store) is settled as a refunded upstream failure, so the unit comes
   // straight back and the one-pending index does not hold the deck until the reaper.
+  //
+  // `billed` is in scope for the WHOLE block for the same reason: once the call has returned, every
+  // settle records what it cost, the fallback in the `catch` included. A throw in the catalog read
+  // or the checks comes after a reply that was billed all the same.
+  let billed: { model: string; usage: ModelUsage } | undefined;
   try {
     let outcome: ModelOutcome<SynopsisResponse>;
     try {
@@ -321,8 +344,10 @@ async function run(
       outcome = { ok: false, errorClass: "upstream_busy" };
     }
 
+    if (outcome.usage) billed = { model: deps.modelName, usage: outcome.usage };
+
     if (!outcome.ok) {
-      const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded" }, deps.now());
+      const settled = await finishRun(started, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed }, deps.now());
       return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
     }
 
@@ -335,7 +360,11 @@ async function run(
       charge = merged.anyRetriedPassed ? "spent" : "refunded";
     }
     const result = outcomeOf(content.verdicts);
-    const written = await finishRun(started.runId, { outcome: result, content, usage: outcome.usage, charge }, deps.now());
+    const written = await finishRun(
+      started,
+      { outcome: result, content, usage: outcome.usage, charge, billed },
+      deps.now(),
+    );
     if (!written) return { kind: "superseded" };
     return {
       kind: "written",
@@ -346,7 +375,7 @@ async function run(
     };
   } catch (error) {
     console.error("synopsis write failed after its reservation", error);
-    const settled = await finishRun(started.runId, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded" }, deps.now());
+    const settled = await finishRun(started, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded", billed }, deps.now());
     return settled ? { kind: "written", outcome: "upstream_busy", synopsis: null } : { kind: "superseded" };
   }
 }

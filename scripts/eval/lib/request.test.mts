@@ -6,13 +6,13 @@ import { tuningResponseSchema } from "../../../src/lib/tuning/response-schema";
 import { synopsisResponseSchema } from "../../../src/lib/synopsis/response-schema";
 import { buildParams, parseReply } from "./request.mjs";
 
-/** What `callModel` hands `messages.parse`, captured through its injected `messages`. */
+/** What `callModel` hands `messages.create`, captured through its injected `messages`. */
 async function sentByApp(schema: z.ZodType<unknown>) {
   let captured: unknown;
   const messages = {
-    parse: async (params: unknown) => {
+    create: async (params: unknown) => {
       captured = params;
-      return { parsed_output: null, stop_reason: "end_turn", usage: { input_tokens: 0, output_tokens: 0 } };
+      return { content: [], stop_reason: "end_turn", usage: { input_tokens: 0, output_tokens: 0 } };
     },
   };
   await callModel(

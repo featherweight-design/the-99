@@ -22,6 +22,12 @@ export function clockTime(at: Date): string {
   return at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+/** A month's name, `October`, read in UTC: the spend cap's months are UTC calendar months, so
+ *  a pause lifting at 00:00 UTC on the 1st is named for that month in every reader's clock. */
+function monthName(at: Date): string {
+  return at.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+}
+
 /** The count and, when one is out, when the next comes back. */
 function standing(left: number, total: number, next: Date | null): string {
   return next ? `${left} of ${total} left · next one at ${clockTime(next)}` : `${left} of ${total} left`;
@@ -36,4 +42,14 @@ export const creditsCopy = {
   /** Every credit is out: the press is disabled and this says when it comes back. */
   spent: (total: number, next: Date | null) =>
     `${standing(0, total, next)}. Your overview and suggestions share these credits.`,
+  /**
+   * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is
+   * disabled until `until`, the 1st of next month. DECIDED wording (orchestrator, 2026-09-24).
+   */
+  paused: (until: Date) =>
+    `Paused until ${monthName(until)} 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.`,
+  /** The same refusal from the server, where no date is formatted in the reader's clock. */
+  pausedServer: "Paused until the 1st of next month. Nothing you did caused this.",
+  /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
+  ownerShare: (month: Date) => `You’ve used your testing share for ${monthName(month)}. Friends aren’t affected.`,
 } as const;

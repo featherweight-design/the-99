@@ -1,15 +1,31 @@
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
+  MODEL_FRIEND_DAILY_ALLOWANCE,
+  MODEL_OWNER_DAILY_ALLOWANCE,
   RESERVATION_TTL_MS,
   allowanceFrom,
   type Allowance,
   type LedgerRow,
   type ModelFeature,
 } from "./allowance-rule";
+import type { ModelUsage } from "./client";
+import { costMicroUsd, featureWorstCaseMicroUsd, FEATURE_CALLS } from "./prices";
+import { reportSpendThreshold } from "./spend-alerts";
+import {
+  BUDGET_USD,
+  crossedAlarms,
+  microToUsd,
+  monthStartUtc,
+  nextMonthStartUtc,
+  spendRefusal,
+  unpricedWorstCaseMicro,
+  type UnpricedCall,
+  type SpendRefusal,
+} from "./spend-rule";
 
 /**
  * The allowance ledger's only reader and writer. SERVER-ONLY: it imports the database.
@@ -23,12 +39,71 @@ import {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** Thrown inside a caller's transaction to roll back a run that found the allowance spent. */
+/** Why a reservation was refused: the player's own allowance, or the app-wide spend cap. */
+export type ReserveRefusal = "allowance" | SpendRefusal;
+
+/** Thrown inside a caller's transaction to roll back a run whose reservation was refused. */
 export class AllowanceSpentError extends Error {
-  constructor() {
-    super("model allowance spent");
+  constructor(readonly refused: ReserveRefusal = "allowance") {
+    super(`model call refused: ${refused}`);
     this.name = "AllowanceSpentError";
   }
+}
+
+/**
+ * The player's rolling-24-hour limit. THE ONE PLACE `MODEL_OWNER_USER_ID` is read (a Clerk user
+ * id): that account gets the owner's ten, everyone else the friend's three. Unset or empty, no
+ * account is the owner and everyone gets three — the limit fails closed.
+ */
+export function dailyLimitFor(userId: string): number {
+  return isOwner(userId) ? MODEL_OWNER_DAILY_ALLOWANCE : MODEL_FRIEND_DAILY_ALLOWANCE;
+}
+
+function isOwner(userId: string): boolean {
+  const owner = process.env.MODEL_OWNER_USER_ID?.trim();
+  return !!owner && owner === userId;
+}
+
+/**
+ * Month-to-date spend, app-wide and this player's, in micro-dollars.
+ *
+ * CREDITS COUNT SUCCESSES; DOLLARS COUNT EVERYTHING BILLED. The allowance ignores refunded rows;
+ * this does not. It is the recorded cost of EVERY call this UTC month, spent or refunded, plus the
+ * worst case of every call this month with no recorded cost still inside its TTL, reserved or
+ * refunded — a Stopped call is refunded at once but keeps billing until its outcome lands.
+ * `spend-rule.ts` holds the rule for the second half (`countsAtWorstCase`); the SQL here only
+ * narrows the rows it is asked about.
+ */
+async function monthSpend(q: Tx | typeof db, userId: string, now: Date): Promise<{ app: number; user: number }> {
+  const start = monthStartUtc(now);
+  const [priced] = await q
+    .select({
+      app: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}), 0)`,
+      user: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}) filter (where ${modelCalls.userId} = ${userId}), 0)`,
+    })
+    .from(modelCalls)
+    .where(and(isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, start)));
+  const unpriced = await q
+    .select({
+      userId: modelCalls.userId, status: modelCalls.status, feature: modelCalls.feature,
+      model: modelCalls.model, createdAt: modelCalls.createdAt,
+    })
+    .from(modelCalls)
+    .where(and(
+      isNull(modelCalls.costMicroUsd),
+      gte(modelCalls.createdAt, start),
+      gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS)),
+    ));
+  const rows = unpriced as (UnpricedCall & { userId: string })[];
+  return {
+    app: Number(priced.app) + unpricedWorstCaseMicro(rows, now),
+    user: Number(priced.user) + unpricedWorstCaseMicro(rows.filter((r) => r.userId === userId), now),
+  };
+}
+
+/** The cheapest call any feature can make: what "one more call would not fit" is measured against. */
+function smallestCallMicro(): number {
+  return Math.min(...(Object.keys(FEATURE_CALLS) as ModelFeature[]).map((f) => featureWorstCaseMicroUsd(f)));
 }
 
 /** The window's reserved and spent rows. `allowanceFrom` applies `counts` — one rule. */
@@ -45,29 +120,64 @@ async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise
   return rows as LedgerRow[];
 }
 
+/**
+ * The player's allowance, with the spend cap's two states when they apply. Both are measured
+ * against the SMALLEST call any feature can make, so a panel says "paused" only when no call at
+ * all would be let through.
+ */
 export async function readAllowance(userId: string, now: Date = new Date()): Promise<Allowance> {
-  return allowanceFrom(await ledgerRows(db, userId, now), now);
+  const [rows, spend] = await Promise.all([ledgerRows(db, userId, now), monthSpend(db, userId, now)]);
+  const allowance = allowanceFrom(rows, now, dailyLimitFor(userId));
+  const refusal = spendRefusal({
+    appMonthMicro: spend.app,
+    ownerMonthMicro: isOwner(userId) ? spend.user : null,
+    callMicro: smallestCallMicro(),
+  });
+  if (refusal === "paused") return { ...allowance, paused: { until: nextMonthStartUtc(now) } };
+  if (refusal === "ownerShare") return { ...allowance, ownerShare: true };
+  return allowance;
 }
 
 /**
- * Inside the CALLER's transaction: lock, count, insert. Null when the allowance is spent.
+ * Inside the CALLER's transaction: lock, check, insert. Refused, with the reason, when the
+ * app-wide spend cap would be passed (`paused`), when the owner's testing share would be
+ * (`ownerShare`), or when the player's own allowance is spent (`allowance`) — in that order, the
+ * order a panel names them in.
+ *
+ * `model` is recorded on the row, so while it is in flight every other reservation prices it at
+ * its worst case (`spend-rule.ts`).
  *
  * The caller inserts its own run row in the same transaction, so a run holds a unit and a run
  * row or neither. The lock is per player and transaction-scoped: `hashtextextended`, the 64-bit
  * form `replaceCollection` uses, under a prefix so it never contends with that lock.
+ *
+ * THE SPEND CHECK IS NOT GLOBALLY SERIALISED, and that is accepted (orchestrator ruling,
+ * 2026-09-24). The lock is per player, so two players reserving at once can both read the same
+ * month-to-date and both pass the $20 check. $20 is a bug guard rather than a budget, and every
+ * in-flight reservation is counted at its worst case, so the overshoot is bounded to about one
+ * call per concurrently reserving player. A global lock would serialise every press in the app to
+ * close that gap.
  */
 export async function reserveModelCall(
   tx: Tx,
   userId: string,
   feature: ModelFeature,
+  model: string,
   now: Date = new Date(),
-): Promise<{ id: string } | null> {
+): Promise<{ id: string } | { refused: ReserveRefusal }> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`model-allowance:${userId}`}, 0))`);
-  const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now);
-  if (allowance.used >= allowance.limit) return null;
+  const spend = await monthSpend(tx, userId, now);
+  const refusal = spendRefusal({
+    appMonthMicro: spend.app,
+    ownerMonthMicro: isOwner(userId) ? spend.user : null,
+    callMicro: featureWorstCaseMicroUsd(feature, model),
+  });
+  if (refusal) return { refused: refusal };
+  const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now, dailyLimitFor(userId));
+  if (allowance.used >= allowance.limit) return { refused: "allowance" };
   const [row] = await tx
     .insert(modelCalls)
-    .values({ userId, feature, createdAt: now })
+    .values({ userId, feature, model, createdAt: now })
     .returning({ id: modelCalls.id });
   return row;
 }
@@ -88,6 +198,13 @@ export async function settleModelCall(
   tx: Tx,
   callId: string,
   to: "spent" | "refunded",
+  /**
+   * What the call was billed for, when it got a response back: recorded on a spent AND on a
+   * refunded settle, since a refund still burned the tokens (and its cost counts toward the
+   * month). Undefined for a settle that knows nothing: a reaper, a Stop. Their row counts at its
+   * worst case until the late outcome records its meters (`recordModelUsage`).
+   */
+  billed: Billed | undefined,
   now: Date = new Date(),
 ): Promise<void> {
   const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
@@ -95,4 +212,55 @@ export async function settleModelCall(
     .update(modelCalls)
     .set({ status: to === "spent" ? sql`case when ${live} then 'spent' else 'refunded' end` : "refunded" })
     .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")));
+  if (billed) await recordModelUsage(tx, callId, billed, now);
+}
+
+export type Billed = { model: string; usage: ModelUsage };
+
+/**
+ * Write what a call was billed for onto its ledger row, and report an alarm line it carried the
+ * month over. The one writer of the meters: `settleModelCall` calls it, and so does an outcome
+ * that arrives LATE, after a Stop or the reaper already settled the row, since that call billed
+ * all the same and its row counts at its worst case until this lands.
+ *
+ * ONLY WHILE THE ROW HAS NO COST, so two writes — a settle and a late outcome, or a retried write —
+ * record one call once and never count it twice. Whatever the row's status: meters are a fact
+ * about the bill, not about whether the player was charged a credit.
+ */
+export async function recordModelUsage(tx: Tx, callId: string, billed: Billed, now: Date = new Date()): Promise<void> {
+  const [row] = await tx
+    .update(modelCalls)
+    .set({
+      model: billed.model,
+      inputTokens: billed.usage.inputTokens,
+      outputTokens: billed.usage.outputTokens,
+      cacheReadTokens: billed.usage.cacheReadTokens,
+      cacheWriteTokens: billed.usage.cacheWriteTokens,
+      costMicroUsd: costMicroUsd(billed.model, billed.usage),
+    })
+    .where(and(eq(modelCalls.id, callId), isNull(modelCalls.costMicroUsd)))
+    .returning({ createdAt: modelCalls.createdAt, cost: modelCalls.costMicroUsd });
+  if (row?.cost && row.createdAt >= monthStartUtc(now)) await alarm(tx, row.cost, now);
+}
+
+/**
+ * Whether the meters just recorded (`cost`) carried the month's app-wide BILLED spend — every
+ * recorded cost this month, spent or refunded — over an alarm line. Read inside the write's own
+ * transaction, so `after` includes this row and `before` is the same sum without it. Two settles committing at the same moment can each miss the other's
+ * row, and one crossing may then be reported twice or not at all: this is a log line, not a gate.
+ */
+async function alarm(tx: Tx, cost: number, now: Date): Promise<void> {
+  const [sum] = await tx
+    .select({ billed: sql<string>`coalesce(sum(${modelCalls.costMicroUsd}), 0)` })
+    .from(modelCalls)
+    .where(and(isNotNull(modelCalls.costMicroUsd), gte(modelCalls.createdAt, monthStartUtc(now))));
+  const after = Number(sum.billed);
+  for (const pct of crossedAlarms(after - cost, after)) {
+    reportSpendThreshold({
+      env: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "unknown",
+      pct,
+      spentUsd: microToUsd(after),
+      capUsd: BUDGET_USD,
+    });
+  }
 }

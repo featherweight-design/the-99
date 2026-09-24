@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ALLOWANCE_WINDOW_MS, MODEL_DAILY_ALLOWANCE, RESERVATION_TTL_MS, allowanceFrom, counts } from "./allowance-rule";
+import { ALLOWANCE_WINDOW_MS, MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS, allowanceFrom, counts } from "./allowance-rule";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
@@ -23,13 +23,13 @@ describe("allowanceFrom", () => {
   });
 
   it("names no reopening time while units remain", () => {
-    const rows = Array.from({ length: MODEL_DAILY_ALLOWANCE - 1 }, (_, i) => spent(hoursAgo(i + 1)));
+    const rows = Array.from({ length: MODEL_FRIEND_DAILY_ALLOWANCE - 1 }, (_, i) => spent(hoursAgo(i + 1)));
     expect(allowanceFrom(rows, now)).toEqual({
-      used: MODEL_DAILY_ALLOWANCE - 1,
-      limit: MODEL_DAILY_ALLOWANCE,
+      used: MODEL_FRIEND_DAILY_ALLOWANCE - 1,
+      limit: MODEL_FRIEND_DAILY_ALLOWANCE,
       reopensAt: null,
       // The credit line names the next one while credits remain: the oldest unit's expiry.
-      nextAt: new Date(hoursAgo(MODEL_DAILY_ALLOWANCE - 1).getTime() + ALLOWANCE_WINDOW_MS),
+      nextAt: new Date(hoursAgo(MODEL_FRIEND_DAILY_ALLOWANCE - 1).getTime() + ALLOWANCE_WINDOW_MS),
     });
   });
 
@@ -44,9 +44,9 @@ describe("allowanceFrom", () => {
 
   it("reopens when the oldest counted call leaves the window", () => {
     // Given out of order on purpose: the reopening time is the OLDEST, not the first listed.
-    const rows = Array.from({ length: MODEL_DAILY_ALLOWANCE }, (_, i) => spent(hoursAgo(20 - i))).reverse();
+    const rows = Array.from({ length: MODEL_FRIEND_DAILY_ALLOWANCE }, (_, i) => spent(hoursAgo(20 - i))).reverse();
     const a = allowanceFrom(rows, now);
-    expect(a.used).toBe(MODEL_DAILY_ALLOWANCE);
+    expect(a.used).toBe(MODEL_FRIEND_DAILY_ALLOWANCE);
     expect(a.reopensAt).toEqual(new Date(hoursAgo(20).getTime() + ALLOWANCE_WINDOW_MS));
   });
 

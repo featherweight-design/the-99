@@ -51,13 +51,14 @@ const CLOSE_DELAY = 80;
  * handler. State holds the opening position alone, so a pointer crossing 480
  * rows does not re-render the list once per frame.
  */
-type PreviewTarget = { imageUri: string; box: PreviewBox };
+/** `overSheet`: the row that opened it is inside a dialog, so the box paints above the sheet. */
+type PreviewTarget = { imageUri: string; box: PreviewBox; overSheet: boolean };
 type PreviewBox = { top: number; left: number };
 
 type PreviewApi = {
   /** Hover began on a row, at the pointer. Null `imageUri` is a no-op — see
    *  `usePreviewRow`. */
-  open: (imageUri: string | null | undefined, x: number, y: number) => void;
+  open: (imageUri: string | null | undefined, x: number, y: number, overSheet?: boolean) => void;
   /** The pointer moved while a row is hovered. */
   move: (x: number, y: number) => void;
   close: () => void;
@@ -166,7 +167,7 @@ export function HoverPreviewProvider({
 
   const api = useMemo<PreviewApi>(
     () => ({
-      open: (imageUri, x, y) => {
+      open: (imageUri, x, y, overSheet = false) => {
         // A row whose card has no art has nothing to preview. Silence rather
         // than a plate: the preview exists to answer "which card is this", and
         // an empty rectangle answers nothing.
@@ -181,7 +182,7 @@ export function HoverPreviewProvider({
           // The pointer has moved since the delay began — a reader who set off
           // down the list does not want the box where they entered the row.
           const at = pending.current ?? { x, y };
-          setTarget({ imageUri, box: place(at.x, at.y) });
+          setTarget({ imageUri, box: place(at.x, at.y), overSheet });
         };
         pending.current = { x, y };
         if (isOpen.current) show();
@@ -216,11 +217,15 @@ export function HoverPreviewProvider({
         {children}
       </div>
       {target && (
+        // UNDER the z-50 sheets by default, which is what every row on the page wants: a row
+        // press that opens the card modal leaves this box up until the pointer moves, and the
+        // modal must cover it. A name hovered INSIDE a sheet (the overview's) previews above it
+        // instead, or the box is drawn under the sheet it was asked for from.
         <div
           ref={boxEl}
           aria-hidden
           data-testid="hover-preview"
-          className="fixed z-40 pointer-events-none rounded-[12px] hidden md:block"
+          className={`fixed ${target.overSheet ? "z-[60]" : "z-40"} pointer-events-none rounded-[12px] hidden md:block`}
           style={{
             top: target.box.top,
             left: target.box.left,
@@ -244,7 +249,8 @@ export function HoverPreviewProvider({
 export function usePreviewRow(imageUri: string | null | undefined) {
   const api = useContext(PreviewContext);
   const onMouseEnter = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => api?.open(imageUri, e.clientX, e.clientY),
+    (e: React.MouseEvent<HTMLElement>) =>
+      api?.open(imageUri, e.clientX, e.clientY, e.currentTarget.closest('[role="dialog"]') !== null),
     [api, imageUri],
   );
   // The box follows the pointer, so the row reports every move it sees. The
