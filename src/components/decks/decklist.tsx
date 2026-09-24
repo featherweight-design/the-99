@@ -665,6 +665,17 @@ export function Decklist({
     const receiptsInSection = (key: string) =>
       receipts.filter((r) => !onList.has(r.cutOracleId) && homeOf(r) === key);
     const orphanReceipts = receipts.filter((r) => !onList.has(r.cutOracleId) && homeOf(r) === undefined);
+    // A receipt takes its cut's slot: in name order under the name sort, where the slot is knowable
+    // from the name alone; under a price or mana sort the cut's own figure has gone with its row, so
+    // the section's last slot.
+    type Placed = { card: DeckDetailCard } | { receipt: (typeof receipts)[number] };
+    const placeReceipts = (cards: DeckDetailCard[], rs: typeof receipts): Placed[] => {
+      const placed: Placed[] = cards.map((card) => ({ card }));
+      if (sort.key !== "name") return [...placed, ...rs.map((receipt) => ({ receipt }))];
+      const flip = sort.direction === "desc" ? -1 : 1;
+      const nameOf = (p: Placed) => ("card" in p ? p.card.name : p.receipt.cut);
+      return [...placed, ...rs.map((receipt) => ({ receipt }))].sort((a, b) => flip * nameOf(a).localeCompare(nameOf(b)));
+    };
 
     const shoppingOrderedIds = shoppingSections
       .flatMap((section) => section.cards.map((c) => c.oracleId))
@@ -753,8 +764,10 @@ export function Decklist({
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
-                {groupCards.map((card) => (
-                  <Fragment key={card.oracleId}>
+                {placeReceipts(groupCards, receiptsInSection(key)).map((item) => {
+                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} />;
+                  const card = item.card;
+                  const row = (
                     <DecklistRow
                       deckId={deckId}
                       card={card}
@@ -764,12 +777,18 @@ export function Decklist({
                       inShopping
                       newestAsOf={newestAsOf}
                     />
-                    {/* One copy fewer: the row stays, and the receipt sits directly under it. */}
-                    {receiptsUnder(card.oracleId).map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
-                  </Fragment>
-                ))}
-                {/* The cut's own row has gone: its receipt takes the section's last slot. */}
-                {receiptsInSection(key).map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
+                  );
+                  const under = receiptsUnder(card.oracleId);
+                  // One copy fewer: the row stays, and its receipt sits under it in the same grid cell.
+                  return under.length ? (
+                    <div key={card.oracleId} className="flex flex-col gap-[4px]">
+                      {row}
+                      {under.map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
+                    </div>
+                  ) : (
+                    <Fragment key={card.oracleId}>{row}</Fragment>
+                  );
+                })}
               </div>
             </div>
           ))}

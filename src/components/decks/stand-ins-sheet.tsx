@@ -55,7 +55,7 @@ const factOf = (cents: number, foilOnly: boolean, asOf: Date): PriceFact =>
 const APPLY =
   "inline-flex items-center justify-center h-[44px] w-[72px] rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]";
 const QUIET =
-  "ml-auto min-h-[44px] md:min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]";
+  "ml-auto min-h-[44px] rounded-[8px] px-[14px] text-[13px] md:min-h-[32px] md:rounded-[7px] md:px-[11px] md:py-[6px] md:text-[12px] font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]";
 
 /** What the sheet knows about one row's Take: the press in flight, a refusal, or a throw. */
 type RowTake = {
@@ -148,7 +148,7 @@ function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newest
             <button
               type="button"
               onClick={take.refused.onClose}
-              className="min-h-[44px] px-[10px] md:min-h-[30px] md:px-[6px] md:py-[4px] rounded-[7px] text-[12px] font-medium bg-transparent border-0 cursor-pointer text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+              className="min-h-[44px] px-[10px] rounded-[8px] text-[13px] md:min-h-[30px] md:px-[6px] md:py-[4px] md:rounded-[7px] md:text-[12px] font-medium bg-transparent border-0 cursor-pointer text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
             >
               {copy.refused.close}
             </button>
@@ -381,9 +381,14 @@ export function StandInsSheet({
           <div className="flex flex-wrap items-center gap-x-[9px] gap-y-[6px]">
             <Thumb imageUri={card.imageUri ?? (load.state === "ready" ? load.read.original.imageUri : null)} border="var(--border-strong)" />
             <span aria-hidden="true" className="flex-none w-[7px] h-[7px] rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
-            <span className="text-[14px] font-semibold" style={{ color: "var(--fg)", borderBottom: "1px dotted var(--accent)" }}>
+            <CardDetailTrigger
+              oracleId={card.oracleId}
+              name={name}
+              className="text-left text-[14px] font-semibold bg-transparent border-0 p-0 cursor-pointer"
+              style={{ color: "var(--fg)", borderBottom: "1px dotted var(--accent)" }}
+            >
               {name}
-            </span>
+            </CardDetailTrigger>
             <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
             {over ? (
               <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>

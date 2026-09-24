@@ -574,7 +574,11 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={close}
           stacked={sheetsBelow > 0}
-          footer={sheetFooter ? (layout) => sheetFooter(card.oracleId, layout) : null}
+          // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
+          // card after a take, keeps the link rather than drawing nothing in its place.
+          footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
+            ? (layout) => sheetFooter(card.oracleId, layout)
+            : null}
           backLabel={backLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
