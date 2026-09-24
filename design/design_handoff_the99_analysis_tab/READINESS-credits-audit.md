@@ -21,7 +21,7 @@ which Hugh's ruling B and the amended brief both override, and the shipped allow
   - **§8, opening the tab** (8a, `The 99 - Analysis Tab.dc.html:475-482`; `HANDOFF.md` §Addendum,
     opening the tab; `STATES-analysis-tab.md` row 8a). A loader while the stored reading is fetched.
     Design's `READINESS.md` records Hugh's sign-off of §7 and §8. It is outside this audit's four
-    items and needs its own owner; it is noted so it is not lost.
+    items, and is audited on its own in §8 below.
   - **One fixture change to a signed-off state, with no visible effect:** 2f (`rangeAnswered`)
     now sets `hasSubline: false` (`analysis-fixtures.js:284`). The `answered` block draws the
     subline itself, so 2f still shows it once. See finding 11.
@@ -91,3 +91,77 @@ finding 7, item 2 by finding 8, and item 3 by Hugh's ruling D (finding 3).
    Re-analyze enabled and Write one disabled; and runs the plan's two mutations (write on the
    `fresh: false` branch; drop the note's condition) plus a third: key the note on `stale`, which
    must fail the 7d case.
+
+## §8: opening the tab (8a)
+
+**Verdict: 🟢 Green.** Audited 2026-09-23 against `origin/main` at `5ea47d7a`. Spec: `HANDOFF.md`
+§Addendum, opening the tab (`:118-121`); `STATES-analysis-tab.md:9` (8a); canvas `:475-482`;
+frames 1300 `:108-113,297`, 390 `:113-118,297`; fixture `analysis-fixtures.js:373-376`; sign-off
+`READINESS.md:18`. **The defect is confirmed.** The state is buildable from tokens and components
+already on `main`. The one open choice is how to fix it: that is engineering's, and the cheap route
+is below. Nothing goes back to Design.
+
+**1. Why the empty state flashes.** The tab never has the stored reading on first paint.
+- The hook starts `idle` (`src/components/decks/use-deck-profile.ts:97`). The panel draws 2a,
+  *not analyzed*, for `idle` (`src/components/decks/analysis-panel.tsx:102-107`).
+- The shell asks for the stored reading only after the tab has painted, in an effect on
+  `view === "analysis"` (`src/components/decks/builder-shell.tsx:306-309`).
+- `peek` leaves the state `idle` while it runs, by design (`use-deck-profile.ts:65-72`, `:197-222`).
+  It is a server action (`src/app/decks/profile-actions.ts:102`) over `readStoredReading`'s head
+  read (`src/lib/profile/stored.ts:133-157`, ~120ms on staging). So 2a stays up for a round trip
+  plus that read, and then the reading replaces it.
+- It happens once per deck per visit. `peeked` stops a second look (`use-deck-profile.ts:201`), and
+  the answer survives a tab switch because the hook lives in the shell.
+
+**2. Is the preferred fix feasible? Yes, but the whole reading is the costlier of two routes.**
+- *Ship the reading.* The page already reads `readStoredPermits` beside the first wave, outside
+  both `cacheForUser` payloads (`src/app/decks/[id]/page.tsx:110-111`, `:341`, `:390`).
+  `readStoredReading` could sit in the same place. There is **no cache conflict**, as long as it
+  stays uncached like the permits: its `fresh` flag follows `dirty`, which every edit moves.
+- *Cost of shipping it.* The profile document is 33 KB median and 40 KB max as JSON on staging
+  (n=2, read-only). That would ride every deck-page load, including loads that never open the tab.
+  `stored.ts:170-174` records that this is exactly why the header ships permits instead.
+- *A second catch.* `readStoredReading` runs the quiet rebuild on a stale `PROFILE_VERSION`
+  (`stored.ts:140-148`). Called from the page, that is a ~630ms compute plus a write inside a render,
+  once per deck after each version bump. The page would need a variant that does not rebuild.
+- *The cheaper route: the permits are already the signal.* `storedPermits` reaches the shell
+  (`builder-shell.tsx:173`) and is non-null only when a `deck_profiles` row exists.
+  Idle with permits null draws 2a at once, with no loader and no flash; idle with permits set and
+  the peek pending draws 8a. Zero bytes, and it fails soft: a row `readStoredReading` declines (an
+  old version over an edited list) shows 8a, then 2a. Optionally, ship the full reading only when
+  the visit arrives on `?tab=analysis` (`initialView`).
+
+**3. When does 8a still show?**
+- Never on a press: that is `loading` (`use-deck-profile.ts:156`), 2b's ring with no held reading
+  or the banner busy over one (`analysis-panel.tsx:82-86`). Never on a tab switch: the shell holds
+  the answer. A deck change resets to `idle` (`use-deck-profile.ts:226-231`); new props re-seed it.
+- So with the full reading shipped, 8a is **unreachable**: no client refetch of the stored reading
+  exists for it to cover. The canvas's "slow client refetch" has no code path.
+- With the permits route, 8a is **reachable and needed**. It shows on the first open of an analyzed
+  deck whenever the peek takes more than 150ms, which a server action plus a ~120ms read often will.
+
+**4. Tokens and assets.** Nothing new is needed.
+- `@keyframes at-wave` and `.anim-at-wave` are shipped (`src/app/globals.css:715-719`); the ring
+  already staggers it by 0.16s (`src/components/decks/analysis-empty.tsx:57-63`).
+- `BracketMark` takes `px={22}` (`src/components/decks/bracket-mark.tsx:74,82`).
+- *Loading…* is not in `src/lib/copy`. It is one new string for `deck-analysis.ts`.
+
+**Engineering corrections (spec against code)**
+1. **Keep the header chip.** 8a withholds it, but the chip is server-rendered from the permits
+   (`page.tsx:110-111,390`). `useHeaderBracket` does not wait on a peek. `probe:bracket-chip`
+   asserts the chip is drawn on a fresh load before any press. It is known, so the spec's own rule
+   ("draws nothing it cannot yet know") keeps it.
+2. **The reduced-motion rule differs.** The spec rests the marks at 0.5. The shipped rule sets
+   `.anim-at-wave` to `opacity: 1` for the ring (`globals.css:751`). 8a needs its own still state,
+   for example a modifier class, without changing the ring's.
+3. **Withholding the mix is new.** The panel draws `children` (the mix) in every state
+   (`analysis-panel.tsx:26-28,111`). 8a is the first state that withholds it, so update that comment
+   and the panel test. Build it as drawn (frames `:297`, `notFetching`).
+4. **`aria-busy` goes on the tabpanel** (`builder-shell.tsx:1098`), as the canvas says. The frames
+   put it on the loader `div`. `role="status"` goes on the loader, beside the panel's existing sr-only
+   announcer (`analysis-panel.tsx:112`). That announcer stays silent for a peek landing (`:58-68`).
+5. **The 150ms and 400ms timing needs a new timer.** Nothing on `main` delays or holds a state.
+   Hold the reading back until the 400ms have passed, and never hold a press's reply.
+6. **The probe.** Delay `fetchStoredDeckProfile` on an analyzed deck and assert no `analysis-empty`
+   is ever drawn, and 8a appears after 150ms and stays 400ms; an unanalyzed deck draws 2a with no
+   8a. Mutation: drop the permits gate, which must fail the first check.
