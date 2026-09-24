@@ -413,14 +413,18 @@ export function DecklistRow({
           // undone on the row: on desktop this block turns horizontal, where the
           // same declaration centres the name in a `flex-auto` box wider than its
           // text and every name in the list floats off the left rail.
-          // Wraps between md and lg for one reason: `over $X` takes a line of its own there (F12,
-          // ruling b), because the two-column grid has no room left to give a name.
-          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:flex-wrap lg:flex-nowrap md:justify-start md:items-center md:gap-x-[6px] md:gap-y-0">
+          // An OVER row wraps between md and lg, for one reason: `over $X` takes a line of its own
+          // there (F12, ruling b), because the two-column grid has no room left to give a name. No
+          // other row wraps: a wrap measures items at their full width, so a long name would push
+          // the figure down on every row.
+          <div className={`flex-auto min-w-0 flex flex-col justify-center md:flex-row ${overText ? "md:flex-wrap lg:flex-nowrap" : ""} md:justify-start md:items-center md:gap-x-[6px] md:gap-y-0`}>
             {/* Name and count share a line so the count stays inline after the
                 name at both widths — on phone the meta line below is its own
                 line, and a count that flowed down with it would read as part
                 of it. */}
-            <div className="min-w-0 flex items-center gap-[6px]">
+            {/* On a wrapping row the name line starts at no width and grows to its own, so the wrap
+                never breaks between the name and the figure: only the full-width `over` line drops. */}
+            <div className={`min-w-0 flex items-center gap-[6px] ${overText ? "md:basis-0 md:grow md:max-w-fit lg:basis-auto lg:grow-0 lg:max-w-none" : ""}`}>
               <CardDetailTrigger
                 oracleId={card.oracleId}
                 name={fullName}

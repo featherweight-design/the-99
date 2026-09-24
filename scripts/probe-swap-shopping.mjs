@@ -1,6 +1,6 @@
 /**
  * probe:swap-shopping — the Shopping limit line and the over-limit marks (swap tools, PR 3), walked
- * in a real browser at 390x844, 768x900 and 1300x900.
+ * in a real browser at 390x844, 768x900, 1024x900 and 1300x900.
  *
  * What only a browser answers:
  *   - the marks MOVE when the limit is edited: a card between the old and the new limit loses its
@@ -8,9 +8,10 @@
  *     for; only a painted `box-shadow` says the ring is there.
  *   - the limit is REMEMBERED: a reload reads the saved figure back, and the deck row holds it.
  *   - the phone's targets are 44px: the figure and `reset to $10`.
- *   - the name keeps its width with `over $X` on the line (audit F12): at 390 the name must keep
- *     the 131px Design costed for Plateau, and at 768, the narrowest width drawing the two-column
- *     grid, it must not collapse under 40px.
+ *   - the name keeps its width with `over $X` on the row (audit F12, ruling b): the line costs the
+ *     name nothing at 390 and 768, where it takes a line of its own, and the name keeps the 131px
+ *     Design costed for Plateau at 390 and 40px at 1024 and 1300. At 768 an under row stays one line
+ *     and an over row keeps its figure beside its name. The room itself at 768 is the grid's.
  *
  * FIXTURE. A brew under the signed-in account holding cards it does NOT own, chosen by their live
  * price so the bands are known: HIGH above $25, MID between $10 and $25, LOW at $10 or under. An
@@ -171,6 +172,12 @@ async function readRows(page, names, figure) {
           cut: trigger.scrollWidth > trigger.clientWidth + 1 ||
             [...trigger.querySelectorAll("*")].some((el) => el.scrollWidth > el.clientWidth + 1),
           rowWidth: Math.round(row.getBoundingClientRect().width),
+          rowHeight: Math.round(row.getBoundingClientRect().height),
+          // The EDHREC figure's top against the name's: the same line, or the figure was pushed down.
+          figureDrop: (() => {
+            const fig = [...row.querySelectorAll("span.tabular-nums")].find((el) => el.getClientRects().length);
+            return fig ? Math.round(fig.getBoundingClientRect().top - trigger.getBoundingClientRect().top) : null;
+          })(),
         };
       }
       return out;
@@ -248,6 +255,15 @@ try {
     console.log(`       ${tag} name room with / without the over line: ${overNames
       .map((n) => `${n} ${rows[n]?.room}/${without[n]}px${rows[n]?.cut ? " cut" : ""}`).join(" · ")}`);
     report(`${tag} the over line's cost to the name (F12)`, cost <= w.maxCost, `${cost}px, at most ${w.maxCost}px`);
+    if (w.label === 768) {
+      // Only an over row wraps here (ruling b): an under row stays one line, and an over row keeps
+      // its figure beside its name, with only `over $X` below.
+      const under = fx.low.map((n) => rows[n]?.rowHeight ?? 0);
+      report(`${tag} an under row stays one line`, Math.max(...under) <= 36, `${under.join(", ")}px tall`);
+      const drops = overNames.map((n) => rows[n]?.figureDrop).filter((d) => d !== null && d !== undefined);
+      report(`${tag} an over row keeps its figure beside its name`, drops.length > 0 && drops.every((d) => Math.abs(d) <= 6),
+        `figure offsets ${drops.join(", ")}px`);
+    }
     if (w.nameFloor) {
       const narrowest = Math.min(...overNames.map((n) => rows[n]?.room ?? 0));
       const cut = overNames.filter((n) => rows[n]?.cut);
