@@ -41,7 +41,8 @@ import { SuggestionCard, type CardActions } from "./suggestion-card";
  *  - nothing changed (state 5): drawn when a press finds the gate `unchanged`, with Suggest
  *    again anyway;
  *  - the five failures (6a-6e), and credits spent (C6, E4), which disables the primary and keeps
- *    the body.
+ *    the body; the spend cap's pause and the owner's share disable it the same way, with their
+ *    own note.
  * The action row is one band across every state, so the panel does not jump as it changes.
  *
  * The server actions are injectable, so every state is testable without a request.
@@ -162,6 +163,10 @@ export function TuningPanel({
   // and a player with no credits left on an unchanged deck must still see the press disabled.
   const spent = state.allowance.used >= state.allowance.limit;
   const left = Math.max(0, state.allowance.limit - state.allowance.used);
+  // The spend cap's two states disable the press exactly as a spent allowance does, and only the
+  // note under it changes. Paused wins (it is the whole app), then the owner's share, then spent.
+  const paused = state.allowance.paused;
+  const blocked = spent || !!paused || state.allowance.ownerShare === true;
 
   async function press(anyway = false) {
     if (!state) return;
@@ -340,13 +345,17 @@ export function TuningPanel({
   // A failure's own note rides in the action row beside Try again, ahead of the credit line.
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
-  const credit = spent
-    // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with more
-    // counted than the limit the reader still has none left at that time.
-    ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
-    : primary.again
-      ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
-      : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
+  const credit = paused
+    ? creditsCopy.paused(paused.until)
+    : state.allowance.ownerShare
+      ? creditsCopy.ownerShare(new Date())
+      : spent
+        // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
+        // more counted than the limit the reader still has none left at that time.
+        ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
+        : primary.again
+          ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
+          : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
   const noteLine = note ? `${note} · ${credit}` : credit;
 
   return (
@@ -412,14 +421,14 @@ export function TuningPanel({
           <>
             <button
               type="button"
-              onClick={() => (spent ? undefined : void press(unchangedShown || failure !== null))}
-              aria-disabled={spent || undefined}
-              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${spent ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"}`}
+              onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null))}
+              aria-disabled={blocked || undefined}
+              className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${blocked ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"}`}
             >
               {unchangedShown ? copy.unchangedCta : primary.label}
             </button>
             <span
-              className={`text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px] md:leading-[1.5] ${spent ? "md:max-w-[380px]" : ""}`}
+              className={`text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px] md:leading-[1.5] ${blocked ? "md:max-w-[380px]" : ""}`}
               style={{ color: "var(--fg-faint)" }}
             >
               {noteLine}

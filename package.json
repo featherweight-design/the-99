@@ -102,6 +102,7 @@
     "probe:fill": "tsx scripts/probe-fill.ts",
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
+    "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "probe:intent-line": "node scripts/probe-intent-line.mjs",
     "probe:tab-opening": "node scripts/probe-tab-opening.mjs",

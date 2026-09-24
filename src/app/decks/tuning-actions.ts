@@ -7,6 +7,7 @@ import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
+import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckSurfaces } from "../../lib/decks/revalidate";
@@ -28,7 +29,7 @@ import { gateReason } from "../../lib/tuning/gate";
 import { MODEL_TIMEOUT_MS, TUNING_MAX_TOKENS, TUNING_MODEL } from "../../lib/tuning/limits";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
-import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../../lib/tuning/run-store";
+import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
 import { nameResolver } from "../../lib/tuning/resolve-names";
 import { validateSuggestions } from "../../lib/tuning/validate";
@@ -97,12 +98,20 @@ export async function runTuning(
   if (gate && !(gate.kind === "unchanged" && anyway)) return { ok: false, message: gate.message };
 
   const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested });
+  if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };
+  if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
 
-  const { runId } = started;
+  // The run and its ledger unit, held for the whole request: every settle below reaches the unit
+  // by its own id, so a deck deleted mid-call (which cascades the run row away) still gets its bill.
+  const run = { runId: started.runId, callId: started.callId };
+  // What the call was billed for, once it returned. Every outcome write after that records it: a
+  // failed one, since a refund still burned the tokens, and a late one that finds the run already
+  // Stopped or reaped, since the call billed all the same (`run-store.ts`, `recordLate`).
+  let billed: Billed | undefined;
   const fail = async (errorClass: Parameters<typeof finishRun>[1]["errorClass"], droppedCount?: number) => {
-    if (await finishRun(runId, { status: "failed", errorClass, droppedCount })) revalidateDeck(deckId);
+    if (await finishRun(run, { status: "failed", errorClass, droppedCount }, billed)) revalidateDeck(deckId);
     return { ok: true } as const;
   };
 
@@ -118,6 +127,7 @@ export async function runTuning(
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
       schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
     });
+    if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage };
     if (!outcome.ok) return await fail(outcome.errorClass);
 
     // One catalog read of every name the model returned; injected so validate.ts stays pure.
@@ -133,7 +143,7 @@ export async function runTuning(
 
     // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
     const flagged = await withBracketAfter(head, profile, declared, kept);
-    if (await persistRun(runId, flagged, droppedCount)) revalidateDeck(deckId);
+    if (await persistRun(run, flagged, droppedCount, billed)) revalidateDeck(deckId);
     return { ok: true };
   } catch (err) {
     await fail("upstream_busy");

@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
-import { AllowanceSpentError, reserveModelCall, settleModelCall } from "../model/allowance";
+import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { ModelErrorClass } from "../model/client";
 import { PROFILE_VERSION } from "../profile/version";
 import { intentTooLong, TUNING_MODEL } from "./limits";
@@ -31,6 +31,30 @@ export type ErrorClass = ModelErrorClass | "ungrounded" | "interrupted";
 
 class RunSupersededError extends Error {}
 
+export type { Billed };
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * A started run as its caller holds it for the whole request: the run row's id, and the id of the
+ * `model_calls` unit the start reserved. The unit id is carried rather than looked up through the
+ * run row, because the run row can VANISH mid-call — `deck_suggestion_runs.deck_id` cascades on a
+ * deck delete while `model_calls` is kept — and the bill must still land on the ledger.
+ */
+export type RunHandle = { runId: string; callId: string };
+
+/**
+ * A LATE OUTCOME still records its bill. When a Stop, the reaper or a deck delete got there
+ * first, the outcome write matches no pending run and changes nothing about the run or the credit
+ * — but the upstream call billed all the same, and until its meters land its unit counts toward
+ * the month at its worst case. So the meters go onto the unit anyway, by the id the start handed
+ * back (`recordModelUsage` writes them only while none are recorded, so this never counts a call
+ * twice).
+ */
+async function recordLate(tx: Tx, callId: string, billed: Billed | undefined): Promise<void> {
+  if (billed) await recordModelUsage(tx, callId, billed);
+}
+
 /**
  * ONE transaction: reserve an allowance unit, then insert the pending row. Committed before any
  * network call. The allowance lock makes the last unit single-winner across decks; the partial
@@ -49,12 +73,12 @@ export async function startRun(
    * started and never another tab's (the row's default makes one when absent).
    */
   opts: { runId?: string; now?: Date } = {},
-): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" }> {
+): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" }> {
   const now = opts.now ?? new Date();
   try {
-    const runId = await db.transaction(async (tx) => {
-      const unit = await reserveModelCall(tx, userId, "tuning", now);
-      if (!unit) throw new AllowanceSpentError();
+    const handle = await db.transaction(async (tx): Promise<RunHandle> => {
+      const unit = await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
+      if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({
         ...(opts.runId ? { id: opts.runId } : {}),
         deckId, userId, inputFingerprint: fingerprint, modelCallId: unit.id,
@@ -62,11 +86,11 @@ export async function startRun(
         readVersion,
         status: "pending",
       }).returning({ id: deckSuggestionRuns.id });
-      return row.id;
+      return { runId: row.id, callId: unit.id };
     });
-    return { kind: "started", runId };
+    return { kind: "started", ...handle };
   } catch (err) {
-    if (err instanceof AllowanceSpentError) return { kind: "allowance" };
+    if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Only the partial index means "a run is already in flight here". A dropped connection or
     // a missing column must not be reported as that.
     if (isUniqueViolation(err)) return { kind: "in_flight" };
@@ -95,15 +119,18 @@ export async function saveIntent(
 
 /** A failed run: the outcome, no items, and its unit back. False when the run was superseded. */
 export async function finishRun(
-  runId: string,
+  { runId, callId }: RunHandle,
   set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number },
+  /** The call's usage, when it got a response: a refund still records what it burned. */
+  billed?: Billed,
 ): Promise<boolean> {
   const written = await db.transaction(async (tx) => {
     const rows = await tx.update(deckSuggestionRuns)
       .set(set)
       .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
       .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of rows) await settleModelCall(tx, r.callId, "refunded");
+    for (const r of rows) await settleModelCall(tx, r.callId, "refunded", billed);
+    if (rows.length === 0) await recordLate(tx, callId, billed);
     return rows;
   });
   return written.length > 0;
@@ -117,9 +144,10 @@ export async function finishRun(
  * insert runs and rolls everything back, so "items persisted, status did not" cannot happen.
  */
 export async function persistRun(
-  runId: string,
+  { runId, callId }: RunHandle,
   kept: ValidatedSuggestion[],
   droppedCount: number,
+  billed?: Billed,
 ): Promise<boolean> {
   try {
     await db.transaction(async (tx) => {
@@ -140,10 +168,14 @@ export async function persistRun(
           bracketAfter: s.bracketAfter,
         })));
       }
-      await settleModelCall(tx, written[0].callId, "spent");
+      await settleModelCall(tx, written[0].callId, "spent", billed);
     });
   } catch (err) {
-    if (err instanceof RunSupersededError) return false;
+    if (err instanceof RunSupersededError) {
+      // The transaction above rolled back; the bill is recorded in one of its own.
+      await db.transaction((tx) => recordLate(tx, callId, billed));
+      return false;
+    }
     throw err;
   }
   return true;
@@ -165,7 +197,7 @@ export async function cancelRun(runId: string, deckId: string, userId: string): 
         eq(deckSuggestionRuns.status, "pending"),
       ))
       .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of cancelled) await settleModelCall(tx, r.callId, "refunded");
+    for (const r of cancelled) await settleModelCall(tx, r.callId, "refunded", undefined);
     return cancelled;
   });
   return rows.length > 0;

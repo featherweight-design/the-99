@@ -35,7 +35,7 @@ import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/li
 import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
 import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
-import { stubReply, type StubMode } from "../src/lib/synopsis/stub";
+import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_REAPER_CUTOFF_MS } from "../src/lib/synopsis/limits";
 
 neonConfig.webSocketConstructor = ws;
@@ -69,7 +69,9 @@ let calls = 0;
 let queue: StubMode[] = [];
 let delayMs = 0;
 const deps: GenerateDeps = {
-  modelName: "probe-stub",
+  // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
+  // and pricing refuses to guess one.
+  modelName: STUB_MODEL,
   model: async (_req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
     calls += 1;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
@@ -133,7 +135,7 @@ async function run() {
   check("…is charged as spent", await ledger(), [{ status: "spent", n: 1 }]);
   const [stored] = await rows<{ model: string; contract_version: number; fingerprint: string }>(sql`
     select model, contract_version, fingerprint from deck_synopses where deck_id = ${deck.id}::uuid`);
-  check("…records the model that wrote it", stored.model, "probe-stub");
+  check("…records the model that wrote it", stored.model, STUB_MODEL);
   check("…and the list it describes", stored.fingerprint, list());
   {
     // Every card the shown overview names carries its preview art in the read, including any a
@@ -185,7 +187,10 @@ async function run() {
   check("…and names the run it retried", link.retry_of, before!.id);
   check("…and spends for the section that passed", (await ledger()).find((r) => r.status === "spent")?.n, 2);
 
-  // 6 · A retry whose retried section fails AGAIN shows nothing new, and is refunded.
+  // 6 · A retry whose retried section fails AGAIN shows nothing new, and is refunded. Aged first:
+  // section 5 spent two units, and a friend's allowance is three, so the retry below would
+  // otherwise be refused for the allowance rather than written.
+  await ageLedger();
   await swap(spares[2]);
   await analyze(deck.id);
   queue = ["partial"];
@@ -230,6 +235,13 @@ async function run() {
   };
   check("a run reaped mid-call reports superseded", (await writeSynopsisFor(deck.id, USER, reapingModel)).kind, "superseded");
   check("…and charges nothing", (await ledger()).find((r) => r.status === "spent"), undefined);
+  // …but records what the call billed on its unit: a late outcome still writes its meters, since
+  // until they land the unit counts toward the month's spend at its worst case. The stub bills
+  // nothing, so its cost is a recorded 0, never the null of a call with no meters.
+  const [lateUnit] = await rows<{ model: string | null; cost: string | null }>(sql`
+    select m.model, m.cost_micro_usd::text as cost from deck_synopses s join model_calls m on m.id = s.model_call_id
+    where s.deck_id = ${deck.id}::uuid and s.outcome = 'interrupted' order by s.created_at desc limit 1`);
+  check("…and still records the late call's meters on its unit", lateUnit, { model: STUB_MODEL, cost: "0" });
 
   // 8c · A throw AFTER the reservation (here, a reply the checks cannot read) settles the run as a
   // refunded upstream failure at once, rather than leaving it pending for the reaper.
@@ -238,13 +250,50 @@ async function run() {
     ...deps,
     model: async (req, facts) => {
       const out = await deps.model(req, facts);
-      return out.ok ? { ...out, value: { ...out.value, weaknesses: null as unknown as string[] } } : out;
+      // A reply that came back (and was billed: a usage the stub never reports, so the probe can
+      // see it land) but that the checks cannot read.
+      return out.ok
+        ? { ...out, value: { ...out.value, weaknesses: null as unknown as string[] }, usage: { ...out.usage, inputTokens: 1_234 } }
+        : out;
     },
   };
   const threw = await writeSynopsisFor(deck.id, USER, throwingModel);
   check("a throw after the reservation ends as a refunded upstream failure",
     [threw.kind === "written" && threw.outcome, (await ledger()).find((r) => r.status === "refunded")?.n, (await state()).pending],
     ["upstream_busy", 1, false]);
+  // …and that fallback settle still records what the returned call billed.
+  const [threwUnit] = await rows<{ input_tokens: number | null; cost: string | null }>(sql`
+    select m.input_tokens, m.cost_micro_usd::text as cost from model_calls m
+    where m.user_id = ${USER} and m.status = 'refunded' and m.created_at > now() - interval '24 hours'`);
+  check("…and records the billed call's meters on its unit", threwUnit, { input_tokens: 1_234, cost: "0" });
+
+  // 8d · The DECK is deleted while the model answers. `deck_synopses.deck_id` cascades, so the run
+  // row is gone when the outcome lands; `model_calls` is kept, and the bill must reach it by the
+  // unit id the start handed back, never through the vanished run row. A throwaway deck, so the
+  // fixture the rest of the run reads survives. With `finishRun` looking the unit up through the
+  // run row instead, the meters check below reads null and fails.
+  await ageLedger();
+  const [doomed] = await rows<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id)
+    values (${USER}, 'probe synopsis doomed', ${legend.oracle_id}::uuid) returning id`);
+  await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values ${sql.join(
+    body.map((c) => sql`(${doomed.id}::uuid, ${c.oracle_id}::uuid, 1)`), sql`, `)}`);
+  await analyze(doomed.id);
+  const deletingModel: GenerateDeps = {
+    ...deps,
+    model: async (req, facts) => {
+      const out = await deps.model(req, facts);
+      await fixture.execute(sql`delete from decks where id = ${doomed.id}::uuid`);
+      return out.ok ? { ...out, usage: { ...out.usage, inputTokens: 4_321 } } : out;
+    },
+  };
+  check("a deck deleted mid-call reports superseded", (await writeSynopsisFor(doomed.id, USER, deletingModel)).kind, "superseded");
+  const [orphan] = await rows<{ input_tokens: number | null; cost: string | null; runs: number }>(sql`
+    select m.input_tokens, m.cost_micro_usd::text as cost,
+      (select count(*)::int from deck_synopses s where s.model_call_id = m.id) as runs
+    from model_calls m where m.user_id = ${USER} order by m.created_at desc limit 1`);
+  check("…its run row went with the deck, and its unit still carries the meters", orphan,
+    { input_tokens: 4_321, cost: "0", runs: 0 });
 
   // 9 · THE REAPER, on both paths: a run a crash left pending is failed, refunded, and frees the
   // deck, whether the next thing to arrive is a write or a read. Each path is proved on its own

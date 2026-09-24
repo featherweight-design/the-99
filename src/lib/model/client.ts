@@ -28,9 +28,22 @@ import type { z } from "zod";
 
 export type ModelErrorClass = "upstream_busy" | "timeout" | "malformed";
 
+/**
+ * What the call was billed for, ACCUMULATED across both attempts: a malformed first reply still
+ * came back, and still burned its tokens. The cache meters are zero while the app sends no
+ * `cache_control`, and are read anyway so a price can never silently leave them out.
+ */
+export type ModelUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+};
+
 export type ModelOutcome<T> =
-  | { ok: true; value: T; usage: { inputTokens: number; outputTokens: number } }
-  | { ok: false; errorClass: ModelErrorClass };
+  | { ok: true; value: T; usage: ModelUsage }
+  /** `usage` is present whenever any attempt got a response back, and absent when none did. */
+  | { ok: false; errorClass: ModelErrorClass; usage?: ModelUsage };
 
 export type ModelRequest<T> = {
   /** The caller's. This module names none. */
@@ -43,7 +56,13 @@ export type ModelRequest<T> = {
   deadlineMs: number;
 };
 
-type Messages = Pick<Anthropic["messages"], "parse">;
+/**
+ * `create`, never the SDK's `parse`. `parse` is `create(...).then(parseMessage)`, and a reply that
+ * fails the schema THROWS out of the second half — after the reply arrived and was billed, with
+ * its usage on the message the throw discards. Calling `create` and parsing here keeps the usage
+ * of every reply that came back, malformed or not.
+ */
+type Messages = Pick<Anthropic["messages"], "create">;
 
 export type ModelDeps = {
   /** Injected in tests; the real client otherwise. */
@@ -53,9 +72,41 @@ export type ModelDeps = {
 };
 
 type Attempt<T> =
-  | { kind: "ok"; value: T; usage: { inputTokens: number; outputTokens: number } }
-  | { kind: "retryable"; errorClass: "upstream_busy" | "malformed" }
-  | { kind: "final"; errorClass: ModelErrorClass };
+  | { kind: "ok"; value: T; usage: ModelUsage }
+  | { kind: "retryable"; errorClass: "upstream_busy" | "malformed"; usage?: ModelUsage }
+  | { kind: "final"; errorClass: ModelErrorClass; usage?: ModelUsage };
+
+type ApiUsage = {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens?: number | null;
+  cache_creation_input_tokens?: number | null;
+};
+
+function usageOf(u: ApiUsage): ModelUsage {
+  return {
+    inputTokens: u.input_tokens,
+    outputTokens: u.output_tokens,
+    cacheReadTokens: u.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: u.cache_creation_input_tokens ?? 0,
+  };
+}
+
+function addUsage(a: ModelUsage | undefined, b: ModelUsage | undefined): ModelUsage | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+    cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
+  };
+}
+
+/** A failure outcome, carrying the usage only when some attempt got a response. */
+function failed<T>(errorClass: ModelErrorClass, usage: ModelUsage | undefined): ModelOutcome<T> {
+  return usage ? { ok: false, errorClass, usage } : { ok: false, errorClass };
+}
 
 export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): Promise<ModelOutcome<T>> {
   const now = deps.now ?? Date.now;
@@ -66,17 +117,19 @@ export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): 
 
   const deadline = now() + req.deadlineMs;
   let last: ModelErrorClass = "upstream_busy";
+  let usage: ModelUsage | undefined;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const remaining = deadline - now();
-    if (remaining <= 0) return { ok: false, errorClass: attempt === 0 ? "timeout" : last };
+    if (remaining <= 0) return failed(attempt === 0 ? "timeout" : last, usage);
 
     const result = await tryOnce(messages, req, remaining, log);
-    if (result.kind === "ok") return { ok: true, value: result.value, usage: result.usage };
-    if (result.kind === "final") return { ok: false, errorClass: result.errorClass };
+    usage = addUsage(usage, result.usage);
+    if (result.kind === "ok") return { ok: true, value: result.value, usage: usage ?? result.usage };
+    if (result.kind === "final") return failed(result.errorClass, usage);
     last = result.errorClass;
   }
-  return { ok: false, errorClass: last };
+  return failed(last, usage);
 }
 
 function realMessages(log: (line: string) => void): Messages | null {
@@ -96,32 +149,48 @@ async function tryOnce<T>(
 ): Promise<Attempt<T>> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), remainingMs);
+  // Built inside the `try`: a fault converting the schema is still a terminal outcome, never a throw.
+  let format: ReturnType<typeof zodOutputFormat<z.ZodType<T>>>;
+  let response: Anthropic.Message;
   try {
-    const response = await messages.parse(
+    format = zodOutputFormat(req.schema);
+    response = await messages.create(
       {
         model: req.model,
         max_tokens: req.maxTokens,
         system: req.system,
         messages: [{ role: "user", content: req.user }],
-        output_config: { format: zodOutputFormat(req.schema) },
+        output_config: { format },
       },
       { signal: controller.signal, timeout: remainingMs, maxRetries: 0 },
     );
-    // A refusal or a reply cut off at max_tokens parses to nothing: the shape was not met.
-    if (response.parsed_output == null) {
-      log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
-      return { kind: "retryable", errorClass: "malformed" };
-    }
-    return {
-      kind: "ok",
-      value: response.parsed_output as T,
-      usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens },
-    };
   } catch (err) {
     return classify(err, controller.signal.aborted, log);
   } finally {
     clearTimeout(timer);
   }
+
+  // The reply is here and billed: every outcome from now on carries its usage.
+  const usage = usageOf(response.usage);
+  // Every text block, joined, as the eval harness reads a reply (`scripts/eval/lib/request.mts`), so
+  // the app and the harness judge one reply the same way. No text at all (a refusal, or a reply
+  // that was all thinking when it hit max_tokens) is the shape not met.
+  const text = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+  let parsed: T | null = null;
+  if (text.length > 0) {
+    try {
+      parsed = format.parse(text) as T;
+    } catch (err) {
+      // The zod output format throws when the reply is not JSON or fails the schema.
+      log(`[model] malformed: ${err instanceof Error ? err.message : String(err)}`);
+      return { kind: "retryable", errorClass: "malformed", usage };
+    }
+  }
+  if (parsed == null) {
+    log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
+    return { kind: "retryable", errorClass: "malformed", usage };
+  }
+  return { kind: "ok", value: parsed, usage };
 }
 
 /** Most specific first: every timeout class extends a connection or abort error. */
