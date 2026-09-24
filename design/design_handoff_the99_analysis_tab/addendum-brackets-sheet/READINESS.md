@@ -1,30 +1,30 @@
 # Readiness: the brackets sheet
 
-**Self-assessed: 🟢 Green for build, with one wording check.** Every figure is a constant on `main`, and the
-chrome is `ModalChrome` with no new props.
+**R3, self-assessed: 🟢 Green for build.** This answers `READINESS-audit.md` findings 1, 2 and 4, and Hugh's review of R2 (see `README.md`, R3).
+Every figure is a constant on `main`, and the chrome is `ModalChrome` with no new props.
+
+## R3 changes
+
+1. **No reader marking on the sheet.** It is a reference with five bracket columns, and it does not read `verdict.permits`.
+2. **No aside.** `ModalChrome` gets a title and a close label only.
+3. **Quotes (Hugh, 2026-09-24).** Each note entry gets one verbatim Wizards line tagged with its post, six in all.
+   New slots: `bracketsSheet.quotes`, `quoteTag`, `quotedFrom` and `corner`, plus two new source constants for `sources.ts`.
+4. **Climb contrast (finding 1).** Text on the yours rung is `--fg`, with a minimum of 8.73:1 across six themes (it was 3.90).
 
 ## Check before ship
 
-1. **The four explanation lines and the tutors line are our paraphrase.** They are written from the comments in
-   `rules.ts`, not from Wizards' post, which the design tools could not fetch this round.
-   - `/copy-review` should read them against the post once.
-   - After that, `lastChecked` moves only when `rules.ts` and the post have been read side by side, as `sources.ts` requires.
-   - Two claims need checking:
-     - "removed the tutor limit in October 2025", taken from `comboLandsEarly`'s comment;
-     - "late in a game" for B3 combos.
+1. `/copy-review` opens both quote posts and confirms each line is still verbatim, since the posts are revised in place.
+2. Findings 7 and 8 (the lead and tutors wording) stay with `/copy-review`. The lead was rewritten in R3.
 
 ## Engineering, in order
 
-1. The foot link in `BracketClimb`, under the rungs box: `aria-haspopup`, local `open` state.
-2. `BracketsSheet` in `ModalChrome` `width={700}`. Cells come from the four limit constants and
-   `COMBO_POLICY`, never transcribed. `limits` is not needed: the sheet is the same for every deck except the marking.
-3. The reader's marking comes from `verdict.permits`: tint the columns in 1–3 and the Optimized · cEDH row for 4 and 5.
-4. Strings go in `deckAnalysisCopy.bracketsSheet` (see `brackets-sheet · copy strings.ts`).
+1. The foot link in `BracketClimb`, under the rungs box: `aria-haspopup` and local `open` state.
+2. On the yours rung in `bracket-climb.tsx`, the name, role label, and Allowances name and count change to `var(--fg)`.
+3. `BracketsSheet` in `ModalChrome` `width={700}`. Cells come from the four limit constants and `COMBO_POLICY`, with 4–5 as `climb.noCap`.
+   The grid transposes below `md`.
+4. The notes list is built from `bracketsSheet.readings` and `quotes`, with `FindingMark` and `BracketMark` (20px chips in the 4–5 entry).
 
 ## Closes
 
 - Verdict `READINESS.md`, engineering item 8.
 - Analysis tab `READINESS.md`, "Still owed": `see all brackets →`.
-
-The `[3,4]` split item there was already settled on 2026-09-20 (`permitsFor`). This sheet's combo line
-describes the resolved rule.

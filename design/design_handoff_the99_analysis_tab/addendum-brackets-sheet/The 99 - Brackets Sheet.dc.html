@@ -9,7 +9,7 @@
 <x-dc>
 <helmet>
 <meta name="design_doc_mode" content="canvas">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root, [data-theme="amonkhet"] {
     --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
@@ -29,35 +29,105 @@
   a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
 </style>
 </helmet>
-<section data-theme="{{ theme }}" data-screen-label="Brackets sheet · R1" style="display:flex;flex-direction:column;gap:56px;padding:56px 64px 96px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1500px;">
+<section data-theme="{{ theme }}" data-screen-label="Brackets sheet · R3" style="display:flex;flex-direction:column;gap:56px;padding:56px 64px 96px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1500px;">
 
   <header style="display:flex;flex-direction:column;gap:14px;max-width:1100px;">
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Analysis tab · addendum · R1</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Analysis tab · addendum · R3</span>
     <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1.15;">All brackets, the sheet behind “see all brackets →”</h1>
-    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">The last surface owed from the verdict round (verdict READINESS item 8). One sheet, opened from the climb's foot, and the only place all four rules and the first three brackets appear together. Built on <b style="color:var(--fg);font-weight:600;">rules.ts</b> and <b style="color:var(--fg);font-weight:600;">sources.ts</b> as they stand on <b style="color:var(--fg);font-weight:600;">main</b>; every figure in the grid is a constant there.</p>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">R3 makes the sheet a reference, not a second climb. All five brackets are columns, nothing marks the reader's own, and each rule's reading and Wizards quote move to a list under the table. Every figure in the grid is a constant in <b style="color:var(--fg);font-weight:600;">rules.ts</b>.</p>
   </header>
 
-  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
-    <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Called · which three</span>
-      <b style="font-size:15px;font-weight:600;">1, 2 and 3 as columns. 4 and 5 as one row under the grid.</b>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">They are the only brackets with card limits: <b style="color:var(--fg-body);font-weight:600;">verdict.limits</b> covers 1 to 3 and nothing else. A column for 4 and one for 5 would be eight <i>no cap</i> cells saying one thing. They are one row instead, so a deck at 4 still finds itself on the sheet, and the row says the one true thing about them: only the banned list, and the difference is how you play.</p>
+  <div id="3a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3a</span><h2 style="margin:0;font-size:18px;font-weight:600;">Opened, at 1300 and 390</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">Five columns, no marking</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The climb already shows where a deck sits, so the sheet only states the rules. Optimized and cEDH are columns like the rest. Their cells read <i>no cap</i>, the same string the climb prints at 4–5. With no marking, there is no tint, no ink rule and no <i>where your cards are</i> label, and so no contrast case left on the sheet. The <b style="color:var(--fg-body);font-weight:600;">yours</b> prop and <b style="color:var(--fg-body);font-weight:600;">verdict.permits</b> are no longer needed here.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">Figures only in the cells</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The corner says <i>cards allowed</i>, so each cell is a number (<b style="color:var(--fg-body);font-weight:600;">0</b>, <b style="color:var(--fg);font-weight:600;">3</b>) or <i>no cap</i>, never <i>0 allowed</i>. That fits five columns at 700 (about 100px each) and the phone's four. <b style="color:var(--fg);font-weight:600;">3</b> is the one figure in <b style="color:var(--fg-body);font-weight:600;">--fg</b> at 600. <i>no cap</i> is <b style="color:var(--fg-body);font-weight:600;">--fg-faint</b> on a dashed underline. The header drops its aside and shows the title and close only.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">390 transposes</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Five bracket columns at 390 would be about 53px, which is narrower than “Exhibition”. So the phone turns the grid: brackets are rows (mark 22 + name), and the four rules are columns (fact mark 16 + a mono 8.5 label that wraps), about 60px each. The figures are the same and so is the notes list. At both widths a reader looks up the bracket and then the rule.</p>
+      </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Called · quote or paraphrase</span>
-      <b style="font-size:15px;font-weight:600;">Paraphrased, with one dated source link.</b>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Three reasons. The readings are ours: “no cap” at 2 and 3 and the combo question at 3 are how the app applies the rules, and a WotC quote above them would claim Wizards said it. Blocker 1 of the verdict round was quoted fragments nobody had checked. And the post is revised in place (<b style="color:var(--fg-body);font-weight:600;">sources.ts</b>), so the foot names it and says when it was last checked. The aside, <i>as we apply them</i>, says the same thing in the header. Bracket names stay verbatim.</p>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="position:relative;width:1300px;height:860px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;background:var(--bg);">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,var(--surface) 0 14px,var(--bg) 14px 28px);opacity:0.5;"></div>
+        <span style="position:absolute;left:24px;top:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">analysis tab · 1300 · behind the scrim</span>
+        <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);display:flex;align-items:center;justify-content:center;">
+          <dc-import name="Brackets Sheet" theme="{{ theme }}" hint-size="700px,731px"></dc-import>
+        </div>
+      </div>
+      <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;background:var(--bg);">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,var(--surface) 0 14px,var(--bg) 14px 28px);opacity:0.5;"></div>
+        <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);">
+          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;">
+            <dc-import name="Brackets Sheet" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,792px"></dc-import>
+          </div>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;border:1px solid var(--border);border-radius:12px;background:var(--surface);">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Called · the phone</span>
-      <b style="font-size:15px;font-weight:600;">The grid does not transpose.</b>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Cells hold only a figure (<i>0 allowed</i>, <i>3 allowed</i>, <i>no cap</i>), so three columns of about 88px fit at 390. Each explanation is a full-width line under its row at both widths, not text inside a cell. The reader looks up a rule and then a bracket, the same order at both widths, and rules stay rows the way they are in the findings.</p>
+  </div>
+
+  <div id="3b" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3b</span><h2 style="margin:0;font-size:18px;font-weight:600;">Unrolled: the notes list and where the quotes sit</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">One entry per rule, under the table</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Six entries: the four rules, then tutors with the findings' <i>no limit</i> chip (8.5 mono, <b style="color:var(--fg-body);font-weight:600;">--fg-faint</b>, fully rounded, 2/6 padding, per audit finding 4), then Optimized and cEDH under both chip marks. Each entry has a mark column (48, or 40 at 390), then the name, our reading if there is one, and the quote. Entries are split by 1px <b style="color:var(--fg-body);font-weight:600;">--border</b> rules. Tutors and the 4–5 note left the table, because both were merged cells saying one thing across every column.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">The quote's type</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The quote sits 5px under the reading. Plex Sans <b style="color:var(--fg-body);font-weight:600;">italic 400</b>, 12 / 1.5 (11.5 at 390), <b style="color:var(--fg-body);font-weight:600;">--fg-body</b>, in curly quotes. The reading stays upright 12 / 1.55 <b style="color:var(--fg-body);font-weight:600;">--fg-muted</b>. A mono tag follows on the same line, <b style="color:var(--fg-body);font-weight:600;">Wizards · Feb 2025</b>, 9.5 (9) <b style="color:var(--fg-body);font-weight:600;">--fg-faint</b>, with an 8px gap and no wrap. Mass land denial has no reading, so its quote stands alone.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">Sources</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Five quotes are verbatim from <b style="color:var(--fg-body);font-weight:600;">Introducing Commander Brackets Beta</b> (11 Feb 2025), and tutors is from the <b style="color:var(--fg-body);font-weight:600;">21 Oct 2025</b> update. The foot keeps the dated rules source and adds <i>Quoted from</i> with both links. The tags are text, so the only controls in the body are those three links.</p>
+      </div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <dc-import name="Brackets Sheet" unrolled="{{ true }}" theme="{{ theme }}" hint-size="700px,1100px"></dc-import>
+      <dc-import name="Brackets Sheet" phone="{{ true }}" unrolled="{{ true }}" theme="{{ theme }}" hint-size="390px,1500px"></dc-import>
+    </div>
+  </div>
+
+  <div id="2a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">2a</span><h2 style="margin:0;font-size:18px;font-weight:600;">The climb's yours rung: text in --fg, ink on everything else</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">This carries over from R2 and now applies only to the climb, since the sheet no longer marks anything. Exhibition's ink on its own 12% tint measures 3.90–4.47 over <b style="color:var(--fg);font-weight:600;">--surface</b>. <b style="color:var(--fg);font-weight:600;">One rule for every bracket:</b> on the yours rung, the name, <i>where your cards are</i> / <i>your cards</i>, and the Allowances rule name and count are <b style="color:var(--fg);font-weight:600;">--fg</b>. The rank's ink stays on the mark, the 1px border and the tint.</p>
+    <div style="display:flex;align-items:flex-start;gap:40px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">climb · yours rung · 1300 · before, then after</span>
+        <div style="display:flex;flex-direction:column;gap:8px;width:520px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:11px;">
+          <div style="display:grid;grid-template-columns:186px 1fr;align-items:center;gap:14px;padding:11px 12px;border-radius:8px;border:1px solid var(--bracket-1);background:color-mix(in oklab, var(--bracket-1) 12%, var(--surface));">
+            <span style="display:flex;align-items:center;gap:9px;">{{ e1full }}<span style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;font-weight:600;color:var(--bracket-1);">Exhibition</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--bracket-1);">where your cards are</span></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">before</span>
+          </div>
+          <div style="display:grid;grid-template-columns:186px 1fr;align-items:center;gap:14px;padding:11px 12px;border-radius:8px;border:1px solid var(--bracket-1);background:color-mix(in oklab, var(--bracket-1) 12%, var(--surface));">
+            <span style="display:flex;align-items:center;gap:9px;">{{ e1full }}<span style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;font-weight:600;color:var(--fg);">Exhibition</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg);">where your cards are</span></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">after</span>
+          </div>
+        </div>
+      </div>
+      <div role="table" aria-label="Contrast by theme" style="display:grid;grid-template-columns:110px repeat(2,auto);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11px;">
+        <span style="padding:8px 12px;color:var(--fg-faint);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;">theme</span>
+        <span style="padding:8px 12px;color:var(--fg-faint);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;">ink</span>
+        <span style="padding:8px 12px;color:var(--fg-faint);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;">--fg</span>
+        <sc-for list="{{ contrast }}" as="c" hint-placeholder-count="6">
+          <span style="padding:7px 12px;border-top:1px solid var(--border);color:var(--fg-body);">{{ c.t }}</span>
+          <span style="padding:7px 12px;border-top:1px solid var(--border);color:var(--danger);">{{ c.ink }}</span>
+          <span style="padding:7px 12px;border-top:1px solid var(--border);color:var(--fg);">{{ c.fg }}</span>
+        </sc-for>
+        <span style="grid-column:1 / -1;padding:8px 12px;border-top:1px solid var(--border);color:var(--fg-faint);font-size:10px;line-height:1.5;">Exhibition on its 12% oklab tint over --surface.<br>Core and Upgraded on --fg: 8.73 minimum.</span>
+      </div>
     </div>
   </div>
 
   <div id="1a" style="display:flex;flex-direction:column;gap:14px;">
     <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">1a</span><h2 style="margin:0;font-size:18px;font-weight:600;">The link in the climb's foot: resting and pressed</h2></div>
-    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Under the rungs box, at its right edge, on every analyzed climb. It is styled like the tab's other openers: mono 11 <b style="color:var(--fg);font-weight:600;">--accent</b>, a dotted underline, and the arrow because it opens a sheet. <b style="color:var(--fg);font-weight:600;">Pressed</b> (and hover at 1300): <b style="color:var(--fg);font-weight:600;">--accent-hover</b>, a solid underline, and an <b style="color:var(--fg);font-weight:600;">--accent</b> tint at 12% on the hit area. At 390 the target is 44px tall and pulled back into the section's gap. Focus-visible is the climb's 2px <b style="color:var(--fg);font-weight:600;">--accent</b> ring. <b style="color:var(--fg);font-weight:600;">aria-haspopup="dialog"</b>, and focus returns to it when the sheet closes.</p>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Unchanged from R1, except that the yours rung follows <a href="#2a">2a</a>. Under the rungs box, at its right edge, on every analyzed climb: mono 11 <b style="color:var(--fg);font-weight:600;">--accent</b>, dotted underline, and the arrow. <b style="color:var(--fg);font-weight:600;">Pressed</b> (and hover at 1300): <b style="color:var(--fg);font-weight:600;">--accent-hover</b>, a solid underline, and a 12% <b style="color:var(--fg);font-weight:600;">--accent</b> tint on the hit area. The target is 44px at 390 and 28px at 1300. <b style="color:var(--fg);font-weight:600;">aria-haspopup="dialog"</b>, and focus returns to the link on close.</p>
     <div style="display:flex;align-items:flex-start;gap:36px;flex-wrap:wrap;">
       <sc-for list="{{ climbs }}" as="v" hint-placeholder-count="4">
         <div style="display:flex;flex-direction:column;gap:8px;">
@@ -71,8 +141,8 @@
                   <span style="display:flex;flex-direction:column;gap:6px;"><span style="{{ v.bodyText }}">Cut <b style="font-weight:600;color:var(--fg);">Rhystic Study and Force of Will</b>: Core allows none.</span><span style="{{ v.pathRow }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px dotted var(--accent);">what would have to go →</span></span></span>
                 </div>
                 <div style="{{ v.rowYours }}">
-                  <span style="{{ v.head }}">{{ v.m3 }}<span style="{{ v.labels }}"><span style="font-size:13px;font-weight:600;color:var(--bracket-3);">Upgraded</span><span style="{{ v.roleYours }}">{{ v.hereLabel }}</span></span></span>
-                  <span style="display:inline-flex;align-items:center;gap:7px;padding-left:{{ v.indent }}px;">{{ v.fGc }}<span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--bracket-3);">Game changers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--bracket-3);">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">3 allowed</span></span>
+                  <span style="{{ v.head }}">{{ v.m3 }}<span style="{{ v.labels }}"><span style="font-size:13px;font-weight:600;color:var(--fg);">Upgraded</span><span style="{{ v.roleYours }}">{{ v.hereLabel }}</span></span></span>
+                  <span style="display:inline-flex;align-items:center;gap:7px;padding-left:{{ v.indent }}px;">{{ v.fGc }}<span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg);">Game changers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--fg);">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">3 allowed</span></span>
                 </div>
                 <div style="{{ v.rowAbove }}">
                   <span style="{{ v.head }}">{{ v.m4 }}<span style="{{ v.labels }}"><span style="font-size:12.5px;font-weight:600;color:var(--fg-body);">Optimized</span><span style="{{ v.role }}">already allowed</span></span></span>
@@ -89,62 +159,9 @@
     </div>
   </div>
 
-  <div id="1b" style="display:flex;flex-direction:column;gap:14px;">
-    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">1b</span><h2 style="margin:0;font-size:18px;font-weight:600;">Opened, at 1300 and 390</h2></div>
-    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">ModalChrome, unchanged.</b> <b style="color:var(--fg);font-weight:600;">width={700}</b>: 560 leaves about 130px per bracket beside the label column, which clips <i>where your cards are</i>, and 760 is the receipt's four tiles across. <b style="color:var(--fg);font-weight:600;">--surface-raised</b> ground, no mark (same as provenance), title <b style="color:var(--fg);font-weight:600;">All brackets</b>, aside <b style="color:var(--fg);font-weight:600;">as we apply them</b>, close <b style="color:var(--fg);font-weight:600;">Close all brackets</b>. Phone: a sheet from 52 with the header pinned to 43. Same scrim as the other sheets. Drawn on a deck at Upgraded, the climb in 1a. The tab behind is shown as the scrim only.</p>
-    <div style="display:flex;align-items:flex-start;gap:40px;">
-      <div style="position:relative;width:1300px;height:860px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;background:var(--bg);">
-        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,var(--surface) 0 14px,var(--bg) 14px 28px);opacity:0.5;"></div>
-        <span style="position:absolute;left:24px;top:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">analysis tab · 1300 · behind the scrim</span>
-        <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);display:flex;align-items:center;justify-content:center;">
-          <dc-import name="Brackets Sheet" yours="3" theme="{{ theme }}" hint-size="700px,731px"></dc-import>
-        </div>
-      </div>
-      <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;background:var(--bg);">
-        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,var(--surface) 0 14px,var(--bg) 14px 28px);opacity:0.5;"></div>
-        <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);">
-          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;">
-            <dc-import name="Brackets Sheet" phone="{{ true }}" yours="3" theme="{{ theme }}" hint-size="390px,792px"></dc-import>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="1c" style="display:flex;flex-direction:column;gap:14px;">
-    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">1c</span><h2 style="margin:0;font-size:18px;font-weight:600;">The full grid, unrolled</h2></div>
-    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
-      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
-        <b style="font-size:13.5px;font-weight:600;">A “no cap” cell</b>
-        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Extra turns at Core and Upgraded, and two-card infinites at Upgraded. These are the rules that <b style="color:var(--fg-body);font-weight:600;">report a figure and give no verdict</b> (<b style="color:var(--fg-body);font-weight:600;">counted: false</b> and <b style="color:var(--fg-body);font-weight:600;">earlyGameOnly</b>). Same words as the climb, in <b style="color:var(--fg-body);font-weight:600;">--fg-faint</b> on a dashed underline that points to the reading below the row. Every no cap cell has a reading, and a row with none has none: mass land denial is the example.</p>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
-        <b style="font-size:13.5px;font-weight:600;">The tutors row</b>
-        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Set off by a dashed rule, with one cell across all three brackets, so it cannot be read as a column of zeroes. The findings' <b style="color:var(--fg-body);font-weight:600;">no limit</b> chip, never <i>no cap</i>. <b style="color:var(--fg-body);font-weight:600;">No cap</b> means a rule exists and sets no number. <b style="color:var(--fg-body);font-weight:600;">No limit</b> means there is no rule at all. The reading says Wizards removed the rule, and says what tutors still do here: decide whether a combo is found or drawn.</p>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
-        <b style="font-size:13.5px;font-weight:600;">Nothing in a cell weights</b>
-        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">No totals, no score, no strength words, no ink that goes up the scale. Bracket inks appear only on the marks and on the reader's own column. <i>3 allowed</i> is the one figure in <b style="color:var(--fg-body);font-weight:600;">--fg</b> at 600, because it is the only allowance above zero. It is an allowance, not a rank.</p>
-      </div>
-    </div>
-    <div style="display:flex;align-items:flex-start;gap:40px;">
-      <dc-import name="Brackets Sheet" yours="3" unrolled="{{ true }}" theme="{{ theme }}" hint-size="700px,900px"></dc-import>
-      <dc-import name="Brackets Sheet" phone="{{ true }}" yours="3" unrolled="{{ true }}" theme="{{ theme }}" hint-size="390px,1200px"></dc-import>
-    </div>
-  </div>
-
-  <div id="1d" style="display:flex;flex-direction:column;gap:14px;">
-    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">1d</span><h2 style="margin:0;font-size:18px;font-weight:600;">How the reader's own bracket is marked</h2></div>
-    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Marked, with the climb's own treatment</b>, because the reader arrives from the climb and should find themselves on the grid. The column is tinted <b style="color:var(--fg);font-weight:600;">YOURS_TINT</b> (12% of the rank's ink over the ground), the header has a 2px ink rule along its top, the name is in ink, and <i>where your cards are</i> / <i>your cards</i> sits under the name (<b style="color:var(--fg);font-weight:600;">climb.roleHere</b> / <b style="color:var(--fg);font-weight:600;">roleHereShort</b>). Figures keep their neutral ink, so the mark shows position and not a result. <b style="color:var(--fg);font-weight:600;">A range marks both</b> (<b style="color:var(--fg);font-weight:600;">[1,2]</b> tints two columns). <b style="color:var(--fg);font-weight:600;">[4]</b> and <b style="color:var(--fg);font-weight:600;">[4,5]</b> tint the 4 · 5 row and add a 2px ink rule on its left edge. The sheet only opens from an analyzed climb, so there is always a bracket to mark.</p>
-    <div style="display:flex;align-items:flex-start;gap:40px;">
-      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">permits [1,2] · 1300</span><dc-import name="Brackets Sheet" yours="12" unrolled="{{ true }}" theme="{{ theme }}" hint-size="700px,900px"></dc-import></div>
-      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">permits [4,5] · 390</span><dc-import name="Brackets Sheet" phone="{{ true }}" yours="45" unrolled="{{ true }}" theme="{{ theme }}" hint-size="390px,1200px"></dc-import></div>
-    </div>
-  </div>
-
   <div id="1e" style="display:flex;flex-direction:column;gap:14px;max-width:1100px;">
     <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">1e</span><h2 style="margin:0;font-size:18px;font-weight:600;">Stacked over a card: not drawn, because no cell names one</h2></div>
-    <p style="margin:0;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">The sheet is about rules, not this deck, so it names categories and not cards. An example card in a cell (an Armageddon beside mass land denial) would be us picking the card that defines the category, which is a kind of weighting, and it would have to be checked against Wizards' text we do not quote. The reader's own cards are in the findings, one tap back. <b style="color:var(--fg);font-weight:600;">Depth stays at one.</b> The only control in the body is the Wizards link, which leaves the app. If Product wants example cards later, they stack exactly as the receipt does (card sheet from 96, this sheet on <b style="color:var(--fg);font-weight:600;">--surface-sunken</b> behind it, header at 0.55, body at 0.35), and nothing new needs drawing.</p>
+    <p style="margin:0;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">The sheet names categories, not cards. Depth stays at one, and the only controls in the body are the three external links. If example cards are added later, they stack the way the receipt does.</p>
   </div>
 </section>
 </x-dc>
@@ -152,11 +169,14 @@
 class Component extends DCLogic {
   state = { art: {} };
   componentDidMount() {
-    const keys = ["bracket-2-core-chip", "bracket-3-upgraded", "bracket-3-upgraded-chip", "bracket-4-optimized-chip", "fact-game-changer"];
+    const keys = ["bracket-1-exhibition", "bracket-2-core-chip", "bracket-3-upgraded", "bracket-4-optimized-chip", "fact-game-changer"];
     Promise.all(keys.map(async (k) => {
       try {
         let t = await (await fetch(new URL(`assets/${k}.svg`, document.baseURI).href)).text();
-        t = t.replace(/<metadata>[\s\S]*?<\/metadata>/, "").replace(/<svg([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/, '<svg$1 width="100%" height="100%"');
+        t = t.replace(/<metadata>[\s\S]*?<\/metadata>/, "")
+          .replace(/<svg([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/, '<svg$1 width="100%" height="100%"')
+          .replace(/fill="#000(000)?"/g, 'fill="currentColor"')
+          .replace(/stroke="#000(000)?"/g, 'stroke="currentColor"');
         return [k, t];
       } catch (e) { return [k, ""]; }
     })).then((p) => this.setState({ art: Object.fromEntries(p) }));
@@ -171,19 +191,19 @@ class Component extends DCLogic {
         frame: { width: phone ? 390 : 820, padding: phone ? "16px 16px 12px" : "20px 24px 16px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: phone ? 18 : 12 },
         box: { display: "flex", flexDirection: "column", gap: phone ? 7 : 8, border: "1px solid var(--border)", borderRadius: 11, background: "var(--surface)", padding: phone ? 11 : 14 },
         rowBelow: { ...rung, border: "1px solid var(--border)", background: "var(--surface-sunken)" },
-        rowYours: { ...rung, padding: phone ? "11px 11px" : "11px 12px", border: "1px solid var(--bracket-3)", background: "color-mix(in oklab, var(--bracket-3) 12%, var(--surface))" },
+        rowYours: { ...rung, padding: "11px 12px", border: "1px solid var(--bracket-3)", background: "color-mix(in oklab, var(--bracket-3) 12%, var(--surface))" },
         rowAbove: { ...rung, border: "1px solid var(--border)" },
         head: { display: "flex", alignItems: "center", gap: phone ? 8 : 9 },
         labels: phone ? { flex: 1, display: "flex", alignItems: "baseline", gap: 8 } : { display: "flex", flexDirection: "column", gap: 2 },
         role: { marginLeft: phone ? "auto" : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: phone ? 8.5 : 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--fg-faint)", whiteSpace: "nowrap" },
-        roleYours: { marginLeft: phone ? "auto" : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: phone ? 8.5 : 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--bracket-3)", whiteSpace: "nowrap" },
+        roleYours: { marginLeft: phone ? "auto" : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: phone ? 8.5 : 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--fg)", whiteSpace: "nowrap" },
         hereLabel: phone ? "your cards" : "where your cards are",
         indent: phone ? 7 : 0,
         bodyText: { paddingLeft: phone ? 7 : 0, fontSize: phone ? 12 : 12.5, lineHeight: phone ? 1.55 : 1.6, color: "var(--fg-muted)", textWrap: "pretty" },
         pathRow: phone ? { display: "flex", justifyContent: "flex-end", alignItems: "center", minHeight: 44, margin: "-6px 0 -8px" } : { display: "block" },
-        m2: phone ? mark("bracket-2-core-chip", 22, "var(--bracket-2)", 0.75) : mark("bracket-2-core-chip", 26, "var(--bracket-2)", 0.75),
-        m3: phone ? mark("bracket-3-upgraded", 26, "var(--bracket-3)") : mark("bracket-3-upgraded", 36, "var(--bracket-3)"),
-        m4: phone ? mark("bracket-4-optimized-chip", 22, "var(--bracket-4)", 0.75) : mark("bracket-4-optimized-chip", 26, "var(--bracket-4)", 0.75),
+        m2: mark("bracket-2-core-chip", phone ? 22 : 26, "var(--bracket-2)", 0.75),
+        m3: mark("bracket-3-upgraded", phone ? 26 : 36, "var(--bracket-3)"),
+        m4: mark("bracket-4-optimized-chip", phone ? 22 : 26, "var(--bracket-4)", 0.75),
         fGc: mark("fact-game-changer", 16, "var(--fact)"),
         footRow: { display: "flex", justifyContent: "flex-end", minHeight: phone ? 44 : 0, alignItems: "center", margin: phone ? "-4px -8px -6px 0" : "0" },
         link: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 28, padding: "0 8px", borderRadius: 6, background: pressed ? "color-mix(in oklab, var(--accent) 12%, transparent)" : "transparent", cursor: "pointer" },
@@ -192,6 +212,8 @@ class Component extends DCLogic {
     };
     return {
       theme: this.props.theme ?? "amonkhet",
+      e1full: mark("bracket-1-exhibition", 36, "var(--bracket-1)"),
+      contrast: [["amonkhet", "4.13", "12.21"], ["kamigawa", "4.25", "12.75"], ["ixalan", "4.05", "11.78"], ["phyrexia", "4.47", "12.73"], ["eldraine", "4.19", "11.70"], ["kaldheim", "3.90", "9.23"]].map(([t, ink, fg]) => ({ t, ink, fg })),
       climbs: [variant(false, false), variant(false, true), variant(true, false), variant(true, true)],
     };
   }
