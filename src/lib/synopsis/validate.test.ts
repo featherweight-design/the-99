@@ -385,6 +385,9 @@ describe("validateSynopsis — universal staples and mana letters", () => {
     ["a quotation", "[[Kratos]] reads \"UR\" on the card and turns spells into damage."],
     ["a single-quoted run", "[[Kratos]] is no 'UR' deck, and turns spells into damage."],
     ["a curly single-quoted run", "[[Kratos]] is no \u2018UR\u2019 deck, and turns spells into damage."],
+    ["a quotation before a dash", "[[Kratos]] is no \u2018UR\u2019\u2014style deck, and turns spells into damage."],
+    ["a quotation before a slash", "[[Kratos]] is no 'UR'/tempo deck, and turns spells into damage."],
+    ["a quotation after a dash", "[[Kratos]] turns spells into damage\u2014no 'UR' deck."],
     ["a card mark", "[[Kratos]] turns every spell into damage, and [[UR]] helps."],
   ])("passes %s", (_label, overview) => {
     const reply = good();
