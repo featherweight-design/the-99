@@ -36,6 +36,7 @@ import { db } from "../src/db";
 import { cardBracketFlags, cards, spellbookVariantCards, spellbookVariants } from "../src/db/schema";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { readLogHead, type LogReport } from "../src/lib/notices/log";
+import { neonRulesEntryDb, recordRulesVersion } from "../src/lib/notices/rules-entry";
 import { loadDeckProfile } from "../src/lib/profile/load";
 import { isInfiniteOrGameEnding } from "../src/lib/spellbook/combo-features";
 import { readStoredReading, type StoredProfileDeps } from "../src/lib/profile/stored";
@@ -106,6 +107,7 @@ async function main() {
   const [a, b] = await Promise.all(picked.map((p) => cardRow(p.oracle_id)));
   const originals = [a, b];
   let constraintAdded = false;
+  let rulesProbeVersion: number | null = null;
   let release: null | (() => Promise<void>) = null;
   // The Combo refresh's tables, captured whole before any case below replaces them, and published
   // back (with logging off) in the `finally`. A run killed between leaves a set one combo away
@@ -303,7 +305,30 @@ async function main() {
       { flagKinds: kinds.length > 0 && kinds.every((k) => k === "massLandDenial" || k === "extraTurns"), combo: kinds.includes("combo") },
       { flagKinds: true, combo: false });
     //   c · A run that publishes both writes combo entries inside the variant publish: case 8.
+
+    // 10 · The deploy's rules entry through the REAL client (`neonRulesEntryDb`): the SQL, the
+    //      partial unique index that makes it idempotent, and the detail's shape. A version far
+    //      above any shipped one, so it never collides with a real entry; deleted by version below.
+    rulesProbeVersion = 900_000 + (Date.now() % 90_000);
+    const openRules = () => neonRulesEntryDb(process.env.DATABASE_URL!);
+    const first = await recordRulesVersion(openRules, rulesProbeVersion);
+    const second = await recordRulesVersion(openRules, rulesProbeVersion);
+    const direct = openRules();
+    await direct.insert(rulesProbeVersion, { rule: "again" });
+    await direct.close();
+    const ruleRows = await rows<{ direction: string; oracle_ids: string[]; detail: Record<string, unknown> }>(sql`
+      select direction, oracle_ids, detail from deck_data_changes
+      where kind = 'rules' and detail->>'rulesVersion' = ${String(rulesProbeVersion)}`);
+    check("10 · written once, then unchanged", [first, second], ["written", "unchanged"]);
+    check("10 · a second insert of the same version is refused by the index", ruleRows.length, 1);
+    check("10 · the entry names no cards, moves, and keeps its version as a string",
+      ruleRows[0] && [ruleRows[0].direction, ruleRows[0].oracle_ids, ruleRows[0].detail.rulesVersion],
+      ["moved", [], String(rulesProbeVersion)]);
   } finally {
+    if (rulesProbeVersion !== null) {
+      await db.execute(sql`delete from deck_data_changes where kind = 'rules' and detail->>'rulesVersion' = ${String(rulesProbeVersion)}`)
+        .catch((e) => { failures += 1; console.error("probe rules entry not deleted", e); });
+    }
     // Each step on its own, so one failing cannot skip the rest.
     if (constraintAdded) {
       await db.execute(sql`alter table deck_data_changes drop constraint if exists probe_notices_reject`)
