@@ -74,7 +74,7 @@ describe("ids off the wire", () => {
   });
 
   it("reads no evidence step it does not know", async () => {
-    expect(await readTuningEvidence(DECK, "collection" as never)).toBeNull();
+    expect(await readTuningEvidence(DECK, "prices" as never)).toBeNull();
     expect(await readTuningEvidence(DECK, "games")).toBe(1);
   });
 });

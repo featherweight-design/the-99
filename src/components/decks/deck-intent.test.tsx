@@ -2,11 +2,14 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { DeckIntentAsk } from "./deck-intent";
+
+type Save = (deckId: string, form: FormData) => Promise<DeckMutationResult>;
 
 const copy = deckTuningCopy.intent;
 
-function draw(save = vi.fn(async () => ({ ok: true as const })), fix: { axis: string; hurt: number; games: number } | null = null) {
+function draw(save = vi.fn<Save>(async () => ({ ok: true })), fix: { axis: string; hurt: number; games: number } | null = null) {
   const onSaved = vi.fn();
   render(<DeckIntentAsk deckId="d1" fix={fix} save={save} onSaved={onSaved} />);
   return { save, onSaved };
@@ -38,7 +41,7 @@ describe("DeckIntentAsk", () => {
   });
 
   it("keeps the typed line when the save is refused", async () => {
-    const { onSaved } = draw(vi.fn(async () => ({ ok: false as const, message: copy.refused })));
+    const { onSaved } = draw(vi.fn<Save>(async () => ({ ok: false, message: copy.refused })));
     await type("go wide");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
     expect(screen.getByPlaceholderText(copy.placeholder)).toHaveValue("go wide");
