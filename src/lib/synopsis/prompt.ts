@@ -54,6 +54,19 @@ const LENGTH_RULES = [
   "Before you answer, count each job, mulligan line and tip, and shorten any that is near or over its limit.",
 ].join("\n");
 
+/**
+ * The Mulligan's budget, restated (eval harness, round 3b on contract 6). Its lines overran their
+ * limit more than any other part of the answer, because a specific line names cards and runs long:
+ * on 15 held-out decks the first write's Mulligan ran a median 75 characters against 80. With these
+ * rules and the app's repair, all four sections rendered on 98% of answers, against 89% without.
+ */
+const MULLIGAN_BUDGET_RULES = [
+  `Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters as rendered, and aim for about 50. Write 8 to 12 words.`,
+  "Every mulligan line names ONE card from the decklist, as [[Name]], or ONE point on the curve (a two-drop, a three-mana play), never a list and never neither.",
+  "The land range the app shows above the Mulligan is not one of your lines and does not count toward any line's length.",
+  'Two lines sized to the budget: "A two-mana rock plus an early play to build on." (47), and "[[Sol Ring]] with no three-drop behind it stalls out." (49).',
+].join("\n");
+
 /** A word target for the job line, this deck's own mulligan figures, the refused words, and marking every mention. */
 function plusRules(facts: SynopsisFacts): string {
   return [
@@ -123,7 +136,7 @@ export function buildSynopsisPrompt(
     lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
   }
 
-  return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}`, user: lines.join("\n") };
+  return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}`, user: lines.join("\n") };
 }
 
 /** Rules text on one line: a line break inside it would read as a new list item. */

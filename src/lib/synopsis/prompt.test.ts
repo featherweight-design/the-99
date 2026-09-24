@@ -107,4 +107,19 @@ describe("buildSynopsisPrompt", () => {
     expect(system).toContain("must be one of: 2, 3, 5.");
     expect(system).toContain("Mark EVERY mention of a card in the decklist");
   });
+
+  it("restates the Mulligan's budget, on a first write and on a repair alike", () => {
+    const first = buildSynopsisPrompt(FACTS).system;
+    const keep = {
+      verdicts: [{ section: "primer", status: "refused", reason: "over_budget", failed: 0, total: 3 }],
+      overview: null, primer: null, keyCards: null, weaknesses: null, cards: {},
+    } as unknown as CheckedSynopsis;
+    const repair = buildSynopsisPrompt(FACTS, { keep, refused: ["primer"] }).system;
+    for (const system of [first, repair]) {
+      expect(system).toContain(`Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters`);
+      expect(system).toContain("names ONE card from the decklist, as [[Name]], or ONE point on the curve");
+      // Last, after the plus rules, as measured: the harness verified the prompt byte for byte.
+      expect(system.endsWith("stalls out.\" (49).")).toBe(true);
+    }
+  });
 });
