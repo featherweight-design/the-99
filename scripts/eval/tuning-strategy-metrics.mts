@@ -7,13 +7,15 @@
  *    `strategy` variant, which tells the model so);
  *  - universal-staple cuts: a cut naming a universal staple;
  *  - one-slot double fills: two or more suggestions filling a role that is exactly one short, read
- *    off their own `mix` citations (`role: have of target`, with or without the colon with have below target);
+ *    off their own `mix` citations as the accept contract reads them (see `roleFilled`);
  *  - threshold-only share: suggestions whose only citations are role counts.
  * Reads `runs/strategy-overviews.json` for the Key cards and the universal set. Sends nothing.
  */
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
+import type { EvidencePack } from "../../src/lib/tuning/evidence";
+import { NUMBER_WORDS } from "../../src/lib/tuning/presentation";
 import { ROOT } from "./lib/run.mjs";
 import type { StrategyInput } from "./variants/tuning.mjs";
 
@@ -25,9 +27,27 @@ const universal = new Set(input.universal.map((n) => n.toLowerCase()));
 type Suggestion = { cut: string; add: string; evidence: { kind: string; value: string }[] };
 type Row = { set: string; cell: string; maxTokens: number; variant: string; deckId: string; trial: number; outcome: string; keptPositions?: number[]; reply: { suggestions: Suggestion[] } | null; usdRealtime: number };
 
+/**
+ * The role a `mix` citation fills, resolved as the accept contract resolves it (`validate.ts`,
+ * `oneFigure` and the `mix` case): exactly one `N of M` figure, the numerator a digit or a number
+ * word, an optional "the"/"your" and an optional "card(s)"; then the pack's own role cell carrying
+ * that have and that target and named in the citation. `oneFigure` is private to the validator and
+ * `src/` is outside this lane, so its grammar is restated here, with `NUMBER_WORDS` imported.
+ */
+function roleFilled(value: string, pack: EvidencePack): { role: string; gap: number } | null {
+  const text = value.toLowerCase();
+  const figures = [...text.matchAll(new RegExp(`\\b(\\d+|${NUMBER_WORDS})\\s+of\\s+(?:the\\s+|your\\s+)?(\\d+)(?:\\s+cards?)?\\b`, "g"))];
+  if (figures.length !== 1) return null;
+  const [, n, m] = figures[0];
+  const have = /^\d+$/.test(n) ? Number(n) : NUMBER_WORDS.split("|").indexOf(n);
+  const cell = pack.targets.roles.find((c) => c.have === have && c.target === Number(m) && text.includes(c.role.replace(/s$/, "")));
+  return cell && cell.have < cell.target ? { role: cell.role, gap: cell.target - cell.have } : null;
+}
+
 const groups = new Map<string, { answers: number; kept: number; keyCut: number; universalCut: number; doubleFill: number; thresholdOnly: number; usd: number }>();
 for (const run of args.runs.split(",")) {
   // A run over `all` decks is split back into its development and held-out decks, as report.mts does.
+  const packs = new Map((JSON.parse(readFileSync(new URL(`runs/${run}/prepared.json`, ROOT), "utf8")) as { deckId: string; pack: EvidencePack }[]).map((p) => [p.deckId, p.pack]));
   const dev = new Set((JSON.parse(readFileSync(new URL(`runs/${run}/meta.json`, ROOT), "utf8")) as { split?: { dev: string[] } }).split?.dev ?? []);
   for (const line of readFileSync(new URL(`runs/${run}/rows.jsonl`, ROOT), "utf8").split("\n").filter(Boolean)) {
     const r = JSON.parse(line) as Row;
@@ -49,8 +69,8 @@ for (const run of args.runs.split(",")) {
       // Each role a suggestion fills counts ONCE for it, however many times it cites that role.
       const filled = new Map<string, number>();
       for (const e of s.evidence) {
-        const m = e.kind === "mix" ? /^(.+?):? (\d+) of (\d+)$/.exec(e.value) : null;
-        if (m && Number(m[2]) < Number(m[3])) filled.set(m[1], Number(m[3]) - Number(m[2]));
+        const f = e.kind === "mix" ? roleFilled(e.value, packs.get(r.deckId)!) : null;
+        if (f) filled.set(f.role, f.gap);
       }
       for (const [role, gap] of filled) {
         const f = fills.get(role) ?? { n: 0, gap };

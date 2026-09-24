@@ -9,7 +9,7 @@
  */
 import "../lib/env.mjs";
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import { ROOT } from "./lib/run.mjs";
@@ -43,6 +43,8 @@ const universal = ((await db.execute(sql`
 `)).rows as { name: string }[]).map((r) => r.name);
 
 const out: StrategyInput = { universal, decks };
+// `runs/` is untracked, so a clean checkout has none until something writes one.
+mkdirSync(new URL("runs/", ROOT), { recursive: true });
 writeFileSync(new URL("runs/strategy-overviews.json", ROOT), `${JSON.stringify(out, null, 2)}\n`);
 console.log(`eval:strategy-input: ${Object.keys(decks).length} decks; universal staples (in ${min}+ conditions): ${universal.join(", ")}`);
 process.exit(0);
