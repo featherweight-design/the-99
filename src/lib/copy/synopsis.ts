@@ -15,10 +15,10 @@ export const synopsisCopy = {
   absent: "No overview has been written for this deck yet.",
   writeOne: "Write one",
   /** Ruling A: the deck's own write just failed upstream (busy, timed out, malformed). */
-  failed: "We could not write the overview just now. Nothing about your deck changed.",
+  failed: "We couldn’t write the overview just now. Nothing about your deck changed.",
   tryAgain: "Try again",
   /** Ruling D: an older overview beside a fresh reading. */
-  olderThanList: "This overview was written before your latest changes. Writing a new one uses a credit.",
+  olderThanList: "This overview was written before your latest changes.",
   writeNew: "Write a new overview",
 
   /** Refused, in the tab (the Overview section itself) and in the modal (any one section). */

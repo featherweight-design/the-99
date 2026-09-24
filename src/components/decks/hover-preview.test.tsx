@@ -325,4 +325,27 @@ describe("HoverPreviewProvider", () => {
     expect(box.className).toContain("hidden");
     expect(box.className).toContain("md:block");
   });
+  // The layer. A row on the page previews UNDER the z-50 sheets, so the card modal a row press
+  // opens covers a box the pointer has not yet closed. A name inside a sheet previews ABOVE it.
+  it("draws under the sheets for a row on the page", () => {
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+    fireEvent.mouseEnter(screen.getByTestId("a"));
+    act(() => void vi.advanceTimersByTime(240));
+    const box = screen.getByTestId("hover-preview");
+    expect(box.className).toContain("z-40");
+    expect(box.className).not.toContain("z-[60]");
+  });
+
+  it("draws above the sheet for a name inside a dialog", () => {
+    render(
+      <HoverPreviewProvider>
+        <div role="dialog">
+          <Row name="a" imageUri={ART} box={LEFT_COLUMN} />
+        </div>
+      </HoverPreviewProvider>,
+    );
+    fireEvent.mouseEnter(screen.getByTestId("a"));
+    act(() => void vi.advanceTimersByTime(240));
+    expect(screen.getByTestId("hover-preview").className).toContain("z-[60]");
+  });
 });
