@@ -568,8 +568,8 @@ export const deckAnalysisCopy = {
   /**
    * The all-brackets reference sheet (addendum-brackets-sheet, R3, audited Green in #924). What
    * each bracket allows, our reading of each rule, and ONE quoted Wizards line under it. The
-   * cells carry no figure here: they are `climb.allowed(n)` / `climb.noCap`, read off the limit
-   * constants in `src/lib/bracket/rules.ts`. It marks no reader's bracket (R2-A, confirmed by Hugh).
+   * cells carry no copy of their own: a count is the bare figure read off the limit constants in
+   * `src/lib/bracket/rules.ts`, and a missing limit reads `climb.noCap`. It marks no reader's bracket (R2-A, confirmed by Hugh).
    *
    * THE QUOTES ARE VERBATIM and each names the post that carries it (`sources.ts`). Never edit
    * the text; re-quote from the post. Two begin mid-sentence and open with an ellipsis, never a
