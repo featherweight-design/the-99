@@ -6,34 +6,20 @@
  *                    [--overlay] [--realtime] [--dry-run] [--plan-done 0.2] [--label sweep]
  *
  * Plan: docs/superpowers/plans/2026-09-23-eval-harness.md. Every piece of the app it touches is
- * imported, never restated: `tuningInputs`, `loadDeckProfileFromHead`, `readOwnedOracleIds`,
- * `buildPlayGroup`, `buildEvidencePack`, `buildPrompt`, `tuningResponseSchema`, `nameResolver`
- * and `validateSuggestions`. The request is built by `buildParams`, which `request.test.mts` pins
- * to what `callModel` sends.
- *
- * Staging is read-only (`connectStaging`), results go to `docs/superpowers/eval/runs/<run>/`, and
- * no batch is sent whose worst case could cross the ledger's cap.
- *
- * Every `src/` import is DYNAMIC and comes after `connectStaging`: `src/db` reads DATABASE_URL
- * when it is first imported, and a static import would bind it to `.env`'s local-dev first. If
- * one ever does, the branch check refuses to start, so the failure is loud.
+ * imported, never restated (`lib/tuning-app.mts`), and the request is built by `buildParams`, which
+ * `request.test.mts` pins to what `callModel` sends. Staging is read-only, results go to
+ * `docs/superpowers/eval/runs/<run>/`, and `runRequests` sends nothing whose worst case could
+ * cross the ledger's cap.
  */
 import "../lib/env.mjs";
 
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { appendFileSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { sendBatch, sendRealtime, countTokens, type Got, type Sent } from "./lib/batch.mjs";
-import { acquireRunLock, readLedger, record, refusal, spent } from "./lib/ledger.mjs";
-import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
-import { buildParams, parseReply, type Cell } from "./lib/request.mjs";
+import { buildParams } from "./lib/request.mjs";
+import { commonRow, parseCell, runRequests } from "./lib/run.mjs";
 import { openTuning, type OverlayDeck } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
-
-const ROOT = new URL("../../docs/superpowers/eval/", import.meta.url);
-const LEDGER = new URL("ledger.jsonl", ROOT).pathname;
 
 const { values: args } = parseArgs({
   options: {
@@ -54,31 +40,11 @@ const log = (line: string) => console.log(`[eval:tuning] ${line}`);
 
 const app = await openTuning();
 const { split, nameOf } = app;
-const tuningResponseSchema = app.schema;
-const TUNING_MAX_TOKENS = app.maxTokens;
-const PROMPT_VERSION = app.promptVersion;
-type TuningResponse = import("../../src/lib/tuning/response-schema").TuningResponse;
-
-/** The model cells. A `+cache` suffix adds the cache markers; `@maxN` overrides the ceiling. */
-const CELLS: Record<string, Omit<Cell, "id">> = {
-  sonnet: { model: app.model },
-  "sonnet-low": { model: app.model, effort: "low" },
-  haiku: { model: "claude-haiku-4-5" },
-};
-
-function parseCell(spec: string): Cell {
-  const m = /^([a-z-]+)(\+cache)?(?:@max(\d+))?$/.exec(spec);
-  const base = m && CELLS[m[1]];
-  if (!m || !base) throw new Error(`eval: unknown cell ${spec}; known: ${Object.keys(CELLS).join(", ")}`);
-  return { id: spec, ...base, cache: m[2] ? true : undefined, maxTokens: m[3] ? Number(m[3]) : undefined };
-}
-
-// ---- The rated set, prepared by the app's own path ------------------------------------------
 
 const setIds = args.decks
   ? args.decks.split(",")
   : args.overlay ? (args.set === "dev" ? split.dev : split.overlay) : args.set === "dev" ? split.dev : args.set === "all" ? [...split.dev, ...split.heldOut] : split.heldOut;
-const cells = args.cells!.split(",").map(parseCell);
+const cells = args.cells!.split(",").map((c) => parseCell(c, app.model));
 const variant = TUNING_VARIANTS[args.variant!];
 if (!variant) throw new Error(`eval: unknown variant ${args.variant}; known: ${Object.keys(TUNING_VARIANTS).join(", ")}`);
 const trials = Number(args.trials);
@@ -92,143 +58,44 @@ if (overlay && setIds.length > overlay.length) {
   throw new Error(`eval: --overlay covers ${overlay.length} decks; ${setIds.length} were named`);
 }
 const prepared = await app.prepare(setIds, variant, overlay);
-type Prepared = (typeof prepared)[number];
-log(`prepared ${prepared.length} decks (${args.overlay ? "overlay" : args.set}), variant ${variant.id}, prompt v${PROMPT_VERSION}`);
+log(`prepared ${prepared.length} decks (${args.overlay ? "overlay" : args.set}), variant ${variant.id}, prompt v${app.promptVersion}`);
 
-// ---- Requests, and the budget guard --------------------------------------------------------
+const keys = new Map<string, { cell: (typeof cells)[number]; deck: (typeof prepared)[number]; trial: number }>();
+const first = cells.flatMap((cell) => prepared.flatMap((deck, d) => Array.from({ length: trials }, (_, trial) => {
+  const customId = `${cell.id.replace(/[^a-zA-Z0-9-]/g, "_")}-d${d}-t${trial}`;
+  keys.set(customId, { cell, deck, trial });
+  return { customId, params: buildParams({ model: cell.model, system: deck.system, user: deck.user, maxTokens: app.maxTokens, schema: app.schema }, cell) };
+})));
 
-type Key = { cell: Cell; deck: Prepared; trial: number };
-const keys = new Map<string, Key>();
-const first: Sent[] = [];
-for (const cell of cells) {
-  for (const [d, deck] of prepared.entries()) {
-    for (let trial = 0; trial < trials; trial++) {
-      const customId = `${cell.id.replace(/[^a-zA-Z0-9-]/g, "_")}-d${d}-t${trial}`;
-      keys.set(customId, { cell, deck, trial });
-      first.push({ customId, params: buildParams({ model: cell.model, system: deck.system, user: deck.user, maxTokens: TUNING_MAX_TOKENS, schema: tuningResponseSchema }, cell) });
-    }
-  }
-}
-
-const counted = new Map<string, number>();
-async function inputTokens(s: Sent): Promise<number> {
-  const h = createHash("sha256").update(JSON.stringify(s.params)).digest("hex");
-  if (!counted.has(h)) counted.set(h, await countTokens(s.params));
-  return counted.get(h)!;
-}
-let worst = 0;
-let inputSum = 0;
-for (const s of first) {
-  const n = await inputTokens(s);
-  inputSum += n;
-  worst += worstCaseUsd(s.params.model, n, s.params.max_tokens, { batch: !args.realtime });
-}
-if (!args["dry-run"]) acquireRunLock(LEDGER);
-const ledger = readLedger(LEDGER);
-log(`${first.length} requests, ${inputSum} input tokens; worst case $${worst.toFixed(2)}; spent so far $${spent(ledger).toFixed(2)}`);
-if (args["dry-run"]) process.exit(0);
-const stop = refusal(ledger, worst, Number(args["plan-done"]));
-if (stop) {
-  log(`NOT SENT: ${stop}`);
-  process.exit(2);
-}
-
-// ---- Sending, with the app's one retry -----------------------------------------------------
-
-const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-tuning-${args.label}`;
-const dir = new URL(`runs/${runId}/`, ROOT);
-mkdirSync(dir, { recursive: true });
-const sha = execSync("git rev-parse --short HEAD").toString().trim();
-writeFileSync(new URL("meta.json", dir), `${JSON.stringify({ runId, sha, args, split, promptVersion: PROMPT_VERSION, variant: { id: variant.id, reason: variant.reason }, decks: prepared.map((p) => ({ deckId: p.deckId, name: nameOf.get(p.deckId) })) }, null, 2)}\n`);
-
-/** The model a request NAMED. The reply's `model` is a dated id (`claude-haiku-4-5-20251001`),
- *  so every price is looked up by what was asked for, which is also what the cell reports. */
-const modelOf = new Map<string, string>();
-
-// Every pack exactly as the model was shown it, so a run can be re-scored without re-reading a
-// staging deck that may have changed since.
-writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(prepared)}\n`);
-
-async function send(batch: Sent[], pass: string, worstUsd: number): Promise<Got[]> {
-  if (batch.length === 0) return [];
-  for (const s of batch) modelOf.set(s.customId, s.params.model);
-  const pendingId = `${runId}/${pass}`;
-  record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
-  let got: Got[];
-  let source: string;
-  if (args.realtime) {
-    got = await sendRealtime(batch, log);
-    source = `realtime:${batch.length}`;
-  } else {
-    const r = await sendBatch(batch, log);
-    got = r.results;
-    source = r.batchId;
-  }
-  // Raw results reach disk BEFORE anything prices or parses them: a throw after this point loses
-  // no answer that was paid for.
-  appendFileSync(new URL(`raw-${pass}.jsonl`, dir), got.map((g) => JSON.stringify(g)).join("\n") + "\n");
-  const usd = got.reduce((n, g) => n + (g.ok ? costUsd(modelOf.get(g.customId)!, g.message.usage as Usage, { batch: !args.realtime }) : 0), 0);
-  const after = record(LEDGER, { at: new Date().toISOString(), runId: `${runId}/${pass}`, source, usd, requests: batch.length, settles: pendingId });
-  log(`${pass}: ${batch.length} answers, $${usd.toFixed(4)}; ledger total $${spent(after).toFixed(2)}`);
-  return got;
-}
-
-const attempts = new Map<string, Got[]>();
-// The first pass is held at the whole worst case (a retry included), so the cap stays covered
-// until it settles; the retry pass then holds its own worst case, a single attempt each.
-for (const g of await send(first, "a1", worst)) attempts.set(g.customId, [g]);
-// `callModel` retries once on a malformed reply or an upstream failure, never on a timeout.
-const retry = first.filter((s) => {
-  const g = attempts.get(s.customId)?.[0];
-  return !g || !g.ok || !parseReply(tuningResponseSchema, g.message).ok;
+const run = await runRequests({
+  feature: "tuning",
+  label: args.label!,
+  first,
+  schema: app.schema,
+  realtime: args.realtime!,
+  dryRun: args["dry-run"]!,
+  planDone: Number(args["plan-done"]),
+  meta: { args, split, promptVersion: app.promptVersion, variant: { id: variant.id, reason: variant.reason }, decks: prepared.map((p) => ({ deckId: p.deckId, name: nameOf.get(p.deckId) })) },
+  prepared,
+  log,
 });
-// The retry is never refused: the worst case checked above already counted a second attempt for
-// every request, so the cap was cleared for it, and skipping it would record first-attempt
-// failures as final ones the app would have retried.
-if (retry.length > 0) {
-  const retryWorst = await retry.reduce(async (n, s) => (await n) + worstCaseUsd(s.params.model, await inputTokens(s), s.params.max_tokens, { batch: !args.realtime }) / 2, Promise.resolve(0));
-  for (const g of await send(retry.map((s) => ({ ...s, customId: `${s.customId}-r` })), "a2", retryWorst)) {
-    attempts.get(g.customId.replace(/-r$/, ""))?.push(g);
-  }
-}
+if (!run) process.exit(args["dry-run"] ? 0 : 2);
 
 // ---- Scoring against the real accept contract -------------------------------------------
 
-const answers: { key: Key; customId: string; attempts: Got[]; value: TuningResponse | null; malformed: string | null }[] = [];
-for (const [customId, key] of keys) {
-  const tries = attempts.get(customId) ?? [];
-  let value: TuningResponse | null = null;
-  let malformed: string | null = "no reply";
-  for (const t of tries) {
-    if (!t.ok) { malformed = `upstream: ${t.reason}`; continue; }
-    const p = parseReply(tuningResponseSchema, t.message);
-    if (p.ok) { value = p.value; malformed = null; break; }
-    malformed = p.reason;
-  }
-  answers.push({ key, customId, attempts: tries, value, malformed });
-}
+const parsed = [...run.answers].filter(([, a]) => a.value !== null);
+const scores = await app.score(parsed.map(([id, a]) => ({ pack: keys.get(id)!.deck.pack, value: a.value! })));
+const scoreOf = new Map(parsed.map(([id], i) => [id, scores[i]]));
 
-const parsed = answers.filter((a) => a.value !== null);
-const scores = new Map(parsed.map((a, i) => [a.customId, i]));
-const scored_ = await app.score(parsed.map((a) => ({ pack: a.key.deck.pack, value: a.value! })));
-
-const out = new URL("rows.jsonl", dir);
-for (const a of answers) {
-  const { cell, deck, trial } = a.key;
-  const usage = a.attempts.flatMap((t) => (t.ok ? [t.message.usage as Usage] : []));
-  const usdAsRun = a.attempts.reduce((n, t) => n + (t.ok ? costUsd(cell.model, t.message.usage as Usage, { batch: !args.realtime }) : 0), 0);
-  const usdRealtime = a.attempts.reduce((n, t) => n + (t.ok ? costUsd(cell.model, t.message.usage as Usage, { batch: false }) : 0), 0);
-  let scored: Record<string, unknown> = { outcome: a.malformed?.startsWith("upstream") ? "upstream_busy" : "malformed", malformed: a.malformed };
-  if (a.value) scored = scored_[scores.get(a.customId)!];
+const out = new URL("rows.jsonl", run.dir);
+for (const [customId, answer] of run.answers) {
+  const { cell, deck, trial } = keys.get(customId)!;
+  const scored = scoreOf.get(customId) ?? { outcome: answer.malformed?.startsWith("upstream") ? "upstream_busy" : "malformed" };
   appendFileSync(out, `${JSON.stringify({
-    runId, feature: "tuning", cell: cell.id, model: cell.model, variant: variant.id,
-    set: args.overlay ? (args.set === "dev" ? "dev-overlay" : "overlay") : args.decks ? "custom" : args.set, deckId: deck.deckId, trial,
-    attempts: a.attempts.length, usage, usdAsRun, usdRealtime, ...scored,
-    // Real-time runs only: milliseconds from request to final token, per attempt.
-    maxTokens: cell.maxTokens ?? TUNING_MAX_TOKENS,
-    latencyMs: a.attempts.flatMap((t) => (t.ok && t.elapsedMs !== undefined ? [t.elapsedMs] : [])),
-    reply: a.value,
+    runId: run.runId, feature: "tuning", variant: variant.id,
+    set: args.overlay ? (args.set === "dev" ? "dev-overlay" : "overlay") : args.decks ? "custom" : args.set,
+    deckId: deck.deckId, trial, ...commonRow(cell, answer, args.realtime!, app.maxTokens), ...scored, reply: answer.value,
   })}\n`);
 }
-log(`wrote ${answers.length} rows to ${out.pathname}`);
+log(`wrote ${run.answers.size} rows to ${out.pathname}`);
 process.exit(0);
