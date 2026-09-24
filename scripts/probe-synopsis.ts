@@ -36,6 +36,8 @@ import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
 import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
+import type { SynopsisFacts } from "../src/lib/synopsis/facts";
+import { loadUniversalStaples } from "../src/lib/staples/universal";
 import { isRepair } from "../src/lib/synopsis/prompt";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
 
@@ -71,12 +73,15 @@ let queue: StubMode[] = [];
 let delayMs = 0;
 /** Every request the fake model was sent, in order, with the deadline it was given. */
 let seen: { user: string; deadlineMs: number; reply: SynopsisResponse | null }[] = [];
+/** The facts the fake model was last handed: what `factsFor` built. */
+let lastFacts: SynopsisFacts | null = null;
 const deps: GenerateDeps = {
   // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
   // and pricing refuses to guess one.
   modelName: STUB_MODEL,
   model: async (req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
     calls += 1;
+    lastFacts = facts;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
     const out = stubReply(facts, queue.shift() ?? "survived");
     // A repair's reply words its primer differently, so a merge that took a PASSING section from
@@ -446,6 +451,31 @@ async function run() {
     select retry_of, contract_version from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
   check("a retry over an older contract rewrites the whole synopsis under the current one",
     [whole.kind, wholeRow.retry_of, wholeRow.contract_version], ["written", null, SYNOPSIS_CONTRACT_VERSION]);
+
+  // 10b · UNIVERSAL STAPLES (Hugh, 2026-09-24). The set is read from `format_staples`, and it is
+  // checked here against an independent query of the same rule; `factsFor` flags a staple the deck
+  // holds, and the stub, which never picks one, still writes a whole overview beside it.
+  const universal = await loadUniversalStaples();
+  const independent = await rows<{ oracle_id: string }>(sql`
+    select oracle_id from format_staples group by oracle_id
+    having count(distinct condition) >= ceil(0.75 * (select count(distinct condition) from format_staples))`);
+  check("the universal staples are the cards staple in three quarters of the conditions",
+    [...universal].sort(), independent.map((r) => r.oracle_id).sort());
+  const [staple] = await rows<{ oracle_id: string }>(sql`
+    select c.oracle_id from cards c where c.oracle_id in (${sql.join([...universal].map((id) => sql`${id}::uuid`), sql`, `)}) and c.type_line not ilike '%Land%'
+    order by c.oracle_id limit 1`);
+  if (!staple) {
+    fail("a universal staple that is not a land", `the set holds ${universal.size}`);
+  } else {
+    await ageLedger();
+    await swap(staple);
+    await analyze(deck.id);
+    queue = ["survived"];
+    const withStaple = await writeSynopsisFor(deck.id, USER, deps);
+    const flagged = (lastFacts as SynopsisFacts | null)?.cards.filter((c) => c.universalStaple).map((c) => c.oracleId) ?? [];
+    check("factsFor flags the universal staple the deck holds, and only that", flagged, [staple.oracle_id]);
+    check("…and the write keeps it off the Key cards and survives", withStaple.kind === "written" && withStaple.outcome, "survived");
+  }
 
   // 11 · THE VERSION COPY, at commit only, onto the newest version, once.
   const committedList = list();
