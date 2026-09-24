@@ -1,0 +1,36 @@
+{
+  "feature": "Swap tools (sub-project 4), PR 3: the Shopping limit line and the over-limit marks",
+  "note": "Needs a server with SWAP_TOOLS_ENABLED=true. SHOP_DECK is a deck the signed-in account owns whose Shopping list holds cards above and below $10 at the newest price run, with no limit set; SET_DECK is the same with shopping_limit_cents = 2500. Shopping is client state: every row reaches it by a PRESS.",
+  "rows": [
+    {
+      "id": "limit-default",
+      "label": "/decks/[id] Shopping: the limit line at the $10 default, and the over rows' ring and `over $10`",
+      "view": "src/components/decks/stand-in-limit.tsx",
+      "steps": [
+        { "goto": "/decks/${SHOP_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Shopping \\d+", "settle": 600 },
+        { "wait": "[data-testid='stand-in-limit']", "settle": 600 }
+      ]
+    },
+    {
+      "id": "limit-editing",
+      "label": "/decks/[id] Shopping: the limit being edited, the $ field with Save and cancel",
+      "view": "src/components/decks/stand-in-limit.tsx",
+      "steps": [
+        { "goto": "/decks/${SHOP_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Shopping \\d+", "settle": 600 },
+        { "clickRole": "button", "name": "^Change the limit", "settle": 500 }
+      ]
+    },
+    {
+      "id": "limit-set",
+      "label": "/decks/[id] Shopping: a set limit of $25, `reset to $10` in the chip's place, fewer rows marked",
+      "view": "src/components/decks/stand-in-limit.tsx",
+      "steps": [
+        { "goto": "/decks/${SET_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Shopping \\d+", "settle": 600 },
+        { "wait": "[data-testid='stand-in-limit']", "settle": 600 }
+      ]
+    }
+  ]
+}

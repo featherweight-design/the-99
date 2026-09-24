@@ -18,7 +18,8 @@
  * falls in its band, so the figure the row draws lands in that band whichever printing it reads.
  * The deck is deleted in a `finally`; its `deck_cards` cascade.
  *
- * Three mutations fail it: the ring dropped from `BuyTag` (24 checks), the stored limit not read by
+ * Four mutations fail it: the separator split from the count into its own flex item (the phone's
+ * editing state then leaves `·` at the end of the first line), the ring dropped from `BuyTag` (24 checks), the stored limit not read by
  * the page (the reload never finds `reset to $10`), and the row's desktop `over $X` drawn at every
  * width (every phone row reads it twice). Needs a server with
  * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
@@ -259,6 +260,19 @@ try {
 
     // Raise it to $25: MID leaves, the count follows.
     await line(page).getByRole("button", { name: /Change the limit/ }).click();
+    // The editing state is the one that wraps on a phone. The `·` must travel with the count
+    // rather than dangle at the end of the first line: read by GEOMETRY, never by markup.
+    const sep = await line(page).evaluate((root) => {
+      const dot = [...root.querySelectorAll("span[aria-hidden]")].find((el) => el.textContent.trim() === "·");
+      const count = dot?.parentElement;
+      if (!dot || !count) return null;
+      const range = document.createRange();
+      range.selectNodeContents(count);
+      const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+      return { dot: Math.round(dot.getBoundingClientRect().top), text: Math.round(rects.at(-1)?.top ?? -1) };
+    });
+    report(`${tag} separator shares the count's line while editing`, sep && Math.abs(sep.dot - sep.text) <= 4,
+      sep ? `dot at ${sep.dot}px, count at ${sep.text}px` : "no separator found");
     await line(page).getByRole("textbox").fill("25");
     await line(page).getByRole("button", { name: "Save" }).click();
     await line(page).getByRole("button", { name: "reset to $10" }).waitFor({ timeout: 15_000 });

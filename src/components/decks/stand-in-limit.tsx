@@ -129,8 +129,10 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
             )}
           </>
         )}
-        <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
-        <span className="font-mono text-[11px] whitespace-nowrap" style={{ color: "var(--fg-muted)" }}>
+        {/* The separator travels with the count in one item, so a wrap never leaves it dangling
+            at the end of the first line (the phone's editing state wraps here). */}
+        <span className="inline-flex items-center gap-[8px] font-mono text-[11px] whitespace-nowrap" style={{ color: "var(--fg-muted)" }}>
+          <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
           {overCount > 0 ? copy.limit.overCount(overCount) : copy.limit.noneOver(figure)}
         </span>
       </form>
