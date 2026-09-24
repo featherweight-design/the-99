@@ -267,6 +267,34 @@ async function run() {
     where m.user_id = ${USER} and m.status = 'refunded' and m.created_at > now() - interval '24 hours'`);
   check("…and records the billed call's meters on its unit", threwUnit, { input_tokens: 1_234, cost: "0" });
 
+  // 8d · The DECK is deleted while the model answers. `deck_synopses.deck_id` cascades, so the run
+  // row is gone when the outcome lands; `model_calls` is kept, and the bill must reach it by the
+  // unit id the start handed back, never through the vanished run row. A throwaway deck, so the
+  // fixture the rest of the run reads survives. With `finishRun` looking the unit up through the
+  // run row instead, the meters check below reads null and fails.
+  await ageLedger();
+  const [doomed] = await rows<{ id: string }>(sql`
+    insert into decks (user_id, name, commander_oracle_id)
+    values (${USER}, 'probe synopsis doomed', ${legend.oracle_id}::uuid) returning id`);
+  await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values ${sql.join(
+    body.map((c) => sql`(${doomed.id}::uuid, ${c.oracle_id}::uuid, 1)`), sql`, `)}`);
+  await analyze(doomed.id);
+  const deletingModel: GenerateDeps = {
+    ...deps,
+    model: async (req, facts) => {
+      const out = await deps.model(req, facts);
+      await fixture.execute(sql`delete from decks where id = ${doomed.id}::uuid`);
+      return out.ok ? { ...out, usage: { ...out.usage, inputTokens: 4_321 } } : out;
+    },
+  };
+  check("a deck deleted mid-call reports superseded", (await writeSynopsisFor(doomed.id, USER, deletingModel)).kind, "superseded");
+  const [orphan] = await rows<{ input_tokens: number | null; cost: string | null; runs: number }>(sql`
+    select m.input_tokens, m.cost_micro_usd::text as cost,
+      (select count(*)::int from deck_synopses s where s.model_call_id = m.id) as runs
+    from model_calls m where m.user_id = ${USER} order by m.created_at desc limit 1`);
+  check("…its run row went with the deck, and its unit still carries the meters", orphan,
+    { input_tokens: 4_321, cost: "0", runs: 0 });
+
   // 9 · THE REAPER, on both paths: a run a crash left pending is failed, refunded, and frees the
   // deck, whether the next thing to arrive is a write or a read. Each path is proved on its own
   // stranded run, because a read reaping first would hide a write that never reaps.

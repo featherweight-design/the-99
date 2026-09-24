@@ -10,6 +10,10 @@
 //
 // Cases, numbered as the plan numbers them:
 //   1  the reaper got there first: a late success writes nothing
+//  1b  the deck was deleted mid-call: the run row cascaded away, and a late success or failure
+//      still records its bill on the unit, by the id `startRun` handed back. Looking the unit up
+//      through the run row instead fails "1b · and still records what it billed on the unit",
+//      once per outcome path (finishRun's and persistRun's, each mutated on its own).
 //   2  the player pressed Stop: a late failure writes nothing
 //   3  a second run on one deck is refused, and the loser holds no unit
 //   4  two decks race for one player's last unit, and exactly one wins
@@ -156,7 +160,7 @@ async function answered(
 ) {
   const started = await startRun(userId, deckId, fingerprint, readVersion);
   if (started.kind !== "started") throw new Error(`startRun refused: ${started.kind}`);
-  await persistRun(started.runId, [suggestion(c, cut)], 0);
+  await persistRun(started, [suggestion(c, cut)], 0);
   const [item] = await rows<{ id: string }>(sql`
     select id from deck_suggestion_items where run_id = ${started.runId}::uuid`);
   return { runId: started.runId, itemId: item.id };
@@ -174,7 +178,7 @@ async function run() {
     const started = await startRun(u, deck, "fp", null);
     if (started.kind !== "started") return fail("case 1 start", started.kind);
     await readTuningState(deck, u, "fp", future(10));
-    const wrote = await persistRun(started.runId, [suggestion(c)], 0, lateBill);
+    const wrote = await persistRun(started, [suggestion(c)], 0, lateBill);
     check("1 · a late success after the reaper reports superseded", wrote, false);
     // The call billed all the same: its meters land on the refunded unit (credits count
     // successes; dollars count everything billed).
@@ -183,6 +187,27 @@ async function run() {
     check("1 · the run still reads failed/interrupted, unit refunded",
       await runRow(started.runId), { status: "failed", error_class: "interrupted", unit: "refunded" });
     check("1 · no items were written", await itemCount(started.runId), 0);
+  }
+
+  // 1b · The deck was DELETED mid-call. Its run rows cascade away while `model_calls` is kept, so a
+  // late outcome can only reach its unit by the id the start handed back, never through the run.
+  {
+    const u = newUser();
+    const callMeters = async (callId: string) => (await rows<{ output_tokens: number | null; cost: string | null }>(sql`
+      select output_tokens, cost_micro_usd::text as cost from model_calls where id = ${callId}::uuid`))[0] ?? null;
+    for (const [label, deliver] of [
+      ["success", (h: { runId: string; callId: string }) => persistRun(h, [], 0, lateBill)],
+      ["failure", (h: { runId: string; callId: string }) => finishRun(h, { status: "failed", errorClass: "timeout" }, lateBill)],
+    ] as const) {
+      const deck = await makeDeck(u, c);
+      const started = await startRun(u, deck, "fp", null);
+      if (started.kind !== "started") return fail(`case 1b start (${label})`, started.kind);
+      await fixture.execute(sql`delete from decks where id = ${deck}::uuid`);
+      check(`1b · the deck's delete took the run row with it (${label})`, await runRow(started.runId), null);
+      check(`1b · a late ${label} on a deleted deck reports superseded`, await deliver(started), false);
+      check(`1b · and still records what it billed on the unit (${label})`, await callMeters(started.callId),
+        { output_tokens: 500, cost: "7000" });
+    }
   }
 
   // 2 · The player pressed Stop. The panel names its run, so Stop cancels that id and no other;
@@ -196,7 +221,7 @@ async function run() {
     if (started.kind !== "started") return fail("case 2 start", started.kind);
     check("2 · the run is written under the id the panel chose", started.runId, chosen);
     check("2 · the Stop lands", await cancelRun(started.runId, deck, u), true);
-    const wrote = await finishRun(started.runId, { status: "failed", errorClass: "timeout" }, lateBill);
+    const wrote = await finishRun(started, { status: "failed", errorClass: "timeout" }, lateBill);
     check("2 · a late failure after the Stop reports superseded", wrote, false);
     check("2 · and still records what it billed on the unit", await unitMeters(started.runId),
       { output_tokens: 500, cost: "7000" });
@@ -355,7 +380,7 @@ async function run() {
     const before = (await readAllowance(u)).used;
     const failed = await startRun(u, deck, "fp", null);
     if (failed.kind !== "started") return fail("case 9 start", failed.kind);
-    await finishRun(failed.runId, { status: "failed", errorClass: "malformed" });
+    await finishRun(failed, { status: "failed", errorClass: "malformed" });
     check("9 · a failed run gives its unit back", (await runRow(failed.runId))!.unit, "refunded");
     check("9 · and the allowance is where it was", (await readAllowance(u)).used, before);
 
@@ -372,7 +397,7 @@ async function run() {
     // run's, and nothing the player had changed (STATES-tuning-panel.md :42).
     const rerun = await startRun(u, deck, "fp-2", null);
     if (rerun.kind !== "started") return fail("case 9 re-run start", rerun.kind);
-    await finishRun(rerun.runId, { status: "failed", errorClass: "timeout" });
+    await finishRun(rerun, { status: "failed", errorClass: "timeout" });
     const kept = await readTuningState(deck, u, "fp-2");
     check("9 · a failed re-run keeps the last set's items", [kept.run?.status, kept.items.length], ["failed", 1]);
   }

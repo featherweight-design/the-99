@@ -32,7 +32,7 @@ vi.mock("../../lib/tuning/run-store", () => ({
   startRun: async (...args: unknown[]) => {
     calls.started += 1;
     calls.startOpts = args[4];
-    return calls.startKind === "started" ? { kind: "started", runId: "run_1" } : { kind: calls.startKind };
+    return calls.startKind === "started" ? { kind: "started", runId: "run_1", callId: "call_1" } : { kind: calls.startKind };
   },
   finishRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
   persistRun: async () => true,
@@ -78,7 +78,7 @@ describe("runTuning after the call returned", () => {
     calls.reachModel = true;
     await expect(runTuning(DECK, { anyway: true })).rejects.toThrow();
     expect(calls.finished).toEqual([[
-      "run_1",
+      { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
       { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 } },
     ]]);

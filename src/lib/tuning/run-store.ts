@@ -36,17 +36,23 @@ export type { Billed };
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
- * A LATE OUTCOME still records its bill. When a Stop or the reaper settled the run first, the
- * outcome write matches no pending run and changes nothing about the run or the credit — but the
- * upstream call billed all the same, and until its meters land its unit counts toward the month at
- * its worst case. So the meters go onto the run's unit anyway (`recordModelUsage` writes them only
- * while none are recorded, so this never counts a call twice).
+ * A started run as its caller holds it for the whole request: the run row's id, and the id of the
+ * `model_calls` unit the start reserved. The unit id is carried rather than looked up through the
+ * run row, because the run row can VANISH mid-call — `deck_suggestion_runs.deck_id` cascades on a
+ * deck delete while `model_calls` is kept — and the bill must still land on the ledger.
  */
-async function recordLate(tx: Tx, runId: string, billed: Billed | undefined): Promise<void> {
-  if (!billed) return;
-  const [run] = await tx.select({ callId: deckSuggestionRuns.modelCallId })
-    .from(deckSuggestionRuns).where(eq(deckSuggestionRuns.id, runId));
-  if (run) await recordModelUsage(tx, run.callId, billed);
+export type RunHandle = { runId: string; callId: string };
+
+/**
+ * A LATE OUTCOME still records its bill. When a Stop, the reaper or a deck delete got there
+ * first, the outcome write matches no pending run and changes nothing about the run or the credit
+ * — but the upstream call billed all the same, and until its meters land its unit counts toward
+ * the month at its worst case. So the meters go onto the unit anyway, by the id the start handed
+ * back (`recordModelUsage` writes them only while none are recorded, so this never counts a call
+ * twice).
+ */
+async function recordLate(tx: Tx, callId: string, billed: Billed | undefined): Promise<void> {
+  if (billed) await recordModelUsage(tx, callId, billed);
 }
 
 /**
@@ -67,10 +73,10 @@ export async function startRun(
    * started and never another tab's (the row's default makes one when absent).
    */
   opts: { runId?: string; now?: Date } = {},
-): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" }> {
+): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" }> {
   const now = opts.now ?? new Date();
   try {
-    const runId = await db.transaction(async (tx) => {
+    const handle = await db.transaction(async (tx): Promise<RunHandle> => {
       const unit = await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({
@@ -80,9 +86,9 @@ export async function startRun(
         readVersion,
         status: "pending",
       }).returning({ id: deckSuggestionRuns.id });
-      return row.id;
+      return { runId: row.id, callId: unit.id };
     });
-    return { kind: "started", runId };
+    return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Only the partial index means "a run is already in flight here". A dropped connection or
@@ -113,7 +119,7 @@ export async function saveIntent(
 
 /** A failed run: the outcome, no items, and its unit back. False when the run was superseded. */
 export async function finishRun(
-  runId: string,
+  { runId, callId }: RunHandle,
   set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number },
   /** The call's usage, when it got a response: a refund still records what it burned. */
   billed?: Billed,
@@ -124,7 +130,7 @@ export async function finishRun(
       .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
       .returning({ callId: deckSuggestionRuns.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, "refunded", billed);
-    if (rows.length === 0) await recordLate(tx, runId, billed);
+    if (rows.length === 0) await recordLate(tx, callId, billed);
     return rows;
   });
   return written.length > 0;
@@ -138,7 +144,7 @@ export async function finishRun(
  * insert runs and rolls everything back, so "items persisted, status did not" cannot happen.
  */
 export async function persistRun(
-  runId: string,
+  { runId, callId }: RunHandle,
   kept: ValidatedSuggestion[],
   droppedCount: number,
   billed?: Billed,
@@ -167,7 +173,7 @@ export async function persistRun(
   } catch (err) {
     if (err instanceof RunSupersededError) {
       // The transaction above rolled back; the bill is recorded in one of its own.
-      await db.transaction((tx) => recordLate(tx, runId, billed));
+      await db.transaction((tx) => recordLate(tx, callId, billed));
       return false;
     }
     throw err;

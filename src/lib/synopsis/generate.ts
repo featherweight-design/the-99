@@ -211,13 +211,13 @@ async function startRun(
   retryOf: string | null,
   /** False on a retry, which rewrites the synopsis for this very list on purpose. */
   checkReuse: boolean,
-): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
+): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
   try {
-    const runId = await db.transaction(async (tx) => {
+    const handle = await db.transaction(async (tx) => {
       const unit = await reserveModelCall(tx, userId, "synopsis", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
@@ -235,9 +235,9 @@ async function startRun(
         deckId, userId, fingerprint: list, contractVersion: SYNOPSIS_CONTRACT_VERSION,
         model, modelCallId: unit.id, status: "pending", retryOf, createdAt: now,
       }).returning({ id: deckSynopses.id });
-      return row.id;
+      return { runId: row.id, callId: unit.id };
     });
-    return { kind: "started", runId };
+    return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
@@ -254,9 +254,13 @@ class AlreadyWrittenError extends Error {}
 /**
  * The outcome and the unit, together. Guarded on `pending`, so a run the reaper already failed
  * changes nothing here, and its late result is discarded. False when superseded.
+ *
+ * The run arrives with its unit's id (`callId`), held by the caller since the start, so the bill
+ * reaches the ledger even when the run row is GONE: `deck_synopses.deck_id` cascades on a deck
+ * delete while `model_calls` is kept.
  */
 export async function finishRun(
-  runId: string,
+  { runId, callId }: { runId: string; callId: string },
   set: {
     outcome: SynopsisOutcome;
     content: CheckedSynopsis | null;
@@ -280,11 +284,12 @@ export async function finishRun(
       .returning({ callId: deckSynopses.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, set.charge, set.billed, now);
     if (rows.length === 0 && set.billed) {
-      // A LATE OUTCOME: the reaper settled this run first, so nothing about the run or the credit
-      // moves, but the call billed all the same and its unit counts at its worst case until its
-      // meters land. `recordModelUsage` writes them only while none are recorded.
-      const [late] = await tx.select({ callId: deckSynopses.modelCallId }).from(deckSynopses).where(eq(deckSynopses.id, runId));
-      if (late) await recordModelUsage(tx, late.callId, set.billed, now);
+      // A LATE OUTCOME: the reaper settled this run first, or its deck was deleted and took the run
+      // row with it, so nothing about the run or the credit moves, but the call billed all the
+      // same and its unit counts at its worst case until its meters land. Reached by the unit's
+      // own id, never through the run row. `recordModelUsage` writes them only while none are
+      // recorded.
+      await recordModelUsage(tx, callId, set.billed, now);
     }
     return rows.length > 0;
   });
@@ -342,7 +347,7 @@ async function run(
     if (outcome.usage) billed = { model: deps.modelName, usage: outcome.usage };
 
     if (!outcome.ok) {
-      const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed }, deps.now());
+      const settled = await finishRun(started, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed }, deps.now());
       return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
     }
 
@@ -356,7 +361,7 @@ async function run(
     }
     const result = outcomeOf(content.verdicts);
     const written = await finishRun(
-      started.runId,
+      started,
       { outcome: result, content, usage: outcome.usage, charge, billed },
       deps.now(),
     );
@@ -370,7 +375,7 @@ async function run(
     };
   } catch (error) {
     console.error("synopsis write failed after its reservation", error);
-    const settled = await finishRun(started.runId, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded", billed }, deps.now());
+    const settled = await finishRun(started, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded", billed }, deps.now());
     return settled ? { kind: "written", outcome: "upstream_busy", synopsis: null } : { kind: "superseded" };
   }
 }
