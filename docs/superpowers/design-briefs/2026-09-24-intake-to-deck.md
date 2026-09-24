@@ -52,7 +52,7 @@ commander. Three gaps:
    box. The form tells the player that more detail helps.
 3. **Free text is matched for free first, and a model reads it only when the player asks.**
    - The sentence is matched deterministically and shown back as editable chips.
-   - If words are left over, the player is offered "Read it properly", which costs one daily allowance
+   - If words are left over, the player is offered "Read it properly", which costs one allowance
      credit.
    - The model only turns words into chips from the real vocabulary. It never names a commander.
 4. **A credit is spent only when the model reads free text.** Choices, the free match and editing chips
@@ -102,7 +102,10 @@ These follow from the rulings. Hugh has not ruled on them one by one, and he may
 - **Brackets 4 and 5** carry no stated limits (`src/lib/bracket/rules.ts:13`), so as a filter they
   admit everything. The row and the fill say nothing different for them.
 - **The budget prices an owned copy** that committed decks already claim as a buy, the same rule the
-  Shopping list uses. A card never stocked has no price and is left out of a budgeted fill.
+  Shopping list uses. A card never stocked has no price and is left out of a budgeted fill. That rule is
+  for the cards the fill chooses. A build-around card is placed anyway, because the player asked for it.
+  When it has never been stocked the budget cannot count it, so the fill caps the rest as usual and the
+  row says the build-around card's price is unknown. Design draws that state.
 - **After a model read**, words it could not map stay visible as "not understood". Editing any chip
   afterwards is free.
 
@@ -124,8 +127,9 @@ States:
   credit;
 - a model read in progress, then done, with its chips marked as read and anything not understood shown;
 - the model read failed and the credit was refunded, or it returned no chips;
-- no credits left today: the offer is replaced by when the next credit arrives, and the matched chips
-  still work;
+- no credits left: the allowance is a rolling 24 hours (`src/lib/model/allowance-rule.ts`), so the
+  offer is replaced by the time the next credit arrives, never by "today" or a midnight reset, and the
+  matched chips still work;
 - the app-wide spend cap reached, which is a different message from the player's own allowance.
 
 A card chip, owned or not, opens the card.
@@ -208,7 +212,12 @@ The way into the intake from Discover's filters, at both widths.
     cheapest printing stocked now, fits in what remains. Basics finish the body.
   - **Bracket** applies the stated limits in `src/lib/bracket/rules.ts`: `GAME_CHANGER_LIMIT` (`:14`),
     `MASS_LAND_DENIAL_LIMIT` (`:24`), `EXTRA_TURN_LIMIT_BRACKET_1` (`:34`) and `COMBO_POLICY` (`:48`).
-    - The commander counts against them.
+    - The commander counts against them, and so does a build-around card, which is always placed.
+    - **This is also what "outside the bracket" means in ruling 6.** The fill keeps every card it
+      chooses inside the limits, and it can always finish with basics, so only the commander or the
+      build-around card can put a deck outside a bracket. For example, a Game Changer commander is
+      outside brackets 1 and 2. The filter tests those one or two cards against the limits alone, so it
+      needs no fill, and the too-narrow count uses the same test.
     - At brackets 1 and 2, the fill never places a card that completes a two-card infinite combo with a
       card already placed. That makes it a pairwise check during the fill, not a per-card filter.
     - At bracket 3 the fill may place combos, since lateness is not computable (`:36-46`). It must
@@ -226,7 +235,7 @@ The way into the intake from Discover's filters, at both widths.
   - `FEATURE_CALLS` (`src/lib/model/prices.ts:74`);
   - a migration for the `model_calls_feature_check` constraint (`schema.ts:1600`).
 
-  It draws on the same daily allowance (`allowance-rule.ts:24-25`) and the app-wide spend cap
+  It draws on the same rolling 24-hour allowance (`allowance-rule.ts:24-25`) and the app-wide spend cap
   (`src/lib/model/spend-rule.ts`). Its output is validated against the tag vocabulary and the catalog
   before it becomes a chip, and a failed read is refunded.
 
