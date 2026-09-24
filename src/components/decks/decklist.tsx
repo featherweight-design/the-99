@@ -366,6 +366,11 @@ export function Decklist({
   // The rows over the deck's Shopping limit (swap tools), for the limit line's `N over`. Rows, not
   // copies: the count names the rows the reader sees marked. Zero whenever the tools are off.
   const swapTools = useSwapTools();
+  // The stand-ins sheet, mounted by the list rather than by its row: a take takes the row away, and
+  // the sheet has to stay to say so. Both views mount it, since a take moves the reader nowhere.
+  const standInsSheet = swapTools?.standIns ? (
+    <StandInsSheet card={swapTools.standIns} newestAsOf={newestAsOf} onClose={swapTools.closeStandIns} />
+  ) : null;
   const shoppingOverCount = swapTools
     ? shoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length
     : 0;
@@ -667,6 +672,7 @@ export function Decklist({
 
     return (
       <div className="flex flex-col">
+        {standInsSheet}
         <GroupToggle
           allCount={built}
           shoppingCount={shoppingCount}
@@ -809,11 +815,7 @@ export function Decklist({
 
   return (
     <div className="flex flex-col">
-      {/* The stand-ins sheet, mounted here rather than by its row: a take takes the row away,
-          and the sheet has to stay to say so. */}
-      {swapTools?.standIns ? (
-        <StandInsSheet card={swapTools.standIns} newestAsOf={newestAsOf} onClose={swapTools.closeStandIns} />
-      ) : null}
+      {standInsSheet}
       {/* Toggle bar */}
       <GroupToggle
         allCount={built}
