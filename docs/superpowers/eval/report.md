@@ -1,0 +1,235 @@
+# Model and prompt evaluation: deck tuning and the deck overview
+
+Sub-project 10 (the eval-harness lane). The plan is `docs/superpowers/plans/2026-09-23-eval-harness.md`.
+
+Everything below was measured against Hugh's 19 staging decks, read-only:
+- 4 development decks and 15 held-out decks, from a seeded split (seed 20260923), with 3 trials per deck;
+- plus a synthetic overlay of games and notes on 6 held-out decks. It is never shown to Hugh as his own.
+
+Costs are at real-time prices per answer, with the app's one retry included, unless a line says otherwise. The per-run tables are `metrics-tuning.md`, `metrics-synopsis.md` and `metrics-overview-contracts.md`.
+
+## Recommendation
+
+| feature | model and prompt | held-out result | $/accepted |
+|---|---|---|---|
+| Tuning | **Sonnet 5 as shipped (S)**: sonnet-low passed every automatic gate and failed Hugh's blind read, 5–9–1 | survived 98%, 2.80 kept per run | $0.0425 |
+| Overview | Sonnet 5 at `effort: "low"`, `budgets-plus` prompt, contract A+B (Hugh's ruling) | all four sections: 96% under A+B | $0.051 (S: $6.13) |
+
+The overview contract (A+B) was Hugh's ruling. The synopsis lane ships the prompt as measured, verified byte-for-byte against the 15 first writes and 37 repair calls. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
+
+## Tuning
+
+S is Sonnet 5 on the shipped prompt, sent with an 8,000 ceiling. Shipped Sonnet at 3,000 truncated
+and malformed on 13% of held-out answers and 56% of overlay answers, which is why S was re-based.
+
+- **Eligible:** only `sonnet-low@max3000`. It is cheaper, and every gate passes.
+- **Haiku + `cite-rules`:** survived 100%, kept 3.78, $0.0071. It fails one gate: names outside
+  the deck at 7% against S's 0% (the gate is S + 5). No Haiku blind round was run.
+- **Plain Haiku:** fails both the overlay gate and the names-outside gate.
+
+### Hugh's blind read, round 1
+
+Sonnet-low against S on the 15 held-out decks, blind, with sides shuffled per deck and each
+decklist one click away. **Hugh preferred S on 9 decks, sonnet-low on 5, and called 1 even
+(Yuriko).** The pre-registered pass needs S preferred on no more than 5 of 15, and on no more than
+3 more decks than the candidate. **Sonnet-low fails, so S stays for tuning**: $0.0425 per accepted
+answer against $0.0169.
+
+His notes, verbatim:
+
+- **HD - Kratos:** "I don't know this deck as well because it's in a draft state, but I like the formatting of A better overall. Answer B has redundancies in it that are represented in the chips below."
+- **HD - Avatar Aang:** "B is slightly better because the cards it recommends for removal are less important to the deck than the ones removes in A. Hermitic Herbalist is one of my best ramp cards, so I would not remove it. However, both answers have the same failure in that they target filling the removal gap. I'm only lacking one removal slot, not two. It's good to have options, but just calling out that if I accepted both, my removal would be 4 of 3."
+- **HD - Gods:** "Swiftfoot Boots is a good recommendation from both, but B wins because it has a genuinely good mix of recommendations to consider."
+- **HD - Wizards:** "Both are good, but I appreciate that B puts an Island removal on the table."
+- **HD Tune - Counter Intelligence:** "Gives me two distinct way to address the draw gap by addressing over reliance on ramp or removal."
+- **HD - Yuriko:** "This one is a bit of a wash, but is actually most telling about the model's reasoning being off with recommendations. Lotus Petal is one of my most expensive and valuable cards, it will never be removed. Ornithopter is also one of the most valuable cards in this deck, specifically because I can play it for free. It enables my commander to come in consistently and then I can replay it for free immediately afterwards.  This one is the most telling that suggestions should consider the strategy of the deck, not just if we're meeting specific category benchmarks."
+- **HD - Tovolar:** "This is a great one that shows how the game notes really tuned the responses. Awesome to see."
+
+Each note checked against the data:
+
+1. **Game notes help** (Tovolar). Only one held-out deck has real logged games (Tovolar, 2 games).
+   He picked S there, and both answers cited them. With one deck the data can neither confirm nor
+   refute this. On the automatics, the synthetic evidence did not raise kept counts. The overlay
+   was never shown to him.
+2. **Cuts blind to the strategy** (Yuriko, Avatar Aang). Confirmed. Both Yuriko answers cut
+   Lotus Petal, and sonnet-low also cut Ornithopter. The tuning prompt carries no statement of the
+   deck's strategy, and no staging deck has a stated intent.
+3. **More suggestions read better.** Strongly confirmed. On the 14 decided decks, the side he
+   picked showed more kept suggestions on 10, fewer on 1, and the same number on 3. S showed 41
+   suggestions across the round against sonnet-low's 36.
+4. **Suggestions beyond the role thresholds read better.** Each shown suggestion was tagged by
+   its citations: only a role count against its target is "threshold"; a decklist, game or note
+   citation is "other". Sonnet-low wrote far more "other" suggestions (16 of 36, against 6 of 41).
+   On 4 of its 5 wins, its side carried the higher "other" share. Overall the effect is weaker
+   than volume: 5 decided decks go with it, 4 against, 5 tied.
+
+Also, from the Avatar Aang note: 7 of the 30 shown answers fill a one-slot gap twice (S 4,
+sonnet-low 3).
+
+**For the tuning lane** (their change, not made here):
+- give the prompt the deck's strategy, from the stored overview or the player's intent, and name
+  the cards it depends on as not to be cut;
+- size each suggestion group to its gap;
+- prefer suggestions grounded in the decklist over pure role-count swaps.
+
+Sonnet-low on such a prompt, asked for 4 to 5 suggestions, is the untested path to S's quality at
+40% of its cost.
+
+## Overview
+
+S truncates or malforms a third of its answers. Its median output hits the 8,000 ceiling (125 of
+131 answers), and its p50 latency is 72 s. Under the shipped contract S renders all four sections
+on 2% of held-out answers, at $6.13 per accepted answer. **S failed on viability, not on
+quality.** So the overview blind read departs from the pre-registered rule: it becomes Hugh's
+absolute read of sonnet-low under A+B, the contract he picked: "would you show this to your pod".
+
+The refusals are shaped by the contract, not the model. Two what-ifs were measured, both on
+contract v2 (after #913):
+
+| contract | all four | $/accepted |
+|---|---|---|
+| shipped | 18% | $0.186 |
+| (A) drop the line, not the section | 58% | $0.057 |
+| (B) one repair call | 62% | $0.101 |
+| (A+B) | 96% | $0.051 |
+
+A+B is derived from the same repair run and leans slightly in its own favour, as stated in
+`metrics-overview-contracts.md`. B adds a second sequential call, about 18 s p50, only on the
+answers that need one.
+
+**The `uncomputed_figure` gap, #913.** Stored answers were re-validated against facts rebuilt with
+the fixed `factsFor`, with no model calls. On held-out, mulligan lines naming an uncomputed figure
+fell from 73 to 10, and primer refusals for that reason fell from 21 to 4.
+
+### Hugh's absolute read, round 2
+
+Fifteen held-out overviews, one per deck (trial 0), shown exactly as a player would see them under
+A+B. Failing lines were dropped, repaired sections sat in place, and anything still refused showed
+in the app's own words. Nothing said which model wrote them, what they cost, or whether a repair
+happened. All four sections rendered on every deck: 54 sections came from the first write and 6
+from a repair. Asked "Would you show this to your pod?", **Hugh answered Yes 6, Close 8, No 1.**
+
+His two summary notes, verbatim: "Sol Ring is in every commander deck and shouldn't be considered
+among 'Key Cards'." and "The Mulligan section was the most hit or miss. A few had good suggestions,
+but most had redundant or unhelpful suggestions."
+
+His per-deck notes, verbatim:
+
+- **HD - Kratos** (Close): "The overview is good. The mulligan steps aren't great. They all recommend basically "keep lands" and "Don't keep no lands". Not very helpful. Key Cards shouldn't include Sol Ring. This is a staple in every deck and not helpful. Weaknesses are good."
+- **HD - Avatar Aang** (Yes): "Strong overview, core strategy, and weaknesses. Mulligan is unhelpful again."
+- **HD - Gods** (Close): "Mulligan is a little better, but two of the send back items are effectively the same. Also, a general note on language: If the category is "Send back" we don't need to say "Send back..." with every line item."
+- **HD Tune - Sultai Arisen** (Yes): "Strongest one yet, IMO. Mulligan is genuinely useful. All sections are strong. Also, small note that we should use the Magic term for color combinations not the mana abbreviation (e.g. Gruul over RG)."
+- **HD Tune - Counter Intelligence** (Close): "This one is close, but misses some core pieces of the strategy in the deck, specifically cards that enable Kilo to be tapped and untapped. It also misses an infinite turn mechanic in the deck. Mulligan is still meh."
+- **HD - Yuriko** (Yes): "Overview could be slightly better noting that there are large CMC cards in this deck for big reveal hits with Yuriko, plus top deck manipulation. But, overall, this is good."
+- **HD - Tovolar** (Close): "Mulligan is meh, everything else is pretty good."
+- **HD - Zombies** (No): "Big flaw with this line, as this is the commander and would not be in my opening hand: "Keep hands with Ghoulcaller Gisa or another recursive threat and lands.""
+- **HD Tune - Scrappy Survivors** (Yes): "One of the better overviews I've seen so far. Uses "Naya" instead of mana abbreviation. Mulligan is genuinely informative. All other segments are strong. Minor callout is that Sol Ring should never be in "Key Cards"."
+- **HD Tune - Mutant Menace** (Close): "Mulligan is unhelpful. Everything else is decent."
+- **HD - Eldrazi** (Close): "Mulligan is not super helpful. Everything else is pretty solid."
+
+Each checked against the data:
+
+1. **Staples as Key cards.** Sol Ring is a Key card in 14 of 15 overviews. Against each deck's own
+   `format_staples` condition, 12 of 15 overviews name a staple: 24 of 113 Key cards, 12 of them Sol
+   Ring. Two decks' conditions carry no staple rows. Filtering every format staple would also remove
+   Torbran from a Kratos deck, Blood Artist from Zombies and Laboratory Maniac from Wizards, which
+   really do carry their strategies. The **universal** staples are the ones that answer Hugh's note.
+   Five cards are staples in at least 12 of the 16 conditions: Sol Ring, Arcane Signet, Swiftfoot
+   Boots, Reliquary Tower and Rogue's Passage.
+2. **Mulligan is hit or miss.** Confirmed. All 82 mulligan lines were tagged:
+   - 46 (56%) are redundant: they restate the land range or another line;
+   - 19 are generic;
+   - 17 (21%) are specific: they name a card, a curve point or a line of play.
+
+   The specific share tracks his picks: 26% on the decks he said Yes to, 16% on Close. 31 of 42
+   send-back lines open with "Send back" under a heading that already says it. The one No (Zombies)
+   is a keep line asking for the commander in the opening hand.
+3. **Colour names.** 6 of 15 overviews state the identity as a mana abbreviation. One uses a guild
+   or shard name, and he praised it.
+4. **Strategy coverage.** The Counter Intelligence overview misses Kilo's untap pieces and the
+   infinite-turn line. The Yuriko overview misses the big reveal cards and top-deck manipulation.
+   No contract check can see these. It is the same "strategy awareness" gap round 1 found in tuning.
+
+**For the synopsis lane** (their change, not made here):
+- keep the universal staples off the Key-card candidates, in `factsFor`, backed by a validator check;
+- render the land range once from facts, and require every mulligan line to name a card or a play
+  pattern, one or two per side;
+- no "Keep"/"Send back" prefix on the lines;
+- never treat the commander as a card in hand;
+- give facts the identity's name.
+
+**Trim** (reminder text stripped from the facts) saves about 3% per answer and loses on A (31%
+against 44%). Not worth it.
+
+## Allowances
+
+**Ruling (Hugh):** keep today's daily allowance: the owner 10 units and each friend 3, with the
+$20 hard stop and the $10 alarm unchanged.
+
+**What that means at full use.** The worst case is every unit of every player used on every day
+of a 30-day month. It is priced at the overview's A+B cost, $0.049 per answer, which is the
+higher of the two features:
+
+| | per full day | per 30 days |
+|---|---|---|
+| everyone (owner 10 + 6 friends × 3) | $1.36 | $40.94 |
+| the owner alone | $0.49 | $14.62 |
+
+The owner's line is capped separately by the owner's $5 share: at full use the owner reaches it
+around day 10 ($0.49 a day), before the shared stop.
+
+At that pace the $10 alarm fires on day 8 and the **$20 hard stop is reached on day 15. It pauses
+everyone for the rest of that month.** At tuning's cost alone ($0.0165), the same use comes to
+$13.86 a month. Hugh accepted this knowing there is no real usage yet: staging's `model_calls`
+holds 0 rows, so every figure here is a worst case, not a forecast.
+
+**Revisit when** `model_calls` shows real monthly spend passing $10.
+
+For reference, these are the largest whole allowances the pre-registered rule
+(30 × (6F + H) × c within the cap, and H's share within $5) would have given:
+
+| contract | c | $10 cap | $20 cap |
+|---|---|---|---|
+| shipped or A | $0.033 | friends 1 / Hugh 4 | friends 3 / Hugh 2, or Hugh 5 / friends 2 |
+| A+B | $0.049 | friends 1 / Hugh 0, or Hugh 3 / friends 0 | friends 2 / Hugh 1, or Hugh 3 / friends 1 |
+
+## Proposals for the owning lanes (not made here)
+
+1. **`effort`.** The overview now sends `effort: "low"` (#918). Tuning stays on S, which sends
+   none, so Sonnet 5 thinks adaptively, billed as output. That is what won Hugh's blind read, so it
+   is not a change to make on cost alone. The estimates below are output tokens minus the visible
+   reply at four characters a token:
+   - Tuning under S: about 2,540 thinking tokens per answer, roughly 61% of the cost.
+   - Tuning at `effort: "low"`: about 390, roughly 24%.
+   - The overview at S: about 5,650 per attempt.
+   - The overview at low: about 590.
+2. **A 3,000 output ceiling for sonnet-low.** The observed maxima are 2,240 output tokens on the
+   overview (176 answers) and 1,502 on tuning (88). A 3,000 ceiling truncates nothing observed and
+   cuts each reservation's worst case. The owning lanes set it after Hugh's model ruling.
+3. **Prompt diffs.** `budgets-plus` for the overview. `cite-rules` for tuning, but only if Haiku is
+   ever reconsidered.
+4. **Caching.** Not worth the change today.
+   - Tuning's 1,545-token system prompt does cache across decks. A read saves about $0.003 per call.
+   - A miss that caches only the system block costs about $0.001, so break-even needs a call from
+     any player in the previous 5 minutes on roughly 1 call in 4.
+   - Caching the deck too pays only on the retry, which ran at about 2%.
+   - The overview's system prompt is about 725 tokens, under Sonnet's 1,024 minimum.
+
+## Method notes
+
+- Every piece of the app the harness touches is imported, never restated.
+  `request.test.mts` pins the batch request to what `callModel` sends.
+- **The resume incident.** A batch status poll hit a connection timeout and the process died while
+  the batch kept running, with its worst case held in the ledger. A one-off `--resume` collected it.
+  A later trim batch sat at 0 of 90 for 70 minutes; cancelling it made 88 of the 90 process, and
+  those are billed. They were collected the same way. The status poll now retries a transient
+  failure, which is what stops a run dying that way. `--resume` itself was removed in PR 2, after
+  review found it drawing findings two rounds running; a stranded batch is collected by hand from
+  its id in the ledger.
+- A ledger entry is written at the worst case before any send and settled at the real cost after, so
+  a crash cannot hide spend.
+- The overview blind departure, and why: see Overview.
+
+## Spend
+
+**$16.94 of $25**, from `ledger.jsonl`: 52 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
