@@ -12,7 +12,8 @@
  *  - `<feature>-<round>-key.json`, which side is which. It never goes to the page. It un-blinds the answers
  *    once Hugh has read every deck.
  *
- * The decks are the HELD-OUT decks, in held-out order, and the answer is trial 0 of each cell.
+ * The decks are the HELD-OUT decks the CANDIDATE ran, in held-out order (all 15, or a subset a
+ * shorter round picked with `eval:tuning --decks`), and the answer is trial 0 of each cell.
  * Each answer is what the player would see: the suggestions that survived checking, in order, or
  * the app's empty or failed state. Sides are assigned by a seeded coin per deck, so a rebuild
  * produces the same pairs.
@@ -71,8 +72,11 @@ function tuningAnswer(r: Row | undefined) {
 
 const base = load(args.base);
 const candidate = load(args.candidate);
-const heldOut = base.meta.split.heldOut;
-if (JSON.stringify(heldOut) !== JSON.stringify(candidate.meta.split.heldOut)) throw new Error("the two runs disagree about the held-out decks");
+if (JSON.stringify(base.meta.split.heldOut) !== JSON.stringify(candidate.meta.split.heldOut)) throw new Error("the two runs disagree about the held-out decks");
+const stray = [...candidate.rows.keys()].filter((d) => !base.meta.split.heldOut.includes(d));
+if (stray.length > 0) throw new Error(`the candidate ran decks outside the held-out set: ${stray.join(", ")}`);
+const heldOut = base.meta.split.heldOut.filter((d) => candidate.rows.has(d));
+if (heldOut.length === 0) throw new Error("the candidate has no held-out rows");
 
 const pairs: { id: string; data: Record<string, unknown> }[] = [];
 const key: Record<string, { left: string; right: string }> = {};
