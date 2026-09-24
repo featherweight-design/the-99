@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { creditsCopy } from "../../lib/copy/credits";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
 import type { FindingArt } from "./receipt-modal";
@@ -37,6 +38,7 @@ export function SynopsisOverview({
   readingFresh,
   onWrite,
   onRetry,
+  onReanalyze,
 }: {
   state: SynopsisState;
   busy: boolean;
@@ -46,6 +48,8 @@ export function SynopsisOverview({
   readingFresh: boolean;
   onWrite: () => void;
   onRetry: (synopsisId: string) => void;
+  /** The banner's Re-analyze, for the modal over a reading that is itself stale (6d). */
+  onReanalyze: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const { synopsis, stale, allowance } = state;
@@ -87,9 +91,11 @@ export function SynopsisOverview({
           <SynopsisText text={content.overview} cards={content.cards} art={art} />
         </p>
         {stale && readingFresh ? (
-          state.lastFailed
+          state.lastRefused
+            ? <RefusedSlot sentence={synopsisCopy.overviewRefused} failed={state.lastRefused.failed} total={state.lastRefused.total} onRetry={canWrite ? onWrite : null} busy={busy} note={note} spent={spent} />
+            : state.lastFailed
             ? <WriteRow line={synopsisCopy.failed} label={synopsisCopy.tryAgain} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
-            : <WriteRow line={synopsisCopy.olderThanList} label={synopsisCopy.writeNew} note={spent ? note : null} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
+            : <WriteRow line={synopsisCopy.olderThanList} label={synopsisCopy.writeNew} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
         ) : null}
       </>
     );
@@ -118,9 +124,9 @@ export function SynopsisOverview({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[11px] text-[var(--accent)] md:min-h-0 cursor-pointer"
+            className="group inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[11px] text-[var(--accent)] hover:text-[var(--accent-hover)] md:min-h-0 cursor-pointer"
           >
-            <span className="[border-bottom:1px_dotted_var(--accent)]">{synopsisCopy.entry}</span>
+            <span className="border-b border-dotted border-[var(--accent)] group-hover:border-[var(--accent-hover)]">{synopsisCopy.entry}</span>
             <span aria-hidden>→</span>
           </button>
         </div>
@@ -132,8 +138,16 @@ export function SynopsisOverview({
           deckName={deckName}
           art={art}
           busy={busy}
-          write={stale && readingFresh ? { label: synopsisCopy.writeNew, line: synopsisCopy.olderThanList, disabled: !canWrite || spent, onPress: onWrite } : null}
+          // 6d's control: Re-analyze while the reading itself is stale, and ruling D's write once
+          // it is current (credits audit, finding 3), with the note the tab draws beside it.
+          action={stale
+            ? readingFresh
+              ? { label: synopsisCopy.writeNew, line: synopsisCopy.olderThanList, note, disabled: !canWrite || spent, onPress: onWrite }
+              : { label: deckAnalysisCopy.banner.reanalyze, line: null, note: null, disabled: false, onPress: onReanalyze }
+            : null}
           onRetry={canWrite && !stale ? () => onRetry(synopsis.id) : null}
+          retryNote={retryNote}
+          spent={spent}
           onClose={() => setOpen(false)}
         />
       ) : null}

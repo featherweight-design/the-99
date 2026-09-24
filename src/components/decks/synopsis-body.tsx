@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { normalizeName } from "../../lib/synopsis/facts";
 import type { SynopsisRow } from "../../lib/synopsis/generate";
@@ -25,8 +27,10 @@ export function SynopsisModal({
   deckName,
   art,
   busy,
-  write,
+  action,
   onRetry,
+  retryNote,
+  spent,
   onClose,
 }: {
   synopsis: SynopsisRow;
@@ -34,10 +38,14 @@ export function SynopsisModal({
   deckName: string;
   art: FindingArt;
   busy: boolean;
-  write: { label: string; line: string; disabled: boolean; onPress: () => void } | null;
+  /** The banner's control: Re-analyze, or ruling D's write with its line and credit note. */
+  action: { label: string; line: string | null; note: string | null; disabled: boolean; onPress: () => void } | null;
   onRetry: (() => void) | null;
+  retryNote: string | null;
+  spent: boolean;
   onClose: () => void;
 }) {
+  const noteId = useId();
   const aside = synopsisCopy.modal.aside(deckName, analyzedWhen(new Date(synopsis.createdAt), new Date()));
   return (
     <ModalChrome
@@ -57,24 +65,30 @@ export function SynopsisModal({
             role="status"
             className="flex flex-col items-stretch gap-[11px] rounded-[10px] border border-[var(--border-strong)] bg-[var(--surface-rail)] px-[14px] py-[13px] md:flex-row md:items-center md:gap-[16px] md:py-[12px] md:pl-[16px] md:pr-[14px]"
           >
-            <p className="flex-1 text-[13px] leading-[1.5] text-[var(--fg-body)]">
-              {synopsisCopy.modal.stale}
-              {write ? <> {write.line}</> : null}
-            </p>
-            {write ? (
+            <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
+              <p className="m-0 text-[13px] leading-[1.5] text-[var(--fg-body)]">
+                {synopsisCopy.modal.stale}
+                {action?.line ? <> {action.line}</> : null}
+              </p>
+              {action?.note ? (
+                <p id={noteId} className="m-0 font-mono text-[9.5px] leading-[1.55] text-[var(--fg-faint)] md:text-[11px]">{action.note}</p>
+              ) : null}
+            </div>
+            {action ? (
               <button
                 type="button"
-                onClick={write.onPress}
-                disabled={write.disabled || busy}
+                onClick={action.disabled || busy ? undefined : action.onPress}
+                aria-disabled={action.disabled || busy || undefined}
                 aria-busy={busy || undefined}
-                className="min-h-[44px] rounded-[8px] bg-[var(--fg)] px-[16px] text-[13px] font-semibold text-[var(--bg)] md:min-h-[34px] cursor-pointer disabled:cursor-default disabled:opacity-60"
+                aria-describedby={action.note ? noteId : undefined}
+                className={`inline-flex min-h-[44px] flex-none items-center justify-center whitespace-nowrap rounded-[8px] bg-[var(--fg)] px-[16px] text-[13px] font-semibold text-[var(--bg)] md:min-h-[34px] ${action.disabled || busy ? "cursor-default opacity-60" : "cursor-pointer"}`}
               >
-                {write.label}
+                {action.label}
               </button>
             ) : null}
           </div>
         ) : null}
-        <SynopsisSections content={synopsis.content} art={art} onRetry={onRetry} busy={busy} />
+        <SynopsisSections content={synopsis.content} art={art} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
       </div>
     </ModalChrome>
   );
@@ -86,11 +100,16 @@ export function SynopsisSections({
   art,
   onRetry,
   busy,
+  note = null,
+  spent = false,
 }: {
   content: CheckedSynopsis;
   art: FindingArt;
   onRetry: (() => void) | null;
   busy: boolean;
+  /** The retry's credit note, and whether every credit is out (7g's disabled form). */
+  note?: string | null;
+  spent?: boolean;
 }) {
   const verdict = (s: SectionId) => content.verdicts.find((v) => v.section === s)!;
   const refused = (v: SectionVerdict) => (
@@ -100,8 +119,8 @@ export function SynopsisSections({
       total={v.total}
       onRetry={onRetry}
       busy={busy}
-      note={null}
-      spent={false}
+      note={note}
+      spent={spent}
       compact
     />
   );
@@ -176,10 +195,10 @@ export function SynopsisSections({
         {content.weaknesses ? (
           <div className="flex flex-col gap-[10px]">
             {content.weaknesses.map((w, i) => (
-              <div key={i} className="grid grid-cols-[14px_1fr]">
-                <span aria-hidden className="mt-[8px] block h-[5px] w-[5px] rotate-45 bg-[var(--fg-faint)]" />
-                <span className={body}>{text(w)}</span>
-              </div>
+              <p key={i} className={`m-0 grid grid-cols-[14px_minmax(0,1fr)] items-baseline ${body}`}>
+                <span aria-hidden className="mt-[2px] block h-[5px] w-[5px] rotate-45 bg-[var(--fg-faint)]" />
+                <span>{text(w)}</span>
+              </p>
             ))}
           </div>
         ) : refused(verdict("weaknesses"))}
@@ -220,10 +239,10 @@ function Hand({
   render: (t: string) => React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-[8px] rounded-[9px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[14px] py-[12px]">
+    <div className="flex min-w-0 flex-col gap-[8px] rounded-[9px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[14px] py-[12px]">
       <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[var(--fg-body)]">{label}</span>
       {lines.map((line, i) => (
-        <div key={i} className="grid grid-cols-[14px_1fr] text-[13px] leading-[1.55] text-[var(--fg-body)]">
+        <div key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-baseline text-[13px] leading-[1.55] text-[var(--fg-body)]">
           <span aria-hidden className="font-mono text-[11px] text-[var(--fg-faint)]">{glyph}</span>
           <span>{render(line)}</span>
         </div>

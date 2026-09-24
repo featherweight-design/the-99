@@ -13,6 +13,8 @@ import type { SynopsisState } from "../../lib/synopsis/read";
 
 const onWrite = vi.fn();
 const onRetry = vi.fn();
+const onReanalyze = vi.fn();
+const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
 const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean }> = {}) =>
   render(
     <CardDetailProvider fetchCard={async () => null}>
@@ -24,6 +26,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         readingFresh={over.readingFresh ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
+        onReanalyze={onReanalyze}
       />
     </CardDetailProvider>,
   );
@@ -31,6 +34,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
 beforeEach(() => {
   onWrite.mockClear();
   onRetry.mockClear();
+  onReanalyze.mockClear();
 });
 
 describe("SynopsisOverview", () => {
@@ -69,13 +73,13 @@ describe("SynopsisOverview", () => {
 
   it("disables Write one, and says nothing about credits, while the reading is not current", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false }), { readingFresh: false });
-    expect((screen.getByRole("button", { name: copy.writeOne }) as HTMLButtonElement).disabled).toBe(true);
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
     expect(screen.queryByText(/credit/i)).toBeNull();
   });
 
   it("disables Write one and says when a credit comes back, with every credit out", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() } }));
-    expect((screen.getByRole("button", { name: copy.writeOne }) as HTMLButtonElement).disabled).toBe(true);
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
     expect(screen.getByText(/0 of 3 left · next one at/)).toBeTruthy();
   });
 
@@ -125,8 +129,8 @@ describe("SynopsisOverview", () => {
     expect(screen.getByText(copy.olderThanList)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.writeNew }));
     expect(onWrite).toHaveBeenCalledOnce();
-    // The line already names the credit; the note is not said twice.
-    expect(screen.queryByText(/Uses a credit\./)).toBeNull();
+    // State 2's chrome, credit note included (credits audit, finding 3).
+    expect(screen.getByText(/Uses a credit\. 2 of 3 left/)).toBeTruthy();
   });
 
   it("offers no write under a stale reading: the banner's Re-analyze comes first", () => {
@@ -137,7 +141,7 @@ describe("SynopsisOverview", () => {
 
   it("disables the write while a run is in flight", () => {
     draw(synopsisState({ synopsis: null, pending: true }));
-    expect((screen.getByRole("button", { name: copy.writeOne }) as HTMLButtonElement).disabled).toBe(true);
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
   });
 
   it("gives the modal ruling D's write over a stale overview, and its sections no retry", () => {
@@ -147,6 +151,49 @@ describe("SynopsisOverview", () => {
     expect(within(dialog).getByText(copy.modal.stale, { exact: false })).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: copy.writeNew }));
     expect(onWrite).toHaveBeenCalledOnce();
+  });
+
+  // A disabled press stays in the tab order, described by its note (audit finding 10d).
+  it("keeps a disabled press focusable and described by its credit note", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() } }));
+    const press = screen.getByRole("button", { name: copy.writeOne });
+    expect(press.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(press);
+    expect(onWrite).not.toHaveBeenCalled();
+    const note = document.getElementById(press.getAttribute("aria-describedby")!);
+    expect(note?.textContent).toMatch(/0 of 3 left/);
+  });
+
+  it("draws a newer run refused everywhere under the older overview, not ruling D's line again", () => {
+    draw(synopsisState({ stale: true, wouldSpend: true, lastRefused: { failed: 4, total: 9 } }));
+    expect(screen.getByRole("button", { name: /Sol Ring/ })).toBeTruthy();
+    expect(screen.getByText(copy.overviewRefused)).toBeTruthy();
+    expect(screen.queryByText(copy.olderThanList)).toBeNull();
+  });
+
+  it("offers the modal's Re-analyze while the reading itself is stale", () => {
+    draw(synopsisState({ stale: true }), { readingFresh: false });
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Re-analyze" }));
+    expect(onReanalyze).toHaveBeenCalledOnce();
+    expect(within(dialog).queryByRole("button", { name: copy.writeNew })).toBeNull();
+  });
+
+  it("holds a modal section's Try again, with the reset line, once every credit is out", () => {
+    const content = checkedSynopsis({
+      primer: null,
+      verdicts: checkedSynopsis().verdicts.map((v) =>
+        v.section === "primer" ? { section: "primer", status: "refused", reason: "over_budget", failed: 1, total: 3 } : v,
+      ),
+    });
+    draw(synopsisState({ synopsis: synopsisRow(content), allowance: { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() } }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
+    const section = screen.getByRole("region", { name: copy.modal.sections.primer });
+    const press = within(section).getByRole("button", { name: copy.tryAgain });
+    fireEvent.click(press);
+    expect(onRetry).not.toHaveBeenCalled();
+    expect(within(section).getByText(/0 of 3 left/)).toBeTruthy();
   });
 
   it("draws a refused section's slot in the modal, under its own label", () => {

@@ -1173,6 +1173,7 @@ export function BuilderShell({
                         readingFresh={readingFresh && synopsis.view.current}
                         onWrite={synopsis.write}
                         onRetry={synopsis.retry}
+                        onReanalyze={profile.request}
                       />
                     ) : null
                   }
