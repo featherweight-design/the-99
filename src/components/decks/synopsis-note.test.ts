@@ -42,14 +42,16 @@ describe("pressNote", () => {
     const until = new Date("2026-10-01T00:00:00Z");
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze")!;
     expect(n.writes).toBe(false);
-    // The lead first: the press still reads the bracket, and only the overview is withheld.
-    expect(n.text).toBe(`Reads the bracket only; the overview waits for a credit. ${creditsCopy.paused(until)}`);
+    // The press still reads the bracket; it is the APP that is paused, since the player has
+    // credits, so "waits for a credit" would be false. Then the cap's own reason, not restated.
+    expect(n.text).toBe(`Reads the bracket only; the overview is paused until October 1. ${creditsCopy.pausedReason}`);
+    expect(n.text).not.toMatch(/waits for a credit/);
     expect(n.text).not.toMatch(/uses a credit/i);
   });
 
   it("says the owner's share is used, and writes nothing", () => {
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }), "reanalyze")!;
     expect(n.writes).toBe(false);
-    expect(n.text).toMatch(/^Reads the bracket only; the overview stays as it was\. .*testing share/);
+    expect(n.text).toMatch(/^Reads the bracket only; you’ve used your testing share for \w+\.$/);
   });
 });

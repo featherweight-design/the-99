@@ -1,4 +1,4 @@
-import { creditsCopy } from "../../lib/copy/credits";
+import { creditsCopy, monthName } from "../../lib/copy/credits";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
 
@@ -18,13 +18,16 @@ export function pressNote(view: SynopsisView, where: PressWhere): { text: string
   if (view.kind !== "ready" || !view.current || !view.state.pressWrites) return null;
   const { allowance } = view.state;
   const left = Math.max(0, allowance.limit - allowance.used);
-  // The press still reads the bracket, which is free; only the overview is withheld. So every
-  // form that writes nothing opens with the same lead, then says why: the app-wide cap, the owner's
-  // own share (the spend cap, #914), or every credit out. Bare, the cap's line beside a working
-  // Analyze reads as the analysis itself being paused.
+  // The press still reads the bracket, which is free; only the overview is withheld. So every form
+  // that writes nothing opens with "Reads the bracket only;" and says why in its own words: the
+  // app is paused (the player has credits, so "waits for a credit" would be false), the owner's
+  // share is used, or every credit is out. Bare, the cap's line beside a working Analyze read as
+  // the analysis itself being paused (the-99-d9's ruling, 2026-09-24).
+  if (allowance.paused) {
+    return { text: `${synopsisCopy.pressNote.paused(monthName(allowance.paused.until))} ${creditsCopy.pausedReason}`, writes: false };
+  }
+  if (allowance.ownerShare) return { text: synopsisCopy.pressNote.ownerShare(monthName(new Date())), writes: false };
   const lead = where === "analyze" ? synopsisCopy.pressNote.analyzeUsedUp : synopsisCopy.pressNote.reanalyzeUsedUp;
-  if (allowance.paused) return { text: `${lead} ${creditsCopy.paused(allowance.paused.until)}`, writes: false };
-  if (allowance.ownerShare) return { text: `${lead} ${creditsCopy.ownerShare(new Date())}`, writes: false };
   if (left > 0) return { text: synopsisCopy.pressNote.writes(creditsCopy.standing(left, allowance.limit, allowance.nextAt)), writes: true };
   return { text: `${lead} ${creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)}`, writes: false };
 }

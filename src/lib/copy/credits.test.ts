@@ -29,4 +29,9 @@ describe("the spend cap's copy", () => {
     expect(creditsCopy.first(4, 5, next)).toBe(`Uses a credit. ${creditsCopy.standing(4, 5, next)}.`);
     expect(creditsCopy.again(4, 5, next)).toContain(creditsCopy.standing(4, 5, next));
   });
+
+  it("composes paused from its reason, so the reason is said in one place", () => {
+    const until = new Date("2026-10-01T00:00:00Z");
+    expect(creditsCopy.paused(until)).toBe(`Paused until October 1. ${creditsCopy.pausedReason}`);
+  });
 });

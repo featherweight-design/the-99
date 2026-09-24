@@ -32,6 +32,13 @@ export const synopsisCopy = {
     analyzeUsedUp: "Reads the bracket only; the overview waits for a credit.",
     /** 7e: the overview on screen stays; the used-up line follows. */
     reanalyzeUsedUp: "Reads the bracket only; the overview stays as it was.",
+    /**
+     * The app-wide cap: the player HAS credits, and it is the app that is paused, so "waits for a
+     * credit" would be false. Followed by the cap's own reason (the-99-d9's ruling, 2026-09-24).
+     */
+    paused: (month: string) => `Reads the bracket only; the overview is paused until ${month} 1.`,
+    /** The owner's testing share for the month is used. */
+    ownerShare: (month: string) => `Reads the bracket only; you’ve used your testing share for ${month}.`,
   },
 
   /** Refused, in the tab (the Overview section itself) and in the modal (any one section). */
