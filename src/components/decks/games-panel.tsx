@@ -305,8 +305,9 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
       <GameFindings summary={summary} />
 
       {/* The pointer to what reads these games (addendum r1, C1/C2): only over a reading, and
-          only with a game to read. */}
-      {tuned && games.length > 0 && onOpenAnalysis ? (
+          only with a game to read. The second half needs no clause here: a deck with no game
+          returns the empty state above, before this point. */}
+      {tuned && onOpenAnalysis ? (
         <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
           {deckTuningCopy.gamesLine.lead}{" "}
           <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent)] hover:underline">
@@ -315,7 +316,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
         </p>
       ) : null}
 
-      <div className={`flex items-baseline gap-[10px] mb-[10px] ${tuned && games.length > 0 && onOpenAnalysis ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
+      <div className={`flex items-baseline gap-[10px] mb-[10px] ${tuned && onOpenAnalysis ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
         <h2 className="font-mono uppercase text-[10px] tracking-[0.14em] text-fg-faint">
           {gameLogCopy.history.heading}
         </h2>

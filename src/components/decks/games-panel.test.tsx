@@ -210,6 +210,8 @@ describe("the Suggested changes pointer", () => {
     expect(screen.queryByText(deckTuningCopy.gamesLine.lead, { exact: false })).toBeNull();
   });
 
+  // Held by the empty state's early return rather than by the pointer's own condition. Kept so a
+  // change that lets the empty state fall through to the history cannot also draw the pointer.
   it("draws nothing with no game to read", () => {
     draw([], true);
     expect(screen.queryByText(deckTuningCopy.gamesLine.lead, { exact: false })).toBeNull();

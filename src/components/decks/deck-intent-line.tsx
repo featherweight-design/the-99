@@ -170,7 +170,7 @@ export function DeckIntentLine({
             setEditing(true);
           }}
           aria-label={copy.editAria}
-          className="relative flex-none font-mono text-[10px] text-[color:var(--fg-locked)] hover:text-[color:var(--fg-muted)] before:absolute before:-inset-[14px] before:content-['']"
+          className="relative flex-none font-mono text-[10px] text-[color:var(--fg-locked)] hover:text-[color:var(--fg-muted)] before:absolute before:-inset-x-[14px] before:-inset-y-[15px] before:content-['']"
         >
           {copy.edit}
         </button>

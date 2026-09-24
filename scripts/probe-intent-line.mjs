@@ -71,7 +71,7 @@ const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
   { label: 390, viewport: { width: 390, height: 844 } },
 ];
-// 105 characters, under the 120 cap and long enough to need two lines at 390.
+// 106 characters, under the 120 cap and long enough to need two lines at 390.
 const LINE = "Grind a four-person table out, keep the removal for whoever is ahead, and win late once the board runs dry";
 
 async function findDeck(page) {

@@ -224,7 +224,11 @@ export function SpineMobile({
           // — more art, never less protection.
           // Plus the chips row since the Analysis tab handoff (§1) moved the status pill and the
           // bracket chip onto a line of their own: another 6px gap and a 22px row, so 143.
-          labelAtPx={143}
+          // Plus the deck's intent line when it has one (placement addendum r3, E2b): a 6px gap
+          // and up to four 18.75px lines at 12.5/1.5. A 120-character line wraps to three at
+          // 390, and the seeded chip and `edit` riding its last line can push a fourth. So 224,
+          // a ceiling again: a one-line intent holds the ramp higher than it needs.
+          labelAtPx={deck.intent ? 224 : 143}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />

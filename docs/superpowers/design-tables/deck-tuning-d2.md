@@ -81,7 +81,7 @@ This state is drawn only in OC, at one width (a 900px frame), before the r3 re-s
 | Row content order | provenance disc → sentence → `from the build` chip → `edit` | OC:365-368, IW:59 |
 | Row | flex, `align-items: baseline`, gap 10px, `flex-wrap: wrap` (OC geometry; V2 set-state gap is 8px) | OC:364 |
 | **Provenance disc** | "the shipped 18px provenance disc" | IW:64, R:183, R:387 |
-| Disc: size | 18×18px, `flex: none`, border-radius 999px | OC:365 |
+| Disc: size | OC draws 18×18px. The shipped disc it names is 18px on a phone and 20px from `md` (`ProvenanceDisc`, the fill ledger's), and that governs. `flex: none`, border-radius 999px | OC:365, IW:64 |
 | Disc: border | 1.5px solid brass (OC `#C9A24B` = `--accent`) | OC:365 |
 | Disc: glyph | display 700 10px, brass, centred (flex center) | OC:365 |
 | **Sentence** | same as state 3 (OC: 14px, `--fg-body`, lh 1.55, 1px dashed underline); r3 values in §2 govern | OC:366, V2:165 |
