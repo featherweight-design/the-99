@@ -70,6 +70,8 @@ export function diffCardBatch(
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Executor = Pick<typeof db, "execute">;
 
+const ENTRY_CHUNK = 1000;
+
 /** What one ingest run reports about its log writes. */
 export type LogReport = { written: number; lost: number };
 
@@ -101,9 +103,14 @@ export async function writeEntries(tx: Tx, entries: readonly ChangeEntry[], repo
   if (entries.length === 0) return;
   try {
     await tx.transaction(async (savepoint) => {
-      await savepoint.insert(deckDataChanges).values(
-        entries.map((e) => ({ kind: e.kind, direction: e.direction, oracleIds: e.oracleIds, detail: e.detail })),
-      );
+      // In chunks: five parameters a row against Postgres's 65,535 per statement means one insert
+      // tops out near 13,000 entries, and an upstream reshuffle of the combo index can exceed that.
+      for (let i = 0; i < entries.length; i += ENTRY_CHUNK) {
+        await savepoint.insert(deckDataChanges).values(
+          entries.slice(i, i + ENTRY_CHUNK)
+            .map((e) => ({ kind: e.kind, direction: e.direction, oracleIds: e.oracleIds, detail: e.detail })),
+        );
+      }
     });
     report.written += entries.length;
   } catch (error) {

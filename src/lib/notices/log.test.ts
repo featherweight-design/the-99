@@ -85,3 +85,19 @@ describe("the change log's non-fatal helpers", () => {
     expect(analyzedOracleIds({ commanderOracleId: "z", partnerOracleId: null, cards: [] })).toEqual(["z"]);
   });
 });
+
+describe("writeEntries at scale", () => {
+  // An upstream reshuffle of the combo index can diff to tens of thousands of entries; one insert
+  // of that many rows passes Postgres's 65,535-parameter ceiling and would lose them all.
+  it("inserts in chunks of 1,000", async () => {
+    const sizes: number[] = [];
+    const savepoint = { insert: () => ({ values: async (rows: unknown[]) => { sizes.push(rows.length); } }) };
+    const tx = { transaction: async (fn: (s: typeof savepoint) => Promise<void>) => fn(savepoint) };
+    const entries = Array.from({ length: 2500 }, (_, i) => ({
+      kind: "combo" as const, direction: "added" as const, oracleIds: [String(i)], detail: {},
+    }));
+    const report = emptyLogReport();
+    await writeEntries(tx as never, entries, report);
+    expect({ sizes, report }).toEqual({ sizes: [1000, 1000, 500], report: { written: 2500, lost: 0 } });
+  });
+});
