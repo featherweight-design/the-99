@@ -1,0 +1,26 @@
+{
+  "feature": "Deck overview (sub-project 6), PR 4: the credit note beside a press that also writes the overview",
+  "note": "Needs a server with ANALYSIS_TAB_ENABLED=true and the stub model. NOREAD_DECK holds no reading and no overview (7a, beside Analyze). STALE_DECK holds a reading marked changed and no overview for its list (7c, beside Re-analyze). Both reached by pressing the Analysis tab.",
+  "rows": [
+    {
+      "id": "note-analyze",
+      "label": "/decks/[id] Analysis: 7a, the note beside Analyze, in its row at 1300 and centred under it at 390",
+      "view": "src/components/decks/analysis-empty.tsx",
+      "steps": [
+        { "goto": "/decks/${NOREAD_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='press-note']", "settle": 600 }
+      ]
+    },
+    {
+      "id": "note-reanalyze",
+      "label": "/decks/[id] Analysis: 7c, the banner's note, between the sentence and Re-analyze at 1300 and under it at 390",
+      "view": "src/components/decks/analysis-banner.tsx",
+      "steps": [
+        { "goto": "/decks/${STALE_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='analysis-banner'] [data-testid='press-note']", "settle": 600 }
+      ]
+    }
+  ]
+}

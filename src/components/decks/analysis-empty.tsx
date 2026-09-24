@@ -91,7 +91,7 @@ export function AnalysisEmpty({
               {copy.idle.bodyPersist}
             </p>
           ) : null}
-          <div className="mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-[20px]">
+          <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
               type="button"
@@ -116,8 +116,10 @@ export function AnalysisEmpty({
                 {shownNote}
               </p>
             ) : null}
-            {shownNote ? <span className="hidden md:block md:basis-full" aria-hidden /> : null}
-            <ProvenanceOpener tone="accent" />
+            {/* With a note in the row, the opener takes its own line under the pair (7a). */}
+            <div className={shownNote ? "md:basis-full" : "contents"}>
+              <ProvenanceOpener tone="accent" />
+            </div>
             {/* IN the CTA row (the table's placement), on a line of its own under the press. */}
             {blocked ? (
               <p
