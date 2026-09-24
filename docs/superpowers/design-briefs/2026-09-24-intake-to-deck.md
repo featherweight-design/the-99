@@ -105,7 +105,8 @@ These follow from the rulings. Hugh has not ruled on them one by one, and he may
   Shopping list uses. A card never stocked has no price and is left out of a budgeted fill. That rule is
   for the cards the fill chooses. A build-around card is placed anyway, because the player asked for it.
   When it has never been stocked the budget cannot count it, so the fill caps the rest as usual and the
-  row says the build-around card's price is unknown. Design draws that state.
+  row says the build-around card's price is unknown, never $0. The row's "about $X to buy" then says
+  it leaves that card out. Design draws that state.
 - **After a model read**, words it could not map stay visible as "not understood". Editing any chip
   afterwards is free.
 
