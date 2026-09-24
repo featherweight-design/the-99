@@ -132,6 +132,17 @@ describe("nameAbility: one case per pattern", () => {
     ["{t}: put a +1/+1 counter on target creature.", "+1/+1 counters"],
     ["{t}: target assembly-worker creature gets +1/+1 until end of turn.", "a pump"],
     ["{t}: target creature can't block this turn.", "a restriction on opponents"],
+    ["you may have this land enter tapped as a copy of any land on the battlefield.", "copying a land"],
+    ["hideaway 4", "hideaway"],
+    ["{t}: add {b}{g}.", "its extra mana"],
+    ["{3}, {t}, sacrifice this land: destroy each nonland permanent with mana value x.", "a board wipe"],
+    ["{2}, {t}, sacrifice a desert: exile all graveyards.", "graveyard hate"],
+    ["{2}{c}, {t}, sacrifice this land: copy target instant or sorcery spell you control.", "copying a spell"],
+    ["{4}, {t}: proliferate.", "proliferate"],
+    ["{4}, {t}: target creature can't be blocked this turn.", "evasion"],
+    ["{2}{r}{w}, {t}: target creature gains double strike until end of turn.", "granting an ability"],
+    ["colorless eldrazi spells you cast cost {2} less to cast.", "a cost reduction"],
+    ["you have no maximum hand size.", "no maximum hand size"],
   ];
 
   it("covers every pattern exactly once", () => {

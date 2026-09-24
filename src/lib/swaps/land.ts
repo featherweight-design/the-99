@@ -151,7 +151,8 @@ export function nonManaAbilities(card: LandText): string[] {
   for (const raw of text.split("\n")) {
     let line = raw.trim();
     // A fixed mana ability at the head of the line, and whatever cost sentence rides it.
-    line = line.replace(/^[^.]*?\badd\b(?![^.]*\bfor each\b)[^.]*\.\s*/, "");
+    // More than one mana from one tap (a bounce land, Ancient Tomb) stays: it is extra mana.
+    if (!/\badd (?:\{[wubrgc]\}){2,}/.test(line)) line = line.replace(/^[^.]*?\badd\b(?![^.]*\bfor each\b)[^.]*\.\s*/, "");
     line = line.replace(/^(?:this land|it) deals \w+ damage to you\.\s*/, "");
     if (!line) continue;
     // A cost on its own line: City of Brass hurts whenever it taps.
@@ -160,6 +161,8 @@ export function nonManaAbilities(card: LandText): string[] {
     if (/^as [^,]+ enters/.test(line) && /\bchoose\b/.test(line)) continue;
     if (/^spend this mana only\b/.test(line) && !/can't be countered/.test(line)) continue;
     if (/^activate only\b/.test(line)) continue;
+    // A bounce land's return is what its double mana costs, not an ability it gives up.
+    if (/^when this land enters, return a land you control to its owner's hand\b/.test(line)) continue;
     if (isFetch && /search your library/.test(line)) continue;
     out.push(line);
   }
@@ -173,25 +176,35 @@ export function nonManaAbilities(card: LandText): string[] {
  */
 export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/can't be countered/, "uncounterable spells"],
+  [/\b(?:becomes|enter[^.]*as) a copy of\b/, "copying a land"],
   [/\bbecomes? an? [^.]*\bcreature\b/, "becoming a creature"],
   [/^channel\b/, "its channel ability"],
-  [/\bfor each\b/, "its extra mana"],
+  [/^hideaway\b|\bplay the exiled card\b/, "hideaway"],
+  [/\bfor each\b|\badd (?:\{[wubrgc]\}){2,}/, "its extra mana"],
   [/\bdestroy target (?:nonbasic )?land\b/, "land destruction"],
+  [/\bexile [^.]*\bgraveyards?\b/, "graveyard hate"],
+  [/\b(?:destroy|exile) (?:all|each)\b/, "a board wipe"],
   [/\b(?:destroy|exile) target\b/, "removal"],
   [/\bcounter target\b/, "a counterspell"],
+  [/\bcopy target [^.]*\bspell\b/, "copying a spell"],
   [/\bdraws? (?:a|one|two|x) cards?\b/, "card draw"],
   [/\bcreate[s]? [^.]*\btokens?\b/, "making tokens"],
-  [/\breturn[s]? [^.]*\bfrom (?:your|a) graveyard\b/, "recursion"],
+  [/\b(?:return|put)s? [^.]*\bfrom (?:your|a) graveyard\b/, "recursion"],
   [/\bsearch your library\b/, "a library search"],
-  [/\bscry \d+\b|\bsurveil \d+\b/, "card selection"],
+  [/\bscry (?:\d+|x)\b|\bsurveil (?:\d+|x)\b/, "card selection"],
   [/\bmills?\b/, "milling"],
   [/\bdeals? \w+ damage to (?:any target|target|each)\b/, "dealing damage"],
   [/\bgain \w+ life\b/, "life gain"],
   [/\buntap target\b/, "untapping a permanent"],
-  [/\bhexproof\b|\bindestructible\b|\bshroud\b|\bprotection from\b/, "protection"],
-  [/\bcycling\b/, "cycling"],
+  [/\bhexproof\b|\bindestructible\b|\bshroud\b|\bprotection from\b|\bregenerate\b/, "protection"],
+  [/cycling\b/, "cycling"],
+  [/\bproliferate\b/, "proliferate"],
   [/\bput [^.]*\+1\/\+1 counters?\b/, "+1/+1 counters"],
+  [/\bcan't be blocked\b/, "evasion"],
   [/\btarget [^.]*creature gets\b|\bcreatures you control get\b/, "a pump"],
+  [/\b(?:gains?|have) (?:double strike|first strike|deathtouch|lifelink|haste|vigilance|flying|trample)\b/, "granting an ability"],
+  [/\bcost \{\d+\} less\b/, "a cost reduction"],
+  [/\bno maximum hand size\b/, "no maximum hand size"],
   [/\bcan't (?:attack|block|cast)\b/, "a restriction on opponents"],
 ];
 

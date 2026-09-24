@@ -2,7 +2,9 @@
 
 **Lane:** `swap-tools` (brief: `boards/lanes/swap-tools.md`). **Written against** `origin/main` at
 `4f3eff49`, and the handoff and audit on `design/swap-tools-handoff` (#929, not yet merged).
-**Status:** draft for Hugh's approval, through the orchestrator (the-99-d9). No code before approval.
+**Status:** APPROVED by Hugh on 2026-09-24 (d288c750), with one change to H3, recorded in
+Decision 2. Migration 0059 is confirmed. Release ruling: every swap surface is behind
+`SWAP_TOOLS_ENABLED`, on in staging and off in production until Hugh walks it (PR 1 adds it).
 Revised once after a cold review. That review's twelve items are folded in below, and item 12's
 questions are answered in §Decisions, each with its reason.
 
@@ -62,20 +64,26 @@ Each has one defensible answer. They are stated here so review can check them.
    - A card whose front face is a land is a land. Agadeem's Awakening is a spell.
    - **§5's guards on every stand-in:** it is legal in Commander, inside the commander's color
      identity, and not already in the draft.
-   - **What the original gives up (H3):** a land whose text is fully accounted for by its mana
-     abilities and the drawbacks the classifier names takes the ordinary drawback line. Any other
-     land (Cavern of Souls, Gaea's Cradle, Boseiju) still takes stand-ins, and each stand-in reads
-     the drawn unnamed form, `gives up something we couldn't name · read the card` (README §4.3).
-     It never reads `gives up nothing`.
-     - A named `gives up: X` form needs an X for each text-job land. That X would be a curated
-       table, and nothing here can write one reliably, so this plan ships the unnamed form. A named
-       X is a follow-up for the copy owner, not a Design round: the line form is already drawn.
+   - **What the original gives up (H3, as Hugh changed it at approval):** every stand-in NAMES what
+     the original did that it does not, from the original's own text, in two layers. First, a
+     deterministic classifier over the original's non-mana abilities (`GIVES_UP_PATTERNS`, one test
+     per pattern): "can't be countered" is `uncounterable spells`, becoming a creature is
+     `becoming a creature`, channel is `its channel ability`, and so on. Second, where no pattern
+     covers an ability, the fallback QUOTES the card's own ability text, trimmed to a budget with
+     an ellipsis. It never reads `gives up nothing` unless that is true, and never the unnamed
+     "couldn't name" line. This departs from Design's drawn unnamed line, per Hugh's ruling, and
+     the fallback's wording and trimming go to `/copy-review` through the orchestrator.
+     Measured over staging's decks: 90.7% of utility-land abilities are named, 9.3% quoted.
    - **Basics are stand-ins like any other land.** A basic is never on Shopping, so it is always
      free (§3.0), and under H3 a basic standing in for a utility land carries the unnamed gives-up
      line. Nothing in the rulings excludes basics, so none are excluded, and no question goes to
      Hugh.
    - A card with no role, or a land that neither makes a color nor fetches, gets **no** stand-in
      and one sentence saying why.
+     - **Cabal Coffers is the one departure from ruling 6's own examples.** The ruling names it as
+       a land that makes no color, but its text adds {B}. Read by the same rule as Gaea's Cradle,
+       it takes black stand-ins, each giving up `its extra mana`. H3 is the later ruling, and it is
+       what lets a utility land take stand-ins at all. Strip Mine makes only {C}, so it gets none.
    - Ranking: free copies first. Then lands by price. Then spells by the commander's inclusion
      (`commander_support_cards.inclusion`, or the pair table for a partner deck), with unlisted cards
      last, by price (F14).
@@ -240,6 +248,6 @@ Hands off, as the orchestrator asked: `synopsis/types.ts`, the synopsis componen
 - `allHold`'s "They're listed above." (copy :171), which the canvas drops.
 - F5: the free-copies-only lead, and the price-free empty sentence.
 - F14: the lead dropping its second clause when the index lists nothing.
-- H3: the named `gives up: X` table for text-job lands, as a follow-up (see Decision 2).
+- H3: the named labels in `GIVES_UP_PATTERNS`, and the quoted fallback's wording and trimming.
 - F13: README R1 keys `excludedOne`, `excludedMany`, `hardStop` and `fits.add` are dropped. The copy
   file is the source.

@@ -97,8 +97,14 @@ async function main() {
   console.log(`no-role fixture: ${rolelessRow.name}`);
   const deckId = await makeDeck("probe swap engine", commander.oracle_id,
     [plateau.oracle_id, foothills.oracle_id, vault.oracle_id, cavern.oracle_id, roleless.oracle_id]);
-  // One owned Command Tower, spoken for by no one: free after a take.
-  await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${tower.oracle_id}::uuid, 1, 'probe')`);
+  // One owned Command Tower, spoken for by no one: free after a take. And one owned Dark Ritual:
+  // ramp at mana value 1, and black, so only the identity guard keeps it out of Mana Vault's list.
+  // Without it the guard's absence is invisible, because the support list and the unlisted pool
+  // are both identity-guarded upstream.
+  const ritual = await card("Dark Ritual");
+  for (const id of [tower.oracle_id, ritual.oracle_id]) {
+    await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${id}::uuid, 1, 'probe')`);
+  }
 
   const identity = new Set(["R", "G", "W"]);
   const draftIds = new Set([plateau.oracle_id, foothills.oracle_id, vault.oracle_id, cavern.oracle_id, roleless.oracle_id, commander.oracle_id]);
@@ -219,9 +225,11 @@ try {
   failures += 1;
   console.log(`FAIL  the run threw — ${(e as Error).message}`);
 } finally {
-  if (pairCleanup) {
-    await fixture.execute(sql`delete from commander_pair_support_cards where commander_oracle_id = ${pairCleanup.a}::uuid and partner_oracle_id = ${pairCleanup.b}::uuid`);
-    await fixture.execute(sql`delete from commander_pair_support where commander_oracle_id = ${pairCleanup.a}::uuid and partner_oracle_id = ${pairCleanup.b}::uuid`);
+  // Assigned inside `main`, which flow analysis cannot see from here.
+  const pair = pairCleanup as { a: string; b: string } | null;
+  if (pair) {
+    await fixture.execute(sql`delete from commander_pair_support_cards where commander_oracle_id = ${pair.a}::uuid and partner_oracle_id = ${pair.b}::uuid`);
+    await fixture.execute(sql`delete from commander_pair_support where commander_oracle_id = ${pair.a}::uuid and partner_oracle_id = ${pair.b}::uuid`);
   }
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
   await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
