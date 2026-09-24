@@ -86,6 +86,18 @@ describe("DeckIntentLine", () => {
     expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.intentSaved);
   });
 
+  // An open, untouched field takes the other door's save, so Save cannot write the old line back.
+  it("moves an untouched open field to a line saved elsewhere, and leaves typed text alone", async () => {
+    const save = vi.fn<Save>(async () => ({ ok: true }));
+    const { rerender } = render(<DeckIntentLine deckId="d1" intent="go wide" seeded={false} width="desktop" save={save} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
+    rerender(<DeckIntentLine deckId="d1" intent="go tall" seeded={false} width="desktop" save={save} />);
+    expect(screen.getByRole("textbox")).toHaveValue("go tall");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "mine" } });
+    rerender(<DeckIntentLine deckId="d1" intent="go long" seeded={false} width="desktop" save={save} />);
+    expect(screen.getByRole("textbox")).toHaveValue("mine");
+  });
+
   // The line's other door (the ask in Suggested changes) saves through the page, which hands the
   // header a new line. A header that held its first line would stay blank until a reload.
   it("takes a new line from the page, and drops the seeded mark with it", () => {

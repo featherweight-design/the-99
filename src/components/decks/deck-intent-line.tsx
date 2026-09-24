@@ -52,7 +52,10 @@ export function DeckIntentLine({
     setSeen({ intent, seeded });
     setLine(intent);
     setIsSeeded(seeded);
-    if (!editing) setDraft(intent ?? "");
+    // An open field follows too, while the player has not typed in it: a Save of an untouched
+    // field would otherwise write the old line back over the one the other door just saved. A
+    // field they HAVE typed in keeps their text, and their Save is theirs to make.
+    if (!editing || draft === (line ?? "")) setDraft(intent ?? "");
   }
   const desktop = width === "desktop";
   // Under the name at 4px on desktop and 5px on a phone (V2:141, :154). The phone's header column
