@@ -55,6 +55,15 @@ describe("DeckIntentLine", () => {
     expect(screen.getByRole("button", { name: copy.save })).not.toBeDisabled();
   });
 
+  it("cancels the edit without saving, back to the line as it was", async () => {
+    const save = draw("go wide");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go tall" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.cancel })));
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByText("go wide")).toBeInTheDocument();
+  });
+
   it("clears the row when the line is saved empty", async () => {
     const save = draw("go wide");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));

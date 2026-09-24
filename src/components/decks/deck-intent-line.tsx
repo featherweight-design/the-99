@@ -19,8 +19,8 @@ const copy = deckTuningCopy.intent;
  * An app-seeded line carries the provenance disc and the `from the build` chip, both dropped for
  * good the moment the player saves over it (`saveDeckIntent` clears the flag).
  *
- * `onArt` is the phone header, where the line sits on the deck's art and takes the cover's ink
- * shadow like the name above it.
+ * On a phone (`width="phone"`) the line sits on the deck's art and takes the cover's ink shadow,
+ * like the name above it.
  */
 export function DeckIntentLine({
   deckId,
@@ -96,6 +96,18 @@ export function DeckIntentLine({
             className="min-h-[44px] rounded-[8px] px-[14px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] md:min-h-[36px]"
           >
             {copy.save}
+          </button>
+          {/* Escape does the same on a keyboard; a phone has no Escape. */}
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(line ?? "");
+              setRefused(null);
+              setEditing(false);
+            }}
+            className="min-h-[44px] px-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] md:min-h-[36px]"
+          >
+            {copy.cancel}
           </button>
         </div>
         {refused ? <MutationError message={refused} /> : null}

@@ -42,6 +42,8 @@ export const deckTuningCopy = {
     // a paywall made of typing.
     skip: "or skip it: the suggestions still run",
     edit: "edit",
+    // Eng-written, owed to /copy-review: the in-place edit's way out, undrawn.
+    cancel: "cancel",
     editAria: "Edit what this deck is for",
     // App-seeded. The chip is an authorship statement, removed PERMANENTLY on first edit.
     seeded: "from the build",
