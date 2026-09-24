@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+
+  <div style="{{ barStyle }}">
+    <div style="{{ rowStyle }}">
+      <span style="{{ allPill }}">{{ allLabel }}</span>
+      <span style="{{ shopPill }}">Shopping 3</span>
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="flex:1;"></span></sc-if>
+
+      <sc-if value="{{ showC2 }}" hint-placeholder-val="{{ true }}">
+        <span style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+          <sc-if value="{{ keptNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">{{ keptNote }}</span></sc-if>
+          <sc-if value="{{ keepLabel }}" hint-placeholder-val="{{ true }}"><span style="{{ bulkBtn }}">{{ keepLabel }}</span></sc-if>
+          <sc-if value="{{ clearLabel }}" hint-placeholder-val="{{ true }}"><span style="{{ bulkBtn }}">{{ clearLabel }}</span></sc-if>
+          <sc-if value="{{ showLock }}" hint-placeholder-val="{{ true }}">
+            <span style="{{ lockBtn }}">
+              <span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="{{ btnG.shackle }}"></span><span style="{{ btnG.leg }}"></span><span style="{{ btnG.body }}"></span><span style="{{ btnG.hole }}"></span></span>
+              <span>{{ lockLabel }}</span>
+            </span>
+          </sc-if>
+        </span>
+      </sc-if>
+
+      <sc-if value="{{ showHair }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="flex:none;width:1px;height:22px;background:var(--border-strong);"></span></sc-if>
+
+      <div style="{{ c3Style }}">
+        <span style="{{ typePill }}">By type</span>
+        <span style="{{ rolePill }}">By role</span>
+        <span style="{{ sortPill }}"><span>{{ sortLabel }}</span><span aria-hidden="true">▾</span></span>
+        <sc-if value="{{ showWell }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex:1;"></span></sc-if>
+          <span style="{{ wellStyle }}">
+            <span style="{{ segList }}">≣</span>
+            <span style="{{ segCard }}">▦</span>
+          </span>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ showSlot }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ slotStyle }}">
+      <sc-if value="{{ mode }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:0;font-size:12.5px;line-height:1.5;color:var(--fg-body);">Locked cards are never suggested as cuts. <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">2 locked</span></p>
+      </sc-if>
+      <sc-if value="{{ showKey }}" hint-placeholder-val="{{ true }}">
+        <div role="group" style="{{ keyStyle }}">
+          <sc-if value="{{ keyBuy }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);">$</span><span>to buy</span></span></sc-if>
+          <span style="display:inline-flex;align-items:center;gap:5px;">
+            <span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid var(--fg-body);border-bottom:none;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:var(--fg-body);"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span>
+            <span>locked</span>
+          </span>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <div style="{{ bodyStyle }}">
+    <sc-if value="{{ receipt }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;margin-bottom:16px;background:var(--surface-sunken);border:1px dashed var(--border-strong);border-radius:8px;">
+        <span style="{{ receiptText }}">38 auto cards removed<span style="color:var(--border-strong);padding:0 6px;">·</span>2 locked cards stayed</span>
+        <span style="flex:none;font-size:12.5px;font-weight:600;color:var(--accent);border-bottom:1px solid var(--accent-shadow);line-height:1.4;">Undo</span>
+      </div>
+    </sc-if>
+    <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding:0 2px 6px;">{{ groupTitle }}</span>
+
+    <sc-if value="{{ listView }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ rowsGrid }}">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+          <div style="{{ rowShell }}">
+            <span style="{{ r.dot }}"></span>
+            <span style="{{ nameText }}">{{ r.name }}</span>
+            <sc-if value="{{ r.auto }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:0 5px;">auto</span></sc-if>
+            <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);">buy · {{ r.buy }}</span></sc-if>
+            <span style="flex:auto;"></span>
+            <sc-if value="{{ r.slot }}" hint-placeholder-val="{{ false }}">
+              <span style="{{ r.slotStyle }}"><sc-if value="{{ r.glyph }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;display:inline-block;width:11px;height:13px;"><span style="{{ r.g.shackle }}"></span><span style="{{ r.g.leg }}"></span><span style="{{ r.g.body }}"></span><span style="{{ r.g.hole }}"></span></span></sc-if></span>
+            </sc-if>
+            <sc-if value="{{ r.x }}" hint-placeholder-val="{{ true }}"><span style="{{ xStyle }}">✕</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ cardView }}" hint-placeholder-val="{{ false }}">
+      <ul style="{{ tilesGrid }}">
+        <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
+          <li style="display:flex;flex-direction:column;border-radius:10px;overflow:hidden;background:var(--surface);border:1px solid var(--border);">
+            <div style="aspect-ratio:63 / 88;background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface-sunken) 6px 12px);display:flex;align-items:flex-end;padding:8px;border-radius:0 0 10px 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">card art · {{ t.name }}</span></div>
+            <div style="{{ captionStyle }}">
+              <div style="flex:auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:6px 3px 6px 10px;">
+                <div style="display:flex;align-items:center;gap:6px;height:18px;">
+                  <span style="flex:none;width:8px;height:8px;border-radius:50%;background:var(--success);"></span>
+                  <sc-if value="{{ t.meta }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid var(--fg-body);border-bottom:none;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:var(--fg-body);"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span></sc-if>
+                  <sc-if value="{{ t.auto }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:0 5px;">auto</span></sc-if>
+                </div>
+                <span style="{{ tileName }}">{{ t.name }}</span>
+              </div>
+              <span style="{{ trailStyle }}">
+                <sc-if value="{{ t.toggle }}" hint-placeholder-val="{{ false }}"><span style="{{ t.box }}"><span aria-hidden="true" style="position:relative;display:inline-block;width:11px;height:13px;"><span style="{{ t.g.shackle }}"></span><span style="{{ t.g.leg }}"></span><span style="{{ t.g.body }}"></span><span style="{{ t.g.hole }}"></span></span></span></sc-if>
+                <sc-if value="{{ t.x }}" hint-placeholder-val="{{ true }}"><span style="{{ tileX }}">✕</span></sc-if>
+              </span>
+            </div>
+          </li>
+        </sc-for>
+      </ul>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:420},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;list&quot;,&quot;card&quot;],&quot;default&quot;:&quot;list&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rest&quot;,&quot;noauto&quot;,&quot;mode&quot;,&quot;shopping&quot;,&quot;receipt&quot;],&quot;default&quot;:&quot;rest&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone, wide = !phone;
+    const s = this.props.state ?? "rest";
+    const shopping = s === "shopping";
+    const mode = s === "mode";
+    const receipt = s === "receipt";
+    const noauto = s === "noauto";
+    const cardView = !shopping && (this.props.view ?? "list") === "card";
+    const listView = !cardView;
+    const mk = (on, ink) => ({
+      shackle: { position: "absolute", left: 2, top: 0, width: 7, height: on ? 7.5 : 4.5, border: `1.6px solid ${ink}`, borderBottom: "none", borderRadius: "3.5px 3.5px 0 0" },
+      leg: on ? { display: "none" } : { position: "absolute", left: 2, top: 3.5, width: 1.6, height: 3.5, background: ink },
+      body: { position: "absolute", left: 0, top: 6.5, width: 11, height: 6.5, borderRadius: 2, background: ink },
+      hole: { position: "absolute", left: 4.5, top: 8.75, width: 2, height: 2, borderRadius: "50%", background: "var(--bg)" },
+    });
+    // Fixture: HD Yuriko, 40 auto cards of which 2 are locked; 59 kept.
+    let keep = "", clear = "", keptNote = "";
+    if (s === "rest" || mode || shopping) { keep = phone ? "Keep 40" : "Keep all 40"; clear = phone ? "Clear auto · 38" : "Clear all auto · 38"; keptNote = wide ? "59 cards are yours now" : ""; }
+    if (receipt) { keep = phone ? "Keep 2" : "Keep all 2"; clear = ""; keptNote = wide ? "59 cards are yours now" : ""; }
+    if (noauto) { keptNote = wide ? "99 cards are yours now" : ""; }
+    const showLock = !shopping;
+    const showC2 = showLock || !!keep || !!keptNote;
+    const mono = "'IBM Plex Mono',monospace";
+    const bulkBtn = { flex: "none", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", fontFamily: mono, fontSize: 12, lineHeight: "16px", color: "var(--fg-body)", border: "1px solid var(--border-strong)", borderRadius: 8, padding: "6px 12px", minHeight: phone ? 44 : 0, opacity: mode ? 0.5 : 1 };
+    const lockBtn = { ...bulkBtn, opacity: 1, gap: 7, minWidth: 116, justifyContent: "center", ...(mode ? { color: "var(--accent)", borderColor: "var(--accent)" } : {}) };
+    const pillBase = { flex: "none", whiteSpace: "nowrap", fontFamily: "'IBM Plex Sans',sans-serif", borderRadius: 999, fontSize: phone ? 12 : 13, lineHeight: phone ? "16px" : "19px", padding: phone ? "4px 11px" : "5px 14px" };
+    const allPill = shopping
+      ? { ...pillBase, fontWeight: 600, color: "var(--fg-faint)", border: "1px solid var(--border-strong)" }
+      : { ...pillBase, fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" };
+    const shopPill = shopping
+      ? { ...pillBase, fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" }
+      : { ...pillBase, fontWeight: 500, color: "var(--warning)", border: "1px solid color-mix(in srgb,var(--accent) 30%,var(--bg))" };
+    const gp = { flex: "none", whiteSpace: "nowrap", fontFamily: "'IBM Plex Sans',sans-serif", borderRadius: 999, fontSize: phone ? 11.5 : 12.5, lineHeight: phone ? "16px" : "18px" };
+    const typePill = { ...gp, fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)", padding: phone ? "4px 10px" : "5px 13px" };
+    const rolePill = { ...gp, fontWeight: 500, color: "var(--fg-faint)", border: phone ? "0" : "1px solid var(--border)", padding: phone ? "4px 6px" : "5px 13px" };
+    // FilterPanel's trigger (filter-panel.tsx), with deckSortCopy.triggerOne = the bare order, no "Sort" prefix.
+    const sortPill = { flex: "none", display: "inline-flex", alignItems: "center", gap: 8, whiteSpace: "nowrap", fontFamily: "'IBM Plex Sans',sans-serif", fontWeight: 500, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)", ...(phone ? { borderRadius: 999, fontSize: 12.5, lineHeight: "16px", padding: "8px 13px", minHeight: 44 } : { borderRadius: 8, fontSize: 13, lineHeight: "18px", padding: "9px 14px" }) };
+    const seg = (on) => ({ width: phone ? 44 : 32, height: phone ? 44 : 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, fontSize: 13, fontFamily: "system-ui,-apple-system,'Segoe UI Symbol','Apple Symbols',sans-serif", ...(on ? { fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", boxShadow: "inset 0 0 0 1px var(--border-strong)" } : { color: "var(--fg-faint)" }) });
+
+    const names = [["Lotus Petal", true, true], ["Mind Stone", false, false], ["Ornithopter", true, true], ["Sol Ring", false, false], ["Talisman of Dominance", false, false], ["Arcane Signet", false, false]];
+    const shopNames = [["Mana Vault", true, false, "$64.50"], ["Rhystic Study", false, false, "$38.20"], ["Fallen Shinobi", false, false, "$2.10"], ["Mystic Remora", false, false, "$1.90"]];
+    const src = shopping ? shopNames : names;
+    const n = phone ? 4 : 6;
+    const list = src.slice(0, Math.min(n, src.length));
+    const rows = list.map(([name, locked, wasAuto, buy]) => {
+      const r = { name, auto: receipt && wasAuto, buy: buy || "", x: !mode, slot: false, glyph: false, g: null, slotStyle: {} };
+      r.dot = { flex: "none", width: phone ? 7 : 8, height: phone ? 7 : 8, borderRadius: "50%", ...(buy ? { border: "1px dashed var(--fg-faint)" } : { background: "var(--success)" }) };
+      if (mode) {
+        const box = locked ? { border: "1px solid var(--accent)", background: "color-mix(in oklab,var(--accent) 14%,transparent)" } : { border: "1px solid var(--border-strong)" };
+        r.slot = true; r.glyph = true; r.g = mk(locked, locked ? "var(--accent)" : "var(--fg-muted)");
+        r.slotStyle = { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, width: phone ? 36 : 26, height: phone ? 36 : 22, margin: phone ? "0 4px" : 0, ...box };
+      } else {
+        r.slot = wide || locked; r.glyph = locked; r.g = mk(true, "var(--fg-body)");
+        r.slotStyle = { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: phone ? 14 : 22, height: phone ? 44 : 22 };
+      }
+      return r;
+    });
+    const tiles = names.slice(0, phone ? 2 : 6).map(([name, locked, wasAuto]) => ({
+      name, meta: locked && !mode, auto: receipt && wasAuto, toggle: mode, x: !mode,
+      g: mk(locked, locked ? "var(--accent)" : "var(--fg-muted)"),
+      box: { width: phone ? 36 : 26, height: phone ? 36 : 24, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px solid ${locked ? "var(--accent)" : "var(--border-strong)"}`, background: locked ? "color-mix(in oklab,var(--accent) 14%,transparent)" : "transparent" },
+    }));
+
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, wide, mode, receipt, listView, cardView, rows, tiles,
+      allLabel: "All 99",
+      keepLabel: keep, clearLabel: clear, keptNote,
+      showC2, showLock, showHair: wide && showC2, showWell: !shopping,
+      lockLabel: mode ? "Done" : "Lock cards",
+      btnG: mk(true, mode ? "var(--accent)" : "var(--fg-muted)"),
+      sortLabel: shopping ? "Price · Highest" : "Name · A–Z",
+      showSlot: true,
+      showKey: !mode,
+      keyBuy: shopping,
+      groupTitle: shopping ? "Artifacts · 4" : "Artifacts · 6",
+      bulkBtn, lockBtn, allPill, shopPill, typePill, rolePill, sortPill,
+      wellStyle: { flex: "none", display: "flex", gap: 2, padding: 2, borderRadius: 8, background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" },
+      segList: seg(listView), segCard: seg(cardView),
+      rootStyle: { width: phone ? 390 : 1300, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      barStyle: phone ? { padding: "9px 16px", borderBottom: "1px solid var(--border)" } : { padding: "14px 26px 10px" },
+      rowStyle: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: phone ? 7 : 10 },
+      c3Style: { display: "flex", alignItems: "center", gap: phone ? 7 : 10, flex: phone && !shopping ? "1 1 auto" : "none" },
+      slotStyle: { padding: phone ? "12px 16px 0" : "14px 26px 0" },
+      keyStyle: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 12px", fontFamily: mono, fontSize: phone ? 10 : 10.5, color: "var(--fg-faint)" },
+      bodyStyle: { padding: phone ? "12px 16px 18px" : "14px 26px 22px" },
+      receiptText: { flex: 1, minWidth: 0, fontFamily: mono, fontSize: phone ? 11 : 12, color: "var(--fg-locked)" },
+      rowsGrid: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: phone ? 3 : "4px 20px" },
+      rowShell: { display: "flex", alignItems: "center", gap: phone ? 9 : 10, borderRadius: 7, padding: phone ? "0 4px 0 8px" : "7px 9px", minHeight: phone ? 52 : 34, background: "var(--surface-rail)" },
+      nameText: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: phone ? 12.5 : 13.5, color: "var(--fg)" },
+      xStyle: phone ? { flex: "none", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "var(--border-dashed)" } : { flex: "none", fontSize: 13, color: "var(--border-dashed)" },
+      tilesGrid: { listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: phone ? "repeat(2,minmax(0,1fr))" : "repeat(6,minmax(0,1fr))", gap: 12 },
+      captionStyle: { display: "flex", alignItems: "stretch", minHeight: phone ? 56 : 50 },
+      tileName: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: phone ? 12 : 13, fontWeight: 600, color: "var(--fg)" },
+      trailStyle: { flex: "none", width: phone ? 44 : 32, display: "flex", alignItems: "center", justifyContent: "center" },
+      tileX: { fontSize: 13, color: "var(--border-dashed)", opacity: phone ? 1 : 0 },
+    };
+  }
+}
+</script>
+</body>
+</html>
