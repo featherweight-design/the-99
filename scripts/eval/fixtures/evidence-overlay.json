@@ -1,0 +1,245 @@
+{
+  "about": "Synthetic evidence for tuning's games, note and intent citations, which Hugh's staging decks barely reach (2 decks with games, 3 notes, no intent). Committed before any run. Injected in memory into the first six held-out decks' EvidencePack, in held-out order (and, for prompt development only, over the four development decks in order), and never written to a database or shown in the blind read. Notes are deliberately about the deck's play in general terms, so each reads plausibly for any commander.",
+  "decks": [
+    {
+      "intent": "A fast, focused build that wins before the table can answer.",
+      "games": [
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 30,
+          "worked": [
+            "engine"
+          ],
+          "hurt": [
+            "mana"
+          ],
+          "note": "Stuck on two lands until turn five."
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 23,
+          "worked": [],
+          "hurt": [
+            "mana",
+            "speed"
+          ],
+          "note": null
+        },
+        {
+          "result": "win",
+          "podSize": 4,
+          "daysAgo": 16,
+          "worked": [
+            "closing",
+            "engine"
+          ],
+          "hurt": [],
+          "note": "Commander stuck around and took over."
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 9,
+          "worked": [],
+          "hurt": [
+            "mana"
+          ],
+          "note": null
+        },
+        {
+          "result": "loss",
+          "podSize": 3,
+          "daysAgo": 2,
+          "worked": [
+            "engine"
+          ],
+          "hurt": [
+            "interaction"
+          ],
+          "note": "No answer to the flyer that killed me."
+        }
+      ]
+    },
+    {
+      "intent": "Grindy value; I want to out-card the table over a long game.",
+      "games": [
+        {
+          "result": "win",
+          "podSize": 4,
+          "daysAgo": 28,
+          "worked": [
+            "card_flow"
+          ],
+          "hurt": [],
+          "note": null
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 21,
+          "worked": [
+            "card_flow"
+          ],
+          "hurt": [
+            "resilience"
+          ],
+          "note": "One wrath and I never recovered."
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 14,
+          "worked": [],
+          "hurt": [
+            "resilience",
+            "board"
+          ],
+          "note": null
+        },
+        {
+          "result": "draw",
+          "podSize": 4,
+          "daysAgo": 7,
+          "worked": [
+            "interaction"
+          ],
+          "hurt": [
+            "closing"
+          ],
+          "note": "Had the game locked but couldn't finish it."
+        }
+      ]
+    },
+    {
+      "intent": "Casual and a bit silly. Big splashy turns over efficiency.",
+      "games": [
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 20,
+          "worked": [
+            "board"
+          ],
+          "hurt": [
+            "speed"
+          ],
+          "note": null
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 13,
+          "worked": [],
+          "hurt": [
+            "speed",
+            "card_flow"
+          ],
+          "note": "Ran out of cards by turn six."
+        },
+        {
+          "result": "win",
+          "podSize": 4,
+          "daysAgo": 6,
+          "worked": [
+            "board",
+            "closing"
+          ],
+          "hurt": [],
+          "note": null
+        }
+      ]
+    },
+    {
+      "intent": "Control: answer everything, then win late.",
+      "games": [
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 25,
+          "worked": [
+            "interaction"
+          ],
+          "hurt": [
+            "closing"
+          ],
+          "note": "Answered everything, then had no way to win."
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 18,
+          "worked": [
+            "interaction"
+          ],
+          "hurt": [
+            "closing"
+          ],
+          "note": null
+        },
+        {
+          "result": "win",
+          "podSize": 4,
+          "daysAgo": 11,
+          "worked": [
+            "interaction",
+            "closing"
+          ],
+          "hurt": [],
+          "note": null
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 4,
+          "worked": [],
+          "hurt": [
+            "mana"
+          ],
+          "note": "Colour screwed: no second colour until turn six."
+        }
+      ]
+    },
+    {
+      "intent": null,
+      "games": [
+        {
+          "result": "win",
+          "podSize": 4,
+          "daysAgo": 15,
+          "worked": [
+            "speed",
+            "engine"
+          ],
+          "hurt": [],
+          "note": null
+        },
+        {
+          "result": "win",
+          "podSize": 4,
+          "daysAgo": 8,
+          "worked": [
+            "engine"
+          ],
+          "hurt": [],
+          "note": "Engine online by turn four, nobody caught up."
+        },
+        {
+          "result": "loss",
+          "podSize": 4,
+          "daysAgo": 1,
+          "worked": [],
+          "hurt": [
+            "resilience"
+          ],
+          "note": "Commander removed twice and I fell apart."
+        }
+      ]
+    },
+    {
+      "intent": "Budget-friendly and resilient to removal.",
+      "games": []
+    }
+  ]
+}

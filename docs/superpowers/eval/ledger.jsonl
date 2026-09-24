@@ -1,0 +1,28 @@
+{"at": "2026-09-24T05:58:51.560837Z", "runId": "calibration-lost", "source": "realtime:12 (upper bound; results lost to a pricing crash, usage never read)", "usd": 0.4025, "requests": 12}
+{"at": "2026-09-24T06:03:01.146Z", "runId": "2026-09-24T05-59-55-794Z-tuning-calibration/a1", "source": "realtime:12", "usd": 0.229259, "requests": 12}
+{"at": "2026-09-24T06:04:08.573Z", "runId": "2026-09-24T05-59-55-794Z-tuning-calibration/a2", "source": "realtime:2", "usd": 0.077682, "requests": 2}
+{"at": "2026-09-24T06:10:05.262Z", "runId": "2026-09-24T06-06-22-063Z-tuning-sweep/a1", "source": "msgbatch_01DGQGtAAGLdV8sJT9ftxagd", "usd": 2.6236370000000018, "requests": 228}
+{"at": "2026-09-24T06:13:09.173Z", "runId": "2026-09-24T06-06-22-063Z-tuning-sweep/a2", "source": "msgbatch_01EbTuEmGD8mEGDBvreepH7j", "usd": 0.410603, "requests": 26}
+{"at":"2026-09-24T06:32:42.851Z","runId":"2026-09-24T06-26-03-243Z-tuning-latency/a1","source":"realtime:16","usd":0.4759720000000001,"requests":16}
+{"at":"2026-09-24T06:33:32.722Z","runId":"2026-09-24T06-26-03-243Z-tuning-latency/a2","source":"realtime:2","usd":0.060686000000000004,"requests":2}
+{"at":"2026-09-24T06:36:55.012Z","runId":"2026-09-24T06-34-12-357Z-tuning-r1-base/a1","source":"msgbatch_016aWHCCmosRujtdY742MYhE","usd":0.04088700000000001,"requests":12}
+{"at":"2026-09-24T06:40:05.750Z","runId":"2026-09-24T06-37-02-903Z-tuning-r1-base-overlay/a1","source":"msgbatch_01NM5LMJceUM7smoHT6LCGyJ","usd":0.042983,"requests":12}
+{"at":"2026-09-24T06:43:28.824Z","runId":"2026-09-24T06-37-02-903Z-tuning-r1-base-overlay/a2","source":"msgbatch_013U5JqMTWVZfmAhD2NPe1Rg","usd":0.0032955,"requests":1}
+{"at":"2026-09-24T06:45:38.899Z","runId":"2026-09-24T06-43-36-340Z-tuning-r1-cite-rules/a1","source":"msgbatch_01Tevm853P2GYLL4tkWfbYAi","usd":0.0423535,"requests":12}
+{"at":"2026-09-24T06:48:01.438Z","runId":"2026-09-24T06-43-36-340Z-tuning-r1-cite-rules/a2","source":"msgbatch_01Jq9EPTi3pwiDNVj2cFKECq","usd":0.0033,"requests":1}
+{"at":"2026-09-24T06:50:11.530Z","runId":"2026-09-24T06-48-09-102Z-tuning-r1-cite-rules-overlay/a1","source":"msgbatch_01QmP8d11octygACPuBhUg1Z","usd":0.0432695,"requests":12}
+{"at":"2026-09-24T06:52:34.150Z","runId":"2026-09-24T06-48-09-102Z-tuning-r1-cite-rules-overlay/a2","source":"msgbatch_01JitfdTaje2ZSKquNY6JLks","usd":0.0143325,"requests":4}
+{"at":"2026-09-24T06:55:02.401Z","runId":"2026-09-24T06-52-39-804Z-tuning-r1-cite-menu/a1","source":"msgbatch_01Y3uHTF7A16PQaqap6hmWGD","usd":0.04114299999999999,"requests":12}
+{"at":"2026-09-24T06:57:25.960Z","runId":"2026-09-24T06-52-39-804Z-tuning-r1-cite-menu/a2","source":"msgbatch_01AxJ1BNUJDs2soDwxK2FdXn","usd":0.0035295,"requests":1}
+{"at":"2026-09-24T06:59:34.229Z","runId":"2026-09-24T06-57-31-726Z-tuning-r1-cite-menu-overlay/a1","source":"msgbatch_011BNeAXnKdKEJsuKJZagsU9","usd":0.0459895,"requests":12}
+{"at":"2026-09-24T07:01:56.785Z","runId":"2026-09-24T06-57-31-726Z-tuning-r1-cite-menu-overlay/a2","source":"msgbatch_01DyckXp9dYQkFoG8wtcKSnQ","usd":0.012435499999999999,"requests":3}
+{"at": "2026-09-24T07:00:43.377Z", "runId": "2026-09-24T06-14-10-808Z-tuning-overlay/a1", "source": "msgbatch_018Fu4oGNgK51RpaMU1gJqek", "usd": 0.9378345000000002, "requests": 72}
+{"at":"2026-09-24T07:06:32.318Z","runId":"2026-09-24T07-03-08-259Z-tuning-r2-cite-names/a1","source":"msgbatch_01WUoKHupGuJVe8fwtE9fvyu","usd":0.040637,"requests":12}
+{"at":"2026-09-24T07:09:01.572Z","runId":"2026-09-24T07-06-38-172Z-tuning-r2-cite-names-overlay/a1","source":"msgbatch_01DpQRcb8JZNkbui28fcVTR2","usd":0.042468000000000006,"requests":12}
+{"at": "2026-09-24T07:04:27.394Z", "runId": "2026-09-24T06-14-10-808Z-tuning-overlay/a2", "source": "msgbatch_0197sb9RcqWiJxWyo1ZEEmar", "usd": 0.25104150000000003, "requests": 15}
+{"at":"2026-09-24T07:11:28.002Z","runId":"2026-09-24T07-09-25-426Z-tuning-heldout-cite-rules-overlay/a1","source":"msgbatch_01TKBD12wbZTnF9VcoL7Bana","usd":0.06162999999999999,"requests":18}
+{"at":"2026-09-24T07:13:30.131Z","runId":"2026-09-24T07-09-25-426Z-tuning-heldout-cite-rules-overlay/a2","source":"msgbatch_01VRBLpnkqUNALs6FetDRQZz","usd":0.0094735,"requests":3}
+{"at":"2026-09-24T07:19:18.849Z","runId":"2026-09-24T07-10-12-181Z-tuning-heldout-cite-rules/a1","source":"msgbatch_01FqGoxQfLyyRZZTGQNvUUVc","usd":0.15192299999999997,"requests":45}
+{"at":"2026-09-24T07:21:21.979Z","runId":"2026-09-24T07-10-12-181Z-tuning-heldout-cite-rules/a2","source":"msgbatch_01LADMKfNuvdcGtdDfSeXw6c","usd":0.007253,"requests":2}
+{"at":"2026-09-24T07:23:35.483Z","runId":"2026-09-24T07-21-32-794Z-tuning-heldout-cite-rules-overlay/a1","source":"msgbatch_018juQBJMvUDmq6XLqao4Ljx","usd":0.06326000000000001,"requests":18}
+{"at":"2026-09-24T07:24:58.034Z","runId":"2026-09-24T07-21-32-794Z-tuning-heldout-cite-rules-overlay/a2","source":"msgbatch_01Lx2HdTtrB3FKpsKZA6j2X3","usd":0.006745,"requests":2}
