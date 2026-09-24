@@ -443,18 +443,18 @@ type MemberInsert = typeof spellbookVariantCards.$inferInsert;
 export async function publishFlags(flagRows: readonly FlagRowInsert[], logging: boolean, notices: LogReport) {
   await db.transaction(async (tx) => {
     // Never tutor: the verdict classifies tutors from oracle text, so a tutor flag moves nothing.
-    const previous: Map<string, FlagFacts> = logging
-      ? new Map(
-          (await tx
+    const previous: Map<string, FlagFacts> | null = logging
+      ? await readBefore(tx, "flags", async (sp) => new Map(
+          (await sp
             .select({ oracleId: cardBracketFlags.oracleId, massLandDenial: cardBracketFlags.massLandDenial, extraTurn: cardBracketFlags.extraTurn })
             .from(cardBracketFlags)).map((r) => [r.oracleId, r]),
-        )
-      : new Map();
+        ))
+      : null;
     await tx.delete(cardBracketFlags);
     for (let i = 0; i < flagRows.length; i += CHUNK) {
       await tx.insert(cardBracketFlags).values(flagRows.slice(i, i + CHUNK));
     }
-    if (logging) {
+    if (previous) {
       const next = flagRows.map((r) => ({ oracleId: r.oracleId, massLandDenial: r.massLandDenial ?? false, extraTurn: r.extraTurn ?? false }));
       await writeEntries(tx, diffFlags(previous, next), notices);
     }
@@ -474,7 +474,7 @@ export async function publishVariants(
   nameOf: (oracleId: string) => string,
 ) {
   await db.transaction(async (tx) => {
-    const previous = logging ? countedCombos(await readCombosBefore(tx)) : new Map<string, CountedCombo>();
+    const previous = logging ? await readBefore(tx, "combos", async (sp) => countedCombos(await readCombosBefore(sp))) : null;
     // The child cascades from the parent, so one delete clears both.
     await tx.delete(spellbookVariants);
     for (let i = 0; i < variantRows.length; i += CHUNK) {
@@ -483,8 +483,27 @@ export async function publishVariants(
     for (let i = 0; i < cardRows.length; i += CHUNK) {
       await tx.insert(spellbookVariantCards).values(cardRows.slice(i, i + CHUNK));
     }
-    if (logging) await writeEntries(tx, diffCombos(previous, countedCombos(combosOf(variantRows, cardRows)), nameOf), notices);
+    if (previous) await writeEntries(tx, diffCombos(previous, countedCombos(combosOf(variantRows, cardRows)), nameOf), notices);
   });
+}
+
+/**
+ * A publish's "before" read, in a SAVEPOINT of the publish's own transaction, so the log's contract
+ * holds from its first statement: a failed read rolls back to the savepoint, the publish goes on,
+ * and that publish writes no entries. Never an empty map in its place, which would log every row as
+ * added.
+ */
+async function readBefore<T>(
+  tx: Tx,
+  what: string,
+  read: (sp: Tx) => Promise<T>,
+): Promise<T | null> {
+  try {
+    return await tx.transaction((sp) => read(sp));
+  } catch (error) {
+    console.warn(`notices: the ${what} before this publish were unread, so it writes no entries (${error instanceof Error ? error.message : String(error)})`);
+    return null;
+  }
 }
 
 /** A variant with its pieces, before the counting rule is applied. */
