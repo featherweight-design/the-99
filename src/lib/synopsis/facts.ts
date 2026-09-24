@@ -30,6 +30,14 @@ export type SynopsisFacts = {
   ramp: number;
   /** The keepable land count for an opening seven, inclusive. */
   keep: { low: number; high: number };
+  /**
+   * The land counts a hand is sent back at: none, one short of the keepable range, and one past
+   * it. Computed from `keep` as surely as `keep` is, and the complement is how a player says it
+   * ("send back 0 or 1 lands", "5 or more").
+   */
+  sendBack: { none: 0; under: number; over: number };
+  /** Each commander's mana value, in `commanders` order: "castable by turn three". */
+  commanderManaValues: number[];
   /** Every numeral a Mulligan line may quote. */
   figures: number[];
   cards: FactCard[];
@@ -80,6 +88,10 @@ export function buildSynopsisFacts(
   const lands = profile.counts.landCapable;
   const ramp = profile.roles.counts.ramp;
   const keep = keepableLands(lands);
+  const sendBack = { none: 0 as const, under: keep.low - 1, over: keep.high + 1 };
+  const commanderManaValues = profile.commanderOracleIds
+    .map((id) => byId.get(id)?.cmc)
+    .filter((n): n is number => typeof n === "number");
   return {
     commanders: profile.commanderOracleIds.map((id) => byId.get(id)?.name).filter((n): n is string => !!n),
     identity: profile.colours.identity,
@@ -87,7 +99,14 @@ export function buildSynopsisFacts(
     lands,
     ramp,
     keep,
-    figures: [...new Set([HAND_SIZE, lands, ramp, keep.low, keep.high])].sort((a, b) => a - b),
+    sendBack,
+    commanderManaValues,
+    // A turn is quoted by the mana value it casts on ("by turn three"), so the mana values are the
+    // turn figures too; nothing else here is a turn.
+    figures: [...new Set([
+      HAND_SIZE, lands, ramp, keep.low, keep.high,
+      sendBack.none, sendBack.under, sendBack.over, ...commanderManaValues,
+    ])].sort((a, b) => a - b),
     cards: profile.cards.map((c) => ({
       oracleId: c.oracleId,
       name: c.name,

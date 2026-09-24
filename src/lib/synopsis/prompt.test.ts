@@ -12,6 +12,8 @@ const FACTS: SynopsisFacts = {
   lands: 36,
   ramp: 10,
   keep: { low: 2, high: 4 },
+  sendBack: { none: 0, under: 1, over: 5 },
+  commanderManaValues: [],
   figures: [2, 4, 7, 10, 36],
   cards: [
     { oracleId: "a", name: "Sol Ring", typeLine: "Artifact", quantity: 1, categories: ["ramp"], oracleText: "{T}: Add {C}{C}." },

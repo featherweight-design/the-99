@@ -61,6 +61,8 @@ describe("the stub", () => {
     lands: 36,
     ramp: 10,
     keep: { low: 2, high: 4 },
+    sendBack: { none: 0, under: 1, over: 5 },
+    commanderManaValues: [],
     figures: [2, 4, 7, 10, 36],
     cards: ["Kratos", "Sol Ring", "Chaos Warp", "Impact Tremors", "Goblin Bombardment", "Mountain"].map((name) => ({
       oracleId: `id-${name}`, name, typeLine: "Card", quantity: 1,

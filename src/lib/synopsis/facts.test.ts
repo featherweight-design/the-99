@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DeckProfile } from "../profile/types";
 import { buildSynopsisFacts, categoriesOf, deckNameIndex, keepableLands, normalizeName } from "./facts";
+import { figuresIn } from "./validate";
 
 describe("keepableLands", () => {
   it.each([
@@ -25,7 +26,7 @@ function profile(): DeckProfile {
   return {
     commanderOracleIds: ["id-Kratos"],
     cards: ["Kratos", "Sol Ring", "Gamble", "Walking Ballista", "Heliod", "Fire // Ice", "Mountain"].map((name) => ({
-      oracleId: `id-${name}`, name, typeLine: "Card", cmc: 1, quantity: 1, layout: "normal",
+      oracleId: `id-${name}`, name, typeLine: "Card", cmc: name === "Kratos" ? 6 : 1, quantity: 1, layout: "normal",
     })),
     counts: { landCapable: 37 },
     roles: {
@@ -41,10 +42,37 @@ function profile(): DeckProfile {
 }
 
 describe("buildSynopsisFacts", () => {
+  // The harness's refusals (2026-09-24): 41 of 56 `uncomputed_figure` Mulligan lines stated the
+  // complement of the keepable range, and 23 a turn or a mana total the facts did not hold. Both
+  // are the app's own numbers, so both are figures.
+  it("allows the send-back bounds, the complement of the keepable range", () => {
+    const f = buildSynopsisFacts(profile(), new Map());
+    expect(f.sendBack).toEqual({ none: 0, under: 1, over: 5 });
+    for (const n of [0, 1, 5]) expect(f.figures).toContain(n);
+  });
+
+  it("passes the harness's refused lines through the validator's own figure reader", () => {
+    const allowed = new Set(buildSynopsisFacts(profile(), new Map()).figures);
+    for (const line of [
+      "Send back a hand with 0 or 1 lands.",
+      "Send back five or more lands.",
+      "Keep a hand that casts Kratos by turn six.",
+      "Keep a hand that reaches 6 mana.",
+    ]) expect(figuresIn(line).every((n) => allowed.has(n)), line).toBe(true);
+    // Still a refusal: a number the app did not compute.
+    expect(figuresIn("Keep 3 ramp pieces.").every((n) => allowed.has(n))).toBe(false);
+  });
+
+  it("allows each commander's mana value, which is also the turn it is cast on", () => {
+    const f = buildSynopsisFacts(profile(), new Map());
+    expect(f.commanderManaValues).toEqual([6]);
+    expect(f.figures).toContain(6);
+  });
+
   it("takes every figure from the profile, counting land-capable cards as lands", () => {
     const f = buildSynopsisFacts(profile(), new Map([["id-Sol Ring", "{T}: Add {C}{C}."]]));
     expect(f).toMatchObject({ commanders: ["Kratos"], lands: 37, ramp: 11, keep: { low: 2, high: 4 }, unproducible: ["W"] });
-    expect(f.figures).toEqual([2, 4, 7, 11, 37]);
+    expect(f.figures).toEqual([0, 1, 2, 4, 5, 6, 7, 11, 37]);
     expect(f.cards.find((c) => c.name === "Sol Ring")).toMatchObject({ categories: ["ramp"], oracleText: "{T}: Add {C}{C}." });
   });
 
