@@ -5,7 +5,7 @@ import { normalizeName } from "../../lib/synopsis/facts";
 import type { SynopsisRow } from "../../lib/synopsis/generate";
 import type { CheckedSynopsis, SectionId, SectionVerdict } from "../../lib/synopsis/types";
 import { ModalChrome, type FindingArt } from "./receipt-modal";
-import { RefusedSlot } from "./synopsis-overview";
+import { RefusedSlot } from "./synopsis-controls";
 import { CardName, SynopsisText } from "./synopsis-text";
 import { analyzedWhen } from "./verdict-block";
 
