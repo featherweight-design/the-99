@@ -13,7 +13,7 @@ vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
 
-import { assembledCombosQuery } from "./load";
+import { assembledCombosQuery, isCountedCombo } from "./load";
 
 // Renders the LOADER's own query, not a copy of it — a copy drifts with the assertion and
 // pins nothing.
@@ -123,5 +123,32 @@ describe("two rows, not merely a card_count of 2", () => {
     expect(text.indexOf("having count(*) = 2")).toBeLessThan(
       text.indexOf("case when vc.must_be_commander"),
     );
+  });
+});
+
+// BYTE FOR BYTE, the whole rendered statement. The deck notices' PR 3 extracted `isCountedCombo`
+// out of the loader's filter and left this SQL alone, and this pins that: the hash is of the text
+// rendered from main's `load.ts` before that change. A change to the query is not forbidden, but it
+// has to change this line too, on purpose.
+describe("the assembled-combo query, whole", () => {
+  it("renders the statement main shipped, unchanged", async () => {
+    const { createHash } = await import("node:crypto");
+    const raw = new PgDialect().sqlToQuery(assembledCombosQuery(["a", "b"], ["cmd"])).sql;
+    expect(createHash("sha256").update(raw).digest("hex")).toBe("721899773b5b60537865aa3b4ef3af397886b07cff998732b65971e2d331522d");
+  });
+});
+
+describe("isCountedCombo", () => {
+  const combo = { cardCount: 2, requiresTemplateIds: [], pieces: ["a", "b"], produces: ["Infinite mana"] };
+  it("counts a two-card, template-free, two-piece combo whose result is infinite", () => {
+    expect(isCountedCombo(combo)).toBe(true);
+  });
+  it.each([
+    ["three cards", { ...combo, cardCount: 3 }],
+    ["a template piece", { ...combo, requiresTemplateIds: [7] }],
+    ["one card named twice", { ...combo, pieces: ["a", "a"] }],
+    ["a mundane result", { ...combo, produces: ["Draw a card"] }],
+  ])("does not count %s", (_label, v) => {
+    expect(isCountedCombo(v)).toBe(false);
   });
 });

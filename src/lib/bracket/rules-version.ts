@@ -12,8 +12,15 @@
  * NOT for `isMassLandDenial` or `isExtraTurn`: those run inside the combo ingest, and their changes
  * reach decks as card-scoped flag entries the Combo refresh logs.
  *
- * A bump is to write one `rules` entry at deploy, stated in words. Neither that write nor the Combo
- * refresh's entries exist yet: both are the deck notices plan's PR 3, which reads this constant. Version 1 is the rules as they stood
- * when the log was created, and writes nothing.
+ * A bump writes one `rules` entry at deploy, stated in words (`RULES_CHANGES` below;
+ * `src/lib/notices/rules-entry.ts`). Version 1 is the rules as they stood when the log was created,
+ * and writes nothing.
  */
 export const BRACKET_RULES_VERSION = 1;
+
+/**
+ * What each version changed, in words, for the one `rules` entry its deploy writes: the rule's
+ * name and what it now reads. A bump without a row here still writes its entry, with no words, so
+ * add the row in the same commit as the bump. Version 1 has none: it is where the log began.
+ */
+export const RULES_CHANGES: Readonly<Record<number, { rule: string; reads: string }>> = {};

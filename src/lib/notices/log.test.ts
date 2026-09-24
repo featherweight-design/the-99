@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  analyzedOracleIds, diffCardBatch, emptyLogReport, logTableExists, readLogHead, writeEntries, type CardFacts,
+  analyzedOracleIds, diffCardBatch, diffCombos, diffFlags, emptyLogReport, logTableExists, readLogHead, writeEntries,
+  type CardFacts, type CountedCombo,
 } from "./log";
 
 const facts = (gameChanger: boolean, commanderLegal = true): CardFacts => ({ gameChanger, commanderLegal });
@@ -120,5 +121,60 @@ describe("writeEntries' sequence numbers", () => {
     const plain = emptyLogReport();
     await writeEntries(tx as never, two, plain);
     expect({ asked: asked.seqs, plain }).toEqual({ asked: [41, 42], plain: { written: 2, lost: 0 } });
+  });
+});
+
+describe("diffFlags", () => {
+  const off = { massLandDenial: false, extraTurn: false };
+  it("logs a flag cleared as removed, and one set as added", () => {
+    const before = new Map([["a", { massLandDenial: true, extraTurn: false }]]);
+    const after = [{ oracleId: "a", ...off }, { oracleId: "b", massLandDenial: false, extraTurn: true }];
+    expect(diffFlags(before, after).map((e) => [e.kind, e.direction, e.oracleIds])).toEqual([
+      ["massLandDenial", "removed", ["a"]],
+      ["extraTurns", "added", ["b"]],
+    ]);
+  });
+
+  it("logs both flags when one card moves on both, and a card absent after as cleared", () => {
+    const before = new Map([["a", { massLandDenial: true, extraTurn: true }]]);
+    expect(diffFlags(before, []).map((e) => [e.kind, e.direction])).toEqual([
+      ["massLandDenial", "removed"],
+      ["extraTurns", "removed"],
+    ]);
+  });
+
+  it("logs nothing for a card whose flags did not move", () => {
+    const before = new Map([["a", { massLandDenial: true, extraTurn: false }]]);
+    expect(diffFlags(before, [{ oracleId: "a", massLandDenial: true, extraTurn: false }])).toEqual([]);
+  });
+});
+
+describe("diffCombos", () => {
+  const combo = (variantId: string, pieces: string[], extra: Partial<CountedCombo> = {}): CountedCombo => ({
+    variantId, pieces, mustBeCommander: [], produces: ["Infinite damage"], ...extra,
+  });
+  const names = new Map([["a", "Alpha"], ["b", "Beta"], ["c", "Gamma"]]);
+  const nameOf = (id: string) => names.get(id) ?? id;
+
+  it("logs a combo newly counted as added and one no longer counted as removed, in variant order", () => {
+    const before = new Map([["v2", combo("v2", ["a", "c"])]]);
+    const after = new Map([["v1", combo("v1", ["a", "b"], { mustBeCommander: ["a"] })]]);
+    expect(diffCombos(before, after, nameOf)).toEqual([
+      { kind: "combo", direction: "added", oracleIds: ["a", "b"],
+        detail: { variantId: "v1", names: ["Alpha", "Beta"], produces: ["Infinite damage"], mustBeCommander: ["a"] } },
+      { kind: "combo", direction: "removed", oracleIds: ["a", "c"],
+        detail: { variantId: "v2", names: ["Alpha", "Gamma"], produces: ["Infinite damage"], mustBeCommander: [] } },
+    ]);
+  });
+
+  it("logs nothing when a counted variant changes under the same id", () => {
+    const before = new Map([["v1", combo("v1", ["a", "b"])]]);
+    const after = new Map([["v1", combo("v1", ["a", "b"], { produces: ["Infinite mana"] })]]);
+    expect(diffCombos(before, after, nameOf)).toEqual([]);
+  });
+
+  it("keeps the names the resolver gives, so a removed piece is named after its row is gone", () => {
+    const removed = diffCombos(new Map([["v1", combo("v1", ["a", "z"])]]), new Map(), nameOf);
+    expect(removed[0]?.detail.names).toEqual(["Alpha", "z"]);
   });
 });

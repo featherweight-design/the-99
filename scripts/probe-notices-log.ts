@@ -33,13 +33,15 @@ import { neon } from "@neondatabase/serverless";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
-import { cards } from "../src/db/schema";
+import { cardBracketFlags, cards, spellbookVariantCards, spellbookVariants } from "../src/db/schema";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { readLogHead, type LogReport } from "../src/lib/notices/log";
 import { loadDeckProfile } from "../src/lib/profile/load";
+import { isInfiniteOrGameEnding } from "../src/lib/spellbook/combo-features";
 import { readStoredReading, type StoredProfileDeps } from "../src/lib/profile/stored";
 import { PROFILE_VERSION } from "../src/lib/profile/version";
 import { upsertCardBatch } from "../src/lib/scryfall/seed";
+import { FLOORS, ingestCombos, publishFlags, publishVariants } from "../src/lib/spellbook/seed";
 import type { CardRow } from "../src/lib/scryfall/transform";
 import { holdProfile } from "./lib/profile-hold.mjs";
 
@@ -70,7 +72,7 @@ const cardRow = async (oracleId: string): Promise<CardRow> => {
 };
 
 /** The log head, which the probe needs to read; an unreadable head is a failed run, not a 0. */
-const logHead = async () => {
+const logHead = async (): Promise<number> => {
   const head = await readLogHead(db);
   if (head === null) throw new Error("the change log head is unreadable");
   return head;
@@ -105,6 +107,14 @@ async function main() {
   const originals = [a, b];
   let constraintAdded = false;
   let release: null | (() => Promise<void>) = null;
+  // The Combo refresh's tables, captured whole before any case below replaces them, and published
+  // back (with logging off) in the `finally`. A run killed between leaves a set one combo away
+  // from the original, which the next Combo refresh replaces.
+  const flagsBefore = await db.select().from(cardBracketFlags);
+  let variantsBefore: (typeof spellbookVariants.$inferSelect)[] | null = null;
+  let membersBefore: (typeof spellbookVariantCards.$inferSelect)[] | null = null;
+  let flagsTouched = false;
+  let variantsTouched = false;
 
   try {
     // 1 · A batch that moves a Game Changer writes one entry, in the same transaction.
@@ -191,11 +201,121 @@ async function main() {
     check("5b · a rebuild fills a legacy row's empty analyzed list", legacy.n > 0, true);
     check("5 · and reports that date to the reader",
       rebuilt?.analyzedAt.toISOString().slice(0, 19), "2026-01-02T03:04:05");
+    // ---- The Combo refresh (plan PR 3) ------------------------------------------------------
+
+    // 6 · A flag moving writes one entry, inside the flag publish.
+    const quiet = flagsBefore.find((f) => !f.massLandDenial && !f.extraTurn);
+    if (!quiet) throw new Error("no flag row without mass land denial or extra turns to flip");
+    head = await logHead();
+    const flipped = flagsBefore.map((f) => f.oracleId === quiet.oracleId
+      ? { ...f, massLandDenial: true, massLandDenialSources: ["oracle_rule"] } : f);
+    flagsTouched = true;
+    const log6 = track();
+    await publishFlags(flipped, true, log6);
+    check("6 · a flag moving is logged, with its direction", await entriesSince(head),
+      [{ kind: "massLandDenial", direction: "added", oracle_ids: [quiet.oracleId] }]);
+    check("6 · and counted", counts(log6), { written: 1, lost: 0 });
+    head = await logHead();
+    await publishFlags(flipped.map((f) => ({ ...f, tutor: !f.tutor, tutorSources: f.tutor ? [] : ["oracle_rule"] })), true, track());
+    check("6 · a TUTOR flag moving writes nothing", await entriesSince(head), []);
+
+    // 7 · A rejected log write inside the flag publish still publishes the flags.
+    await db.execute(sql`alter table deck_data_changes add constraint probe_notices_reject check (false) not valid`);
+    constraintAdded = true;
+    const log7 = track();
+    await publishFlags(flagsBefore, true, log7);
+    const [{ mld }] = await rows<{ mld: boolean }>(sql`
+      select mass_land_denial as mld from card_bracket_flags where oracle_id = ${quiet.oracleId}::uuid`);
+    check("7 · the flags still published", mld, false);
+    check("7 · the loss is counted", counts(log7), { written: 0, lost: 1 });
+    await db.execute(sql`alter table deck_data_changes drop constraint probe_notices_reject`);
+    constraintAdded = false;
+
+    // 8 · Only a COUNTED combo appearing or disappearing is logged, with its names and result.
+    variantsBefore = await db.select().from(spellbookVariants);
+    membersBefore = await db.select().from(spellbookVariantCards);
+    const members = new Map<string, typeof membersBefore>();
+    for (const m of membersBefore) members.set(m.variantId, [...(members.get(m.variantId) ?? []), m]);
+    const counted = variantsBefore.find((v) => v.cardCount === 2 && v.requiresTemplateIds.length === 0
+      && (members.get(v.variantId)?.length ?? 0) === 2 && isInfiniteOrGameEnding(v.produces));
+    const mundane = variantsBefore.find((v) => v.cardCount === 2 && v.requiresTemplateIds.length === 0
+      && (members.get(v.variantId)?.length ?? 0) === 2 && !isInfiniteOrGameEnding(v.produces));
+    if (!counted || !mundane) throw new Error("the combo index holds no counted or no mundane two-card variant");
+    const probeId = `probe-notices-${Date.now()}`;
+    const [c1, c2] = picked.map((p) => p.oracle_id);
+    const nextVariants = [
+      ...variantsBefore.filter((v) => v.variantId !== counted.variantId && v.variantId !== mundane.variantId),
+      { ...counted, variantId: probeId },
+    ];
+    const nextMembers = [
+      ...membersBefore.filter((m) => m.variantId !== counted.variantId && m.variantId !== mundane.variantId),
+      { variantId: probeId, oracleId: c1, mustBeCommander: true },
+      { variantId: probeId, oracleId: c2, mustBeCommander: false },
+    ];
+    head = await logHead();
+    variantsTouched = true;
+    const log8 = track();
+    await publishVariants(nextVariants, nextMembers, true, log8, (id) => `name:${id.slice(0, 4)}`);
+    const combos = await rows<{ direction: string; oracle_ids: string[]; detail: Record<string, unknown> }>(sql`
+      select direction, oracle_ids, detail from deck_data_changes where seq > ${head} and kind = 'combo' order by seq`);
+    check("8 · the removed counted combo and the added one are logged, and the mundane one is not",
+      combos.map((c) => [c.direction, c.detail.variantId]).sort(),
+      [["added", probeId], ["removed", counted.variantId]]);
+    const added = combos.find((c) => c.direction === "added");
+    check("8 · an entry keeps its pieces, names, result and commander piece", added && {
+      ids: added.oracle_ids, names: added.detail.names, produces: added.detail.produces, cmd: added.detail.mustBeCommander,
+    }, {
+      ids: [c1, c2].sort(), names: [c1, c2].sort().map((id) => `name:${id.slice(0, 4)}`),
+      produces: counted.produces, cmd: [c1],
+    });
+    check("8 · nothing else was logged", (await entriesSince(head)).length, 2);
+
+    // 9 · The Combo refresh's three stopping points, through the real ingest.
+    const noSweep = async () => ({ cards: [] });
+    const emptyBulk = async () => new Response('{"variants": []}').body!;
+    //   a · Refused before the flag publish (the classifier floors): nothing is written.
+    head = await logHead();
+    const flagCount = async () => Number((await rows<{ n: string }>(sql`select count(*) n from card_bracket_flags`))[0].n);
+    const flagsAtA = await flagCount();
+    // Each refusal is identified by its OWN message: a bare catch passes whatever threw.
+    let refusedA = "";
+    try {
+      await ingestCombos({ fetchSweep: noSweep, fetchBulk: emptyBulk, log: () => {}, notices: track() });
+    } catch (e) {
+      refusedA = String(e);
+    }
+    check("9a · refused before the flags, by the classifier floors", /REFUSED — below floor, nothing written/.test(refusedA), true);
+    check("9a · and wrote no entries, and no flags", { entries: (await entriesSince(head)).length, flags: await flagCount() },
+      { entries: 0, flags: flagsAtA });
+    //   b · Refused after the flag publish (the variant floor): the flag entries stand, and no
+    //       combo entry is written. Every classifier floor is lowered so the flags publish.
+    head = await logHead();
+    const open = Object.fromEntries(Object.entries(FLOORS).map(([k]) => [k, 0])) as unknown as typeof FLOORS;
+    let refusedB = "";
+    try {
+      await ingestCombos({ fetchSweep: noSweep, fetchBulk: emptyBulk, floors: { ...open, variantsKept: 1 } as unknown as typeof FLOORS, log: () => {}, notices: track() });
+    } catch (e) {
+      refusedB = String(e);
+    }
+    const kinds = [...new Set((await entriesSince(head)).map((e) => e.kind))].sort();
+    check("9b · refused at the variant floor", /variants kept, below the floor/.test(refusedB), true);
+    check("9b · the flag entries stand and no combo entry was written",
+      { flagKinds: kinds.length > 0 && kinds.every((k) => k === "massLandDenial" || k === "extraTurns"), combo: kinds.includes("combo") },
+      { flagKinds: true, combo: false });
+    //   c · A run that publishes both writes combo entries inside the variant publish: case 8.
   } finally {
     // Each step on its own, so one failing cannot skip the rest.
     if (constraintAdded) {
       await db.execute(sql`alter table deck_data_changes drop constraint if exists probe_notices_reject`)
         .catch((e) => { failures += 1; console.error("constraint not dropped", e); });
+    }
+    if (flagsTouched) {
+      await publishFlags(flagsBefore, false, track())
+        .catch((e) => { failures += 1; console.error("flags not restored", e); });
+    }
+    if (variantsTouched && variantsBefore && membersBefore) {
+      await publishVariants(variantsBefore, membersBefore, false, track(), (id) => id)
+        .catch((e) => { failures += 1; console.error("variants not restored", e); });
     }
     for (const card of originals) {
       await upsertCardBatch([card], false, track())

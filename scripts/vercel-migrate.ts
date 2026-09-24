@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { decideMigration } from "../src/lib/deploy/migrate-decision";
+import { finishMigration, neonRulesEntryDb, recordRulesVersion } from "../src/lib/notices/rules-entry";
 
 // The one script that deliberately does not import `scripts/lib/env.mjs`: this
 // must read only the real deployment environment, so a stray .env in a build
@@ -37,4 +38,8 @@ if (result.error) {
   process.exit(1);
 }
 
-process.exit(result.status ?? 1);
+// ADDITIVE, and only after the migrations applied: the deck notices' bracket-rules entry. It
+// resolves on every path, with a statement timeout and an overall deadline, and this script's exit
+// code is the migration's whatever it does. See `finishMigration` and its test.
+finishMigration(result.status, () => recordRulesVersion(() => neonRulesEntryDb(decision.databaseUrl)))
+  .then((code) => process.exit(code));

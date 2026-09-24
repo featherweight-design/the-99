@@ -158,3 +158,67 @@ export function analyzedOracleIds(head: {
   if (head.partnerOracleId) ids.add(head.partnerOracleId);
   return [...ids].sort();
 }
+
+// ---------------------------------------------------------------------------------------------
+// The Combo refresh's two diffs (brief §6). Flags publish in their own transaction before the bulk,
+// variants in a second; each diff is written inside its own publish.
+
+/** The two flags the verdict reads from `card_bracket_flags`. `tutor` is not one of them: the
+ *  verdict classifies tutors from oracle text, so a tutor-flag change moves no stored analysis. */
+export type FlagFacts = { massLandDenial: boolean; extraTurn: boolean };
+
+/** Entries for every card whose mass land denial or extra-turn flag moved, either way. A card
+ *  absent from a side has neither flag on that side (an absent id means no flag applies). */
+export function diffFlags(
+  before: ReadonlyMap<string, FlagFacts>,
+  after: ReadonlyArray<FlagFacts & { oracleId: string }>,
+): ChangeEntry[] {
+  const next = new Map(after.map((r) => [r.oracleId, r]));
+  const ids = [...new Set([...before.keys(), ...next.keys()])].sort();
+  const none: FlagFacts = { massLandDenial: false, extraTurn: false };
+  const entries: ChangeEntry[] = [];
+  for (const id of ids) {
+    const was = before.get(id) ?? none;
+    const now = next.get(id) ?? none;
+    if (was.massLandDenial !== now.massLandDenial) {
+      entries.push({ kind: "massLandDenial", direction: now.massLandDenial ? "added" : "removed", oracleIds: [id], detail: {} });
+    }
+    if (was.extraTurn !== now.extraTurn) {
+      entries.push({ kind: "extraTurns", direction: now.extraTurn ? "added" : "removed", oracleIds: [id], detail: {} });
+    }
+  }
+  return entries;
+}
+
+/** A combo the verdict would count, reduced to what an entry needs (`isCountedCombo`). */
+export type CountedCombo = {
+  variantId: string;
+  /** Its two pieces, sorted: a deck must hold both for the entry to touch it. */
+  pieces: string[];
+  /** The pieces that only work from the command zone; checked against the deck on read (D5). */
+  mustBeCommander: string[];
+  produces: string[];
+};
+
+/**
+ * Entries for every COUNTED combo Spellbook added or removed (plan D7). A variant whose row changed
+ * while it stayed counted writes nothing, and neither does one that was never counted. The entry
+ * keeps the card names and the result at diff time (readiness F16), because a removed variant's
+ * row is gone after the publish.
+ */
+export function diffCombos(
+  before: ReadonlyMap<string, CountedCombo>,
+  after: ReadonlyMap<string, CountedCombo>,
+  nameOf: (oracleId: string) => string,
+): ChangeEntry[] {
+  const entry = (c: CountedCombo, direction: ChangeDirection): ChangeEntry => ({
+    kind: "combo",
+    direction,
+    oracleIds: c.pieces,
+    detail: { variantId: c.variantId, names: c.pieces.map(nameOf), produces: c.produces, mustBeCommander: c.mustBeCommander },
+  });
+  const added = [...after.values()].filter((c) => !before.has(c.variantId)).map((c) => entry(c, "added"));
+  const removed = [...before.values()].filter((c) => !after.has(c.variantId)).map((c) => entry(c, "removed"));
+  return [...added, ...removed].sort((a, b) =>
+    String(a.detail.variantId).localeCompare(String(b.detail.variantId)));
+}
