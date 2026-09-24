@@ -112,6 +112,9 @@ export const deckTuningCopy = {
     unchangedReasonGamesKey: "games",
     unchangedReasonGames: (n: number, when: string) =>
       n === 0 ? "none logged yet" : `${n} of ${n} already read, none logged since ${when}`,
+    unchangedReasonAxisKey: "weakest axis",
+    unchangedReasonAxis: (axis: string, hurt: number, games: number) =>
+      `${axis}, marked against you in ${hurt} of ${games}`,
     unchangedReasonIntentKey: "this deck is for",
     unchangedReasonIntent: "unchanged since you wrote it",
     unchangedReasonIntentEmpty: "still blank",
@@ -129,7 +132,9 @@ export const deckTuningCopy = {
     logGame: "Log a game \u2192",
     notes: "Notes on your games",
     notesCount: (m: number, n: number) => `on ${m} of ${n} games`,
-    list: "This list, against the recommended mix",
+    // C1 names the list alone; the no-games and unmarked frames (D1, E5) name the mix beside it.
+    list: "This list",
+    listVsMix: "This list, against the recommended mix",
     listCount: (n: number) => `${n} cards`,
     // Eng-written: r2 gives the intent its own row and no label (README :88).
     intent: "What you said this deck is for",

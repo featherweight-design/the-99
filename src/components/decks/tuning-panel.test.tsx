@@ -144,6 +144,35 @@ describe("TuningPanel", () => {
     expect(screen.getByText(creditsCopy.first(3, 5, next))).toBeInTheDocument();
   });
 
+  it("keeps the last set on screen under a failed re-run, with Try again replacing it", async () => {
+    const failed = { ...okRun, id: "r2", status: "failed" as const, errorClass: "timeout" };
+    await draw(deps([{ ...results, run: failed, stale: true }]));
+    expect(screen.getByTestId("tuning-failure")).toHaveTextContent(deckTuningCopy.failure.timeout.heading);
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(deckTuningCopy.failure.timeout.note))).toBeInTheDocument();
+  });
+
+  it("disables the press when every credit is out even on an unchanged deck", async () => {
+    const next = new Date("2026-09-24T14:20:00Z");
+    const d = deps([{ ...results, allowance: { used: 5, limit: 5, reopensAt: next, nextAt: next } }]);
+    await draw(d);
+    expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
+    await press(copy.again);
+    expect(d.run).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+  });
+
+  it("asks what the deck is for only before a first set, never over one", async () => {
+    const noIntent = { ...facts, intent: null };
+    await draw(deps([fresh]), noIntent);
+    expect(screen.getByText(deckTuningCopy.intent.askLabel)).toBeInTheDocument();
+  });
+
+  it("does not ask what the deck is for over a set of suggestions", async () => {
+    await draw(deps([results]), { ...facts, intent: null });
+    expect(screen.queryByText(deckTuningCopy.intent.askLabel)).toBeNull();
+  });
+
   it("shows the refusal and keeps the panel when the server refuses the run", async () => {
     const d = deps([fresh, fresh], { run: vi.fn(async () => ({ ok: false as const, message: "no" })) });
     await draw(d);

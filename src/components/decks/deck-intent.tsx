@@ -55,7 +55,7 @@ export function DeckIntentAsk({
     <form
       onSubmit={submit}
       aria-labelledby="intent-ask-label"
-      className="mt-[14px] rounded-[11px] px-[14px] py-[14px] md:px-[18px] md:py-[16px]"
+      className="mt-[14px] mb-[8px] rounded-[11px] px-[14px] py-[14px] md:px-[18px] md:py-[16px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
     >
       <label
@@ -81,7 +81,7 @@ export function DeckIntentAsk({
         }}
         placeholder={copy.placeholder}
         autoComplete="off"
-        className="mt-[14px] block min-h-[48px] w-full rounded-[8px] px-[14px] py-[12px] text-[16px] md:min-h-[46px] md:text-[13.5px]"
+        className="mt-[14px] block min-h-[48px] w-full rounded-[8px] px-[14px] py-[12px] text-[16px] placeholder:text-[color:var(--fg-locked)] md:min-h-[46px] md:text-[13.5px]"
         style={{ background: "var(--surface)", border: "1px dashed var(--border-strong)", color: "var(--fg)" }}
       />
       <div className="mt-[12px] flex flex-wrap items-center gap-[14px]">

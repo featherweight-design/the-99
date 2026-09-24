@@ -344,6 +344,13 @@ async function run() {
     check("9 · an unchanged deck gates as unchanged", gateReason(same)?.kind ?? null, "unchanged");
     const moved = await readTuningState(deck, u, "fp-2");
     check("9 · a changed deck is stale and ungated", [moved.stale, gateReason(moved)], [true, null]);
+    // A failed re-run leaves the last good set on screen, still open: the failure is the new
+    // run's, and nothing the player had changed (STATES-tuning-panel.md :42).
+    const rerun = await startRun(u, deck, "fp-2", null);
+    if (rerun.kind !== "started") return fail("case 9 re-run start", rerun.kind);
+    await finishRun(rerun.runId, { status: "failed", errorClass: "timeout" });
+    const kept = await readTuningState(deck, u, "fp-2");
+    check("9 · a failed re-run keeps the last set's items", [kept.run?.status, kept.items.length], ["failed", 1]);
   }
 
   // 12 · A commit retires the set, and an item the deck has moved past no longer applies.

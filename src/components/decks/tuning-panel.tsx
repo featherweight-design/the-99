@@ -134,10 +134,10 @@ export function TuningPanel({
 
   const steps = readSteps(facts, intent);
   const reading = counts !== null || state.run?.status === "pending";
-  const gate = gateReason(state);
-  const spent = gate?.kind === "allowance";
+  // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
+  // and a player with no credits left on an unchanged deck must still see the press disabled.
+  const spent = state.allowance.used >= state.allowance.limit;
   const left = Math.max(0, state.allowance.limit - state.allowance.used);
-  const showResults = !reading && state.run?.status === "ok" && !state.retired && state.items.length > 0;
 
   async function press(anyway = false) {
     if (!state) return;
@@ -190,8 +190,11 @@ export function TuningPanel({
   let body: ReactNode;
   let primary: { label: string; again: boolean } = { label: copy.suggest, again: false };
   let note: string | null = null;
+  let neverRun = false;
 
   const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
+  // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
+  const hasSet = !reading && !state.retired && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, steps);
 
   if (reading) {
@@ -200,7 +203,7 @@ export function TuningPanel({
         <div className="mt-[14px] flex flex-col items-center gap-[10px] text-center md:mt-[12px] md:flex-row md:items-center md:gap-[20px] md:text-left">
           <span className="md:hidden"><FanShuffle size="phone" /></span>
           <span className="hidden md:inline-flex"><FanShuffle size="desktop" /></span>
-          <span className="flex flex-1 flex-col gap-[6px]">
+          <span className="flex min-w-0 flex-1 flex-col gap-[10px] md:gap-[6px]">
             <span className="font-display text-[15px] font-semibold md:text-[16px]" style={{ color: "var(--fg)" }}>
               {copy.loadingHeading}
             </span>
@@ -212,10 +215,6 @@ export function TuningPanel({
         <ManifestRows rows={manifestRows(facts, intent, counts ?? {}, steps)} />
       </>
     );
-  } else if (failure) {
-    body = <Failure failure={failure} />;
-    // No set is on screen after a failure, so the press replaces nothing: the first-run note.
-    primary = { label: deckTuningCopy.failure.retry, again: false };
   } else if (state.retired) {
     body = (
       <>
@@ -223,28 +222,29 @@ export function TuningPanel({
         <ManifestRows rows={neverRunRows} onLogGame={onLogGame} />
       </>
     );
-  } else if (showResults) {
+  } else if (hasSet) {
     const total = state.items.length;
     const applied = state.items.filter((i) => i.verdict === "accepted").length;
     const rejected = state.items.filter((i) => i.verdict === "dismissed").length;
     const answered = applied + rejected === total;
-    const dropped = state.run?.droppedCount ?? 0;
-    primary = { label: copy.again, again: true };
+    const dropped = state.run?.status === "ok" ? state.run.droppedCount : 0;
+    primary = { label: failure ? deckTuningCopy.failure.retry : copy.again, again: true };
+    // The results lead is a desktop line, and the no-games set (D2) draws none at either width.
+    const lead = failure || (state.gameCount === 0 && !answered) ? null : answered
+      ? total === 1 ? copy.allDoneLeadOne(applied === 1) : copy.allDoneLead(numberWord(total), applied, rejected)
+      : dropped > 0
+        ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
+        : total === 1 ? copy.resultsLeadOne : copy.resultsLead(cap(numberWord(total)));
     body = (
       <>
-        <ReadFrom state={state} facts={facts} />
+        {failure ? <Failure failure={failure} /> : null}
+        {answered ? null : <ReadFrom state={state} facts={facts} />}
         {unchangedShown ? (
-          <Unchanged state={state} intent={intent} />
-        ) : (
-          <Lead desktopOnly={!answered}>
-            {answered
-              ? total === 1 ? copy.allDoneLeadOne(applied === 1) : copy.allDoneLead(numberWord(total), applied, rejected)
-              : dropped > 0
-                ? total === 1 ? copy.fewerLeadOne(cap(numberWord(dropped))) : copy.fewerLead(cap(numberWord(total)), cap(numberWord(dropped)))
-                : total === 1 ? copy.resultsLeadOne : copy.resultsLead(cap(numberWord(total)))}
-          </Lead>
-        )}
-        <ul className="mt-[14px] flex flex-col gap-[12px] md:gap-[8px]">
+          <Unchanged state={state} intent={intent} fix={facts.fix} />
+        ) : lead ? (
+          <Lead desktopOnly={!answered} wide>{lead}</Lead>
+        ) : null}
+        <ul className={`mt-[14px] flex flex-col ${answered ? "gap-[6px]" : "gap-[12px] md:gap-[8px]"}`}>
           {state.items.map((item: TuningItem) => (
             <li key={item.id}>
               <SuggestionCard
@@ -260,8 +260,13 @@ export function TuningPanel({
       </>
     );
     if (applied + rejected > 0 && !answered) note = copy.tally(applied, total, rejected);
+  } else if (failure) {
+    body = <Failure failure={failure} />;
+    // No set is on screen, so the press replaces nothing: the first-run note.
+    primary = { label: deckTuningCopy.failure.retry, again: false };
   } else {
     // Never run, or cleared by a Stop: the lead the evidence supports, and what will be read.
+    neverRun = true;
     body = (
       <>
         <Lead>
@@ -275,6 +280,8 @@ export function TuningPanel({
       </>
     );
   }
+  // A failure's own note rides in the action row beside Try again, ahead of the credit line.
+  if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
   const credit = spent
     ? creditsCopy.spent(state.allowance.limit, state.allowance.nextAt)
@@ -303,7 +310,7 @@ export function TuningPanel({
         {copy.heading}
       </h2>
       {body}
-      {!reading && intent === null ? (
+      {neverRun && intent === null ? (
         <DeckIntentAsk
           deckId={deckId}
           fix={facts.fix ? { axis: axisName(facts.fix.key), hurt: facts.fix.hurt, games: facts.gameCount } : null}
@@ -322,7 +329,7 @@ export function TuningPanel({
       >
         {reading ? (
           <>
-            <div className="flex gap-[8px] md:contents">
+            <div className="flex gap-[8px] md:gap-[12px]">
               <span
                 aria-disabled="true"
                 className="flex h-[44px] flex-[2] items-center justify-center rounded-[8px] text-[13.5px] font-semibold md:h-auto md:flex-none md:px-[20px] md:py-[11px] md:text-[14px]"
@@ -338,7 +345,7 @@ export function TuningPanel({
                 {copy.stop}
               </button>
             </div>
-            <span className="text-center font-mono text-[9.5px] md:text-left md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+            <span className="-mt-[1px] text-center font-mono text-[9.5px] md:mt-0 md:text-left md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
               {manifest.progress(steps.filter((s) => counts?.[s] != null).length, steps.length)}
             </span>
           </>
@@ -353,7 +360,7 @@ export function TuningPanel({
               {unchangedShown ? copy.unchangedCta : primary.label}
             </button>
             <span
-              className="text-center font-mono text-[9.5px] leading-[1.55] md:max-w-[380px] md:text-left md:text-[11px] md:leading-[1.5]"
+              className={`text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px] md:leading-[1.5] ${spent ? "md:max-w-[380px]" : ""}`}
               style={{ color: "var(--fg-faint)" }}
             >
               {noteLine}
@@ -369,10 +376,11 @@ export function TuningPanel({
 
 // ── The pieces ──────────────────────────────────────────────────────────
 
-function Lead({ children, desktopOnly = false }: { children: ReactNode; desktopOnly?: boolean }) {
+function Lead({ children, desktopOnly = false, wide = false }: { children: ReactNode; desktopOnly?: boolean; wide?: boolean }) {
+  // Capped at 680px over a set of cards (A1); a lead over a manifest runs the panel's width.
   return (
     <p
-      className={`${desktopOnly ? "hidden md:block" : ""} mt-[10px] text-[12.5px] leading-[1.6] md:mt-[11px] md:max-w-[680px] md:text-[13.5px] md:leading-[1.65]`}
+      className={`${desktopOnly ? "hidden md:block" : ""} ${wide ? "md:max-w-[680px]" : ""} mt-[10px] text-[12.5px] leading-[1.6] md:mt-[11px] md:text-[13.5px] md:leading-[1.65]`}
       style={{ color: "var(--fg-body)" }}
     >
       {children}
@@ -404,16 +412,19 @@ function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) 
   );
 }
 
-function Unchanged({ state, intent }: { state: TuningState; intent: string | null }) {
+function Unchanged({ state, intent, fix }: { state: TuningState; intent: string | null; fix: TuningFacts["fix"] }) {
   const when = state.lastOkAt ? state.lastOkAt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
   const rows: [string, string][] = [
     [copy.unchangedReasonGamesKey, copy.unchangedReasonGames(state.gameCount, when)],
+    ...(fix ? [[copy.unchangedReasonAxisKey, copy.unchangedReasonAxis(axisName(fix.key), fix.hurt, state.gameCount)] as [string, string]] : []),
     [copy.unchangedReasonIntentKey, intent === null ? copy.unchangedReasonIntentEmpty : copy.unchangedReasonIntent],
   ];
   return (
-    <div data-testid="tuning-unchanged">
-      <Lead>{copy.unchanged(when)}</Lead>
-      <ul className="mt-[12px] flex flex-col gap-[6px]">
+    <div data-testid="tuning-unchanged" className="md:max-w-[640px]">
+      <p className="mt-[10px] text-[12.5px] leading-[1.6] md:mt-[12px] md:text-[13.5px] md:leading-[1.65]" style={{ color: "var(--fg-body)" }}>
+        {copy.unchanged(when)}
+      </p>
+      <ul className="mt-[12px] flex flex-col gap-[6px] md:mt-[14px]">
         {rows.map(([key, value]) => (
           <li
             key={key}
@@ -423,7 +434,7 @@ function Unchanged({ state, intent }: { state: TuningState; intent: string | nul
             <span className="w-[98px] flex-none font-mono text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>
               {key}
             </span>
-            <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{value}</span>
+            <span className="min-w-0 flex-auto font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{value}</span>
           </li>
         ))}
       </ul>
@@ -446,8 +457,13 @@ function failureCopy(errorClass: string | null): FailureCopy {
 }
 
 function Failure({ failure }: { failure: FailureCopy }) {
+  // Its own box (state 6, OC:807): the one --danger on the surface is the tag, never the border.
   return (
-    <div data-testid="tuning-failure" className="mt-[12px]">
+    <div
+      data-testid="tuning-failure"
+      className="mt-[12px] rounded-[12px] px-[18px] py-[16px]"
+      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
+    >
       <div className="flex flex-wrap items-baseline gap-[10px]">
         <span
           className="rounded-full px-[9px] py-[3px] font-mono text-[9.5px] uppercase tracking-[0.14em]"
@@ -459,9 +475,6 @@ function Failure({ failure }: { failure: FailureCopy }) {
       </div>
       <p className="mt-[11px] max-w-[660px] text-[13.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>{failure.body}</p>
       <p className="mt-[9px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{failure.kept}</p>
-      {failure.note ? (
-        <p className="mt-[6px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{failure.note}</p>
-      ) : null}
     </div>
   );
 }
@@ -492,7 +505,7 @@ export function manifestRows(
     rows.push({
       kind: "read",
       key: step,
-      label: labelOf(step),
+      label: labelOf(step, facts),
       count: n === null ? null : countOf(step, n, facts),
       done: counts !== null && landed != null,
     });
@@ -511,11 +524,11 @@ function known(facts: TuningFacts, intent: string | null, step: EvidenceStep): n
   }
 }
 
-function labelOf(step: EvidenceStep): string {
+function labelOf(step: EvidenceStep, facts: TuningFacts): string {
   switch (step) {
     case "games": return manifest.games;
     case "notes": return manifest.notes;
-    case "decklist": return manifest.list;
+    case "decklist": return facts.fix === null ? manifest.listVsMix : manifest.list;
     case "intent": return manifest.intent;
     case "collection": return manifest.collection;
   }

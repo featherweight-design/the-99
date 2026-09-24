@@ -236,7 +236,7 @@ function Thumb({ item, side }: { item: TuningItem; side: "cut" | "add" }) {
       {...trigger}
       tabIndex={-1}
       aria-hidden
-      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] ${side === "cut" ? "[border:1px_solid_var(--border-strong)]" : "[border:1px_solid_var(--border-dashed)]"} ${src ? "" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
+      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] ${side === "cut" ? "[border:1px_solid_var(--border-strong)]" : "[border:1px_solid_var(--border-dashed)]"} ${src ? "" : side === "cut" ? "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]"}`}
       // eslint-disable-next-line no-restricted-syntax -- the card's own art, a per-item URL no class can hold
       style={src ? { backgroundImage: `url("${src}")` } : undefined}
       title={name}

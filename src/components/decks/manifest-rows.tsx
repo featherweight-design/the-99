@@ -27,7 +27,7 @@ export function ManifestRows({ rows, onLogGame }: { rows: readonly ManifestRow[]
             style={{ border: "1px dashed var(--border-dashed)" }}
           >
             <Box dashed />
-            <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-[10px]">
+            <span className="flex min-w-0 flex-1 flex-col gap-[1px] md:flex-row md:items-center md:gap-[10px]">
               <span className="text-[12.5px] md:flex-1 md:text-[13px]" style={{ color: "var(--fg-faint)" }}>
                 {copy.games}
               </span>
