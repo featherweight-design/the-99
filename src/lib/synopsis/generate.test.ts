@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import type { SynopsisFacts } from "./facts";
-import { mergeRetry, outcomeOf, refusedSections, shown } from "./generate";
+import { chargeFor, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
+import { isRepair } from "./prompt";
 import { stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionVerdict } from "./types";
 import { validateSynopsis } from "./validate";
@@ -31,6 +32,23 @@ describe("the run's outcome and charge", () => {
     expect(shown(content([no("overview"), ok("primer")], "a"))).toBe(true);
     expect(shown(content([no("overview"), no("primer")], "a"))).toBe(false);
     expect(shown(null)).toBe(false);
+  });
+
+  // The credit rule (Hugh, 2026-09-24): all four render, or the unit comes back.
+  it("charges only when all four sections render", () => {
+    expect(chargeFor(content([ok("overview"), ok("primer"), ok("keyCards"), ok("weaknesses")], "a"))).toBe("spent");
+    expect(chargeFor(content([no("overview"), ok("primer"), ok("keyCards"), ok("weaknesses")], "a"))).toBe("refunded");
+    expect(chargeFor(content([no("overview"), no("primer"), no("keyCards"), no("weaknesses")], "a"))).toBe("refunded");
+    expect(chargeFor(null)).toBe("refunded");
+  });
+
+  // Both calls of a repaired write are billed, so the settle records their sum.
+  it("adds two replies' usage, and keeps one when the other got no response", () => {
+    const a = { inputTokens: 1, outputTokens: 2, cacheReadTokens: 3, cacheWriteTokens: 4 };
+    expect(sumUsage(a, a)).toEqual({ inputTokens: 2, outputTokens: 4, cacheReadTokens: 6, cacheWriteTokens: 8 });
+    expect(sumUsage(a, undefined)).toBe(a);
+    expect(sumUsage(undefined, a)).toBe(a);
+    expect(sumUsage(undefined, undefined)).toBeUndefined();
   });
 });
 
@@ -81,6 +99,20 @@ describe("the stub", () => {
     expect(run("busy")).toBe("upstream_busy");
     expect(run("timeout")).toBe("timeout");
     expect(run("malformed")).toBe("malformed");
+  });
+
+  // Contract B's two outcomes, told apart by the request: a repair's user message names reasons.
+  it("repairs on the repair call alone, or refuses it again", () => {
+    const status = (mode: Parameters<typeof stubReply>[1], repair: boolean) => {
+      const reply = stubReply(facts, mode, repair);
+      return reply.ok ? validateSynopsis(reply.value, facts, new Map()).verdicts.map((v) => v.status) : reply.errorClass;
+    };
+    expect(status("repairs", false)).toEqual(["refused", "ok", "ok", "ok"]);
+    expect(status("repairs", true)).toEqual(["ok", "ok", "ok", "ok"]);
+    expect(status("unrepaired", true)).toEqual(["refused", "ok", "ok", "ok"]);
+    expect(stubMode({ SYNOPSIS_STUB: "repairs" })).toBe("repairs");
+    expect(isRepair("Those sections failed checking for these reasons; fix exactly these: overview: unknown_card.")).toBe(true);
+    expect(isRepair("Write the overview.")).toBe(false);
   });
 
   it("passes on a deck of lands with only a few spells, naming distinct cards", () => {
