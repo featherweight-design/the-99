@@ -1,4 +1,5 @@
 import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
+import { colorLabel } from "../decks/format";
 import { identityNameOf, type SynopsisFacts } from "./facts";
 import type { CheckedSynopsis, SectionId } from "./types";
 
@@ -82,7 +83,9 @@ export function buildSynopsisPrompt(
   lines.push(`Commander: ${facts.commanders.join(" and ")}`);
   lines.push(`Color identity: ${identityNameOf(facts)}`);
   if (facts.unproducible.length > 0) {
-    lines.push(`Colors the spells need that no land produces: ${facts.unproducible.join("")}`);
+    // By name, as the identity is: a letter run here would hand the model the very form it is
+    // told never to write.
+    lines.push(`Colors the spells need that no land produces: ${facts.unproducible.map((c) => colorLabel([c]).toLowerCase()).join(" and ")}`);
   }
 
   lines.push("", "Mulligan figures (the only numbers the mulligan lines may state):");

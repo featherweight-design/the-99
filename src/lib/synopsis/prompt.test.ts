@@ -60,6 +60,10 @@ describe("buildSynopsisPrompt", () => {
     expect(system).toContain("never by mana letters");
   });
 
+  it("names the colors no land produces rather than spelling their letters", () => {
+    expect(buildSynopsisPrompt({ ...FACTS, unproducible: ["R", "G"] }).user).toContain("Colors the spells need that no land produces: red and green");
+  });
+
   it("names facts stored before the identity name existed the same way", () => {
     expect(buildSynopsisPrompt({ ...FACTS, identityName: undefined }).user).toContain("Color identity: Gruul");
     expect(buildSynopsisPrompt({ ...FACTS, identityName: "Temur" }).user).toContain("Color identity: Temur");

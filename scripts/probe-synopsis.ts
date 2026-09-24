@@ -461,7 +461,7 @@ async function run() {
     having count(distinct condition) >= ceil(0.75 * (select count(distinct condition) from format_staples))`);
   check("the universal staples are the cards staple in three quarters of the conditions",
     [...universal].sort(), independent.map((r) => r.oracle_id).sort());
-  const [staple] = await rows<{ oracle_id: string }>(sql`
+  const [staple] = universal.size === 0 ? [] : await rows<{ oracle_id: string }>(sql`
     select c.oracle_id from cards c where c.oracle_id in (${sql.join([...universal].map((id) => sql`${id}::uuid`), sql`, `)}) and c.type_line not ilike '%Land%'
     order by c.oracle_id limit 1`);
   if (!staple) {
@@ -474,7 +474,12 @@ async function run() {
     const withStaple = await writeSynopsisFor(deck.id, USER, deps);
     const flagged = (lastFacts as SynopsisFacts | null)?.cards.filter((c) => c.universalStaple).map((c) => c.oracleId) ?? [];
     check("factsFor flags the universal staple the deck holds, and only that", flagged, [staple.oracle_id]);
-    check("…and the write keeps it off the Key cards and survives", withStaple.kind === "written" && withStaple.outcome, "survived");
+    // The stub never offers a staple, so this proves the write path and the stored card list; the
+    // validator's own refusal of one is proved in validate.test.ts.
+    const keyCards = withStaple.kind === "written" ? withStaple.synopsis?.content.keyCards ?? [] : [];
+    const stapleName = (lastFacts as SynopsisFacts | null)?.cards.find((c) => c.oracleId === staple.oracle_id)?.name;
+    check("…and the write survives with the staple off its Key cards",
+      [withStaple.kind === "written" && withStaple.outcome, keyCards.some((k) => k.card === stapleName)], ["survived", false]);
   }
 
   // 11 · THE VERSION COPY, at commit only, onto the newest version, once.

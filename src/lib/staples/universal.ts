@@ -1,8 +1,8 @@
 /**
  * UNIVERSAL STAPLES: the cards nearly every Commander deck plays whatever it is doing (Hugh,
- * 2026-09-24). ONE definition, app-wide: the overview keeps them off its Key cards, and tuning and
- * the swap tools read the same set, so no two surfaces disagree about which cards are "just
- * staples".
+ * 2026-09-24). ONE definition, app-wide. The overview is its first reader, keeping them off its Key
+ * cards; tuning and the swap tools are to import this module rather than restate the rule, so no
+ * two surfaces disagree about which cards are "just staples".
  *
  * DERIVED, NEVER NAMED. A card is universal when it is a staple in at least three quarters of the
  * `format_staples` conditions: 12 of 16 when the table was measured (staging, 2026-09-24), which
