@@ -13,6 +13,7 @@ import { readySlice } from "../lib/recs/ready-to-build";
 import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
+import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -113,6 +114,9 @@ export default async function HomePage() {
       includeProxyStats: true,
       includeDeckState: true,
       includeCommanderArt: true,
+      // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
+      // `/decks` reads it under. 0.83ms on staging.
+      includeBracket: analysisTabEnabled(),
     }),
   ]);
   if (stats.uniqueCards === 0 && decks.length === 0) {
