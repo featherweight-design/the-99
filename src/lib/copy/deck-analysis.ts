@@ -87,6 +87,8 @@ export const deckAnalysisCopy = {
   panel: {
     /** The empty state's label, over the ring. */
     overview: "Overview",
+    /** The opening loader (§8, 8a), while the stored reading is fetched. Says nothing about it. */
+    opening: "Loading\u2026",
     idle: {
       heading: "Five brackets. Your cards pick which.",
       body:

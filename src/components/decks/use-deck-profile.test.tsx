@@ -45,13 +45,17 @@ const B = "22222222-2222-4222-8222-222222222222";
 
 /** Every (deck, state) pair that reached the screen, so a single wrong render is visible. */
 const painted: string[] = [];
+/** Every (state, peek settled) pair painted, for the opening loader's rule. */
+const settledPaint: string[] = [];
 
 function Harness({ deckId = A, listKey }: { deckId?: string; listKey?: string }) {
-  const { state, request, peek } = useDeckProfile(deckId, listKey);
+  const { state, request, peek, peekSettled } = useDeckProfile(deckId, listKey);
   painted.push(`${deckId}:${state.kind}`);
+  settledPaint.push(`${state.kind}:${peekSettled}`);
   return (
     <div>
       <span data-testid="kind">{state.kind}</span>
+      <span data-testid="settled">{String(peekSettled)}</span>
       <span data-testid="held">{String("held" in state && state.held !== null)}</span>
       <span data-testid="fresh">{state.kind === "ready" ? String(state.fresh) : "-"}</span>
       <span data-testid="at">{state.kind === "ready" ? state.analyzedAt : "-"}</span>
@@ -79,6 +83,7 @@ const peek = async (c: ReturnType<typeof render>) => {
 
 beforeEach(() => {
   painted.length = 0;
+  settledPaint.length = 0;
   stub.peeks = [];
   stub.stored = { ok: false, reason: "none" };
   stub.peekGate = null;
@@ -354,6 +359,37 @@ describe("useDeckProfile peek", () => {
 
   // A press still in flight for this deck outranks a stored copy, even after the shell moved away
   // and back, which resets the state to idle while the press is pending.
+  // THE OPENING LOADER (§8, 8a) waits on this. An idle tab whose peek has not answered does not
+  // know it is unanalyzed; one whose peek has answered, with anything, does.
+  describe("peekSettled", () => {
+    it("is false until the peek answers, then true for a miss", async () => {
+      stub.peekGate = () => {};
+      const c = render(<Harness />);
+      expect(c.getByTestId("settled").textContent).toBe("false");
+      await peek(c);
+      expect(c.getByTestId("settled").textContent).toBe("false");
+      await act(async () => stub.peekGate!());
+      expect(c.getByTestId("settled").textContent).toBe("true");
+      expect(kind(c)).toBe("idle");
+    });
+
+    it("settles on a failed peek too, so a failure never leaves the loader up", async () => {
+      stub.peekThrows = true;
+      const c = render(<Harness />);
+      await peek(c);
+      expect(c.getByTestId("settled").textContent).toBe("true");
+    });
+
+    it("lands a stored reading in the same render it settles, never idle and settled first", async () => {
+      stub.stored = { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-23T00:00:00Z", fresh: true, versionNumber: null };
+      const c = render(<Harness />);
+      await peek(c);
+      expect(kind(c)).toBe("ready");
+      // idle+settled would draw the empty state for a frame before the reading.
+      expect(settledPaint).not.toContain("idle:true");
+    });
+  });
+
   it("makes no peek while a press for the same deck is in flight", async () => {
     stub.gate = () => {};
     const c = render(<Harness />);

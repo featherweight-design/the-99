@@ -261,4 +261,51 @@ describe("AnalysisPanel", () => {
       expect(screen.queryByText(/^tuning for/)).toBeNull();
     });
   });
+
+  // OPENING THE TAB (§8, 8a): the one state that withholds the mix. It draws nothing it cannot
+  // yet know, because the fetch may resolve to the empty state or to any analyzed shape.
+  describe("opening the tab", () => {
+    const opening = (phase: "wait" | "loader", state: ProfileState = { kind: "idle" }) =>
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={state} onRequest={onRequest} opening={phase} tuning={() => <p>tuning</p>}>
+            <div>{MIX}</div>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+
+    it("holds the block with nothing in it while waiting out the delay", () => {
+      const { container } = opening("wait");
+      const loader = container.querySelector("[data-opening-loader]")!;
+      expect(loader).toHaveAttribute("data-opening-loader", "waiting");
+      expect(loader.textContent).toBe("");
+      expect(screen.queryByTestId("analysis-empty")).toBeNull();
+      expect(screen.queryByText(MIX)).toBeNull();
+    });
+
+    it("draws the five marks and the word, and nothing else", () => {
+      const { container } = opening("loader");
+      const loader = container.querySelector("[data-opening-loader]")!;
+      expect(loader).toHaveAttribute("role", "status");
+      expect(loader.querySelectorAll(".anim-at-wave.at-wave-rest")).toHaveLength(5);
+      expect(loader).toHaveTextContent(copy.opening);
+      expect(screen.queryByTestId("analysis-empty")).toBeNull();
+      expect(screen.queryByTestId("analysis-ring")).toBeNull();
+      expect(screen.queryByText(MIX)).toBeNull();
+    });
+
+    // Held for the hold even once the reading landed: the reading waits behind the loader.
+    it("withholds a reading that landed while the loader is held", () => {
+      opening("loader", ready());
+      expect(screen.queryByText(MIX)).toBeNull();
+      expect(screen.queryByText("tuning")).toBeNull();
+      expect(screen.getByText(copy.opening)).toBeInTheDocument();
+    });
+
+    it("draws the mix again once the tab has its answer", () => {
+      draw({ kind: "idle" });
+      expect(screen.getByText(MIX)).toBeInTheDocument();
+      expect(screen.getByTestId("analysis-empty")).toBeInTheDocument();
+    });
+  });
 });

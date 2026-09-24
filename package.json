@@ -103,6 +103,7 @@
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "probe:intent-line": "node scripts/probe-intent-line.mjs",
+    "probe:tab-opening": "node scripts/probe-tab-opening.mjs",
     "check:tuning": "tsx scripts/check-tuning.ts",
     "eval:tuning": "tsx scripts/eval/tuning.mts",
     "eval:report": "tsx scripts/eval/report.mts",
