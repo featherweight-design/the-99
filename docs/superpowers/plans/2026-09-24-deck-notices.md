@@ -73,6 +73,12 @@ note has somewhere to go. Everything else the audit cites was re-read on `3f420a
 
 ---
 
+## Measured on staging (read-only, 2026-09-24)
+
+0 of 19 decks hold a card with `commander_legal = false` (0 rows); the catalog carries 53 Game Changers. No real deck
+reaches a legality state today, so every probe BUILDS one on local-dev (a not-legal card sleeved into a fixture deck)
+and FAILS when it finds no illegal deck, rather than passing over nothing.
+
 ## PRs
 
 Each PR runs the pre-open pass, the pr-review skill, the fence check before merge, and a rebase plus `pnpm typecheck`
