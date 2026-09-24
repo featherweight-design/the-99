@@ -9,7 +9,7 @@ const ALL_COLORS = ["W", "U", "B", "R", "G"];
 // color identity", "...that a land an opponent controls could produce"), and a
 // fixed cap silently drops whichever riders happen to run long. "any one color"
 // is the same grant phrased differently.
-const ANY_COLOR = /\badd\b[^.\n]*\bany (?:one )?color\b/;
+export const ANY_COLOR = /\badd\b[^.\n]*\bany (?:one )?color\b/;
 
 /**
  * Which colours a set of lands can actually produce.
