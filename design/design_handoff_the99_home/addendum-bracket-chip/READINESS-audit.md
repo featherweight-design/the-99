@@ -1,5 +1,7 @@
 # Readiness audit: Home addendum, the bracket chip on the resume row
 
+> **Revision 2 (2026-09-24), at the end of this file, supersedes the verdict below.** F1, F2, F3 and F6 are fixed. The verdict stays Orange on one new ruling (R2).
+
 **Verdict: Orange.** The placement, the states, the tokens and the copy are all buildable as drawn, and
 the data is one opt-in flag that costs under a millisecond. Three things hold it back from Green: the
 addendum's width table is measured against a line wider than the real one, none of its rows draws the
@@ -107,3 +109,83 @@ marks only**, with the face in the accessible name (F4).
 The 19px row pill (`resume-decks.tsx:198`) sits beside a 22 / 24 chip, so the chip stands 3 to 5px taller.
 The tile pairs a 22px pill with the same chip. Design drew it this way on purpose, and it reads fine in the
 canvas.
+
+## Revision 2 (2026-09-24)
+
+**Verdict: Orange.** All four Design findings are fixed: F1, F2, F3 and F6. The width table is right. Every
+drawn row carries its clause. 360 is drawn and nothing clips. The worst case is the reachable `4–5`.
+One new ruling holds it back from Green. Pass 2 does not fix the one-line row. It **redraws every Home row
+as three lines and adds the deck tile's progress bar to the row** (section C). That goes past the ask,
+and the README says so itself. Hugh has to choose between C and the fallback B (R2). Both are buildable
+as specified. Nothing goes back to Design.
+
+Re-audited against `origin/main` at `f93eea71`. None of the files the first pass cited has changed since
+`dac4fd5c`, so every line reference above still holds. The revision changes `README.md` and the canvas.
+The six chip assets and `support.js` are byte-identical to pass 1.
+
+### What pass 2 proposes
+
+- **C, the proposal.** Every row, chip or not, has three lines. (1) The name and stamp, unchanged. (2) The pill,
+  then the chip in a `flex-none gap-[8px]` group, then the commander, `min-w-0 flex-1 truncate`, which is the
+  only thing on the line that shrinks. (3) A 3px bar (`flex-1 min-w-0`, `statusBarStyle`), then the whole
+  count group `{built} / {bodySize} · N cards`, `flex-none whitespace-nowrap`, which never shrinks. The row
+  changes from `py-[10px]` to `py-[4px]`; the text column's `gap-[4px]` is unchanged.
+- **B, the fallback.** Only a row with a chip splits: the pill and chip on line two, and the commander and
+  count on line three. Those rows get `py-[6px] gap-[2px]`. A row with no chip is the shipped row.
+
+### F1, F2, F3 and F6
+
+| # | Status | Evidence |
+|---|---|---|
+| F1 | **Fixed** | The canvas §A header and the README both give 208 / 238 / 223 / 283 at 360 / 390 / 1180 / 1300. That matches the tree: the rail is `w-[62px]` from `md` (`src/components/shell/nav.tsx:148`), and `<main>` has no horizontal padding (`shell.tsx:43`). The dashboard is `px-[16px]` below 1180 and `p-[20px_26px_26px]` with `gap-[20px]` and a `w-[316px]` rail from 1180 (`dashboard.tsx:116`, `:137`). The rows are `basis-[calc(50%-6px)]` in a `gap-[12px]` wrap (`resume-decks.tsx:334`, `:341`), so (850 − 12) / 2 = 419. Pills are 64 / 52 / 76, since `statusPillStyle` draws a 1px border (`status-style.ts:80`) around `px-[7px]` of 6px glyphs. The chip is 28 / 55: `pl-[2px]`, a 1px border, 22px marks (`CHIP_MARK_PX`, `bracket-chip.tsx:93`) and a 5px gap (`:36`), with `pr-[2px]` once the face is gone. The count is 44 and `· 12 cards` is 63, since mono at 10.5 advances 6.3. One slip, in the README only: its "To buy + single" row reads 110 / 140 / 185, and the true figure is **106 / 136 / 181** (208 − 52 − 8 − 28 − 14). The canvas computes it correctly in the frame labels, so the build is unaffected. |
+| F2 | **Fixed** | All three cases in both C and B carry the clause (`· 12 cards`, `· 12 cards`, `· 4 cards`). In C the count group has a line to itself and nothing in it can shrink. The narrowest line is 208 at 360, and the group needs 111 plus a 10px gap. At 390 the commander keeps 85px in the worst row (13 characters, `Yuriko, the T…`) and 136 or more on every other drawn row. Decision 23's hazard, a partly printed figure, can no longer occur at any width. A **pair row** is not drawn. In C its names take the commander's slot, so they get the same 55 / 85 / 130 as the worst single row. At 390 that is `Ishai + Bru…`. At 360 the partner span gets about 19px, which still fits the `+ …` that decision 19 needs. The pair row keeps dropping the clause (`:110`). C no longer needs that rule for width, but the README keeps it unchanged, which is right: that is a separate change. |
+| F3 | **Fixed** | 360 is drawn in both C and B, and nothing clips at it. In C, line two's worst case is `Unresolved` + the range + 14 = 153 of 208, and line three is 121 of 208. C holds down to about a 305px viewport before the commander reaches 0. It also fixes a clip that ships today with no chip involved. At 360 the shipped `Unresolved` row with a clause has 56px left for the 63px clause, so it prints `· 12 ca…` with the commander at 0. Under B that no-chip row stays as it ships. |
+| F6 | **Fixed** | The worst case is now `Unresolved` with an unanswered `4–5`: the rank-4 plate, the rank-5 mark at 0.65, `99 / 99 · 12 cards`, the longest name, and `committed 10mo ago`. `[4,5]` is in `REACHABLE` (`src/lib/bracket/verdict-head.ts:42`). The single case is Upgraded (`[3]`). A range chip is 55 whatever its ranks, so `[1,2]` would measure the same. |
+
+### Width budget in C
+
+Line = row − 2 (border) − right padding (10, or 18 from 1180) − inset (108, or 116 from 1000). Line two's
+commander = line − pill − (8 + chip, when drawn) − 14. Line three's bar = line − 10 − 111.
+
+| | 360 | 390 | 393 | 1180 (2×2) | 1300 (2×2) |
+|---|---|---|---|---|---|
+| Row / line | 328 / 208 | 358 / 238 | 361 / 241 | 359 / 223 | 419 / 283 |
+| Commander · `Unresolved` + range | 55 | 85 | 88 | 70 | 130 |
+| Commander · `Complete` + range | 67 | 97 | 100 | 82 | 142 |
+| Commander · `To buy` + single | 106 | 136 | 139 | 121 | 181 |
+| Commander · `Unresolved`, no chip | 118 | 148 | 151 | 133 | 193 |
+| Commander · `To buy`, no chip | 142 | 172 | 175 | 157 | 217 |
+| Bar (count group whole, 111) | 87 | 117 | 120 | 102 | 162 |
+
+Nothing on line two or three is ever asked for more than the line has, at any of these widths. 1180 is
+still the narrowest desktop, and it sits between the two phones.
+
+### New in pass 2
+
+| # | Severity | Finding | Resolution | Owner |
+|---|---|---|---|---|
+| N1 | Medium | **C adds a bar to every Home row and reshapes the no-chip row.** The resume row has never drawn a progress bar (`statusBarStyle` has no caller under `src/components/home`). The Home handoff ruled that "the status pill is the row's status signal" (`design_handoff_the99_home/README.md`, E3). C adds a second status-inked signal beside the count, on rows with no chip too. The README flags this and asks for sign-off. | Hugh's ruling (R2). | Hugh |
+| N2 | Medium | **The canvas headline describes B, not C.** The H1 ("A row with a chip splits line two in two"), the intro paragraph ("A row with no chip is the shipped row, unchanged"), the last three rows of the §A table (`line − 125`, `in 58`) and the three cards under B all describe the fallback. Only section C and the README describe the proposal, so a builder who reads the canvas from the top builds B. | Build from the README and the section C frames. If R2 picks B, the headline is correct as it stands. No Design round is needed: nothing is missing, it only points at the other option. | eng |
+| N3 | Low | **C fills the content box with no slack.** 17.4 + 4 + 24 + 4 + 12.6 = 62 in a 62px box from `md` (60 on the phone). B does the same, at 58 in 58. Line one is a baseline-aligned line that mixes Cinzel at 1.2 with the stamp at the inherited 1.5, so its laid-out height is not guaranteed to be 17.4. Any excess is split top and bottom and cut by the row's `overflow-hidden` (`:124`). | Measure line one's laid-out height in the build's probe at 1300 and 390. If it is over, `py-[3px]` recovers 2px. | eng |
+| N4 | Low | **Line two's height is stated in the canvas and not in the README.** The canvas sets `height: 22 / 24` on line two in every C row. Without it, a no-chip row's line two is the pill's 19px, so in a mixed 2×2 pair the two rows' text blocks differ by 5px and the deck names sit about 2.5px apart. C's "no offset in a mixed pair" depends on that height. | Put `h-[22px] md:h-[24px]` on line two. | eng |
+| N5 | Low | **"The tile's 3px progress bar" is not quite the tile's.** The tile's track is `h-[3px] rounded-full` on `--border`, and it omits the fill at `built === 0` (`deck-card.tsx:557-571`). C specifies `rounded-[2px]` on `--border-strong` with the fill always drawn. | Follow the README's `--border-strong`, because it stands on `--surface-inset`, not the tile's ground. Keep the tile's `built > 0` fill rule so an empty deck draws an empty track. | eng |
+
+### Carried over
+
+- **F4 and F5 stand as written above**, and the README's "Data and engineering" section now restates both.
+  The anchors are unchanged on `f93eea71`: the row has no composed accessible name (`resume-decks.tsx:112-125`),
+  and the analysis action still defers only `revalidatePath("/decks")` (`src/app/decks/profile-actions.ts:82`).
+- `includeBracket: analysisTabEnabled()` is still the whole data change (`src/app/page.tsx:112-116`).
+- `face?: boolean` on `BracketChip`, with `pr-[2px]` when it is false, is unchanged from pass 1.
+- **Checked and clean, again.** No new token: all 14 tokens the README lists are declared in all six themes in `globals.css`. No new
+  string. No new mark: the `*-chip-ink.svg` stand-ins are the same files as pass 1, and nothing in `design/`
+  is imported. No About entry, per the cosmetic rule.
+
+### Ruling needed from Hugh
+
+**R2 · C or B.** Recommend **C**. It gives every row the same three lines, so a mixed pair never offsets and
+a row keeps its shape when a deck gets its first analysis. It fixes the 360 clause clip that ships today. It
+gives the count a line of its own at every width, which retires decision 23's hazard rather than managing
+it. The cost is N1, a bar on a row the Home handoff kept to a single status signal, and a change to rows
+that have no chip. B keeps the shipped row wherever there is no chip. It costs a 9px name offset in a
+mixed pair, and the row changes shape on a deck's first analysis.
