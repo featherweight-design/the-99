@@ -64,17 +64,17 @@ card-to-commanders index was added for this feature (`src/db/schema.ts:994-996`)
 4. **The limit is a per-card dollar figure, remembered per deck.** It is not a total budget: a
    total has many answers and would make the tool choose, which is the ranking the suite rules
    out. The default is $10.
-5. **A land's job is the colours it makes.** Stand-ins make every colour the original makes. They
+5. **A land's job is the colors it makes.** Stand-ins make every color the original makes. They
    are ordered cheapest first, with copies the player already has free at the top. Each names what
    it gives up: enters tapped, deals damage, costs life, and so on.
 5a. **A fetch land's job is the land types it finds.** Wooded Foothills (Mountain or Forest) gets
    cheaper lands that find those types: Terramorphic Expanse, Evolving Wilds, Fabled Passage. Each
    names what it gives up (enters tapped, finds only a basic). Ruled after the cold review, which
-   found that the colour reading gives a fetch no colours at all.
+   found that the color reading gives a fetch no colors at all.
 6. **A spell's job is its role.** Stand-ins share the original's role (ramp, draw, removal, wipes),
    cost the same mana value or less, and are ranked by how often this commander's decks run them.
    A card with no role says so plainly and offers nothing. The tool never guesses. The same goes for
-   a land that neither makes a colour nor fetches (Strip Mine, Cabal Coffers): its job is its text,
+   a land that neither makes a color nor fetches (Strip Mine, Cabal Coffers): its job is its text,
    so it gets no stand-in.
 7. **Taking a stand-in swaps it into the draft, with a Put it back undo.** This is the same act as
    Suggested changes' Apply. A player learns one swap mechanism, not two.
@@ -110,8 +110,8 @@ them.
   names the roles it shares.
 - **A card whose front face is a land is a land;** anything else is a spell (Agadeem's Awakening is
   a spell). Mana value is the card's own mana value.
-- **An "any colour" land** (City of Brass, Mana Confluence, and Command Tower inside the deck)
-  counts as making every colour the grant covers. A grant that depends on other permanents
+- **An "any color" land** (City of Brass, Mana Confluence, and Command Tower inside the deck)
+  counts as making every color the grant covers. A grant that depends on other permanents
   (Exotic Orchard, Reflecting Pool) does not count.
 - **"Already in the deck"** means in the draft, which is the deck the player is editing.
 
@@ -161,7 +161,7 @@ or the new total with what the swap saved.
 ### 3.5 Fits your decks (card modal)
 
 A section in the card modal listing the player's decks the card could join. A deck qualifies when
-its commander's colour identity allows the card and the deck does not already hold it. The decks
+its commander's color identity allows the card and the deck does not already hold it. The decks
 that already hold it are listed by `AvailabilityDetail` already.
 
 Each deck row shows:
@@ -172,7 +172,7 @@ Each deck row shows:
   nothing if the card has no role.
 
 States: several decks; every deck that could play it already holds it; no deck can play it (the
-colours rule them all out); the card is not legal in Commander; and no decks at all.
+colors rule them all out); the card is not legal in Commander; and no decks at all.
 
 ## §4 Open for Design to call
 
@@ -199,8 +199,8 @@ colours rule them all out); the card is not legal in Commander; and no decks at 
   copies lead every list of stand-ins.
 - **No single score.** A stand-in shows its facts: price, mana value, its commander figure, what it
   gives up. A fitting deck shows two facts. None of these is combined into a number.
-- **A stand-in never breaks the deck.** It is legal in Commander, inside the commander's colour
-  identity, and not already in the deck. For a land, it makes every colour the original makes.
+- **A stand-in never breaks the deck.** It is legal in Commander, inside the commander's color
+  identity, and not already in the deck. For a land, it makes every color the original makes.
 - **A stand-in is cheaper, or it is free.** A card with no price has never been stocked (AGENTS.md,
   price refresh) and cannot be called cheaper, so it appears only if the player owns a free copy.
 - **Only Shopping rows are swept.** Owned free cards are never flagged, whatever they are worth.
@@ -216,10 +216,10 @@ colours rule them all out); the card is not legal in Commander; and no decks at 
 
 Recorded so the round is not asked about them. All deterministic.
 
-- **Land colours need a reader that has never run in production.** `producibleColors`
+- **Land colors need a reader that has never run in production.** `producibleColors`
   (`src/lib/recs/mana.ts:30`) reads basic land types and the "add" clauses on both faces, and its
-  "any colour" pattern is at `:12`. Nothing but its test calls it. The profile instead takes a
-  land's colour identity (`src/lib/profile/build.ts:259-264`), which reads City of Brass as making
+  "any color" pattern is at `:12`. Nothing but its test calls it. The profile instead takes a
+  land's color identity (`src/lib/profile/build.ts:259-264`), which reads City of Brass as making
   nothing. The stand-in query uses a text reader, needs no new ingest, and must add the conditional
   exclusion in §3.0.
 - **Fetch lands need a second reader:** the land types a "search your library for a … card" land
@@ -243,7 +243,7 @@ Recorded so the round is not asked about them. All deterministic.
   proxies, `touchDeck`) is extracted and shared, so the two tools stay one act. **Undo needs its
   own storage.** `undoItem` (`verdicts.ts:154`) restores from a snapshot on the suggestion row, and
   a Shopping take has no such row. The plan names where that snapshot lives. The button's label is
-  the same "Put it back" (`deck-tuning.ts:206`), and the #593 removal undo uses it too.
+  the same "Put it back" (`deck-tuning.ts:206`), one word from the #593 removal undo's "Put back"; Design and `/copy-review` keep the two distinct or make them one.
 - **Fits your decks' payload:** the modal fetches per card through `getCardDetail`
   (`src/app/card-detail-action.ts:18`) and today receives only the decks that hold the card. It
   needs the reader's decks, their commanders' identities (`fitsIdentity`,
