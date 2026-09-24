@@ -16,6 +16,7 @@ import { synopsisResponseSchema, type SynopsisResponse } from "./response-schema
 import { STUB_MODEL, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionId, SectionVerdict, SynopsisOutcome } from "./types";
 import { marksIn, validateSynopsis } from "./validate";
+import { overviewDataMovedFor } from "../notices/overview";
 
 /**
  * Writing a synopsis: reserve, call, check, store, settle. SERVER-ONLY: it imports the database.
@@ -41,6 +42,8 @@ export type SynopsisRow = {
   contractVersion: number;
   createdAt: Date;
   content: CheckedSynopsis;
+  /** The change log head the reading it was written from had seen (deck notices plan D11). */
+  seenSeq?: number;
 };
 
 export type WriteResult =
@@ -173,6 +176,7 @@ export async function readShownSynopsis(
       contractVersion: deckSynopses.contractVersion,
       createdAt: deckSynopses.createdAt,
       content: deckSynopses.content,
+      seenSeq: deckSynopses.seenSeq,
     })
     .from(deckSynopses)
     .where(and(
@@ -203,11 +207,11 @@ async function freshReading(deckId: string, userId: string, deps?: StoredProfile
   const reading = await readStoredReading(deckId, userId, deps);
   if (!reading?.fresh) return null;
   const [row] = await db
-    .select({ list: deckProfiles.fingerprint, at: deckProfiles.computedAt, dirty: deckProfiles.dirty })
+    .select({ list: deckProfiles.fingerprint, at: deckProfiles.computedAt, dirty: deckProfiles.dirty, seenSeq: deckProfiles.seenSeq })
     .from(deckProfiles)
     .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
   if (!row || row.dirty || row.at.getTime() !== reading.analyzedAt.getTime()) return null;
-  return { profile: reading.profile, list: row.list };
+  return { profile: reading.profile, list: row.list, seenSeq: row.seenSeq };
 }
 
 /** Exported for the eval harness, which must run this exact input builder rather than a copy. */
@@ -246,6 +250,14 @@ async function startRun(
   retryOf: string | null,
   /** False on a retry, which rewrites the synopsis for this very list on purpose. */
   checkReuse: boolean,
+  /** The reading's change log head, stamped on the run (deck notices plan D11). */
+  seenSeq = 0,
+  /**
+   * The list's overview is being REPLACED because the data under it moved (D11). The check under
+   * the lock then counts only an overview written for this reading or a later one, which is what a
+   * concurrent press would have written; the moved one it replaces does not stop it.
+   */
+  replacing = false,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
@@ -264,13 +276,14 @@ async function startRun(
           .from(deckSynopses)
           .where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId), eq(deckSynopses.status, "done"),
             eq(deckSynopses.fingerprint, list),
+            replacing ? sql`${deckSynopses.seenSeq} >= ${seenSeq}` : sql`true`,
             sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`))
           .limit(1);
         if (shownNow) throw new AlreadyWrittenError();
       }
       const [row] = await tx.insert(deckSynopses).values({
         deckId, userId, fingerprint: list, contractVersion: SYNOPSIS_CONTRACT_VERSION,
-        model, modelCallId: unit.id, status: "pending", retryOf, createdAt: now,
+        model, modelCallId: unit.id, status: "pending", retryOf, createdAt: now, seenSeq,
       }).returning({ id: deckSynopses.id });
       return { runId: row.id, callId: unit.id };
     });
@@ -352,8 +365,13 @@ async function run(
       if (refusedSections(current.content).length === 0) return { kind: "nothing_to_retry" };
       base = current;
     }
-  } else if (current && current.fingerprint === reading.list) {
-    // REUSE IS KEYED ON THE LIST ALONE (ruling B): a contract change never rewrites it.
+  }
+  const replacing = !retry && !!current && current.fingerprint === reading.list
+    && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0));
+  if (!retry && current && current.fingerprint === reading.list && !replacing) {
+    // REUSE IS KEYED ON THE LIST (ruling B): a contract change never rewrites it. The one exception
+    // is data under the list moving (deck notices D11): the read marks that overview stale and
+    // offers *Write a new overview*, which must then write one rather than hand the same one back.
     return { kind: "reused", synopsis: current };
   }
 
@@ -361,7 +379,7 @@ async function run(
   const refused = base ? refusedSections(base.content) : null;
   const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined);
 
-  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry);
+  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog

@@ -9,7 +9,8 @@ import { deckBodySize } from "../decks/deck-size";
 import { newestVersion, versionCards } from "../decks/versions";
 import { analyzedOracleIds, LOG_HEAD_SQL, readLogHead } from "../notices/log";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
-import { cachedDeckProfile, readProfileHead, type ProfileHead } from "./load";
+import { cachedDeckProfile, loadDeckProfile, readProfileHead, type ProfileHead } from "./load";
+import { readingMoved } from "../notices/read";
 import { PROFILE_VERSION } from "./version";
 import type { Bracket } from "../bracket/types";
 import { isReachablePermits } from "../bracket/verdict-head";
@@ -40,9 +41,18 @@ import type { DeckProfile } from "./types";
 export type StoredProfileDeps = {
   generation: () => Promise<string>;
   compute: (deckId: string, userId: string) => Promise<DeckProfile | null>;
+  /**
+   * The UNCACHED build, for every press (plan D9, and H1's recompute). `cachedDeckProfile` keys on the list and the
+   * catalog generation, and neither moves for a log entry: the generation stamp is written at the
+   * END of an ingest, is cached for a minute, and a rules bump never moves it. So a cache hit could
+   * hand back the very reading a notice is about. Absent, `compute` stands in.
+   */
+  computeFresh?: (deckId: string, userId: string) => Promise<DeckProfile | null>;
 };
 
-const REQUEST_DEPS: StoredProfileDeps = { generation: catalogGeneration, compute: cachedDeckProfile };
+const REQUEST_DEPS: StoredProfileDeps = {
+  generation: catalogGeneration, compute: cachedDeckProfile, computeFresh: loadDeckProfile,
+};
 
 /** A stored reading, with whether it still describes the deck. */
 export type StoredReading = {
@@ -259,11 +269,25 @@ export async function computeAndStoreProfile(
   const versionNumber = holding?.number ?? rebuildOf?.versionNumber ?? null;
   const stillNewest = (pinTo || holding) && versionId ? isNewestVersion(deckId, versionId) : sql`true`;
 
-  // RULING 5: the same list, under the same code, is the same answer. Clear `dirty` (and take the
-  // commit's pin) on the row as it stands, guarded on the fingerprint and version it was read at
-  // AND on the deck's edit stamp: an edit landing after that read — even one undone back to the
-  // same list — moves the stamp, and the clear matches nothing.
-  if (row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list) {
+  // H1 (Hugh, 2026-09-24): a PRESS on an unchanged list recomputes when the data under the reading
+  // moved: a change log entry touches it (plan D5, D8). Only a press: a commit's pin and a quiet
+  // rebuild keep ruling 5's shortcut, so a commit never moves the held bracket. With nothing
+  // pending, the press answers from the store exactly as before.
+  const isPress = !pinTo && !rebuildOf;
+  const sameAnswer = row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list;
+  const dataMoved = Boolean(isPress && sameAnswer && row && (await readingMoved({
+    seenSeq: row.seenSeq,
+    rulesVersion: row.rulesVersion,
+    // An empty list is a legacy row (schema note), read as the list this press is guarded to.
+    analyzedOracleIds: row.analyzedOracleIds.length > 0 ? row.analyzedOracleIds : analyzedOracleIds(head),
+    commanderOracleIds: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
+  })));
+
+  // RULING 5: the same list, under the same code, and the same data (H1), is the same answer. Clear
+  // `dirty` (and take the commit's pin) on the row as it stands, guarded on the fingerprint and
+  // version it was read at AND on the deck's edit stamp: an edit landing after that read — even one
+  // undone back to the same list — moves the stamp, and the clear matches nothing.
+  if (row && sameAnswer && !dataMoved) {
     let cleared = false;
     try {
       cleared = await clearDirty(deckId, list, editedAt, versionId, stillNewest);
@@ -304,7 +328,14 @@ export async function computeAndStoreProfile(
   // Unreadable (null): the write takes the head in its own statement, which errs towards quiet.
   const seenSeq = rebuildOf ? rebuildOf.marks.seenSeq : await readLogHead(db);
   const seenSeqValue = seenSeq ?? sql`(${LOG_HEAD_SQL})`;
-  const profile = await deps.compute(deckId, userId);
+  // A PRESS NEVER TAKES THE CACHE. It stamps the reading as past every entry and under the current
+  // rules, and the cache key carries neither the log head nor the rules version: a press on a list
+  // analyzed before a rules bump or an entry (edit away, edit back) would otherwise store the old
+  // answer under the new marks and clear the notice over a verdict that never saw it. A pin and a
+  // quiet rebuild keep their marks, so the cache stays theirs.
+  const profile = isPress
+    ? await (deps.computeFresh ?? deps.compute)(deckId, userId)
+    : await deps.compute(deckId, userId);
   if (!profile) return null;
   let analyzedAt = new Date();
   // THE PIN IS WRITTEN SEPARATELY, after the row, when it names a version that must still be the

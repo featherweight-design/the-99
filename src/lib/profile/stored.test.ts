@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
-vi.mock("./load", () => ({ cachedDeckProfile: vi.fn(), readProfileHead: vi.fn() }));
+vi.mock("./load", () => ({ cachedDeckProfile: vi.fn(), loadDeckProfile: vi.fn(), readProfileHead: vi.fn() }));
 vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: vi.fn() }));
 
 const { deckLegality } = await import("./stored");

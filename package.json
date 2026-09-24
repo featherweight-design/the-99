@@ -37,6 +37,7 @@
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",
     "probe:declaration": "tsx scripts/probe-declaration.ts",
     "probe:profile-store": "tsx scripts/probe-profile-store.ts",
+    "probe:notices": "tsx scripts/probe-notices.ts",
     "probe:notices-log": "tsx scripts/probe-notices-log.ts",
     "probe:synopsis": "tsx scripts/probe-synopsis.ts",
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",

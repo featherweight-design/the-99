@@ -9,6 +9,7 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { reapSynopses } from "./reaper";
+import { overviewDataMovedFor } from "../notices/overview";
 import type { CheckedSynopsis, SynopsisOutcome } from "./types";
 
 /**
@@ -67,13 +68,21 @@ const FAILED: readonly SynopsisOutcome[] = ["upstream_busy", "timeout", "malform
 export function synopsisStatus(input: {
   reading: { fresh: boolean; list: string } | null;
   synopsis: Pick<SynopsisRow, "fingerprint"> | null;
+  /**
+   * A change log entry touching this deck landed between the overview's reading and the current
+   * one (deck notices plan D11, Hugh's H4): the list is the same and the data under it is not.
+   * `overviewDataMovedFor` decides it; absent, nothing moved.
+   */
+  dataMoved?: boolean;
   allowance: Allowance;
   /** A run in flight: a press now is refused as `in_flight` and writes nothing. */
   pending: boolean;
 }): { stale: boolean; wouldSpend: boolean } {
   const { reading, synopsis, allowance, pending } = input;
-  const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list);
-  const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list;
+  const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list || !!input.dataMoved);
+  // An overview whose data moved is not this list's any more: its press writes (D11), or the stale
+  // form's *Write a new overview* would hand back the overview it says is out of date.
+  const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list && !input.dataMoved;
   // Paused (the app-wide cap) or the owner's share used: the reservation refuses, so nothing would spend.
   const refused = !!allowance.paused || !!allowance.ownerShare;
   const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && allowance.used < allowance.limit;
@@ -116,6 +125,7 @@ export async function readSynopsisState(
 
   const status = synopsisStatus({
     reading: reading && row ? { fresh: reading.fresh, list: row.list } : null,
+    dataMoved: synopsis ? await overviewDataMovedFor(deckId, userId, synopsis.seenSeq ?? 0) : false,
     synopsis,
     allowance,
     pending: newest?.status === "pending",
