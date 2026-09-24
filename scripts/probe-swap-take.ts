@@ -95,6 +95,14 @@ async function main() {
     check("undo: another reader cannot", await undoSwap(bought.swapId, "someone-else"), null);
   }
 
+  // 2b. An undone swap's id stays spent, even when the same take is made again: without that, the
+  //     OLD id would undo the NEW take and leave the new swap row claiming it still stands.
+  if (bought.ok) {
+    const again = await takeStandIn(deck, USER, plateau, foundry);
+    check("undo: an old swap id cannot undo a new take of the same pair", await undoSwap(bought.swapId, USER), null);
+    if (again.ok) check("undo: the new take's own id still can", await undoSwap(again.swapId, USER), deck);
+  }
+
   // 3. A free take: the only Command Tower is owned and spoken for by no one.
   await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${tower}::uuid, 1, 'probe')`);
   const free = await takeStandIn(deck, USER, plateau, tower);
