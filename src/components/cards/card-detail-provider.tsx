@@ -96,8 +96,14 @@ type CardDetailContextValue = {
    * (Analysis tab handoff §3). The newest registration's label is the one drawn, because that
    * is the sheet a dismissal lands on.
    */
-  registerSheet: (backLabel?: string) => () => void;
+  registerSheet: (backLabel?: string, footer?: SheetFooter) => () => void;
 };
+
+/**
+ * A sheet's footer for a card stacked over it, or null for a card that is not one of the sheet's
+ * own (the stand-ins sheet draws Take on its stand-ins and nothing on anything else).
+ */
+export type SheetFooter = (oracleId: string, layout: "row" | "column") => ReactNode;
 
 const CardDetailContext = createContext<CardDetailContextValue | null>(null);
 
@@ -264,14 +270,15 @@ export function CardDetailProvider({
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   // One entry per sheet underneath, in the order they registered. A token rather than the label
   // identifies an entry, since two sheets may carry the same label.
-  const [sheets, setSheets] = useState<{ token: object; label: string | undefined }[]>([]);
-  const registerSheet = useCallback((label?: string) => {
+  const [sheets, setSheets] = useState<{ token: object; label: string | undefined; footer?: SheetFooter }[]>([]);
+  const registerSheet = useCallback((label?: string, footer?: SheetFooter) => {
     const token = {};
-    setSheets((list) => [...list, { token, label }]);
+    setSheets((list) => [...list, { token, label, footer }]);
     return () => setSheets((list) => list.filter((entry) => entry.token !== token));
   }, []);
   const sheetsBelow = sheets.length;
   const backLabel = sheets.at(-1)?.label;
+  const sheetFooter = sheets.at(-1)?.footer;
   const [failed, setFailed] = useState(false);
   // Joined and re-split rather than held as an array, so the callback's dependency is a
   // STRING and cannot churn on identity alone. The deck page happens to memoise its list
@@ -567,6 +574,7 @@ export function CardDetailProvider({
           total={paging ? siblings.length : 1}
           onClose={close}
           stacked={sheetsBelow > 0}
+          footer={sheetFooter ? (layout) => sheetFooter(card.oracleId, layout) : null}
           backLabel={backLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back

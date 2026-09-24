@@ -9,7 +9,7 @@ import { cssUrl } from "../../lib/collection/browse";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { CardRef } from "../../lib/profile/types";
-import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { FindingMark } from "./finding-mark";
 
@@ -110,6 +110,7 @@ export function ModalChrome({
   backLabel = title,
   ground = "var(--surface-raised)",
   titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
+  stackFooter,
   children,
 }: {
   mark?: React.ReactNode;
@@ -126,13 +127,25 @@ export function ModalChrome({
    * 43px header rather than losing its end, as the 390 frame draws it.
    */
   titleClassName?: string;
+  /** What a card stacked over this sheet draws in place of its Mana Pool link (the stand-ins' Take). */
+  stackFooter?: SheetFooter;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { registerSheet, openOracleId } = useCardDetail();
   useDialogA11y(ref, onClose);
-  useEffect(() => registerSheet(backLabel), [registerSheet, backLabel]);
+  // The footer is read through a ref, so a sheet whose state moves does not re-register itself (and
+  // flicker the stacked card's way back) on every render.
+  const footerRef = useRef(stackFooter);
+  useEffect(() => {
+    footerRef.current = stackFooter;
+  });
+  const hasFooter = stackFooter !== undefined;
+  useEffect(
+    () => registerSheet(backLabel, hasFooter ? (id, layout) => footerRef.current?.(id, layout) ?? null : undefined),
+    [registerSheet, backLabel, hasFooter],
+  );
 
   // The card in front of this one. The sheet steps down a ground behind it, which is the second
   // half of what lets a reader see where a dismissal lands.

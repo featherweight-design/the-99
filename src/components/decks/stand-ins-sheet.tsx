@@ -23,7 +23,7 @@ import type { StandInsRead } from "../../lib/swaps/gather";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { loadingStatus, sheetModel, type SheetRow } from "../../lib/swaps/sheet-model";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
 import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
@@ -219,6 +219,7 @@ export function StandInsSheet({
   onClose: () => void;
 }) {
   const tools = useSwapTools();
+  const { close: closeCard } = useCardDetail();
   const [load, setLoad] = useState<Load>({ state: "loading" });
 
   const deckId = tools?.deckId;
@@ -312,11 +313,63 @@ export function StandInsSheet({
       : null,
   });
   // The stacked card pages the sheet's own list, in the sheet's order across its groups.
-  const siblings = model?.groups.flatMap((g) => g.rows.map((r) => r.oracleId)) ?? [];
+  const rows = model?.groups.flatMap((g) => g.rows) ?? [];
+  const siblings = rows.map((r) => r.oracleId);
+  const listAsOf = load.state === "ready" ? load.read.newestAsOf : null;
+
+  // A stand-in's card, stacked over the sheet, takes it from where the reader is (§7.3). Nothing for
+  // a card that is not one of the list's, and nothing once a take has landed.
+  const stackFooter: SheetFooter = (oracleId, layout) => {
+    const row = rows.find((r) => r.oracleId === oracleId);
+    if (!row || taken) return null;
+    const press = () => {
+      closeCard();
+      void take(row);
+    };
+    const where = swapToolsCopy.modal.inPlaceOf(name, tools.deckName);
+    if (layout === "row") {
+      return (
+        <span data-testid="stand-in-footer" className="flex flex-1 min-w-0 items-center gap-[12px]">
+          <span className="flex-1 min-w-0 font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
+          <PricePlate row={row} newestAsOf={listAsOf} />
+          <button type="button" onClick={press} aria-label={copy.takeAria(row.name, name)} className={APPLY}>
+            {copy.take}
+          </button>
+        </span>
+      );
+    }
+    return (
+      <div
+        data-testid="stand-in-footer"
+        className="flex flex-col gap-[8px] px-[16px] pt-[10px] pb-[20px] border-t border-[color:var(--border)]"
+        style={{ background: "var(--surface-sunken)" }}
+      >
+        <span className="flex items-center gap-[8px]">
+          <span className="flex-1 min-w-0 font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>{where}</span>
+          <PricePlate row={row} newestAsOf={listAsOf} />
+        </span>
+        <button
+          type="button"
+          onClick={press}
+          aria-label={copy.takeAria(row.name, name)}
+          className="flex items-center justify-center w-full h-[44px] rounded-[8px] text-[13px] font-semibold bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+        >
+          {swapToolsCopy.modal.take(row.name)}
+        </button>
+      </div>
+    );
+  };
   const provenance = newestAsOf ? provenanceForm(newestAsOf, new Date()) : null;
 
   return (
-    <ModalChrome title={copy.title} closeLabel={copy.closeAria} onClose={onClose} width={640}>
+    <ModalChrome
+      title={copy.title}
+      closeLabel={copy.closeAria}
+      onClose={onClose}
+      width={640}
+      backLabel={copy.backLabel}
+      stackFooter={stackFooter}
+    >
       <div data-testid="stand-ins-sheet" className="flex flex-col gap-[12px] md:gap-[14px] px-[16px] pt-[14px] pb-[24px] md:px-[18px] md:pt-[16px] md:pb-[18px]">
         <section
           className="flex flex-col gap-[6px] px-[13px] pt-[11px] pb-[12px] rounded-[10px] border border-[color:var(--border)]"
