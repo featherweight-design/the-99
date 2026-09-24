@@ -18,6 +18,13 @@ Fixed in this PR, and confirmed by the confirm pass:
 - The desktop gap between the Shopping figure and the over item's `·` is 5px. The name block's
   own gap is 6px, so the over item pulls back one pixel.
 
+Decided by engineering, where the handoff draws nothing:
+
+- **The refusal's placement.** `limit.invalid` has a key and no drawing, so it is a `role="alert"` line
+  under the limit line, in mono 10px `--warning`. The field is `aria-invalid` and described by it.
+- **The `$` field holds 7ch**, because it takes six digits (up to $100,000) and a 5ch box scrolled the
+  first digit out of view.
+
 A deviation, recorded in the code:
 
 - The `$` field's input is 16px below `md` against the table's 13px. iOS Safari zooms the page on

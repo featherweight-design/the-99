@@ -53,7 +53,9 @@ import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 // box making up the vertical padding, desktop 34px with real padding.
 // Exception: a row carrying a meta line under the name grows to 52px on the
 // phone. Desktop is 34px flat either way — there the meta line's contents sit
-// inline with the name instead.
+// inline with the name instead — with one exception of its own: between md and
+// lg a Shopping row over the deck's limit puts `over $X` on a line under the
+// name (swap tools F12, ruling b), and grows to hold it.
 const ROW_PADDING = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]";
 
 const ROW_SHELL = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[44px] md:min-h-[34px]`;
@@ -439,8 +441,9 @@ export function DecklistRow({
               {quantityGlyph}
               {factMarks}
             </div>
-            {/* The phone meta line, and the only two things that ever ride it:
-                the cost, then the EDHREC figure. Nothing else joins it. */}
+            {/* The phone meta line, and the only things that ever ride it: the
+                cost, then the EDHREC figure, then, on a Shopping row over the
+                deck's limit, `over $X`. Nothing else joins it. */}
             <span className="md:hidden flex items-center gap-[5px] min-w-0">
               {cost ? <CostPips cost={cost} size={PIP_SIZE_PHONE} spoken /> : null}
               {cost && hasShoppingMeta ? (

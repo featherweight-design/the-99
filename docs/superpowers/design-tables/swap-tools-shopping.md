@@ -135,7 +135,7 @@
 | Replaces | The figure button and the chip or reset | same |
 | aria-label key | `swapToolsCopy.limit.fieldAria` | same |
 | Input rule | Whole dollars, 1 or more | same |
-| Validation copy key | `swapToolsCopy.limit.invalid` (not drawn) | same |
+| Validation copy key | `swapToolsCopy.limit.invalid`: not drawn in the handoff; built as a `role="alert"` line under the limit line, mono 10px, `--warning`, the field `aria-invalid` and described by it | same |
 | display | inline-flex | inline-flex |
 | align-items | center | center |
 | gap | 4px | 4px |
@@ -289,7 +289,7 @@
 | Limit null (default) | `decks.shopping_limit_cents` is null, which reads as 1000 | Figure `$10` + `default` chip | Marked at > $10 |
 | Limit set | Column is non-null (whole dollars, ≥ 1) | Figure at the set value + `reset` control, no chip | Marked at > the set value |
 | Editing | The figure button is pressed | Figure and chip/reset are replaced by the `$` field, Save and cancel. Separator, count and key stay | Unchanged until save |
-| Validation refused | The field holds < 1, > 100,000 or a non-whole value | `limit.invalid` (not drawn; the placement is not specified) | — |
+| Validation refused | The field holds < 1, > 100,000 or a non-whole value | `limit.invalid`, as the `role="alert"` line above (the handoff draws no placement; engineering's) | — |
 | Zero over | No row's drawn price exceeds the limit | Count renders `limit.noneOver(figure)` | No ⇄ or ring on any row. Desktop has a 22px slot on every row |
 | Some over | ≥ 1 row over | Count renders `limit.overCount(n)` | Over rows: ring + `over` meta + ⇄ |
 | No price feed | No provenance, so `PriceStrip` returns null | Still renders, as the strip's sibling. The count reads `noneOver` | No row is over. Desktop: 22px slot on every row |
