@@ -1,5 +1,15 @@
 # Readiness audit: Home addendum, the bracket chip on the resume row
 
+## Hugh's rulings
+
+Both rulings are made, so nothing in this audit waits on Hugh.
+
+- **R1 (2026-09-23): marks only on Home.** The row draws the chip's marks without its face, and the bracket's
+  name is kept for screen readers.
+- **R2 (2026-09-24): option C.** EVERY Home resume row becomes three lines with the tile's progress bar, rows
+  with no chip included. This amends the Home handoff's "the status pill is the row's only status signal"
+  (N1). N2 still applies: build from C, not from the canvas headline that describes B.
+
 > **Revision 2 (2026-09-24), at the end of this file, supersedes the verdict below.** F1, F2, F3 and F6 are fixed. The verdict stays Orange on one new ruling (R2).
 
 **Verdict: Orange.** The placement, the states, the tokens and the copy are all buildable as drawn, and
