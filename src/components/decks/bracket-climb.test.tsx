@@ -265,6 +265,9 @@ describe("the yours rung's text", () => {
     const name = within(yours).getByText("Upgraded");
     expect(name.className).toContain("text-[color:var(--fg)]");
     expect(name.getAttribute("style")).toBeNull();
+    // The role label ("where your cards are") too: its colour is set inline, so read it there.
+    const role = within(yours).getByText(copy.roleHere).parentElement!;
+    expect(role.style.color).toBe("var(--fg)");
     for (const f of within(yours).getAllByTestId("climb-figure")) {
       for (const span of f.querySelectorAll("span.font-mono")) expect(span.getAttribute("style")).toBeNull();
     }
