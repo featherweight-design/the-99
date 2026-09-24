@@ -268,7 +268,9 @@ Recorded so the round is not asked about them. All deterministic.
 
 ## §7 Sequence
 
-This brief waits for Hugh's approval before it goes to Design. The pure parts can build before the
+Ships behind `SWAP_TOOLS_ENABLED` (analysis-flag.ts pattern): ON in the-99-staging, OFF in production until Hugh walks it (Hugh, 2026-09-24).
+
+Hugh approved this brief on 2026-09-24. The pure parts can build before the
 handoff (Tier A): the drawback classifier, the stand-in query and the fit reader. The surfaces wait
 for READINESS. The About entry is batched with the rest of the analysis line's entries at launch, so
 it is not drawn in this round.
