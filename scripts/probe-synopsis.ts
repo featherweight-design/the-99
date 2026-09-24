@@ -152,6 +152,7 @@ async function run() {
   check("…calling no model", calls, 1);
   check("…and charging nothing", await ledger(), [{ status: "spent", n: 1 }]);
   check("a current synopsis is not stale and would not spend", [(await state()).stale, (await state()).wouldSpend], [false, false]);
+  check("…and a press over its list writes nothing (7d)", (await state()).pressWrites, false);
   // A contract bump alone is not an edit either: the old synopsis is still the list's.
   await fixture.execute(sql`update deck_synopses set contract_version = 0 where deck_id = ${deck.id}::uuid`);
   check("a synopsis under an older contract is reused too", (await writeSynopsisFor(deck.id, USER, deps)).kind, "reused");
@@ -161,6 +162,9 @@ async function run() {
   await swap(spares[0]);
   const edited = await state();
   check("an edit stales the synopsis", edited.stale, true);
+  // The press note keys on the LIVE list (the credits audit, item 2): an edit makes a press write
+  // before any reading describes the new list, and a revert (7d) would make it write nothing.
+  check("…and makes a press write, read off the live list", edited.pressWrites, true);
   check("…and a write over the stale reading is refused", (await writeSynopsisFor(deck.id, USER, deps)).kind, "no_reading");
   await analyze(deck.id);
   check("after Re-analyze a press would spend", (await state()).wouldSpend, true);
