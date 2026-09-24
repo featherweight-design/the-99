@@ -175,7 +175,9 @@ function lineCheck(
  * A section built from its lines. `whole` lines must all pass (prose: the overview, the strategy
  * steps); a `list` drops a failing line and passes when its survivors keep the list's minimum
  * (contract A, Hugh 2026-09-24). A list past its MAXIMUM is refused whole, since the reply was then
- * told something it ignored. The refusal names the first failing line's reason, or `wrong_count`.
+ * told something it ignored, and names `wrong_count` whatever its lines did: fixing a bad line
+ * would still leave the list too long, so the count is what the repair has to fix. A list under
+ * its minimum names its first failing line's reason, or `wrong_count` when every line passed.
  */
 function section<T>(
   id: SectionId,
