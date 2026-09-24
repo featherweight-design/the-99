@@ -38,15 +38,20 @@ export function SynopsisModal({
   onRetry: (() => void) | null;
   onClose: () => void;
 }) {
+  const aside = synopsisCopy.modal.aside(deckName, analyzedWhen(new Date(synopsis.createdAt), new Date()));
   return (
     <ModalChrome
       title={synopsisCopy.modal.title}
-      aside={synopsisCopy.modal.aside(deckName, analyzedWhen(new Date(synopsis.createdAt), new Date()))}
+      // DESKTOP ONLY in the header, as the lean's reasoning does it: at 390 the title and a deck's
+      // name cannot share the 43px header (the contact sheet drew the title as `OVER…`), so on the
+      // phone the aside opens the body instead, whole.
+      aside={<span className="hidden md:inline">{aside}</span>}
       closeLabel={synopsisCopy.modal.close}
       onClose={onClose}
       width={700}
     >
       <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
+        <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
         {stale ? (
           <div
             role="status"

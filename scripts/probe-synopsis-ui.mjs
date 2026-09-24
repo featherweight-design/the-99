@@ -246,6 +246,18 @@ async function run() {
     await pm.waitFor({ state: "visible", timeout: 10_000 });
     const pw = await pm.evaluate((el) => Math.round(el.getBoundingClientRect().width));
     report("390px · the modal takes the width", pw >= 380, `${pw}px`);
+    // The title whole, with no tolerance: an ellipsized title reads `scrollWidth` 1px over. And
+    // the aside drawn ONCE, opening the body, rather than squeezing the title in the header.
+    const head = await pm.evaluate((el) => {
+      const h = el.querySelector("h2");
+      const shown = (e) => e.getBoundingClientRect().width > 0;
+      return {
+        clipped: h ? h.scrollWidth > h.clientWidth : true,
+        asides: [...el.querySelectorAll("span")].filter((e) => shown(e) && / · written /.test(e.textContent) && e.children.length === 0).length,
+      };
+    });
+    report("390px · the modal's title is whole", !head.clipped, head.clipped ? "truncated" : "whole");
+    report("390px · the aside is drawn once, in the body", head.asides === 1, `${head.asides} drawn`);
     await phone.close();
   } finally {
     // The overview this run wrote, and the credit it spent, so a run leaves neither behind.
