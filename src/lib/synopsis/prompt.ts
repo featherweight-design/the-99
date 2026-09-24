@@ -54,6 +54,10 @@ export function buildSynopsisPrompt(
   lines.push(`- Lands, counting land-backed double-faced cards: ${facts.lands}`);
   lines.push(`- Ramp pieces: ${facts.ramp}`);
   lines.push(`- A keepable seven-card hand holds ${facts.keep.low} to ${facts.keep.high} lands.`);
+  lines.push(`- Send back a hand with ${facts.sendBack.none} to ${facts.sendBack.under} lands, or ${facts.sendBack.over} or more.`);
+  if (facts.commanderManaValues.length > 0) {
+    lines.push(`- Commander mana value (a turn to cast it on is this number): ${facts.commanderManaValues.join(" and ")}`);
+  }
 
   const total = facts.cards.reduce((n, c) => n + c.quantity, 0);
   lines.push("", `Decklist (${total} cards). Each card: name, type line, [categories], then its rules text.`);

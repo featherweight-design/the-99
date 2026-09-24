@@ -36,7 +36,7 @@ import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
 import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
 import { stubReply, type StubMode } from "../src/lib/synopsis/stub";
-import { SYNOPSIS_REAPER_CUTOFF_MS } from "../src/lib/synopsis/limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_REAPER_CUTOFF_MS } from "../src/lib/synopsis/limits";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -247,7 +247,7 @@ async function run() {
       returning id`);
     const [run] = await rows<{ id: string }>(sql`
       insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, created_at)
-      values (${deck.id}::uuid, ${USER}, ${list()}, 1, 'probe-stub', ${unit.id}::uuid,
+      values (${deck.id}::uuid, ${USER}, ${list()}, ${SYNOPSIS_CONTRACT_VERSION}, 'probe-stub', ${unit.id}::uuid,
         now() - (${SYNOPSIS_REAPER_CUTOFF_MS + 60_000} || ' milliseconds')::interval)
       returning id`);
     return run.id;
@@ -302,7 +302,7 @@ async function run() {
   const [wholeRow] = await rows<{ retry_of: string | null; contract_version: number }>(sql`
     select retry_of, contract_version from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
   check("a retry over an older contract rewrites the whole synopsis under the current one",
-    [whole.kind, wholeRow.retry_of, wholeRow.contract_version], ["written", null, 1]);
+    [whole.kind, wholeRow.retry_of, wholeRow.contract_version], ["written", null, SYNOPSIS_CONTRACT_VERSION]);
 
   // 11 · THE VERSION COPY, at commit only, onto the newest version, once.
   const committedList = list();
