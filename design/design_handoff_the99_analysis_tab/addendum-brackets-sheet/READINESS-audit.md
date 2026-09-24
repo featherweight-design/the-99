@@ -125,3 +125,136 @@ No case was found where the code is wrong about the published rules.
    stops at 3 (`src/lib/bracket/types.ts:89`). Accepted.
 2. **Quote or paraphrase:** Design chose paraphrase. This conflicts with a brief lock, so it goes to Hugh (finding 2).
 3. **Transpose on the phone:** no. The cells hold figures only and fit at 88px. Accepted.
+
+## Revision 2 (2026-09-24)
+
+**Verdict: 🟢 Green.** Re-audited against `origin/main` at `c11785b2` (#920). Both asks are
+answered. Nothing goes back to Design. One scope change needs Hugh to confirm it (R2-A below).
+Design's files call this drop **R3** and say it answers "Hugh's review of R2". Engineering
+received no R2, so this section calls the drop revision 2, after the second intake.
+
+What changed: the sheet is now a reference and marks nothing. It has five bracket columns, and
+the grid transposes on the phone. The chrome aside is gone. A notes list under the table holds
+each rule's reading and one quoted Wizards line. The climb's yours rung draws its text in
+`--fg`. The copy file adds `quotes`, `quoteTag`, `quotedFrom` and `corner`, and proposes two
+source constants. One reference asset was added, `assets/bracket-1-exhibition.svg`, and no file
+was removed.
+
+### Item 1: Exhibition contrast
+
+**The sheet no longer draws any text in bracket ink.** No column is marked, so nothing is drawn
+in `--bracket-1` on a tint, and the `where your cards are` label is gone. The bracket names in the
+header are `--fg-body` on `--surface-raised`, which measures 8.18 minimum (eldraine). The
+bracket marks are graphics, and `--bracket-1` on `--surface-raised` is 4.26 minimum (kaldheim),
+which is over the 3:1 bar for graphics. Finding 1 no longer applies to the sheet.
+
+**The climb uses `--fg` on the yours rung** for the name, the role label, and the Allowances
+rule name and count (canvas 2a). The ink stays on the mark, the 1px border and the tint. This is
+what finding 1 proposed.
+
+Computed from `src/app/globals.css`. The ground is the code's own:
+`color-mix(in oklab, var(--bracket-N) 12%, var(--surface))` (`bracket-climb.tsx:128`,
+`YOURS_TINT = 0.12` at `:41`). The mix was done in OKLab, and the ratios are WCAG 2.x relative
+luminance.
+
+| Theme | Exhibition, ink (before) | Exhibition, `--fg` (after) | `--fg`, Core · Upgraded · Optimized · cEDH |
+|---|---|---|---|
+| amonkhet | 4.13 | **12.21** | 11.88 · 11.59 · 11.09 · 10.67 |
+| kamigawa | 4.25 | **12.75** | 12.42 · 12.11 · 11.61 · 11.19 |
+| ixalan | 4.05 | **11.78** | 11.46 · 11.16 · 10.67 · 10.26 |
+| phyrexia | 4.47 | **12.73** | 12.43 · 12.15 · 11.68 · 11.28 |
+| eldraine | 4.19 | **11.70** | 11.39 · 11.10 · 10.64 · 10.24 |
+| kaldheim | 3.90 | **9.23** | 8.97 · 8.73 · 8.33 · **8.00** |
+
+- **Every cell is at least 4.5:1**, and the lowest is 8.00. Design's own table (canvas 2a,
+  `The 99 - Brackets Sheet.dc.html:216`) matches this one to two decimals in every theme.
+- **One small correction to Design's text:** `READINESS.md` says "a minimum of 8.73:1 across
+  six themes". That figure covers Core and Upgraded. The rule covers every yours rung, and
+  Optimized and cEDH go lower, to 8.33 and 8.00 in kaldheim. It is still far above the bar, so
+  nothing changes.
+- **The climb gets the same answer as the sheet.** The sheet removed its ink text, and the climb
+  replaced its ink text with `--fg`. Both leave the rank's colour on non-text marks only.
+
+### Item 2: the quotes
+
+**They are drawn at both widths.** The six notes-list entries each end in a quote: Plex Sans
+italic, 12/1.5 at 1300 and 11.5 at 390, in `--fg-body`, in curly quotes. A mono tag follows on
+the same line: 9.5px at 1300, 9px at 390, `--fg-faint` (`Brackets Sheet.dc.html`, `quoteStyle`
+and `tagStyle`). Canvas 3a draws 1300 and 3b draws 390.
+
+**Where they live:** `bracketsSheet.quotes` in `brackets-sheet · copy strings.ts`. Each is a
+`{ text, source }` pair, with `source` either `"intro"` or `"oct25"`. `quoteTag` gives the mono
+tag for each source, and `quotedFrom` labels the foot. The readings stay in
+`bracketsSheet.readings`, and the tutors and 4–5 readings stay in `tutors.reading` and
+`high.reading`. Quote and reading are separate constants, as finding 2 required.
+
+**All six are verbatim.** The posts were fetched raw on 2026-09-24 and each string was matched
+as an exact substring of the HTML, including the en dash in `1–3`.
+
+| Rule | Quote | Post | Where in the post |
+|---|---|---|---|
+| Game changers | "Up to three cards from the Game Changers list." | Feb 2025 | Bracket 3, Deck Building |
+| Mass land denial | "you should not expect to see these cards anywhere in Brackets 1–3." | Feb 2025 | The effects paragraph. "These cards" means mass land denial, which is the sentence's subject |
+| Extra turns | "Extra-turn cards should only appear in low quantities and are not intended to be chained in succession or looped." | Feb 2025 | Brackets 2 and 3, Deck Building |
+| Two-card infinites | "No intentional early-game two-card infinite combos." | Feb 2025 | Bracket 3, Deck Building |
+| Tutors | "remove the tutor restrictions from Commander Brackets entirely" | Oct 2025 | A fragment of "…the avenue we'd like to take is to remove the tutor restrictions from Commander Brackets entirely and rely on Game Changers to catch the most efficient tutors." |
+| Optimized and cEDH | "There are no restrictions (other than the banned list)." | Feb 2025 | Brackets 4 and 5, Deck Building |
+
+**Sources.** `src/lib/bracket/sources.ts` has one source today, `BRACKET_RULES_SOURCE`
+(`sources.ts:14-20`), the February 9, 2026 update at
+`https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-february-9-2026`.
+That post carries none of these lines as text. The raw HTML has no `Deck Building`,
+`Extra-turn`, `two-card infinite` or `mass land denial`. Design says so in the copy file and
+proposes two constants for `sources.ts`. Both check out:
+- `BRACKETS_INTRO_SOURCE`: `https://magic.wizards.com/en/news/announcements/introducing-commander-brackets-beta`.
+  Its page title is "Introducing Commander Brackets Beta", and it is dated 2025-02-11.
+- `BRACKETS_OCT25_SOURCE`: `https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025`.
+  Its page title is "Commander Brackets Beta Update – October 21, 2025", with the en dash.
+
+**Verified:** all six quotes are verbatim. **Not verifiable from Wizards' text:** whether the five
+February 2025 lines are still current word for word. The February 2025 post was not revised in
+place: it still carries the tutor restriction that the October 2025 post removed. Neither later
+post restates these restrictions as text. Every quoted line agrees with `rules.ts`
+(`GAME_CHANGER_LIMIT[3] = 3`, `MASS_LAND_DENIAL_LIMIT = 0`, `COMBO_POLICY[3] = earlyGameOnly`,
+extra turns uncounted at 2–3, and 4–5 unrestricted). The October 2025 combo guidance, "not ones
+that tend to happen in the first six turns", also agrees. The quotes are accurate to their
+posts, and the `Feb 2025` tag dates each one. The residual risk is the one Design's
+`READINESS.md` "Check before ship" item 1 already hands to `/copy-review`.
+
+### Earlier findings, carried forward
+
+| # | Status after revision 2 |
+|---|---|
+| 1 | **Closed.** See item 1. |
+| 2 | **Closed** by Hugh's ruling and item 2. |
+| 3 | **Closed.** The lead no longer says the linked post "has theirs". It reads "…with one line of Wizards' own under it", and each quote links the post that carries it. |
+| 4 | **Closed.** The chip is now 8.5px mono uppercase, 0.1em tracking, `--fg-faint`, a `--border-strong` border, fully round, with 2/6 padding. That is exactly `findings-block.tsx:115-117`. |
+| 5 | Open, eng, unchanged. The link's pressed state is new and its sibling opener has none. Build it as drawn. |
+| 6 | **Closed in `READINESS.md`**, whose engineering item 3 builds cells from the constants. `README.md:76`, in the kept R1 section, still says `Allowances` "already maps" them. Treat R1 as superseded. |
+| 7 | **Closed.** The lead was rewritten. |
+| 8 | Open, `/copy-review`. The tutors reading still says tutors "move no bracket on their own". The October 2025 quote now sits under it, and that quote goes on to "rely on Game Changers to catch the most efficient tutors", so the Game Changer route is still worth naming. |
+
+### New in this revision
+
+| # | Sev | Evidence | Correction | Owner |
+|---|---|---|---|---|
+| R2-A | Confirm | The original ask included "The reader's own bracket" (this audit's first table). The revision removes it: "No reader marking on the sheet" (`READINESS.md` R3 change 1, `README.md:7-8`). Design attributes this to "Hugh's review of R2", and engineering has no record of that review. | Hugh confirms the sheet marks nothing. If he does, nothing changes: the body needs no `permits`, and the first audit's note "The marking is derivable" no longer applies. This is a confirmation of a stated ruling, not an open one, so it does not hold the verdict. | **Hugh** |
+| R2-B | Low | Two quotes open mid-sentence in lower case: mass land denial ("you should…") and tutors ("remove the…"). Both are verbatim. | A `/copy-review` item: keep them as they are, or add a leading ellipsis. Do not capitalise, because that would stop them being verbatim. | eng |
+| R2-C | Low | The quote tag, `Quoted from`, the `cards allowed` corner and the `no limit` chip are `--fg-faint` on `--surface-raised`. That measures 4.41 in amonkhet, 3.70 in kamigawa, 4.62 in ixalan, 3.93 in phyrexia, 4.59 in eldraine and 4.37 in kaldheim. The foot links are `--accent`, which is 4.14 in phyrexia and 4.25 in kaldheim. | These are the app's existing metadata and link tiers, and the findings chip and the provenance date already ship in them. They are not something this sheet introduced. The tag repeats what the foot's links already carry. This is recorded here, and it does not gate the sheet. The same tier on the yours rung's tint, the Allowances `allowed` label, measures 2.94–4.21. That is pre-existing and out of this revision's scope. | eng (note) |
+
+**Checked and fine:**
+- **Five columns at 1300.** ModalChrome 700 leaves about 98px per column. That is 700 minus 2 of
+  border, 36 of padding, 2 of table border and 168 for the row header, divided by five. That fits
+  `Exhibition` nowrap at 12/600 with 16 of padding.
+- **The 390 transpose.** Rule columns are about 60px: 390 minus 32 of padding, 2 of border and
+  116 for the row header, divided by four. The longest word in a label, `INFINITES` at 8.5px mono,
+  is about 49px plus 8 of padding, which fits. This reverses R1's answer to open question 3. The
+  reason given holds: five columns would be about 53px, which is narrower than `Exhibition`.
+- **The 20px chips** in the 4–5 notes entry resolve to the chip form (`markForm`,
+  `src/lib/bracket/mark-size.ts:17-20`).
+- **The chrome.** ModalChrome's `aside` is optional (`receipt-modal.tsx:117`), so dropping it
+  needs no new prop.
+- **Fact marks in `--fact`.** The canvas now agrees with `FindingMark`, which the app already
+  drew correctly.
+- **The new asset.** `assets/bracket-1-exhibition.svg` is a reference copy only and is never
+  copied into `public/`.
