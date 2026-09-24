@@ -34,6 +34,12 @@ function standing(left: number, total: number, next: Date | null): string {
 }
 
 export const creditsCopy = {
+  /**
+   * The count and, when one is out, when the next comes back: `4 of 5 left · next one at 2:01 AM`.
+   * Exported so a surface composing its own lead around the shared line (the overview's press
+   * notes) says it in exactly this format rather than a copy of it.
+   */
+  standing,
   /** Beside a press that would spend a credit for the first time on this surface. */
   first: (left: number, total: number, next: Date | null) => `Uses a credit. ${standing(left, total, next)}.`,
   /** Beside a press that would replace what is on screen. */

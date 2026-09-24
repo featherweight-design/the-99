@@ -74,7 +74,9 @@ export function synopsisStatus(input: {
   const { reading, synopsis, allowance, pending } = input;
   const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list);
   const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list;
-  const wouldSpend = !!reading?.fresh && !forThisList && !pending && allowance.used < allowance.limit;
+  // Paused (the app-wide cap) or the owner's share used: the reservation refuses, so nothing would spend.
+  const refused = !!allowance.paused || !!allowance.ownerShare;
+  const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && allowance.used < allowance.limit;
   return { stale, wouldSpend };
 }
 

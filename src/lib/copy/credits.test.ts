@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { creditsCopy } from "./credits";
+import { clockTime, creditsCopy } from "./credits";
 
 describe("the spend cap's copy", () => {
   it("names the month a pause lifts in, read in UTC", () => {
@@ -18,5 +18,15 @@ describe("the spend cap's copy", () => {
 
   it("has a server twin with no date in it", () => {
     expect(creditsCopy.pausedServer).toBe("Paused until the 1st of next month. Nothing you did caused this.");
+  });
+
+  // ONE FORMAT: the overview composes its own leads around `standing`, so `first` and `again`
+  // must be built from the very same line or the two surfaces drift apart.
+  it("exports standing, and first and again compose from it", () => {
+    const next = new Date("2026-09-24T14:20:00");
+    expect(creditsCopy.standing(4, 5, next)).toBe(`4 of 5 left · next one at ${clockTime(next)}`);
+    expect(creditsCopy.standing(5, 5, null)).toBe("5 of 5 left");
+    expect(creditsCopy.first(4, 5, next)).toBe(`Uses a credit. ${creditsCopy.standing(4, 5, next)}.`);
+    expect(creditsCopy.again(4, 5, next)).toContain(creditsCopy.standing(4, 5, next));
   });
 });

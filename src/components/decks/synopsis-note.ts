@@ -1,4 +1,4 @@
-import { clockTime, creditsCopy } from "../../lib/copy/credits";
+import { creditsCopy } from "../../lib/copy/credits";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
 
@@ -18,13 +18,11 @@ export function pressNote(view: SynopsisView, where: PressWhere): { text: string
   if (view.kind !== "ready" || !view.current || !view.state.pressWrites) return null;
   const { allowance } = view.state;
   const left = Math.max(0, allowance.limit - allowance.used);
-  if (left > 0) return { text: synopsisCopy.pressNote.writes(standing(left, allowance.limit, allowance.nextAt)), writes: true };
+  // The app-wide cap, or the owner's own share: every press is refused before it can write, so the
+  // note says why instead of naming a credit (the spend cap, #914).
+  if (allowance.paused) return { text: creditsCopy.paused(allowance.paused.until), writes: false };
+  if (allowance.ownerShare) return { text: creditsCopy.ownerShare(new Date()), writes: false };
+  if (left > 0) return { text: synopsisCopy.pressNote.writes(creditsCopy.standing(left, allowance.limit, allowance.nextAt)), writes: true };
   const lead = where === "analyze" ? synopsisCopy.pressNote.analyzeUsedUp : synopsisCopy.pressNote.reanalyzeUsedUp;
   return { text: `${lead} ${creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)}`, writes: false };
-}
-
-// INTERIM: `creditsCopy.standing` is exported once #914 has merged (the-99-d9, 2026-09-24). Until
-// then this restates its private format, and is deleted before this PR opens.
-function standing(left: number, total: number, next: Date | null): string {
-  return next ? `${left} of ${total} left · next one at ${clockTime(next)}` : `${left} of ${total} left`;
 }

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { synopsisState } from "./__fixtures__/synopsis";
 import { pressNote } from "./synopsis-note";
+import { creditsCopy } from "../../lib/copy/credits";
 import type { SynopsisView } from "./synopsis-state";
 import type { SynopsisState } from "../../lib/synopsis/read";
 
@@ -35,5 +36,19 @@ describe("pressNote", () => {
   it("is silent until the state has been read for the list on screen", () => {
     expect(pressNote({ kind: "idle" }, "analyze")).toBeNull();
     expect(pressNote(ready({ pressWrites: true }, false), "analyze")).toBeNull();
+  });
+
+  it("says the app is paused, and writes nothing, while the spend cap holds", () => {
+    const until = new Date("2026-10-01T00:00:00Z");
+    const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze")!;
+    expect(n.writes).toBe(false);
+    expect(n.text).toBe(creditsCopy.paused(until));
+    expect(n.text).not.toMatch(/uses a credit/i);
+  });
+
+  it("says the owner's share is used, and writes nothing", () => {
+    const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }), "reanalyze")!;
+    expect(n.writes).toBe(false);
+    expect(n.text).toMatch(/testing share/);
   });
 });

@@ -95,6 +95,19 @@ describe("SynopsisOverview", () => {
     expect(note).not.toContain(clockTime(next));
   });
 
+  it("holds Write one and says the app is paused while the spend cap holds", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until: new Date("2026-10-01T12:00:00Z") } } }));
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
+    expect(screen.getByText(/^Paused until/)).toBeTruthy();
+    expect(screen.queryByText(/Uses a credit/)).toBeNull();
+  });
+
+  it("holds Write one and names the owner's used share", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }));
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
+    expect(screen.getByText(/testing share/)).toBeTruthy();
+  });
+
   it("says a failed write failed, and offers Try again", () => {
     draw(synopsisState({ synopsis: null, lastFailed: true, wouldSpend: true }));
     expect(screen.getByText(copy.failed)).toBeTruthy();
