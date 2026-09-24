@@ -54,6 +54,25 @@ const LENGTH_RULES = [
   "Before you answer, count each job, mulligan line and tip, and shorten any that is near or over its limit.",
 ].join("\n");
 
+/**
+ * The Mulligan's budget, restated (eval harness, `primer-budget-c` on contract 6). Its lines overran
+ * their limit more than any other part of the answer, because a specific line names cards and runs
+ * long: on 15 held-out decks the first write's Mulligan ran a median 75 characters against 80. With
+ * these rules and the app's repair, all four sections rendered on 100% of answers (45 of 45),
+ * against 89% without.
+ *
+ * NO NUMBER WORD IN A WORKED LINE. The first version's examples ("a two-drop", "no three-drop")
+ * taught compounds `figuresIn` reads as figures, and 21 held-out lines naming a figure the deck
+ * lacked were dropped silently under contract A. These examples carry no figure, and the target is
+ * read from `limits.ts` like every other.
+ */
+const MULLIGAN_BUDGET_RULES = [
+  `Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters as rendered, and aim for about ${CHAR_BUDGETS.mulligan - 25}. Write 8 to 12 words.`,
+  "Every mulligan line names one card from the decklist, as [[Name]], a point on the curve, or a line of play, never a list of cards. Any number in it still has to be one of the mulligan figures.",
+  "The land range the app shows above the Mulligan is not one of your lines and does not count toward any line's length.",
+  'Two lines sized to the budget: "[[Sol Ring]] with nothing to cast after it stalls out." (50), and "Early ramp backed by a way to draw more cards." (46).',
+].join("\n");
+
 /** A word target for the job line, this deck's own mulligan figures, the refused words, and marking every mention. */
 function plusRules(facts: SynopsisFacts): string {
   return [
@@ -123,7 +142,7 @@ export function buildSynopsisPrompt(
     lines.push(`${REPAIR_LEAD} ${reasons.join("; ")}.`);
   }
 
-  return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}`, user: lines.join("\n") };
+  return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES}`, user: lines.join("\n") };
 }
 
 /** Rules text on one line: a line break inside it would read as a new list item. */

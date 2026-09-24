@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SynopsisFacts } from "./facts";
 import { CHAR_BUDGETS, SECTION_COUNTS } from "./limits";
 import { buildSynopsisPrompt } from "./prompt";
+import { figuresIn } from "./validate";
 import type { CheckedSynopsis } from "./types";
 
 const FACTS: SynopsisFacts = {
@@ -106,5 +107,33 @@ describe("buildSynopsisPrompt", () => {
     expect(system).toContain("A Key card's job is 4 to 8 words.");
     expect(system).toContain("must be one of: 2, 3, 5.");
     expect(system).toContain("Mark EVERY mention of a card in the decklist");
+  });
+
+  it("restates the Mulligan's budget, on a first write and on a repair alike", () => {
+    const first = buildSynopsisPrompt(FACTS).system;
+    const keep = {
+      verdicts: [{ section: "primer", status: "refused", reason: "over_budget", failed: 0, total: 3 }],
+      overview: null, primer: null, keyCards: null, weaknesses: null, cards: {},
+    } as unknown as CheckedSynopsis;
+    const repair = buildSynopsisPrompt(FACTS, { keep, refused: ["primer"] }).system;
+    for (const system of [first, repair]) {
+      expect(system).toContain(`Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters`);
+      expect(system).toContain(`aim for about ${CHAR_BUDGETS.mulligan - 25}. Write 8 to 12 words.`);
+      expect(system).toContain("a point on the curve, or a line of play, never a list of cards");
+      // Last, after the plus rules, as measured: the harness verified the prompt byte for byte.
+      expect(system.endsWith("draw more cards.\" (46).")).toBe(true);
+    }
+  });
+
+  it("gives worked lines that state no figure, so a model copying them is never refused for one", () => {
+    // The first version's examples said "two-drop" and "three-drop": `figuresIn` reads both as
+    // figures, and a line copying them on a deck without a 2 or a 3 was dropped silently.
+    const system = buildSynopsisPrompt(FACTS).system;
+    const worked = [...system.split("\n").at(-1)!.matchAll(/"([^"]+)" \(\d+\)/g)].map((m) => m[1]);
+    expect(worked).toHaveLength(2);
+    for (const line of worked) {
+      expect(figuresIn(line), line).toEqual([]);
+      expect(line.replace(/\[\[|\]\]/g, "").length, line).toBeLessThanOrEqual(CHAR_BUDGETS.mulligan);
+    }
   });
 });
