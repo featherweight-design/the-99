@@ -1,6 +1,6 @@
 # Design Brief: The small swap tools (sub-project 4)
 
-**Date:** 2026-09-24 · **Branch:** `docs/scoping-briefs` (held for Hugh's approval; not yet a PR)
+**Date:** 2026-09-24 · **Branch:** `docs/scoping-briefs` (approved by Hugh, 2026-09-24)
 **Rulings:** Hugh, 2026-09-24, in the scoping conversation for this brief (§2).
 **Spec:** `docs/superpowers/specs/2026-09-19-deck-analysis-foundation-design.md:24-26` lists #218
 ("deck facts × one card"), #217 ("deck facts + support index") and cheaper swaps ("deck facts +
@@ -98,7 +98,10 @@ them.
 - **"Cheaper" compares cheapest printings.** Each card's price is its cheapest current printing
   (`loadPrices`, `price-query.ts:67`, the same figure the buy tag draws). Non-foil is preferred,
   with foil or etched used only when that is all the feed carries (`:95-97`). The original is
-  compared at its own figure, owned or not.
+  compared at its own figure, owned or not. `loadPrices` prefers a row at the newest `as_of` but
+  falls back to a sold-out printing's frozen price (`:93`). **A stand-in offered at a price must
+  be stocked now**, meaning it has a row at the newest `as_of`. A card that is sold out everywhere
+  is no cheaper to buy than one never stocked.
 - **A stand-in is "free" exactly when taking it would not put it on Shopping.** An owned copy that
   committed decks already claim is priced like any buy. A card with no price has never been stocked
   (AGENTS.md, price refresh), so it appears only as a free copy.
@@ -136,7 +139,7 @@ everywhere), its price or the fact that it is free, its availability mark, what 
 or its mana value (spells), and a Take control. At the head sits the card being replaced and its
 price.
 
-Four states:
+Five states:
 - **Lands:** a list headed by owned free copies, then priced cards cheapest first. Plateau into
   Sacred Foundry, Battlefield Forge, Rugged Prairie, Sunbaked Canyon.
 - **Spells:** a list ranked by how often this commander's decks run each card, each showing that
@@ -202,7 +205,8 @@ colors rule them all out); the card is not legal in Commander; and no decks at a
 - **A stand-in never breaks the deck.** It is legal in Commander, inside the commander's color
   identity, and not already in the deck. For a land, it makes every color the original makes.
 - **A stand-in is cheaper, or it is free.** A card with no price has never been stocked (AGENTS.md,
-  price refresh) and cannot be called cheaper, so it appears only if the player owns a free copy.
+  price refresh), and one sold out at the newest price run cannot be bought. Neither can be called
+  cheaper, so either appears only if the player owns a free copy.
 - **Only Shopping rows are swept.** Owned free cards are never flagged, whatever they are worth.
 - **Basic lands are never on the list** (`shopping.ts:32`), so they never get stand-ins.
 - **A role-less card gets no guess.** Neither tool falls back to card type or to "cards this
