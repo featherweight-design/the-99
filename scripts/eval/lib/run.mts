@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import type { z } from "zod";
 
@@ -56,6 +56,21 @@ export async function runRequests<T>(opts: {
   resume?: { runId: string; batchId: string };
 }): Promise<{ runId: string; dir: URL; answers: Map<string, Answer<T>> } | null> {
   const { first, schema, realtime, log } = opts;
+  // A real-time pass has no batch to reattach to: resuming one would send every request again.
+  if (opts.resume && realtime) throw new Error("eval: --resume reattaches to a batch; a --realtime run cannot be resumed");
+
+  // The request set, one hash per custom id. A run writes it; a resume must rebuild the SAME set,
+  // or the old batch's replies would be scored against a different pack and labelled with it.
+  const requestHashes = Object.fromEntries(first.map((s) => [s.customId, createHash("sha256").update(JSON.stringify(s.params)).digest("hex")]));
+  if (opts.resume) {
+    // Settled already: collecting it again would record its cost twice.
+    if (readLedger(LEDGER).entries.some((e) => e.settles === `${opts.resume!.runId}/a1`)) throw new Error(`eval: ${opts.resume.runId}/a1 is already settled; nothing to resume`);
+    const saved = new URL(`runs/${opts.resume.runId}/requests.json`, ROOT);
+    if (!existsSync(saved)) throw new Error(`eval: run ${opts.resume.runId} recorded no request set, so a resume cannot be checked against it`);
+    const before = JSON.parse(readFileSync(saved, "utf8")) as Record<string, string>;
+    const differ = [...new Set([...Object.keys(before), ...Object.keys(requestHashes)])].filter((id) => before[id] !== requestHashes[id]);
+    if (differ.length > 0) throw new Error(`eval: the rebuilt requests differ from the run's on ${differ.length} ids (${differ.slice(0, 3).join(", ")}…); resume with the original arguments and code`);
+  }
 
   const counted = new Map<string, number>();
   let worst = 0;
@@ -85,6 +100,7 @@ export async function runRequests<T>(opts: {
   if (!opts.resume) {
     writeFileSync(new URL("meta.json", dir), `${JSON.stringify({ runId, sha, ...opts.meta }, null, 2)}\n`);
     writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(opts.prepared)}\n`);
+    writeFileSync(new URL("requests.json", dir), `${JSON.stringify(requestHashes)}\n`);
   }
 
   const modelOf = new Map(first.map((s) => [s.customId, s.params.model]));
