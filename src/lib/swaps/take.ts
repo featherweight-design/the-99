@@ -88,9 +88,15 @@ export async function undoSwap(swapId: string, userId: string): Promise<string |
   });
 }
 
-/** A limit the field can hold: whole dollars, $1 or more. Null is the $10 default. */
+/**
+ * The highest limit the field takes: $100,000, above any card's price and well inside the column's
+ * `integer` range, so an absurd figure is refused here rather than thrown by Postgres.
+ */
+export const MAX_LIMIT_CENTS = 10_000_000;
+
+/** A limit the field can hold: whole dollars, $1 to $100,000. Null is the $10 default. */
 export function validLimit(cents: number | null): boolean {
-  return cents === null || (Number.isInteger(cents) && cents >= 100 && cents % 100 === 0);
+  return cents === null || (Number.isInteger(cents) && cents >= 100 && cents <= MAX_LIMIT_CENTS && cents % 100 === 0);
 }
 
 /** Remember the deck's Shopping limit. False when the value is not a whole dollar, or the deck is not the reader's. */
