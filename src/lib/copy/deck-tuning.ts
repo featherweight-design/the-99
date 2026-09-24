@@ -42,6 +42,8 @@ export const deckTuningCopy = {
     // a paywall made of typing.
     skip: "or skip it: the suggestions still run",
     edit: "edit",
+    // Eng-written, owed to /copy-review: the in-place edit's way out, undrawn.
+    cancel: "cancel",
     editAria: "Edit what this deck is for",
     // App-seeded. The chip is an authorship statement, removed PERMANENTLY on first edit.
     seeded: "from the build",
@@ -265,6 +267,13 @@ export const deckTuningCopy = {
     spent: "No credits left. The next one comes back within a day.",
   },
 
+  // ── The Games tab's pointer to Suggested changes (addendum r1, C1/C2) ────
+  // Drawn after the findings, only when the deck has a reading and one game or more.
+  gamesLine: {
+    lead: "Suggested changes reads these games.",
+    link: "It is on the Analysis tab \u2192",
+  },
+
   // ── The game note (Surface 1, amends #9's form) ────────────────────────
   note: {
     label: "Note",
@@ -301,6 +310,9 @@ export const deckTuningCopy = {
     // shipped as a claim about a surface nobody can open. Restore the full
     // sentence when the panel lands — see §Errata in the design table.
     readBack: "Read back to you in the history:",
+    // With Suggested changes on the deck (it ships with the Analysis tab), the clause held back
+    // above is true again, and the full sentence is drawn.
+    readBackTuned: "Read back to you in the history, and read by Suggested changes:",
     readBackEmphasis: "quoted, never paraphrased",
   },
 } as const;

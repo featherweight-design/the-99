@@ -25,6 +25,8 @@ export interface GameLogFormProps {
   /** Called when an axis moves columns, for the live region. */
   onAnnounce: (message: string) => void;
   isFirstGame: boolean;
+  /** Suggested changes is on this deck, so the note's line may say it reads the note. */
+  tuned?: boolean;
   /** Overrides the collapsed button's label. Defaults to `gameLogCopy.form.open`. */
   ctaLabel?: string;
   /** Bone-filled collapsed button. True only in the empty state, where the CTA
@@ -99,6 +101,7 @@ export function GameLogForm({
   ctaLabel,
   ctaSolid = false,
   initialOpen = false,
+  tuned = false,
 }: GameLogFormProps) {
   const [open, setOpen] = useState(initialOpen);
   const [result, setResult] = useState<GameResult | null>(null);
@@ -480,12 +483,11 @@ export function GameLogForm({
           {deckTuningCopy.note.ariaDescription}
         </span>
 
-        {/* Desktop only. The handoff's sentence also promises the tuning panel
-            reads the note; that panel is unbuilt, so the clause naming it is
-            held back rather than shipped as a claim about a surface nobody can
-            open. See §Errata in the design table. */}
+        {/* Desktop only. The handoff's sentence also promises Suggested changes
+            reads the note, which is true only where it exists: it ships with the
+            Analysis tab, so the clause naming it is drawn only when `tuned`. */}
         <p className="hidden md:block mt-[8px] font-mono text-[10px] leading-[1.5] text-fg-faint">
-          {deckTuningCopy.note.readBack}{" "}
+          {tuned ? deckTuningCopy.note.readBackTuned : deckTuningCopy.note.readBack}{" "}
           <em className="not-italic text-fg-body">{deckTuningCopy.note.readBackEmphasis}</em>
         </p>
       </div>

@@ -211,6 +211,22 @@ describe("TuningPanel", () => {
     expect(screen.getByText(deckTuningCopy.intent.askLabel)).toBeInTheDocument();
   });
 
+  // The header's `edit` saves through the page. The ask has to go the moment the page says the
+  // deck has a line, or it asks for one the header is already drawing.
+  it("drops the ask when the page brings a line saved from the header", async () => {
+    const d = deps([fresh]);
+    const noIntent = { ...facts, intent: null };
+    let rerender!: ReturnType<typeof render>["rerender"];
+    await act(async () => {
+      ({ rerender } = render(<TuningPanel deckId="d1" permits={[3]} facts={noIntent} onLogGame={vi.fn()} deps={d} />));
+    });
+    expect(screen.getByText(deckTuningCopy.intent.askLabel)).toBeInTheDocument();
+    await act(async () => {
+      rerender(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} />);
+    });
+    expect(screen.queryByText(deckTuningCopy.intent.askLabel)).toBeNull();
+  });
+
   it("does not ask what the deck is for over a set of suggestions", async () => {
     await draw(deps([results]), { ...facts, intent: null });
     expect(screen.queryByText(deckTuningCopy.intent.askLabel)).toBeNull();

@@ -254,6 +254,14 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect((wash as HTMLElement).style.height).toBe("288px");
   });
 
+  // The intent line sits inside the same block, so a deck with one keys the ramp to the taller
+  // block: up to four 12.5/1.5 lines and their gap on top of the 143.
+  it("keys the ramp to the taller block when the deck has an intent line", () => {
+    const { container } = renderSpine(<SpineMobile {...props} deck={{ ...props.deck, intent: "go wide and win late" }} />);
+    const wash = container.querySelector("[data-art-wash-band]")!;
+    expect(wash).toHaveAttribute("data-art-wash-label-at", "224");
+  });
+
   // The meta row inside that block is ONE row: a pair's two names and five pips are wider than
   // the caption, and a wrapping row would grow the block past the ramp keyed to it.
   it("never lets the meta row wrap to a second line", () => {

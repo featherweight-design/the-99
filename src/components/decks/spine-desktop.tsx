@@ -28,6 +28,7 @@ import { useDeckRename } from "./use-deck-rename";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
+import { DeckIntentLine } from "./deck-intent-line";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -35,6 +36,11 @@ export interface SpineBandProps {
   deck: {
     id: string;
     name: string;
+    /** What this deck is for, drawn second in the header; null draws no row. Optional because
+     *  the fixtures that build this literal predate it. */
+    intent?: string | null;
+    /** The line is the app's own words from a fill, until the player's first save. */
+    intentSeeded?: boolean;
     commander: {
       oracleId: string;
       name: string;
@@ -368,6 +374,15 @@ export function SpineDesktop({
               </>
             )}
           </div>
+
+          {/* SECOND in the order (placement addendum r3, E2): the deck's purpose, under its name. */}
+          <DeckIntentLine
+            key={deck.id}
+            deckId={deck.id}
+            intent={deck.intent ?? null}
+            seeded={deck.intentSeeded ?? false}
+            width="desktop"
+          />
 
           <div
             // Same marker as the phone's row, for the same probe.

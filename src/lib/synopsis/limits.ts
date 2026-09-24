@@ -9,7 +9,8 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
  * edit, and only a write for a new list uses the new contract. The version is stored per run so
  * the eval harness can tell the contracts' outcomes apart.
  */
-export const SYNOPSIS_CONTRACT_VERSION = 1;
+// 2: the Mulligan's figures gained the send-back bounds and the commanders' mana values.
+export const SYNOPSIS_CONTRACT_VERSION = 2;
 
 /** A pending run older than this was abandoned; the read-time reaper fails it as `interrupted`
  *  and refunds its unit. Below `RESERVATION_TTL_MS`, so the reap always lands while the unit

@@ -29,14 +29,6 @@ export const WORD_DRIFT_ALLOWLIST = [
   { quoted: "ninety-nine slots zero filled type a name below or take the ninety-nine we've already picked out eats everything anyway", reason: "the pre-edit form, quoted by the row that documents the edit" },
   // ── Templates the table fills with an example ──────────────────────────
   { quoted: "filter off · n results you don't own", reason: "table writes `n` where the code branches singular" },
-
-  // ── A table for a feature that is NOT BUILT ────────────────────────────
-  // `deck-tuning.md` specifies #10, which is designed and planned with the
-  // build paused, so none of its copy ships and every row of it matches the
-  // nearest shipped sibling by shape alone. This one lands on the game-delete
-  // refusal. When #10 is built this entry comes out, and the check starts
-  // holding that table to the strings it ships.
-  { quoted: "we couldn't make that swap nothing has changed", reason: "deck-tuning.md specifies #10, which is not built; nothing ships to compare against" },
 ];
 
 /** The allowlist as a set of reduced spans, for the check to test against. */

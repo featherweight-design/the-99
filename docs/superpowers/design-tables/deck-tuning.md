@@ -1121,7 +1121,7 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 | error placement | under this card's own action row | under this card's own action row |
 | panel-level error | — never | — never |
 | other cards | unchanged | unchanged |
-| copy | `We couldn’t make that swap. Nothing has changed.` | same |
+| copy | `We couldn’t make that swap. The deck is unchanged.` | same |
 
 ### Card — state: Dismissed (5)
 
