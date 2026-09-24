@@ -194,7 +194,7 @@ as an exact substring of the HTML, including the en dash in `1–3`.
 | Rule | Quote | Post | Where in the post |
 |---|---|---|---|
 | Game changers | "Up to three cards from the Game Changers list." | Feb 2025 | Bracket 3, Deck Building |
-| Mass land denial | "you should not expect to see these cards anywhere in Brackets 1–3." | Feb 2025 | The effects paragraph. "These cards" means mass land denial, which is the sentence's subject |
+| Mass land denial | "you should not expect to see these cards anywhere in Brackets 1–3." | Feb 2025 | The effects paragraph. "These cards" refers back to the sentence before, which defines "mass land denial" |
 | Extra turns | "Extra-turn cards should only appear in low quantities and are not intended to be chained in succession or looped." | Feb 2025 | Brackets 2 and 3, Deck Building |
 | Two-card infinites | "No intentional early-game two-card infinite combos." | Feb 2025 | Bracket 3, Deck Building |
 | Tutors | "remove the tutor restrictions from Commander Brackets entirely" | Oct 2025 | A fragment of "…the avenue we'd like to take is to remove the tutor restrictions from Commander Brackets entirely and rely on Game Changers to catch the most efficient tutors." |
@@ -227,7 +227,7 @@ posts, and the `Feb 2025` tag dates each one. The residual risk is the one Desig
 |---|---|
 | 1 | **Closed.** See item 1. |
 | 2 | **Closed** by Hugh's ruling and item 2. |
-| 3 | **Closed.** The lead no longer says the linked post "has theirs". It reads "…with one line of Wizards' own under it", and each quote links the post that carries it. |
+| 3 | **Closed.** The lead no longer says the linked post "has theirs". It reads "…with one line of Wizards' own under it", and each quote is tagged with its post (`Wizards · Feb 2025` or `Oct 2025`). The tag itself is not a link. The two posts are linked once, in the foot's `Quoted from` row. |
 | 4 | **Closed.** The chip is now 8.5px mono uppercase, 0.1em tracking, `--fg-faint`, a `--border-strong` border, fully round, with 2/6 padding. That is exactly `findings-block.tsx:115-117`. |
 | 5 | Open, eng, unchanged. The link's pressed state is new and its sibling opener has none. Build it as drawn. |
 | 6 | **Closed in `READINESS.md`**, whose engineering item 3 builds cells from the constants. `README.md:76`, in the kept R1 section, still says `Allowances` "already maps" them. Treat R1 as superseded. |
