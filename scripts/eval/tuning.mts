@@ -86,6 +86,11 @@ const overlay = args.overlay
   ? (JSON.parse(readFileSync(new URL("fixtures/evidence-overlay.json", import.meta.url), "utf8")) as { decks: OverlayDeck[] }).decks
   : null;
 
+// The overlay is laid over decks in order, one fixture entry each, so a set longer than the fixture
+// (only reachable through `--decks`) would reach past its end.
+if (overlay && setIds.length > overlay.length) {
+  throw new Error(`eval: --overlay covers ${overlay.length} decks; ${setIds.length} were named`);
+}
 const prepared = await app.prepare(setIds, variant, overlay);
 type Prepared = (typeof prepared)[number];
 log(`prepared ${prepared.length} decks (${args.overlay ? "overlay" : args.set}), variant ${variant.id}, prompt v${PROMPT_VERSION}`);

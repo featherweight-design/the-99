@@ -55,7 +55,20 @@ if (existsSync(runsDir)) {
     }
   }
 }
-const mine = rows.filter((r) => r.feature === args.feature);
+// ONE answer per (set, cell, variant, deck, trial): the earliest run's, since run ids begin with
+// their start time. A configuration run twice, or a calibration repeated by a sweep, would
+// otherwise add samples beyond the plan's decks × trials and weigh some decks twice.
+const seen = new Set<string>();
+let duplicates = 0;
+const mine = rows
+  .filter((r) => r.feature === args.feature)
+  .sort((a, b) => a.runId.localeCompare(b.runId))
+  .filter((r) => {
+    const k = `${r.set}|${r.cell}|${r.variant}|${r.deckId}|${r.trial}`;
+    if (seen.has(k)) { duplicates += 1; return false; }
+    seen.add(k);
+    return true;
+  });
 
 const pct = (n: number, d: number) => (d === 0 ? "–" : `${((100 * n) / d).toFixed(0)}%`);
 const mean = (xs: number[]) => (xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length);
@@ -69,7 +82,7 @@ for (const r of mine) {
 
 const lines: string[] = [];
 lines.push(`# Automatic metrics: ${args.feature}`, "");
-lines.push(`Recomputed from ${mine.length} rows in ${new Set(mine.map((r) => r.runId)).size} runs. Costs at real-time prices.`, "");
+lines.push(`Recomputed from ${mine.length} rows in ${new Set(mine.map((r) => r.runId)).size} runs, one per set, cell, variant, deck and trial (${duplicates} later repeats set aside). Costs at real-time prices.`, "");
 lines.push("| set | cell | variant | n | survived | ungrounded | malformed | upstream | kept/run | returned/run | outside names | in tok | out tok (p95) | visible out (est.) | cache r/w | $/answer | $/accepted |");
 lines.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
 const dropLines: string[] = [];
