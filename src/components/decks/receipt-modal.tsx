@@ -92,9 +92,9 @@ export function ReceiptModal({
  * lean, what would have to go, and how we make these decisions. An optional mark, a title, an
  * optional aside (a count, or a qualifier), and close.
  *
- * THREE WIDTHS, one per body (Analysis tab handoff §3): 760 for the receipt's four tiles across,
+ * FOUR WIDTHS, one per body (Analysis tab handoff §3): 760 for the receipt's four tiles across,
  * 700 for the reasoning's two plates and for what would have to go, 560 for how we make these
- * decisions. `ground` is the reasoning's `--elevated` against everyone else's `--surface-raised`.
+ * decisions, and 640 for the swap tools' stand-ins sheet (audit F7). `ground` is the reasoning's `--elevated` against everyone else's `--surface-raised`.
  *
  * `backLabel` is what a card stacked on this sheet calls it: `← {backLabel}` in the card's close
  * slot. It defaults to the title, which is right for every sheet but what would have to go,
@@ -117,7 +117,7 @@ export function ModalChrome({
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
-  width: 560 | 700 | 760;
+  width: 560 | 640 | 700 | 760;
   backLabel?: string;
   ground?: string;
   /**
@@ -211,6 +211,7 @@ export function ModalChrome({
 // Literal class strings, so Tailwind sees each one.
 const WIDTH_CLASS = {
   560: "md:w-[560px] ",
+  640: "md:w-[640px] ",
   700: "md:w-[700px] ",
   760: "md:w-[760px] ",
 } as const;

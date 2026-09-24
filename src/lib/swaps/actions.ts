@@ -7,6 +7,7 @@ import { deckSurfaces } from "../decks/revalidate";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { swapToolsEnabled } from "./flag";
+import { loadStandIns, type StandInsRead } from "./gather";
 import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take";
 
 /**
@@ -46,4 +47,16 @@ export async function setShoppingLimitAction(deckId: string, cents: number | nul
   // A limit moves marks, not claims: the deck's own surfaces only.
   if (ok) for (const path of deckSurfaces(deckId)) revalidatePath(path);
   return { ok };
+}
+
+/**
+ * The stand-ins for one Shopping row, read when the sheet opens rather than shipped with the page:
+ * the gather is several queries per card and most rows are never pressed. A read, so it revalidates
+ * nothing. Null covers every refusal alike (flag off, a bad id, a deck that is not the reader's),
+ * because the sheet draws one `failed` state for all of them.
+ */
+export async function loadStandInsAction(deckId: string, cutOracleId: string): Promise<StandInsRead | null> {
+  if (!swapToolsEnabled() || !isUuid(deckId) || !isUuid(cutOracleId)) return null;
+  const userId = await requireUserId();
+  return loadStandIns(deckId, userId, cutOracleId);
 }
