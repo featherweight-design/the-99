@@ -173,7 +173,11 @@ that already hold it are listed by `AvailabilityDetail` already.
 Each deck row shows:
 - the deck's name, which opens the deck;
 - **the commander fact:** how often this commander's decks run the card, or that the index does
-  not list it for this commander;
+  not list it for this commander. **Inclusion only (Hugh, 2026-09-24):** one figure, the same one
+  cheaper swaps ranks by, so it means one thing in both tools. Synergy is not shown. Universal
+  staples (Sol Ring, Arcane Signet and the like) are identified by the app's shared staple
+  definition, derived from `format_staples`, and Design says how a staple reads in Fits your decks,
+  so a staple never reads as a commander-specific fit;
 - **the need fact:** this deck's count of the card's role against its target ("removal 5 of 8"), or
   nothing if the card has no role. It is also omitted when the deck's role targets are not
   measured: `recommendedMix` falls back to asserted flat targets when the skeleton carries no
