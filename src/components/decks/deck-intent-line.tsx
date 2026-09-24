@@ -113,6 +113,7 @@ export function DeckIntentLine({
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setDraft(line ?? "");
+                  setRefused(null);
                   setEditing(false);
                 }
               }}
@@ -177,6 +178,7 @@ export function DeckIntentLine({
           onClick={() => {
             setDraft(line ?? "");
             setTouched(false);
+            setRefused(null);
             setEditing(true);
           }}
           aria-label={copy.editAria}

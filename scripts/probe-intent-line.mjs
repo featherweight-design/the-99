@@ -175,10 +175,15 @@ async function run() {
       }
     }
   } finally {
-    if (handle.gameId) await sql`delete from deck_games where id = ${handle.gameId}`.catch((e) => console.error("cleanup game:", e));
+    // A cleanup that fails FAILS the run: this probe writes to a real account's deck, and a run
+    // that left the intent overwritten or the game behind must not print "All checks passed".
+    if (handle.gameId) {
+      await sql`delete from deck_games where id = ${handle.gameId}`
+        .catch((e) => report("cleanup: the fixture game is deleted", false, String(e)));
+    }
     if (handle.restoreIntent && deck) {
       await sql`update decks set intent = ${deck.intent}, intent_seeded = ${deck.intent_seeded} where id = ${deck.id}`
-        .catch((e) => console.error("cleanup intent:", e));
+        .catch((e) => report("cleanup: the deck's intent is restored", false, String(e)));
     }
     await browser.close();
   }

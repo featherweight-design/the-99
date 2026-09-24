@@ -57,6 +57,16 @@ describe("DeckIntentLine", () => {
     expect(screen.getByRole("button", { name: copy.save })).not.toBeDisabled();
   });
 
+  it("drops a refusal when Escape closes the field, so reopening starts clean", async () => {
+    draw("go wide", false, vi.fn<Save>(async () => ({ ok: false, message: "nope" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
+    expect(screen.getByText("nope")).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
+    expect(screen.queryByText("nope")).toBeNull();
+  });
+
   it("cancels the edit without saving, back to the line as it was", async () => {
     const save = draw("go wide");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
