@@ -105,7 +105,9 @@
     "check:tuning": "tsx scripts/check-tuning.ts",
     "eval:tuning": "tsx scripts/eval/tuning.mts",
     "eval:report": "tsx scripts/eval/report.mts",
-    "eval:rescore": "tsx scripts/eval/rescore.mts"
+    "eval:rescore": "tsx scripts/eval/rescore.mts",
+    "eval:synopsis": "tsx scripts/eval/synopsis.mts",
+    "eval:blind": "tsx scripts/eval/blind.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
