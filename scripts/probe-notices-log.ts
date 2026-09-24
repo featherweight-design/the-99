@@ -8,8 +8,8 @@
 //
 // It calls the REAL `upsertCardBatch` (one batch of `seedCards`, without the bulk download) and
 // the real `readStoredReading`. It writes to the shared catalog, so every card it touches is
-// captured first and upserted back in a `finally`, the log entries it wrote are deleted (only
-// entries after its start about a card it touched), and the
+// captured first and upserted back in a `finally`, the log entries it wrote are deleted by their
+// exact sequence numbers, and the
 // one reading it rebuilds is held on disk by `scripts/lib/profile-hold.mjs`.
 //
 // It refuses the staging and production branches before its first write, by the Neon branch the
@@ -35,7 +35,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { cards } from "../src/db/schema";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
-import { emptyLogReport, readLogHead } from "../src/lib/notices/log";
+import { readLogHead, type LogReport } from "../src/lib/notices/log";
 import { loadDeckProfile } from "../src/lib/profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../src/lib/profile/stored";
 import { PROFILE_VERSION } from "../src/lib/profile/version";
@@ -69,6 +69,23 @@ const cardRow = async (oracleId: string): Promise<CardRow> => {
   };
 };
 
+/** The log head, which the probe needs to read; an unreadable head is a failed run, not a 0. */
+const logHead = async () => {
+  const head = await readLogHead(db);
+  if (head === null) throw new Error("the change log head is unreadable");
+  return head;
+};
+
+/** Every report the probe hands a writer, so the cleanup can delete EXACTLY the entries it wrote
+ *  (`LogReport.seqs`) and nothing a concurrent ingest published meanwhile. */
+const reports: LogReport[] = [];
+const track = (): LogReport => {
+  const r: LogReport = { written: 0, lost: 0, seqs: [] };
+  reports.push(r);
+  return r;
+};
+const counts = (r: LogReport) => ({ written: r.written, lost: r.lost });
+
 const entriesSince = (head: number) =>
   rows<{ kind: string; direction: string; oracle_ids: string[] }>(sql`
     select kind, direction, oracle_ids from deck_data_changes where seq > ${head} order by seq`);
@@ -86,35 +103,34 @@ async function main() {
   if (picked.length < 2) throw new Error("no fixture cards: the catalog is empty");
   const [a, b] = await Promise.all(picked.map((p) => cardRow(p.oracle_id)));
   const originals = [a, b];
-  const startHead = await readLogHead(db);
   let constraintAdded = false;
   let release: null | (() => Promise<void>) = null;
 
   try {
     // 1 · A batch that moves a Game Changer writes one entry, in the same transaction.
     await db.update(cards).set({ gameChanger: true }).where(eq(cards.oracleId, a.oracleId));
-    let head = await readLogHead(db);
-    const log1 = emptyLogReport();
+    let head = await logHead();
+    const log1 = track();
     await upsertCardBatch([a], true, log1);
     check("1 · the card is back to the catalog's value", (await cardRow(a.oracleId)).gameChanger, false);
     check("1 · one entry, a Game Changer leaving", await entriesSince(head),
       [{ kind: "gameChanger", direction: "removed", oracle_ids: [a.oracleId] }]);
-    check("1 · the report counts it", log1, { written: 1, lost: 0 });
+    check("1 · the report counts it", counts(log1), { written: 1, lost: 0 });
 
     // 2 · A ban is dated; an unban writes nothing (legality is derived live, plan D6).
-    head = await readLogHead(db);
-    await upsertCardBatch([{ ...a, commanderLegal: false }], true, emptyLogReport());
-    await upsertCardBatch([a], true, emptyLogReport());
+    head = await logHead();
+    await upsertCardBatch([{ ...a, commanderLegal: false }], true, track());
+    await upsertCardBatch([a], true, track());
     check("2 · the ban is logged and the unban is not", await entriesSince(head),
       [{ kind: "notLegal", direction: "added", oracle_ids: [a.oracleId] }]);
 
     // 3 · A batch that throws after its read writes NEITHER the upsert nor an entry.
     await db.update(cards).set({ gameChanger: true }).where(eq(cards.oracleId, a.oracleId));
-    head = await readLogHead(db);
+    head = await logHead();
     let threw = false;
     try {
       // `name` is NOT NULL: the second row fails the statement after the before-read has run.
-      await upsertCardBatch([a, { ...b, name: null as unknown as string }], true, emptyLogReport());
+      await upsertCardBatch([a, { ...b, name: null as unknown as string }], true, track());
     } catch {
       threw = true;
     }
@@ -126,7 +142,7 @@ async function main() {
     //     rejects every new row and is dropped in the `finally`.
     await db.execute(sql`alter table deck_data_changes add constraint probe_notices_reject check (false) not valid`);
     constraintAdded = true;
-    const log4 = emptyLogReport();
+    const log4 = track();
     let threw4 = false;
     try {
       await upsertCardBatch([a], true, log4);
@@ -135,7 +151,7 @@ async function main() {
     }
     check("4 · a rejected log write does not fail the batch", threw4, false);
     check("4 · the batch still published", (await cardRow(a.oracleId)).gameChanger, false);
-    check("4 · the loss is counted", log4, { written: 0, lost: 1 });
+    check("4 · the loss is counted", counts(log4), { written: 0, lost: 1 });
     await db.execute(sql`alter table deck_data_changes drop constraint probe_notices_reject`);
     constraintAdded = false;
 
@@ -182,14 +198,12 @@ async function main() {
         .catch((e) => { failures += 1; console.error("constraint not dropped", e); });
     }
     for (const card of originals) {
-      await upsertCardBatch([card], false, emptyLogReport())
+      await upsertCardBatch([card], false, track())
         .catch((e) => { failures += 1; console.error(`card ${card.oracleId} not restored`, e); });
     }
-    // ONLY what this run could have written: after its start AND about a card it touched. A
-    // concurrent ingest's entries about other cards are left alone.
-    await db.execute(sql`
-      delete from deck_data_changes
-      where seq > ${startHead} and oracle_ids && ${`{${originals.map((c) => c.oracleId).join(",")}}`}::uuid[]`)
+    // EXACTLY what this run wrote, by sequence number: a concurrent ingest's entries survive.
+    const mine = reports.flatMap((r) => r.seqs ?? []);
+    await db.execute(sql`delete from deck_data_changes where seq = any(${`{${mine.join(",")}}`}::bigint[])`)
       .catch((e) => { failures += 1; console.error("probe entries not deleted", e); });
     if (release) await release().catch((e: unknown) => { failures += 1; console.error("reading not restored", e); });
   }

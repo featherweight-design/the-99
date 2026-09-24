@@ -7,7 +7,7 @@ import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { deckBodySize } from "../decks/deck-size";
 import { newestVersion, versionCards } from "../decks/versions";
-import { analyzedOracleIds, readLogHead } from "../notices/log";
+import { analyzedOracleIds, LOG_HEAD_SQL, readLogHead } from "../notices/log";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, readProfileHead, type ProfileHead } from "./load";
 import { PROFILE_VERSION } from "./version";
@@ -301,7 +301,9 @@ export async function computeAndStoreProfile(
   const catalog = await deps.generation();
   // THE LOG HEAD TOO, and for the same reason (plan D3): an entry published while this computes
   // is past the mark and still reported. A rebuild keeps the mark it replaced.
+  // Unreadable (null): the write takes the head in its own statement, which errs towards quiet.
   const seenSeq = rebuildOf ? rebuildOf.marks.seenSeq : await readLogHead(db);
+  const seenSeqValue = seenSeq ?? sql`(${LOG_HEAD_SQL})`;
   const profile = await deps.compute(deckId, userId);
   if (!profile) return null;
   let analyzedAt = new Date();
@@ -336,7 +338,7 @@ export async function computeAndStoreProfile(
               ? rebuildOf.marks.analyzedOracleIds
               : analyzedOracleIds(now),
           }
-        : { seenSeq, rulesVersion: BRACKET_RULES_VERSION, analyzedOracleIds: analyzedOracleIds(now) };
+        : { seenSeq: seenSeqValue, rulesVersion: BRACKET_RULES_VERSION, analyzedOracleIds: analyzedOracleIds(now) };
       const [written] = await tx
         .insert(deckProfiles)
         .values({

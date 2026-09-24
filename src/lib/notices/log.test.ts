@@ -58,10 +58,12 @@ describe("the change log's non-fatal helpers", () => {
     expect(await logTableExists(failing)).toBe(false);
   });
 
-  it("reads the head as 0 when the log is empty or unreadable", async () => {
+  // Null, never 0: a reading stored at 0 has "seen" nothing, so a transient failure would put the
+  // whole log's history in front of the player as new.
+  it("reads an empty log's head as 0, and an unreadable one as null", async () => {
     expect(await readLogHead(exec({ rows: [{ head: "17" }] }))).toBe(17);
     expect(await readLogHead(exec({ rows: [{ head: 0 }] }))).toBe(0);
-    expect(await readLogHead(failing)).toBe(0);
+    expect(await readLogHead(failing)).toBeNull();
   });
 
   it("counts a failed write as lost and never throws", async () => {
@@ -91,7 +93,13 @@ describe("writeEntries at scale", () => {
   // of that many rows passes Postgres's 65,535-parameter ceiling and would lose them all.
   it("inserts in chunks of 1,000", async () => {
     const sizes: number[] = [];
-    const savepoint = { insert: () => ({ values: async (rows: unknown[]) => { sizes.push(rows.length); } }) };
+    const savepoint = {
+      insert: () => ({
+        values: (rows: unknown[]) => ({
+          returning: async () => { sizes.push(rows.length); return rows.map((_, i) => ({ seq: i })); },
+        }),
+      }),
+    };
     const tx = { transaction: async (fn: (s: typeof savepoint) => Promise<void>) => fn(savepoint) };
     const entries = Array.from({ length: 2500 }, (_, i) => ({
       kind: "combo" as const, direction: "added" as const, oracleIds: [String(i)], detail: {},
@@ -99,5 +107,18 @@ describe("writeEntries at scale", () => {
     const report = emptyLogReport();
     await writeEntries(tx as never, entries, report);
     expect({ sizes, report }).toEqual({ sizes: [1000, 1000, 500], report: { written: 2500, lost: 0 } });
+  });
+});
+
+describe("writeEntries' sequence numbers", () => {
+  it("collects the exact seqs written when the caller asks, and only then", async () => {
+    const savepoint = { insert: () => ({ values: () => ({ returning: async () => [{ seq: 41 }, { seq: 42 }] }) }) };
+    const tx = { transaction: async (fn: (s: typeof savepoint) => Promise<void>) => fn(savepoint) };
+    const two = [1, 2].map((i) => ({ kind: "combo" as const, direction: "added" as const, oracleIds: [String(i)], detail: {} }));
+    const asked = { written: 0, lost: 0, seqs: [] as number[] };
+    await writeEntries(tx as never, two, asked);
+    const plain = emptyLogReport();
+    await writeEntries(tx as never, two, plain);
+    expect({ asked: asked.seqs, plain }).toEqual({ asked: [41, 42], plain: { written: 2, lost: 0 } });
   });
 });

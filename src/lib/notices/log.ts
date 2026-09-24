@@ -72,8 +72,9 @@ type Executor = Pick<typeof db, "execute">;
 
 const ENTRY_CHUNK = 1000;
 
-/** What one ingest run reports about its log writes. */
-export type LogReport = { written: number; lost: number };
+/** What one ingest run reports about its log writes. `seqs`, when a caller passes an array, collects
+ *  the exact sequence numbers written, so a probe can delete what it wrote and nothing else. */
+export type LogReport = { written: number; lost: number; seqs?: number[] };
 
 export const emptyLogReport = (): LogReport => ({ written: 0, lost: 0 });
 
@@ -106,10 +107,11 @@ export async function writeEntries(tx: Tx, entries: readonly ChangeEntry[], repo
       // In chunks: five parameters a row against Postgres's 65,535 per statement means one insert
       // tops out near 13,000 entries, and an upstream reshuffle of the combo index can exceed that.
       for (let i = 0; i < entries.length; i += ENTRY_CHUNK) {
-        await savepoint.insert(deckDataChanges).values(
+        const inserted = await savepoint.insert(deckDataChanges).values(
           entries.slice(i, i + ENTRY_CHUNK)
             .map((e) => ({ kind: e.kind, direction: e.direction, oracleIds: e.oracleIds, detail: e.detail })),
-        );
+        ).returning({ seq: deckDataChanges.seq });
+        report.seqs?.push(...inserted.map((r) => r.seq));
       }
     });
     report.written += entries.length;
@@ -124,20 +126,27 @@ function message(error: unknown): string {
 }
 
 /**
- * The log's head: the highest `seq` written, or 0. A reading stores it as `seen_seq`, read BEFORE
- * the compute, so an entry published while the compute runs is still reported against that
- * reading (plan D3). Non-fatal: a database without the log has no entries, and 0 says as much.
+ * The log's head: the highest `seq` written, or 0 for an empty log. A reading stores it as
+ * `seen_seq`, read BEFORE the compute, so an entry published while the compute runs is still
+ * reported against that reading (plan D3).
+ *
+ * NULL WHEN UNREADABLE, never 0. A reading stored at 0 has "seen" nothing, so a transient failure
+ * here would put every entry in the log's history in front of the player as new. The caller takes
+ * the head inside its own write instead (`LOG_HEAD_SQL`), which can only err towards quiet.
  */
-export async function readLogHead(exec: Executor): Promise<number> {
+export async function readLogHead(exec: Executor): Promise<number | null> {
   try {
-    const result = await exec.execute(sql`select coalesce(max(seq), 0)::bigint as head from deck_data_changes`);
+    const result = await exec.execute(LOG_HEAD_SQL);
     const row = (result as unknown as { rows: Array<{ head: string | number }> }).rows[0];
     return Number(row?.head ?? 0);
   } catch (error) {
-    console.warn(`deck notices: change log head unreadable, reading as 0: ${message(error)}`);
-    return 0;
+    console.warn(`deck notices: change log head unreadable; the write takes it instead: ${message(error)}`);
+    return null;
   }
 }
+
+/** The head as an SQL expression, for a write that could not read it first. */
+export const LOG_HEAD_SQL = sql`select coalesce(max(seq), 0)::bigint as head from deck_data_changes`;
 
 /** The cards a reading analyzed, commanders included, sorted and distinct (plan D5). */
 export function analyzedOracleIds(head: {
