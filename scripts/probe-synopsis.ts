@@ -36,7 +36,8 @@ import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
 import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_REAPER_CUTOFF_MS } from "../src/lib/synopsis/limits";
+import { isRepair } from "../src/lib/synopsis/prompt";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -68,14 +69,21 @@ const profileDeps: StoredProfileDeps = {
 let calls = 0;
 let queue: StubMode[] = [];
 let delayMs = 0;
+/** Every request the fake model was sent, in order, with the deadline it was given. */
+let seen: { user: string; deadlineMs: number; reply: SynopsisResponse | null }[] = [];
 const deps: GenerateDeps = {
   // The stub's own name, which the spend cap knows makes no request: a made-up name has no price,
   // and pricing refuses to guess one.
   modelName: STUB_MODEL,
-  model: async (_req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
+  model: async (req, facts): Promise<ModelOutcome<SynopsisResponse>> => {
     calls += 1;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
-    return stubReply(facts, queue.shift() ?? "survived");
+    const out = stubReply(facts, queue.shift() ?? "survived");
+    // A repair's reply words its primer differently, so a merge that took a PASSING section from
+    // the repair rather than keeping the first answer's is visible, not identical by construction.
+    if (out.ok && isRepair(req.user)) out.value.primer.strategy[0] = "Build your mana early in the game.";
+    seen.push({ user: req.user, deadlineMs: req.deadlineMs, reply: out.ok ? out.value : null });
+    return out;
   },
   now: () => new Date(),
   profile: profileDeps,
@@ -98,12 +106,12 @@ async function run() {
   const [legend] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line ilike '%Legendary Creature%' order by oracle_id limit 1`);
   if (!legend) return fail("a legend to lead the fixture", "the catalog is empty");
-  const pool104 = await rows<{ oracle_id: string }>(sql`
+  const pool = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where type_line not ilike '%Land%' and oracle_id <> ${legend.oracle_id}::uuid
-    order by oracle_id limit 104`);
-  if (pool104.length < 104) return fail("104 cards for the fixture", `found ${pool104.length}`);
-  const body = pool104.slice(0, 99);
-  const spares = pool104.slice(99);
+    order by oracle_id limit 107`);
+  if (pool.length < 107) return fail("107 cards for the fixture", `found ${pool.length}`);
+  const body = pool.slice(0, 99);
+  const spares = pool.slice(99);
 
   const [deck] = await rows<{ id: string }>(sql`
     insert into decks (user_id, name, commander_oracle_id)
@@ -196,37 +204,87 @@ async function run() {
   await swap(spares[0]);
   await analyze(deck.id);
 
-  // 5 · A PARTIAL refusal, then a section retry that passes: the rest byte for byte.
+  // 5 · CONTRACT B: a first answer with a refused section gets ONE repair, before anything is
+  // shown, and the rest stays byte for byte. All four render, so it spends one unit.
   await ageLedger();
   await swap(spares[1]);
   await analyze(deck.id);
-  queue = ["partial"];
+  queue = ["partial", "survived"];
+  seen = [];
+  calls = 0;
+  // A clock that moves 40s during the first call, so the repair's share of the deadline is a
+  // figure worked out by hand rather than "whatever was left", which any budget satisfies.
+  let clock5 = Date.now();
+  const repaired = await writeSynopsisFor(deck.id, USER, {
+    ...deps,
+    now: () => new Date(clock5),
+    model: async (req, facts) => {
+      const out = await deps.model(req, facts);
+      clock5 += 40_000;
+      return out;
+    },
+  });
+  check("a refused section is repaired in the same write", repaired.kind === "written" && [repaired.outcome, calls], ["survived", 2]);
+  check("…the repair asks only for the refused section, with its reason",
+    /did not pass checking last time: overview\./.test(seen[1]?.user ?? "") && /fix exactly these: overview: unknown_card/.test(seen[1]?.user ?? ""), true);
+  check("…under what is left of the write's one deadline", [seen[0]?.deadlineMs, seen[1]?.deadlineMs], [SYNOPSIS_DEADLINE_MS, SYNOPSIS_DEADLINE_MS - 40_000]);
+  const [repairedRow] = await rows<{ content: { primer: unknown } }>(sql`select content from deck_synopses where deck_id = ${deck.id}::uuid order by created_at desc limit 1`);
+  check("…keeps the first answer's passing sections byte for byte", canon(repairedRow.content.primer), canon(seen[0]?.reply?.primer));
+  check("…and spends once, for both calls", (await ledger()).find((r) => r.status === "spent")?.n, 1);
+
+  // 5b · A repair that fails again leaves the first answer standing: shown, but three sections
+  // of four, so the unit is REFUNDED (Hugh, 2026-09-24) while the dollars stay counted.
+  await ageLedger();
+  await swap(spares[6]);
+  await analyze(deck.id);
+  queue = ["partial", "partial"];
+  calls = 0;
   const partial = await writeSynopsisFor(deck.id, USER, deps);
-  check("a partial answer is refused, and shown", partial.kind === "written" && [partial.outcome, !!partial.synopsis], ["refused", true]);
-  check("…and spends, because the player sees three sections", (await ledger()).find((r) => r.status === "spent")?.n, 1);
+  check("an unrepaired answer is refused, and shown", partial.kind === "written" && [partial.outcome, !!partial.synopsis, calls], ["refused", true, 2]);
+  check("…and refunded, since not all four render", await ledger(), [{ status: "refunded", n: 1 }]);
   const before = partial.kind === "written" ? partial.synopsis! : null;
+  queue = ["survived"];
+  calls = 0;
   const retried = await retrySynopsisFor(deck.id, USER, before!.id, deps);
   const after = retried.kind === "written" ? retried.synopsis! : null;
-  check("the retry survives", retried.kind === "written" && retried.outcome, "survived");
+  check("the player's Try again survives, in one call", retried.kind === "written" && [retried.outcome, calls], ["survived", 1]);
   check("…keeps the passing sections unchanged", canon([after?.content.primer, after?.content.keyCards, after?.content.weaknesses]),
     canon([before?.content.primer, before?.content.keyCards, before?.content.weaknesses]));
   check("…rewrites the refused one", after?.content.overview !== null, true);
   const [link] = await rows<{ retry_of: string | null }>(sql`select retry_of from deck_synopses where id = ${after!.id}::uuid`);
   check("…and names the run it retried", link.retry_of, before!.id);
-  check("…and spends for the section that passed", (await ledger()).find((r) => r.status === "spent")?.n, 2);
+  check("…and spends, now that all four render", (await ledger()).find((r) => r.status === "spent")?.n, 1);
 
-  // 6 · A retry whose retried section fails AGAIN shows nothing new, and is refunded. Aged first:
-  // section 5 spent two units, and a friend's allowance is three, so the retry below would
-  // otherwise be refused for the allowance rather than written.
+  // 5c · A first answer that used up the deadline gets no repair: the write stands as checked.
+  await ageLedger();
+  await swap(spares[7]);
+  await analyze(deck.id);
+  queue = ["partial"];
+  calls = 0;
+  let clock = Date.now();
+  const lateDeps: GenerateDeps = {
+    ...deps,
+    now: () => new Date(clock),
+    model: async (req, facts) => {
+      const out = await deps.model(req, facts);
+      clock += SYNOPSIS_DEADLINE_MS - SYNOPSIS_REPAIR_MIN_MS + 1;
+      return out;
+    },
+  };
+  const late = await writeSynopsisFor(deck.id, USER, lateDeps);
+  check("no repair is sent with less than its minimum of the deadline left", late.kind === "written" && [late.outcome, calls], ["refused", 1]);
+  check("…and the partial answer is refunded", await ledger(), [{ status: "refunded", n: 1 }]);
+
+  // 6 · A retry whose retried section fails AGAIN shows nothing new, and is refunded too.
   await ageLedger();
   await swap(spares[2]);
   await analyze(deck.id);
-  queue = ["partial"];
+  queue = ["partial", "partial"];
   const partial2 = await writeSynopsisFor(deck.id, USER, deps);
   queue = ["partial"];
   const failedRetry = await retrySynopsisFor(deck.id, USER, partial2.kind === "written" ? partial2.synopsis!.id : "", deps);
   check("a retry failing again is still refused", failedRetry.kind === "written" && failedRetry.outcome, "refused");
-  check("…and refunded", (await ledger()).find((r) => r.status === "refunded")?.n, 1);
+  check("…and both are refunded", (await ledger()).find((r) => r.status === "refunded")?.n, 2);
 
   // 7 · An upstream failure refunds, keeps the old synopsis, and says so once.
   await ageLedger();
@@ -365,7 +423,7 @@ async function run() {
   await ageLedger();
   await swap(body[2]); // left the deck in section 6
   await analyze(deck.id);
-  queue = ["refused"];
+  queue = ["refused", "refused"];
   const allRefused = await writeSynopsisFor(deck.id, USER, deps);
   check("a write refused in every section is refused and shows nothing",
     allRefused.kind === "written" && [allRefused.outcome, allRefused.synopsis], ["refused", null]);
@@ -378,7 +436,7 @@ async function run() {
   // A reading an older PROFILE_VERSION wrote is rebuilt quietly by the read, which moves its
   // stamp; the write must still accept it rather than refuse it as moved underneath.
   await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
-  queue = ["partial"];
+  queue = ["partial", "partial"];
   const old = await writeSynopsisFor(deck.id, USER, deps);
   check("a write over a reading rebuilt for a new PROFILE_VERSION still writes", old.kind, "written");
   const oldId = old.kind === "written" ? old.synopsis!.id : "";
@@ -518,7 +576,10 @@ async function live(fixtureDeck: string) {
   }
   // Sonnet list prices per million tokens, input and output; an estimate, never a bill.
   const [IN, OUT] = [3, 15];
-  for (let i = 0; i < max; i++) {
+  // `--max-calls` counts MODEL CALLS, not writes: since contract B a write can make two (the first
+  // answer and its repair), and a call past the cap is refused here rather than sent.
+  let made = 0;
+  for (let i = 0; i < max && made < max; i++) {
     await fixture.execute(sql`update model_calls set created_at = now() - interval '25 hours' where user_id = ${userId}`);
     await fixture.execute(sql`delete from deck_version_synopses where synopsis_id in (select id from deck_synopses where deck_id = ${deckId}::uuid)`);
     await fixture.execute(sql`delete from deck_synopses where deck_id = ${deckId}::uuid`);
@@ -526,7 +587,14 @@ async function live(fixtureDeck: string) {
     const started = Date.now();
     const liveDeps = defaultDeps();
     const debug = process.argv.includes("--debug");
+    let callsThisWrite = 0;
     const result = await writeSynopsisFor(deckId, userId, { ...liveDeps, profile: profileDeps, model: async (req, facts) => {
+      if (made >= max) {
+        console.log(`CAP  call ${made + 1} not sent (--max-calls=${max})`);
+        return { ok: false, errorClass: "upstream_busy" };
+      }
+      made += 1;
+      callsThisWrite += 1;
       const out = await liveDeps.model(req, facts);
       // --debug: what the refusals were ABOUT, which the stored run keeps only for passing sections.
       if (debug && out.ok) {
@@ -544,8 +612,12 @@ async function live(fixtureDeck: string) {
       select outcome, input_tokens, output_tokens, content from deck_synopses where deck_id = ${deckId}::uuid
       order by created_at desc limit 1`);
     const cost = ((r?.input_tokens ?? 0) * IN + (r?.output_tokens ?? 0) * OUT) / 1e6;
-    console.log(`LIVE ${i + 1}/${max}  ${result.kind} ${r?.outcome}  in ${r?.input_tokens} out ${r?.output_tokens}  ~$${cost.toFixed(4)}  ${seconds}s`);
+    const [unit] = await rows<{ status: string }>(sql`
+      select status from model_calls where user_id = ${userId} order by created_at desc limit 1`);
+    console.log(`LIVE write ${i + 1} (${callsThisWrite} call${callsThisWrite === 1 ? "" : "s"}, ${made}/${max})  ${result.kind} ${r?.outcome}  unit ${unit?.status}  in ${r?.input_tokens} out ${r?.output_tokens}  ~$${cost.toFixed(4)}  ${seconds}s`);
     if (r?.content) console.log(JSON.stringify((r.content as { verdicts: unknown }).verdicts));
+    // A write that made no call cannot make one next time either (no reading, a spent allowance).
+    if (callsThisWrite === 0) break;
   }
 }
 

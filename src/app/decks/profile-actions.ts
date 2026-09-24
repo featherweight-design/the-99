@@ -79,7 +79,11 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   // may be holding from before the press is retired. DEFERRED into `after()`: a revalidation during
   // the action re-renders the route it was called from into its reply, which on this page is the
   // whole deck (the 1.6MB lesson recorded in `probe:printing-pick`).
-  after(() => revalidatePath("/decks"));
+  // Home's resume row draws the same chip, from the same row (Home bracket-chip addendum, F5).
+  after(() => {
+    revalidatePath("/decks");
+    revalidatePath("/");
+  });
 
   const { profile, analyzedAt, fresh, versionNumber } = result.reading;
   return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber };

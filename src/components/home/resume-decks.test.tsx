@@ -232,19 +232,19 @@ describe("ResumeDecks", () => {
         shopping={rollup()} total={1} now={NOW}
       />,
     );
-    const count = screen.getByText("99 / 98");
-    expect(count.className).toContain("flex-none");
-    // The group keeps its automatic minimum — that minimum IS the figure's
-    // width, so the group stops shrinking once the clause is spent instead of
-    // letting the row clip an unshrinkable figure into `86 / 9`.
-    expect(count.parentElement?.className).not.toContain("min-w-0");
+    // Since the bracket-chip addendum the count has its own line, beside the bar: the
+    // whole group is `flex-none` and nothing in it truncates (§C).
+    const group = screen.getByText("99 / 98").parentElement!;
+    expect(group.className).toContain("flex-none");
+    expect(group.className).toContain("whitespace-nowrap");
+    expect(group.innerHTML).not.toContain("truncate");
     expect(screen.getByText("+ Bruse Tarl").style.flexShrink).toBe("1000");
     expect(screen.getByText("Ishai").style.textOverflow).toBe("ellipsis");
   });
 
-  // Decision 23. The long-form clause leaves negative room for a name at all,
-  // and a partly truncated figure is never the answer — so a pair row drops the
-  // clause outright and the figure survives in the accessible name.
+  // Decision 23, kept by the bracket-chip addendum (section C) when the count
+  // moved to its own line: a pair row drops the clause, and the figure survives
+  // in the accessible name.
   it("drops the to-buy clause on a pair row and keeps it in the accessible name", () => {
     render(
       <ResumeDecks
@@ -324,5 +324,46 @@ describe("a resume row after the marks", () => {
       />,
     );
     expect(container.textContent).not.toContain("changes since");
+  });
+});
+
+// The Home bracket-chip addendum, section C (R2 = C): every row is three lines, and the chip is
+// marks only (R1).
+describe("a resume row with the bracket chip", () => {
+  const ranged = deck({ bracket: { permits: [4, 5], answered: null } });
+
+  it("draws the chip marks only, after the pill, and speaks the pair as one phrase", () => {
+    const { container } = render(<ResumeDecks decks={[ranged]} shopping={rollup()} total={1} now={NOW} />);
+    const chip = container.querySelector<HTMLElement>('[data-testid="bracket-chip"]')!;
+    expect(chip.getAttribute("data-bracket")).toBe("4-5");
+    expect(chip.textContent).not.toContain("Optimized");
+    expect(chip.closest("[aria-hidden]")).not.toBeNull();
+    expect(screen.getByText("To buy").closest("[aria-hidden]")).not.toBeNull();
+    const spoken = container.querySelector(".sr-only")!;
+    expect(spoken.textContent).toBe("To buy, bracket Optimized or cEDH");
+  });
+
+  it("draws no chip, and leaves the pill spoken, on a deck with no analysis", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
+    expect(container.querySelector('[data-testid="bracket-chip"]')).toBeNull();
+    expect(screen.getByText("To buy").closest("[aria-hidden]")).toBeNull();
+  });
+
+  it("states line two's height, so rows with and without a chip line up (N4)", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
+    const lineTwo = screen.getByText("To buy").closest("[data-resume-text] > span:nth-child(2)")!;
+    expect(lineTwo.className).toContain("h-[22px]");
+    expect(lineTwo.className).toContain("md:h-[24px]");
+    expect(container.querySelector("a")!.className).toContain("py-[4px]");
+  });
+
+  it("draws the bar on every row, and an empty track for an empty deck (N5)", () => {
+    const { container } = render(
+      <ResumeDecks decks={[deck({ id: "a" }), deck({ id: "b", built: 0 })]} shopping={rollup()} total={2} now={NOW} />,
+    );
+    const bars = [...container.querySelectorAll<HTMLElement>("[data-resume-bar]")];
+    expect(bars).toHaveLength(2);
+    expect(bars.map((b) => b.style.background)).toEqual(["var(--border-strong)", "var(--border-strong)"]);
+    expect(bars.map((b) => b.children.length)).toEqual([1, 0]);
   });
 });

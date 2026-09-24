@@ -7,9 +7,9 @@ import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCal
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_REPAIR_MIN_MS } from "./limits";
 import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
-import { buildSynopsisPrompt } from "./prompt";
+import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
 import { synopsisResponseSchema, type SynopsisResponse } from "./response-schema";
 import { STUB_MODEL, stubMode, stubReply, synopsisLive } from "./stub";
@@ -25,8 +25,9 @@ import { marksIn, validateSynopsis } from "./validate";
  * decision 1): the press that analyzed has already stored it, and a write asked for over a stale
  * or missing reading is refused rather than paying for an analysis nobody pressed.
  *
- * ONLY A SUCCESSFUL ANSWER SPENDS (Hugh, 2026-09-23; plan, decision 4). A first write is spent
- * when any section passes; a section retry only when a RETRIED section passes. A run is written
+ * ONLY A WHOLE ANSWER SPENDS (Hugh, 2026-09-24, replacing 2026-09-23's "any section passes"): a
+ * write, the player's Try again included, is spent only when all four sections render after the
+ * repair (`chargeFor`); anything less refunds the unit, while its dollars stay counted. A run is written
  * `pending` in the transaction that reserves its unit, and settled in the transaction that writes
  * its outcome, so the two can never disagree.
  */
@@ -60,7 +61,8 @@ export type WriteResult =
   /** A retry with nothing to retry, or a retry over a list the synopsis no longer describes. */
   | { kind: "nothing_to_retry" };
 
-export type ModelCall = (req: { system: string; user: string }, facts: SynopsisFacts) =>
+/** `deadlineMs` is what is left of the write's one budget: the repair gets only the remainder. */
+export type ModelCall = (req: { system: string; user: string; deadlineMs: number }, facts: SynopsisFacts) =>
   Promise<ModelOutcome<SynopsisResponse>>;
 
 export type GenerateDeps = {
@@ -84,9 +86,9 @@ export function defaultDeps(): GenerateDeps {
         maxTokens: SYNOPSIS_MAX_TOKENS,
         effort: SYNOPSIS_EFFORT,
         schema: synopsisResponseSchema,
-        deadlineMs: SYNOPSIS_DEADLINE_MS,
+        deadlineMs: req.deadlineMs,
       })
-      : async (_req, facts) => stubReply(facts, stubMode()),
+      : async (req, facts) => stubReply(facts, stubMode(), isRepair(req.user)),
     now: () => new Date(),
   };
 }
@@ -100,6 +102,26 @@ export function shown(content: CheckedSynopsis | null): boolean {
 
 export function outcomeOf(verdicts: readonly SectionVerdict[]): "survived" | "refused" {
   return verdicts.every((v) => v.status === "ok") ? "survived" : "refused";
+}
+
+/**
+ * THE CREDIT RULE (Hugh, 2026-09-24): a write is charged only when all four sections render. Any
+ * refused section refunds the reservation, whatever the rest shows; what the call cost is still
+ * recorded as spend (#914).
+ */
+export function chargeFor(content: CheckedSynopsis | null): "spent" | "refunded" {
+  return content && outcomeOf(content.verdicts) === "survived" ? "spent" : "refunded";
+}
+
+/** Two replies' usage, for a write that made the repair call too. */
+export function sumUsage(a: ModelUsage | undefined, b: ModelUsage | undefined): ModelUsage | undefined {
+  if (!a || !b) return a ?? b;
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+    cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
+  };
 }
 
 export function refusedSections(content: CheckedSynopsis): SectionId[] {
@@ -347,15 +369,20 @@ async function run(
   // settle records what it cost, the fallback in the `catch` included. A throw in the catalog read
   // or the checks comes after a reply that was billed all the same.
   let billed: { model: string; usage: ModelUsage } | undefined;
-  try {
-    let outcome: ModelOutcome<SynopsisResponse>;
+  // ONE budget for the whole write, the repair included (contract B): the repair is sent only with
+  // what is left of it, so the write can never outlast the deck page's `maxDuration`.
+  const startedAt = deps.now().getTime();
+  const remaining = () => SYNOPSIS_DEADLINE_MS - (deps.now().getTime() - startedAt);
+  const call = async (req: { system: string; user: string }): Promise<ModelOutcome<SynopsisResponse>> => {
     try {
-      outcome = await deps.model(prompt, facts);
+      return await deps.model({ ...req, deadlineMs: remaining() }, facts);
     } catch (error) {
       console.error("synopsis model call threw", error);
-      outcome = { ok: false, errorClass: "upstream_busy" };
+      return { ok: false, errorClass: "upstream_busy" };
     }
-
+  };
+  try {
+    const outcome = await call(prompt);
     if (outcome.usage) billed = { model: deps.modelName, usage: outcome.usage };
 
     if (!outcome.ok) {
@@ -363,18 +390,30 @@ async function run(
       return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
     }
 
-    const checked = validateSynopsis(outcome.value, facts, await catalogFor(outcome.value, facts));
-    let content = checked;
-    let charge: "spent" | "refunded" = shown(checked) ? "spent" : "refunded";
+    let usage: ModelUsage | undefined = outcome.usage;
+    let content = validateSynopsis(outcome.value, facts, await catalogFor(outcome.value, facts));
     if (base && refused) {
-      const merged = mergeRetry(base.content, checked, refused);
-      content = merged.content;
-      charge = merged.anyRetriedPassed ? "spent" : "refunded";
+      content = mergeRetry(base.content, content, refused).content;
+    } else if (refusedSections(content).length > 0 && remaining() >= SYNOPSIS_REPAIR_MIN_MS) {
+      // CONTRACT B: ONE repair, before the player sees anything. It is the section-retry prompt:
+      // the facts, the first answer's passing sections to return unchanged, and each refused
+      // section's reason. Checked by the same rules, and merged so every passing section stays
+      // byte for byte. A refused section the repair fails again stays refused, now with the
+      // repair's own reason and counts, which is what a later Try again is asked to fix.
+      const failing = refusedSections(content);
+      const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }));
+      usage = sumUsage(usage, repair.usage);
+      if (usage) billed = { model: deps.modelName, usage };
+      if (repair.ok) {
+        const repaired = validateSynopsis(repair.value, facts, await catalogFor(repair.value, facts));
+        content = mergeRetry(content, repaired, failing).content;
+      }
     }
+    const charge = chargeFor(content);
     const result = outcomeOf(content.verdicts);
     const written = await finishRun(
       started,
-      { outcome: result, content, usage: outcome.usage, charge, billed },
+      { outcome: result, content, usage: usage ?? null, charge, billed },
       deps.now(),
     );
     if (!written) return { kind: "superseded" };

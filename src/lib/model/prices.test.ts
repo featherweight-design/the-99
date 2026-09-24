@@ -51,11 +51,12 @@ describe("worstCaseMicroUsd", () => {
 
 describe("FEATURE_CALLS", () => {
   it("prices each feature with its own model, ceiling and max_tokens", () => {
-    expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS });
-    expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS });
-    // $0.208 and $0.156 at today's Sonnet 5, with 8,000- and 3,000-token ceilings.
+    expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
+    expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 });
+    // $0.208 at today's Sonnet 5 and an 8,000-token ceiling; $0.312 for the synopsis, whose one
+    // write can make two calls (the first answer and its repair) at a 3,000-token ceiling each.
     expect(featureWorstCaseMicroUsd("tuning")).toBe(208_000);
-    expect(featureWorstCaseMicroUsd("synopsis")).toBe(156_000);
+    expect(featureWorstCaseMicroUsd("synopsis")).toBe(312_000);
   });
 
   it("prices a reservation at the model it recorded, falling back to the feature's", () => {

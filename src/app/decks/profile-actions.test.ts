@@ -155,9 +155,11 @@ describe("fetchDeckProfile", () => {
 describe("fetchDeckProfile — the deck list", () => {
   // The tile's chip reads the row a press stores, so the press retires the `/decks` list the
   // router may hold — through `after`, never during the action, or the reply carries the page.
-  it("retires /decks after a press, deferred", async () => {
+  // Home's resume row draws the same chip (Home bracket-chip addendum, F5), so it goes too, in
+  // the same deferred call.
+  it("retires /decks and Home after a press, deferred", async () => {
     await fetchDeckProfile(DECK);
-    expect(stub.revalidated).toEqual(["/decks"]);
+    expect(stub.revalidated).toEqual(["/decks", "/"]);
     expect(stub.deferred).toBe(1);
   });
 
