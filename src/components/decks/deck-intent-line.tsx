@@ -41,6 +41,9 @@ export function DeckIntentLine({
   const [isSeeded, setIsSeeded] = useState(seeded);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(intent ?? "");
+  // Whether the player has typed in the open field, by an event rather than by comparing text: a
+  // field typed in and typed back to the old line is still theirs.
+  const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
@@ -55,7 +58,7 @@ export function DeckIntentLine({
     // An open field follows too, while the player has not typed in it: a Save of an untouched
     // field would otherwise write the old line back over the one the other door just saved. A
     // field they HAVE typed in keeps their text, and their Save is theirs to make.
-    if (!editing || draft === (line ?? "")) setDraft(intent ?? "");
+    if (!editing || !touched) setDraft(intent ?? "");
   }
   const desktop = width === "desktop";
   // Under the name at 4px on desktop and 5px on a phone (V2:141, :154). The phone's header column
@@ -102,7 +105,10 @@ export function DeckIntentLine({
               name="intent"
               value={draft}
               onChange={(e) => {
-                if (countCharacters(e.target.value) <= copy.maxLength) setDraft(e.target.value);
+                if (countCharacters(e.target.value) <= copy.maxLength) {
+                  setDraft(e.target.value);
+                  setTouched(true);
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
@@ -170,6 +176,7 @@ export function DeckIntentLine({
           type="button"
           onClick={() => {
             setDraft(line ?? "");
+            setTouched(false);
             setEditing(true);
           }}
           aria-label={copy.editAria}

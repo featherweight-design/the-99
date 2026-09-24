@@ -96,6 +96,10 @@ describe("DeckIntentLine", () => {
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "mine" } });
     rerender(<DeckIntentLine deckId="d1" intent="go long" seeded={false} width="desktop" save={save} />);
     expect(screen.getByRole("textbox")).toHaveValue("mine");
+    // Typed back to the line the page last sent: still typed in, and still the player's.
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go long" } });
+    rerender(<DeckIntentLine deckId="d1" intent="go far" seeded={false} width="desktop" save={save} />);
+    expect(screen.getByRole("textbox")).toHaveValue("go long");
   });
 
   // The line's other door (the ask in Suggested changes) saves through the page, which hands the
