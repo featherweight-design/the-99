@@ -106,6 +106,9 @@ async function findDeck(page) {
 async function findChangesDeck(page) {
   if (process.env.PROBE_CHANGES_DECK) return `/decks/${process.env.PROBE_CHANGES_DECK}/changes`;
   await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+  // The tiles stream in after the shell, so an immediate read can find none
+  // and report "no deck has a draft" about an account that has one.
+  await onPage(page, "li article").first().waitFor({ timeout: 15_000 }).catch(() => {});
   const hrefs = await page.evaluate(() => [
     ...new Set(
       [...document.querySelectorAll('main li article a[href^="/decks/"]')]
