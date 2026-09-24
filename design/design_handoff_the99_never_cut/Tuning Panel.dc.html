@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ pageStyle }}">
+  <section aria-labelledby="tuning-h" style="{{ panelStyle }}">
+    <h3 id="tuning-h" style="margin:0;font-family:var(--display);font-weight:700;font-size:19px;color:var(--fg);">Suggested changes</h3>
+
+    <sc-if value="{{ readLine }}" hint-placeholder-val="{{ false }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">{{ readLine }}</span>
+    </sc-if>
+
+    <p style="margin:0;max-width:880px;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ lead }}</p>
+
+    <sc-if value="{{ showManifest }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <sc-for list="{{ manifest }}" as="m" hint-placeholder-count="4">
+          <div style="{{ mRow }}">
+            <span aria-hidden="true" style="{{ mTick }}"></span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+              <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--fg-body);">{{ m.label }}<sc-if value="{{ m.lock }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid var(--fg-body);border-bottom:none;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:var(--fg-body);"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span></sc-if></span>
+              <sc-if value="{{ m.names }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--fg-muted);">{{ m.names }}</span></sc-if>
+            </span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ m.count }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showCards }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ cardsStyle }}">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="2">
+          <sc-if value="{{ it.broken }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ brokenRow }}">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">no longer applies</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--fg-faint);"><span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:11px;height:13px;"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid var(--fg-body);border-bottom:none;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:var(--fg-body);"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span>{{ it.brokenText }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ it.open }}" hint-placeholder-val="{{ true }}">
+            <article style="{{ cardStyle }}">
+              <div style="{{ pairStyle }}">
+                <span style="display:flex;min-width:0;align-items:center;gap:9px;">
+                  <span style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--border) 0 3px,var(--surface-raised) 3px 6px);"></span>
+                  <span style="{{ it.cutStyle }}">{{ it.cut }}</span>
+                </span>
+                <span style="display:flex;min-width:0;align-items:center;gap:9px;">
+                  <span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">→</span>
+                  <span style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-dashed);background:repeating-linear-gradient(135deg,var(--elevated) 0 3px,var(--border) 3px 6px);"></span>
+                  <span style="flex:none;width:7px;height:7px;border-radius:50%;background:var(--success);"></span>
+                  <span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ it.add }}</span>
+                </span>
+              </div>
+              <p style="margin:0;max-width:980px;font-size:12.5px;line-height:1.5;color:var(--fg-body);">{{ it.text }}</p>
+              <div style="{{ actionsStyle }}">
+                <div style="{{ btnRow }}">
+                  <span style="{{ applyBtn }}">Apply</span>
+                  <span style="{{ rejectBtn }}">Reject</span>
+                </div>
+                <span style="{{ chipRow }}">
+                  <sc-for list="{{ it.chips }}" as="c" hint-placeholder-count="2">
+                    <span style="display:flex;align-items:baseline;gap:5px;border-radius:5px;padding:3px 7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);"><span style="text-transform:uppercase;letter-spacing:0.1em;color:var(--fg-locked);">{{ c.k }}</span><span style="color:var(--fg-muted);">{{ c.v }}</span></span>
+                  </sc-for>
+                </span>
+              </div>
+            </article>
+          </sc-if>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="{{ actionRow }}">
+      <span style="flex:1;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">{{ note }}</span>
+      <span style="{{ primary }}">{{ primaryLabel }}</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:520},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ready&quot;,&quot;nomarks&quot;,&quot;results&quot;,&quot;before&quot;,&quot;after&quot;,&quot;allmarked&quot;,&quot;v2results&quot;,&quot;v2after&quot;,&quot;v2allmarked&quot;],&quot;default&quot;:&quot;ready&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const s = this.props.state ?? "ready";
+    const marksRow = { label: "Cards you marked never cut", lock: true, names: "Lotus Petal · Ornithopter", count: "2 of 99" };
+    const base = [
+      { label: "Your games", count: "6 games · 4 marked" },
+      { label: "Notes on your games", count: "on 2 of 6 games" },
+      { label: "This list, against the recommended mix", count: "99 cards" },
+      { label: "What you own, and what a card costs", count: "your collection" },
+    ];
+    const readyLead = "Six games logged and four of them marked. We will read the results, your game notes, this list and what you own, and suggest up to five swaps.";
+    const cutStyle = { minWidth: 0, fontSize: 13, color: "var(--fg-body)", textDecoration: "line-through", textDecorationColor: "var(--fg-locked)", borderBottom: "1px dotted var(--accent)" };
+    const cutOpened = { ...cutStyle, borderBottom: "1px solid var(--accent)", background: "color-mix(in oklab,var(--accent) 12%,transparent)", borderRadius: 3, padding: "0 3px", margin: "0 -3px" };
+    const card = (cut, add, text, short, chips, o = {}) => ({ open: true, broken: false, cut, add, text: phone ? short : text, chips, cutStyle: o.opened ? cutOpened : cutStyle });
+    const A = card("Mind Stone", "Sakashima’s Student", "Ramp sits at 10 of 10 and mana was marked as working in 4 of 6 games, so one rock can make room for a second copy of your best ninja.", "Ramp is at 10 of 10 and mana worked in 4 of 6 games. Room for a ninja.", [{ k: "mix", v: "ramp 10 of 10" }, { k: "games", v: "Mana worked in 4 of 6" }]);
+    const B = card("Talisman of Dominance", "Fallen Shinobi", "Card flow was marked as hurting in 3 of 6 games. Fallen Shinobi turns each hit into a free spell off the top of their library.", "Card flow hurt in 3 of 6 games. Each hit casts a free spell.", [{ k: "games", v: "Card flow hurt in 3 of 6" }]);
+    const O = card("Ornithopter", "Faerie Seer", "Ornithopter is 1 of 4 creatures here with 0 power. Faerie Seer flies for the same job and scries 2 when it connects.", "1 of 4 creatures here with 0 power. Faerie Seer flies and scries.", [{ k: "decklist", v: "0 power · 4 of 99" }], { opened: s === "before" });
+    const L = card("Lotus Petal", "Arcane Signet", "Lotus Petal is spent the first time you use it. Arcane Signet stays, and ramp sits at 9 of 10.", "Spent once. Arcane Signet stays, and ramp is 9 of 10.", [{ k: "mix", v: "ramp 9 of 10" }]);
+    const broken = { open: false, broken: true, brokenText: "You marked Ornithopter never cut." };
+    let lead = readyLead, manifest = [...base, marksRow], showManifest = true, items = [], readLine = "", note = "Uses a credit. You have 4 of 5 left · next one at 21:40", primaryLabel = "Suggest changes", disabled = false, showCards = false;
+    if (s === "nomarks") manifest = base;
+    if (s === "results") {
+      showManifest = false; showCards = true; items = [A, B];
+      readLine = "read from 6 games · 2 game notes · 99 cards · your collection · 2 never cut";
+      lead = "Two swaps this time. One more would have cut Lotus Petal, which you marked never cut, so we dropped it.";
+      note = "2 open · Replaces these suggestions and uses a credit. 3 of 5 left · next one at 21:40"; primaryLabel = "Suggest again";
+    }
+    if (s === "before" || s === "after") {
+      showManifest = false; showCards = true;
+      items = s === "before" ? [O, L] : [broken, L];
+      readLine = "read from 6 games · 2 game notes · 99 cards · your collection";
+      lead = "Two swaps this time. Three more did not hold up to checking.";
+      note = s === "before" ? "2 open · Replaces these suggestions and uses a credit. 4 of 5 left · next one at 21:40" : "1 open · 1 no longer applies · Replaces these suggestions and uses a credit. 4 of 5 left · next one at 21:40";
+      primaryLabel = "Suggest again";
+    }
+    if (s === "v2results") {
+      showManifest = false; showCards = true; items = [A, B];
+      readLine = "read from 6 games · 2 game notes · 99 cards · your collection";
+      lead = "Two swaps this time. Three more did not hold up to checking.";
+      note = "2 open · Replaces these suggestions and uses a credit. 3 of 5 left · next one at 21:40"; primaryLabel = "Suggest again";
+    }
+    if (s === "v2after") {
+      showManifest = false; showCards = true;
+      items = [{ open: false, broken: true, brokenText: "You locked Ornithopter." }, L];
+      readLine = "read from 6 games · 2 game notes · 99 cards · your collection";
+      lead = "Two swaps this time. Three more did not hold up to checking.";
+      note = "1 open · 1 no longer applies · Replaces these suggestions and uses a credit. 4 of 5 left · next one at 21:40";
+      primaryLabel = "Suggest again";
+    }
+    if (s === "v2allmarked") {
+      showManifest = false; disabled = true;
+      lead = "Every card but Yuriko is locked, so there is nothing we could suggest cutting. Unlock a card and suggestions can run again.";
+      note = "No credit is used.";
+    }
+    if (s === "allmarked") {
+      showManifest = false; disabled = true;
+      lead = "Every card but Yuriko is marked never cut, so there is nothing we could suggest cutting. Clear a mark in a card’s view and suggestions can run again.";
+      note = "No credit is used.";
+    }
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, lead, manifest, showManifest, items, showCards, readLine, note, primaryLabel,
+      brokenRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 9, borderRadius: 9, padding: "9px 12px", background: "var(--surface-sunken)", border: "1px solid var(--border)", minHeight: phone ? 44 : 0 },
+      pageStyle: { width: phone ? 390 : 1300, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", padding: phone ? "16px 12px" : "28px 32px" },
+      panelStyle: { display: "flex", flexDirection: "column", gap: phone ? 12 : 14, background: "var(--surface-sunken)", border: "1px solid var(--border)", borderRadius: 12, padding: phone ? "16px 14px 4px" : "18px 20px 0" },
+      mRow: { display: "flex", alignItems: "center", gap: 11, minHeight: phone ? 44 : 38, padding: "8px 12px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8 },
+      mTick: { flex: "none", width: phone ? 18 : 16, height: phone ? 18 : 16, borderRadius: 4, border: "1px solid var(--border-strong)" },
+      cardsStyle: { display: "flex", flexDirection: "column", gap: phone ? 12 : 8 },
+      cardStyle: { display: "flex", flexDirection: "column", gap: phone ? 11 : 8, borderRadius: phone ? 10 : 9, padding: phone ? "13px 12px" : "10px 12px", background: "var(--surface)", border: "1px solid var(--border)" },
+      pairStyle: phone ? { display: "flex", flexDirection: "column", gap: 7 } : { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 9 },
+      actionsStyle: phone ? { display: "flex", flexDirection: "column-reverse", gap: 11 } : { display: "flex", alignItems: "center", gap: 7 },
+      btnRow: { display: "flex", gap: phone ? 8 : 7, ...(phone ? {} : { marginRight: "auto" }) },
+      chipRow: { display: "flex", flexWrap: "wrap", gap: phone ? 6 : 5 },
+      applyBtn: phone ? { flex: 1, height: 44, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" } : { borderRadius: 7, padding: "6px 13px", fontSize: 12.5, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" },
+      rejectBtn: phone ? { flex: 1, height: 44, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" } : { borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" },
+      actionRow: phone ? { display: "flex", flexDirection: "column-reverse", alignItems: "stretch", gap: 10, padding: "12px 0 14px", borderTop: "1px solid var(--border)", marginTop: 2 } : { display: "flex", alignItems: "center", gap: 16, minHeight: 56, borderTop: "1px solid var(--border)", marginTop: 2 },
+      primary: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: phone ? 44 : 36, padding: "0 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: disabled ? "var(--fg-locked)" : "var(--accent)", border: `1px solid ${disabled ? "var(--border-strong)" : "var(--accent)"}` },
+    };
+  }
+}
+</script>
+</body>
+</html>

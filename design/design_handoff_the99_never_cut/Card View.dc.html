@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:none;width:322px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 28px;background:var(--bg);">
+      <div style="width:264px;height:368px;border-radius:13px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;padding:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ c.name }}</span></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Click to zoom</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;">{{ c.price }}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;flex:none;height:160px;background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;justify-content:space-between;padding:12px 16px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ c.name }}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;background:var(--bg);">{{ c.price }}</span>
+      <span style="position:absolute;top:6px;right:6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg);">×</span>
+    </div>
+  </sc-if>
+
+  <div style="{{ rightStyle }}">
+    <div style="{{ viewportStyle }}">
+      <div style="{{ scrollStyle }}">
+        <div style="{{ titleBlock }}">
+          <h2 style="{{ titleStyle }}">{{ c.name }}</h2>
+          <span style="font-size:14px;line-height:1.5;color:var(--fg-muted);">{{ c.type }}</span>
+        </div>
+
+        <sc-if value="{{ shopping }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;border-radius:4px;padding:2px 6px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);box-shadow:0 0 0 1px color-mix(in oklab,var(--warning) 60%,transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">$64.50</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--warning);">over your $10 limit</span></div>
+            <sc-if value="{{ on }}" hint-placeholder-val="{{ false }}">
+              <span style="{{ standinsNote }}">No stand-ins: you marked it never cut</span>
+            </sc-if>
+            <sc-if value="{{ off }}" hint-placeholder-val="{{ true }}">
+              <span style="{{ standinsLink }}"><span style="border-bottom:1px solid var(--accent-shadow);">See cheaper stand-ins →</span></span>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <div style="{{ box }}"><sc-for list="{{ c.oracle }}" as="o" hint-placeholder-count="1"><p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);">{{ o }}</p></sc-for></div>
+
+        <sc-if value="{{ showCollection }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ box }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">{{ c.owned }}</span></div>
+          <sc-if value="{{ c.claims }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:14px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--fg-body);"><span style="text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-strong);">HD Yuriko</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">holds 1</span></div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <div style="{{ deckBox }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In this deck</div>
+          <div role="switch" aria-checked="false" style="{{ switchRow }}">
+            <span aria-hidden="true" style="{{ tickOff }}"></span>
+            <span style="font-size:13px;color:var(--fg-body);">Run a proxy in HD Yuriko</span>
+          </div>
+          <p style="margin:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Takes effect at once. A proxy is not part of a version.</p>
+          <div style="height:1px;background:var(--border);margin:14px 0 6px;"></div>
+          <div role="switch" aria-checked="{{ on }}" style="{{ switchRow }}">
+            <span aria-hidden="true" style="{{ tickNc }}">{{ tickGlyph }}</span>
+            <span style="font-size:13px;color:var(--fg-body);">Never suggest cutting it from HD Yuriko</span>
+            <span aria-hidden="true" style="position:relative;flex:none;display:inline-block;width:9px;height:11px;margin-left:-3px;"><span style="{{ lockShackle }}"></span><span style="{{ lockBody }}"></span></span>
+          </div>
+          <sc-if value="{{ on }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">Suggested changes and cheaper stand-ins will leave it in. You can still remove it yourself.</p>
+          </sc-if>
+          <p style="margin:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Takes effect at once. It is not part of a version.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ footStyle }}">
+      <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;">
+        <span style="{{ linkStyle }}"><span style="border-bottom:1px solid var(--accent-shadow);">Buy any printing at Mana Pool ↗</span></span>
+        <span style="{{ linkStyle }}"><span style="border-bottom:1px solid var(--accent-shadow);">Find a deck for it →</span></span>
+      </div>
+      <span style="{{ navStyle }}"><span style="color:var(--accent);">‹ Prev</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">{{ c.pos }}</span><span style="color:var(--accent);">Next ›</span></span>
+    </div>
+
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span aria-label="Close" style="position:absolute;top:22px;right:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:15px;color:var(--fg-body);">✕</span></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:824,&quot;height&quot;:625},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;on&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;from&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;decklist&quot;,&quot;shopping&quot;],&quot;default&quot;:&quot;decklist&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const wide = !phone;
+    const on = !!this.props.on;
+    const shopping = (this.props.from ?? "decklist") === "shopping";
+    const C = shopping
+      ? { name: "Mana Vault", type: "Artifact", oracle: ["Mana Vault doesn’t untap during your untap step. {T}: Add {C}{C}{C}."], price: "$64.50", owned: "none", claims: false, noCollection: true, pos: "1 of 3" }
+      : { name: "Lotus Petal", type: "Artifact", oracle: ["{T}, Sacrifice Lotus Petal: Add one mana of any color."], price: "$0.40", owned: "×1", claims: true, pos: "7 of 99" };
+    const ink = on ? "var(--fg-body)" : "var(--fg-faint)";
+    const H = 625, FOOT = 92;
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, wide, on, off: !on, shopping, c: C,
+      tickGlyph: on ? "✓" : "",
+      tickOff: { flex: "none", width: phone ? 18 : 16, height: phone ? 18 : 16, borderRadius: 2, boxShadow: "inset 0 0 0 1px var(--fg-faint)" },
+      tickNc: on
+        ? { flex: "none", width: phone ? 18 : 16, height: phone ? 18 : 16, borderRadius: 2, background: "var(--fg-body)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }
+        : { flex: "none", width: phone ? 18 : 16, height: phone ? 18 : 16, borderRadius: 2, boxShadow: "inset 0 0 0 1px var(--fg-faint)" },
+      lockShackle: { position: "absolute", left: 1.5, top: 0, width: 6, height: 7, border: `1.5px solid ${ink}`, borderBottom: "none", borderRadius: "3px 3px 0 0" },
+      lockBody: on ? { position: "absolute", left: 0, bottom: 0, width: 9, height: 6, borderRadius: 1.5, background: ink } : { position: "absolute", left: 0, bottom: 0, width: 9, height: 6, borderRadius: 1.5, border: `1.5px solid ${ink}` },
+      switchRow: { marginTop: 8, display: "flex", alignItems: "center", gap: phone ? 12 : 11, minHeight: 44, cursor: "pointer" },
+      standinsNote: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: "var(--fg-faint)" },
+      standinsLink: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontSize: 13, fontWeight: 600, color: "var(--accent)" },
+      rootStyle: phone
+        ? { width: 390, background: "var(--surface-rail)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" }
+        : { width: 824, height: H, background: "var(--surface-rail)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", border: "1px solid var(--border-strong)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.45)" },
+      rightStyle: phone ? { display: "flex", flexDirection: "column" } : { position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column" },
+      showCollection: !C.noCollection,
+      viewportStyle: phone ? {} : { flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: shopping ? "flex-start" : "flex-end" },
+      scrollStyle: { display: "flex", flexDirection: "column", gap: phone ? 16 : 20, padding: phone ? "18px 16px 20px" : "30px 30px 22px", flex: "none" },
+      titleBlock: { display: "flex", flexDirection: "column", gap: 6, paddingRight: wide ? 44 : 0 },
+      titleStyle: { margin: 0, fontFamily: "var(--display)", fontWeight: 700, fontSize: phone ? 23 : 29, lineHeight: 1.18, color: "var(--fg)" },
+      box: { borderRadius: 12, padding: phone ? "16px" : "18px 20px", background: "var(--bg)", border: "1px solid var(--border)" },
+      deckBox: { borderRadius: 10, padding: phone ? "14px 16px" : "18px 20px", background: "var(--bg)", border: "1px solid var(--border)" },
+      footStyle: phone
+        ? { display: "flex", flexDirection: "column", gap: 4, padding: "6px 16px 24px", borderTop: "1px solid var(--border)" }
+        : { flex: "none", height: FOOT, display: "flex", alignItems: "center", gap: 16, margin: "0 30px", borderTop: "1px solid var(--border)" },
+      linkStyle: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontSize: phone ? 14 : 13.5, fontWeight: 500, color: "var(--accent)", whiteSpace: "nowrap" },
+      navStyle: { display: "flex", alignItems: "center", gap: 14, minHeight: phone ? 44 : 0, fontSize: 14, whiteSpace: "nowrap", ...(phone ? { justifyContent: "space-between" } : {}) },
+    };
+  }
+}
+</script>
+</body>
+</html>
