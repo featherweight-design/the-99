@@ -11,7 +11,8 @@ with Hugh (R1.1 to R1.3). Design's own `READINESS.md` is answered in §5.
 Build it, with the engineering corrections below. Design answered all seven §4 calls. Every state the brief asks
 for is drawn at 1300 and 390: all 26 frame ids in `STATES-help-me-choose.md` are mounted by the canvas, once at
 1300 and once with `phone` (`The 99 - Help Me Choose.dc.html:94-101`). Every CSS token the package names is
-declared in `globals.css`. Nothing goes back to Design.
+declared in `globals.css` except `--display`, which is each canvas's local alias for `--font-display` (F12).
+Nothing goes back to Design.
 
 Two departures from the brief's wording come from Hugh's own review passes, as `README.md` records, so they are
 confirmations for the record rather than open questions (§4 H1, H2). The copy file lags the final `HANDOFF.md` in
@@ -103,7 +104,7 @@ exists yet for sub-project 8 in `docs/superpowers/plans/`. **The plan must name 
 | `fillDeck` | Yes, taking a deck id only | `src/app/decks/actions.ts:677` |
 | `lane-params` `c` / `m` | Yes. `m=exact` means Exactly | `src/lib/commanders/lane-params.ts:69`, `:80`, `:89-90` |
 | `colorLabel` | Yes | `src/lib/decks/format.ts:60` |
-| Discover's result line | Yes. The rack builds its sentence per lane, and the chassis draws it | `src/components/commanders/rack/result-line.tsx:41`, `filter-rack.tsx:91`; drawn by `src/components/ui/result-line.tsx:24` through `filter-chassis.tsx:23` |
+| Discover's result line | Yes. The rack builds its sentence per lane, and the chassis draws it, with a `resultTrailing` slot beside it | `src/components/commanders/rack/result-line.tsx:41`, `filter-rack.tsx:91`; drawn by `src/components/ui/result-line.tsx:24` at `filter-chassis.tsx:334`, the slot at `:120`, `:335-336` |
 | `createPicker.sub` | Yes: *Choose a commander from your collection.* | `src/lib/copy/decks-builder.ts:379` |
 | `creditsCopy.standing`, `.spent`, `.paused`, `.ownerShare` | Yes | `src/lib/copy/credits.ts:34`, `:51-52`, `:57`, `:64` |
 
@@ -115,7 +116,10 @@ exists yet for sub-project 8 in `docs/superpowers/plans/`. **The plan must name 
 
 ### Tokens
 
-Every `--token` in the package's `.md` and `.html` files is declared in `src/app/globals.css`.
+Every `--token` in the package's `.md` and `.html` files is declared in `src/app/globals.css`, with one
+exception. `var(--display)` appears 15 times across `Hand-off.dc.html`, `Doors.dc.html` and
+`Help Me Choose.dc.html`, and it is an alias each canvas declares in its own `:root`. The app's token is
+`--font-display` (`globals.css:470`), which components reach through the `font-display` class (F12).
 
 ---
 
@@ -125,17 +129,18 @@ All findings are engineering's. There are no Design findings.
 
 | # | Sev | Evidence (origin/main) | Finding and correction | Owner |
 |---|---|---|---|---|
-| F1 | Medium | `actions.ts:677`; `deck-intent-line.tsx:20-21` | **The fill-failed retry cannot recover the answers.** HANDOFF §6 has the banner's retry call `fillDeck` "with the stored answers", but `fillDeck` takes a deck id alone, and the only place the answers land is the intent line, which is free text the player can overwrite. The build-around card is lost the same way today, since `selectedOracleIds` reaches `createDeck` and nothing else. **Correction:** store the answers as structured data with the deck (budget, bracket, build-around card), and have `fillDeck` read them. The intent line stays a sentence written from them | eng |
+| F1 | Medium | `actions.ts:387-391`, `:426-437`, `:677`, `:730-738` | **On the fill-failed path (6d) the answers land nowhere.** HANDOFF §6 has the banner's retry call `fillDeck` "with the stored answers" and says "the intent line is seeded either way". Neither holds. When the fill fails, `createDeck`'s catch inserts a bare deck with `filled: false`: no cards, no intent, and the selection is dropped (`:426-437`). The create seeds the intent only when the fill placed something beyond the selection (`:387-391`). `fillDeck` takes a deck id alone (`:677`) and never seeds, deliberately, because a line the player cleared reads exactly like one never written (`:730-738`). **Correction:** store the answers as structured data on the deck in both paths, the catch included (budget, bracket, build-around card), and have `fillDeck` read them and place the build-around card. For the intent line, store with the answers that no line has been written yet, so the retry can seed it without overwriting a line the player cleared. That keeps `:735`'s rule for every other deck | eng |
 | F2 | Medium | `deck-tuning.ts:51` (`maxLength: 120`); `limits.ts:47-56` | **The answers sentence can pass the intent cap.** *Built around {commander}: {theme}, with {card}, under {$cap}, bracket {n}.* with two themes and a long card name runs past 120 characters. `seededIntent` falls back to a short form, then an ellipsis. **Correction:** give the answers variant the same fallback chain: the full sentence, then the commander and themes, then `seededBriefShort` | eng |
 | F3 | Medium | `src/lib/decks/analysis-flag.ts`; brief §7 | **`HELP_ME_CHOOSE_ENABLED` gates the route and both doors.** With the switch off, `/decks/new/choose` answers not-found and neither the `/decks/new` door nor Discover's link renders. **Correction:** one reader in the `analysis-flag.ts` pattern, read by the route and by both door sites | eng |
 | F4 | Medium | `allowance.ts:161`, `:197`; `allowance-rule.ts:6-7` | **Where "an empty read is refunded" is decided.** The run is reserved, then settled `spent` or `refunded`. A reply that parses but yields no chip surviving validation against the tag vocabulary and the catalog must settle `refunded`, so validation runs before the settle, not after it. *Stop* refunds, as tuning's does (`allowance.ts:34`) | eng |
-| F5 | Low | `ui/result-line.tsx:24`, drawn by `filter-chassis.tsx:23`; the rack's sentence at `rack/result-line.tsx:41` | **The Discover link goes into a shared result line.** One `ResultLine` draws the line for every chassis route, and the rack builds one sentence for both `/commanders` and `/discover`. **Correction:** add a slot the Discover lane alone fills, and carry `c` and `m` into the link. No other route's result line changes | eng |
+| F5 | Low | `filter-chassis.tsx:120`, `:334-336`; `filter-bar.tsx:273`; `filter-rack.tsx:172` | **The Discover link goes into a shared result line.** One `ResultLine` draws the line for every chassis route, and the rack builds one sentence for both `/commanders` and `/discover`. The chassis already has a `resultTrailing` slot at the line's right end, which `/collection` fills today. **Correction:** the rack passes the link through `resultTrailing` on the Discover lane only, carrying `c` and `m`. No other route's result line changes. The slot sits at the right end on desktop, as drawn; the phone's own line under the count is new layout in that slot | eng |
 | F6 | Low | `help-me-choose · copy strings.ts:17`, `:27-28`, `:61`, `:83` | **The copy file lags the final handoff in four places.** `wordsCaption` says *Matched as you type, for free*, where HANDOFF §2 and §3 say nothing is matched while typing. `dock` and `dockZero` are R1's dropped dock. `results.head` and `moreLine` print a total, which HANDOFF §2 and §4 forbid. **Correction:** build from `HANDOFF.md`; drop those keys and take `wordsCaption` from HANDOFF §2, at `/copy-review` | eng, `/copy-review` |
 | F7 | Low | READINESS readings 4 and 8; HANDOFF §5 | **Too narrow is "fewer than 3" in one place and "fewer than 4" in two.** **Correction:** fewer than 4. That is the point where best fits cannot show, and the bar takes their place | eng |
 | F8 | Low | brief §3.0, §3.3 (#937); copy `results.unpriced` | **The unpriced row does not say its buy figure leaves the card out.** The brief now asks for that, and for the price to read unknown, never $0. The row line says *no price on record, placed anyway*, and the chip says `buy · no price`. **Correction:** at `/copy-review`, the row line adds that the buy figure does not count the card | eng, `/copy-review` |
 | F9 | Low | `credits.ts:17`, `:31`, `:51-52`; `decks-builder.ts:379` | **Three shipped strings widen.** `creditsCopy.spent` names *overview and suggestions*, and its word is Hugh's (`credits.ts:17`). `PAUSED_REASON` names two features. `createPicker.sub` becomes Design's *Pick a commander from your collection, or let us help.* All three go through `/copy-review`, and the first is Hugh's word | `/copy-review` |
 | F10 | Low | `create-pre-filled.tsx:115`, `:215`, `:307` | **`CreatePreFilled` writes its strings inline.** The new back link, *Back to results*, both subs and the answers block belong in the copy module, so they pass `check:copy-drift`. The existing inline strings can move in the same change | eng |
 | F11 | Low | STATES "Credit line, by allowance" | **The owner-share state has no frame.** It is 3g's disabled button with `creditsCopy.ownerShare` as the line, and precedence follows the tuning panel: paused, then owner share, then spent. **Correction:** derive it from 3g | eng |
+| F12 | Low | `Hand-off.dc.html`, `Doors.dc.html`, `Help Me Choose.dc.html` (15 uses); `globals.css:470` | **`var(--display)` is a canvas alias, not an app token.** Transcribed as written it resolves to nothing, and `check:tokens` would report it. **Correction:** use the `font-display` class, or `var(--font-display)` | eng |
 
 ### Engineering notes, not findings
 
@@ -167,7 +172,7 @@ Both are confirmations of changes Design attributes to his own review passes. Ne
 | Reading 2 (the control beats the words) | Accepted |
 | Reading 3 (stop words) | Accepted. Eng owns the list |
 | Reading 4 (fewer than 3) | Superseded by reading 8 (F7) |
-| Readings 5 and 9 (answers on the deck) | Reading 9 stands: the seeded intent line. The retry also needs them stored as data (F1) |
+| Readings 5 and 9 (answers on the deck) | Reading 9 stands: the seeded intent line. The answers also need storing as data, and the fill-failed path seeds nothing today (F1) |
 | Reading 6 (offer whenever words) | H2 |
 | Reading 7 (*Look deeper*) | Accepted |
 | Reading 8 (best fits need 4) | Accepted |
