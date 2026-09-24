@@ -114,4 +114,19 @@ describe("useDeckSynopsis", () => {
     await act(() => result.current.write());
     expect(result.current.view.kind === "ready" && result.current.view.busy).toBe(false);
   });
+  it("lets a press on a deck the reader left finish without cancelling the new deck's read", async () => {
+    let finish!: (v: unknown) => void;
+    actions.writeSynopsis.mockImplementationOnce(() => new Promise((r) => { finish = r; }));
+    const { result, rerender } = renderHook(({ deck }) => useDeckSynopsis(deck, true, "k"), { initialProps: { deck: "d1" } });
+    await waitFor(() => expect(result.current.view.kind).toBe("ready"));
+    let pressed!: Promise<void>;
+    act(() => { pressed = result.current.write(); });
+    let second!: (v: unknown) => void;
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { second = r; }));
+    rerender({ deck: "d2" });
+    await act(async () => { finish({ kind: "reused" }); await pressed; });
+    await act(async () => second(synopsisState({ stale: true })));
+    expect(result.current.view.kind === "ready" && result.current.view.state.stale).toBe(true);
+    expect(actions.fetchSynopsis).toHaveBeenCalledTimes(2);
+  });
 });

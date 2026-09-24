@@ -32,13 +32,18 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
 
-  // The key a read was asked under, readable from its continuation.
+  // The key a read was asked under, and the deck on screen, readable from a continuation.
   const askedKey = useRef(refreshKey);
+  const shownDeck = useRef(deckId);
   useEffect(() => {
     askedKey.current = refreshKey;
-  }, [refreshKey]);
+    shownDeck.current = deckId;
+  }, [refreshKey, deckId]);
 
   const load = useCallback(async () => {
+    // A press on a deck the reader has since left re-reads nothing: taking a generation here would
+    // cancel the read the new deck's effect already has in flight, and leave its tab idle.
+    if (shownDeck.current !== deckId) return;
     const mine = ++generation.current;
     const key = askedKey.current;
     // A failed read keeps the answer on screen; the next key or press asks again.
