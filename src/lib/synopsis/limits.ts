@@ -12,7 +12,8 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 // 2: the Mulligan's figures gained the send-back bounds and the commanders' mana values.
 // 3: contract A (Hugh, 2026-09-24): a list section drops a failing line and renders when its
 //    minimum survives; prose still fails whole.
-export const SYNOPSIS_CONTRACT_VERSION = 3;
+// 4: contract B: one automatic repair of the refused sections, in the same write.
+export const SYNOPSIS_CONTRACT_VERSION = 4;
 
 /** A pending run older than this was abandoned; the read-time reaper fails it as `interrupted`
  *  and refunds its unit. Below `RESERVATION_TTL_MS`, so the reap always lands while the unit

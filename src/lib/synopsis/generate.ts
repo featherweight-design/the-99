@@ -25,8 +25,9 @@ import { marksIn, validateSynopsis } from "./validate";
  * decision 1): the press that analyzed has already stored it, and a write asked for over a stale
  * or missing reading is refused rather than paying for an analysis nobody pressed.
  *
- * ONLY A SUCCESSFUL ANSWER SPENDS (Hugh, 2026-09-23; plan, decision 4). A first write is spent
- * when any section passes; a section retry only when a RETRIED section passes. A run is written
+ * ONLY A WHOLE ANSWER SPENDS (Hugh, 2026-09-24, replacing 2026-09-23's "any section passes"): a
+ * write, the player's Try again included, is spent only when all four sections render after the
+ * repair (`chargeFor`); anything less refunds the unit, while its dollars stay counted. A run is written
  * `pending` in the transaction that reserves its unit, and settled in the transaction that writes
  * its outcome, so the two can never disagree.
  */
@@ -394,9 +395,11 @@ async function run(
     if (base && refused) {
       content = mergeRetry(base.content, content, refused).content;
     } else if (refusedSections(content).length > 0 && remaining() >= SYNOPSIS_REPAIR_MIN_MS) {
-      // CONTRACT B: ONE repair, before the player sees anything. It carries only the refused
-      // sections' reasons plus the facts, is checked by the same rules, and keeps every passing
-      // section byte for byte. A repair that fails leaves the first answer standing.
+      // CONTRACT B: ONE repair, before the player sees anything. It is the section-retry prompt:
+      // the facts, the first answer's passing sections to return unchanged, and each refused
+      // section's reason. Checked by the same rules, and merged so every passing section stays
+      // byte for byte. A refused section the repair fails again stays refused, now with the
+      // repair's own reason and counts, which is what a later Try again is asked to fix.
       const failing = refusedSections(content);
       const repair = await call(buildSynopsisPrompt(facts, { keep: content, refused: failing }));
       usage = sumUsage(usage, repair.usage);
