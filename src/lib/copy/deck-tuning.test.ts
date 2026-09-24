@@ -41,17 +41,17 @@ describe("deckTuningCopy", () => {
     expect(suggestionRules.noPercentage).toMatch(/percentage/);
   });
 
-  // The readBack line ends on its separator because an emphasised clause follows
-  // it in the markup. That is the only string here allowed to end unfinished, and
+  // The readBack lines end on their separator because an emphasised clause follows
+  // them in the markup. They are the only strings here allowed to end unfinished, and
   // naming it is what stops a second one being added by habit.
   //
   // The class includes the COLON since the 2026-09-13 sweep: `readBack` used to
   // end on an em dash, so a guard listing only `—` and `,` covered it. It now
   // ends on `:`, and a guard that did not list `:` would wave through the very
   // ending it exists to catch.
-  it("ends every line but the read-back one on a finished clause", () => {
+  it("ends every line but the read-back ones on a finished clause", () => {
     for (const s of strings) {
-      if (s === deckTuningCopy.note.readBack) continue;
+      if (s === deckTuningCopy.note.readBack || s === deckTuningCopy.note.readBackTuned) continue;
       expect(s.trimEnd()).not.toMatch(/[—:,]$/);
     }
   });

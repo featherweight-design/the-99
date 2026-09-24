@@ -105,6 +105,13 @@ export function TuningPanel({
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
   const [intent, setIntent] = useState(facts.intent);
+  // The header's `edit` is the line's other door, and its save revalidates the page: a new line
+  // from the page replaces the one held here, adjusted during render so the old one never paints.
+  const [seenIntent, setSeenIntent] = useState(facts.intent);
+  if (seenIntent !== facts.intent) {
+    setSeenIntent(facts.intent);
+    setIntent(facts.intent);
+  }
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);

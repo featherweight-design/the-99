@@ -15,6 +15,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { FillPassSummary } from "../../lib/decks/fill-passes";
 import { fillDeck, undoFillPass } from "../../app/decks/actions";
 import { GhostButton } from "../ui/button";
+import { ProvenanceDisc } from "../ui/provenance-disc";
 import { MutationError } from "./mutation-error";
 import { fillPassLabel } from "./pass-mark";
 
@@ -83,13 +84,7 @@ export function ProvenanceLedger({
     >
       <div className="flex items-center gap-[9px] md:gap-[11px] mb-[9px] md:mb-[11px]">
         {/* ⓘ outlined disc, as the shipped strip drew it. */}
-        <span
-          aria-hidden
-          className="flex-none flex items-center justify-center rounded-full font-mono w-[18px] h-[18px] md:w-[20px] md:h-[20px] text-[10px] md:text-[11px]"
-          style={{ border: "1px solid var(--accent-shadow)", color: "var(--accent)" }}
-        >
-          i
-        </span>
+        <ProvenanceDisc />
         <h3
           className="m-0 font-sans font-normal text-[12px] md:text-[12.5px] leading-[1.4]"
           style={{ color: "var(--fg-body)" }}

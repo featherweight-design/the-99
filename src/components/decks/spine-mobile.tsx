@@ -11,6 +11,7 @@ import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
+import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
@@ -223,7 +224,11 @@ export function SpineMobile({
           // — more art, never less protection.
           // Plus the chips row since the Analysis tab handoff (§1) moved the status pill and the
           // bracket chip onto a line of their own: another 6px gap and a 22px row, so 143.
-          labelAtPx={143}
+          // Plus the deck's intent line when it has one (placement addendum r3, E2b): a 6px gap
+          // and up to four 18.75px lines at 12.5/1.5. A 120-character line wraps to three at
+          // 390, and the seeded chip and `edit` riding its last line can push a fourth. So 224,
+          // a ceiling again: a one-line intent holds the ramp higher than it needs.
+          labelAtPx={deck.intent ? 224 : 143}
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
@@ -436,6 +441,14 @@ export function SpineMobile({
                   </button>
                 </span>
               </div>
+              {/* SECOND in the order (placement addendum r3, E2b), on the art like the name. */}
+              <DeckIntentLine
+                key={deck.id}
+                deckId={deck.id}
+                intent={deck.intent ?? null}
+                seeded={deck.intentSeeded ?? false}
+                width="phone"
+              />
               {metaRow(true)}
               {chipsRow}
             </>

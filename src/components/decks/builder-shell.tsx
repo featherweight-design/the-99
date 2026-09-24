@@ -1168,7 +1168,15 @@ export function BuilderShell({
               </div>
             ) : view === "games" ? (
               <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">
-                <GamesPanel deckId={deck.id} games={games} summary={gameSummary} />
+                <GamesPanel
+                  deckId={deck.id}
+                  games={games}
+                  summary={gameSummary}
+                  // Suggested changes lives on the Analysis tab over a reading, and the header's
+                  // chip is the stored reading's own signal.
+                  tuned={headerBracket !== null}
+                  onOpenAnalysis={() => setView("analysis")}
+                />
               </div>
             ) : view === "versions" ? (
               <div id="panel-versions" role="tabpanel" aria-labelledby="tab-versions">

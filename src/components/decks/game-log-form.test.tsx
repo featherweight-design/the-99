@@ -29,6 +29,20 @@ const localDay = (at: Date) =>
   `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
 
 describe("GameLogForm", () => {
+  // The read-back names Suggested changes only where that panel exists: a deck with a reading.
+  it("says Suggested changes reads the note only on a tuned deck", () => {
+    const { unmount } = render(
+      <GameLogForm deckId="deck_1" isFirstGame={false} onSaved={vi.fn()} onAnnounce={vi.fn()} tuned />,
+    );
+    open();
+    expect(screen.getByText(deckTuningCopy.note.readBackTuned, { exact: false })).toBeInTheDocument();
+    unmount();
+    mount();
+    open();
+    expect(screen.getByText(deckTuningCopy.note.readBack, { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText(deckTuningCopy.note.readBackTuned, { exact: false })).toBeNull();
+  });
+
   // State 2 → 3. The fifteen-second log is result-then-save, and nothing else.
   it("enables save on a result alone", () => {
     mount();

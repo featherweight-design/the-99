@@ -203,8 +203,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   **A false positive is allowlisted in `scripts/lib/copy-drift-allowlist.mjs`, with its reason,
   and that is a deliberate act that shows up in a diff.** An exemption granted silently is how
   the next rename hides. A row there says "these two look alike to a machine and are unrelated",
-  never "this drift is fine". One names a table for a feature that is NOT BUILT (`deck-tuning.md`
-  specifies #10, paused), where nothing ships to compare against; that row comes out when #10 does.
+  never "this drift is fine". One used to name `deck-tuning.md` as a table for a feature not yet
+  built; it came out when #10 shipped, and the first run without it caught real drift in that
+  table (`Nothing has changed.` against the shipped `The deck is unchanged.`).
 
   **Its own failure paths are pinned** in `copy-drift.test.mts`, and they were run before it was
   believed: the first version reported green over a reverted rename, because `prose` tested the
