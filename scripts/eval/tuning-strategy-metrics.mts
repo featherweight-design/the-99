@@ -46,13 +46,16 @@ for (const run of args.runs.split(",")) {
       if (keyCards.has(s.cut.toLowerCase())) g.keyCut += 1;
       if (universal.has(s.cut.toLowerCase())) g.universalCut += 1;
       if (s.evidence.every((e) => e.kind === "mix")) g.thresholdOnly += 1;
+      // Each role a suggestion fills counts ONCE for it, however many times it cites that role.
+      const filled = new Map<string, number>();
       for (const e of s.evidence) {
         const m = e.kind === "mix" ? /^(.+?):? (\d+) of (\d+)$/.exec(e.value) : null;
-        if (m && Number(m[2]) < Number(m[3])) {
-          const f = fills.get(m[1]) ?? { n: 0, gap: Number(m[3]) - Number(m[2]) };
-          f.n += 1;
-          fills.set(m[1], f);
-        }
+        if (m && Number(m[2]) < Number(m[3])) filled.set(m[1], Number(m[3]) - Number(m[2]));
+      }
+      for (const [role, gap] of filled) {
+        const f = fills.get(role) ?? { n: 0, gap };
+        f.n += 1;
+        fills.set(role, f);
       }
     }
     if ([...fills.values()].some((f) => f.gap === 1 && f.n > 1)) g.doubleFill += 1;

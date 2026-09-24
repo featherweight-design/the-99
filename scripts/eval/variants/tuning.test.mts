@@ -47,3 +47,27 @@ describe("tuning variants", () => {
     expect({ ...shown, staples: [] }).toEqual({ ...pack, staples: [] });
   });
 });
+
+describe("the strategy variant", () => {
+  const { messages } = applyVariant(TUNING_VARIANTS.strategy, pack, buildPrompt, "deck-1");
+  const base = buildPrompt(pack);
+
+  it("adds the deck's own strategy and Key cards to the user message, marks stripped", () => {
+    expect(messages.user.startsWith(base.user)).toBe(true);
+    expect(messages.user).toContain("How this deck plays (from its own overview):\n- Attack with X.");
+    expect(messages.user).toContain("Key cards, never to be cut: X.");
+  });
+
+  it("adds the count, gap, grounding, Key-card and universal-staple rules to the system message", () => {
+    expect(messages.system.startsWith(base.system)).toBe(true);
+    expect(messages.system).toContain("Make 4 or 5 suggestions");
+    expect(messages.system).toContain("one short of its target gets one suggestion");
+    expect(messages.system).toContain("grounded in how this deck plays");
+    expect(messages.system).toContain("Never suggest cutting a Key card");
+    expect(messages.system).toContain("Never suggest cutting Sol Ring just to fix a role count.");
+  });
+
+  it("fails a deck with no stored overview rather than running without it", () => {
+    expect(() => applyVariant(TUNING_VARIANTS.strategy, pack, buildPrompt, "no-such-deck")).toThrow(/no stored overview/);
+  });
+});
