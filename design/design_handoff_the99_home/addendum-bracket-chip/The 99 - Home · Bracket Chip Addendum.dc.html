@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:56px;width:max-content;">
+
+  <div style="max-width:1100px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;">ADDENDUM · PASS 2</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Home · the resume row · bracket chip</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.15;">A row with a chip splits line two in two: the plates on one line, the commander and the count on the next.</h1>
+    <p style="margin:0;max-width:980px;font-size:14.5px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;">Marks only, as Hugh ruled on 2026-09-23 (R1). The chip still sits <b style="color:var(--fg);font-weight:600;">immediately after the status pill</b>, 8px from it. But once the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">· N cards</span> clause is drawn, no single line fits at any desktop or phone width (§A). So when <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">deck.bracket</span> is set, the pill and chip take line two and the commander and count drop to line three. That is one boolean with no measurement. The row stays 72px. A row with no chip is the shipped row, unchanged. Nothing new: no mark, token or string.</p>
+  </div>
+
+  <section id="c" data-screen-label="C · count on its own line" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">C · <span style="color:var(--accent);">variant · the count on its own line, with the progress bar · every row</span></div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Every row, with a chip or without, has the same three lines. Line one is the name and stamp. Line two is the pill, the chip and the commander, and the commander is the only thing on it that shrinks. Line three is the tile's 3px progress bar (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">statusBarStyle</span>, filled in the status's ink, from a zero basis) followed by the whole count, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">99 / 99 · 12 cards</span>, which never shrinks. The row stays 72px, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">py-[4px]</span> and 4px between lines. That's 17.4 + 4 + 22 / 24 + 4 + 12.6 = 60 / 62 in a 62px content box, which is the most the 72px row allows. Every row is the same shape, so there's no offset in a mixed pair. Worst-case commander: 55px at 360, 85 at 390, 130 at 1300 (Unresolved + 4–5). With no chip it's 142 / 172 / 217.</p>
+    <div style="display:flex;align-items:flex-start;gap:48px;">
+      <sc-for list="{{ frames2 }}" as="f" hint-placeholder-count="3">
+        <div data-screen-label="{{ f.id }}" style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.title }}</span>
+          <div style="{{ f.box }}">
+            <sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="3">
+              <div style="{{ r.cell }}">
+                <div data-resume-row="true" style="{{ r.row }}">
+                  <div style="{{ r.art }}"></div><div style="{{ r.wash }}"></div>
+                  <span style="{{ r.col }}">
+                    <span style="display:flex;align-items:baseline;gap:8px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Cinzel',serif;font-size:14.5px;font-weight:600;line-height:1.2;color:var(--fg);">{{ r.name }}</span><span style="margin-left:auto;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ r.stamp }}</span></span>
+                    <span style="{{ r.line2 }}">
+                      <span style="display:flex;align-items:center;gap:8px;flex:none;">
+                        <span style="{{ r.pill }}">{{ r.status }}</span>
+                        <sc-if value="{{ r.hasChip }}" hint-placeholder-val="{{ true }}"><span data-bracket-chip="marks" style="{{ r.chip }}"><img alt="" src="{{ r.low }}" style="display:block;width:22px;height:22px;"><sc-if value="{{ r.range }}" hint-placeholder-val="{{ false }}"><img alt="" src="{{ r.high }}" style="display:block;width:22px;height:22px;opacity:0.65;"></sc-if></span></sc-if>
+                      </span>
+                      <span style="min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ r.cmd }}</span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:10px;min-width:0;line-height:1.2;">
+                      <span style="flex:1 1 0;min-width:0;height:3px;border-radius:2px;background:var(--border-strong);overflow:hidden;"><span style="{{ r.bar }}"></span></span>
+                      <span style="flex:none;display:flex;gap:4px;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span>{{ r.count }}</span><span>{{ r.copies }}</span></span>
+                    </span>
+                  </span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ r.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="a" data-screen-label="A · measurement" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">A · <span style="color:var(--accent);">the measurement, corrected</span></div>
+    <div style="max-width:1100px;border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:300px repeat(4,minmax(0,1fr));background:var(--surface-sunken);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">
+        <span style="padding:10px 14px;">line width</span>
+        <span style="padding:10px 14px;border-left:1px solid var(--border);">360 · 208</span>
+        <span style="padding:10px 14px;border-left:1px solid var(--border);">390 · 238</span>
+        <span style="padding:10px 14px;border-left:1px solid var(--border);">1180 · 223</span>
+        <span style="padding:10px 14px;border-left:1px solid var(--border);">1300 · 283</span>
+      </div>
+      <sc-for list="{{ math }}" as="m" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:300px repeat(4,minmax(0,1fr));border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.5;">
+          <span style="padding:9px 14px;color:var(--fg-body);">{{ m.k }}</span>
+          <span style="padding:9px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);border-left:1px solid var(--border);">{{ m.a }}</span>
+          <span style="padding:9px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);border-left:1px solid var(--border);">{{ m.b }}</span>
+          <span style="padding:9px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);border-left:1px solid var(--border);">{{ m.c }}</span>
+          <span style="padding:9px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);border-left:1px solid var(--border);">{{ m.d }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Line widths: the row, minus its 2px border, the right padding (10, or 18 from 1180) and the inset (108, or 116 from 1000). At 1300 the left column is 1300 − 62 rail − 26 − 26 − 20 gap − 316 rail = 850, so each row in the 2×2 is 419. Mono advances at 0.6em. Pills include their 1px border. Line three's figure is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">line − 14 − 44 − 4 − 63</span>. The clause is at most 10 characters (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">· 99 cards</span>), and pair rows never draw it.</p>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--danger);border-radius:5px;padding:2px 8px;">✕</span><span style="font-size:15px;font-weight:600;">Marks only, on one line, with the clause: the commander is gone and the clause reads as a different number</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · for the record, not for build</span></div>
+    <div style="width:358px;height:72px;position:relative;display:flex;align-items:center;overflow:hidden;border-radius:12px;border:1px solid var(--border);background:var(--surface-inset);padding:10px 10px 10px 0;">
+      <div style="{{ art.yuriko }}"></div><div style="position:absolute;left:0;top:0;bottom:0;width:130px;background:linear-gradient(90deg, transparent 50px, var(--surface-inset) 108px);"></div>
+      <span style="position:relative;display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;padding-left:108px;">
+        <span style="display:flex;align-items:baseline;gap:8px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Cinzel',serif;font-size:14.5px;font-weight:600;line-height:1.2;">The Tiger's Unending Parade</span><span style="margin-left:auto;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">committed 10mo ago</span></span>
+        <span style="display:flex;align-items:center;gap:14px;min-width:0;height:22px;">
+          <span style="display:flex;align-items:center;gap:8px;flex:none;">
+            <span style="display:flex;flex:none;align-items:center;height:19px;border-radius:5px;padding:0 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);background:color-mix(in srgb, var(--warning) 18%, var(--bg));border:1px solid var(--border-strong);white-space:nowrap;">Unresolved</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;flex:none;height:22px;padding:0 2px;border-radius:6px;background:color-mix(in srgb, var(--bracket-4) 12%, var(--bg));border:1px solid color-mix(in oklab, var(--bracket-4) 55%, transparent);"><img alt="" src="assets/bracket-4-optimized-chip-ink.svg" style="display:block;width:22px;height:22px;"><img alt="" src="assets/bracket-5-cedh-chip-ink.svg" style="display:block;width:22px;height:22px;opacity:0.65;"></span>
+          </span>
+          <span style="min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Yuriko, the Tiger's Shadow</span>
+          <span style="display:flex;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="flex:none;white-space:nowrap;">99 / 99</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">· 12 cards</span></span>
+        </span>
+      </span>
+    </div>
+  </section>
+
+  <section id="b" data-screen-label="B · three cases" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">B · <span style="color:var(--accent);">no chip, a single mark, the 4–5 range · at 360, 390 and 1300 · every row with its clause</span></div>
+    <div style="display:flex;align-items:flex-start;gap:48px;">
+      <sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+        <div data-screen-label="{{ f.id }}" style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.title }}</span>
+          <div style="{{ f.box }}">
+            <sc-for list="{{ f.rows }}" as="r" hint-placeholder-count="3">
+              <div style="{{ r.cell }}">
+                <div data-resume-row="true" style="{{ r.row }}">
+                  <div style="{{ r.art }}"></div><div style="{{ r.wash }}"></div>
+                  <span style="{{ r.col }}">
+                    <span style="display:flex;align-items:baseline;gap:8px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Cinzel',serif;font-size:14.5px;font-weight:600;line-height:1.2;color:var(--fg);">{{ r.name }}</span><span style="margin-left:auto;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ r.stamp }}</span></span>
+                    <sc-if value="{{ r.hasChip }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                        <span style="{{ r.pill }}">{{ r.status }}</span>
+                        <span data-bracket-chip="marks" style="{{ r.chip }}"><img alt="" src="{{ r.low }}" style="display:block;width:22px;height:22px;"><sc-if value="{{ r.range }}" hint-placeholder-val="{{ false }}"><img alt="" src="{{ r.high }}" style="display:block;width:22px;height:22px;opacity:0.65;"></sc-if></span>
+                      </span>
+                      <span style="display:flex;align-items:baseline;gap:14px;min-width:0;line-height:1.2;">
+                        <span style="min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ r.cmd }}</span>
+                        <span style="display:flex;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="flex:none;white-space:nowrap;">{{ r.count }}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.copies }}</span></span>
+                      </span>
+                    </sc-if>
+                    <sc-if value="{{ r.noChip }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:flex;align-items:center;gap:14px;min-width:0;">
+                        <span style="{{ r.pill }}">{{ r.status }}</span>
+                        <span style="min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ r.cmd }}</span>
+                        <span style="display:flex;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="flex:none;white-space:nowrap;">{{ r.count }}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.copies }}</span></span>
+                      </span>
+                    </sc-if>
+                  </span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ r.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1100px;">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">What gives way</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The line does. Nothing on it shrinks. Line two holds the pill and chip, which are both unshrinkable, with room to spare at every width (worst case 139 of 208). Line three is the shipped commander-and-count pair, now with the whole line to itself. The commander keeps at least 83px (13 characters) at 360 and 113px at 390. The clause never truncates.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Height · still 72</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">17.4 (name) + 2 + 22 / 24 (chip) + 2 + 12.6 (mono at 1.2) = 56 / 58. The chip row gets <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">py-[6px]</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">gap-[2px]</span>, which gives a 58px content box. The wash and portrait are untouched. A row with no chip keeps 10 and 4.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">The cost · a mixed pair at 1300</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Rows centre their text, so in a 2×2 pair where one row has a chip and one doesn't, the two deck names sit about 9px apart (first row above). It changes when a deck gets its first analysis, not with the viewport or the bracket count. 360 is the narrowest width drawn, and nothing clips there.</span></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const art = (n) => ({ position: "absolute", left: 0, top: 0, bottom: 0, width: 99, backgroundImage: `url("https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=art_crop")`, backgroundSize: "cover", backgroundPosition: "center" });
+    const pill = (tok) => ({ display: "flex", flex: "none", alignItems: "center", height: 19, borderRadius: 5, padding: "0 7px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: `var(${tok})`, background: `color-mix(in srgb, var(${tok}) 18%, var(--bg))`, border: "1px solid var(--border-strong)", whiteSpace: "nowrap" });
+    const chip = (b, h) => ({ display: "inline-flex", alignItems: "center", gap: 5, flex: "none", height: h, padding: "0 2px", borderRadius: 6, background: `color-mix(in srgb, var(--bracket-${b}) 12%, var(--bg))`, border: `1px solid color-mix(in oklab, var(--bracket-${b}) 55%, transparent)` });
+    const mk = (b) => `assets/bracket-${{ 3: "3-upgraded", 4: "4-optimized", 5: "5-cedh" }[b]}-chip-ink.svg`;
+    const mono = (s) => Math.round(s.length * 6.3);
+    const pillW = (s) => s.length * 6 + 16;
+    const cases = [
+      { name: "The Tiger's Unending Parade of Ninja Tricks and Sneaky Returns", cmd: "Yuriko, the Tiger's Shadow", status: "Unresolved", tok: "--warning", stamp: "committed 10mo ago", count: "99 / 99", copies: "· 12 cards", low: 4, high: 5, what: "4–5 · widest pill, name and stamp" },
+      { name: "HD - Tovolar", cmd: "Tovolar, Dire Overlord", status: "To buy", tok: "--accent", stamp: "committed 3d ago", count: "87 / 99", copies: "· 12 cards", what: "no chip · the shipped row" },
+      { name: "HD - Kinnan", cmd: "Kinnan, Bonder Prodigy", status: "To buy", tok: "--accent", stamp: "played yesterday", count: "95 / 99", copies: "· 4 cards", low: 3, what: "single · Upgraded" },
+    ];
+    const F = [
+      { id: "360", w: 328, line: 208, pl: 108, pr: 10, h: 22, desk: false, title: "360 · stacked · rows 328 · line 208" },
+      { id: "390", w: 358, line: 238, pl: 108, pr: 10, h: 22, desk: false, title: "390 · stacked · rows 358 · line 238" },
+      { id: "1300", w: 419, line: 283, pl: 116, pr: 18, h: 24, desk: true, title: "1300 · left column 850, 2×2 · rows 419 · line 283" },
+    ];
+    const frames = F.map((f) => ({
+      id: f.id, title: f.title,
+      box: f.desk
+        ? { width: 850, display: "flex", flexWrap: "wrap", gap: 12 }
+        : { width: f.w + 32, padding: "14px 16px 16px", border: "1px solid var(--border)", borderRadius: 18, display: "flex", flexDirection: "column", gap: 12 },
+      rows: cases.map((c) => {
+        const hasChip = !!c.low;
+        let label;
+        if (hasChip) {
+          const cmdW = f.line - 14 - mono(c.count) - 4 - mono(c.copies);
+          label = `${c.what} · commander ${cmdW}px · clause whole`;
+        } else {
+          const rest = f.line - pillW(c.status) - 28 - mono(c.count) - 4;
+          const cw = mono(c.copies);
+          label = rest >= cw ? `${c.what} · commander ${rest - cw}px · clause whole` : `${c.what} · commander 0 · clause ${rest}px`;
+        }
+        return {
+          ...c, hasChip, noChip: !hasChip, range: !!c.high, label,
+          low: hasChip ? mk(c.low) : "", high: c.high ? mk(c.high) : "",
+          art: art(c.cmd), pill: pill(c.tok), chip: chip(c.low || 4, f.h),
+          cell: { display: "flex", flexDirection: "column", gap: 6, width: f.w },
+          row: { height: 72, position: "relative", display: "flex", alignItems: "center", overflow: "hidden", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-inset)", padding: `${hasChip ? 6 : 10}px ${f.pr}px ${hasChip ? 6 : 10}px 0` },
+          wash: { position: "absolute", left: 0, top: 0, bottom: 0, width: f.pl + 24, background: `linear-gradient(90deg, transparent 50px, var(--surface-inset) ${f.pl}px)` },
+          col: { position: "relative", display: "flex", flexDirection: "column", gap: hasChip ? 2 : 4, minWidth: 0, flex: 1, paddingLeft: f.pl },
+        };
+      }),
+    }));
+    const frames2 = F.map((f) => ({
+      id: f.id + " · C", title: f.title,
+      box: f.desk
+        ? { width: 850, display: "flex", flexWrap: "wrap", gap: 12 }
+        : { width: f.w + 32, padding: "14px 16px 16px", border: "1px solid var(--border)", borderRadius: 18, display: "flex", flexDirection: "column", gap: 12 },
+      rows: cases.map((c) => {
+        const hasChip = !!c.low;
+        const chipW = c.high ? 55 : 28;
+        const cmdW = f.line - pillW(c.status) - (hasChip ? 8 + chipW : 0) - 14;
+        const barW = f.line - 10 - mono(c.count) - 4 - mono(c.copies);
+        const built = parseInt(c.count, 10);
+        return {
+          ...c, hasChip, range: !!c.high,
+          label: `${c.what.replace(" · the shipped row", "")} · commander ${cmdW}px · bar ${barW}px`,
+          low: hasChip ? mk(c.low) : "", high: c.high ? mk(c.high) : "",
+          art: art(c.cmd), pill: pill(c.tok), chip: chip(c.low || 4, f.h),
+          bar: { display: "block", height: "100%", width: `${Math.min(100, (built / 99) * 100)}%`, background: `var(${c.tok})` },
+          cell: { display: "flex", flexDirection: "column", gap: 6, width: f.w },
+          row: { height: 72, position: "relative", display: "flex", alignItems: "center", overflow: "hidden", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-inset)", padding: `4px ${f.pr}px 4px 0` },
+          wash: { position: "absolute", left: 0, top: 0, bottom: 0, width: f.pl + 24, background: `linear-gradient(90deg, transparent 50px, var(--surface-inset) ${f.pl}px)` },
+          col: { position: "relative", display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: 1, paddingLeft: f.pl },
+          line2: { display: "flex", alignItems: "center", gap: 14, minWidth: 0, height: f.h },
+        };
+      }),
+    }));
+    return {
+      art: { yuriko: art("Yuriko, the Tiger's Shadow") },
+      frames, frames2,
+      math: [
+        { k: "pill · Complete / To buy / Unresolved", a: "64 / 52 / 76", b: "64 / 52 / 76", c: "64 / 52 / 76", d: "64 / 52 / 76" },
+        { k: "chip, marks only · single / range", a: "28 / 55", b: "28 / 55", c: "28 / 55", d: "28 / 55" },
+        { k: "count · gap · clause (· 12 cards)", a: "44 · 4 · 63", b: "44 · 4 · 63", c: "44 · 4 · 63", d: "44 · 4 · 63" },
+        { k: "whole chip, Exhibition or Core (174 / 185) + Unresolved · settled by R1", a: "over by 122", b: "over by 92", c: "over by 118", d: "over by 58" },
+        { k: "one line · Unresolved + 4–5 + clause, commander at 0 (needs 278)", a: "over by 70", b: "over by 40", c: "over by 55", d: "commander 5" },
+        { k: "line two · pill + 8 + chip, worst 139", a: "spare 69", b: "spare 99", c: "spare 84", d: "spare 144" },
+        { k: "line three · commander keeps (line − 125)", a: "83 · 13 ch", b: "113 · 17 ch", c: "98 · 15 ch", d: "158 · 25 ch" },
+        { k: "height · 17.4 + 2 + chip + 2 + 12.6 in 58", a: "56", b: "56", c: "58", d: "58" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

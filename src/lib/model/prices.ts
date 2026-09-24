@@ -68,7 +68,7 @@ export function worstCaseMicroUsd(model: string, inputCeilingTokens: number, max
  *
  * INPUT CEILINGS, measured on staging read-only 2026-09-24 with the count_tokens API over all 19
  * staging decks: the tuning prompt ran 3,748 to 5,116 tokens; the synopsis prompt 6,551 to 10,342,
- * and a synopsis section retry adds the kept synopsis on top, up to its 8,000-token output. The
+ * and a synopsis section retry adds the kept synopsis on top, up to its 3,000-token output. The
  * ceilings are those maxima with room to grow: tuning 12,000, synopsis 24,000.
  */
 export const FEATURE_CALLS: Readonly<Record<ModelFeature, { model: string; inputCeilingTokens: number; maxTokens: number }>> = {
