@@ -26,6 +26,7 @@ import type { TuningItem, TuningRun, TuningState } from "../tuning/state";
 import type { ValidatedSuggestion } from "../tuning/validate";
 import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
+import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 
 /**
@@ -256,9 +257,20 @@ async function readItems(
   const addIds = rows.rows.map((r) => r.add_oracle_id);
   // The add's claims are read from THIS deck's vantage, as the decklist reads its own cards: the
   // swap would put the card in this deck, so this deck's own claim is not a rival for it.
+  // Both are decoration on a card that stands without them, so each fails soft, as the deck page's
+  // own price and claim rollups do: a card with no price draws no figure, and one with no claim
+  // picture draws no mark, rather than the whole set failing to draw.
   const [{ prices, newestAsOf }, claims] = await Promise.all([
-    loadPrices(addIds),
-    addIds.length > 0 ? loadAvailability(userId, { oracleIds: addIds, excludeDeckId: deckId }) : new Map(),
+    loadPrices(addIds).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
+      console.error("tuning items: price read failed", e);
+      return { prices: new Map(), newestAsOf: null };
+    }),
+    addIds.length > 0
+      ? loadAvailability(userId, { oracleIds: addIds, excludeDeckId: deckId }).catch((e) => {
+          console.error("tuning items: claim read failed", e);
+          return new Map<string, Availability>();
+        })
+      : new Map<string, Availability>(),
   ]);
   const items = rows.rows.map((r): TuningItem => {
     return {

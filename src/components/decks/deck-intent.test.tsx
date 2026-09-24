@@ -49,6 +49,14 @@ describe("DeckIntentAsk", () => {
     expect(onSaved).not.toHaveBeenCalled();
   });
 
+  it("says the save failed and frees the field when the action rejects", async () => {
+    draw(vi.fn<Save>(() => Promise.reject(new Error("network"))));
+    await type("go wide");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
+    expect(screen.getByRole("alert")).toHaveTextContent(copy.refused);
+    expect(screen.getByRole("button", { name: copy.save })).not.toBeDisabled();
+  });
+
   it("goes away on Skip and writes nothing", async () => {
     const { save } = draw();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.skip })));

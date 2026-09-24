@@ -204,6 +204,17 @@ describe("TuningPanel", () => {
     }
   });
 
+  it("leaves the reading state with a refusal when the run or a read rejects", async () => {
+    const d = deps([fresh, fresh], {
+      run: vi.fn(() => Promise.reject(new Error("network"))),
+      evidence: vi.fn(() => Promise.reject(new Error("network"))),
+    });
+    await draw(d);
+    await press(copy.suggest);
+    expect(screen.queryByRole("button", { name: copy.stop })).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent(deckTuningCopy.run.refused);
+  });
+
   it("shows the refusal and keeps the panel when the server refuses the run", async () => {
     const d = deps([fresh, fresh], { run: vi.fn(async () => ({ ok: false as const, message: "no" })) });
     await draw(d);

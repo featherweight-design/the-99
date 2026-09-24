@@ -109,17 +109,28 @@ export function TuningPanel({
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
 
+  // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
+  // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
+  // run or read leaves the reading state with the run's own refusal.
   const reread = useCallback(async () => {
-    const next = await deps.read(deckId);
-    setState(next);
-    return next;
+    try {
+      const next = await deps.read(deckId);
+      setState(next);
+      return next;
+    } catch {
+      return null;
+    }
   }, [deps, deckId]);
 
   useEffect(() => {
     let live = true;
-    void deps.read(deckId).then((next) => {
-      if (live) setState(next);
-    });
+    deps.read(deckId).then(
+      (next) => {
+        if (live) setState(next);
+      },
+      // A first read that fails draws nothing, as a deck with no reading does.
+      () => {},
+    );
     return () => {
       live = false;
     };
@@ -154,12 +165,16 @@ export function TuningPanel({
     const mine = ++token.current;
     setCounts({});
     setAnnounced(deckTuningCopy.announce.started);
-    const running = deps.run(deckId, anyway ? { anyway: true } : {});
-    // The manifest ticks on reads that genuinely land, one after another.
+    // Settled to a result whatever happens, so an unexpected throw is a refusal like any other.
+    const running = deps.run(deckId, anyway ? { anyway: true } : {}).catch(
+      (): DeckMutationResult => ({ ok: false, message: deckTuningCopy.run.refused }),
+    );
+    // The manifest ticks on reads that genuinely land, one after another. A read that fails
+    // stays unticked; the run is what decides the outcome.
     for (const step of steps) {
-      const n = await deps.evidence(deckId, step);
+      const n = await deps.evidence(deckId, step).catch(() => null);
       if (token.current !== mine) return;
-      setCounts((c) => (c === null ? c : { ...c, [step]: n }));
+      if (n !== null) setCounts((c) => (c === null ? c : { ...c, [step]: n }));
     }
     const result = await running;
     if (token.current !== mine) return;
@@ -182,10 +197,10 @@ export function TuningPanel({
     // telling the reader none was used.
     let cancelled = false;
     for (let attempt = 0; attempt < STOP_TRIES && !cancelled; attempt += 1) {
-      const current = await deps.read(deckId);
+      const current = await deps.read(deckId).catch(() => null);
       if (current?.run?.status === "pending") {
-        await deps.cancel(deckId, current.run.id);
-        cancelled = true;
+        cancelled = await deps.cancel(deckId, current.run.id).then((r) => r.ok, () => false);
+        if (!cancelled) break;
       } else if (attempt < STOP_TRIES - 1) {
         await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
       }

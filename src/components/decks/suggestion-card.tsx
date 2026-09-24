@@ -52,7 +52,9 @@ export function SuggestionCard({
   async function answer(kind: keyof CardActions) {
     setBusy(kind);
     setRefused(null);
-    const result = await actions[kind](item.id);
+    // A rejection is a refusal too: the card must never stay disabled with nothing said.
+    const refusal = kind === "apply" ? copy.applyRefused : kind === "undo" ? copy.undoRefused : copy.verdictRefused;
+    const result = await actions[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: refusal }));
     setBusy(null);
     if (!result.ok) {
       setRefused(result.message);

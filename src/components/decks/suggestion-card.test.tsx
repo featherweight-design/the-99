@@ -121,6 +121,13 @@ describe("SuggestionCard", () => {
     expect(onSettled).not.toHaveBeenCalled();
   });
 
+  it("says the apply failed and frees the card when the action rejects", async () => {
+    draw(item, { apply: () => Promise.reject(new Error("network")) });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.apply })); });
+    expect(screen.getByRole("alert")).toHaveTextContent(copy.applyRefused);
+    expect(screen.getByRole("button", { name: copy.apply })).not.toBeDisabled();
+  });
+
   it("collapses an applied swap to a row that can be put back", async () => {
     const undo = vi.fn(ok);
     draw({ ...item, verdict: "accepted" }, { undo });
