@@ -187,7 +187,10 @@ async function run() {
   check("…and names the run it retried", link.retry_of, before!.id);
   check("…and spends for the section that passed", (await ledger()).find((r) => r.status === "spent")?.n, 2);
 
-  // 6 · A retry whose retried section fails AGAIN shows nothing new, and is refunded.
+  // 6 · A retry whose retried section fails AGAIN shows nothing new, and is refunded. Aged first:
+  // section 5 spent two units, and a friend's allowance is three, so the retry below would
+  // otherwise be refused for the allowance rather than written.
+  await ageLedger();
   await swap(spares[2]);
   await analyze(deck.id);
   queue = ["partial"];
