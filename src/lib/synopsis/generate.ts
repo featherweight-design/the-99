@@ -133,8 +133,14 @@ export function mergeRetry(
 // Reads.
 
 /** The draft's synopsis: the newest finished run with at least one section shown. */
-export async function readShownSynopsis(deckId: string, userId: string, list?: string): Promise<SynopsisRow | null> {
-  const [row] = await db
+export async function readShownSynopsis(
+  deckId: string,
+  userId: string,
+  list?: string,
+  /** A caller's transaction, when the overview must come from the same snapshot as its list. */
+  on: Pick<typeof db, "select"> = db,
+): Promise<SynopsisRow | null> {
+  const [row] = await on
     .select({
       id: deckSynopses.id,
       fingerprint: deckSynopses.fingerprint,

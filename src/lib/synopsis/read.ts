@@ -5,7 +5,7 @@ import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, d
 import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
-import { loadProfileHead } from "../profile/load";
+import { readProfileHead } from "../profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { reapSynopses } from "./reaper";
@@ -95,15 +95,19 @@ export async function readSynopsisState(
   if (!owned) return null;
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
 
-  // THE LIVE LIST, read in one repeatable-read snapshot (`loadProfileHead`): its deck row and its
-  // cards are two reads, and an edit landing between them would fingerprint a list that never
-  // existed. It is read first because the overview shown is the one written for it, if any.
-  const live = await loadProfileHead(deckId, userId).then((head) => (head ? listFingerprint(head) : null));
-  const [reading, row, synopsis, newest, allowance] = await Promise.all([
+  // THE LIVE LIST AND ITS OVERVIEW, from ONE read-only repeatable-read snapshot. The list is two
+  // reads (the deck row and its cards), and the overview shown is the one written for that list:
+  // read apart, an edit landing between them pairs list A with A's overview while the deck is
+  // already B, and the press note would describe a list that is no longer live.
+  const { live, synopsis } = await db.transaction(async (tx) => {
+    const head = await readProfileHead(tx, deckId, userId);
+    const list = head ? listFingerprint(head) : null;
+    return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx) };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  const [reading, row, newest, allowance] = await Promise.all([
     readStoredReading(deckId, userId, deps),
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
-    readShownSynopsis(deckId, userId, live ?? undefined),
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
       .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
