@@ -6,6 +6,7 @@ Canvas ids in brackets. `HANDOFF.md` §2 is the prose.
 
 | Canvas | State | Header chip | Tab body |
 |---|---|---|---|
+| 8a | opening the tab, fetching | none | the chip-mark row + *Loading…* only; nothing else, no mix (after 150ms, held 400ms) |
 | 2a | never analyzed | none | Overview empty state: ring, heading, body, **Analyze** + *How we make these decisions →* |
 | 2b | loading, never drawn | none | 2a with the ring animating, Analyze disabled, heading *Reading your deck…* |
 | 2c | failed, never drawn | none | 2a with the ring at 0.3, failure copy, **Try again** |
