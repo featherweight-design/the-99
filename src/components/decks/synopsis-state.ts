@@ -26,7 +26,9 @@ export type SynopsisView =
   | { kind: "ready"; state: SynopsisState; busy: boolean; current: boolean };
 
 export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: string) {
-  const [answer, setAnswer] = useState<{ state: SynopsisState; key: string } | null>(null);
+  // The deck an answer is for rides with it: the shell survives a client navigation between
+  // decks, and the previous deck's overview must never draw on the next one's tab.
+  const [answer, setAnswer] = useState<{ state: SynopsisState; key: string; deckId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
 
@@ -39,9 +41,10 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   const load = useCallback(async () => {
     const mine = ++generation.current;
     const key = askedKey.current;
-    const got = await fetchSynopsis(deckId);
-    if (mine !== generation.current) return;
-    if ("synopsis" in got) setAnswer({ state: got, key });
+    // A failed read keeps the answer on screen; the next key or press asks again.
+    const got = await fetchSynopsis(deckId).catch(() => null);
+    if (mine !== generation.current || !got) return;
+    if ("synopsis" in got) setAnswer({ state: got, key, deckId });
   }, [deckId]);
 
   useEffect(() => {
@@ -49,26 +52,32 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     // The read settles in a continuation rather than through `load`, so no state is set
     // synchronously inside the effect.
     const mine = ++generation.current;
-    void fetchSynopsis(deckId).then((got) => {
-      if (mine === generation.current && "synopsis" in got) setAnswer({ state: got, key: refreshKey });
-    });
+    fetchSynopsis(deckId).then(
+      (got) => {
+        if (mine === generation.current && "synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
+      },
+      // A failed read keeps what is on screen, never a stale `current`; the next key asks again.
+      () => {},
+    );
   }, [active, refreshKey, deckId]);
 
   const press = useCallback(async (run: () => Promise<WriteResult | { kind: string }>) => {
     setBusy(true);
     try {
-      await run();
+      await run().catch(() => null);
+      // Whatever the press returned, the stored state is the truth the tab draws. BUSY HOLDS
+      // THROUGH THE RE-READ: cleared first, the answer from before the press would draw a live
+      // write over a run that has already landed, and a second press would spend again.
+      await load();
     } finally {
       setBusy(false);
-      // Whatever the press returned, the stored state is the truth the tab draws.
-      await load();
     }
   }, [load]);
 
   const write = useCallback(() => press(() => writeSynopsis(deckId)), [press, deckId]);
   const retry = useCallback((synopsisId: string) => press(() => retrySynopsisSections(deckId, synopsisId)), [press, deckId]);
 
-  const view: SynopsisView = answer
+  const view: SynopsisView = answer && answer.deckId === deckId
     ? { kind: "ready", state: answer.state, busy, current: answer.key === refreshKey }
     : { kind: "idle" };
   return {

@@ -1173,7 +1173,7 @@ export function BuilderShell({
                         settled={synopsis.view.current}
                         onWrite={synopsis.write}
                         onRetry={synopsis.retry}
-                        onReanalyze={profile.request}
+                        reanalyze={{ onPress: profile.request, disabled: profile.state.kind === "loading" || built !== bodySize }}
                       />
                     ) : null
                   }

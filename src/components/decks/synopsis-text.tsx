@@ -44,7 +44,9 @@ export function SynopsisText({
 export function CardName({ oracleId, name, imageUri }: { oracleId: string; name: string; imageUri: string | null }) {
   const preview = usePreviewRow(imageUri);
   return (
-    <span {...preview} className="inline" data-testid="synopsis-card">
+    // A press opens the card modal under the pointer, and a box raised above the sheet it was
+    // hovered in would sit above that modal too: the press closes it.
+    <span {...preview} onClickCapture={preview.onMouseLeave} className="inline" data-testid="synopsis-card">
       <CardDetailTrigger
         oracleId={oracleId}
         name={name}

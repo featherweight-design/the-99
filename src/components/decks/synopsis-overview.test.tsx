@@ -15,7 +15,7 @@ const onWrite = vi.fn();
 const onRetry = vi.fn();
 const onReanalyze = vi.fn();
 const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
-const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean }> = {}) =>
+const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean; reanalyzeBlocked: boolean }> = {}) =>
   render(
     <CardDetailProvider fetchCard={async () => null}>
       <SynopsisOverview
@@ -27,7 +27,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         settled={over.settled ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
-        onReanalyze={onReanalyze}
+        reanalyze={{ onPress: onReanalyze, disabled: over.reanalyzeBlocked ?? false }}
       />
     </CardDetailProvider>,
   );
@@ -182,6 +182,15 @@ describe("SynopsisOverview", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Re-analyze" }));
     expect(onReanalyze).toHaveBeenCalledOnce();
     expect(within(dialog).queryByRole("button", { name: copy.writeNew })).toBeNull();
+  });
+
+  it("holds the modal's Re-analyze exactly as the tab's banner holds it", () => {
+    draw(synopsisState({ stale: true }), { readingFresh: false, reanalyzeBlocked: true });
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
+    const press = within(screen.getByRole("dialog")).getByRole("button", { name: "Re-analyze" });
+    expect(inert(press)).toBe(true);
+    fireEvent.click(press);
+    expect(onReanalyze).not.toHaveBeenCalled();
   });
 
   it("holds a modal section's Try again, with the reset line, once every credit is out", () => {

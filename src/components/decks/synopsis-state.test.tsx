@@ -82,4 +82,36 @@ describe("useDeckSynopsis", () => {
     await act(() => result.current.retry("syn-1"));
     expect(actions.retrySynopsisSections).toHaveBeenCalledWith("d1", "syn-1");
   });
+  it("stays busy until the re-read after a press lands", async () => {
+    let reread!: (v: unknown) => void;
+    const { result } = renderHook(() => useDeckSynopsis("d1", true, "k"));
+    await waitFor(() => expect(result.current.view.kind).toBe("ready"));
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { reread = r; }));
+    let pressed!: Promise<void>;
+    act(() => { pressed = result.current.write(); });
+    await waitFor(() => expect(actions.fetchSynopsis).toHaveBeenCalledTimes(2));
+    expect(result.current.view.kind === "ready" && result.current.view.busy).toBe(true);
+    await act(async () => { reread(synopsisState()); await pressed; });
+    expect(result.current.view.kind === "ready" && result.current.view.busy).toBe(false);
+  });
+
+  it("never draws one deck's answer on another's tab", async () => {
+    const { result, rerender } = renderHook(({ deck }) => useDeckSynopsis(deck, true, "k"), { initialProps: { deck: "d1" } });
+    await waitFor(() => expect(result.current.view.kind).toBe("ready"));
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise(() => {}));
+    rerender({ deck: "d2" });
+    expect(result.current.view.kind).toBe("idle");
+  });
+
+  it("keeps what it has when a read fails, and raises nothing", async () => {
+    const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d1", true, key), { initialProps: { key: "a" } });
+    await waitFor(() => expect(result.current.view.kind).toBe("ready"));
+    actions.fetchSynopsis.mockRejectedValueOnce(new Error("down"));
+    rerender({ key: "b" });
+    await waitFor(() => expect(actions.fetchSynopsis).toHaveBeenCalledTimes(2));
+    expect(result.current.view.kind === "ready" && result.current.view.current).toBe(false);
+    actions.writeSynopsis.mockRejectedValueOnce(new Error("down"));
+    await act(() => result.current.write());
+    expect(result.current.view.kind === "ready" && result.current.view.busy).toBe(false);
+  });
 });
