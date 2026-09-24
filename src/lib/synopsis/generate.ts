@@ -153,23 +153,22 @@ export async function readShownSynopsis(deckId: string, userId: string): Promise
 /**
  * The fresh reading a write works from, with the list it describes. Null when there is none.
  *
- * ONE STORED ROW, checked either side of the reading. `readStoredReading` answers from its own
- * transaction, so the row is read before and after it and must not have moved: a new analysis
- * stored, or an edit marking it dirty, between the two would otherwise hand the model one list's
- * profile under another list's fingerprint, and the synopsis would be stamped with a list its
- * facts do not describe.
+ * ONE STORED ROW. `readStoredReading` answers from its own transaction, so the row's list is read
+ * after it, and the row must still be the one the reading came from: the same `computed_at` as
+ * the reading's `analyzedAt`, and no edit since. A new analysis stored, or an edit, in between
+ * would otherwise hand the model one list's profile under another list's fingerprint. Comparing
+ * against the READING's stamp rather than an earlier read of the row is what lets the quiet
+ * rebuild of an older `PROFILE_VERSION` through, since that rebuild moves `computed_at` itself.
  */
 async function freshReading(deckId: string, userId: string, deps?: StoredProfileDeps) {
-  const stamp = async () => (await db
+  const reading = await readStoredReading(deckId, userId, deps);
+  if (!reading?.fresh) return null;
+  const [row] = await db
     .select({ list: deckProfiles.fingerprint, at: deckProfiles.computedAt, dirty: deckProfiles.dirty })
     .from(deckProfiles)
-    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))))[0];
-  const before = await stamp();
-  const reading = await readStoredReading(deckId, userId, deps);
-  const after = await stamp();
-  if (!reading?.fresh || !before || !after || after.dirty) return null;
-  if (before.list !== after.list || before.at.getTime() !== after.at.getTime()) return null;
-  return { profile: reading.profile, list: after.list };
+    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+  if (!row || row.dirty || row.at.getTime() !== reading.analyzedAt.getTime()) return null;
+  return { profile: reading.profile, list: row.list };
 }
 
 async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]): Promise<SynopsisFacts> {

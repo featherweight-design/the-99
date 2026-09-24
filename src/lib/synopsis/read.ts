@@ -25,7 +25,7 @@ export type SynopsisState = {
   stale: boolean;
   /**
    * A press would actually write one (plan, decision 9): a fresh reading to write from, no
-   * synopsis for the current list, and a unit left. What the credit note keys on, never `stale`
+   * synopsis for the current list, no run already in flight, and a unit left. What the credit note keys on, never `stale`
    * (credits audit, finding 4): after a revert the banner shows while the synopsis is current.
    */
   wouldSpend: boolean;
@@ -47,11 +47,13 @@ export function synopsisStatus(input: {
   reading: { fresh: boolean; list: string } | null;
   synopsis: Pick<SynopsisRow, "fingerprint"> | null;
   allowance: Allowance;
+  /** A run in flight: a press now is refused as `in_flight` and writes nothing. */
+  pending: boolean;
 }): { stale: boolean; wouldSpend: boolean } {
-  const { reading, synopsis, allowance } = input;
+  const { reading, synopsis, allowance, pending } = input;
   const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list);
   const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list;
-  const wouldSpend = !!reading?.fresh && !forThisList && allowance.used < allowance.limit;
+  const wouldSpend = !!reading?.fresh && !forThisList && !pending && allowance.used < allowance.limit;
   return { stale, wouldSpend };
 }
 
@@ -80,6 +82,7 @@ export async function readSynopsisState(
     reading: reading && row ? { fresh: reading.fresh, list: row.list } : null,
     synopsis,
     allowance,
+    pending: newest?.status === "pending",
   });
   const lastFailed = !!newest && newest.status === "done"
     && FAILED.includes(newest.outcome as SynopsisOutcome)

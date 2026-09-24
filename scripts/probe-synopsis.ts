@@ -28,6 +28,7 @@ import { touchDeck } from "../src/lib/decks/touch";
 import { commitVersion } from "../src/lib/decks/versions";
 import { listFingerprint } from "../src/lib/profile/fingerprint";
 import { loadDeckProfile } from "../src/lib/profile/load";
+import { PROFILE_VERSION } from "../src/lib/profile/version";
 import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profile/stored";
 import type { ModelOutcome } from "../src/lib/model/client";
 import { retrySynopsisFor, writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
@@ -263,8 +264,12 @@ async function run() {
   // body[0] left the deck in section 4, so putting it back is a real edit.
   await swap(body[0]);
   await analyze(deck.id);
+  // A reading an older PROFILE_VERSION wrote is rebuilt quietly by the read, which moves its
+  // stamp; the write must still accept it rather than refuse it as moved underneath.
+  await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
   queue = ["partial"];
   const old = await writeSynopsisFor(deck.id, USER, deps);
+  check("a write over a reading rebuilt for a new PROFILE_VERSION still writes", old.kind, "written");
   const oldId = old.kind === "written" ? old.synopsis!.id : "";
   await fixture.execute(sql`update deck_synopses set contract_version = 0 where id = ${oldId}::uuid`);
   const whole = await retrySynopsisFor(deck.id, USER, oldId, deps);
@@ -286,6 +291,16 @@ async function run() {
   check("an older version is never pinned", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
   check("…while the newest one is", await pinSynopsisToVersion(deck.id, USER, { versionId: v2.id, list: committedList }), true);
   check("another reader cannot read a version's copy", await readVersionSynopsis(v1.id, "someone-else"), null);
+  // Only the DRAFT'S synopsis is copied: an older run for this same list is history. A newer run
+  // for another list makes the committed list's own run stale, and a commit then pins nothing.
+  const [latest] = await rows<{ id: string }>(sql`select id from deck_synopses where deck_id = ${deck.id}::uuid
+    and status = 'done' order by created_at desc limit 1`);
+  await fixture.execute(sql`insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
+    select deck_id, user_id, 'another-list', contract_version, model, model_call_id, 'done', outcome, content
+    from deck_synopses where id = ${latest.id}::uuid`);
+  const { version: v3 } = await commitVersion(deck.id, null);
+  check("a commit whose list only an OLDER synopsis describes pins nothing",
+    await pinSynopsisToVersion(deck.id, USER, { versionId: v3.id, list: committedList }), false);
 
   // 12 · The allowance: spent, the write says so, the analysis is untouched.
   await swap(body[1]); // left the deck in section 5

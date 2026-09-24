@@ -22,18 +22,19 @@ import { isNewestVersion, type CommitPin } from "../profile/stored";
 export async function pinSynopsisToVersion(deckId: string, userId: string, pin: CommitPin): Promise<boolean> {
   try {
     const [match] = await db
-      .select({ id: deckSynopses.id })
+      .select({ id: deckSynopses.id, fingerprint: deckSynopses.fingerprint })
       .from(deckSynopses)
       .where(and(
         eq(deckSynopses.deckId, deckId),
         eq(deckSynopses.userId, userId),
         eq(deckSynopses.status, "done"),
-        eq(deckSynopses.fingerprint, pin.list),
         sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`,
       ))
       .orderBy(desc(deckSynopses.createdAt))
       .limit(1);
-    if (!match) return false;
+    // THE DRAFT'S synopsis, then its list: an older run written for this same list (write A, write
+    // B, revert to A, commit) is history, not what the player was reading, and is never copied.
+    if (!match || match.fingerprint !== pin.list) return false;
     const written = await db
       .insert(deckVersionSynopses)
       .select(db
