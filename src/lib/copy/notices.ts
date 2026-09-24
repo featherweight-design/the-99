@@ -19,5 +19,39 @@ export const deckNoticesCopy = {
       unread: (n: number) => `${notices(n)} since this deck was analyzed`,
       notLegal: (n: number) => `${cards(n)} not legal in this deck`,
     },
+    /** The header's full face (`● 3 notices`); the tile draws the condensed `● 3`. */
+    count: notices,
+    aria: {
+      unread: (n: number) => `${notices(n)} since this deck was analyzed. Open notices`,
+      read: (n: number) => `${notices(n)}, read. Open notices`,
+      notLegal: (n: number) => `${cards(n)} not legal in this deck. Open notices`,
+    },
+  },
+  sheet: {
+    title: "Notices",
+    since: (date: string) => `since analyzed ${date}`,
+    closeAria: "Close notices",
+    groups: {
+      notLegal: "Not legal in Commander",
+      outsideColors: "Outside the commander’s colors",
+      // gameChangers, twoCardCombos, massLandDenial, extraTurns: deckAnalysisCopy.findings.labels
+      rules: "Bracket rules",
+    },
+    dir: { added: "added", removed: "removed", moved: "moved" },
+    combo: (result: string) => `Spellbook: ${result}.`,
+    legal: {
+      notLegal: "Not legal in Commander.",
+      outside: (colors: string, commander: string, identity: string) =>
+        `${colors}, outside ${commander}’s colors (${identity}).`,
+      foot: "These stay until the cards leave the deck. Reading them does not clear them.",
+    },
+    foot: {
+      holds: "Your bracket holds until you re-analyze. Nothing here moves it on its own.",
+      dirty:
+        "Your bracket holds until you re-analyze. Your own edits are waiting too: the Re-analyze on the Analysis tab reads both.",
+      toTab: "Analysis tab",
+      /** Undrawn in the handoff: the foot's own press failing. Queued for /copy-review. */
+      failed: "We couldn’t re-analyze. Your bracket holds as it was.",
+    },
   },
 } as const;

@@ -11,6 +11,7 @@ import type { TileBracket } from "../../lib/decks/read";
 import { SpineDesktop } from "./spine-desktop";
 import { SpineMobile } from "./spine-mobile";
 import type { StatusPill } from "../../lib/decks/status";
+import type { HeaderNotice } from "./notice-tag";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -56,6 +57,9 @@ interface BuilderSpineProps {
   /** The header's bracket chip, or null when the deck is unread. See `SpineBandProps`. */
   bracket?: TileBracket | null;
   onOpenBracket?: () => void;
+  /** The header's notice and its press. See `SpineBandProps`. */
+  notice?: HeaderNotice | null;
+  onOpenNotices?: () => void;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -264,6 +268,8 @@ export function BuilderSpine({
   offerFirstCommit,
   bracket = null,
   onOpenBracket,
+  notice = null,
+  onOpenNotices,
 }: BuilderSpineProps) {
   return (
     <>
@@ -275,6 +281,8 @@ export function BuilderSpine({
       offerFirstCommit={offerFirstCommit}
       bracket={bracket}
       onOpenBracket={onOpenBracket}
+      notice={notice}
+      onOpenNotices={onOpenNotices}
     />
     <SpineMobile
       deck={deck}
@@ -284,6 +292,8 @@ export function BuilderSpine({
       offerFirstCommit={offerFirstCommit}
       bracket={bracket}
       onOpenBracket={onOpenBracket}
+      notice={notice}
+      onOpenNotices={onOpenNotices}
     />
 
     {/* Below the spine and above the decklist, per the canvas: it is a claim

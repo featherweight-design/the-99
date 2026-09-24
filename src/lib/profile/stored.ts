@@ -115,7 +115,7 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
  * every later row stores `listFingerprint`. A legacy row built under an older version than the
  * current one cannot be compared, and reads as a different list.
  */
-function sameList(row: { profileVersion: number; fingerprint: string }, head: ProfileHead): boolean {
+export function sameList(row: { profileVersion: number; fingerprint: string }, head: ProfileHead): boolean {
   return row.profileVersion === 0
     ? row.fingerprint === profileFingerprint(head)
     : row.fingerprint === listFingerprint(head);

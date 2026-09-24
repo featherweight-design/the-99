@@ -33,6 +33,7 @@ import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks
 import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
+import { noticesEnabled } from "../../../lib/notices/flag";
 import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 
@@ -392,6 +393,7 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
+      noticesEnabled={noticesEnabled()}
       storedPermits={storedBracket}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
       // deployment that does not draw it lands on the decklist rather than on an unselected

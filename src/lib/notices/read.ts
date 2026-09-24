@@ -17,6 +17,8 @@ import { dataGroup, inGroupOrder, type NoticeGroup } from "./group";
 import type { ChangeDirection, ChangeKind } from "./log";
 import { offendingIds, rulesViolations } from "./rules-violations";
 import { touches, type LoggedEntry, type ReadingMarks } from "./touches";
+import { sameList } from "../profile/stored";
+import { readProfileHead } from "../profile/load";
 
 export type NoticeCard = { oracleId: string; name: string };
 
@@ -42,6 +44,12 @@ export type ViolationNotice = {
 export type DeckNotices = {
   /** The stored reading's analysis date, or null for a deck never analyzed. */
   analyzedAt: Date | null;
+  /**
+   * The player has edited the deck since that reading (it is `dirty`, or its list has moved). The
+   * Notices foot then sends them to the Analysis tab's banner rather than offering its own
+   * Re-analyze (HANDOFF §2, plan D12). False for a deck never analyzed.
+   */
+  readingStale: boolean;
   groups: { group: NoticeGroup; items: (DataNotice | ViolationNotice)[] }[];
   /** Data entries, and how many are past the player's last opening. */
   dataCount: number;
@@ -52,6 +60,25 @@ export type DeckNotices = {
   /** The two marks opening the sheet moves to (PR 6). */
   readMarks: { seq: number; violations: string[] };
 };
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * The offending ids of the deck's cards AS THEY STAND, read through `tx`: the set a legality mark
+ * is compared against before it is written (`openNotices`). The same rule the read applies.
+ */
+export async function liveOffendingIds(tx: Tx, deckId: string, commanderIds: readonly string[]): Promise<string[]> {
+  const rows = await tx
+    .select({ oracleId: cards.oracleId, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
+    .from(cards)
+    .where(sql`${cards.oracleId} in (
+      select ${deckCards.oracleId} from ${deckCards} where ${deckCards.deckId} = ${deckId}::uuid
+      union select unnest(${`{${commanderIds.join(",")}}`}::uuid[])
+    )`);
+  const byId = new Map(rows.map((r) => [r.oracleId, r]));
+  const commanders = commanderIds.map((id) => byId.get(id)).filter((c) => c !== undefined);
+  return offendingIds(rulesViolations(rows.filter((r) => !commanderIds.includes(r.oracleId)), commanders));
+}
 
 /** The deck notices for `deckId`, or null when it is not the reader's deck. */
 export async function loadDeckNotices(deckId: string, userId: string): Promise<DeckNotices | null> {
@@ -74,6 +101,9 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
         analyzed: deckProfiles.analyzedOracleIds,
         readSeq: deckProfiles.noticesReadSeq,
         computedAt: deckProfiles.computedAt,
+        dirty: deckProfiles.dirty,
+        fingerprint: deckProfiles.fingerprint,
+        profileVersion: deckProfiles.profileVersion,
       })
       .from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
@@ -81,10 +111,13 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
       .select({ oracleId: deckCards.oracleId })
       .from(deckCards)
       .where(eq(deckCards.deckId, deckId));
-    return { deck, reading, cardRows };
+    // The foot's freshness is the reading's own rule (fresh while the fingerprint matches and
+    // `dirty` is clear), read from the same snapshot as the marks.
+    const head = reading && !reading.dirty ? await readProfileHead(tx, deckId, userId) : null;
+    return { deck, reading, cardRows, head };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
   if (!snapshot) return null;
-  const { deck, reading, cardRows } = snapshot;
+  const { deck, reading, cardRows, head } = snapshot;
   const commanderIds = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const currentIds = [...new Set([...commanderIds, ...cardRows.map((r) => r.oracleId)])];
 
@@ -123,6 +156,9 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
   const readSeq = reading?.readSeq ?? 0;
   return {
     analyzedAt: reading?.computedAt ?? null,
+    // `sameList`, the stored reading's own comparison: a pre-0054 row stores a different fingerprint,
+    // and the Analysis tab reads it fresh over an unchanged list, so Notices must too.
+    readingStale: Boolean(reading && (reading.dirty || !head || !sameList(reading, head))),
     groups: inGroupOrder<DataNotice | ViolationNotice>([...violationItems, ...data], (i) => i.group),
     dataCount: data.length,
     dataUnread: data.filter((d) => d.seq > readSeq).length,

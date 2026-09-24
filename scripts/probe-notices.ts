@@ -30,9 +30,10 @@ import { db } from "../src/db";
 import { decks } from "../src/db/schema";
 import { readCatalogGeneration } from "../src/lib/cache/catalog-generation";
 import { commitVersion } from "../src/lib/decks/versions";
+import { markNoticesRead } from "../src/lib/notices/mark";
 import { loadDeckNotices } from "../src/lib/notices/read";
 import { noticeSummarySql } from "../src/lib/notices/summary-sql";
-import { listFingerprint } from "../src/lib/profile/fingerprint";
+import { listFingerprint, profileFingerprint } from "../src/lib/profile/fingerprint";
 import { loadDeckProfile, readProfileHead } from "../src/lib/profile/load";
 import { computeAndStoreProfile, type StoredProfileDeps } from "../src/lib/profile/stored";
 import { overviewDataMoved } from "../src/lib/notices/overview";
@@ -140,6 +141,7 @@ async function run() {
   await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${spare}::uuid, 1)`);
   await plant("gameChanger", [spare]);
   check("3 · a card added since the analysis is not reported", (await loadDeckNotices(deck.id, USER))?.dataCount, 2);
+  check("3 · and the reading reads stale, so the foot sends the player to the tab", (await loadDeckNotices(deck.id, USER))?.readingStale, true);
   await agree("a card added since");
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${spare}::uuid`);
 
@@ -158,6 +160,7 @@ async function run() {
   const r5 = await reading(deck.id);
   check("5 · the recompute went past the cache", { computes, freshComputes }, { computes: 0, freshComputes: 1 });
   check("5 · the mark moved past every entry", Number(r5.seen) >= Math.max(...planted), true);
+  check("5 · and the reading is fresh again", (await loadDeckNotices(deck.id, USER))?.readingStale, false);
   check("5 · the analysis date moved", r5.at !== at0, true);
   check("5 · and the notices cleared", (await loadDeckNotices(deck.id, USER))?.dataCount, 0);
 
@@ -196,7 +199,8 @@ async function run() {
   const n9 = await loadDeckNotices(deck.id, USER);
   check("9 · a banned card is listed first, unread", n9 && [n9.groups[0]?.group, n9.violationCount, n9.violationsUnread], ["notLegal", 1, true]);
   await agree("notLegalUnread");
-  await db.execute(sql`update decks set notices_legal_seen = ${`{${n9!.readMarks.violations.join(",")}}`}::uuid[] where id = ${deck.id}::uuid`);
+  // The real mark, the one opening the sheet writes.
+  await markNoticesRead(deck.id, USER, n9!.readMarks);
   const n9r = await loadDeckNotices(deck.id, USER);
   check("9 · reading quiets it and keeps it listed", n9r && [n9r.violationCount, n9r.violationsUnread], [1, false]);
   await agree("notLegalRead");
@@ -259,6 +263,35 @@ async function run() {
   check("13 · which marks the overview stale", (await overview()).stale, true);
   const otherBan = await plant("notLegal", [outsider]);
   check("13 · a ban on another card does not move it", await overviewDataMoved(otherBan - 1, otherBan, deckIds), false);
+
+  // 14 · The foot reads freshness by the stored reading's own rule (`sameList`): a row written
+  //      before migration 0054 stores `profileFingerprint`, and over an unchanged, clean list the
+  //      Analysis tab reads it fresh, so Notices must not send the player there as though it were
+  //      stale.
+  await computeAndStoreProfile(deck.id, USER, deps);
+  const head14 = (await db.transaction((tx) => readProfileHead(tx, deck.id, USER)))!;
+  await db.execute(sql`update deck_profiles set profile_version = 0, dirty = false,
+    fingerprint = ${profileFingerprint(head14)} where deck_id = ${deck.id}::uuid`);
+  check("14 · a pre-0054 reading over an unchanged list reads fresh in Notices", (await loadDeckNotices(deck.id, USER))?.readingStale, false);
+  await db.execute(sql`update deck_profiles set fingerprint = 'probe-other-list' where deck_id = ${deck.id}::uuid`);
+  check("14 · and stale once its list is another", (await loadDeckNotices(deck.id, USER))?.readingStale, true);
+
+  // 15 · The legality mark is written only while it is still the deck's set. An open that read the
+  //      banned card, finishing after the card left (and after a later open marked the empty set),
+  //      must not write its older set back: the dot would return over a set already seen.
+  const legalSeen = async () => (await db.select({ s: decks.noticesLegalSeen }).from(decks).where(eq(decks.id, deck.id)))[0]?.s ?? [];
+  await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
+  const early = (await loadDeckNotices(deck.id, USER))!.readMarks;
+  await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
+  const later = (await loadDeckNotices(deck.id, USER))!.readMarks;
+  check("15 · the later open records its set", await markNoticesRead(deck.id, USER, later), true);
+  check("15 · the late open says it recorded nothing", await markNoticesRead(deck.id, USER, early), false);
+  check("15 · a late open's older legality set is not written back", await legalSeen(), []);
+  check("15 · and the deck reads quiet", (await loadDeckNotices(deck.id, USER))?.violationsUnread, false);
+  await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
+  await markNoticesRead(deck.id, USER, (await loadDeckNotices(deck.id, USER))!.readMarks);
+  check("15 · a mark of the deck's own set is written", await legalSeen(), [banned.oracle_id]);
+  await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
 }
 
 /**

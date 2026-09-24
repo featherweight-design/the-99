@@ -1,0 +1,31 @@
+{
+  "feature": "Deck notices — the Notices sheet and the header's tag (PR 6)",
+  "note": "One deck at both widths, photographed with the notice fixture standing: run `PROBE_KEEP=1 pnpm probe:notices-sheet` first, which leaves the fixture deck (d0000000-0000-4000-8000-00000000beef) holding a banned card and an unread Game Changer entry, with its reading marked dirty. The next run of that probe puts it all back. The header rows show the tag last in the chips row; the sheet rows open it by a press and show the legality group first and the foot sending the player to the Analysis tab.",
+  "rows": [
+    {
+      "id": "header-desktop",
+      "label": "deck header, desktop",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "widths": ["desktop"],
+      "steps": [{ "goto": "/decks/d0000000-0000-4000-8000-00000000beef", "wait": "[data-notice-tag]:visible", "settle": 2500 }]
+    },
+    {
+      "id": "header-phone",
+      "label": "deck header, 390px",
+      "view": "src/components/decks/spine-mobile.tsx",
+      "widths": ["phone"],
+      "steps": [{ "goto": "/decks/d0000000-0000-4000-8000-00000000beef", "wait": "[data-notice-tag]:visible", "settle": 2500 }]
+    },
+    {
+      "id": "sheet",
+      "label": "Notices sheet, opened from the tag",
+      "view": "src/components/decks/notices-body.tsx",
+      "widths": ["desktop", "phone"],
+      "steps": [
+        { "goto": "/decks/d0000000-0000-4000-8000-00000000beef", "wait": "[data-notice-tag]:visible", "settle": 2500 },
+        { "click": "[data-notice-tag]:visible" },
+        { "wait": "[data-testid='notices-body']", "settle": 1200 }
+      ]
+    }
+  ]
+}
