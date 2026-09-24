@@ -393,6 +393,13 @@
       "when": 1790204383272,
       "tag": "0055_premium_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1790225147233,
+      "tag": "0056_tranquil_mandroid",
+      "breakpoints": true
     }
   ]
 }

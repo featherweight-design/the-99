@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+
+import type { SynopsisFacts } from "./facts";
+import { CHAR_BUDGETS, SECTION_COUNTS } from "./limits";
+import { buildSynopsisPrompt } from "./prompt";
+import type { CheckedSynopsis } from "./types";
+
+const FACTS: SynopsisFacts = {
+  commanders: ["Kratos", "Atreus"],
+  identity: ["R", "G"],
+  unproducible: [],
+  lands: 36,
+  ramp: 10,
+  keep: { low: 2, high: 4 },
+  figures: [2, 4, 7, 10, 36],
+  cards: [
+    { oracleId: "a", name: "Sol Ring", typeLine: "Artifact", quantity: 1, categories: ["ramp"], oracleText: "{T}: Add {C}{C}." },
+    { oracleId: "b", name: "Forest", typeLine: "Basic Land", quantity: 12, categories: ["land"], oracleText: null },
+  ],
+};
+
+describe("buildSynopsisPrompt", () => {
+  it("states the contract's own figures, so the prompt and the validator read one set", () => {
+    const { system } = buildSynopsisPrompt(FACTS);
+    expect(system).toContain(`at most ${CHAR_BUDGETS.overview} characters`);
+    expect(system).toContain(`${SECTION_COUNTS.keyCards.min} to ${SECTION_COUNTS.keyCards.max} different cards`);
+    expect(system).toContain("[[Sol Ring]]");
+  });
+
+  it("hands over the computed mulligan figures and every card with its categories", () => {
+    const { user } = buildSynopsisPrompt(FACTS);
+    expect(user).toContain("Commander: Kratos and Atreus");
+    expect(user).toContain("holds 2 to 4 lands");
+    expect(user).toContain("- Sol Ring (Artifact) [ramp]: {T}: Add {C}{C}.");
+    expect(user).toContain("- 12x Forest (Basic Land) [land]");
+    expect(user).toContain("Decklist (13 cards)");
+  });
+
+  it("shows no bracket and no strength figure", () => {
+    const { user } = buildSynopsisPrompt(FACTS);
+    expect(user).not.toMatch(/bracket|power|score/i);
+  });
+
+  it("sends a retry the passing sections and names the refused ones", () => {
+    const keep = { overview: "Kept.", primer: null, keyCards: null, weaknesses: ["Kept too."] } as CheckedSynopsis;
+    const { user } = buildSynopsisPrompt(FACTS, { keep, refused: ["primer", "keyCards"] });
+    expect(user).toContain("did not pass checking last time: primer, keyCards.");
+    expect(user).toContain('"overview":"Kept."');
+  });
+});

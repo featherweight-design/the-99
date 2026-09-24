@@ -1,0 +1,134 @@
+import type { DeckProfile } from "../profile/types";
+import { CATEGORIES, type Category } from "./types";
+
+/**
+ * What the synopsis is written from and checked against. Pure: the profile is the stored
+ * analysis, and the oracle texts are a lookup the generator makes beside it.
+ *
+ * THE FIGURES ARE THE APP'S (brief §6). The model is handed the mulligan's counts and asked to
+ * phrase them, never to count; the validator then refuses a Mulligan line quoting any numeral
+ * that is not one of `figures`.
+ */
+
+export type FactCard = {
+  oracleId: string;
+  name: string;
+  typeLine: string;
+  quantity: number;
+  categories: Category[];
+  oracleText: string | null;
+};
+
+export type SynopsisFacts = {
+  commanders: string[];
+  /** WUBRG order, as the profile holds it. */
+  identity: string[];
+  /** Colours the deck's costs ask for that no land produces. Named, never counted. */
+  unproducible: string[];
+  /** `counts.landCapable`: a modal double-faced land is a land drop. */
+  lands: number;
+  ramp: number;
+  /** The keepable land count for an opening seven, inclusive. */
+  keep: { low: number; high: number };
+  /** Every numeral a Mulligan line may quote. */
+  figures: number[];
+  cards: FactCard[];
+};
+
+/** The opening hand. Quotable in a Mulligan line ("a seven-card hand"). */
+export const HAND_SIZE = 7;
+const LIBRARY = 99;
+
+/**
+ * The keepable land range for an opening seven. With `e = 7·L/99`, the expected lands in seven,
+ * it is `[max(2, floor(e) − 1), min(5, ceil(e) + 1)]`: at 36 lands, 2–4. A stated rule rather
+ * than a model's judgement, because the brief makes the Mulligan's counts the app's.
+ */
+export function keepableLands(lands: number): { low: number; high: number } {
+  const e = (HAND_SIZE * lands) / LIBRARY;
+  const low = Math.max(2, Math.floor(e) - 1);
+  const high = Math.max(low, Math.min(5, Math.ceil(e) + 1));
+  return { low, high };
+}
+
+/** Every card's categories, from the classifications the profile already holds. */
+export function categoriesOf(profile: DeckProfile): Map<string, Set<Category>> {
+  const out = new Map<string, Set<Category>>();
+  const add = (oracleId: string, c: Category) => {
+    const set = out.get(oracleId) ?? new Set<Category>();
+    set.add(c);
+    out.set(oracleId, set);
+  };
+  for (const [role, cards] of Object.entries(profile.roles.cards)) {
+    if (!(CATEGORIES as readonly string[]).includes(role)) continue;
+    for (const card of cards) add(card.oracleId, role as Category);
+  }
+  for (const t of profile.brackets.comboReach.tutors) add(t.oracleId, "tutor");
+  for (const combo of profile.brackets.twoCardCombos) for (const c of combo.cards) add(c.oracleId, "combo");
+  for (const id of profile.commanderOracleIds) add(id, "commander");
+  return out;
+}
+
+export function buildSynopsisFacts(
+  profile: DeckProfile,
+  oracleTexts: ReadonlyMap<string, string | null>,
+): SynopsisFacts {
+  const cats = categoriesOf(profile);
+  const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
+  const lands = profile.counts.landCapable;
+  const ramp = profile.roles.counts.ramp;
+  const keep = keepableLands(lands);
+  return {
+    commanders: profile.commanderOracleIds.map((id) => byId.get(id)?.name).filter((n): n is string => !!n),
+    identity: profile.colours.identity,
+    unproducible: profile.colours.unproducible,
+    lands,
+    ramp,
+    keep,
+    figures: [...new Set([HAND_SIZE, lands, ramp, keep.low, keep.high])].sort((a, b) => a - b),
+    cards: profile.cards.map((c) => ({
+      oracleId: c.oracleId,
+      name: c.name,
+      typeLine: c.typeLine,
+      quantity: c.quantity,
+      categories: CATEGORIES.filter((k) => cats.get(c.oracleId)?.has(k)),
+      oracleText: oracleTexts.get(c.oracleId) ?? null,
+    })),
+  };
+}
+
+/**
+ * The form two names are compared in: case, curly apostrophes and quotes, and runs of space do
+ * not make two names different cards.
+ */
+export function normalizeName(name: string): string {
+  return name
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Every name a deck card may be written as: its full name, and for a two-faced card each face
+ * (`Fire // Ice` answers to `Fire` and to `Ice`). A full name always wins over a face. A face
+ * name shared by two deck cards resolves to neither, since the mark could mean either.
+ */
+export function deckNameIndex(cards: readonly Pick<FactCard, "oracleId" | "name">[]): Map<string, { oracleId: string; name: string }> {
+  const out = new Map<string, { oracleId: string; name: string }>();
+  for (const c of cards) out.set(normalizeName(c.name), { oracleId: c.oracleId, name: c.name });
+  const faces = new Map<string, { oracleId: string; name: string } | null>();
+  for (const c of cards) {
+    const parts = c.name.split(" // ");
+    if (parts.length < 2) continue;
+    for (const f of parts) {
+      const key = normalizeName(f);
+      if (out.has(key)) continue;
+      const prior = faces.get(key);
+      faces.set(key, prior === undefined || prior?.oracleId === c.oracleId ? { oracleId: c.oracleId, name: c.name } : null);
+    }
+  }
+  for (const [key, card] of faces) if (card) out.set(key, card);
+  return out;
+}
