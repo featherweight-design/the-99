@@ -1,7 +1,36 @@
 # All brackets: the reference sheet (Analysis tab addendum)
 
-**Canvas:** `The 99 - Brackets Sheet.dc.html` (1a–1e). **Body component:** `Brackets Sheet.dc.html`
-(`phone`, `unrolled`, `yours`: `12` · `2` · `3` · `4` · `45`, `theme`).
+## R3 (2026-09-24): Hugh's review of R2
+
+This replaces R1's grid, the chrome aside and the reader marking. Canvas **3a**, **3b** and **2a**. The link (1a) is unchanged.
+
+- **A reference, not a second climb.** The climb already shows where a deck sits, so the sheet marks nothing: no tint,
+  no ink rule and no `roleHere`. The body needs no `permits` or `yours`, and audit finding 1 no longer applies to the sheet.
+- **Five bracket columns.** Cells hold the bare figure (`0`, `3`) or `climb.noCap`, under a `cards allowed` corner.
+  At 4–5 every cell is `no cap`, which the climb already prints there. `3` is the only `--fg`/600 figure.
+  - 1300: `168px repeat(5, 1fr)` in ModalChrome 700, about 98px per column; rule names nowrap. The header is mark 22 over the name, 12/600 `--fg-body`.
+  - **390 transposes:** brackets become rows (`116px`: mark 22 + name 11.5/600) and the rules become four columns of about 60px
+    (fact mark 16 over a wrapping mono 8.5 uppercase label). Five columns would be about 53px, which is narrower than "Exhibition".
+- **Header:** title and close only. The aside is removed.
+- **A notes list under the table** replaces the per-row readings, the tutors row and the Optimized · cEDH row. It has six entries:
+  the four rules, tutors with the findings' `no limit` chip (audit finding 4), and Optimized and cEDH under both chip marks.
+  Each entry has a mark column (48, or 40 at 390), then the name (12.5/600 `--fg`), the reading if there is one
+  (12/1.55 `--fg-muted`), and the quote. Entries are split by 1px `--border`.
+- **The quote (Hugh's ruling):** 5px under the reading, in Plex Sans italic 400, 12/1.5 (11.5 at 390), `--fg-body`, in curly quotes.
+  A mono tag follows on the same line: `Wizards · Feb 2025`, 9.5 (9) `--fg-faint`, 8px gap, nowrap.
+  Five quotes come from *Introducing Commander Brackets Beta* (11 Feb 2025) and tutors from the 21 Oct 2025 update.
+  The foot adds `Quoted from` and both links.
+- **Fact marks are `--fact`.** The canvas inlined SVGs whose paths are `fill="#000"` mask art, so they drew black.
+  `FindingMark` masks them in the app, so the app was already correct and only the drawing was wrong.
+- **Climb, carried over from R2 (2a):** on the yours rung, the name, the role label and the Allowances rule name and count are
+  `var(--fg)`. The ink stays on the mark, border and tint. Exhibition's contrast goes from 3.90 to 9.23 at its lowest (kaldheim).
+
+---
+
+## R1
+
+**Canvas:** `The 99 - Brackets Sheet.dc.html` (3a, 3b, 2a, 1a, 1e). **Body component:** `Brackets Sheet.dc.html`
+(`phone`, `unrolled`, `theme`).
 **Source of truth:** verdict `HANDOFF.md` (the deleted limits table) and `READINESS.md` item 8; analysis tab
 `READINESS.md`, "Still owed". Built on `main`: `src/lib/bracket/rules.ts`, `sources.ts`, `types.ts`,
 `components/decks/receipt-modal.tsx` (`ModalChrome`), `bracket-climb.tsx`, `provenance-panel.tsx`,
