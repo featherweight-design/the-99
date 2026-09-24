@@ -12,17 +12,19 @@ import type { SynopsisResponse } from "./response-schema";
  * The reply is built from the deck it is asked about, so it passes the accept contract on any
  * whole deck, and `SYNOPSIS_STUB` switches it to each other outcome the UI has to draw:
  * `partial` (the Overview refused), `refused` (every section refused), `malformed`, `busy` and
- * `timeout`. Stored runs record the model as `"stub"`, so a browser probe can tell from the row
+ * `timeout`, plus `repairs` and `unrepaired` for the repair call (contract B), which the stub tells
+ * apart from a first write by its user message. Stored runs record the model as `"stub"`, so a browser probe can tell from the row
  * that no real call was made.
  */
 
 export const STUB_MODEL = "stub";
 
-export type StubMode = "survived" | "partial" | "refused" | "malformed" | "busy" | "timeout";
+export type StubMode = "survived" | "partial" | "refused" | "malformed" | "busy" | "timeout" | "repairs" | "unrepaired";
 
 export function stubMode(env: Record<string, string | undefined> = process.env): StubMode {
   const mode = env.SYNOPSIS_STUB;
   return mode === "partial" || mode === "refused" || mode === "malformed" || mode === "busy" || mode === "timeout"
+    || mode === "repairs" || mode === "unrepaired"
     ? mode
     : "survived";
 }
@@ -34,7 +36,11 @@ export function synopsisLive(env: Record<string, string | undefined> = process.e
 
 const USAGE = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
-export function stubReply(facts: SynopsisFacts, mode: StubMode): ModelOutcome<SynopsisResponse> {
+export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false): ModelOutcome<SynopsisResponse> {
+  // Contract B's two outcomes: the first answer refuses its Overview, and the repair either
+  // mends it (`repairs`) or fails the same way (`unrepaired`).
+  if (mode === "repairs") return stubReply(facts, repair ? "survived" : "partial");
+  if (mode === "unrepaired") return stubReply(facts, "partial");
   if (mode === "malformed") return { ok: false, errorClass: "malformed" };
   if (mode === "busy") return { ok: false, errorClass: "upstream_busy" };
   if (mode === "timeout") return { ok: false, errorClass: "timeout" };

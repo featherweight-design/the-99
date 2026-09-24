@@ -71,9 +71,16 @@ export function worstCaseMicroUsd(model: string, inputCeilingTokens: number, max
  * and a synopsis section retry adds the kept synopsis on top, up to its 3,000-token output. The
  * ceilings are those maxima with room to grow: tuning 12,000, synopsis 24,000.
  */
-export const FEATURE_CALLS: Readonly<Record<ModelFeature, { model: string; inputCeilingTokens: number; maxTokens: number }>> = {
-  tuning: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS },
-  synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS },
+export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
+  model: string;
+  inputCeilingTokens: number;
+  maxTokens: number;
+  /** Model calls one reservation can make. A synopsis write is up to TWO: the first answer and
+   *  contract B's automatic repair, both under the one unit (Hugh, 2026-09-24). */
+  callsPerWrite: number;
+}>> = {
+  tuning: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
+  synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 },
 };
 
 /**
@@ -82,5 +89,5 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, { model: string; input
  */
 export function featureWorstCaseMicroUsd(feature: ModelFeature, model: string | null = null): number {
   const call = FEATURE_CALLS[feature];
-  return worstCaseMicroUsd(model ?? call.model, call.inputCeilingTokens, call.maxTokens);
+  return call.callsPerWrite * worstCaseMicroUsd(model ?? call.model, call.inputCeilingTokens, call.maxTokens);
 }
