@@ -199,8 +199,14 @@ export function TuningPanel({
     for (let attempt = 0; attempt < STOP_TRIES && !cancelled; attempt += 1) {
       const current = await deps.read(deckId).catch(() => null);
       if (current?.run?.status === "pending") {
-        cancelled = await deps.cancel(deckId, current.run.id).then((r) => r.ok, () => false);
-        if (!cancelled) break;
+        const runId = current.run.id;
+        await deps.cancel(deckId, runId).catch(() => null);
+        // `cancelTuningRun` answers ok whether or not its guarded update matched: a run that
+        // settled between the read and the cancel was not stopped, and its credit may be spent.
+        // So the answer is read back, and only a run that now reads cancelled was stopped.
+        const after = await deps.read(deckId).catch(() => null);
+        cancelled = after?.run?.id === runId && after.run.status === "cancelled";
+        break;
       } else if (attempt < STOP_TRIES - 1) {
         await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
       }

@@ -109,12 +109,23 @@ describe("TuningPanel", () => {
 
   it("offers Stop only while a run is pending, and Stop cancels the pending run", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-    const d = deps([pending, pending, fresh]);
+    const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
+    const d = deps([pending, pending, cancelled]);
     await draw(d);
     expect(screen.getByRole("button", { name: copy.stop })).toBeInTheDocument();
     await press(copy.stop);
     expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
     expect(screen.queryByRole("button", { name: copy.stop })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.stopped);
+  });
+
+  it("claims no stop when the run settled before the cancel reached it", async () => {
+    const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
+    const d = deps([pending, pending, { ...results, run: { ...okRun, id: "r2" } }]);
+    await draw(d);
+    await press(copy.stop);
+    expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
+    expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
   });
 
   it("renders an interrupted run with its own copy, and no suggestions", async () => {
