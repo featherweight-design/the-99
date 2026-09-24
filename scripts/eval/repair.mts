@@ -6,8 +6,9 @@
  * that had a section refused, asking for those sections again with the reasons they failed.
  *
  * The follow-up is the app's own section retry, not a new prompt: `buildSynopsisPrompt(facts,
- * { keep, refused })` writes it, the run's own variant is applied on top exactly as it was to the
- * first write, and one line is appended naming each refused section's reason. The merge is the
+ * { keep, refused })` writes it, including the line naming each refused section's reason (the app's
+ * own since #918), and the run's own variant is applied on top exactly as it was to the first
+ * write. The merge is the
  * app's `mergeRetry`, which keeps every passing section byte for byte. Both calls are charged to
  * the answer, so "per accepted answer" includes the repair.
  *
@@ -30,8 +31,9 @@ import "../lib/env.mjs";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { DESIGN_MINIMUMS, dropLineRule, type SectionPass } from "./lib/line-rule.mjs";
+import { DESIGN_MINIMUMS, dropLineRule, mulliganSpecific, type SectionPass } from "./lib/line-rule.mjs";
 import type { Got } from "./lib/batch.mjs";
+import { deckNameIndex, normalizeName } from "../../src/lib/synopsis/facts";
 import { buildParams, parseReply } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests, type Answer } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
@@ -84,9 +86,10 @@ const toRepair = firsts.filter((f) => f.checked && f.refused.length > 0);
 const keys = new Map<string, (typeof firsts)[number]>();
 const first = toRepair.map((f, i) => {
   const facts = factsOf.get(f.row.deckId)!;
-  const reasons = f.checked!.verdicts.flatMap((v) => (v.status === "refused" ? [`${v.section}: ${v.reason}${v.failed ? ` (${v.failed} of ${v.total} cards failed checking)` : ""}`] : []));
+  // Since #918 the app's own retry prompt names each refused section's reason (the line this
+  // harness used to append when B was measured), so the request is the app's, unchanged.
   const { messages } = applySynopsisVariant(variant, facts, (fx) => buildSynopsisPrompt(fx, { keep: f.checked!, refused: f.refused }));
-  const user = `${messages.user}\nThose sections failed checking for these reasons; fix exactly these: ${reasons.join("; ")}.`;
+  const user = messages.user;
   const customId = `repair-d${String(i).padStart(3, "0")}`;
   keys.set(customId, f);
   return { customId, params: buildParams({ model: cell.model, system: messages.system, user, maxTokens: app.maxTokens, schema: app.schema }, cell) };
@@ -149,6 +152,8 @@ const out = args.rescore ? null : new URL("rows.jsonl", run.dir);
 const tally = { shipped: [0, 0], a: [0, 0], b: [0, 0], ab: [0, 0] } as Record<string, [number, number]>;
 const add = (k: string, passed: boolean, usdOfAnswer: number) => { tally[k][0] += passed ? 1 : 0; tally[k][1] += usdOfAnswer; };
 const allPass = (p: SectionPass) => Object.values(p).every(Boolean);
+/** Over what the app draws after its repair: Key cards, universal staples among them, mulligan lines and how many are specific, and refusals by reason. */
+const drawn = { keyCards: 0, universalKeyCards: 0, mulliganLines: 0, specific: 0, refusals: new Map<string, number>() };
 // Each repaired answer, with the sections its repair was asked for.
 const repaired = new Map<string, { answer: Answer<unknown>; refused: SectionId[] }>();
 if (stored) for (const [k, v] of stored.byAnswer) repaired.set(k, v);
@@ -161,6 +166,8 @@ for (const f of firsts) {
   const rep = repaired.get(`${f.row.deckId}|${f.row.trial}`);
   let after = before;
   let mergedVerdicts = f.checked?.verdicts ?? [];
+  // What the app draws after its repair: the first write's checked content, or the merge.
+  let shown: typeof f.checked = f.checked;
   let repairRow: Record<string, unknown> = {};
   const facts = factsOf.get(f.row.deckId)!;
   const firstDrop = f.row.reply ? dropLineRule(f.row.reply, facts, await app.catalog(f.row.reply, facts), DESIGN_MINIMUMS) : null;
@@ -177,6 +184,7 @@ for (const f of firsts) {
       repairDrop = dropLineRule(value, facts, catalog, DESIGN_MINIMUMS);
       const merged = mergeRetry(f.checked!, fresh, retaken).content;
       mergedVerdicts = merged.verdicts;
+      shown = merged;
       after = merged.verdicts.every((v) => v.status === "ok");
     }
   }
@@ -188,14 +196,33 @@ for (const f of firsts) {
   add("a", aPass, firstUsd);
   add("b", after, firstUsd + repairUsd);
   add("ab", abPass, firstUsd + (aPass ? 0 : repairUsd));
+  if (shown) {
+    const universal = new Set(facts.cards.filter((c) => c.universalStaple).map((c) => c.oracleId));
+    const deck = deckNameIndex(facts.cards);
+    for (const k of shown.keyCards ?? []) {
+      drawn.keyCards += 1;
+      const card = deck.get(normalizeName(k.card.replace(/^\[\[(.*)\]\]$/, "$1")));
+      if (card && universal.has(card.oracleId)) drawn.universalKeyCards += 1;
+    }
+    for (const line of [...(shown.primer?.mulligan.keep ?? []), ...(shown.primer?.mulligan.sendBack ?? [])]) {
+      drawn.mulliganLines += 1;
+      if (mulliganSpecific(line)) drawn.specific += 1;
+    }
+    for (const v of mergedVerdicts) if (v.status === "refused") drawn.refusals.set(`${v.section}:${v.reason}`, (drawn.refusals.get(`${v.section}:${v.reason}`) ?? 0) + 1);
+  }
   if (out) appendFileSync(out, `${JSON.stringify({
     runId: run.runId, feature: "synopsis-repair", from: args.from, cell: args.cell, variant: args.variant, set: f.row.set,
     deckId: f.row.deckId, trial: f.row.trial, firstUsdRealtime: f.row.usdRealtime, repair: repairRow,
     passedBefore: before, passedAfter: after, verdictsAfter: mergedVerdicts, dropLineFirst: firstDrop, dropLineRepair: repairDrop, passedA: aPass, passedAB: abPass,
   })}\n`);
 }
-for (const [k, name] of [["shipped", "shipped"], ["a", "(A) drop the line"], ["b", "(B) repair"], ["ab", "(A+B)"]] as const) {
+// "shipped" and (B) read the app's OWN verdicts (`validateSynopsis`, `mergeRetry`), so under the
+// contract in force they are the app's first write and the app's write-plus-repair. (A) and (A+B)
+// read this harness's drop-the-line rules as measured before #918; from contract v6 on, the app's
+// own verdict is stricter than they are, and the app's answer is (B).
+for (const [k, name] of [["shipped", "the app's first write"], ["a", "(A) drop the line, pre-#918 rules"], ["b", "(B) the app's write plus its repair"], ["ab", "(A+B), pre-#918 rules"]] as const) {
   const [n, u] = tally[k];
   log(`${name}: all four sections on ${n} of ${firsts.length} (${Math.round((100 * n) / firsts.length)}%); $${(u / Math.max(1, n)).toFixed(4)} per accepted answer at real-time prices`);
 }
+log(`as drawn after the repair: ${drawn.universalKeyCards} of ${drawn.keyCards} Key cards are universal staples; ${drawn.specific} of ${drawn.mulliganLines} mulligan lines specific (${Math.round((100 * drawn.specific) / Math.max(1, drawn.mulliganLines))}%); refusals left: ${[...drawn.refusals].map(([k, n]) => `${k} ${n}`).join(", ") || "none"}`);
 process.exit(0);
