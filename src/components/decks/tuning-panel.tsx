@@ -324,7 +324,7 @@ export function TuningPanel({
 
       {/* THE ACTION ROW: one band in every state, the one primary first. */}
       <div
-        className="mt-[16px] flex flex-col gap-[9px] pt-[15px] md:mt-[18px] md:min-h-[56px] md:flex-row md:flex-wrap md:items-center md:gap-[16px] md:pt-[16px]"
+        className={`mt-[16px] flex flex-col gap-[9px] pt-[15px] md:mt-[18px] md:min-h-[56px] md:flex-row md:flex-wrap md:items-center md:pt-[16px] ${reading ? "md:gap-[12px]" : "md:gap-[16px]"}`}
         style={{ borderTop: "1px solid var(--border)" }}
       >
         {reading ? (
