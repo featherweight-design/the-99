@@ -6,6 +6,7 @@ import { slotDeck } from "../../lib/bracket/slot";
 import { cachedDeckProfile } from "../../lib/profile/load";
 import { listFingerprint } from "../../lib/profile/fingerprint";
 import { pinAnalysisToVersion, type CommitPin } from "../../lib/profile/stored";
+import { pinSynopsisToVersion } from "../../lib/synopsis/pin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -1668,9 +1669,16 @@ export async function commitDeckVersion(
   // RULING 2: the commit pins the deck's analysis to the version it just wrote. Off the commit's
   // path, in `after()`, because an analysis can cost 2.2s and the reader is waiting on the commit
   // alone. `pinAnalysisToVersion` writes nothing when an edit has moved the deck off this list
-  // since, and nothing for a version that is not a whole deck (ruling 1).
+  // since, and nothing for a version that is not a whole deck (ruling 1). The synopsis is COPIED
+  // beside it, never written: a commit writes no prose (ruling 7), and the version keeps the draft's
+  // synopsis only when it was written for exactly this list (brief §2.4). Both are best-effort.
   const committed = pin;
-  if (committed) after(() => pinAnalysisToVersion(deckId, userId, committed));
+  if (committed) {
+    after(() => Promise.all([
+      pinAnalysisToVersion(deckId, userId, committed),
+      pinSynopsisToVersion(deckId, userId, committed),
+    ]));
+  }
   revalidateClaims(deckId, userId);
   return result;
 }
