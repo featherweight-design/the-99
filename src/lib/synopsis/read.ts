@@ -36,6 +36,11 @@ export type SynopsisState = {
    * only right after this deck's own write failed, never otherwise.
    */
   lastFailed: boolean;
+  /**
+   * The deck's newest run was refused in EVERY section, after the overview on screen was written:
+   * Round 0's refused state, with the count summed over its sections. Null otherwise.
+   */
+  lastRefused: { failed: number; total: number } | null;
   /** A run is in flight on this deck. */
   pending: boolean;
 };
@@ -72,7 +77,7 @@ export async function readSynopsisState(
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
     readShownSynopsis(deckId, userId),
-    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt })
+    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content })
       .from(deckSynopses).where(eq(deckSynopses.deckId, deckId))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
     readAllowance(userId, now),
@@ -87,7 +92,12 @@ export async function readSynopsisState(
   const lastFailed = !!newest && newest.status === "done"
     && FAILED.includes(newest.outcome as SynopsisOutcome)
     && (!synopsis || newest.createdAt > synopsis.createdAt);
-  return { synopsis, ...status, allowance, lastFailed, pending: newest?.status === "pending" };
+  const newer = !!newest && (!synopsis || newest.createdAt > synopsis.createdAt);
+  const lastRefused = newer && newest!.status === "done" && newest!.outcome === "refused" && newest!.content
+    && !newest!.content.verdicts.some((v) => v.status === "ok")
+    ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
+    : null;
+  return { synopsis, ...status, allowance, lastFailed, lastRefused, pending: newest?.status === "pending" };
 }
 
 /** A version's synopsis, as copied at its commit, or null. Never stale (`SYNOPSIS-modal.md` §4.4). */
