@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
 import type { SynopsisResponse } from "./response-schema";
-import { figuresIn, jobSupported, marksIn, rendered, strengthClaim, validateSynopsis } from "./validate";
+import { figuresIn, jobSupported, marksIn, rendered, strengthClaim, unmarkedNames, validateSynopsis } from "./validate";
 
 const card = (name: string, categories: SynopsisFacts["cards"][number]["categories"] = []) => ({
   oracleId: `id-${name}`, name, typeLine: "Creature", quantity: 1, categories, oracleText: null,
@@ -210,6 +210,19 @@ describe("a card's name is not a claim the prose makes", () => {
     const reply = good();
     reply.keyCards[4] = { card: "Impact Tremors", claims: [], job: "Survives your own [[Wrath of God]]." };
     expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "keyCards").status).toBe("ok");
+  });
+});
+
+describe("every deck name is marked", () => {
+  it("refuses a deck card named without its mark", () => {
+    const reply = good();
+    reply.overview = "Play Sol Ring early, then [[Impact Tremors]].";
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview")).toMatchObject({ reason: "unmarked_card" });
+  });
+
+  it("does not read a one-word name, a lowercase phrase or a marked name as unmarked", () => {
+    expect(unmarkedNames("Cast [[Sol Ring]], then chaos warp nothing, then Kratos swings.", ["Sol Ring", "Chaos Warp", "Kratos"])).toEqual([]);
+    expect(unmarkedNames("Sol Ring's mana matters.", ["Sol Ring"])).toEqual(["Sol Ring"]);
   });
 });
 

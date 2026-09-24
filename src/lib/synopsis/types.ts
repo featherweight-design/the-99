@@ -21,6 +21,8 @@ export type Category = (typeof CATEGORIES)[number];
 export const REFUSAL_REASONS = [
   /** A `[[Name]]` mark that resolves to no card in the deck (in Weaknesses: in the catalog). */
   "unknown_card",
+  /** A deck card named in the prose without its mark, which would render as text that opens nothing. */
+  "unmarked_card",
   /** A tip naming fewer than two distinct cards. */
   "tip_too_few_cards",
   /** A tip whose card list and its own marks disagree, or name a card not in the deck. */

@@ -111,11 +111,16 @@ class Resolver {
   failed = 0;
   /** The first rule the section broke. Checking carries on, so every name is still counted. */
   reason: RefusalReason | null = null;
+  /** The deck's names as printed, full names and faces, for the unmarked-name rule. */
+  readonly names: string[];
+
   constructor(
     private readonly deck: Map<string, Card>,
     private readonly found: Record<string, Card>,
     private readonly catalog: ReadonlyMap<string, Card> | null,
-  ) {}
+  ) {
+    this.names = [...new Set([...deck.values()].flatMap((c) => [c.name, ...c.name.split(" // ")]))];
+  }
 
   refuse(reason: RefusalReason): void {
     this.reason ??= reason;
@@ -160,9 +165,25 @@ function check(
     : { section, status: "refused", reason, failed: r.failed, total: r.total };
 }
 
+/**
+ * The deck names a text states without marking them. Every card name must open the card
+ * (brief §3.2), and an unmarked one renders as plain text. Deliberately CONSERVATIVE, because a
+ * false hit refuses a whole section: only names of two words or more, matched case-sensitively
+ * on word boundaries, so "a forest of tokens" is not `Forest` and "opt out" is not `Opt`.
+ */
+export function unmarkedNames(text: string, names: readonly string[]): string[] {
+  const bare = unmarked(text);
+  return names.filter((name) => name.includes(" ") && new RegExp(`(^|[^\\w])${escapeRegExp(name)}($|[^\\w])`).test(bare));
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** The rules every item of prose keeps, and its marks resolved. */
 function prose(r: Resolver, text: string, budget: number): void {
   if (!endsSentence(text)) r.refuse("partial_sentence");
+  if (unmarkedNames(text, r.names).length > 0) r.refuse("unmarked_card");
   if (rendered(text).trim().length > budget) r.refuse("over_budget");
   if (strengthClaim(unmarked(text))) r.refuse("strength_claim");
   r.marks(text);
