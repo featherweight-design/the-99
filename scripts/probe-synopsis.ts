@@ -397,6 +397,11 @@ async function run() {
   check("a pin for the committed list copies the synopsis", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), true);
   const copy = await readVersionSynopsis(v1.id, USER);
   check("…which the version reads back", copy?.versionNumber, v1.number);
+  {
+    // A version can name cards the deck no longer holds, so its read carries their preview art.
+    const named = new Set(Object.values(copy?.content.cards ?? {}).map((c) => c.oracleId));
+    check("…with art for every card it names", named.size > 0 && [...named].every((id) => id in (copy?.art ?? {})), true);
+  }
   check("…and a second pin changes nothing", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
   const { version: v2 } = await commitVersion(deck.id, null);
   check("an older version is never pinned", await pinSynopsisToVersion(deck.id, USER, { versionId: v1.id, list: committedList }), false);
