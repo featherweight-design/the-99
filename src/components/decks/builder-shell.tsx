@@ -17,7 +17,9 @@ import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { TuningPanel } from "./tuning-panel";
-import { useDeckProfile } from "./use-deck-profile";
+import { SynopsisOverview } from "./synopsis-overview";
+import { useDeckSynopsis } from "./synopsis-state";
+import { shownReading, useDeckProfile } from "./use-deck-profile";
 import { isOpening, useOpeningGate } from "./use-opening-gate";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
@@ -323,6 +325,16 @@ export function BuilderShell({
       peekSettled: profile.peekSettled,
     }),
     deck.id,
+  );
+  // THE OVERVIEW, held here beside the profile for the same reason (synopsis plan, PR 3). Keyed on
+  // the list and the reading on screen, so an edit or an analysis settling refetches whether the
+  // stored overview is still current and what a write would cost. It never writes by itself.
+  const reading = shownReading(profile.state);
+  const readingFresh = profile.state.kind === "ready" && Boolean(reading?.fresh);
+  const synopsis = useDeckSynopsis(
+    deck.id,
+    analysisEnabled && view === "analysis",
+    `${listKey}|${reading?.analyzedAt ?? ""}|${readingFresh}`,
   );
   const counts = deckCounts(cards, unresolvedCount);
 
@@ -1117,8 +1129,8 @@ export function BuilderShell({
                     rather than replacing it. The strip is counted from the list and is true in
                     every profile state, which is what makes a failed read a delay rather than an
                     outage. */}
-                {/* ONE hover preview for the whole tab: the suggestion cards use it today, and the
-                    synopsis's card names will borrow it rather than mount a second. */}
+                {/* ONE hover preview for the whole tab: the suggestion cards and the overview's
+                    card names both borrow it rather than mount a second. */}
                 <HoverPreviewProvider>
                 <AnalysisPanel
                   state={profile.state}
@@ -1150,6 +1162,19 @@ export function BuilderShell({
                     refused: declaration.refused,
                   }}
                   art={findingArt}
+                  overview={
+                    synopsis.view.kind === "ready" ? (
+                      <SynopsisOverview
+                        state={synopsis.view.state}
+                        busy={synopsis.view.busy}
+                        deckName={deck.name}
+                        art={findingArt}
+                        readingFresh={readingFresh}
+                        onWrite={synopsis.write}
+                        onRetry={synopsis.retry}
+                      />
+                    ) : null
+                  }
                   tuning={(permits) => (
                     <TuningPanel
                       deckId={deck.id}

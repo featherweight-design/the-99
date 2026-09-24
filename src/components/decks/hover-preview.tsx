@@ -216,11 +216,13 @@ export function HoverPreviewProvider({
         {children}
       </div>
       {target && (
+        // z-60, over the z-50 sheets: the overview's modal names cards that preview on hover, and
+        // a box drawn under the sheet it was hovered from is a box nobody sees.
         <div
           ref={boxEl}
           aria-hidden
           data-testid="hover-preview"
-          className="fixed z-40 pointer-events-none rounded-[12px] hidden md:block"
+          className="fixed z-[60] pointer-events-none rounded-[12px] hidden md:block"
           style={{
             top: target.box.top,
             left: target.box.left,
