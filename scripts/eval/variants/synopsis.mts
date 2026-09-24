@@ -85,3 +85,43 @@ export function applySynopsisVariant(variant: SynopsisVariant, facts: SynopsisFa
   const built = build(shown);
   return { facts: shown, messages: variant.prompt ? variant.prompt(built, shown) : built };
 }
+
+/**
+ * Round 3, on contract v6 (orchestrator, 2026-09-24). The v6 re-measure lost 7 points of all four
+ * to the primer, and the primer's overruns are its MULLIGAN lines: median 75 characters against an
+ * 80 budget, 58 of 180 over, because a specific line names cards and runs longer. The shipped prompt
+ * already says "aim for about 55", so this states the budget as words and as one idea per line, and
+ * shows two lines sized to it. Neither example opens with the heading's word, and both name a
+ * curve point, so the heading-prefix rule and the specific share are not traded for length. The
+ * budget is read from `CHAR_BUDGETS`, never restated.
+ */
+const PRIMER_BUDGET_RULES = [
+  `Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters as rendered, and aim for about 50. Write 8 to 12 words, with ONE card or ONE point on the curve per line, never a list.`,
+  "The land range the app shows above the Mulligan is not one of your lines and does not count toward any line's length.",
+  'Two lines sized to the budget: "A two-mana rock plus an early play to build on." (47), and "Only expensive spells, with nothing to cast before the late game." (65).',
+].join("\n");
+
+SYNOPSIS_VARIANTS["primer-budget"] = {
+  id: "primer-budget",
+  reason: "Round 3 on v6: the mulligan budget as a word target, one idea per line, the land line not counted, and two worked lines sized to it. From the v6 held-out overruns.",
+  prompt: (m) => ({ system: `${m.system}\n${PRIMER_BUDGET_RULES}`, user: m.user }),
+};
+
+/**
+ * Round 3b. The first primer-budget run on the dev decks cut primer over_budget from 5 to 0 and
+ * mulligan overruns from 17 to 1, but the specific share fell from 77% to 56%: the model copied the
+ * second worked line, which names neither a card nor a curve point. So both worked lines now carry
+ * one, the second a decklist mark, and the rule says every line must.
+ */
+const PRIMER_BUDGET_RULES_B = [
+  `Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters as rendered, and aim for about 50. Write 8 to 12 words.`,
+  "Every mulligan line names ONE card from the decklist, as [[Name]], or ONE point on the curve (a two-drop, a three-mana play), never a list and never neither.",
+  "The land range the app shows above the Mulligan is not one of your lines and does not count toward any line's length.",
+  'Two lines sized to the budget: "A two-mana rock plus an early play to build on." (47), and "[[Sol Ring]] with no three-drop behind it stalls out." (49).',
+].join("\n");
+
+SYNOPSIS_VARIANTS["primer-budget-b"] = {
+  id: "primer-budget-b",
+  reason: "Round 3b on v6: primer-budget with every mulligan line naming a card or a curve point, and a worked line that names a card. The first version held the budget and lost the specific share.",
+  prompt: (m) => ({ system: `${m.system}\n${PRIMER_BUDGET_RULES_B}`, user: m.user }),
+};
