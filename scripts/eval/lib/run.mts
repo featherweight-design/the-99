@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import type { z } from "zod";
 
@@ -51,27 +51,8 @@ export async function runRequests<T>(opts: {
   meta: Record<string, unknown>;
   prepared: unknown;
   log: (line: string) => void;
-  /** Attach to a first-pass batch an earlier process submitted and died waiting on. Its pending
-   *  ledger entry is the one this run settles, and nothing new is submitted for the first pass. */
-  resume?: { runId: string; batchId: string };
 }): Promise<{ runId: string; dir: URL; answers: Map<string, Answer<T>> } | null> {
   const { first, schema, realtime, log } = opts;
-  // A real-time pass has no batch to reattach to: resuming one would send every request again.
-  if (opts.resume && realtime) throw new Error("eval: --resume reattaches to a batch; a --realtime run cannot be resumed");
-
-  // The request set, one hash per custom id. A run writes it; a resume must rebuild the SAME set,
-  // or the old batch's replies would be scored against a different pack and labelled with it.
-  const requestHashes = Object.fromEntries(first.map((s) => [s.customId, createHash("sha256").update(JSON.stringify(s.params)).digest("hex")]));
-  if (opts.resume) {
-    // Settled already: collecting it again would record its cost twice.
-    if (readLedger(LEDGER).entries.some((e) => e.settles === `${opts.resume!.runId}/a1`)) throw new Error(`eval: ${opts.resume.runId}/a1 is already settled; nothing to resume`);
-    const saved = new URL(`runs/${opts.resume.runId}/requests.json`, ROOT);
-    if (!existsSync(saved)) throw new Error(`eval: run ${opts.resume.runId} recorded no request set, so a resume cannot be checked against it`);
-    const before = JSON.parse(readFileSync(saved, "utf8")) as Record<string, string>;
-    const differ = [...new Set([...Object.keys(before), ...Object.keys(requestHashes)])].filter((id) => before[id] !== requestHashes[id]);
-    if (differ.length > 0) throw new Error(`eval: the rebuilt requests differ from the run's on ${differ.length} ids (${differ.slice(0, 3).join(", ")}…); resume with the original arguments and code`);
-  }
-
   const counted = new Map<string, number>();
   let worst = 0;
   let inputSum = 0;
@@ -86,38 +67,33 @@ export async function runRequests<T>(opts: {
   const ledger = readLedger(LEDGER);
   log(`${first.length} requests, ${inputSum} input tokens; worst case $${worst.toFixed(2)}; spent so far $${spent(ledger).toFixed(2)}`);
   if (opts.dryRun) return null;
-  const stop = opts.resume ? null : refusal(ledger, worst, opts.planDone);
+  const stop = refusal(ledger, worst, opts.planDone);
   if (stop) {
     log(`NOT SENT: ${stop}`);
     return null;
   }
 
-  const runId = opts.resume?.runId ?? `${new Date().toISOString().replace(/[:.]/g, "-")}-${opts.feature}-${opts.label}`;
+  const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${opts.feature}-${opts.label}`;
   const dir = new URL(`runs/${runId}/`, ROOT);
   mkdirSync(dir, { recursive: true });
   const sha = execSync("git rev-parse --short HEAD").toString().trim();
-  // A resumed run keeps the meta and packs the original process wrote before it died.
-  if (!opts.resume) {
-    writeFileSync(new URL("meta.json", dir), `${JSON.stringify({ runId, sha, ...opts.meta }, null, 2)}\n`);
-    writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(opts.prepared)}\n`);
-    writeFileSync(new URL("requests.json", dir), `${JSON.stringify(requestHashes)}\n`);
-  }
+  writeFileSync(new URL("meta.json", dir), `${JSON.stringify({ runId, sha, ...opts.meta }, null, 2)}\n`);
+  writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(opts.prepared)}\n`);
 
   const modelOf = new Map(first.map((s) => [s.customId, s.params.model]));
   // A batch is recorded at its worst case BEFORE it is submitted and settled at its real cost after
   // (`ledger.mts`), so a crash between paying and settling leaves the worst case counted.
-  const send = async (batch: Sent[], pass: string, worstUsd: number, resumeId?: string): Promise<Got[]> => {
+  const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[]> => {
     if (batch.length === 0) return [];
     const pendingId = `${runId}/${pass}`;
-    // A resumed pass already has its pending entry, written by the process that submitted it.
-    if (!resumeId) record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
+    record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
     let got: Got[];
     let source: string;
     if (realtime) {
       got = await sendRealtime(batch, log);
       source = `realtime:${batch.length}`;
     } else {
-      const r = await sendBatch(batch, log, resumeId);
+      const r = await sendBatch(batch, log);
       got = r.results;
       source = r.batchId;
     }
@@ -130,10 +106,12 @@ export async function runRequests<T>(opts: {
 
   const attempts = new Map<string, Got[]>();
   // The first pass is held at the whole worst case, a retry included.
-  for (const g of await send(first, "a1", worst, opts.resume?.batchId)) attempts.set(g.customId, [g]);
+  for (const g of await send(first, "a1", worst)) attempts.set(g.customId, [g]);
   const retry = first.filter((s) => {
     const g = attempts.get(s.customId)?.[0];
-    return !g || !g.ok || !parseReply(schema, g.message).ok;
+    // Retried as `callModel` retries: an upstream it classes as transient, or a reply that fails
+    // the schema. A timeout or a refused request is final there, so it is final here.
+    return !g || (g.ok ? !parseReply(schema, g.message).ok : g.retry);
   });
   // The retry is never refused: the worst case checked above already counted a second attempt for
   // every request, so the cap was cleared for it, and skipping it would record first-attempt

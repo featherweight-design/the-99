@@ -4,7 +4,6 @@
  *
  *   pnpm eval:tuning --cells sonnet,sonnet-low,haiku --set heldOut --trials 3 [--variant trim]
  *                    [--overlay] [--realtime] [--dry-run] [--plan-done 0.2] [--label sweep]
- *                    [--resume <runId>:<batchId>]   (same arguments as the run being resumed)
  *
  * Plan: docs/superpowers/plans/2026-09-23-eval-harness.md. Every piece of the app it touches is
  * imported, never restated (`lib/tuning-app.mts`), and the request is built by `buildParams`, which
@@ -34,7 +33,6 @@ const { values: args } = parseArgs({
     "dry-run": { type: "boolean", default: false },
     "plan-done": { type: "string", default: "0" },
     label: { type: "string", default: "run" },
-    resume: { type: "string" },
   },
 });
 
@@ -80,7 +78,6 @@ const run = await runRequests({
   meta: { args, split, promptVersion: app.promptVersion, variant: { id: variant.id, reason: variant.reason }, decks: prepared.map((p) => ({ deckId: p.deckId, name: nameOf.get(p.deckId) })) },
   prepared,
   log,
-  resume: args.resume ? { runId: args.resume.split(":")[0], batchId: args.resume.split(":")[1] } : undefined,
 });
 if (!run) process.exit(args["dry-run"] ? 0 : 2);
 

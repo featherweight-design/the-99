@@ -1,4 +1,7 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
+
+import { retryable } from "./batch.mjs";
 
 import { refusal, spent } from "./ledger.mjs";
 import { costUsd, worstCaseUsd } from "./pricing.mjs";
@@ -66,5 +69,20 @@ describe("spent", () => {
     const pending = e({ usd: 5, pending: "r/a1" });
     expect(spent({ entries: [pending] })).toBe(5);
     expect(spent({ entries: [pending, e({ usd: 1.25, settles: "r/a1" })] })).toBe(1.25);
+  });
+});
+
+describe("retryable (callModel's split)", () => {
+  const h = new Headers();
+  it("retries a rate limit, a server error and a lost connection", () => {
+    expect(retryable(new Anthropic.RateLimitError(429, {}, "slow down", h))).toBe(true);
+    expect(retryable(new Anthropic.InternalServerError(529, {}, "overloaded", h))).toBe(true);
+    expect(retryable(new Anthropic.APIConnectionError({ message: "reset" }))).toBe(true);
+  });
+  it("never retries a timeout, an abort or a request the API refused", () => {
+    expect(retryable(new Anthropic.APIConnectionTimeoutError())).toBe(false);
+    expect(retryable(new Anthropic.APIUserAbortError())).toBe(false);
+    expect(retryable(new Anthropic.BadRequestError(400, {}, "bad", h))).toBe(false);
+    expect(retryable(new Anthropic.AuthenticationError(401, {}, "no key", h))).toBe(false);
   });
 });

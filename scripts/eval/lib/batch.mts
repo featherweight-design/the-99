@@ -6,14 +6,16 @@ import type { Params } from "./request.mjs";
  * Sending requests, by batch or one at a time. Either way the caller gets back one result per
  * `customId`, keyed rather than ordered: batch results arrive in any order.
  *
- * A result is the message, or the reason there is none. `errored`, `expired` and `canceled`
- * batch entries all come back as `upstream`, the class `callModel` gives an upstream it could
- * not get an answer from; the runner retries them once, as the app does.
+ * A result is the message, or the reason there is none, with `retry` saying whether `callModel`
+ * would try again: a rate limit, a server error or a lost connection is retried once; a timeout,
+ * a refused credential or a malformed request is final (`classify` in `src/lib/model/client.ts`).
+ * A batch entry that `expired` or was `canceled` never reached the model, the nearest thing a batch
+ * has to a busy upstream, so it is retried.
  */
 export type Sent = { customId: string; params: Params };
 export type Got =
   | { customId: string; ok: true; message: Anthropic.Message; elapsedMs?: number }
-  | { customId: string; ok: false; reason: string };
+  | { customId: string; ok: false; reason: string; retry: boolean };
 
 /**
  * The first-party API, named explicitly. The app's client talks to it with no base-URL override,
@@ -23,6 +25,15 @@ export type Got =
  * would change what is being measured.
  */
 export const API_BASE_URL = "https://api.anthropic.com";
+
+/** The batch error types `callModel` would meet as a rate limit or a server error. */
+const RETRYABLE_ERROR_TYPES = new Set(["rate_limit_error", "overloaded_error", "api_error"]);
+
+/** `callModel`'s split, for a thrown call: timeouts and aborts are final, as is any request error. */
+export function retryable(err: unknown): boolean {
+  if (err instanceof Anthropic.APIConnectionTimeoutError || err instanceof Anthropic.APIUserAbortError) return false;
+  return err instanceof Anthropic.RateLimitError || err instanceof Anthropic.InternalServerError || err instanceof Anthropic.APIConnectionError;
+}
 
 let client: Anthropic | null = null;
 function anthropic(): Anthropic {
@@ -39,17 +50,13 @@ export async function countTokens(params: Params): Promise<number> {
 }
 
 /**
- * `resumeId` attaches to a batch already submitted (a run whose process died while it was being
- * processed), so the answers already paid for are collected rather than lost. A poll that fails
- * is retried on the next tick: a batch keeps processing whether or not anyone is watching it, and a
+ * A poll that fails is retried on the next tick: a batch keeps processing whether or not anyone is watching it, and a
  * single timed-out status check used to end the run with its batch still running.
  */
-export async function sendBatch(requests: Sent[], log: (line: string) => void, resumeId?: string): Promise<{ batchId: string; results: Got[] }> {
+export async function sendBatch(requests: Sent[], log: (line: string) => void): Promise<{ batchId: string; results: Got[] }> {
   const api = anthropic().messages.batches;
-  const batch = resumeId
-    ? await api.retrieve(resumeId)
-    : await api.create({ requests: requests.map((r) => ({ custom_id: r.customId, params: r.params })) });
-  log(resumeId ? `batch ${batch.id}: resumed` : `batch ${batch.id}: ${requests.length} requests submitted`);
+  const batch = await api.create({ requests: requests.map((r) => ({ custom_id: r.customId, params: r.params })) });
+  log(`batch ${batch.id}: ${requests.length} requests submitted`);
   let status = batch.processing_status;
   let last = "";
   while (status !== "ended") {
@@ -69,7 +76,10 @@ export async function sendBatch(requests: Sent[], log: (line: string) => void, r
   const results: Got[] = [];
   for await (const entry of await api.results(batch.id)) {
     if (entry.result.type === "succeeded") results.push({ customId: entry.custom_id, ok: true, message: entry.result.message });
-    else results.push({ customId: entry.custom_id, ok: false, reason: `batch ${entry.result.type}` });
+    else if (entry.result.type === "errored") {
+      const type = entry.result.error.error.type;
+      results.push({ customId: entry.custom_id, ok: false, reason: `batch errored: ${type}`, retry: RETRYABLE_ERROR_TYPES.has(type) });
+    } else results.push({ customId: entry.custom_id, ok: false, reason: `batch ${entry.result.type}`, retry: true });
   }
   return { batchId: batch.id, results };
 }
@@ -86,7 +96,7 @@ export async function sendRealtime(requests: Sent[], log: (line: string) => void
       const message = await anthropic().messages.create(r.params, { maxRetries: 0 });
       out.push({ customId: r.customId, ok: true, message, elapsedMs: Math.round(performance.now() - start) });
     } catch (err) {
-      out.push({ customId: r.customId, ok: false, reason: err instanceof Error ? err.message : String(err) });
+      out.push({ customId: r.customId, ok: false, reason: err instanceof Error ? err.message : String(err), retry: retryable(err) });
     }
     log(`realtime ${r.customId}: done`);
   }
