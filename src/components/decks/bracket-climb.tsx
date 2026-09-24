@@ -81,7 +81,7 @@ export function BracketClimb({
         (and, at 1300, hovered) state that the path's opener does not have, drawn as the canvas
         draws it (audit finding 5). A 44px target at 390, pulled back into the section gap.
       */}
-      <div className="-mb-[6px] -ml-[8px] -mr-[8px] -mt-[4px] flex justify-end md:m-0">
+      <div className="-mb-[6px] -mr-[8px] -mt-[4px] flex justify-end md:m-0">
         <button
           type="button"
           aria-haspopup="dialog"

@@ -572,7 +572,8 @@ export const deckAnalysisCopy = {
    * constants in `src/lib/bracket/rules.ts`. It marks no reader's bracket (R2-A, confirmed by Hugh).
    *
    * THE QUOTES ARE VERBATIM and each names the post that carries it (`sources.ts`). Never edit
-   * the text; re-quote from the post. Two open in lower case, as the posts write them (R2-B).
+   * the text; re-quote from the post. Two begin mid-sentence and open with an ellipsis, never a
+   * capital (R2-B; the-99-d9's ruling, 2026-09-24).
    */
   bracketsSheet: {
     open: "see all brackets",
@@ -592,13 +593,13 @@ export const deckAnalysisCopy = {
     },
     quotes: {
       gameChangers: { text: "Up to three cards from the Game Changers list.", source: "intro" },
-      massLandDenial: { text: "you should not expect to see these cards anywhere in Brackets 1\u20133.", source: "intro" },
+      massLandDenial: { text: "\u2026you should not expect to see these cards anywhere in Brackets 1\u20133.", source: "intro" },
       extraTurns: {
         text: "Extra-turn cards should only appear in low quantities and are not intended to be chained in succession or looped.",
         source: "intro",
       },
       twoCardCombos: { text: "No intentional early-game two-card infinite combos.", source: "intro" },
-      tutors: { text: "remove the tutor restrictions from Commander Brackets entirely", source: "oct25" },
+      tutors: { text: "\u2026remove the tutor restrictions from Commander Brackets entirely.", source: "oct25" },
       high: { text: "There are no restrictions (other than the banned list).", source: "intro" },
     },
     quoteTag: { intro: "Wizards \u00b7 Feb 2025", oct25: "Wizards \u00b7 Oct 2025" },
@@ -608,8 +609,8 @@ export const deckAnalysisCopy = {
       label: "Tutors",
       reading:
         "Wizards removed the tutor limit in October 2025, finding that tutors are not all alike. We count them in " +
-        "the findings. They move no bracket on their own: they only tell us whether a combo can be found rather " +
-        "than drawn.",
+        "the findings. They move no bracket as tutors: a tutor on the Game Changer list counts there, and " +
+        "otherwise they only tell us whether a combo can be found rather than drawn.",
     },
     high: {
       name: "Optimized and cEDH",
