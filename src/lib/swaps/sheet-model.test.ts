@@ -116,4 +116,44 @@ describe("the stand-ins sheet's model", () => {
     expect(loadingStatus("land")).toBeNull();
     expect(loadingStatus("other")).toBeNull();
   });
+
+  describe("a give-up every stand-in shares (Hugh, 2026-09-24)", () => {
+    const cavern = card("Cavern of Souls", "Land");
+    const uncounterable = { kind: "named", label: "uncounterable spells" } as const;
+
+    it("says it once, in the lead, and leaves each row only its costs, or nothing", () => {
+      const m = sheetModel(read({
+        job: { kind: "land", colors: ["W", "U"] },
+        original: cavern,
+        free: [standIn("Command Tower", { free: true, givesUp: [uncounterable] })],
+        cheapest: [standIn("Azorius Chancery", { givesUp: [uncounterable], drawbacks: [{ kind: "entersTapped" }] })],
+      }));
+      expect(m.lead).toBe(copy.leadLandsGivesUp("white and blue", "uncounterable spells"));
+      expect(m.groups.map((g) => g.rows[0].facts)).toEqual([[], [copy.drawback.entersTapped]]);
+    });
+
+    it("quotes a shared unnamed ability in the lead too, and says a fetch's the same way", () => {
+      const quoted = { kind: "quoted", text: "Threshold — {U}, {T}…" } as const;
+      const m = sheetModel(read({
+        job: { kind: "fetch", types: ["island"], basicOnly: false },
+        original: card("Some Fetch", "Land"),
+        cheapest: [standIn("A", { givesUp: [quoted] }), standIn("B", { givesUp: [quoted] })],
+      }));
+      expect(m.lead).toBe(copy.leadFetchGivesUp("Island", "“Threshold — {U}, {T}…”"));
+      expect(m.groups[0].rows.every((r) => r.facts.length === 0)).toBe(true);
+    });
+
+    it("keeps each row's own clause when the stand-ins give up different things", () => {
+      const m = sheetModel(read({
+        job: { kind: "land", colors: ["W"] },
+        original: cavern,
+        cheapest: [
+          standIn("A", { givesUp: [uncounterable] }),
+          standIn("B", { givesUp: [{ kind: "named", label: "card draw" }] }),
+        ],
+      }));
+      expect(m.lead).toBe(copy.leadLands("white"));
+      expect(m.groups[0].rows.map((r) => r.facts)).toEqual([[copy.givesUp("uncounterable spells")], [copy.givesUp("card draw")]]);
+    });
+  });
 });

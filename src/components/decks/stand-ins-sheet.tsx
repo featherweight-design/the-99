@@ -77,9 +77,12 @@ function StandInRow({ row, newestAsOf }: { row: SheetRow; newestAsOf: Date | nul
             </span>
           ) : null}
         </div>
-        <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
-          {row.facts.join(" · ")}
-        </p>
+        {/* A row left with nothing to say (its give-up said once in the lead) draws no second line. */}
+        {row.facts.length ? (
+          <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
+            {row.facts.join(" · ")}
+          </p>
+        ) : null}
       </div>
       <div className="col-start-1 row-start-2 pl-[43px] md:col-start-2 md:row-start-1 md:pl-0 flex md:justify-end">
         {row.free ? (

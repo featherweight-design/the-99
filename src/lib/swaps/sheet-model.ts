@@ -45,7 +45,8 @@ export function drawbackText(d: Drawback, colors: readonly Color[]): string {
 }
 
 /** H3: a named ability as its label, an unnamed one quoted from the card's own text. */
-export const givenUpText = (g: GivenUp) => copy.givesUp(g.kind === "named" ? g.label : `“${g.text}”`);
+const abilityText = (g: GivenUp) => (g.kind === "named" ? g.label : `“${g.text}”`);
+export const givenUpText = (g: GivenUp) => copy.givesUp(abilityText(g));
 
 export type SheetRow = {
   oracleId: string;
@@ -114,13 +115,26 @@ export function sheetModel(read: StandInsRead): SheetModel {
     : job.kind === "fetch" ? [copy.jobFinds(typesText(job.types)), ...own.map((d) => drawbackText(d, landColors))].join(" · ")
     : copy.jobRole(rolesText(job.roles), job.mv);
 
+  // Hugh, 2026-09-24: when every stand-in gives up the SAME thing, the lead says it once and the rows
+  // show only what differs. Mixed, each row keeps its own clause.
+  const everyRow = [...read.free, ...read.cheapest];
+  const givenUpKey = (s: StandIn) => s.givesUp.map(abilityText).join("|");
+  const shared =
+    job.kind !== "spell" && everyRow.length > 0 && everyRow[0].givesUp.length > 0
+      && everyRow.every((s) => givenUpKey(s) === givenUpKey(everyRow[0]))
+      ? listWords(everyRow[0].givesUp.map(abilityText), "and")
+      : null;
+
   const facts = (s: StandIn): string[] => {
     if (job.kind === "spell") {
       const out = [rolesText(s.shared), copy.mv(s.card.cmc)];
       if (s.inclusion !== null) out.push(copy.figure(String(Math.round(s.inclusion)), commander));
       return out;
     }
-    const clauses = [...firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors)), ...s.givesUp.map(givenUpText)];
+    const costs = firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors));
+    // Said once in the lead: the row keeps only its costs, and may be left with nothing at all.
+    if (shared !== null) return costs;
+    const clauses = [...costs, ...s.givesUp.map(givenUpText)];
     // H3: `gives up nothing` only when it is true, which is when nothing above was said.
     return clauses.length ? clauses : [copy.givesUpNothing];
   };
@@ -147,8 +161,10 @@ export function sheetModel(read: StandInsRead): SheetModel {
 
   const lead =
     soldOut ? copy.leadSoldOut
-    : job.kind === "land" ? copy.leadLands(colorsText(job.colors))
-    : job.kind === "fetch" ? copy.leadFetch(typesText(job.types, true))
+    : job.kind === "land"
+      ? shared !== null ? copy.leadLandsGivesUp(colorsText(job.colors), shared) : copy.leadLands(colorsText(job.colors))
+    : job.kind === "fetch"
+      ? shared !== null ? copy.leadFetchGivesUp(typesText(job.types, true), shared) : copy.leadFetch(typesText(job.types, true))
     // F14: nothing listed for this commander or pair, so the order clause has nothing to name.
     : read.byCommander.length === 0 ? copy.leadSpellsUnlisted(rolesText(job.roles), job.mv)
     : copy.leadSpells(rolesText(job.roles), job.mv, commander);
