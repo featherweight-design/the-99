@@ -75,7 +75,7 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
                   setInvalid(false);
                 }}
                 // 16px keeps iOS Safari from zooming the page on focus; the drawn text is 13px.
-                className="w-[5ch] bg-transparent border-none outline-none p-0 text-[16px] md:text-[13px]"
+                className="w-[5ch] bg-transparent border-none outline-none p-0 text-[16px] md:text-[13px] caret-[color:var(--accent)]"
                 style={{ color: "var(--fg)" }}
               />
             </label>

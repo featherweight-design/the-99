@@ -476,7 +476,9 @@ export function DecklistRow({
               </span>
             ) : null}
             {overText ? (
-              <span className="hidden md:inline-flex flex-none items-center gap-[5px] font-mono text-[10px] whitespace-nowrap">
+              // The block's 6px gap sits before this item; the design's figure-to-`·` gap is 5px, the
+              // one-pixel pull that makes the two read as one group.
+              <span className="hidden md:inline-flex flex-none items-center gap-[5px] md:-ml-px font-mono text-[10px] whitespace-nowrap">
                 {hasShoppingMeta ? <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span> : null}
                 <span style={{ color: "var(--warning)" }}>{overText}</span>
               </span>
