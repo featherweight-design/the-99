@@ -1,12 +1,13 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique, foreignKey, uniqueIndex,
+  unique, foreignKey, uniqueIndex, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
 import type { CommanderEngine } from "../lib/recs/engine";
 import type { DeckProfile } from "../lib/profile/types";
+import type { CheckedSynopsis } from "../lib/synopsis/types";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -1611,3 +1612,66 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   ),
   index("deck_suggestion_items_run_position_idx").on(t.runId, t.position),
 ]);
+
+/**
+ * One generation of a deck's synopsis (sub-project 6). Kept, never replaced: the history is the
+ * record, and the eval harness counts outcomes from it. The draft's synopsis is the newest `done`
+ * run whose content has at least one section that passed checking.
+ *
+ * Written `pending` in the same transaction that reserves the player's allowance unit
+ * (`model_call_id`), BEFORE the model is called, and settled to `done` in the transaction that
+ * settles the unit. A pending run older than `SYNOPSIS_REAPER_CUTOFF_MS` was abandoned; the
+ * read-time reaper writes it `done` with outcome `interrupted` and refunds its unit, so a crash
+ * never locks the deck out.
+ *
+ * `fingerprint` is `listFingerprint`, the list alone, and REUSE IS KEYED ON IT ALONE (Hugh,
+ * ruling B, 2026-09-23): a synopsis written under an older `contract_version` keeps showing until
+ * the list changes. The contract version is stored so outcomes under two contracts can be told
+ * apart, never to stale a row.
+ *
+ * `input_tokens` / `output_tokens` are NULLABLE: the model client reports usage only for a reply
+ * it returns, so a failed run records none, and after the client's one retry it reports the
+ * second attempt alone, so a retried success understates its cost by the first.
+ */
+export const deckSynopses = pgTable("deck_synopses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  fingerprint: text("fingerprint").notNull(),
+  contractVersion: integer("contract_version").notNull(),
+  model: text("model").notNull(),
+  /** The allowance unit this run holds; its outcome write settles it. */
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  status: text("status").notNull().default("pending"),
+  /** Null while pending. */
+  outcome: text("outcome"),
+  /** Every section's verdict and the content of those that passed. Null unless the reply parsed. */
+  content: jsonb("content").$type<CheckedSynopsis>(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  /** The run a section retry built on: its passing sections are carried over byte for byte. */
+  retryOf: uuid("retry_of").references((): AnyPgColumn => deckSynopses.id, { onDelete: "set null" }),
+}, (t) => [
+  check("deck_synopses_status_check", sql`${t.status} in ('pending', 'done')`),
+  check(
+    "deck_synopses_outcome_check",
+    sql`(${t.status} = 'pending') = (${t.outcome} is null)
+        and (${t.outcome} is null or ${t.outcome} in ('survived', 'refused', 'malformed', 'upstream_busy', 'timeout', 'interrupted'))`,
+  ),
+  // One run in flight per deck: the loser of a double press gets a unique violation, not a
+  // second run and a second charge. Same partial form as deck_suggestion_runs.
+  uniqueIndex("deck_synopses_one_pending_idx").on(t.deckId).where(sql`${t.status} = 'pending'`),
+  index("deck_synopses_deck_created_idx").on(t.deckId, t.createdAt),
+]);
+
+/**
+ * A version's synopsis: the one written for exactly the list that version froze, copied at the
+ * commit and never after (Hugh, 2026-09-23; `SYNOPSIS-modal.md` §4.4, "written for version 3 when
+ * it was committed"). Inserted once, if absent, and never updated, so it never goes stale and a
+ * later rewrite of the draft cannot reach it.
+ */
+export const deckVersionSynopses = pgTable("deck_version_synopses", {
+  versionId: uuid("version_id").primaryKey().references(() => deckVersions.id, { onDelete: "cascade" }),
+  synopsisId: uuid("synopsis_id").notNull().references(() => deckSynopses.id, { onDelete: "cascade" }),
+});

@@ -2,7 +2,9 @@ import { getTableName } from "drizzle-orm";
 import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { deckGames, decks, deckSuggestionItems, deckSuggestionRuns, modelCalls } from "./schema";
+import {
+  deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, modelCalls,
+} from "./schema";
 
 describe("deck tuning schema", () => {
   it("keeps the game note singular and separate from decks.notes", () => {
@@ -47,5 +49,47 @@ describe("deck tuning schema", () => {
   it("indexes the allowance ledger on the one query it answers", () => {
     const idx = getTableConfig(modelCalls).indexes.map((i) => i.config.name);
     expect(idx).toContain("model_calls_user_created_idx");
+  });
+});
+
+describe("deck synopsis schema", () => {
+  const pairs = (t: Parameters<typeof getTableConfig>[0]) =>
+    getTableConfig(t).foreignKeys.map((fk) => {
+      const ref = fk.reference();
+      return `${ref.columns[0].name}->${getTableName(ref.foreignTable)}.${ref.foreignColumns[0].name}:${fk.onDelete}`;
+    });
+  const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql.replace(/\s+/g, " ");
+
+  it("allows one pending run per deck", () => {
+    const unique = getTableConfig(deckSynopses).indexes.filter((i) => i.config.unique);
+    expect(unique).toHaveLength(1);
+    expect(unique[0].config.name).toBe("deck_synopses_one_pending_idx");
+    expect(render(unique[0].config.where!)).toBe(`"deck_synopses"."status" = 'pending'`);
+  });
+
+  it("ties an outcome to a finished run, and only to a known outcome", () => {
+    const checks = Object.fromEntries(getTableConfig(deckSynopses).checks.map((c) => [c.name, render(c.value)]));
+    expect(checks.deck_synopses_status_check).toContain(`in ('pending', 'done')`);
+    const outcome = checks.deck_synopses_outcome_check;
+    expect(outcome).toContain(`("deck_synopses"."status" = 'pending') = ("deck_synopses"."outcome" is null)`);
+    for (const o of ["survived", "refused", "malformed", "upstream_busy", "timeout", "interrupted"]) {
+      expect(outcome).toContain(`'${o}'`);
+    }
+  });
+
+  it("cascades a run with its deck, holds its allowance unit, and lets a retry outlive its base", () => {
+    expect(pairs(deckSynopses)).toEqual(expect.arrayContaining([
+      "deck_id->decks.id:cascade",
+      "model_call_id->model_calls.id:no action",
+      "retry_of->deck_synopses.id:set null",
+    ]));
+  });
+
+  it("keys a version's copy on the version, and drops it with the version or the run", () => {
+    expect(getTableConfig(deckVersionSynopses).columns.find((c) => c.primary)?.name).toBe("version_id");
+    expect(pairs(deckVersionSynopses)).toEqual(expect.arrayContaining([
+      "version_id->deck_versions.id:cascade",
+      "synopsis_id->deck_synopses.id:cascade",
+    ]));
   });
 });

@@ -1,0 +1,273 @@
+import { describe, expect, it } from "vitest";
+
+import type { SynopsisFacts } from "./facts";
+import type { SynopsisResponse } from "./response-schema";
+import { figuresIn, jobSupported, marksIn, rendered, strengthClaim, unmarkedNames, validateSynopsis } from "./validate";
+
+const card = (name: string, categories: SynopsisFacts["cards"][number]["categories"] = []) => ({
+  oracleId: `id-${name}`, name, typeLine: "Creature", quantity: 1, categories, oracleText: null,
+});
+
+const FACTS: SynopsisFacts = {
+  commanders: ["Kratos"],
+  identity: ["R"],
+  unproducible: [],
+  lands: 36,
+  ramp: 10,
+  keep: { low: 2, high: 4 },
+  figures: [2, 4, 7, 10, 36],
+  cards: [
+    card("Kratos", ["commander"]),
+    card("Sol Ring", ["ramp"]),
+    card("Rhystic Study", ["draw"]),
+    card("Chaos Warp", ["removal"]),
+    card("Blasphemous Act", ["wipes"]),
+    card("Gamble", ["tutor"]),
+    card("Fire // Ice", ["removal"]),
+    card("Goblin Bombardment"),
+    card("Impact Tremors"),
+  ],
+};
+
+const CATALOG = new Map([["rest in peace", { oracleId: "id-rip", name: "Rest in Peace" }]]);
+
+function good(): SynopsisResponse {
+  return {
+    overview: "[[Kratos]] turns every spell into damage, and [[Impact Tremors]] finishes the table.",
+    primer: {
+      strategy: [
+        "Play [[Sol Ring]] early.",
+        "Land [[Impact Tremors]] before the big turn.",
+        "Cast [[Blasphemous Act]] and swing.",
+      ],
+      mulligan: {
+        keep: ["Keep a seven with 2 to 4 lands.", "Keep a hand with [[Sol Ring]]."],
+        sendBack: ["Send back a hand with no ramp.", "Send back a hand with no lands."],
+      },
+      tips: [
+        { cards: ["Goblin Bombardment", "Impact Tremors"], text: "Sacrifice tokens to [[Goblin Bombardment]] after [[Impact Tremors]] triggers." },
+        { cards: ["Kratos", "Fire"], text: "Cast [[Fire]] with [[Kratos]] out to double the damage." },
+      ],
+    },
+    keyCards: [
+      { card: "Kratos", claims: ["commander"], job: "Leads the deck." },
+      { card: "Sol Ring", claims: ["ramp"], job: "Ramps you a turn ahead." },
+      { card: "Rhystic Study", claims: ["draw"], job: "Draws you cards all game." },
+      { card: "Chaos Warp", claims: ["removal"], job: "Answers any permanent." },
+      { card: "Impact Tremors", claims: [], job: "Turns every creature into damage." },
+    ],
+    weaknesses: ["[[Rest in Peace]] shuts off the recursion.", "Slow starts leave you exposed."],
+  };
+}
+
+const verdictOf = (r: ReturnType<typeof validateSynopsis>, s: string) => r.verdicts.find((v) => v.section === s)!;
+
+describe("validateSynopsis", () => {
+  it("passes a reply that keeps every rule, and resolves every mark", () => {
+    const r = validateSynopsis(good(), FACTS, CATALOG);
+    expect(r.verdicts.map((v) => v.status)).toEqual(["ok", "ok", "ok", "ok"]);
+    expect(r.overview).toBe(good().overview);
+    expect(r.cards["fire"]).toEqual({ oracleId: "id-Fire // Ice", name: "Fire // Ice" });
+    expect(r.cards["rest in peace"]?.name).toBe("Rest in Peace");
+  });
+
+  it("refuses a mark outside the deck with its count, and withholds the section's content", () => {
+    const reply = good();
+    reply.overview = "[[Kratos]] and [[Craterhoof Behemoth]] win.";
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "overview")).toEqual({ section: "overview", status: "refused", reason: "unknown_card", failed: 1, total: 2 });
+    expect(r.overview).toBeNull();
+    expect(verdictOf(r, "primer").status).toBe("ok");
+  });
+
+  it("lets Weaknesses name a catalog card the deck lacks, and no other section", () => {
+    const reply = good();
+    reply.overview = "[[Rest in Peace]] hurts.";
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "overview").status).toBe("refused");
+    expect(verdictOf(r, "weaknesses").status).toBe("ok");
+  });
+
+  it("refuses a Weaknesses mark the catalog does not hold", () => {
+    const reply = good();
+    reply.weaknesses = ["[[Not A Card]] beats it."];
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "weaknesses")).toMatchObject({ reason: "unknown_card", failed: 1 });
+  });
+
+  it("refuses a tip naming one card", () => {
+    const reply = good();
+    reply.primer.tips[0] = { cards: ["Sol Ring"], text: "Play [[Sol Ring]] first." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "tip_too_few_cards" });
+  });
+
+  it("refuses a tip whose card is not in the deck", () => {
+    const reply = good();
+    reply.primer.tips[0] = { cards: ["Sol Ring", "Mana Crypt"], text: "Play [[Sol Ring]] and [[Mana Crypt]]." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "tip_not_in_deck", failed: 1 });
+  });
+
+  it("matches a tip's list to its prose by card, so a face and its full name agree", () => {
+    const reply = good();
+    reply.primer.tips[1] = { cards: ["Kratos", "Fire // Ice"], text: "Cast [[Fire]] with [[Kratos]] out to double the damage." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer").status).toBe("ok");
+  });
+
+  it("counts a listed name the prose never marks", () => {
+    const reply = good();
+    reply.primer.tips[0] = { cards: ["Sol Ring", "Gamble", "Mana Crypt"], text: "Use [[Gamble]] to find [[Sol Ring]]." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "tip_not_in_deck", failed: 1 });
+  });
+
+  it("refuses a tip whose prose names a card its list does not", () => {
+    const reply = good();
+    reply.primer.tips[0] = { cards: ["Sol Ring", "Gamble"], text: "Use [[Gamble]] to find [[Sol Ring]] and [[Chaos Warp]]." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "tip_not_in_deck" });
+  });
+
+  it("refuses a Key card claiming a category the app does not hold", () => {
+    const reply = good();
+    reply.keyCards[4] = { card: "Impact Tremors", claims: ["draw"], job: "Keeps you ahead." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "keyCards")).toMatchObject({ reason: "job_unsupported" });
+  });
+
+  it("refuses a Key card whose job describes an unheld category in words", () => {
+    const reply = good();
+    reply.keyCards[4] = { card: "Impact Tremors", claims: [], job: "Draws a card for every creature." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "keyCards")).toMatchObject({ reason: "job_unsupported" });
+  });
+
+  it("refuses the same Key card twice", () => {
+    const reply = good();
+    reply.keyCards[4] = { card: "Sol Ring", claims: [], job: "Taps for two." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "keyCards")).toMatchObject({ reason: "wrong_count" });
+  });
+
+  it("refuses a Mulligan figure the app did not compute, in digits or in words", () => {
+    for (const line of ["Keep a hand with 3 ramp pieces.", "Keep a hand with three ramp pieces."]) {
+      const reply = good();
+      reply.primer.mulligan.keep[0] = line;
+      expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "uncomputed_figure" });
+    }
+  });
+
+  it("refuses strength talk anywhere, and allows a game fact", () => {
+    const reply = good();
+    reply.weaknesses = ["It is a strong deck that struggles against graveyard hate."];
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "weaknesses")).toMatchObject({ reason: "strength_claim" });
+    const fact = good();
+    fact.overview = "[[Kratos]] deals 16 damage in one turn.";
+    expect(verdictOf(validateSynopsis(fact, FACTS, CATALOG), "overview").status).toBe("ok");
+  });
+
+  it("refuses a count out of range", () => {
+    const reply = good();
+    reply.primer.strategy = reply.primer.strategy.slice(0, 2);
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "wrong_count" });
+    const many = good();
+    many.weaknesses = ["A.", "B.", "C.", "D."];
+    expect(verdictOf(validateSynopsis(many, FACTS, CATALOG), "weaknesses")).toMatchObject({ reason: "wrong_count" });
+  });
+
+  it("refuses an item over its budget, counted as rendered", () => {
+    const reply = good();
+    reply.keyCards[4] = { card: "Impact Tremors", claims: [], job: `${"x".repeat(60)}.` };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "keyCards")).toMatchObject({ reason: "over_budget" });
+    const marked = good();
+    // 59 rendered characters: the brackets do not count.
+    marked.keyCards[4] = { card: "Impact Tremors", claims: [], job: `[[Kratos]] ${"x".repeat(51)}.` };
+    expect(verdictOf(validateSynopsis(marked, FACTS, CATALOG), "keyCards").status).toBe("ok");
+  });
+
+  it("refuses a partial sentence", () => {
+    const reply = good();
+    reply.overview = "[[Kratos]] turns every spell into";
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview")).toMatchObject({ reason: "partial_sentence" });
+  });
+});
+
+describe("a card's name is not a claim the prose makes", () => {
+  const facts: SynopsisFacts = {
+    ...FACTS,
+    cards: [...FACTS.cards, card("Brutal Hordechief"), card("Three Visits", ["ramp"]), card("Room 101"), card("Wrath of God", ["wipes"])],
+  };
+
+  it("reads no strength word in a card's name", () => {
+    const reply = good();
+    reply.weaknesses = ["Losing [[Brutal Hordechief]] early slows the clock."];
+    expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "weaknesses").status).toBe("ok");
+  });
+
+  it("reads no figure in a card's name", () => {
+    const reply = good();
+    reply.primer.mulligan.keep[1] = "Keep a hand with [[Three Visits]].";
+    expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "primer").status).toBe("ok");
+    const digits = good();
+    digits.primer.mulligan.keep[1] = "Keep a hand with [[Room 101]].";
+    expect(verdictOf(validateSynopsis(digits, facts, CATALOG), "primer").status).toBe("ok");
+  });
+
+  it("reads no category in another card's name inside a job", () => {
+    const reply = good();
+    reply.keyCards[4] = { card: "Impact Tremors", claims: [], job: "Survives your own [[Wrath of God]]." };
+    expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "keyCards").status).toBe("ok");
+  });
+});
+
+describe("every deck name is marked", () => {
+  it("refuses a deck card named without its mark", () => {
+    const reply = good();
+    reply.overview = "Play Sol Ring early, then [[Impact Tremors]].";
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview"))
+      .toEqual({ section: "overview", status: "refused", reason: "unmarked_card", failed: 1, total: 2 });
+  });
+
+  it("does not read a one-word name, a lowercase phrase or a marked name as unmarked", () => {
+    expect(unmarkedNames("Cast [[Sol Ring]], then chaos warp nothing, then Kratos swings.", ["Sol Ring", "Chaos Warp", "Kratos"])).toEqual([]);
+    expect(unmarkedNames("Sol Ring's mana matters.", ["Sol Ring"])).toEqual(["Sol Ring"]);
+  });
+});
+
+describe("a refused section still counts every name in it", () => {
+  it("counts the names after the first broken rule, and keeps that rule as the reason", () => {
+    const reply = good();
+    reply.overview = `[[Kratos]] and [[Craterhoof Behemoth]] ${"win ".repeat(200)}.`;
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview"))
+      .toEqual({ section: "overview", status: "refused", reason: "over_budget", failed: 1, total: 2 });
+  });
+
+  it("counts a tip's names once", () => {
+    const r = validateSynopsis(good(), FACTS, CATALOG);
+    // strategy 3 + keep 1 + tips 4.
+    expect(verdictOf(r, "primer").total).toBe(8);
+  });
+});
+
+describe("the contract's helpers", () => {
+  it("reads marks and renders them as names", () => {
+    expect(marksIn("Play [[Sol Ring]] and [[Fire]].")).toEqual(["Sol Ring", "Fire"]);
+    expect(rendered("Play [[Sol Ring]].")).toBe("Play Sol Ring.");
+  });
+
+  it("reads figures in digits and words, past ten", () => {
+    expect(figuresIn("Keep 2 to four lands.")).toEqual([2, 4]);
+    expect(figuresIn("Keep eleven lands, or a dozen.")).toEqual([11, 12]);
+  });
+
+  it("does not read a creature's power as strength talk", () => {
+    expect(strengthClaim("A creature with power 4 or greater.")).toBe(false);
+    expect(strengthClaim("A high-power table.")).toBe(true);
+    expect(strengthClaim("Rates a 7/10.")).toBe(true);
+    expect(strengthClaim("Seven out of ten.")).toBe(true);
+    expect(strengthClaim("Above most power levels.")).toBe(true);
+  });
+
+  it("holds a job to the categories the card has", () => {
+    expect(jobSupported({ claims: [], job: "Ramps you." }, new Set(["ramp"]))).toBe(true);
+    expect(jobSupported({ claims: ["ramp"], job: "Taps for mana." }, new Set())).toBe(false);
+  });
+
+  it("gives a land or a commander job no words it could be refused for", () => {
+    expect(jobSupported({ claims: [], job: "A land that enters untapped and taps for two colors." }, new Set())).toBe(true);
+    expect(jobSupported({ claims: ["commander"], job: "Leads the deck from the command zone." }, new Set(["commander"]))).toBe(true);
+  });
+});
