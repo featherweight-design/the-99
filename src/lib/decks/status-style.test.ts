@@ -1,4 +1,9 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { contrast, mixOklab, parseHex } from "../theme/color";
+import { parseThemeBlocks } from "../theme/parse-css";
 import { STATUS_TOKEN, statusBarStyle, statusKeylineStyle, statusPillStyle } from "./status-style";
 import type { StatusPill } from "./status";
 
@@ -29,8 +34,8 @@ describe("status style", () => {
     }
   });
 
-  it("builds the four unexceptional pills from one rule — 18% over the plate, full label", () => {
-    for (const status of ["Over", "Unresolved", "To buy", "Complete"] as StatusPill[]) {
+  it("builds the three unexceptional pills from one rule — 18% over the plate, full label", () => {
+    for (const status of ["Unresolved", "To buy", "Complete"] as StatusPill[]) {
       const style = statusPillStyle(status);
       const token = STATUS_TOKEN[status];
       expect(style.color).toBe(`var(${token})`);
@@ -38,15 +43,24 @@ describe("status style", () => {
     }
   });
 
+  // H5: `Over` keeps the flat rule's tint and puts its red on the hairline, with `--fg` as the
+  // label, because `--danger` as text reads under 4.5:1 on its own plate.
+  it("draws Over's red in the tint and the edge, never the label", () => {
+    const style = statusPillStyle("Over");
+    expect(style.color).toBe("var(--fg)");
+    expect(style.background).toBe("color-mix(in srgb, var(--danger) 18%, var(--bg))");
+    expect(style.border).toBe("1px solid var(--danger)");
+  });
+
   // The pill only ever sits on art. A translucent fill let a bright pixel reach
   // the label, so every fill mixes into `--bg` and every edge is one opaque
   // hairline — no status keeps a faded border of its own colour.
-  it("plates every pill opaquely, behind one hairline", () => {
+  it("plates every pill opaquely, behind one opaque hairline", () => {
     for (const status of ALL) {
       const style = statusPillStyle(status);
       expect(style.background).not.toContain("transparent");
       expect(style.border).toContain("1px");
-      expect(style.border).toContain("var(--border-strong)");
+      expect(style.border).toMatch(status === "Over" ? /var\(--danger\)$/ : /var\(--border-strong\)$/);
     }
   });
 
@@ -103,5 +117,57 @@ describe("the phase values", () => {
     expect(statusBarStyle("Complete", 98, 98).width).toBe("100%");
     expect(statusBarStyle("Building", 87, 98).width).toBe(`${(87 / 98) * 100}%`);
     expect(statusBarStyle("New", 0, 99).width).toBe("0%");
+  });
+});
+
+// H5, measured: the two red labels read at 4.5:1 or better on every theme's ground. Computed from
+// the hex in `globals.css`, with `color-mix(in srgb, …)` mixed per channel as the browser does.
+describe("H5 contrast, over all six themes", () => {
+  const THEMES = parseThemeBlocks(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "globals.css"), "utf8"),
+  );
+  const hex = (theme: Map<string, string>, token: string) => {
+    const v = theme.get(token.replace(/^--/, ""));
+    if (!v || !/^#[0-9a-f]{6}$/i.test(v)) throw new Error(`${token} is not a hex value: ${v}`);
+    return v;
+  };
+  const mix = (a: string, b: string, weightOfA: number) =>
+    `#${parseHex(a).map((c, i) => Math.round(c * weightOfA + parseHex(b)[i] * (1 - weightOfA)).toString(16).padStart(2, "0")).join("")}`;
+  const minimum = (ratios: number[]) => Math.min(...ratios);
+
+  it("reads six themes", () => {
+    expect(THEMES.size).toBe(6);
+  });
+
+  it("Over's label clears 4.5:1 on its own plate", () => {
+    const ratios = [...THEMES.values()].map((t) => contrast(hex(t, "--fg"), mix(hex(t, "--danger"), hex(t, "--bg"), 0.18)));
+    expect(minimum(ratios)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("the Not legal tag's label clears 4.5:1 on the tile's ground and the header's", () => {
+    const ratios = [...THEMES.values()].flatMap((t) => [
+      contrast(hex(t, "--fg"), hex(t, "--surface-inset")),
+      contrast(hex(t, "--fg"), hex(t, "--bg")),
+    ]);
+    expect(minimum(ratios)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("the Not legal tag's label clears 4.5:1 on its own 14% tint", () => {
+    const ratios = [...THEMES.values()].map((t) => contrast(hex(t, "--fg"), mixOklab(hex(t, "--danger"), hex(t, "--surface-inset"), 0.14)));
+    expect(minimum(ratios)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("the data tag's --fact ink clears 4.5:1 on the tile's ground and the header's", () => {
+    const ratios = [...THEMES.values()].flatMap((t) => [
+      contrast(hex(t, "--fact"), hex(t, "--surface-inset")),
+      contrast(hex(t, "--fact"), hex(t, "--bg")),
+    ]);
+    expect(minimum(ratios)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The counterfactual H5 replaces: the red as TEXT fails on both grounds, which is why it moved.
+  it("would not with --danger as the label", () => {
+    const ratios = [...THEMES.values()].map((t) => contrast(hex(t, "--danger"), hex(t, "--surface-inset")));
+    expect(minimum(ratios)).toBeLessThan(4.5);
   });
 });

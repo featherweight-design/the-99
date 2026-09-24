@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DeckCard } from "./deck-card";
 import type { DeckListItem } from "../../lib/decks/read";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { formatWhen } from "../../lib/format/when";
 
 vi.mock("./deck-card-overflow", () => ({
   DeckCardOverflow: () => <button type="button">Actions</button>,
@@ -67,7 +68,7 @@ describe("DeckCard", () => {
     // middle of the space the tile was given.
     const footer = container.querySelector(".deck-card-footer")!;
     expect(footer.className).toContain("flex-1");
-    expect(footer.className).toContain("content-start");
+    expect(footer.className).toContain("flex-col");
   });
 
   // The tile's wash is the OWNED printing's art, so the caption under it has to be the
@@ -371,7 +372,7 @@ describe("DeckCard", () => {
       const { container } = render(
         <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Draft" })} shopping={undefined} now={now} />,
       );
-      const chip = container.querySelector("[class*='grid-area:chip']") as HTMLElement;
+      const chip = container.querySelector("[data-deck-chips]") as HTMLElement;
       expect(chip.style.borderLeft).toBe("");
       expect(chip.style.background).not.toBe("var(--bg)");
       expect((container.querySelector("[data-deck-bar-fill]") as HTMLElement).style.opacity).toBe("");
@@ -551,8 +552,8 @@ describe("DeckCard — the progress sentence", () => {
     expect(band.textContent).not.toContain("To buy");
 
     const chip = screen.getByText("To buy");
-    // The pill sits in the chip cell's flex group, which it shares with the bracket chip.
-    expect(chip.parentElement!.className).toContain("[grid-area:chip]");
+    // The pill sits in the chips row, which it shares with the bracket chip and the notice.
+    expect(chip.parentElement!.hasAttribute("data-deck-chips")).toBe(true);
     expect(chip.className).not.toContain("absolute");
     expect(container.querySelector(".deck-card-footer")?.contains(chip)).toBe(true);
   });
@@ -605,11 +606,10 @@ describe("DeckCard — the bracket chip", () => {
   });
 });
 
-describe("DeckCard — the footer's second row", () => {
-  // Declared unconditionally it cost a blank strip plus the row gap on every
-  // tile with nothing to put there — most of them — and taller tiles for an
-  // empty area is the opposite of what this round is for.
-  it("declares no second row when there is no figure and no date", () => {
+describe("DeckCard — the footer's three rows", () => {
+  // THREE FIXED ROWS (deck notices HANDOFF §1a): the detail row is drawn on every tile, empty
+  // when there is nothing to put in it, so every tile on /decks is one height.
+  it("draws the detail row on a tile with no figure and no date, empty", () => {
     const { container } = render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({ statusPill: "Building", built: 87, lastPlayedAt: null, inUseElsewhere: 0 })}
@@ -617,25 +617,31 @@ describe("DeckCard — the footer's second row", () => {
         now={now}
       />,
     );
-    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
-    expect(footer.className).toContain("[grid-template-areas:'chip_bar_count']");
-    expect(footer.className).not.toContain("detail_detail_detail");
+    const row = container.querySelector<HTMLElement>("[data-deck-detail]")!;
+    expect(row.className).toContain("h-[14px]");
+    expect(row.textContent).toBe("");
   });
 
-  it("declares it when a figure is there to go in it", () => {
+  it("puts a figure in it when there is one", () => {
     const { container } = render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck({ statusPill: "Over", built: 104 })} shopping={undefined} now={now} />,
     );
-    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
-    expect(footer.className).toContain("detail_detail_detail");
-    expect(screen.getByText("5 over")).toBeInTheDocument();
+    expect(container.querySelector("[data-deck-detail]")!.textContent).toContain("5 over");
   });
 
-  // A Draft CAN have a logged game — the Games panel offers the form on an empty
-  // deck — and a Draft never draws last played, because its detail row carries
-  // `created today` alone. Two separate conditions gave that deck an empty second
-  // row at `sm`; one figure decides both the template and the render.
-  it("declares no second row for a New deck with a logged game", () => {
+  // H6: last played at BOTH widths now, so it carries no `sm:` gate.
+  it("draws last played at every width", () => {
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
+        deck={deck({ statusPill: "Building", built: 87, lastPlayedAt: daysBefore(2) })} shopping={undefined} now={now} />,
+    );
+    const played = screen.getByText(formatWhen(daysBefore(2), now));
+    expect(played.className).not.toContain("hidden");
+  });
+
+  // A New deck CAN have a logged game (the Games panel offers the form on an empty deck), and its
+  // detail row carries `created today` alone.
+  it("draws no last played for a New deck with a logged game", () => {
     const { container } = render(
       <DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null}
         deck={deck({
@@ -648,9 +654,7 @@ describe("DeckCard — the footer's second row", () => {
         now={now}
       />,
     );
-    const footer = container.querySelector<HTMLElement>(".deck-card-footer")!;
-    expect(footer.className).toContain("[grid-template-areas:'chip_bar_count']");
-    expect(footer.className).not.toContain("played");
+    expect(container.querySelector("[data-deck-detail]")!.textContent).not.toContain(formatWhen(daysBefore(2), now));
   });
 });
 
@@ -701,5 +705,66 @@ describe("the tile's proxy line yields where the slot is deliberately empty", ()
       />,
     );
     expect(screen.queryByText(proxyCopy.deckCard.line(3))).toBeNull();
+  });
+});
+
+describe("DeckCard — the notice (deck notices HANDOFF §1a)", () => {
+  const card = (over: Partial<DeckListItem>) =>
+    render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck(over)} shopping={undefined} now={now} />);
+
+  it("draws no tag for a deck with no notice", () => {
+    const { container } = card({ notice: null });
+    expect(container.querySelector("[data-notice-tag]")).toBeNull();
+  });
+
+  it("condenses unread data to a dot and the count, after the chip, and names it in the link", () => {
+    const { container } = card({ bracket: { permits: [3], answered: null }, notice: { kind: "unread", count: 3 } });
+    const row = container.querySelector("[data-deck-chips]")!;
+    const tag = row.querySelector<HTMLElement>("[data-notice-tag='unread']")!;
+    expect(tag.textContent).toBe("3");
+    expect(tag.querySelector("[data-notice-dot]")).not.toBeNull();
+    expect(row.lastElementChild).toBe(tag);
+    expect(screen.getByRole("link", { name: /, bracket \w+, 3 notices since this deck was analyzed,/ })).toBeTruthy();
+  });
+
+  it("draws legality in the chip's slot with no chip, and keeps it without the dot once read", () => {
+    const { container, unmount } = card({ bracket: null, notice: { kind: "notLegalUnread", count: 2 } });
+    const tag = container.querySelector<HTMLElement>("[data-notice-tag='notLegalUnread']")!;
+    expect(tag.textContent).toBe("Not legal");
+    expect(tag.querySelector("[data-notice-dot]")).not.toBeNull();
+    expect(screen.getByRole("link", { name: /To buy, 2 cards not legal in this deck,/ })).toBeTruthy();
+    unmount();
+    const read = card({ bracket: null, notice: { kind: "notLegalRead", count: 2 } });
+    const quiet = read.container.querySelector<HTMLElement>("[data-notice-tag='notLegalRead']")!;
+    expect(quiet.textContent).toBe("Not legal");
+    expect(quiet.querySelector("[data-notice-dot]")).toBeNull();
+  });
+
+  // H5: the red is on the hairline and the dot, never the words.
+  it("inks Not legal's words in --fg and its edge in --danger", () => {
+    const { container } = card({ notice: { kind: "notLegalUnread", count: 1 } });
+    const tag = container.querySelector<HTMLElement>("[data-notice-tag]")!;
+    expect(tag.style.color).toBe("var(--fg)");
+    expect(tag.style.border).toContain("var(--danger) 70%");
+    expect(tag.style.background).toBe("color-mix(in oklab, var(--danger) 14%, var(--surface-inset))");
+  });
+
+  // The one yield: only a RANGE beside a notice draws its marks-only twin, by container width.
+  it("mounts the marks-only twin for a range beside a notice, and for nothing else", () => {
+    const faces = (c: HTMLElement) => c.querySelectorAll("[data-testid='bracket-chip']").length;
+    const range = card({ bracket: { permits: [1, 2], answered: null }, notice: { kind: "notLegalUnread", count: 1 } });
+    expect(faces(range.container)).toBe(2);
+    expect(range.container.innerHTML).toContain("@min-[330px]:@max-[408px]:hidden");
+    range.unmount();
+    const single = card({ bracket: { permits: [3], answered: null }, notice: { kind: "notLegalUnread", count: 1 } });
+    expect(faces(single.container)).toBe(1);
+    single.unmount();
+    const quiet = card({ bracket: { permits: [1, 2], answered: null }, notice: null });
+    expect(faces(quiet.container)).toBe(1);
+    quiet.unmount();
+    // A data tag reaches the yield in its own, narrower window (measured: 354.3px from `md`).
+    const data = card({ bracket: { permits: [1, 2], answered: null }, notice: { kind: "unread", count: 99 } });
+    expect(data.container.innerHTML).toContain("@min-[330px]:@max-[358px]:hidden");
+    expect(data.container.innerHTML).not.toContain("@max-[408px]");
   });
 });

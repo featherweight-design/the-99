@@ -1,0 +1,36 @@
+{
+  "feature": "Deck notices \u2014 the tile (PR 5)",
+  "note": "One route at both widths, photographed with the notice fixture standing: run `PROBE_KEEP=1 pnpm probe:notices-tile` first, which leaves a range deck holding a banned card, a single-mark deck with an unread data notice, and a deck with no reading holding a banned card. The next run of that probe puts all three back. The yield is visible at 390 (a 356px tile, inside the 330 to 408 band) and not at 1300 desktop's wider tiles; the probe asserts both by measurement, and this sheet is for the eye.",
+  "rows": [
+    {
+      "id": "decks-desktop",
+      "label": "/decks, desktop",
+      "view": "src/components/decks/deck-card.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "article",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "decks-phone",
+      "label": "/decks, 390px",
+      "view": "src/components/decks/deck-card.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "article",
+          "settle": 3000
+        }
+      ]
+    }
+  ]
+}

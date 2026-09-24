@@ -11,6 +11,7 @@ import { DEFAULT_DECK_SORT } from "../../lib/decks/sort";
 import { getCollectionStats } from "../../lib/home/summary";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { READY_COUNT } from "../../lib/recs/ready-to-build";
+import { noticesEnabled } from "../../lib/notices/flag";
 import { DecksView } from "../../components/decks/decks-view";
 
 export default async function DecksPage({
@@ -53,6 +54,8 @@ export default async function DecksPage({
       // copy the player owns rather than drawing another printing's.
       includeCommanderArt: true,
       includeBracket,
+      // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
+      includeNotice: includeBracket && noticesEnabled(),
     }),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.

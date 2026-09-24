@@ -14,6 +14,7 @@ import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 import { BracketChip } from "./bracket-chip";
+import { NoticeTag, noticeSpoken } from "./notice-tag";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -194,7 +195,9 @@ const DETAIL_COLOR: Record<DeckListItem["statusPill"], string> = {
   New: "var(--fg-faint)",
   Draft: "var(--fg-faint)",
   Building: "var(--fg-faint)",
-  Over: "var(--danger)",
+  // H5: red TEXT reads under 4.5:1 on the tile, so `Over`'s figure is quiet like the rest and
+  // the pill above it carries the red on its hairline and tint.
+  Over: "var(--fg-faint)",
   Unresolved: "var(--warning)",
   "To buy": "var(--fg-faint)",
   Complete: "var(--fg-faint)",
@@ -247,6 +250,21 @@ interface DeckCardProps {
  * set of nodes; two subtrees would read the label twice to a screen reader and
  * pass a property check on both columns while being wrong.
  */
+/**
+ * The yield's two halves, by the tile's container width (HANDOFF §1a, readiness F6). From the band
+ * floor (330) to the width that holds the widest pill, the widest range and `Not legal` on one
+ * line, the range draws marks only. The upper figure is MEASURED by `probe:notices-tile`, not
+ * derived: the handoff's 366 counted a 73px pill and a 168px range, and the widest shipped forms
+ * are `Unresolved` and `Exhibition or Core`, which need 404.5px from `md` (386.3 below it) beside
+ * `Not legal`, and 354.3 beside `● 99`. Each threshold leaves a few pixels for a platform's glyphs.
+ */
+const YIELD = {
+  notLegal: { faced: "@min-[330px]:@max-[408px]:hidden", marks: "hidden @min-[330px]:@max-[408px]:contents" },
+  // A range beside `● 99` needs 354.3px from `md`, so the data tag reaches the yield too, in a
+  // narrower window: the handoff's "only range + Not legal" holds only above it.
+  data: { faced: "@min-[330px]:@max-[358px]:hidden", marks: "hidden @min-[330px]:@max-[358px]:contents" },
+};
+
 export function DeckCard({
   deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus, closeAfterCreate,
 }: DeckCardProps) {
@@ -287,12 +305,18 @@ export function DeckCard({
   // commanders: the visible line shortens them to fit and the accessible name
   // never does — truncation is a layout compromise, not an information one.
   const identity = `${deck.partnerName === null ? commanderName : `${commanderName} and ${deck.partnerName}`}, ${colour}`;
-  const spokenStatus = deck.bracket
+  const withBracket = deck.bracket
     ? refreshCopy.decks.statusWithBracket(
         deck.statusPill,
         verdictHead(deck.bracket.permits, deck.bracket.answered).face,
       )
     : deck.statusPill;
+  // The notice rides after the chip in the name as it does on the row, since the row is hidden.
+  const notice = noticeSpoken(deck.notice ?? null);
+  const spokenStatus = notice ? `${withBracket}, ${notice}` : withBracket;
+  // The yield applies only to a RANGE beside a notice: a single mark's name fits beside any tag.
+  const yieldsFace = Boolean(deck.bracket && deck.notice && verdictHead(deck.bracket.permits, deck.bracket.answered).split);
+  const yieldClasses = YIELD[deck.notice?.kind === "unread" ? "data" : "notLegal"];
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
@@ -482,107 +506,93 @@ export function DeckCard({
           that sentence — `4 over` and `3 lines unresolved` are facts about the
           deck the reader opened the tile for. */}
       <div
-        // The second row exists only when something goes in it. Declared
-        // unconditionally it costs a blank strip plus the row gap on every
-        // Building tile, every Complete one and every To buy deck with no
-        // roll-up entry — which is most of them, and taller tiles for an empty
-        // area is the opposite of what this round is for.
-        // Presentation, for the same reason as the block above: the status, the
-        // count and the detail figure are all in the link's name. No focusable
-        // element lives in this row.
+        // THREE FIXED ROWS (deck notices HANDOFF §1a, r2): chips, bar, detail. The bar never
+        // changes length with the chips, and every tile on /decks is the same height: 248 band +
+        // 92 footer, 94 from `md` where the chips row is the chip's 24px (readiness F6). The detail
+        // row is ALWAYS drawn, empty when there is neither a figure nor a last-played date, so a
+        // tile with nothing to say ends level with one that has something.
+        // Presentation: the status, the count, the detail figure and the notice are all in the
+        // link's name. No focusable element lives here.
         aria-hidden="true"
-        // `flex-1` takes the slack a shorter tile would otherwise have left at
-        // the bottom of its grid row, and `content-start` keeps the rows at the
-        // top of it — the `items-center` beside it aligns a row's own cells, and
-        // stretching the tracks instead would float `[chip] [bar] [count]` into
-        // the middle of the empty space it was given.
-        className={`deck-card-footer grid flex-1 content-start items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] sm:gap-y-[9px] ${
-          detail === null && !hasLastPlayed
-            ? "[grid-template-areas:'chip_bar_count']"
-            : detail === null
-              ? "[grid-template-areas:'chip_bar_count'] sm:[grid-template-areas:'chip_bar_count''._._played']"
-              : hasLastPlayed
-                ? "[grid-template-areas:'chip_bar_count''detail_detail_detail'] sm:[grid-template-areas:'chip_bar_count''detail_._played']"
-                // No date to sit in the third column, so the figure takes the
-                // whole row at both widths. `auto 1fr auto` would otherwise put
-                // `3 to buy · $18.40` in the narrow first column and truncate it
-                // while the other two stood empty.
-                : "[grid-template-areas:'chip_bar_count''detail_detail_detail']"
-        }`}
-        // The bar's track has a 40px FLOOR. The chip cell wraps on a narrow tile, and a wrapping
-        // cell's max-content is both pills side by side, which an `auto` track takes whole when it
-        // can: the bar's `1fr` then resolved to 0px at 700 wide and the tile lost its progress.
-        style={{ gridTemplateColumns: "auto minmax(40px, 1fr) auto", borderTop: "1px solid var(--border)" }}
+        // `flex-1` takes the slack of a grid row, below the rows rather than between them.
+        className="deck-card-footer flex flex-1 flex-col gap-[9px] pt-[11px] pr-[13px] pb-[13px] pl-[13px]"
+        style={{ borderTop: "1px solid var(--border)" }}
       >
-        {/* In flow rather than pinned to art, so the box is a prop and the fill
-            and the label stay written once. */}
-        {/* The chip cell: the status, then the bracket when the deck has been read since its
-            last edit (Round 0: "immediately after StatusPillBadge", and absent when unread). One
-            flex group so the two share one line (the pill's 22px; 24px from `md` once a chip
-            is drawn, the handoff's chip height) and the bar's track starts after both. It WRAPS, and keeps its min-content: from 640px up a tile is ~189px, which
-            cannot hold the pill, a range chip, the bar and the count on one line, and a cell
-            allowed to shrink below its pills paints them over the bar. Wrapped, the chip takes
-            a second line inside the cell instead. */}
-        <span className="[grid-area:chip] flex flex-wrap items-center gap-x-[8px] gap-y-[6px]">
+        {/* The chips row: status, bracket, notice. It NEVER WRAPS from the 330px band floor up,
+            and below it keeps today's wrap (readiness F5): the narrow three-up the grid mis-sizes
+            cannot hold the pill and a single chip on one line, notice or none. */}
+        <span
+          data-deck-chips
+          className="flex h-[22px] flex-none flex-nowrap items-center gap-[8px] md:h-[24px] @max-[330px]:h-auto @max-[330px]:flex-wrap @max-[330px]:gap-y-[6px]"
+        >
           <StatusPillBadge
             status={deck.statusPill}
-            className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
+            className="flex h-[22px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em] md:h-[24px]"
           />
           {deck.bracket ? (
-            <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} />
+            yieldsFace ? (
+              // THE ONE YIELD (HANDOFF §1a): a range beside a notice drops its name below the width
+              // that holds all three, and keeps its plate and both marks. Both drawn, one shown, by
+              // the tile's own container: a prop cannot answer a width. Below the band floor the
+              // row wraps instead, so the name comes back there.
+              <>
+                <span className={`contents ${yieldClasses.faced}`}>
+                  <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} />
+                </span>
+                <span className={`contents ${yieldClasses.marks}`}>
+                  <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} face={false} />
+                </span>
+              </>
+            ) : (
+              <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} />
+            )
           ) : null}
+          {deck.notice ? <NoticeTag notice={deck.notice} /> : null}
         </span>
 
-        {detail !== null && (
-          <span
-            className="truncate font-mono text-[11px] sm:text-[10.5px]"
-            style={{ gridArea: "detail", color: detail.color }}
+        {/* 3 · Progress, then the count in a fixed slot sized for `100 / 99` at 12.5px (readiness
+            F7), so an Over deck's count never clips and the bar is one length on every tile. The
+            track is drawn for every status; the fill is omitted when nothing is built. */}
+        <span className="flex h-[14px] flex-none items-center gap-[10px]">
+          <div
+            data-deck-bar
+            className="relative h-[3px] min-w-0 flex-1 rounded-full"
+            style={{ background: "var(--border)" }}
           >
-            {detail.text}
+            {/* `built`, not the status: an empty track is what nothing built looks like, and
+                since R6 a `Draft` can be 47 cards along. */}
+            {deck.built > 0 && (
+              <div
+                data-deck-bar-fill
+                className="absolute top-0 bottom-0 left-0 rounded-full"
+                style={statusBarStyle(deck.statusPill, deck.built, bodySize)}
+              />
+            )}
+          </div>
+          <span
+            data-deck-count
+            className="w-[60px] flex-none text-right font-mono text-[12.5px] tabular-nums sm:text-[12px]"
+            style={{ color: deck.built === 0 ? "var(--fg-muted)" : "var(--fg)" }}
+          >
+            {count}
           </span>
-        )}
-
-        <span
-          className="text-right font-mono text-[12.5px] tabular-nums sm:text-[12px]"
-          style={{
-            gridArea: "count",
-            color: deck.built === 0 ? "var(--fg-muted)" : "var(--fg)",
-          }}
-        >
-          {count}
         </span>
 
-        {/* 3 · Progress. The track is drawn for every status; the fill is
-            omitted entirely for Draft, which is what "empty track" means. */}
-        <div
-          data-deck-bar
-          className="relative h-[3px] rounded-full"
-          style={{ gridArea: "bar", background: "var(--border)" }}
-        >
-          {/* `built`, not the status: an empty track is what nothing built
-              looks like, and since R6 a `Draft` can be 47 cards along. Reading
-              the count says what the old `!== "Draft"` meant and keeps saying
-              it whatever the vocabulary does next. */}
-          {deck.built > 0 && (
-            <div
-              data-deck-bar-fill
-              className="absolute top-0 bottom-0 left-0 rounded-full"
-              style={statusBarStyle(deck.statusPill, deck.built, bodySize)}
-            />
+        {/* 4 · The detail figure left, truncating, and last played right, at BOTH widths (H6).
+            A `New` tile has no last played: its row carries `created today` alone. */}
+        <span data-deck-detail className="flex h-[14px] flex-none items-center gap-[10px] font-mono">
+          <span
+            className="min-w-0 flex-1 truncate text-[11px] sm:text-[10.5px]"
+            style={detail ? { color: detail.color } : undefined}
+          >
+            {detail?.text}
+          </span>
+          {hasLastPlayed && (
+            <span className="flex-none text-right text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+              {lastPlayed}
+            </span>
           )}
-        </div>
-
-        {/* 4 · Last played, desktop only. A Draft tile has none: its detail row
-            carries `created today` alone. Nor does a deck that has never been
-            played — that clause is cut. */}
-        {hasLastPlayed && (
-          <span
-            className="hidden text-right font-mono text-[10.5px] sm:inline"
-            style={{ gridArea: "played", color: "var(--fg-faint)" }}
-          >
-            {lastPlayed}
-          </span>
-        )}
+        </span>
       </div>
 
       {/* The whole tile is the target. Last in the DOM so it overlays the body,
