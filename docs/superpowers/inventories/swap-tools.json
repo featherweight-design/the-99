@@ -1,15 +1,26 @@
 {
-  "feature": "Swap tools (sub-project 4), PR 3: the Shopping limit line and the over-limit marks",
-  "note": "Needs a server with SWAP_TOOLS_ENABLED=true. SHOP_DECK is a deck the signed-in account owns whose Shopping list holds cards above and below $10 at the newest price run, with no limit set; SET_DECK is the same with shopping_limit_cents = 2500. Shopping is client state: every row reaches it by a PRESS.",
+  "feature": "Swap tools (sub-project 4): the Shopping limit line, the over-limit marks, and the stand-ins sheet",
+  "note": "Needs a server with SWAP_TOOLS_ENABLED=true. SHOP_DECK is a deck the signed-in account owns whose Shopping list holds cards above and below $10 at the newest price run, with no limit set; SET_DECK is the same with shopping_limit_cents = 2500. Shopping is client state: every row reaches it by a PRESS. SHEET_DECK is a deck whose Shopping list holds an over-limit dual land (Plateau), fetch (Wooded Foothills) and removal spell (Deadly Rollick), led by a five-color commander; probe:swap-sheet builds exactly that and deletes it, so build one by hand for the sheet.",
   "rows": [
     {
       "id": "limit-default",
       "label": "/decks/[id] Shopping: the limit line at the $10 default, and the over rows' ring and `over $10`",
       "view": "src/components/decks/stand-in-limit.tsx",
       "steps": [
-        { "goto": "/decks/${SHOP_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Shopping \\d+", "settle": 600 },
-        { "wait": "[data-testid='stand-in-limit']", "settle": 600 }
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='stand-in-limit']",
+          "settle": 600
+        }
       ]
     },
     {
@@ -17,9 +28,21 @@
       "label": "/decks/[id] Shopping: the limit being edited, the $ field with Save and cancel",
       "view": "src/components/decks/stand-in-limit.tsx",
       "steps": [
-        { "goto": "/decks/${SHOP_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Shopping \\d+", "settle": 600 },
-        { "clickRole": "button", "name": "^Change the limit", "settle": 500 }
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Change the limit",
+          "settle": 500
+        }
       ]
     },
     {
@@ -27,9 +50,98 @@
       "label": "/decks/[id] Shopping: a set limit of $25, `reset to $10` in the chip's place, fewer rows marked",
       "view": "src/components/decks/stand-in-limit.tsx",
       "steps": [
-        { "goto": "/decks/${SET_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "button", "name": "^Shopping \\d+", "settle": 600 },
-        { "wait": "[data-testid='stand-in-limit']", "settle": 600 }
+        {
+          "goto": "/decks/${SET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='stand-in-limit']",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "sheet-land",
+      "label": "/decks/[id] Shopping: the ⇄ on Plateau, the stand-ins sheet for a land, 640 on desktop, a sheet from 52px on the phone",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Plateau,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-fetch",
+      "label": "/decks/[id] Shopping: the ⇄ on Wooded Foothills, the stand-ins sheet for a fetch, 640 on desktop, a sheet from 52px on the phone",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Wooded Foothills,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-spell",
+      "label": "/decks/[id] Shopping: the ⇄ on Deadly Rollick, the stand-ins sheet for a spell, 640 on desktop, a sheet from 52px on the phone",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Deadly Rollick,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
       ]
     }
   ]
