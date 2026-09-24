@@ -1,11 +1,11 @@
 /**
- * `pnpm eval:blind --feature tuning|synopsis --round <n> --title <shown title>
+ * `pnpm eval:blind --feature tuning --round <n> --title <shown title>
  *   --base <runId>:<cell>:<variant> --candidate <runId>:<cell>:<variant>`
  *
  * Builds the pairs for Hugh's blind read from rows already on disk. It sends nothing and reads no
  * database. It writes two files under `docs/superpowers/eval/blind/`:
  *  - `<feature>-<round>-pairs.json`, the documents seeded into the page's `pairs` collection. Each holds a
- *    deck's name, its commander and the two answers, as `left` and `right`, with no cell, model or
+ *    deck's name, its commander, its decklist and the two answers, as `left` and `right`, with no cell, model or
  *    cost anywhere in it;
  *  - `<feature>-<round>-key.json`, which side is which. It never goes to the page. It un-blinds the answers
  *    once Hugh has read every deck.
@@ -30,6 +30,9 @@ const { values: args } = parseArgs({
   },
 });
 if (!args.base || !args.candidate || !args.title) throw new Error("eval:blind needs --base and --candidate as <runId>:<cell>:<variant>, and --title");
+// The overview's read was ruled an ABSOLUTE read of one setup under the contract Hugh picks, not a
+// pair against S, so it is built for that contract once it is picked rather than from these rows.
+if (args.feature !== "tuning") throw new Error("eval:blind builds tuning pairs only; the overview read is built once its contract is picked");
 /** A round is one candidate against the base. Rounds are shuffled independently of each other. */
 const roundId = `${args.feature}-${args.round}`;
 const roundSeed = SPLIT_SEED + 1000 * Number(args.round);
@@ -37,8 +40,7 @@ const roundSeed = SPLIT_SEED + 1000 * Number(args.round);
 const ROOT = new URL("../../docs/superpowers/eval/", import.meta.url);
 
 type Tuning = { suggestions: { add: string; cut: string; rationale: string; evidence: { kind: string; value: string }[] }[] };
-type Overview = { overview: string; primer: { strategy: string[]; mulligan: { keep: string[]; sendBack: string[] }; tips: { text: string }[] }; keyCards: { card: string; job: string }[]; weaknesses: string[] };
-type Row = { deckId: string; cell: string; variant: string; trial: number; outcome: string; keptPositions?: number[]; verdicts?: { section: string; status: string }[]; reply: Tuning | Overview | null };
+type Row = { deckId: string; cell: string; variant: string; trial: number; outcome: string; keptPositions?: number[]; reply: Tuning | null };
 type Meta = { split: { heldOut: string[] }; decks: { deckId: string; name: string }[] };
 
 function load(spec: string) {
@@ -47,7 +49,7 @@ function load(spec: string) {
   const rows = readFileSync(new URL("rows.jsonl", dir), "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row)
     .filter((r) => r.cell === cell && r.variant === variant && r.trial === 0);
   const meta = JSON.parse(readFileSync(new URL("meta.json", dir), "utf8")) as Meta;
-  const prepared = JSON.parse(readFileSync(new URL("prepared.json", dir), "utf8")) as { deckId: string; pack?: { commanders: { name: string }[] }; facts?: { commanders: string[] } }[];
+  const prepared = JSON.parse(readFileSync(new URL("prepared.json", dir), "utf8")) as { deckId: string; pack: { commanders: { name: string }[]; cards: { name: string; quantity: number }[] } }[];
   return { spec, rows: new Map(rows.map((r) => [r.deckId, r])), meta, prepared: new Map(prepared.map((p) => [p.deckId, p])) };
 }
 
@@ -64,30 +66,6 @@ function tuningAnswer(r: Row | undefined) {
   };
 }
 
-/**
- * The overview as the modal shows it: every passing section in full, and a refused section as the
- * refused slot. The primer's four parts share its one verdict.
- */
-function overviewAnswer(r: Row | undefined) {
-  if (!r) throw new Error("a held-out deck has no row in one of the runs; the pair set would compare an absence");
-  if (!r.reply || !r.verdicts) return { status: "failed" };
-  const o = r.reply as Overview;
-  const ok = (sec: string) => r.verdicts!.some((v) => v.section === sec && v.status === "ok");
-  const section = (title: string, sec: string, body: { paragraph?: string; items?: string[] }) => (ok(sec) ? { title, ...body } : { title, refused: true });
-  return {
-    status: "sections",
-    sections: [
-      section("Overview", "overview", { paragraph: o.overview }),
-      section("How it plays", "primer", { items: o.primer.strategy }),
-      section("Keep", "primer", { items: o.primer.mulligan.keep }),
-      section("Send back", "primer", { items: o.primer.mulligan.sendBack }),
-      section("Tips", "primer", { items: o.primer.tips.map((t) => t.text) }),
-      section("Key cards", "keyCards", { items: o.keyCards.map((k) => `${k.card}: ${k.job}`) }),
-      section("Weaknesses", "weaknesses", { items: o.weaknesses }),
-    ],
-  };
-}
-const answerOf = args.feature === "tuning" ? tuningAnswer : overviewAnswer;
 
 const base = load(args.base);
 const candidate = load(args.candidate);
@@ -99,8 +77,8 @@ const key: Record<string, { left: string; right: string }> = {};
 heldOut.forEach((deckId, order) => {
   const id = `${roundId}-${String(order + 1).padStart(2, "0")}`;
   const flip = seededShuffle([0, 1], roundSeed + order)[0] === 1;
-  const b = answerOf(base.rows.get(deckId));
-  const c = answerOf(candidate.rows.get(deckId));
+  const b = tuningAnswer(base.rows.get(deckId));
+  const c = tuningAnswer(candidate.rows.get(deckId));
   const prepared = base.prepared.get(deckId) ?? candidate.prepared.get(deckId);
   pairs.push({
     id,
@@ -110,7 +88,9 @@ heldOut.forEach((deckId, order) => {
       roundTitle: args.title,
       order: order + 1,
       deckName: base.meta.decks.find((d) => d.deckId === deckId)?.name ?? "Untitled deck",
-      commander: prepared?.pack?.commanders.map((x) => x.name).join(" and ") ?? prepared?.facts?.commanders.join(" and ") ?? "",
+      commander: prepared?.pack.commanders.map((x) => x.name).join(" and ") ?? "",
+      // The deck as the model saw it, so a suggestion can be judged against it (plan: one click away).
+      decklist: (prepared?.pack.cards ?? []).map((c) => ({ name: c.name, quantity: c.quantity })).sort((x, y) => x.name.localeCompare(y.name)),
       left: flip ? c : b,
       right: flip ? b : c,
     },

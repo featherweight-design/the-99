@@ -65,7 +65,12 @@ export async function sendBatch(requests: Sent[], log: (line: string) => void): 
     try {
       b = await api.retrieve(batch.id);
     } catch (err) {
-      log(`batch ${batch.id}: status check failed (${err instanceof Error ? err.message : String(err)}); retrying`);
+      // A transient failure (a lost connection, a timeout, a 429 or 5xx) is retried on the next
+      // tick. Anything else, such as a revoked key or a batch that does not exist, never recovers,
+      // so it ends the run with the batch id in the log and its worst case still held in the ledger.
+      const transient = retryable(err) || err instanceof Anthropic.APIConnectionTimeoutError;
+      log(`batch ${batch.id}: status check failed (${err instanceof Error ? err.message : String(err)})${transient ? "; retrying" : ""}`);
+      if (!transient) throw err;
       continue;
     }
     status = b.processing_status;
@@ -77,7 +82,10 @@ export async function sendBatch(requests: Sent[], log: (line: string) => void): 
   for await (const entry of await api.results(batch.id)) {
     if (entry.result.type === "succeeded") results.push({ customId: entry.custom_id, ok: true, message: entry.result.message });
     else if (entry.result.type === "errored") {
-      const type = entry.result.error.error.type;
+      // `ErrorResponse` nests the object (`{ type: "error", error: { type } }`); read the outer
+      // type too, so an unexpected shape is classed rather than thrown mid-collection.
+      const e = entry.result.error as { type?: string; error?: { type?: string } };
+      const type = e.error?.type ?? e.type ?? "unknown";
       results.push({ customId: entry.custom_id, ok: false, reason: `batch errored: ${type}`, retry: RETRYABLE_ERROR_TYPES.has(type) });
     } else results.push({ customId: entry.custom_id, ok: false, reason: `batch ${entry.result.type}`, retry: true });
   }
