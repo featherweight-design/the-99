@@ -6,6 +6,8 @@
  * The component draws this and decides nothing. Copy is keyed here and never composed in JSX.
  */
 import { swapToolsCopy } from "../copy/swap-tools";
+import { isLandFace } from "../cards/facet";
+import { shortName } from "../cards/short-name";
 import { formatCents } from "../decks/price";
 import type { StandInsRead } from "./gather";
 import { drawbacks, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
@@ -26,7 +28,9 @@ export function listWords(words: readonly string[], joiner: "and" | "or"): strin
 }
 
 const colorsText = (colors: readonly Color[]) => listWords(colors.map((c) => COLOR_WORD[c]), "and");
-const typesText = (types: readonly BasicType[]) => listWords(types.map((t) => TYPE_WORD[t]), "or");
+/** `Mountain or Forest` in the job line's `finds a {types} card`; the lead repeats the article: `a Mountain or a Forest`. */
+const typesText = (types: readonly BasicType[], each = false) =>
+  listWords(types.map((t, i) => (each && i > 0 ? `a ${TYPE_WORD[t]}` : TYPE_WORD[t])), "or");
 const rolesText = (roles: readonly SpellRole[]) => listWords(roles, "and");
 
 export function drawbackText(d: Drawback, colors: readonly Color[]): string {
@@ -77,23 +81,29 @@ function row(s: StandIn, facts: string[]): SheetRow {
 
 export function sheetModel(read: StandInsRead): SheetModel {
   const { job, original } = read;
-  const commander = read.commanders.join(" + ");
+  const commander = read.commanders.map(shortName).join(" + ");
   const soldOut = read.originalCents === null;
   const price = read.originalCents === null ? "" : formatCents(read.originalCents);
 
   if (job.kind === "none") {
-    const land = /\bLand\b/.test(original.typeLine);
+    // The front face decides, as `jobOf` does: a spell with a land back face is a spell here.
+    const land = isLandFace(original.typeLine);
     return {
       job: copy.jobNoRole, lead: null, groups: [], foot: false,
       sentence: land ? copy.noRoleLand(original.name) : copy.noRole(original.name),
     };
   }
 
-  const own = job.kind === "spell" ? [] : drawbacks(original);
+  // `finds only a basic` leads: it is what a fetch IS, and its costs follow.
+  const firstBasicOnly = (list: Drawback[]) =>
+    [...list].sort((a, b) => Number(b.kind === "basicOnly") - Number(a.kind === "basicOnly"));
+  const own = job.kind === "spell" ? [] : firstBasicOnly(drawbacks(original));
   const landColors: Color[] = job.kind === "land" ? job.colors : job.kind === "fetch" ? job.types.map((t) => TYPE_COLOR[t]) : [];
 
   const jobLine =
-    job.kind === "land" ? [copy.jobColors(colorsText(job.colors)), ...own.map((d) => drawbackText(d, job.colors))].join(" · ")
+    // A land's own line says what it costs, or that it costs nothing (the handoff's Plateau).
+    job.kind === "land"
+      ? [copy.jobColors(colorsText(job.colors)), ...(own.length ? own.map((d) => drawbackText(d, job.colors)) : [copy.givesUpNothing])].join(" · ")
     : job.kind === "fetch" ? [copy.jobFinds(typesText(job.types)), ...own.map((d) => drawbackText(d, landColors))].join(" · ")
     : copy.jobRole(rolesText(job.roles), job.mv);
 
@@ -103,7 +113,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
       if (s.inclusion !== null) out.push(copy.figure(String(Math.round(s.inclusion)), commander));
       return out;
     }
-    const clauses = [...s.drawbacks.map((d) => drawbackText(d, landColors)), ...s.givesUp.map(givenUpText)];
+    const clauses = [...firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors)), ...s.givesUp.map(givenUpText)];
     // H3: `gives up nothing` only when it is true, which is when nothing above was said.
     return clauses.length ? clauses : [copy.givesUpNothing];
   };
@@ -131,7 +141,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
   const lead =
     soldOut ? copy.leadSoldOut
     : job.kind === "land" ? copy.leadLands(colorsText(job.colors))
-    : job.kind === "fetch" ? copy.leadFetch(typesText(job.types))
+    : job.kind === "fetch" ? copy.leadFetch(typesText(job.types, true))
     // F14: nothing listed for this commander or pair, so the order clause has nothing to name.
     : read.byCommander.length === 0 ? copy.leadSpellsUnlisted(rolesText(job.roles), job.mv)
     : copy.leadSpells(rolesText(job.roles), job.mv, commander);

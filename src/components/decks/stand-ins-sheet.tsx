@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
+import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { provenanceForm, type PriceFact } from "../../lib/decks/price";
@@ -70,7 +71,10 @@ function StandInRow({ row, newestAsOf }: { row: SheetRow; newestAsOf: Date | nul
           </span>
           {/* A free copy a draft holds: the shipped marker, read as `soft` (free, owned, held). */}
           {row.free && row.soft > 0 ? (
-            <AvailabilityMarker availability={{ owned: 1, hard: 0, soft: row.soft, free: 1, claims: [] }} seam="var(--surface-raised)" />
+            // The row sets no meta type for the marker to inherit, so it is given its own: mono 10.5.
+            <span className="flex-none font-mono text-[10.5px]">
+              <AvailabilityMarker availability={{ owned: 1, hard: 0, soft: row.soft, free: 1, claims: [] }} seam="var(--surface-raised)" />
+            </span>
           ) : null}
         </div>
         <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
@@ -125,6 +129,7 @@ export function StandInsSheet({
   const model = load.state === "ready" ? sheetModel(load.read) : null;
   const over = isOverLimit(card.price, newestAsOf, tools.limitCents);
   const status = loadingStatus(card.role);
+  const name = printedFaceName(card);
   const provenance = newestAsOf ? provenanceForm(newestAsOf, new Date()) : null;
 
   return (
@@ -138,10 +143,10 @@ export function StandInsSheet({
             {copy.replacing(tools.deckName)}
           </span>
           <div className="flex flex-wrap items-center gap-x-[9px] gap-y-[6px]">
-            <Thumb imageUri={load.state === "ready" ? load.read.original.imageUri : null} border="var(--border-strong)" />
+            <Thumb imageUri={card.imageUri ?? (load.state === "ready" ? load.read.original.imageUri : null)} border="var(--border-strong)" />
             <span aria-hidden="true" className="flex-none w-[7px] h-[7px] rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
             <span className="text-[14px] font-semibold" style={{ color: "var(--fg)", borderBottom: "1px dotted var(--accent)" }}>
-              {card.name}
+              {name}
             </span>
             <BuyTag variant="row" price={card.price ?? null} newestAsOf={newestAsOf} />
             {over ? (
@@ -188,7 +193,7 @@ export function StandInsSheet({
               {copy.failed.body}
             </p>
             <p className="m-0 mt-[8px] max-w-[420px] text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
-              {copy.failed.kept(card.name)}
+              {copy.failed.kept(name)}
             </p>
             <button
               type="button"

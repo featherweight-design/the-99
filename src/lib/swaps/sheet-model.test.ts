@@ -40,9 +40,9 @@ describe("the stand-ins sheet's model", () => {
     expect(m.foot).toBe(true);
   });
 
-  it("names a pair as A + B, and drops the order clause when nothing is listed for it (F14)", () => {
-    const m = sheetModel(read({ commanders: ["Tymna", "Thrasios"], unlisted: [standIn("Chaos Warp")] }));
-    expect(m.groups.map((g) => g.heading)).toEqual([copy.groupUnlisted("Tymna + Thrasios")]);
+  it("names a pair as A + B by short name, and drops the order clause when nothing is listed for it (F14)", () => {
+    const m = sheetModel(read({ commanders: ["Tymna the Weaver", "Thrasios, Triton Hero"], unlisted: [standIn("Chaos Warp")] }));
+    expect(m.groups.map((g) => g.heading)).toEqual([copy.groupUnlisted("Tymna the Weaver + Thrasios")]);
     expect(m.lead).toBe(copy.leadSpellsUnlisted("removal", 2));
   });
 
@@ -57,7 +57,7 @@ describe("the stand-ins sheet's model", () => {
         standIn("Clifftop Retreat"),
       ],
     }));
-    expect(m.job).toBe(copy.jobColors("white and red"));
+    expect(m.job).toBe(`${copy.jobColors("white and red")} · ${copy.givesUpNothing}`);
     expect(m.lead).toBe(copy.leadLands("white and red"));
     expect(m.groups.map((g) => g.heading)).toEqual([copy.groupCheapest]);
     const facts = m.groups[0].rows.map((r) => r.facts);
@@ -72,10 +72,11 @@ describe("the stand-ins sheet's model", () => {
     const m = sheetModel(read({
       job: { kind: "fetch", types: ["mountain", "forest"], basicOnly: false },
       original: card("Wooded Foothills", "Land", "{T}, Pay 1 life, Sacrifice Wooded Foothills: Search your library for a Mountain or Forest card"),
-      cheapest: [standIn("Evolving Wilds", { drawbacks: [{ kind: "basicOnly" }, { kind: "entersTapped" }] })],
+      // In the engine's own order, costs first: the model puts `finds only a basic` ahead of them.
+      cheapest: [standIn("Evolving Wilds", { drawbacks: [{ kind: "entersTapped" }, { kind: "basicOnly" }] })],
     }));
     expect(m.job.startsWith(copy.jobFinds("Mountain or Forest"))).toBe(true);
-    expect(m.lead).toBe(copy.leadFetch("Mountain or Forest"));
+    expect(m.lead).toBe(copy.leadFetch("Mountain or a Forest"));
     expect(m.groups[0].rows[0].facts).toEqual([copy.drawback.basicOnly, copy.drawback.entersTapped]);
   });
 
@@ -84,6 +85,9 @@ describe("the stand-ins sheet's model", () => {
       .toBe(copy.noRole("Smothering Tithe"));
     const land = sheetModel(read({ job: { kind: "none" }, original: card("Strip Mine", "Land") }));
     expect(land.sentence).toBe(copy.noRoleLand("Strip Mine"));
+    // The front face decides: a spell whose back face is a land is a spell.
+    const mdfc = sheetModel(read({ job: { kind: "none" }, original: card("Some Spell // Some Land", "Sorcery // Land") }));
+    expect(mdfc.sentence).toBe(copy.noRole("Some Spell // Some Land"));
     expect(land).toMatchObject({ lead: null, groups: [], foot: false, job: copy.jobNoRole });
   });
 
