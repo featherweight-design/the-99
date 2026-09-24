@@ -1,4 +1,7 @@
-import { render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
@@ -6,6 +9,9 @@ import type { ComboRef, FlagSource } from "../../lib/profile/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { BracketClimb, NEIGHBOUR_OPACITY, YOURS_TINT } from "./bracket-climb";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
+import { contrast, mixOklab } from "../../lib/theme/color";
+import { parseThemeBlocks } from "../../lib/theme/parse-css";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 
 /**
  * Every case is a REAL profile through the REAL verdict. The climb's three rungs are a function
@@ -218,11 +224,11 @@ describe("the marks", () => {
 
 // "The climb states, the findings open." The ONE control is Round 4's: the lower rung's
 // `what would have to go →`, which opens the upgrade path as a sheet (3b).
-it("has nothing to press but the path's own opener", () => {
+it("has nothing to press but the path's own opener and the reference sheet's link", () => {
   draw("3");
   const buttons = screen.queryAllByRole("button");
-  expect(buttons).toHaveLength(1);
-  expect(buttons[0].getAttribute("aria-haspopup")).toBe("dialog");
+  expect(buttons.map((b) => b.dataset.testid ?? "path")).toEqual(["path", "see-all-brackets"]);
+  expect(buttons.every((b) => b.getAttribute("aria-haspopup") === "dialog")).toBe(true);
   expect(screen.queryAllByRole("link")).toHaveLength(0);
 });
 
@@ -246,5 +252,58 @@ describe("what the theme contract measures is what the rung draws", () => {
     for (const mark of marks) {
       expect((mark.parentElement as HTMLElement).style.opacity).toBe(String(NEIGHBOUR_OPACITY));
     }
+  });
+});
+
+// Addendum R2 (2a): the yours rung's TEXT reads in `--fg`; its ink stays on the mark, border and
+// tint. The rank's ink as text on its own tinted rung read 3.90 on Exhibition in kaldheim.
+
+describe("the yours rung's text", () => {
+  it("draws in --fg, never the rank's ink", () => {
+    draw("3");
+    const yours = rungs().find((r) => r.dataset.role === "yours")!;
+    const name = within(yours).getByText("Upgraded");
+    expect(name.className).toContain("text-[color:var(--fg)]");
+    expect(name.getAttribute("style")).toBeNull();
+    // The role label ("where your cards are") too: its colour is set inline, so read it there.
+    const role = within(yours).getByText(copy.roleHere).parentElement!;
+    expect(role.style.color).toBe("var(--fg)");
+    for (const f of within(yours).getAllByTestId("climb-figure")) {
+      for (const span of f.querySelectorAll("span.font-mono")) expect(span.getAttribute("style")).toBeNull();
+    }
+  });
+
+  it("clears 4.5:1 on its own tinted rung in every theme, at every rank", () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "globals.css"), "utf8");
+    const failures: string[] = [];
+    let floor = Infinity;
+    for (const [theme, tokens] of parseThemeBlocks(css)) {
+      for (const rank of [1, 2, 3, 4, 5]) {
+        const ground = mixOklab(tokens.get(`bracket-${rank}`)!, tokens.get("surface")!, YOURS_TINT);
+        const ratio = contrast(tokens.get("fg")!, ground);
+        floor = Math.min(floor, ratio);
+        if (ratio < 4.5) failures.push(`${theme} bracket-${rank} ${ratio.toFixed(2)}`);
+      }
+    }
+    expect(failures).toEqual([]);
+    expect(floor).toBeGreaterThan(7.5);
+  });
+});
+
+describe("see all brackets", () => {
+  it("opens the reference sheet from the climb's foot, and closes back to the link", () => {
+    const profile = SHAPES["3"]();
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <BracketClimb verdict={slotDeck(profile)} profile={profile} />
+      </CardDetailProvider>,
+    );
+    const link = screen.getByTestId("see-all-brackets");
+    expect(link.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(link.textContent).toContain("see all brackets");
+    fireEvent.click(link);
+    expect(screen.getByRole("dialog", { name: "All brackets" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close all brackets" }));
+    expect(screen.queryByRole("dialog", { name: "All brackets" })).toBeNull();
   });
 });

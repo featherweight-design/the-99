@@ -19,6 +19,25 @@ export const BRACKET_RULES_SOURCE = {
   lastChecked: "2026-09-22",
 } as const;
 
+/**
+ * The two posts the all-brackets sheet QUOTES (addendum R2, audit finding 3). The February 2026
+ * update above is the rules' current text and does not carry these lines as text; each quote on
+ * the sheet names the post it came from, and they are these.
+ */
+export const BRACKETS_INTRO_SOURCE = {
+  name: "Wizards of the Coast",
+  title: "Introducing Commander Brackets Beta",
+  url: "https://magic.wizards.com/en/news/announcements/introducing-commander-brackets-beta",
+  published: "2025-02-11",
+} as const;
+
+export const BRACKETS_OCT25_SOURCE = {
+  name: "Wizards of the Coast",
+  title: "Commander Brackets Beta Update \u2013 October 21, 2025",
+  url: "https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-october-21-2025",
+  published: "2025-10-21",
+} as const;
+
 /** The combo index. Linked from each combo's own receipt and from the provenance row. */
 export const SPELLBOOK_SOURCE = {
   name: "Commander Spellbook",

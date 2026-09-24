@@ -564,6 +564,60 @@ export const deckAnalysisCopy = {
       "If someone at the table disagrees with your bracket, the argument is usually about one " +
       "of these four. Knowing which one we are least sure of is how you settle it.",
   },
+
+  /**
+   * The all-brackets reference sheet (addendum-brackets-sheet, R3, audited Green in #924). What
+   * each bracket allows, our reading of each rule, and ONE quoted Wizards line under it. The
+   * cells carry no copy of their own: a count is the bare figure read off the limit constants in
+   * `src/lib/bracket/rules.ts`, and a missing limit reads `climb.noCap`. It marks no reader's bracket (R2-A, confirmed by Hugh).
+   *
+   * THE QUOTES ARE VERBATIM and each names the post that carries it (`sources.ts`). Never edit
+   * the text; re-quote from the post. Two begin mid-sentence and open with an ellipsis, never a
+   * capital (R2-B; the-99-d9's ruling, 2026-09-24).
+   */
+  bracketsSheet: {
+    open: "see all brackets",
+    title: "All brackets",
+    close: "Close all brackets",
+    lead: "What each bracket allows in a deck, then how we read each rule, with one line of Wizards' own under it.",
+    corner: "cards allowed",
+    readings: {
+      gameChangers: "Counted card by card against Wizards' published Game Changer list.",
+      massLandDenial: null,
+      extraTurns:
+        "At Core and Upgraded the rule is about chaining extra turns, and a decklist cannot show that. We count " +
+        "them and give no verdict. Only a two-card combo that loops turns puts a deck past Upgraded.",
+      twoCardCombos:
+        "Upgraded allows them late in a game. A list cannot show when a combo lands, so we ask whether this deck " +
+        "can find both halves rather than draw into them. If it can, that is Optimized.",
+    },
+    quotes: {
+      gameChangers: { text: "Up to three cards from the Game Changers list.", source: "intro" },
+      massLandDenial: { text: "\u2026you should not expect to see these cards anywhere in Brackets 1\u20133.", source: "intro" },
+      extraTurns: {
+        text: "Extra-turn cards should only appear in low quantities and are not intended to be chained in succession or looped.",
+        source: "intro",
+      },
+      twoCardCombos: { text: "No intentional early-game two-card infinite combos.", source: "intro" },
+      tutors: { text: "\u2026remove the tutor restrictions from Commander Brackets entirely.", source: "oct25" },
+      high: { text: "There are no restrictions (other than the banned list).", source: "intro" },
+    },
+    quoteTag: { intro: "Wizards \u00b7 Feb 2025", oct25: "Wizards \u00b7 Oct 2025" },
+    quotedFrom: "Quoted from",
+    sourceMonth: { intro: "Feb 2025", oct25: "Oct 2025" },
+    tutors: {
+      label: "Tutors",
+      reading:
+        "Wizards removed the tutor limit in October 2025, finding that tutors are not all alike. We count them in " +
+        "the findings. They move no bracket as tutors: a tutor on the Game Changer list counts there, and " +
+        "otherwise they only tell us whether a combo can be found rather than drawn.",
+    },
+    high: {
+      name: "Optimized and cEDH",
+      reading:
+        "No card limits on any of the four. Only the banned list applies, and which of the two a deck is, is how you play it.",
+    },
+  },
 } as const;
 
 /**

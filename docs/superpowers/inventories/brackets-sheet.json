@@ -1,0 +1,42 @@
+{
+  "feature": "All brackets: the reference sheet (Analysis tab addendum R3), opened from the climb's foot",
+  "note": "Needs a server with ANALYSIS_TAB_ENABLED=true, and ANALYSIS_DECK set to a deck the signed-in account owns that ALREADY holds a stored reading (on local-dev, d0000000-0000-4000-8000-00000000cafe does). Reached by pressing the Analysis tab and then the link.",
+  "rows": [
+    {
+      "id": "brackets-link",
+      "label": "/decks/[id] Analysis: the climb's foot with `see all brackets →` under the rungs box",
+      "view": "src/components/decks/bracket-climb.tsx",
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='see-all-brackets']", "settle": 600 },
+        { "scrollTo": "[data-testid='see-all-brackets']", "settle": 400 }
+      ]
+    },
+    {
+      "id": "brackets-sheet",
+      "label": "/decks/[id] Analysis: the All brackets sheet, 700 with five bracket columns on desktop, transposed on the phone",
+      "view": "src/components/decks/all-brackets-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='see-all-brackets']", "settle": 600 },
+        { "click": "[data-testid='see-all-brackets']", "settle": 400 },
+        { "wait": "[data-testid='brackets-sheet']", "settle": 500 }
+      ]
+    },
+    {
+      "id": "brackets-notes",
+      "label": "/decks/[id] Analysis: the sheet's notes and foot, each rule's reading with one quoted Wizards line",
+      "view": "src/components/decks/all-brackets-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='see-all-brackets']", "settle": 600 },
+        { "click": "[data-testid='see-all-brackets']", "settle": 400 },
+        { "wait": "[data-testid='brackets-sheet']", "settle": 500 },
+        { "scrollTo": "[data-testid='brackets-sheet-note']:nth-of-type(5)", "settle": 400 }
+      ]
+    }
+  ]
+}
