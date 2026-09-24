@@ -49,7 +49,10 @@ const WIDTHS = [
   // row's name must keep, uncut; Design costed Plateau at "about 131px" at 390. None at 768, where
   // the grid itself overflows (see F12 below).
   { label: 390, viewport: { width: 390, height: 844 }, edit: true, maxCost: 0, nameFloor: 131 },
-  { label: 768, viewport: { width: 768, height: 900 }, edit: false, maxCost: 60, nameFloor: null },
+  // F12, ruling b: up to lg the line takes a row of its own, so at 768 it costs the name nothing.
+  // 1024 is the first width that draws it inline.
+  { label: 768, viewport: { width: 768, height: 900 }, edit: false, maxCost: 0, nameFloor: null },
+  { label: 1024, viewport: { width: 1024, height: 900 }, edit: false, maxCost: 60, nameFloor: 40 },
   { label: 1300, viewport: { width: 1300, height: 900 }, edit: true, maxCost: 60, nameFloor: 40 },
 ];
 

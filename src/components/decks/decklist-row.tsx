@@ -413,7 +413,9 @@ export function DecklistRow({
           // undone on the row: on desktop this block turns horizontal, where the
           // same declaration centres the name in a `flex-auto` box wider than its
           // text and every name in the list floats off the left rail.
-          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:justify-start md:items-center md:gap-[6px]">
+          // Wraps between md and lg for one reason: `over $X` takes a line of its own there (F12,
+          // ruling b), because the two-column grid has no room left to give a name.
+          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:flex-wrap lg:flex-nowrap md:justify-start md:items-center md:gap-x-[6px] md:gap-y-0">
             {/* Name and count share a line so the count stays inline after the
                 name at both widths — on phone the meta line below is its own
                 line, and a count that flowed down with it would read as part
@@ -479,9 +481,15 @@ export function DecklistRow({
               // The block's 6px gap sits before this item; the design's figure-to-`·` gap is 5px, the
               // one-pixel pull that makes the two read as one group. With no figure there is no `·`,
               // and the name keeps the block's own gap.
-              <span className={`hidden md:inline-flex flex-none items-center gap-[5px] ${hasShoppingMeta ? "md:-ml-px" : ""} font-mono text-[10px] whitespace-nowrap`}>
+              <span className={`hidden lg:inline-flex flex-none items-center gap-[5px] ${hasShoppingMeta ? "lg:-ml-px" : ""} font-mono text-[10px] whitespace-nowrap`}>
                 {hasShoppingMeta ? <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span> : null}
                 <span style={{ color: "var(--warning)" }}>{overText}</span>
+              </span>
+            ) : null}
+            {overText ? (
+              // md to lg: its own line under the name, the phone's form, so it costs the name nothing.
+              <span className="hidden md:block lg:hidden basis-full font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
+                {overText}
               </span>
             ) : null}
           </div>
