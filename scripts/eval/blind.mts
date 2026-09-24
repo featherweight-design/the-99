@@ -79,7 +79,12 @@ heldOut.forEach((deckId, order) => {
   const flip = seededShuffle([0, 1], roundSeed + order)[0] === 1;
   const b = tuningAnswer(base.rows.get(deckId));
   const c = tuningAnswer(candidate.rows.get(deckId));
-  const prepared = base.prepared.get(deckId) ?? candidate.prepared.get(deckId);
+  // Both answers must come from the same deck as the page shows it: a deck edited on staging
+  // between the two runs would put the base's decklist beside a candidate written for another.
+  const prepared = base.prepared.get(deckId);
+  if (!prepared || JSON.stringify(prepared.pack) !== JSON.stringify(candidate.prepared.get(deckId)?.pack)) {
+    throw new Error(`deck ${deckId}: the two runs saw different packs; build pairs from runs over the same deck snapshot`);
+  }
   pairs.push({
     id,
     data: {
@@ -88,9 +93,9 @@ heldOut.forEach((deckId, order) => {
       roundTitle: args.title,
       order: order + 1,
       deckName: base.meta.decks.find((d) => d.deckId === deckId)?.name ?? "Untitled deck",
-      commander: prepared?.pack.commanders.map((x) => x.name).join(" and ") ?? "",
+      commander: prepared.pack.commanders.map((x) => x.name).join(" and ") ?? "",
       // The deck as the model saw it, so a suggestion can be judged against it (plan: one click away).
-      decklist: (prepared?.pack.cards ?? []).map((c) => ({ name: c.name, quantity: c.quantity })).sort((x, y) => x.name.localeCompare(y.name)),
+      decklist: prepared.pack.cards.map((c) => ({ name: c.name, quantity: c.quantity })).sort((x, y) => x.name.localeCompare(y.name)),
       left: flip ? c : b,
       right: flip ? b : c,
     },
