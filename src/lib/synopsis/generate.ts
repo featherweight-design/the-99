@@ -8,7 +8,7 @@ import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS } from "./limits";
-import { SYNOPSIS_MODEL } from "./model";
+import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
 import { buildSynopsisPrompt } from "./prompt";
 import { reapSynopses } from "./reaper";
 import { synopsisResponseSchema, type SynopsisResponse } from "./response-schema";
@@ -82,6 +82,7 @@ export function defaultDeps(): GenerateDeps {
         system: req.system,
         user: req.user,
         maxTokens: SYNOPSIS_MAX_TOKENS,
+        effort: SYNOPSIS_EFFORT,
         schema: synopsisResponseSchema,
         deadlineMs: SYNOPSIS_DEADLINE_MS,
       })

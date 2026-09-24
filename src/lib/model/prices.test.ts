@@ -53,9 +53,9 @@ describe("FEATURE_CALLS", () => {
   it("prices each feature with its own model, ceiling and max_tokens", () => {
     expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS });
     expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS });
-    // $0.208 and $0.256 at today's Sonnet 5 and 8,000-token ceilings.
+    // $0.208 and $0.156 at today's Sonnet 5, with 8,000- and 3,000-token ceilings.
     expect(featureWorstCaseMicroUsd("tuning")).toBe(208_000);
-    expect(featureWorstCaseMicroUsd("synopsis")).toBe(256_000);
+    expect(featureWorstCaseMicroUsd("synopsis")).toBe(156_000);
   });
 
   it("prices a reservation at the model it recorded, falling back to the feature's", () => {
