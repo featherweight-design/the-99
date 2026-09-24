@@ -17,13 +17,16 @@ import Link from "next/link";
 import { GhostButton } from "@/components/ui/button";
 import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { verdictHead } from "../../lib/bracket/verdict-head";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { byTouched, elapsed, touchedBy } from "../../lib/decks/touched";
+import { statusBarStyle } from "../../lib/decks/status-style";
 import { TRUNCATES } from "../decks/spine-desktop";
+import { BracketChip } from "../decks/bracket-chip";
 import { StatusPillBadge } from "../decks/status-pill";
 import { ArtWash } from "../ui/art-wash";
 
@@ -99,7 +102,8 @@ function ResumeRow(
     name: deck.commanderName,
     printedName: deck.commanderPrintedName,
   });
-  const count = `${deck.built} / ${deckBodySize(partnerName !== null)}`;
+  const bodySize = deckBodySize(partnerName !== null);
+  const count = `${deck.built} / ${bodySize}`;
   // Decision 23. The long form leaves negative room for a name at all — 62px of
   // pill, 28px of gaps and a 113px count against the 200px this line gets — so
   // something has to not render, and it is never a partly truncated figure:
@@ -121,7 +125,7 @@ function ResumeRow(
       // the portrait. Two rows never overflowed, which is why the bug arrives
       // with the fourth. Above 1180px the container is a row again and `flex-1`
       // is what makes the pair share the width.
-      className={`relative flex h-[72px] min-w-0 flex-none items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[10px] min-[1180px]:flex-1 min-[1180px]:pr-[18px] ${className ?? ""}`}
+      className={`relative flex h-[72px] min-w-0 flex-none items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[4px] pr-[10px] min-[1180px]:flex-1 min-[1180px]:pr-[18px] ${className ?? ""}`}
     >
       {/* §ResumeRow — the commander's portrait, at the band's own height. It is
           a column the type starts clear of, not a plate the type sits on: 99px
@@ -156,7 +160,9 @@ function ResumeRow(
         // `overflow-hidden`. A 9px gap instead of 17, and 10px of right padding
         // instead of 18, give that line 134 and the commander's name what is
         // left. Nothing moves at 1000px and above, where the row has the room it
-        // was drawn with.
+        // was drawn with. Since the bracket-chip addendum the count has its own line (the third),
+        // and the row's vertical padding closed from 10 to 4 to hold three lines in its 62px content
+        // box: 17.4 + 4 + 22 / 24 + 4 + 12.6 = 60 / 62.
         className="relative flex min-w-0 flex-auto flex-col gap-[4px] pl-[108px] min-[1000px]:pl-[116px]"
       >
         {/* The DECK name, not the commander's. The frame prints the commander
@@ -192,11 +198,35 @@ function ResumeRow(
           </span>
         </span>
 
-        <span className="flex min-w-0 items-center gap-[14px]">
-          <StatusPillBadge
-            status={deck.statusPill}
-            className="flex h-[19px] flex-none items-center rounded-[5px] px-[7px] font-mono text-[10px]"
-          />
+        {/* Line two (addendum §C): the plates, then the commander. The height is STATED rather
+            than left to the pill (N4): a row with no chip would otherwise be the pill's 19px tall,
+            and in a mixed pair of rows the deck names above would sit 2.5px apart. */}
+        <span className="flex h-[22px] min-w-0 items-center gap-[14px] md:h-[24px]">
+          <span className="flex flex-none items-center gap-[8px]">
+            {/* With a chip, the pill and the marks are one spoken phrase, `To buy, bracket
+                Upgraded`, as the tile's accessible name says it (F4). Without one the pill
+                speaks for itself, as it always has. */}
+            <span aria-hidden={deck.bracket ? true : undefined} className="flex">
+              <StatusPillBadge
+                status={deck.statusPill}
+                className="flex h-[19px] flex-none items-center rounded-[5px] px-[7px] font-mono text-[10px]"
+              />
+            </span>
+            {deck.bracket && (
+              <>
+                {/* Marks only on Home (R1): the row has no room for a name. */}
+                <span aria-hidden className="flex">
+                  <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} face={false} />
+                </span>
+                <span className="sr-only">
+                  {refreshCopy.decks.statusWithBracket(
+                    deck.statusPill,
+                    verdictHead(deck.bracket.permits, deck.bracket.answered).face,
+                  )}
+                </span>
+              </>
+            )}
+          </span>
           {/* The commander names the portrait beside it. No text shadow, here
               or anywhere on this row: the type starts at the 116px inset, clear
               of the art, which is decision 9's stated exception.
@@ -239,35 +269,33 @@ function ResumeRow(
               </span>
             </>
           )}
-          {/* Decision 19 inverts what this line used to do. The count was the
-              shrinking child and collapsed to zero width before the name lost a
-              character — right for one name, wrong now that the denominator
-              carries the pair's other signal. It is pinned; the names above are
-              the only thing that gives. */}
-          {/* The figure and its clause are two children of one group rather than
-              one string, so that the clause, and never the figure, is what a
-              narrow row eats into: `86 / 9…` reads as a different number in a
-              way `3 car…` does not. That is also the latent bug this fixes — the
-              two shared a span that truncated to `86 / 98 · 3 t…`.
+        </span>
 
-              The name beside them takes its width from a zero basis and the
-              figure cannot shrink at all, so on a single row the clause is the
-              only child with anything left to give.
-
-              The group deliberately does NOT carry `min-w-0`: its automatic
-              minimum is its min-content width, which is the figure's — the
-              clause waives its own with `min-w-0`. So the group shrinks exactly
-              as far as the clause has left to give and then stops, which is what
-              pins the figure. With `min-w-0` here the group keeps going and the
-              unshrinkable figure inside is clipped by the row instead, printing
-              the `86 / 9` this whole arrangement exists to prevent. */}
-          <span className="flex gap-[4px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-            <span className="flex-none whitespace-nowrap">{count}</span>
-            {clause && (
-              <span className="min-w-0 truncate">
-                {`· ${refreshCopy.decks.detailCopies(copies!)}`}
-              </span>
+        {/* Line three (addendum §C, R2 = C): the tile's progress bar with the count beside it, on
+            EVERY row, a row with no chip included, so the four rows are one shape. The count group
+            is `flex-none` and nothing in it truncates: the bar is the only child with anything to
+            give, and it keeps 85px or more at 360. */}
+        <span className="flex min-w-0 items-center gap-[10px]" style={{ lineHeight: 1.2 }}>
+          <span
+            data-resume-bar
+            className="relative h-[3px] min-w-0 flex-1 overflow-hidden rounded-[2px]"
+            // `--border-strong`, not the tile's `--border`: this track stands on `--surface-inset` (N5).
+            style={{ background: "var(--border-strong)" }}
+          >
+            {/* The tile's fill rule, kept (N5): an empty deck draws an empty track. */}
+            {deck.built > 0 && (
+              <span
+                className="absolute top-0 bottom-0 left-0 rounded-[2px]"
+                style={statusBarStyle(deck.statusPill, deck.built, bodySize)}
+              />
             )}
+          </span>
+          <span
+            data-resume-count
+            className="flex flex-none gap-[4px] whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]"
+          >
+            <span>{count}</span>
+            {clause && <span>{`· ${refreshCopy.decks.detailCopies(copies!)}`}</span>}
           </span>
         </span>
       </span>

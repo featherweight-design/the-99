@@ -20,10 +20,17 @@ import { BracketMark, bracketInk } from "./bracket-mark";
 export function BracketChip({
   permits,
   answered = null,
+  face = true,
 }: {
   permits: readonly Bracket[];
   /** The declaration, passed only when `declarationAsk` read it as answered. See `lib/bracket/chip-answer`. */
   answered?: Bracket | null;
+  /**
+   * False draws the marks alone, on the same plate: Home's resume row, which has no room for a
+   * name (the Home bracket-chip addendum, R1). The padding closes to 2px either side, so a single
+   * mark is 28px wide and a range 55px, hairline included. Every other mount keeps the default.
+   */
+  face?: boolean;
 }) {
   const head = verdictHead(permits, answered);
   const low = head.chip;
@@ -33,7 +40,7 @@ export function BracketChip({
     <span
       data-testid="bracket-chip"
       data-bracket={head.split ? permits.join("-") : low}
-      className="inline-flex h-[22px] flex-none items-center gap-[5px] whitespace-nowrap rounded-[6px] border pl-[2px] pr-[8px] md:h-[24px]"
+      className={`inline-flex h-[22px] flex-none items-center gap-[5px] whitespace-nowrap rounded-[6px] border pl-[2px] ${face ? "pr-[8px]" : "pr-[2px]"} md:h-[24px]`}
       style={{
         background: `color-mix(in srgb, ${ink} 12%, var(--bg))`,
         borderColor: `color-mix(in oklab, ${ink} 55%, transparent)`,
@@ -44,9 +51,11 @@ export function BracketChip({
       {marks.map((b, i) => (
         <BracketMark key={b} bracket={b} px={CHIP_MARK_PX} dim={i > 0} />
       ))}
-      <span className="font-mono text-[10px] md:text-[11px]" style={{ color: ink }}>
-        {head.face}
-      </span>
+      {face && (
+        <span className="font-mono text-[10px] md:text-[11px]" style={{ color: ink }}>
+          {head.face}
+        </span>
+      )}
     </span>
   );
 }

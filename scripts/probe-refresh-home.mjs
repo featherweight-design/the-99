@@ -24,14 +24,33 @@
 //   7. The 900px band nobody drew: rows stack rather than clipping their names.
 //   8. Phone controls clear 44px, and both header CTAs are on the page at every
 //      width — the pair mobile Home did not draw before this round.
+//   9. The bracket chip (Home bracket-chip addendum, section C): every row is
+//      three lines inside its 72px, the chip draws marks only (a range 55px, a
+//      single 28px), the commander is the only child of line two that shrinks,
+//      the count group beside the bar is never cut, and a row with no chip
+//      lines up with one that has one (N4). A range is what the width is sized
+//      for, so the probe PUTS one on Home: it finds a deck of this account whose
+//      stored reading is an unanswered range, moves its `last_edited_at` to now
+//      so it is one of the four rows, and puts the stamp back in a `finally`.
+//      No such deck FAILS the run rather than measuring singles and passing.
+//      A chip-less deck is touched a second earlier, so the first pair mixes the
+//      two and N4 is measured rather than skipped. Three mutations fail it: the
+//      chip's face left on (16 checks), line two's stated height removed (names
+//      2.5px apart in every pair), and the bar's `flex-1` removed (0px bars).
 //
 // Run: `node scripts/probe-refresh-home.mjs`, against local dev.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+  "DATABASE_URL",
+]);
+const sql = neon(DATABASE_URL);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
@@ -145,10 +164,13 @@ function staleness(stamp) {
   return { h: n, d: n * 24, w: n * 168, mo: n * 720 }[m[2]];
 }
 
+/** The two decks the probe moved onto Home: undefined until looked for, null when either is missing. */
+let rangeFixture;
+
 async function main() {
   await clerkSetup();
   const browser = await chromium.launch();
-
+  try {
   for (const vp of [
     { label: "desktop", width: 1440, height: 900 },
     // The band the old threshold made a third layout of: one column, and until
@@ -161,6 +183,11 @@ async function main() {
     { label: "narrow-pair", width: 1200, height: 900 },
     { label: "mid", width: 900, height: 900 },
     { label: "phone", width: 390, height: 844, isMobile: true, hasTouch: true },
+    // The addendum's own widths: 1300 as drawn, 1180 the narrowest pair, 360 the
+    // narrowest phone it measures (F3).
+    { label: "pair-1300", width: 1300, height: 900 },
+    { label: "pair-1180", width: 1180, height: 900 },
+    { label: "phone-360", width: 360, height: 780, isMobile: true, hasTouch: true },
   ]) {
     const context = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
@@ -169,6 +196,15 @@ async function main() {
     });
     const page = await context.newPage();
     await signIn(page);
+    if (rangeFixture === undefined) rangeFixture = await surfaceRange(page);
+    if (rangeFixture === null) {
+      console.error(
+        "PREREQUISITE: this account needs a deck whose stored reading is an unanswered range AND a deck with no reading.",
+      );
+      failures += 1;
+      await context.close();
+      break;
+    }
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
 
@@ -378,11 +414,102 @@ async function main() {
       }
     }
 
+    // 9. The bracket chip.
+    const chip = await page.evaluate(`(${READ_CHIP_ROWS})()`);
+    check(
+      `${vp.label}: every row's three lines sit inside its band`,
+      chip.rows.filter((r) => !r.linesInside).map((r) => r.name),
+      [],
+    );
+    check(`${vp.label}: every row draws three lines`, [...new Set(chip.rows.map((r) => r.lines))], [3]);
+    check(
+      `${vp.label}: the chip draws marks only`,
+      chip.rows.filter((r) => r.chip && r.chip.text !== "").map((r) => r.name),
+      [],
+    );
+    check(
+      `${vp.label}: the range chip is 55 and a single 28`,
+      chip.rows.filter((r) => r.chip && r.chip.w !== (r.chip.range ? 55 : 28)).map((r) => [r.name, r.chip.w]),
+      [],
+    );
+    check(`${vp.label}: the range deck is on Home`, chip.rows.some((r) => r.chip?.range), true);
+    check(
+      `${vp.label}: nothing but the commander shrinks on line two`,
+      chip.rows.filter((r) => !r.platesWhole).map((r) => r.name),
+      [],
+    );
+    check(
+      `${vp.label}: the count group is never cut`,
+      chip.rows.filter((r) => !r.countWhole).map((r) => r.name),
+      [],
+    );
+    // The count's WORST case, the way the stamp's is measured above: a count long enough that the
+    // bar has to give most of its width. The count group is `flex-none`, so the bar gives and the
+    // count stays whole; a shrinkable group would split the loss and cut the figure. Written into
+    // the live rows and put back. At the narrow widths this is the only reading that tells the two
+    // apart, because the real count always leaves the bar room.
+    // An INVARIANCE rather than a mutation-proved case: the bar grows from a zero basis, so a
+    // count that fits the line is never squeezed whether or not its group is `flex-none`, and
+    // dropping that class measured nothing. It catches a future change that gives the bar a basis.
+    const worstCount = await page.evaluate(`(() => {
+      const heading = [...document.querySelectorAll('main h2')]
+        .find((h) => (h.textContent ?? '').trim().startsWith('Pick up'));
+      const rows = [...heading.closest('section').querySelectorAll('a[href^="/decks/"]')];
+      const cut = [];
+      for (const a of rows) {
+        const count = a.querySelector('[data-resume-count]');
+        const line = count.parentElement;
+        const before = count.innerHTML;
+        // Most of the line, less the gap and 20px of bar: the widest count that still fits whole.
+        count.innerHTML = '<span></span>';
+        const probe = count.firstElementChild;
+        probe.textContent = '99 / 99';
+        while (probe.getBoundingClientRect().width < line.getBoundingClientRect().width - 10 - 20) {
+          probe.textContent += ' ·';
+        }
+        const r = a.getBoundingClientRect();
+        const b = count.getBoundingClientRect();
+        if (count.scrollWidth > count.clientWidth + 0.5 || b.right > r.right + 0.5) cut.push(a.querySelector('[data-resume-name]').textContent);
+        count.innerHTML = before;
+      }
+      return cut;
+    })()`);
+    check(`${vp.label}: a count that takes the bar's room stays whole`, worstCount, []);
+    check(
+      `${vp.label}: every bar keeps 80px or more`,
+      chip.rows.filter((r) => r.barW < 80).map((r) => [r.name, r.barW]),
+      [],
+    );
+    // N4: in a pair, the deck names are level whether or not a row carries a chip.
+    const pairs = Object.values(Object.groupBy(chip.rows, (r) => r.y)).filter((g) => g.length === 2);
+    const mixed = pairs.filter((g) => Boolean(g[0].chip) !== Boolean(g[1].chip));
+    // The fixture puts a mixed pair first, so on any width that draws pairs its absence is a failure.
+    if (pairs.length > 0) check(`${vp.label}: a pair mixes a chip row with a chip-less one`, mixed.length > 0, true);
+    check(
+      `${vp.label}: deck names in a pair are level`,
+      pairs.filter((g) => Math.abs(g[0].nameTop - g[1].nameTop) > 0.5).map((g) => g.map((r) => r.name)),
+      [],
+    );
+
     await page.screenshot({ path: `/tmp/home-parity-${vp.label}.png`, fullPage: true });
     await context.close();
   }
 
   await browser.close();
+  } finally {
+    // Put the stamp back, whatever happened above: the fixture moved a real deck
+    // to the head of this account's Home.
+    // Each on its own, so one failing cannot skip the other.
+    for (const f of rangeFixture ?? []) {
+      try {
+        await sql`update decks set last_edited_at = ${f.lastEditedAt} where id = ${f.id}`;
+        console.log(`      (restored ${f.id}'s last_edited_at)`);
+      } catch (error) {
+        console.error(`RESTORE FAILED for ${f.id}: set last_edited_at back to ${f.lastEditedAt}`, error);
+        failures += 1;
+      }
+    }
+  }
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
 }
@@ -391,3 +518,85 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
+/**
+ * Finds a deck of the signed-in account whose stored reading is an unanswered range, and makes it
+ * the most recently edited, so it is one of Home's four rows. The previous stamp is returned, and
+ * `main`'s `finally` writes it back. Unanswered: an answered range draws its answer alone.
+ */
+async function surfaceRange(page) {
+  const userId = await page.evaluate(() => window.Clerk.user.id);
+  const [row] = await sql`
+    select d.id, d.last_edited_at
+    from decks d join deck_profiles p on p.deck_id = d.id
+    where d.user_id = ${userId}
+      and cardinality(p.permits) = 2
+      and (d.declared_bracket is null or not (d.declared_bracket = any(p.permits)))
+    order by d.id
+    limit 1`;
+  if (!row) return null;
+  // And a deck with NO reading, touched a second earlier, so the first pair on a desktop mixes a
+  // chip row with a chip-less one: N4's level names are only measurable in that pair.
+  const [bare] = await sql`
+    select d.id, d.last_edited_at
+    from decks d left join deck_profiles p on p.deck_id = d.id
+    where d.user_id = ${userId} and p.deck_id is null
+    order by d.id
+    limit 1`;
+  if (!bare) return null;
+  await sql`update decks set last_edited_at = now() where id = ${row.id}`;
+  await sql`update decks set last_edited_at = now() - interval '1 second' where id = ${bare.id}`;
+  return [
+    { id: row.id, lastEditedAt: row.last_edited_at },
+    { id: bare.id, lastEditedAt: bare.last_edited_at },
+  ];
+}
+
+/** Each resume row's three lines, its chip, its plates, its count and its bar. */
+const READ_CHIP_ROWS = `() => {
+  const heading = [...document.querySelectorAll('main h2')]
+    .find((h) => (h.textContent ?? '').trim().startsWith('Pick up'));
+  const section = heading.closest('section');
+  const rows = [...section.querySelectorAll('a[href^="/decks/"]')].map((a) => {
+    const r = a.getBoundingClientRect();
+    const text = a.querySelector('[data-resume-text]');
+    const lines = [...text.children].filter((el) => el.getClientRects().length && !el.classList.contains('sr-only'));
+    const linesInside = lines.every((el) => {
+      const b = el.getBoundingClientRect();
+      return b.top >= r.top - 0.5 && b.bottom <= r.bottom + 0.5 && b.height > 0;
+    });
+    const chipEl = a.querySelector('[data-testid="bracket-chip"]');
+    const chipBox = chipEl?.getBoundingClientRect();
+    // Line two's plates group: the pill, and the chip when there is one. Whole means laid out at
+    // its content width: nothing in it gave way to the commander.
+    const plates = lines[1]?.firstElementChild;
+    const platesWhole = plates ? plates.scrollWidth <= plates.clientWidth + 0.5 : false;
+    const count = a.querySelector('[data-resume-count]');
+    const cb = count?.getBoundingClientRect();
+    const countWhole = count
+      ? count.scrollWidth <= count.clientWidth + 0.5 && cb.right <= r.right + 0.5 && cb.width > 0
+      : false;
+    const bar = a.querySelector('[data-resume-bar]');
+    const name = a.querySelector('[data-resume-name]');
+    return {
+      name: (name?.textContent ?? '').trim(),
+      nameTop: name ? name.getBoundingClientRect().top : 0,
+      y: Math.round(r.y),
+      lines: lines.length,
+      linesInside,
+      chip: chipEl
+        ? {
+            // The chip's own text, less the marks' numerals: the name is what "marks only" drops.
+            text: [...chipEl.children].filter((c) => c.getAttribute('data-testid') !== 'bracket-mark')
+              .map((c) => c.textContent).join('').trim(),
+            w: Math.round(chipBox.width),
+            range: (chipEl.getAttribute('data-bracket') ?? '').includes('-'),
+          }
+        : null,
+      platesWhole,
+      countWhole,
+      barW: bar ? Math.round(bar.getBoundingClientRect().width) : 0,
+    };
+  });
+  return { rows };
+}`;
