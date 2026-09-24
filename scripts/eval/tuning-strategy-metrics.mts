@@ -12,8 +12,8 @@
  * and two from his round 3 notes (round 4):
  *  - chip restatements: kept suggestions whose rationale states an `N of M` figure one of its own
  *    citations already shows as a chip;
- *  - repeated openings: kept rationales that open (in their first four words) on the same role, or
- *    the same `N of M` count, as an earlier rationale in the same answer (the rule forbids both);
+ *  - repeated openings: kept rationales that open on the same role (first four words), or the same
+ *    `N of M` count (first eight), as an earlier rationale in the same answer (the rule forbids both);
  * with malformed answers and output tokens per answer, since S lost two answers at ~6,000 thinking
  * tokens.
  * Reads `runs/strategy-overviews.json` for the Key cards and the universal set. Sends nothing.
@@ -44,11 +44,15 @@ function figuresOf(text: string): Set<string> {
   return out;
 }
 
-/** What a rationale opens on, in its first four words: the first pack role it names and any `N of M` count. */
+/**
+ * What a rationale opens on: the first pack role named in its first four words, and any `N of M`
+ * count in its first eight, since the count usually completes a few words in ("Removal sits at 2 of 3").
+ */
 function opening(rationale: string, pack: EvidencePack): string[] {
-  const head = rationale.toLowerCase().split(/\s+/).slice(0, 4).join(" ");
+  const words = rationale.toLowerCase().split(/\s+/);
+  const head = words.slice(0, 4).join(" ");
   const hit = pack.targets.roles.find((c) => new RegExp(`\\b${c.role.replace(/s$/, "").toLowerCase()}`).test(head));
-  return [...(hit ? [`role:${hit.role}`] : []), ...[...figuresOf(head)].map((f) => `count:${f}`)];
+  return [...(hit ? [`role:${hit.role}`] : []), ...[...figuresOf(words.slice(0, 8).join(" "))].map((f) => `count:${f}`)];
 }
 
 /**
