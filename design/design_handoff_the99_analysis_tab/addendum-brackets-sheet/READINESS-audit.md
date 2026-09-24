@@ -1,5 +1,16 @@
 # Readiness audit: the brackets reference sheet (addendum)
 
+## Hugh's rulings (2026-09-24)
+
+Hugh approved this audit on 2026-09-24.
+
+- **Quote or paraphrase (finding 2): both.** Keep Design's plain reading of each rule, and add one short
+  quoted Wizards line per rule beside it. This amends the verdict brief's lock, *"the rules text is quoted,
+  not paraphrased"* (`docs/superpowers/design-briefs/2026-09-20-the-verdict.md:192`). Finding 3 still
+  applies: each quote needs a source that actually contains it.
+- **Exhibition contrast (finding 1): back to Design as a revision.** This audit merges now, and the revision
+  gets its own re-audit when it returns.
+
 **Verdict: 🟠 Orange.** Audited 2026-09-24 against `origin/main` at `dac4fd5c` (#901). Every
 figure on the sheet matches the code, the chrome is `ModalChrome` with no new props, every token
 exists, and the marking derives from data the tab already holds. The sheet is buildable. Two
