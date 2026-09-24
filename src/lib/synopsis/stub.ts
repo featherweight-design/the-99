@@ -50,10 +50,11 @@ export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false):
   // lands, so a land-heavy deck still passes. A deck with fewer than four distinct cards besides
   // its commander (99 copies of one basic) gets a refused key-cards section, as the real contract
   // would give it; `survived` means the stub TRIED to pass, not that it always can.
+  // Never a universal staple: the contract refuses one as a Key card.
   const others = [...new Set([
     ...facts.cards.filter((c) => !c.categories.includes("land")),
     ...facts.cards.filter((c) => c.categories.includes("land")),
-  ].map((c) => c.name).filter((n) => n !== commander))];
+  ].filter((c) => !c.universalStaple).map((c) => c.name).filter((n) => n !== commander))];
   const pick = (i: number) => others[i] ?? commander;
   const { low, high } = facts.keep;
 

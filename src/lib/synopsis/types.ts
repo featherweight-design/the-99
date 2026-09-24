@@ -39,6 +39,11 @@ export const REFUSAL_REASONS = [
   "over_budget",
   /** Text that does not end a sentence. */
   "partial_sentence",
+  /** A Key card that is a universal staple (`src/lib/staples/universal.ts`), which says nothing
+   *  about this deck (Hugh, 2026-09-24). */
+  "universal_staple",
+  /** The deck's colors written as mana letters (RG, BUG) rather than their identity name. */
+  "mana_letters",
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 

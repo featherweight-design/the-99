@@ -69,6 +69,28 @@ const STRENGTH = [
   /\b(strong|stronger|strongest|powerful|brutal|efficient|respectable|oppressive|busted|top[- ]tier)\b/i,
 ];
 
+/**
+ * The deck's colors written as mana letters (Hugh, 2026-09-24: 6 of 15 overviews said "RG" where
+ * the app says "Gruul"). NARROW on purpose, because a false hit drops a line or refuses prose:
+ * only an UPPERCASE, word-bounded run of two to five distinct WUBRG letters that is exactly the
+ * deck's own identity, read outside card marks and outside quotation. So a set code or an
+ * abbreviation that happens to be two colour letters reads as prose unless it IS the deck's
+ * colours, and lowercase, a run inside a word, and quoted rules text never trip it.
+ */
+export function manaLetters(text: string, identity: readonly string[]): string[] {
+  if (identity.length < 2) return [];
+  const own = [...identity].sort().join("");
+  // Double quotes pair anywhere; a single quote only where it stands at a word's edge on both
+  // sides (any non-word character, a dash or a slash included), so an apostrophe inside a word
+  // ("deck's", "don't") never opens or closes a quotation.
+  const outside = unmarked(text)
+    .replace(/["\u201c][^"\u201d]*["\u201d]/g, " ")
+    .replace(/(^|[^\w'\u2018\u2019])['\u2018][^'\u2018\u2019]*['\u2019](?![\w])/g, "$1 ");
+  return [...outside.matchAll(/\b([WUBRG]{2,5})\b/g)]
+    .map((m) => m[1])
+    .filter((run) => new Set(run).size === run.length && [...run].sort().join("") === own);
+}
+
 export function strengthClaim(text: string): boolean {
   return STRENGTH.some((re) => re.test(text));
 }
@@ -118,6 +140,8 @@ class Resolver {
   readonly names: string[];
   /** The commanders' names, checked by that rule whatever their length. */
   commanders: string[] = [];
+  /** The deck's identity letters, for the mana-letter rule. */
+  identity: string[] = [];
 
   constructor(
     private readonly deck: Map<string, Card>,
@@ -160,10 +184,12 @@ function lineCheck(
   deck: Map<string, Card>,
   catalog: ReadonlyMap<string, Card> | null,
   commanders: string[],
+  identity: string[],
 ): LineResult {
   const found: Record<string, Card> = {};
   const r = new Resolver(deck, found, catalog);
   r.commanders = commanders;
+  r.identity = identity;
   run(r);
   // EVERY RULE RUNS, so the line's `failed` / `total` count every name in it. The reason is the
   // first rule broken; a name that failed with no rule broken is `unknown_card`.
@@ -243,6 +269,7 @@ function prose(r: Resolver, text: string, budget: number): void {
   if (bare.length > 0) r.refuse("unmarked_card");
   if (rendered(text).trim().length > budget) r.refuse("over_budget");
   if (strengthClaim(unmarked(text))) r.refuse("strength_claim");
+  if (manaLetters(text, r.identity).length > 0) r.refuse("mana_letters");
   r.marks(text);
 }
 
@@ -258,9 +285,10 @@ export function validateSynopsis(
   const deck = deckNameIndex(facts.cards);
   const categories = new Map(facts.cards.map((c) => [c.oracleId, new Set(c.categories)]));
   const allowedFigures = new Set(facts.figures);
+  const universal = new Set(facts.cards.filter((c) => c.universalStaple).map((c) => c.oracleId));
   const found: Record<string, Card> = {};
   const line = (run: (r: Resolver) => void, cat: ReadonlyMap<string, Card> | null = null) =>
-    lineCheck(run, deck, cat, facts.commanders);
+    lineCheck(run, deck, cat, facts.commanders, facts.identity);
 
   const overview = section("overview", [
     { kind: "whole", lines: [line((r) => prose(r, reply.overview, CHAR_BUDGETS.overview))] },
@@ -302,6 +330,7 @@ export function validateSynopsis(
     const card = r.deckCard(k.card);
     if (!card) return;
     if (!jobSupported(k, categories.get(card.oracleId) ?? new Set())) r.refuse("job_unsupported");
+    if (universal.has(card.oracleId)) r.refuse("universal_staple");
     if (r.reason === null && r.failed === 0) {
       if (named.has(card.oracleId)) r.refuse("wrong_count");
       named.add(card.oracleId);

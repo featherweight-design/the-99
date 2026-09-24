@@ -341,3 +341,58 @@ describe("validateSynopsis — drop the line, not the section", () => {
     expect(r.weaknesses).toEqual(["Slow starts leave you exposed."]);
   });
 });
+
+// Hugh's rating, 2026-09-24.
+describe("validateSynopsis — universal staples and mana letters", () => {
+  it("drops a Key card that is a universal staple, and renders the rest", () => {
+    const facts = { ...FACTS, cards: FACTS.cards.map((c) => (c.name === "Sol Ring" ? { ...c, universalStaple: true } : c)) };
+    const reply = good();
+    reply.keyCards.push({ card: "Gamble", claims: ["tutor"], job: "Finds the missing piece." });
+    const r = validateSynopsis(reply, facts, CATALOG);
+    expect(verdictOf(r, "keyCards").status).toBe("ok");
+    expect(r.keyCards!.map((k) => k.card)).not.toContain("Sol Ring");
+  });
+
+  it("refuses a Key card list left short by a universal staple, naming the reason", () => {
+    const facts = { ...FACTS, cards: FACTS.cards.map((c) => (c.name === "Sol Ring" ? { ...c, universalStaple: true } : c)) };
+    expect(verdictOf(validateSynopsis(good(), facts, CATALOG), "keyCards")).toMatchObject({ status: "refused", reason: "universal_staple" });
+  });
+
+  const IZZET = { ...FACTS, identity: ["U", "R"] };
+  it("refuses the overview when it names the deck's colors in mana letters", () => {
+    const reply = good();
+    reply.overview = "This UR deck lets [[Kratos]] turn every spell into damage.";
+    expect(verdictOf(validateSynopsis(reply, IZZET, CATALOG), "overview")).toMatchObject({ status: "refused", reason: "mana_letters" });
+  });
+
+  it("reads letters beside an apostrophe as prose, not as a quotation", () => {
+    const reply = good();
+    reply.overview = "This UR deck's plan lets [[Kratos]] turn every spell into damage.";
+    expect(verdictOf(validateSynopsis(reply, IZZET, CATALOG), "overview")).toMatchObject({ status: "refused", reason: "mana_letters" });
+  });
+
+  it("drops a weakness that uses the letters, keeping the others", () => {
+    const reply = good();
+    reply.weaknesses = ["The RU mana base stumbles on a slow start.", "Slow starts leave you exposed."];
+    expect(validateSynopsis(reply, IZZET, CATALOG).weaknesses).toEqual(["Slow starts leave you exposed."]);
+  });
+
+  // The-99-d9's condition: prose that must PASS.
+  it.each([
+    ["a run inside a word", "[[Kratos]] turns every spell into damage, and URZA would approve."],
+    ["lowercase letters", "[[Kratos]] turns every ur spell into damage."],
+    ["letters that are not the deck's colors", "[[Kratos]] turns every spell into damage, like a WR aggro list."],
+    ["a quotation", "[[Kratos]] reads \"UR\" on the card and turns spells into damage."],
+    ["a single-quoted run", "[[Kratos]] is no 'UR' deck, and turns spells into damage."],
+    ["a curly single-quoted run", "[[Kratos]] is no \u2018UR\u2019 deck, and turns spells into damage."],
+    ["a quotation before a dash", "[[Kratos]] is no \u2018UR\u2019\u2014style deck, and turns spells into damage."],
+    ["a quotation before a slash", "[[Kratos]] is no 'UR'/tempo deck, and turns spells into damage."],
+    ["a quotation after a dash", "[[Kratos]] turns spells into damage\u2014no 'UR' deck."],
+    ["a card mark", "[[Kratos]] turns every spell into damage, and [[UR]] helps."],
+  ])("passes %s", (_label, overview) => {
+    const reply = good();
+    reply.overview = overview;
+    const facts = { ...IZZET, cards: [...IZZET.cards, { ...IZZET.cards[0], oracleId: "id-UR", name: "UR", categories: [] }] };
+    expect(verdictOf(validateSynopsis(reply, facts, CATALOG), "overview").status).toBe("ok");
+  });
+});

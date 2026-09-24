@@ -1,3 +1,4 @@
+import { colorLabel } from "../decks/format";
 import type { DeckProfile } from "../profile/types";
 import { CATEGORIES, type Category } from "./types";
 
@@ -17,12 +18,18 @@ export type FactCard = {
   quantity: number;
   categories: Category[];
   oracleText: string | null;
+  /** A universal staple (`src/lib/staples/universal.ts`): never a Key card (Hugh, 2026-09-24). */
+  universalStaple?: boolean;
 };
 
 export type SynopsisFacts = {
   commanders: string[];
   /** WUBRG order, as the profile holds it. */
   identity: string[];
+  /** The identity's name (Gruul, Sultai, Non-green, Colorless), which the prose uses in place of
+   *  mana letters. `colorLabel`, the app's one naming. Optional only so facts stored before it
+   *  existed (the eval harness's runs) still read: `identityNameOf` names them the same way. */
+  identityName?: string;
   /** Colours the deck's costs ask for that no land produces. Named, never counted. */
   unproducible: string[];
   /** `counts.landCapable`: a modal double-faced land is a land drop. */
@@ -42,6 +49,11 @@ export type SynopsisFacts = {
   figures: number[];
   cards: FactCard[];
 };
+
+/** The identity's name, for facts built before `identityName` existed as well as after. */
+export function identityNameOf(facts: Pick<SynopsisFacts, "identity" | "identityName">): string {
+  return facts.identityName ?? colorLabel(facts.identity);
+}
 
 /** The opening hand. Quotable in a Mulligan line ("a seven-card hand"). */
 export const HAND_SIZE = 7;
@@ -82,6 +94,7 @@ export function categoriesOf(profile: DeckProfile): Map<string, Set<Category>> {
 export function buildSynopsisFacts(
   profile: DeckProfile,
   oracleTexts: ReadonlyMap<string, string | null>,
+  universal: ReadonlySet<string> = new Set(),
 ): SynopsisFacts {
   const cats = categoriesOf(profile);
   const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
@@ -95,6 +108,7 @@ export function buildSynopsisFacts(
   return {
     commanders: profile.commanderOracleIds.map((id) => byId.get(id)?.name).filter((n): n is string => !!n),
     identity: profile.colours.identity,
+    identityName: colorLabel(profile.colours.identity),
     unproducible: profile.colours.unproducible,
     lands,
     ramp,
@@ -114,6 +128,7 @@ export function buildSynopsisFacts(
       quantity: c.quantity,
       categories: CATEGORIES.filter((k) => cats.get(c.oracleId)?.has(k)),
       oracleText: oracleTexts.get(c.oracleId) ?? null,
+      universalStaple: universal.has(c.oracleId),
     })),
   };
 }

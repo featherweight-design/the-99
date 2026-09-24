@@ -46,6 +46,29 @@ describe("buildSynopsisPrompt", () => {
     expect(user).toContain("Commander mana value (a turn to cast it on is this number): 4 and 3");
   });
 
+  // Hugh's rating, 2026-09-24: the identity by name, and no universal staple as a Key card.
+  it("names the identity and marks a universal staple", () => {
+    const { system, user } = buildSynopsisPrompt({
+      ...FACTS,
+      cards: FACTS.cards.map((c) => (c.name === "Sol Ring" ? { ...c, universalStaple: true } : c)),
+    });
+    expect(user).toContain("Color identity: Gruul");
+    expect(user).not.toContain("Color identity: RG");
+    expect(user).toContain("- Sol Ring (Artifact) [ramp] (universal staple): {T}: Add {C}{C}.");
+    expect(user).not.toContain("Forest (Basic Land) [land] (universal staple)");
+    expect(system).toContain('never one marked "universal staple"');
+    expect(system).toContain("never by mana letters");
+  });
+
+  it("names the colors no land produces rather than spelling their letters", () => {
+    expect(buildSynopsisPrompt({ ...FACTS, unproducible: ["R", "G"] }).user).toContain("Colors the spells need that no land produces: red and green");
+  });
+
+  it("names facts stored before the identity name existed the same way", () => {
+    expect(buildSynopsisPrompt({ ...FACTS, identityName: undefined }).user).toContain("Color identity: Gruul");
+    expect(buildSynopsisPrompt({ ...FACTS, identityName: "Temur" }).user).toContain("Color identity: Temur");
+  });
+
   it("states no mana value line when no commander carries one", () => {
     const { user } = buildSynopsisPrompt(FACTS);
     expect(user).not.toContain("Commander mana value");
