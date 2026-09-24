@@ -64,6 +64,7 @@ export async function recordRulesVersion(
   open: () => RulesEntryDb,
   version: number = BRACKET_RULES_VERSION,
   deadlineMs: number = DEADLINE_MS,
+  changes: Readonly<Record<number, { rule: string; reads: string }>> = RULES_CHANGES,
 ): Promise<RulesEntryOutcome> {
   if (version <= 1) return "unchanged";
   let db: RulesEntryDb | null = null;
@@ -72,8 +73,12 @@ export async function recordRulesVersion(
     const work = (async (): Promise<RulesEntryOutcome> => {
       db = open();
       if ((await db.highestLogged()) >= version) return "unchanged";
-      const change = RULES_CHANGES[version];
-      await db.insert(version, change ? { rule: change.rule, reads: change.reads } : {});
+      // A version with no words is REFUSED rather than logged: logged, it would count as written and
+      // no later deploy would retry it, while every reader got a notice with nothing to say. The
+      // refusal is the warn line below, and `rules-version.test.ts` fails CI before it can ship.
+      const change = changes[version];
+      if (!change) throw new Error(`no RULES_CHANGES row for version ${version}`);
+      await db.insert(version, { rule: change.rule, reads: change.reads });
       return "written";
     })();
     const deadline = new Promise<never>((_, reject) => {

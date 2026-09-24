@@ -20,7 +20,8 @@ export const BRACKET_RULES_VERSION = 1;
 
 /**
  * What each version changed, in words, for the one `rules` entry its deploy writes: the rule's
- * name and what it now reads. A bump without a row here still writes its entry, with no words, so
- * add the row in the same commit as the bump. Version 1 has none: it is where the log began.
+ * name and what it now reads. Every version above 1 needs its row, in the same commit as the bump:
+ * `rules-version.test.ts` fails without one, and a deploy that got past it writes no entry and
+ * warns. Version 1 has none: it is where the log began.
  */
 export const RULES_CHANGES: Readonly<Record<number, { rule: string; reads: string }>> = {};

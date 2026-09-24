@@ -311,8 +311,9 @@ async function main() {
     //      above any shipped one, so it never collides with a real entry; deleted by version below.
     rulesProbeVersion = 900_000 + (Date.now() % 90_000);
     const openRules = () => neonRulesEntryDb(process.env.DATABASE_URL!);
-    const first = await recordRulesVersion(openRules, rulesProbeVersion);
-    const second = await recordRulesVersion(openRules, rulesProbeVersion);
+    const probeWords = { [rulesProbeVersion]: { rule: "Probe rule", reads: "what it reads" } };
+    const first = await recordRulesVersion(openRules, rulesProbeVersion, undefined, probeWords);
+    const second = await recordRulesVersion(openRules, rulesProbeVersion, undefined, probeWords);
     const direct = openRules();
     await direct.insert(rulesProbeVersion, { rule: "again" });
     await direct.close();

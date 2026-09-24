@@ -39,10 +39,22 @@ describe("recordRulesVersion", () => {
     expect(open).not.toHaveBeenCalled();
   });
 
+  const words = { 2: { rule: "A rule", reads: "What it reads" } };
+
   it("writes one entry when the version is above the highest logged, and closes", async () => {
     const { db, calls } = fakeDb();
-    expect(await recordRulesVersion(() => db, 2)).toBe("written");
+    expect(await recordRulesVersion(() => db, 2, undefined, words)).toBe("written");
     expect(calls).toEqual(["highest", "insert 2", "close"]);
+  });
+
+  // Logged without words, the version would count as written and never be retried, while every
+  // reader got a notice with nothing to say.
+  it("refuses a version with no words, writing nothing and warning", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { db, calls } = fakeDb();
+    expect(await recordRulesVersion(() => db, 2, undefined, {})).toBe("failed");
+    expect(calls).not.toContain("insert 2");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("no RULES_CHANGES row for version 2"));
   });
 
   it("writes nothing when that version is already logged", async () => {
