@@ -67,6 +67,7 @@
   .cite { font: 12px/1.4 var(--mono); background: var(--sunken); padding: 3px 7px; border-radius: 4px; }
   .cite b { font-weight: 500; color: var(--muted); margin-right: 6px; }
   .empty { color: var(--muted); font-style: italic; margin: 0; }
+  .badge { justify-self: start; width: max-content; border: 1px solid var(--cut); color: var(--cut); border-radius: 999px; padding: 2px 8px; font: 500 9.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
   .prose p, .prose li { max-width: 65ch; }
   .prose h4 { margin: 8px 0 2px; font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .prose ul { margin: 0; padding-left: 18px; }
@@ -167,7 +168,12 @@ function synopsisSide(a) {
   const out = [];
   for (const s of a.sections) {
     out.push(el("h4", {}, s.title));
-    if (s.refused) out.push(el("p", { class: "empty" }, typeof s.refused === "string" ? s.refused : "This section failed checking and would not be shown."));
+    if (s.refused) {
+      // The app's refused slot: its badge, its sentence and its failed count.
+      if (s.badge) out.push(el("span", { class: "badge" }, s.badge));
+      out.push(el("p", { class: "empty" }, typeof s.refused === "string" ? s.refused : "This section failed checking and would not be shown."));
+      if (s.detail) out.push(el("p", { class: "status" }, s.detail));
+    }
     else if (s.paragraph) out.push(el("p", {}, strip(s.paragraph)));
     else out.push(el("ul", {}, s.items.map((t) => el("li", {}, strip(t)))));
   }

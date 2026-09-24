@@ -59,6 +59,14 @@ const firsts = new Map(readFileSync(new URL(`${args.from}/rows.jsonl`, runs), "u
   .filter((r) => r.cell === args.cell && r.variant === args.variant && r.trial === 0)
   .map((r) => [r.deckId, r]));
 
+// The repair must have been made FROM this run, for this cell and variant, and judged under
+// rebuilt facts as this read is: replies judged under other inputs would pair with the wrong answer.
+const repairMeta = readJson<{ args: { from?: string; cell?: string; variant?: string; "fresh-facts"?: boolean } }>(args.repair, "meta.json").args;
+const mismatch = (["from", "cell", "variant"] as const).filter((k) => repairMeta[k] !== args[k]);
+if (mismatch.length > 0 || repairMeta["fresh-facts"] !== true) {
+  throw new Error(`repair run ${args.repair} was not made from ${args.from} / ${args.cell} / ${args.variant} with --fresh-facts (differs on ${[...mismatch, ...(repairMeta["fresh-facts"] ? [] : ["fresh-facts"])].join(", ")})`);
+}
+
 // The repair run's replies, keyed through its own prepared list (custom ids are positions in it).
 const sent = readJson<{ deckId: string; trial: number; refused: SectionId[] }[]>(args.repair, "prepared.json");
 const raw = new Map<string, Got[]>();
@@ -82,7 +90,8 @@ sent.forEach((p, i) => {
   repairs.set(p.deckId, { reply, refused: p.refused });
 });
 
-type Shown = { title: string; paragraph?: string; items?: string[]; refused?: string };
+/** A refused section carries the app's whole refused slot: its badge, its sentence and its count. */
+type Shown = { title: string; paragraph?: string; items?: string[]; refused?: string; badge?: string; detail?: string };
 const SECTIONS: SectionId[] = ["overview", "primer", "keyCards", "weaknesses"];
 const pairs: { id: string; data: Record<string, unknown> }[] = [];
 const key: Record<string, { deckId: string; source: Record<SectionId, "first" | "repair" | "refused"> }> = {};
@@ -100,6 +109,10 @@ for (const [order, deckId] of meta.split.heldOut.entries()) {
   const rep = repairs.get(deckId);
   const repCat = rep?.reply ? await app.catalog(rep.reply, facts) : null;
   const repPass = rep?.reply && repCat ? dropLineRule(rep.reply, facts, repCat, DESIGN_MINIMUMS) : null;
+  // The verdict a refused section is shown with: the repair's when the section was repaired, else the first write's.
+  const firstVerdicts = first.reply && firstCat ? app.validate(first.reply, facts, firstCat).verdicts : [];
+  const repVerdicts = rep?.reply && repCat ? app.validate(rep.reply, facts, repCat).verdicts : [];
+  const verdictOf = (s: SectionId) => (rep?.refused.includes(s) ? repVerdicts : firstVerdicts).find((v) => v.section === s);
 
   const source = {} as Record<SectionId, "first" | "repair" | "refused">;
   const content = {} as Record<SectionId, ReturnType<typeof dropLineContent> | null>;
@@ -111,7 +124,15 @@ for (const [order, deckId] of meta.split.heldOut.entries()) {
   if (SECTIONS.every((s) => source[s] !== "refused")) allFour += 1;
 
   const t = copy.modal;
-  const refused = (title: string, s: SectionId): Shown => ({ title, refused: s === "overview" ? copy.overviewRefused : copy.sectionRefused });
+  const refused = (title: string, s: SectionId): Shown => {
+    const v = verdictOf(s);
+    return {
+      title,
+      badge: copy.notWritten,
+      refused: s === "overview" ? copy.overviewRefused : copy.sectionRefused,
+      detail: v ? copy.failedCount(v.failed, v.total) : undefined,
+    };
+  };
   const sections: Shown[] = [];
   sections.push(content.overview ? { title: t.sections.overview, paragraph: content.overview.overview } : refused(t.sections.overview, "overview"));
   if (content.primer) {
