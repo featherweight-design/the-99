@@ -133,7 +133,7 @@ export function mergeRetry(
 // Reads.
 
 /** The draft's synopsis: the newest finished run with at least one section shown. */
-export async function readShownSynopsis(deckId: string, userId: string): Promise<SynopsisRow | null> {
+export async function readShownSynopsis(deckId: string, userId: string, list?: string): Promise<SynopsisRow | null> {
   const [row] = await db
     .select({
       id: deckSynopses.id,
@@ -149,7 +149,10 @@ export async function readShownSynopsis(deckId: string, userId: string): Promise
       eq(deckSynopses.status, "done"),
       sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`,
     ))
-    .orderBy(desc(deckSynopses.createdAt))
+    // THE LIST'S OWN OVERVIEW FIRST, when a list is named: reuse is keyed on the fingerprint alone
+    // (ruling B), so after A, an edit and a write of B, and a revert to A, A's overview is still
+    // A's. Newest-only would describe the deck as B and write, and charge, a duplicate A (7d).
+    .orderBy(...(list ? [sql`(${deckSynopses.fingerprint} = ${list}) desc`] : []), desc(deckSynopses.createdAt))
     .limit(1);
   return row?.content ? (row as SynopsisRow) : null;
 }
@@ -224,12 +227,14 @@ async function startRun(
       // read "no synopsis" before either wrote; if the first finished before the second got here,
       // the one-pending index is clear again and only this check stops a second, charged write.
       if (checkReuse) {
-        const [shownNow] = await tx.select({ id: deckSynopses.id, fingerprint: deckSynopses.fingerprint })
+        // Any shown overview for THIS list, not only the newest: the same rule the read uses.
+        const [shownNow] = await tx.select({ id: deckSynopses.id })
           .from(deckSynopses)
           .where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId), eq(deckSynopses.status, "done"),
+            eq(deckSynopses.fingerprint, list),
             sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`))
-          .orderBy(desc(deckSynopses.createdAt)).limit(1);
-        if (shownNow?.fingerprint === list) throw new AlreadyWrittenError();
+          .limit(1);
+        if (shownNow) throw new AlreadyWrittenError();
       }
       const [row] = await tx.insert(deckSynopses).values({
         deckId, userId, fingerprint: list, contractVersion: SYNOPSIS_CONTRACT_VERSION,
@@ -241,7 +246,7 @@ async function startRun(
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
-      const synopsis = await readShownSynopsis(deckId, userId);
+      const synopsis = await readShownSynopsis(deckId, userId, list);
       if (synopsis) return { kind: "reused", synopsis };
     }
     if (isUniqueViolation(err)) return { kind: "in_flight" };
@@ -303,7 +308,7 @@ async function run(
 ): Promise<WriteResult> {
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
-  const current = await readShownSynopsis(deckId, userId);
+  const current = await readShownSynopsis(deckId, userId, reading.list);
 
   // A section retry works only on the synopsis for this very list, under this very contract. One
   // written under an older contract is rewritten whole instead: a document never mixes two

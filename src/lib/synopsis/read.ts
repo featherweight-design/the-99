@@ -5,7 +5,7 @@ import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, d
 import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
-import { readProfileHead } from "../profile/load";
+import { loadProfileHead } from "../profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { reapSynopses } from "./reaper";
@@ -95,16 +95,19 @@ export async function readSynopsisState(
   if (!owned) return null;
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
 
-  const [reading, row, synopsis, newest, allowance, live] = await Promise.all([
+  // THE LIVE LIST, read in one repeatable-read snapshot (`loadProfileHead`): its deck row and its
+  // cards are two reads, and an edit landing between them would fingerprint a list that never
+  // existed. It is read first because the overview shown is the one written for it, if any.
+  const live = await loadProfileHead(deckId, userId).then((head) => (head ? listFingerprint(head) : null));
+  const [reading, row, synopsis, newest, allowance] = await Promise.all([
     readStoredReading(deckId, userId, deps),
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
-    readShownSynopsis(deckId, userId),
+    readShownSynopsis(deckId, userId, live ?? undefined),
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
       .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
     readAllowance(userId, now),
-    db.transaction((tx) => readProfileHead(tx, deckId, userId)).then((head) => (head ? listFingerprint(head) : null)),
   ]);
 
   const status = synopsisStatus({
