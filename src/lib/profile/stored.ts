@@ -2,10 +2,12 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckProfiles, deckVersions, decks } from "../../db/schema";
+import { BRACKET_RULES_VERSION } from "../bracket/rules-version";
 import { slotDeck } from "../bracket/slot";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { deckBodySize } from "../decks/deck-size";
 import { newestVersion, versionCards } from "../decks/versions";
+import { analyzedOracleIds, readLogHead } from "../notices/log";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, readProfileHead, type ProfileHead } from "./load";
 import { PROFILE_VERSION } from "./version";
@@ -85,6 +87,9 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
       versionId: deckProfiles.versionId,
       versionNumber: deckVersions.number,
       computedAt: deckProfiles.computedAt,
+      seenSeq: deckProfiles.seenSeq,
+      rulesVersion: deckProfiles.rulesVersion,
+      analyzedOracleIds: deckProfiles.analyzedOracleIds,
     })
     .from(deckProfiles)
     .leftJoin(deckVersions, eq(deckVersions.id, deckProfiles.versionId))
@@ -144,7 +149,13 @@ export async function readStoredReading(
     // Rebuilt ONLY over the list this read saw, and keeping its pin: a version bump changes the
     // document, never which version the list belongs to.
     const rebuilt = await computeAndStoreProfile(deckId, userId, deps, {
-      rebuildOf: { list: listFingerprint(head), versionId: row.versionId, versionNumber: row.versionNumber },
+      rebuildOf: {
+        list: listFingerprint(head), versionId: row.versionId, versionNumber: row.versionNumber,
+        marks: {
+          seenSeq: row.seenSeq, rulesVersion: row.rulesVersion,
+          analyzedOracleIds: row.analyzedOracleIds,
+        },
+      },
     });
     return rebuilt?.kind === "ok" ? { ...rebuilt.reading } : null;
   }
@@ -186,6 +197,9 @@ export async function readStoredPermits(deckId: string, userId: string): Promise
 /** What a commit hands the pin: the version it wrote, and the fingerprint of the list it froze. */
 export type CommitPin = { versionId: string; list: string };
 
+/** What a quiet rebuild carries over from the row it replaces (plan D4). */
+export type RebuildMarks = { seenSeq: number; rulesVersion: number; analyzedOracleIds: string[] };
+
 export type AnalyzeResult =
   | { kind: "ok"; reading: StoredReading }
   /** The body is not `deckBodySize` (ruling 1). Nothing was computed or written. */
@@ -212,8 +226,13 @@ export async function computeAndStoreProfile(
   }: {
     pinTo?: CommitPin;
     /** A quiet rebuild of a row an older PROFILE_VERSION wrote: the list the reader's read saw, and
-     *  the pin it held. Written only over that list, and the pin is kept. */
-    rebuildOf?: { list: string; versionId: string | null; versionNumber: number | null };
+     *  the pin it held. Written only over that list, and the pin is kept. So are the deck notices
+     *  marks and the analysis date (`marks`): a rebuild is a deploy's, not the player's, and must
+     *  not swallow a pending notice or read as a new analysis (brief §6, readiness F4). */
+    rebuildOf?: {
+      list: string; versionId: string | null; versionNumber: number | null;
+      marks: RebuildMarks;
+    };
   } = {},
 ): Promise<AnalyzeResult | null> {
   const { head, row, editedAt } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
@@ -280,6 +299,9 @@ export async function computeAndStoreProfile(
   // generation it reads itself, and reads are monotonic, so the one read here is never newer than
   // the catalog the profile was built against.
   const catalog = await deps.generation();
+  // THE LOG HEAD TOO, and for the same reason (plan D3): an entry published while this computes
+  // is past the mark and still reported. A rebuild keeps the mark it replaced.
+  const seenSeq = rebuildOf ? rebuildOf.marks.seenSeq : await readLogHead(db);
   const profile = await deps.compute(deckId, userId);
   if (!profile) return null;
   let analyzedAt = new Date();
@@ -302,11 +324,15 @@ export async function computeAndStoreProfile(
       const now = await readProfileHead(tx, deckId, userId);
       if (!now || profileFingerprint(now) !== profile.fingerprint) return;
       const fingerprint = listFingerprint(now);
+      const marks = rebuildOf
+        ? rebuildOf.marks
+        : { seenSeq, rulesVersion: BRACKET_RULES_VERSION, analyzedOracleIds: analyzedOracleIds(now) };
       const [written] = await tx
         .insert(deckProfiles)
         .values({
           deckId, userId, fingerprint, catalog, profile, permits,
           profileVersion: PROFILE_VERSION, dirty: false, versionId: pinned,
+          seenSeq: marks.seenSeq, rulesVersion: marks.rulesVersion, analyzedOracleIds: marks.analyzedOracleIds,
         })
         .onConflictDoUpdate({
           target: deckProfiles.deckId,
@@ -317,7 +343,14 @@ export async function computeAndStoreProfile(
             // A commit's pin, a rebuild's kept pin, or none: a press's recompute describes a list
             // that differs from the one any earlier pin was for.
             versionId: pinned,
-            computedAt: sql`now()`,
+            seenSeq: marks.seenSeq,
+            rulesVersion: marks.rulesVersion,
+            analyzedOracleIds: marks.analyzedOracleIds,
+            // A rebuild keeps the date of the analysis it replaced (readiness F4), so `since
+            // analyzed` is the player's press and never the deploy's.
+            // The row's own column, not a value read back through JS: the column is
+            // microsecond-precise and a Date is not, so a carried value would move the date.
+            computedAt: rebuildOf ? sql`${deckProfiles}.computed_at` : sql`now()`,
           },
         })
         .returning({ computedAt: deckProfiles.computedAt });
