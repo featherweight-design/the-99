@@ -22,9 +22,9 @@ which Hugh's ruling B and the amended brief both override, and the shipped allow
     opening the tab; `STATES-analysis-tab.md` row 8a). A loader while the stored reading is fetched.
     Design's `READINESS.md` records Hugh's sign-off of §7 and §8. It is outside this audit's four
     items and needs its own owner; it is noted so it is not lost.
-  - **One unannounced change to a signed-off state:** 2f (`rangeAnswered`) now sets
-    `hasSubline: false` (`analysis-fixtures.js:284`), which drops the range subline from that
-    frame. See finding 11.
+  - **One fixture change to a signed-off state, with no visible effect:** 2f (`rangeAnswered`)
+    now sets `hasSubline: false` (`analysis-fixtures.js:284`). The `answered` block draws the
+    subline itself, so 2f still shows it once. See finding 11.
 - **No Home resume-row bracket chip is drawn.** Nothing in the drop mentions Home or the resume
   row. Hugh ruled yes on 2026-09-23, and it has not been briefed; it still needs its own prompt.
 - **The engineering audit `READINESS-r1-audit.md` is kept.** The drop arrived with it deleted;
@@ -64,7 +64,7 @@ finding 7, item 2 by finding 8, and item 3 by Hugh's ruling D (finding 3).
 | 8 | Low | ***Synopses* against *overview* in the used-up string.** The tab says *overview*, and the shared string says *Synopses*. One word must win, and it changes both surfaces. | `CREDITS-overview.md:43,61-62` | `design_handoff_the99_deck_tuning/README.md:108` | **`/copy-review`**, Hugh's word |
 | 9 | Low | **No 12-hour time formatter exists, and the time is the reader's clock.** Nothing in `src/` formats a clock time. The time has to be formatted on the client in the reader's own zone; a server render names UTC and mismatches on hydration. Tuning r3's audit asked for the same, formatted rather than written as a literal. | `CREDITS-overview.md:47` | `src/lib/copy/deck-tuning.ts:102-103` ("in the reader's own clock"); `design_handoff_the99_deck_tuning/READINESS-r3-audit.md:29-30` | **eng** |
 | 10 | Low | **Undrawn neighbors of the drawn states.** (a) Ruling A's upstream-failure line (*We could not write the overview just now…* with *Try again*) is a writer and takes 7h's note. (b) A short deck: `blocked` disables Analyze and Re-analyze, and a refused press writes nothing, so no note draws. (c) While a press is in flight the note stays as drawn; the button disables in place. (d) The banner's DOM order differs by width (sentence, note, button at 1300; sentence, button, note at 390): one note node reordered at `md:`, never two mounted copies, tied to its button by `aria-describedby` so the cost is heard before the press. | 7h (canvas `:472`); frames 1300 `:102`, 390 `:108` | plan `:237-242` (ruling A); `analysis-panel.tsx:76`; `analysis-banner.tsx:13-16`; `analysis-empty.tsx:83`; `analysis-banner.tsx:38` | **eng** |
-| 11 | Low | **2f loses its subline, unannounced.** `rangeAnswered` now sets `hasSubline: false`, which removes *Your cards permit Optimized or cEDH…* from a signed-off frame. §7's Overview states build on 2f (`S.overviewAbsent = { ...S.rangeAnswered }`), so it may be incidental. `STATES-analysis-tab.md` row 2f does not mention the subline either way. | `analysis-fixtures.js:284,369` | shipped string `src/lib/copy/declaration.ts:56` | **eng**: build 2f as shipped; ask Design in the PR if the removal was meant |
+| 11 | Low | **2f's `hasSubline: false` changes nothing drawn.** `rangeAnswered` sets `answered: true`, and both frames draw `subline` inside the `answered` block regardless of `hasSubline` (1300 `:218-219`, 390 `:175-176`). So *Your cards permit Optimized or cEDH…* still shows once on 2f and on the §7 states cloned from it (`S.overviewAbsent = { ...S.rangeAnswered }`). The flag only stops the general subline slot from drawing the same sentence a second time. | `analysis-fixtures.js:284,369` | frames 1300 `:215-219`, 390 `:172-176`; shipped string `src/lib/copy/declaration.ts:56` | **eng**: none; build 2f as shipped, subline once |
 
 ## What synopsis PR 4 must build
 
