@@ -244,7 +244,9 @@ The way into the intake from Discover's filters, at both widths.
 
 ## §7 Sequence
 
-This brief waits for Hugh's approval before it goes to Design. The Tier A work can build before the
+Ships behind `HELP_ME_CHOOSE_ENABLED` (analysis-flag.ts pattern): ON in the-99-staging, OFF in production until Hugh walks it (Hugh, 2026-09-24).
+
+Hugh approved this brief on 2026-09-24. The Tier A work can build before the
 handoff:
 - the fill's budget and bracket constraints;
 - the theme-fit, card-fit and no-theme reads;

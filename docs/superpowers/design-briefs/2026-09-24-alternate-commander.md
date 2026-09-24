@@ -192,6 +192,8 @@ All of it is deterministic, with no model call.
 
 ## §7 Sequence
 
+Ships behind `CHANGE_COMMANDER_ENABLED` (analysis-flag.ts pattern): ON in the-99-staging, OFF in production until Hugh walks it (Hugh, 2026-09-24).
+
 Hugh approved this brief on 2026-09-24. It depends on the shared universal-staple
 definition (ruling 5), which the orchestrator is sequencing. The commander write, the draft's commander
 entry and the candidate query are Tier A and can build before the handoff. The surfaces wait for
