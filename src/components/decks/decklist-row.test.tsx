@@ -15,6 +15,9 @@ import { COST_TRACK } from "../ui/cost-pips";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { markerAria } from "../ui/availability-marker";
 import { recommendedMix } from "../../lib/decks/mix";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { SwapToolsProvider } from "../../lib/swaps/context";
+import { OVER_LIMIT_RING } from "./buy-tag";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -1022,5 +1025,39 @@ describe("DecklistRow — an owned card this deck prints", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: true }}  newestAsOf={null}/>);
 
     expect(screen.getByText("Owned")).toBeInTheDocument();
+  });
+});
+
+// Swap tools, ruling 4: a Shopping row over the deck's limit gains a ring on its buy tag and an
+// `over $X` on its meta line. Nothing changes with the tools off, or on the All tab.
+describe("DecklistRow over the Shopping limit (swap tools)", () => {
+  const asOf = new Date("2026-09-20T00:00:00Z");
+  const priced = (cents: number) => ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf } });
+  const inTools = (ui: React.ReactNode, stored: number | null = null) =>
+    renderRow(<SwapToolsProvider deckId="d1" storedLimitCents={stored}>{ui}</SwapToolsProvider>);
+  const ring = () => Array.from(document.querySelectorAll<HTMLElement>("span")).filter((s) => s.style.boxShadow === OVER_LIMIT_RING);
+
+  it("rings the tag and says over $10 for a card above the default", () => {
+    inTools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    expect(ring()).toHaveLength(1);
+    expect(screen.getAllByText(swapToolsCopy.row.over("$10")).length).toBeGreaterThan(0);
+  });
+
+  it("does not mark a card at the limit exactly, or one under a raised limit", () => {
+    inTools(<DecklistRow deckId="d1" card={priced(1000)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    expect(ring()).toHaveLength(0);
+    cleanup();
+    inTools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />, 2000);
+    expect(ring()).toHaveLength(0);
+    expect(screen.queryByText(swapToolsCopy.row.over("$20"))).toBeNull();
+  });
+
+  it("marks nothing with the tools off, or on the All tab", () => {
+    renderRow(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    expect(ring()).toHaveLength(0);
+    cleanup();
+    inTools(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />);
+    expect(ring()).toHaveLength(0);
+    expect(screen.queryByText(swapToolsCopy.row.over("$10"))).toBeNull();
   });
 });

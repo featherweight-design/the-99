@@ -16,6 +16,7 @@ import {
   DECK_GROUPING_LABELS,
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
+import { StandInLimit } from "./stand-in-limit";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
@@ -71,6 +72,9 @@ type GroupToggleProps = {
       Required, not defaulted: an empty list renders the strip with no link at
       all, so a caller that forgot it would ship a silently link-less strip. */
   shoppingCards: { name: string; quantity: number }[];
+  /** Shopping rows over the deck's limit (swap tools). The limit line counts them; it draws
+   *  nothing when the tools are off. */
+  shoppingOverCount?: number;
   /** The live order for the open filter, and the way to change it. */
   sort: { key: DeckSortKey; direction: DeckSortDirection };
   onSortChange: (next: { key: DeckSortKey; direction: DeckSortDirection }) => void;
@@ -103,6 +107,7 @@ export function GroupToggle({
   priceSummary = null,
   provenance = null,
   shoppingCards,
+  shoppingOverCount = 0,
   sort,
   onSortChange,
   onSortAnnounce,
@@ -356,6 +361,9 @@ export function GroupToggle({
       {filter === "shopping" && priceSummary && (
         <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} />
       )}
+      {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
+          limit still shows then (it reads `none over`). */}
+      {filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
     </div>
   );
 }

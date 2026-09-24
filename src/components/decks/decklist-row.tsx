@@ -45,6 +45,9 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { useSwapTools } from "../../lib/swaps/context";
+import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
@@ -187,7 +190,14 @@ export function DecklistRow({
   // column of 52px ones. Ragged is the failure the group boundary exists to
   // avoid; a little more space under one name is not.
   const inLandsGroup = card.cardTypeGroup === "Lands";
-  const hasMetaLine = hasShoppingMeta || !inLandsGroup;
+  // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and the meta line an
+  // `over $X`. Shopping only, and only where the tools are on (`swapTools` is null otherwise).
+  const swapTools = useSwapTools();
+  const overLimit = swapTools !== null && inShopping && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
+  const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
+  // A land in Shopping over the limit carries the line even with no EDHREC figure to put on it:
+  // the marking is the one thing on it the reader needs.
+  const hasMetaLine = hasShoppingMeta || !inLandsGroup || overLimit;
   const rowShell = hasMetaLine ? ROW_SHELL_META : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
@@ -442,6 +452,16 @@ export function DecklistRow({
                   {figureTextPhone}
                 </span>
               ) : null}
+              {overText ? (
+                <>
+                  {cost || hasShoppingMeta ? (
+                    <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
+                  ) : null}
+                  <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
+                    {overText}
+                  </span>
+                </>
+              ) : null}
             </span>
             {hasShoppingMeta ? (
               <span
@@ -453,6 +473,12 @@ export function DecklistRow({
                 }}
               >
                 {figureTextDesktop}
+              </span>
+            ) : null}
+            {overText ? (
+              <span className="hidden md:inline-flex flex-none items-center gap-[5px] font-mono text-[10px] whitespace-nowrap">
+                {hasShoppingMeta ? <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span> : null}
+                <span style={{ color: "var(--warning)" }}>{overText}</span>
               </span>
             ) : null}
           </div>
@@ -563,6 +589,7 @@ export function DecklistRow({
             price={card.price}
             newestAsOf={newestAsOf}
             reserveSlot={hasShoppingMeta}
+            overLimit={overLimit}
             // `inShopping`, not the figure: Shopping is the list being paid
             // from, and the figure is `undefined` there too whenever EDHREC is
             // unreachable. The All tab is being scanned, so the tag collapses
