@@ -1346,6 +1346,8 @@ logged games; `markedCount` stands for games carrying a worked/hurt mark.
 
 ## Deferred to D2
 
+D2 is now tabled in `deck-tuning-d2.md` and verified in `gap-report-deck-tuning-d2.md`. The list below records what this table deferred.
+
 - **Deck-header intent line (E2 / E2b)**: second row in `spine-desktop.tsx` / `spine-mobile.tsx`,
   order name → intent → pips + commander → chips → bar; 14px/1.45 desktop, 12.5px/1.5 phone, dashed
   underline, mono "edit"; seeded chip state (V2:139-165, R3A note 3).

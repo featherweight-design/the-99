@@ -18,7 +18,9 @@ const draw = (intent: string | null, seeded = false, save = vi.fn<Save>(async ()
 describe("DeckIntentLine", () => {
   it("draws no row at all when the deck has no line", () => {
     const { container } = render(<DeckIntentLine deckId="d1" intent={null} seeded={false} width="desktop" />);
-    expect(container.innerHTML).toBe("");
+    // Only the empty live region, which draws nothing.
+    expect(container.querySelector("[data-deck-intent]")).toBeNull();
+    expect(container.textContent).toBe("");
   });
 
   it("draws the line whole, with its edit control", () => {
@@ -72,5 +74,28 @@ describe("DeckIntentLine", () => {
     expect((save.mock.calls[0][1] as FormData).get("intent")).toBe("");
     expect(screen.queryByText("go wide")).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
+    // The row is gone, and the save is still announced.
+    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.intentSaved);
+  });
+
+  it("announces a save", async () => {
+    draw("go wide");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go tall" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
+    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.intentSaved);
+  });
+
+  // The line's other door (the ask in Suggested changes) saves through the page, which hands the
+  // header a new line. A header that held its first line would stay blank until a reload.
+  it("takes a new line from the page, and drops the seeded mark with it", () => {
+    const { rerender } = render(<DeckIntentLine deckId="d1" intent={null} seeded={false} width="desktop" />);
+    expect(screen.queryByText("go wide")).toBeNull();
+    rerender(<DeckIntentLine deckId="d1" intent="go wide" seeded={false} width="desktop" />);
+    expect(screen.getByText("go wide")).toBeInTheDocument();
+    rerender(<DeckIntentLine deckId="d1" intent="Built around Gisa." seeded width="desktop" />);
+    expect(screen.getByText(copy.seeded)).toBeInTheDocument();
+    rerender(<DeckIntentLine deckId="d1" intent="win late" seeded={false} width="desktop" />);
+    expect(screen.queryByText(copy.seeded)).toBeNull();
   });
 });

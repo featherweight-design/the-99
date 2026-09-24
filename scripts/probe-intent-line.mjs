@@ -150,6 +150,11 @@ async function run() {
       const tag = `${width.label}`;
       if (!report(`${tag}: the line is drawn`, h.line !== null, h.line ? `at ${h.line.top}px` : "not drawn")) continue;
       report(`${tag}: second, under the name`, h.title !== null && h.line.top >= h.title - 1, `name ends ${h.title}px, line starts ${h.line.top}px`);
+      // 4px under the name on desktop and 5px on a phone (V2:141, :154). The phone column already
+      // spaces its rows 6px apart, so a line adding its own margin on top reads 11.
+      const gap = h.title === null ? null : h.line.top - h.title;
+      const want = width.label === 390 ? 5 : 4;
+      report(`${tag}: ${want}px under the name`, gap !== null && Math.abs(gap - want) <= 1, `${gap}px`);
       report(`${tag}: above the commander line`, h.meta !== null && h.line.bottom <= h.meta + 1, `line ends ${h.line.bottom}px, commander line ${h.meta}px`);
       report(`${tag}: whole, never truncated`, !h.clipped && h.text === LINE, h.clipped ? "clipped" : "whole");
       if (width.label === 390) report(`${tag}: wraps rather than truncating`, h.lines >= 2, `${h.lines} lines`);

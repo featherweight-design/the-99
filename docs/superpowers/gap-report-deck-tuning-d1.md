@@ -44,5 +44,7 @@ reachability gaps found. Each is listed below with what was done.
 
 ## Deferred to D2
 
+Built in D2. See `gap-report-deck-tuning-d2.md`.
+
 The deck-header intent line (E2/E2b, with its seeded state), the Games-tab pointer line and the
 `note.readBack` amendment, and retiring `deck-tuning.md`'s copy-drift allowlist row.

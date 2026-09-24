@@ -6,6 +6,7 @@ import { saveDeckIntent } from "../../app/decks/tuning-actions";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { COVER_INK_SHADOW } from "../ui/art-wash";
+import { ProvenanceDisc } from "../ui/provenance-disc";
 import { MutationError } from "./mutation-error";
 
 const copy = deckTuningCopy.intent;
@@ -42,10 +43,29 @@ export function DeckIntentLine({
   const [draft, setDraft] = useState(intent ?? "");
   const [saving, setSaving] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
+  const [announced, setAnnounced] = useState("");
+  // The line has a second door (the ask in Suggested changes) and a second copy (the other width),
+  // and every save revalidates the deck. So a new line from the page replaces the held one,
+  // adjusted during render rather than in an effect, so the old line never paints once more.
+  const [seen, setSeen] = useState({ intent, seeded });
+  if (seen.intent !== intent || seen.seeded !== seeded) {
+    setSeen({ intent, seeded });
+    setLine(intent);
+    setIsSeeded(seeded);
+    if (!editing) setDraft(intent ?? "");
+  }
   const desktop = width === "desktop";
+  // Under the name at 4px on desktop and 5px on a phone (V2:141, :154). The phone's header column
+  // already spaces its rows 6px apart, so the line takes 1px back rather than adding 5.
   const shadow = desktop ? undefined : COVER_INK_SHADOW;
 
-  if (line === null && !editing) return null;
+  // The save's announcement outlives the row: an emptied line draws nothing, and still says so.
+  const status = (
+    <span role="status" className="sr-only">
+      {announced}
+    </span>
+  );
+  if (line === null && !editing) return status;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -65,97 +85,96 @@ export function DeckIntentLine({
     setLine(draft.trim() === "" ? null : draft.trim());
     setIsSeeded(false);
     setEditing(false);
+    setAnnounced(deckTuningCopy.announce.intentSaved);
   }
 
   if (editing) {
     return (
-      <form onSubmit={submit} className={desktop ? "mt-[4px]" : "mt-[5px] w-full"}>
-        <div className="flex flex-wrap items-center gap-[8px]">
-          <input
-            autoFocus
-            name="intent"
-            value={draft}
-            onChange={(e) => {
-              if (countCharacters(e.target.value) <= copy.maxLength) setDraft(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
+      <>
+        {status}
+        <form onSubmit={submit} className={desktop ? "mt-[4px]" : "-mt-px w-full"}>
+          <div className="flex flex-wrap items-center gap-[8px]">
+            <input
+              autoFocus
+              name="intent"
+              value={draft}
+              onChange={(e) => {
+                if (countCharacters(e.target.value) <= copy.maxLength) setDraft(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setDraft(line ?? "");
+                  setEditing(false);
+                }
+              }}
+              readOnly={saving}
+              placeholder={copy.placeholder}
+              aria-label={copy.askLabel}
+              className="min-h-[44px] min-w-0 flex-1 rounded-[8px] px-[12px] text-[16px] placeholder:text-[color:var(--fg-locked)] md:min-h-[36px] md:text-[14px]"
+              style={{ background: "var(--surface-sunken)", border: "1px dashed var(--border-strong)", color: "var(--fg)" }}
+            />
+            <button
+              type="submit"
+              disabled={saving}
+              className="min-h-[44px] rounded-[8px] px-[14px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] md:min-h-[36px]"
+            >
+              {copy.save}
+            </button>
+            {/* Escape does the same on a keyboard; a phone has no Escape. */}
+            <button
+              type="button"
+              onClick={() => {
                 setDraft(line ?? "");
+                setRefused(null);
                 setEditing(false);
-              }
-            }}
-            readOnly={saving}
-            placeholder={copy.placeholder}
-            aria-label={copy.askLabel}
-            className="min-h-[44px] min-w-0 flex-1 rounded-[8px] px-[12px] text-[16px] placeholder:text-[color:var(--fg-locked)] md:min-h-[36px] md:text-[14px]"
-            style={{ background: "var(--surface-sunken)", border: "1px dashed var(--border-strong)", color: "var(--fg)" }}
-          />
-          <button
-            type="submit"
-            disabled={saving}
-            className="min-h-[44px] rounded-[8px] px-[14px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] md:min-h-[36px]"
-          >
-            {copy.save}
-          </button>
-          {/* Escape does the same on a keyboard; a phone has no Escape. */}
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(line ?? "");
-              setRefused(null);
-              setEditing(false);
-            }}
-            className="min-h-[44px] px-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] md:min-h-[36px]"
-          >
-            {copy.cancel}
-          </button>
-        </div>
-        {refused ? <MutationError message={refused} /> : null}
-      </form>
+              }}
+              className="min-h-[44px] px-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)] md:min-h-[36px]"
+            >
+              {copy.cancel}
+            </button>
+          </div>
+          {refused ? <MutationError message={refused} /> : null}
+        </form>
+      </>
     );
   }
 
   return (
-    <p
-      data-deck-intent
-      className={desktop ? "mt-[4px] flex flex-wrap items-baseline gap-[8px]" : "mt-[5px] flex w-full flex-wrap items-baseline gap-[8px]"}
-      style={{ textShadow: shadow }}
-    >
-      {isSeeded ? (
-        <span
-          role="img"
-          aria-label={copy.seededAria}
-          className="inline-flex size-[18px] flex-none items-center justify-center self-center rounded-full font-display text-[10px] font-bold"
-          style={{ border: "1.5px solid var(--accent)", color: "var(--accent)" }}
-        >
-          i
-        </span>
-      ) : null}
-      <span
-        className={desktop ? "min-w-0 text-[14px] leading-[1.45]" : "min-w-0 text-[12.5px] leading-[1.5]"}
-        style={{ color: "var(--fg-body)", borderBottom: "1px dashed var(--border-strong)" }}
+    <>
+      {status}
+      <p
+        data-deck-intent
+        className={desktop ? "mt-[4px] flex flex-wrap items-baseline gap-[8px]" : "-mt-px flex w-full flex-wrap items-baseline gap-[8px]"}
+        style={{ textShadow: shadow }}
       >
-        {line}
-      </span>
-      {isSeeded ? (
+        {/* The shipped disc (the fill ledger's), as the handoff names it, not the base canvas's copy. */}
+        {isSeeded ? <ProvenanceDisc label={copy.seededAria} className="self-center" /> : null}
         <span
-          className="flex-none rounded-full px-[9px] py-[2px] font-mono text-[10px] uppercase tracking-[0.1em]"
-          style={{ color: "var(--accent)", background: "color-mix(in oklab, var(--accent) 12%, transparent)" }}
+          className={desktop ? "min-w-0 text-[14px] leading-[1.45]" : "min-w-0 text-[12.5px] leading-[1.5]"}
+          style={{ color: "var(--fg-body)", borderBottom: "1px dashed var(--border-strong)" }}
         >
-          {copy.seeded}
+          {line}
         </span>
-      ) : null}
-      <button
-        type="button"
-        onClick={() => {
-          setDraft(line ?? "");
-          setEditing(true);
-        }}
-        aria-label={copy.editAria}
-        className="relative flex-none font-mono text-[10px] text-[color:var(--fg-locked)] hover:text-[color:var(--fg-muted)] before:absolute before:-inset-[14px] before:content-['']"
-      >
-        {copy.edit}
-      </button>
-    </p>
+        {isSeeded ? (
+          <span
+            className="flex-none rounded-full px-[9px] py-[2px] font-mono text-[10px] uppercase tracking-[0.1em]"
+            style={{ color: "var(--accent)", background: "color-mix(in oklab, var(--accent) 12%, transparent)" }}
+          >
+            {copy.seeded}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(line ?? "");
+            setEditing(true);
+          }}
+          aria-label={copy.editAria}
+          className="relative flex-none font-mono text-[10px] text-[color:var(--fg-locked)] hover:text-[color:var(--fg-muted)] before:absolute before:-inset-[14px] before:content-['']"
+        >
+          {copy.edit}
+        </button>
+      </p>
+    </>
   );
 }
