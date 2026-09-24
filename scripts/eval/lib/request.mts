@@ -50,16 +50,14 @@ export function buildParams<T>(req: Pick<ModelRequest<T>, "model" | "system" | "
 
 /**
  * The reply's structured output, parsed exactly as `callModel` parses it: the zod format's own
- * `parse` over the first text block. A reply with no text, one cut off at `max_tokens`, or one that fails the
- * schema is `malformed`, which is how `callModel` classes each of them.
+ * `parse` over every text block, joined. A reply with no text, one cut off at `max_tokens`, or one
+ * that fails the schema is `malformed`, which is how `callModel` classes each of them.
  */
 export function parseReply<T>(schema: z.ZodType<T>, message: Pick<Anthropic.Message, "content" | "stop_reason">):
   | { ok: true; value: T }
   | { ok: false; reason: string } {
-  // The FIRST text block, as `callModel` (and the SDK's own parser) reads it.
-  const block = message.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") return { ok: false, reason: `no text (stop_reason ${message.stop_reason})` };
-  const text = block.text;
+  const text = message.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+  if (text.length === 0) return { ok: false, reason: `no text (stop_reason ${message.stop_reason})` };
   try {
     return { ok: true, value: zodOutputFormat(schema).parse(text) as T };
   } catch (err) {
