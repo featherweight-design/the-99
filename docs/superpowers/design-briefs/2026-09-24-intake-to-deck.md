@@ -147,6 +147,8 @@ States:
 - ordered by a theme, by several themes, by a card, and by a theme plus a card;
 - ordered by ownership because no theme or card was given, with the suggestion to add one;
 - too narrow (ruling 8): few results or none, with the answer that removes the most named;
+- a build-around card that has never been stocked (§3.0): its price reads unknown, never $0, and the
+  row's "about $X to buy" says it leaves that card out;
 - the list loading, and a row whose ownership figures are still loading or failed while the others show
   (each row runs a trial fill, §6);
 - the whole list failing.
