@@ -139,10 +139,12 @@ export function SynopsisOverview({
           art={art}
           busy={busy}
           // 6d's control: Re-analyze while the reading itself is stale, and ruling D's write once
-          // it is current (credits audit, finding 3), with the note the tab draws beside it.
+          // it is current (credits audit, finding 3), with the note the tab draws beside it. The
+          // banner's own sentence already says the overview predates the changes, so ruling D's
+          // line is not appended to it (copy review: rule 8).
           action={stale
             ? readingFresh
-              ? { label: synopsisCopy.writeNew, line: synopsisCopy.olderThanList, note, disabled: !canWrite || spent, onPress: onWrite }
+              ? { label: synopsisCopy.writeNew, line: null, note, disabled: !canWrite || spent, onPress: onWrite }
               : { label: deckAnalysisCopy.banner.reanalyze, line: null, note: null, disabled: false, onPress: onReanalyze }
             : null}
           onRetry={canWrite && !stale ? () => onRetry(synopsis.id) : null}

@@ -148,7 +148,10 @@ describe("SynopsisOverview", () => {
     draw(synopsisState({ stale: true, wouldSpend: true }));
     fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText(copy.modal.stale, { exact: false })).toBeTruthy();
+    expect(within(dialog).getByText(copy.modal.stale)).toBeTruthy();
+    // The banner says the overview predates the changes once, not twice.
+    expect(within(dialog).queryByText(copy.olderThanList, { exact: false })).toBeNull();
+    expect(within(dialog).getByText(/Uses a credit/)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: copy.writeNew }));
     expect(onWrite).toHaveBeenCalledOnce();
   });
