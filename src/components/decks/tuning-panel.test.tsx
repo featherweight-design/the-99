@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { creditsCopy } from "../../lib/copy/credits";
@@ -179,6 +179,38 @@ describe("TuningPanel", () => {
     expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText(creditsCopy.spent(5, next))).toBeInTheDocument();
     expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+  });
+
+  it("disables the primary while the app is paused, and says until when, credits in hand or not", async () => {
+    const until = new Date("2026-10-01T00:00:00Z");
+    const d = deps([{ ...results, stale: true, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null, paused: { until } } }]);
+    await draw(d);
+    expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText(creditsCopy.paused(until))).toBeInTheDocument();
+    await press(copy.again);
+    expect(d.run).not.toHaveBeenCalled();
+  });
+
+  it("disables the owner's press once his testing share is used, with its own note", async () => {
+    const d = deps([{ ...results, stale: true, allowance: { used: 1, limit: 10, reopensAt: null, nextAt: null, ownerShare: true } }]);
+    await draw(d);
+    expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText(creditsCopy.ownerShare(new Date()))).toBeInTheDocument();
+    await press(copy.again);
+    expect(d.run).not.toHaveBeenCalled();
+  });
+
+  it("names the pause over the owner's share, and the share over spent credits", async () => {
+    const until = new Date("2026-10-01T00:00:00Z");
+    const next = new Date("2026-09-24T14:20:00Z");
+    const spentOut = { used: 5, limit: 5, reopensAt: next, nextAt: next };
+    await draw(deps([{ ...results, stale: true, allowance: { ...spentOut, paused: { until }, ownerShare: true } }]));
+    expect(screen.getByText(creditsCopy.paused(until))).toBeInTheDocument();
+    expect(screen.queryByText(creditsCopy.ownerShare(new Date()))).toBeNull();
+    cleanup();
+    await draw(deps([{ ...results, stale: true, allowance: { ...spentOut, ownerShare: true } }]));
+    expect(screen.getByText(creditsCopy.ownerShare(new Date()))).toBeInTheDocument();
+    expect(screen.queryByText(creditsCopy.spent(5, next))).toBeNull();
   });
 
   it("names the next credit while credits remain", async () => {
