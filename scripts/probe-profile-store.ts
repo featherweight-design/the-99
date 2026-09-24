@@ -282,7 +282,7 @@ async function run() {
   // read that decided on it and the rebuild).
   await fixture.execute(sql`update deck_profiles set profile_version = ${PROFILE_VERSION - 1} where deck_id = ${deck.id}::uuid`);
   check("a rebuild for another list is refused",
-    await computeAndStoreProfile(deck.id, USER, deps, { rebuildOf: { list: "not-this-list", versionId: null, versionNumber: null } }), null);
+    await computeAndStoreProfile(deck.id, USER, deps, { rebuildOf: { list: "not-this-list", versionId: null, versionNumber: null, marks: { seenSeq: 0, rulesVersion: 1, analyzedOracleIds: [] } } }), null);
   check("and computed and wrote nothing",
     { computes, v: (await storedRow(deck.id))?.profile_version }, { computes: 6, v: PROFILE_VERSION - 1 });
   await computeAndStoreProfile(deck.id, USER, deps);

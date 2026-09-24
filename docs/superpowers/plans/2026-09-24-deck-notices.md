@@ -44,10 +44,10 @@ These are engineering's, recorded so review does not re-ask them.
   - `direction`: `added | removed | moved`;
   - `oracle_ids` (uuid[]): every card a deck must hold for the entry to touch it. It is empty for `rules`;
   - `detail` (jsonb): a combo keeps its card names, `produces` and which piece `must_be_commander` (F16); a rules entry
-    keeps its rule name, what the rule now reads and `rules_version`;
+    keeps its rule name, what the rule now reads and its version under the JSON key `rulesVersion`;
   - `published_at`.
 
-  A GIN index covers `oracle_ids`. A unique partial index on `(detail->>'rules_version')` where `kind = 'rules'` makes a
+  A GIN index covers `oracle_ids`. A unique partial index on `(detail->>'rulesVersion')` where `kind = 'rules'` makes a
   rules entry impossible to write twice.
 - **D3. The marks live on `deck_profiles`:**
   - `seen_seq`: the log head read BEFORE the compute, beside `deps.generation()` (`stored.ts:282`);
@@ -81,7 +81,7 @@ These are engineering's, recorded so review does not re-ask them.
 - **D8. A bracket-rules version** (`BRACKET_RULES_VERSION` in `src/lib/bracket/rules-version.ts`) lives apart from
   `PROFILE_VERSION`. Whenever the running build's version is above the highest logged one, `scripts/vercel-migrate.ts`
   writes one `rules` entry. The unique index makes a second write a no-op. The write is non-fatal (D13). A reading is
-  touched by a rules entry when `profile.rules_version < entry.detail.rules_version`. That comparison uses the version
+  touched by a rules entry when `profile.rules_version < entry.detail.rulesVersion`. That comparison uses the version
   stored on the reading, not the reading's timestamp, so a reading computed between the deploy and the entry's write is
   still judged correctly. The first value writes no entry.
 - **D9. H1's recompute covers a player's PRESS only.** On an unchanged list, Analyze or Re-analyze answers from the store

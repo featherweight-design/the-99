@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique, foreignKey, uniqueIndex, bigint, type AnyPgColumn,
+  unique, foreignKey, uniqueIndex, bigint, bigserial, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
@@ -303,6 +303,13 @@ export const decks = pgTable("decks", {
    * player says otherwise. No surface writes it yet.
    */
   declaredBracket: integer("declared_bracket"),
+  /**
+   * The not-legal cards the player last saw in the deck notices, sorted (readiness F11). Legality
+   * is derived live from the deck's cards and has no log sequence to be read against when a card
+   * came in by import, so its read state is the SET: a notice is unread while the deck's current
+   * offending cards differ from this one. Null until the notices are first opened.
+   */
+  noticesLegalSeen: uuid("notices_legal_seen").array(),
   /**
    * What the player says this deck is FOR, in their words — the standing input deck tuning
    * (#10) hands the model beside the list and the games. Null until stated, or until a fill
@@ -1297,6 +1304,42 @@ export const catalogRefreshes = pgTable("catalog_refreshes", {
 ]);
 
 /**
+ * The deck notices change log (sub-project 9): one row per bracket-relevant change the weekly
+ * ingests publish under the catalog, on its OWN sequence. `catalog_refreshes` cannot key it: it
+ * is one overwritten row, and most of its six writers move nothing a verdict reads.
+ *
+ * A deck's notices are the entries past its reading's `deck_profiles.seen_seq` whose
+ * `oracle_ids` its analyzed list wholly holds (`oracle_ids <@ analyzed_oracle_ids`, hence the
+ * GIN index), plus `rules` entries past its reading's `rules_version`. A `rules` entry names no
+ * cards, and the unique index on its version means it can be written only once however many
+ * deploys try.
+ *
+ * Writers today: the card ingest (`gameChanger`, `notLegal`). The Combo refresh's flag and combo
+ * entries and the deploy's `rules` entry are the deck notices plan's PR 3; the kinds are declared
+ * here now so the table does not change shape under them. `detail` carries what the entry needs to be read after the row it describes is gone: a
+ * removed combo's card names and result (readiness F16), a rule's name and what it now reads.
+ *
+ * Written only by the ingests and the deploy, never by a player, and never the reason an ingest
+ * fails: every write is non-fatal (`src/lib/notices/log.ts`).
+ */
+export const deckDataChanges = pgTable("deck_data_changes", {
+  seq: bigserial("seq", { mode: "number" }).primaryKey(),
+  kind: text("kind").notNull(),
+  direction: text("direction").notNull(),
+  oracleIds: uuid("oracle_ids").array().notNull(),
+  detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
+  publishedAt: timestamp("published_at").notNull().defaultNow(),
+}, (t) => [
+  check("deck_data_changes_kind_check",
+    sql`${t.kind} in ('gameChanger', 'massLandDenial', 'extraTurns', 'combo', 'rules', 'notLegal')`),
+  check("deck_data_changes_direction_check", sql`${t.direction} in ('added', 'removed', 'moved')`),
+  index("deck_data_changes_oracle_ids_idx").using("gin", t.oracleIds),
+  uniqueIndex("deck_data_changes_rules_version_idx")
+    .on(sql`(${t.detail}->>'rulesVersion')`)
+    .where(sql`${t.kind} = 'rules'`),
+]);
+
+/**
  * Per-account preferences that are not a reading habit. A reading habit —
  * which view, which order — lives in localStorage, because it belongs to the
  * device and re-prompting on a second one costs nothing. This does not: the
@@ -1496,6 +1539,28 @@ export const deckProfiles = pgTable("deck_profiles", {
   dirty: boolean("dirty").notNull().default(false),
   /** The version a commit pinned this analysis to. Null when the reading came from a press. */
   versionId: uuid("version_id").references(() => deckVersions.id, { onDelete: "set null" }),
+  /**
+   * The deck notices marks (plan D3). `seen_seq` is the change log's head read BEFORE this
+   * reading was computed, so an entry published during the compute is still reported.
+   * `rules_version` is the bracket-rules version it was computed under. `analyzed_oracle_ids` is
+   * the list it analyzed, commanders included: an entry is tested against the cards the reading
+   * describes, not the draft (a card added since is `dirty`'s to report). A quiet rebuild keeps
+   * all three, and `computed_at`, so it never swallows a notice (brief §6, readiness F4).
+   *
+   * An EMPTY `analyzed_oracle_ids` marks a legacy row, since every deck holds at least its
+   * commander: a pre-0058 deployment still serving during the cutover writes readings with these
+   * columns' defaults after the backfill has run. A rebuild fills it rather than carrying it, and
+   * the notices read (plan PR 4) takes the deck's current list in its place.
+   *
+   * `notices_read_seq` is the last entry the player opened the notices at. Reading quiets data
+   * notices (the handoff's §3). A re-analysis that RECOMPUTES moves `seen_seq` past them; a press
+   * on an unchanged list answers from the store (ruling 5) and moves nothing, until the plan's
+   * PR 4 makes such a press recompute when an entry touches the deck (Hugh's H1).
+   */
+  seenSeq: bigint("seen_seq", { mode: "number" }).notNull().default(0),
+  noticesReadSeq: bigint("notices_read_seq", { mode: "number" }).notNull().default(0),
+  rulesVersion: integer("rules_version").notNull().default(0),
+  analyzedOracleIds: uuid("analyzed_oracle_ids").array().notNull().default(sql`'{}'::uuid[]`),
 }, (t) => [
   index("deck_profiles_user_idx").on(t.userId),
   check("deck_profiles_permits_check",
@@ -1664,6 +1729,14 @@ export const deckSynopses = pgTable("deck_synopses", {
   outputTokens: integer("output_tokens"),
   /** The run a section retry built on: its passing sections are carried over byte for byte. */
   retryOf: uuid("retry_of").references((): AnyPgColumn => deckSynopses.id, { onDelete: "set null" }),
+  /**
+   * The change log head the analysis this overview was written from had seen (plan D11). A
+   * notice-driven re-analysis (Hugh's H1, the plan's PR 4) keeps the list and moves only the data,
+   * so the overview is marked
+   * possibly out of date when this is below the reading's `seen_seq`. 0 for every overview
+   * written before the log existed, which the log's first entry therefore dates correctly.
+   */
+  seenSeq: bigint("seen_seq", { mode: "number" }).notNull().default(0),
 }, (t) => [
   check("deck_synopses_status_check", sql`${t.status} in ('pending', 'done')`),
   check(
