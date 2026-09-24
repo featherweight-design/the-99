@@ -1,7 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db";
-import { deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
+import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
@@ -41,6 +41,12 @@ export type SynopsisState = {
    * Round 0's refused state, with the count summed over its sections. Null otherwise.
    */
   lastRefused: { failed: number; total: number } | null;
+  /**
+   * The preview art for every card the shown overview names, by oracle id. The page's own art
+   * covers the deck; Weaknesses may name a card the deck does not hold, resolved against the
+   * catalog, and its name must preview like any other.
+   */
+  art: Record<string, string | null>;
   /** A run is in flight on this deck. */
   pending: boolean;
 };
@@ -100,7 +106,12 @@ export async function readSynopsisState(
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
-  return { synopsis, ...status, allowance, lastFailed, lastRefused, pending: newest?.status === "pending" };
+  const named = synopsis ? [...new Set(Object.values(synopsis.content.cards).map((c) => c.oracleId))] : [];
+  const art = named.length === 0 ? {} : Object.fromEntries(
+    (await db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)))
+      .map((r) => [r.oracleId, r.imageUri]),
+  );
+  return { synopsis, ...status, allowance, lastFailed, lastRefused, art, pending: newest?.status === "pending" };
 }
 
 /** A version's synopsis, as copied at its commit, or null. Never stale (`SYNOPSIS-modal.md` §4.4). */

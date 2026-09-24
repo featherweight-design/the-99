@@ -36,6 +36,7 @@ export function synopsisState(over: Partial<SynopsisState> = {}): SynopsisState 
     allowance: { used: 1, limit: 3, reopensAt: null, nextAt: new Date() },
     lastFailed: false,
     lastRefused: null,
+    art: {},
     pending: false,
     ...over,
   };

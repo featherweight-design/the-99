@@ -135,6 +135,14 @@ async function run() {
     select model, contract_version, fingerprint from deck_synopses where deck_id = ${deck.id}::uuid`);
   check("…records the model that wrote it", stored.model, "probe-stub");
   check("…and the list it describes", stored.fingerprint, list());
+  {
+    // Every card the shown overview names carries its preview art in the read, including any a
+    // Weaknesses line names that the deck does not hold.
+    const s2 = await state();
+    const named = new Set(Object.values(s2.synopsis?.content.cards ?? {}).map((c) => c.oracleId));
+    check("the read carries art for every card the overview names",
+      named.size > 0 && [...named].every((id) => id in s2.art), true);
+  }
 
   // 3 · REUSE IS KEYED ON THE LIST (ruling B): a second press on the same list reuses, free.
   const again = await writeSynopsisFor(deck.id, USER, deps);

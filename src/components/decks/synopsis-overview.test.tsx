@@ -2,10 +2,11 @@
 // is a prop, so each is asserted without a request, and the ones that draw no write control are
 // asserted to draw none rather than assumed to.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { checkedSynopsis, synopsisRow, synopsisState } from "./__fixtures__/synopsis";
+import { HoverPreviewProvider } from "./hover-preview";
 import { SynopsisOverview } from "./synopsis-overview";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";
@@ -250,5 +251,35 @@ describe("SynopsisOverview", () => {
     expect(within(section).getByText(copy.failedCount(2, 5))).toBeTruthy();
     fireEvent.click(within(section).getByRole("button", { name: copy.tryAgain }));
     expect(onRetry).toHaveBeenCalledWith("syn-1");
+  });
+  // Weaknesses may name a card the deck does not hold. The page's art covers only the deck, so the
+  // read carries art for every named card, and that name previews like any other.
+  it("previews a named card the deck does not hold, from the read's own art", () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      writable: true, configurable: true,
+      value: (q: string) => ({ matches: q === "(hover: hover)", media: q, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+        dispatchEvent: () => false }),
+    });
+    try {
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <HoverPreviewProvider>
+            <SynopsisOverview
+              state={synopsisState({ art: { craterhoof: "https://img/hoof.jpg" } })}
+              busy={false} deckName="Hoof" art={new Map()} readingFresh settled
+              onWrite={onWrite} onRetry={onRetry} reanalyze={{ onPress: onReanalyze, disabled: false }}
+            />
+          </HoverPreviewProvider>
+        </CardDetailProvider>,
+      );
+      const hoof = screen.getAllByTestId("synopsis-card").find((e) => /Craterhoof/.test(e.textContent ?? ""))!;
+      fireEvent.mouseEnter(hoof);
+      act(() => void vi.advanceTimersByTime(240));
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("hoof.jpg");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

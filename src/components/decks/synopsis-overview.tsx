@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
@@ -57,6 +57,15 @@ export function SynopsisOverview({
   reanalyze: { onPress: () => void; disabled: boolean };
 }) {
   const [open, setOpen] = useState(false);
+  // The page's art covers the deck; the read's covers every card the overview names, which is how
+  // a Weaknesses card the deck does not hold still previews. The page's entry wins where both do.
+  const named = useMemo<FindingArt>(() => {
+    const out = new Map(art);
+    for (const [oracleId, imageUri] of Object.entries(state.art)) {
+      if (!out.has(oracleId)) out.set(oracleId, { name: "", imageUri });
+    }
+    return out;
+  }, [art, state.art]);
   const { synopsis, stale, allowance } = state;
   const content = synopsis?.content ?? null;
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
@@ -103,7 +112,7 @@ export function SynopsisOverview({
     body = (
       <>
         <p className="text-[13.5px] leading-[1.65] md:text-[15px] md:leading-[1.7] md:max-w-[760px] text-[var(--fg-body)] [text-wrap:pretty]">
-          <SynopsisText text={content.overview} cards={content.cards} art={art} />
+          <SynopsisText text={content.overview} cards={content.cards} art={named} />
         </p>
         {followUp}
       </>
@@ -147,7 +156,7 @@ export function SynopsisOverview({
           synopsis={synopsis}
           stale={stale}
           deckName={deckName}
-          art={art}
+          art={named}
           busy={busy}
           // 6d's control: Re-analyze while the reading itself is stale, and ruling D's write once
           // it is current (credits audit, finding 3), with the note the tab draws beside it. The
