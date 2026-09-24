@@ -38,15 +38,29 @@ export async function countTokens(params: Params): Promise<number> {
   return r.input_tokens;
 }
 
-export async function sendBatch(requests: Sent[], log: (line: string) => void): Promise<{ batchId: string; results: Got[] }> {
+/**
+ * `resumeId` attaches to a batch already submitted (a run whose process died while it was being
+ * processed), so the answers already paid for are collected rather than lost. A poll that fails
+ * is retried on the next tick: a batch keeps processing whether or not anyone is watching it, and a
+ * single timed-out status check used to end the run with its batch still running.
+ */
+export async function sendBatch(requests: Sent[], log: (line: string) => void, resumeId?: string): Promise<{ batchId: string; results: Got[] }> {
   const api = anthropic().messages.batches;
-  const batch = await api.create({ requests: requests.map((r) => ({ custom_id: r.customId, params: r.params })) });
-  log(`batch ${batch.id}: ${requests.length} requests submitted`);
+  const batch = resumeId
+    ? await api.retrieve(resumeId)
+    : await api.create({ requests: requests.map((r) => ({ custom_id: r.customId, params: r.params })) });
+  log(resumeId ? `batch ${batch.id}: resumed` : `batch ${batch.id}: ${requests.length} requests submitted`);
   let status = batch.processing_status;
   let last = "";
   while (status !== "ended") {
     await new Promise((r) => setTimeout(r, 20_000));
-    const b = await api.retrieve(batch.id);
+    let b: Awaited<ReturnType<typeof api.retrieve>>;
+    try {
+      b = await api.retrieve(batch.id);
+    } catch (err) {
+      log(`batch ${batch.id}: status check failed (${err instanceof Error ? err.message : String(err)}); retrying`);
+      continue;
+    }
     status = b.processing_status;
     const line = `batch ${batch.id}: ${status} ${JSON.stringify(b.request_counts)}`;
     if (line !== last) log(line);

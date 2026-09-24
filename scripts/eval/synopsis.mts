@@ -33,6 +33,8 @@ const { values: args } = parseArgs({
     "dry-run": { type: "boolean", default: false },
     "plan-done": { type: "string", default: "0" },
     label: { type: "string", default: "run" },
+    /** `<runId>:<batchId>`: attach to a first pass an earlier process submitted and died waiting on. */
+    resume: { type: "string" },
   },
 });
 
@@ -70,6 +72,7 @@ const run = await runRequests({
   meta: { args, split, contractVersion: app.contractVersion, variant: { id: variant.id, reason: variant.reason }, decks: prepared.map((p) => ({ deckId: p.deckId, name: nameOf.get(p.deckId) })) },
   prepared,
   log,
+  resume: args.resume ? { runId: args.resume.split(":")[0], batchId: args.resume.split(":")[1] } : undefined,
 });
 if (!run) process.exit(args["dry-run"] ? 0 : 2);
 

@@ -51,6 +51,9 @@ export async function runRequests<T>(opts: {
   meta: Record<string, unknown>;
   prepared: unknown;
   log: (line: string) => void;
+  /** Attach to a first-pass batch an earlier process submitted and died waiting on. Its pending
+   *  ledger entry is the one this run settles, and nothing new is submitted for the first pass. */
+  resume?: { runId: string; batchId: string };
 }): Promise<{ runId: string; dir: URL; answers: Map<string, Answer<T>> } | null> {
   const { first, schema, realtime, log } = opts;
 
@@ -68,33 +71,37 @@ export async function runRequests<T>(opts: {
   const ledger = readLedger(LEDGER);
   log(`${first.length} requests, ${inputSum} input tokens; worst case $${worst.toFixed(2)}; spent so far $${spent(ledger).toFixed(2)}`);
   if (opts.dryRun) return null;
-  const stop = refusal(ledger, worst, opts.planDone);
+  const stop = opts.resume ? null : refusal(ledger, worst, opts.planDone);
   if (stop) {
     log(`NOT SENT: ${stop}`);
     return null;
   }
 
-  const runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${opts.feature}-${opts.label}`;
+  const runId = opts.resume?.runId ?? `${new Date().toISOString().replace(/[:.]/g, "-")}-${opts.feature}-${opts.label}`;
   const dir = new URL(`runs/${runId}/`, ROOT);
   mkdirSync(dir, { recursive: true });
   const sha = execSync("git rev-parse --short HEAD").toString().trim();
-  writeFileSync(new URL("meta.json", dir), `${JSON.stringify({ runId, sha, ...opts.meta }, null, 2)}\n`);
-  writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(opts.prepared)}\n`);
+  // A resumed run keeps the meta and packs the original process wrote before it died.
+  if (!opts.resume) {
+    writeFileSync(new URL("meta.json", dir), `${JSON.stringify({ runId, sha, ...opts.meta }, null, 2)}\n`);
+    writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(opts.prepared)}\n`);
+  }
 
   const modelOf = new Map(first.map((s) => [s.customId, s.params.model]));
   // A batch is recorded at its worst case BEFORE it is submitted and settled at its real cost after
   // (`ledger.mts`), so a crash between paying and settling leaves the worst case counted.
-  const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[]> => {
+  const send = async (batch: Sent[], pass: string, worstUsd: number, resumeId?: string): Promise<Got[]> => {
     if (batch.length === 0) return [];
     const pendingId = `${runId}/${pass}`;
-    record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
+    // A resumed pass already has its pending entry, written by the process that submitted it.
+    if (!resumeId) record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
     let got: Got[];
     let source: string;
     if (realtime) {
       got = await sendRealtime(batch, log);
       source = `realtime:${batch.length}`;
     } else {
-      const r = await sendBatch(batch, log);
+      const r = await sendBatch(batch, log, resumeId);
       got = r.results;
       source = r.batchId;
     }
@@ -107,7 +114,7 @@ export async function runRequests<T>(opts: {
 
   const attempts = new Map<string, Got[]>();
   // The first pass is held at the whole worst case, a retry included.
-  for (const g of await send(first, "a1", worst)) attempts.set(g.customId, [g]);
+  for (const g of await send(first, "a1", worst, opts.resume?.batchId)) attempts.set(g.customId, [g]);
   const retry = first.filter((s) => {
     const g = attempts.get(s.customId)?.[0];
     return !g || !g.ok || !parseReply(schema, g.message).ok;
