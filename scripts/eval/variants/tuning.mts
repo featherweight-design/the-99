@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import type { EvidencePack } from "../../../src/lib/tuning/evidence";
 import { noteDate } from "../../../src/lib/tuning/note-date";
 import { axisLabel, oneLine } from "../../../src/lib/tuning/prompt";
@@ -19,7 +21,8 @@ export type TuningVariant = {
   id: string;
   reason: string;
   pack?: (pack: EvidencePack) => EvidencePack;
-  prompt?: (messages: Messages, pack: EvidencePack) => Messages;
+  /** `deckId` is the deck the pack was built for, for a variant that brings in stored context. */
+  prompt?: (messages: Messages, pack: EvidencePack, deckId: string) => Messages;
 };
 
 /** How many staples the trimmed context keeps. The prompt calls the list "context, not a menu". */
@@ -111,8 +114,57 @@ TUNING_VARIANTS["cite-names"] = {
   prompt: (m) => ({ system: `${m.system}\n${CITE_RULES}\n${NAMES_RULE}`, user: m.user }),
 };
 
-export function applyVariant(variant: TuningVariant, pack: EvidencePack, build: (p: EvidencePack) => Messages) {
+export function applyVariant(variant: TuningVariant, pack: EvidencePack, build: (p: EvidencePack) => Messages, deckId = "") {
   const shown = variant.pack ? variant.pack(pack) : pack;
   const built = build(shown);
-  return { pack: shown, messages: variant.prompt ? variant.prompt(built, shown) : built };
+  return { pack: shown, messages: variant.prompt ? variant.prompt(built, shown, deckId) : built };
 }
+
+/**
+ * Round 3, for Hugh's blind round 1 notes (orchestrator, 2026-09-24): the strategy each deck plays,
+ * the size of each gap, grounding in the decklist, and the universal staples.
+ *
+ * The strategy is the deck's OWN stored overview: its strategy steps and its Key cards, read from
+ * `runs/strategy-overviews.json`, which `strategy-input.mts` builds from the stored overview reads.
+ * A deck with no entry fails the run rather than silently running without it. The universal staples
+ * are read from the same file, derived there from `format_staples` (a staple in at least 12 of the
+ * 16 conditions), never listed here.
+ */
+export type StrategyInput = {
+  universal: string[];
+  decks: Record<string, { strategy: string[]; keyCards: string[] }>;
+};
+
+let strategyInput: StrategyInput | null = null;
+export function setStrategyInput(input: StrategyInput) { strategyInput = input; }
+function strategyOf(deckId: string) {
+  if (!strategyInput) {
+    strategyInput = JSON.parse(readFileSync(new URL("../../../docs/superpowers/eval/runs/strategy-overviews.json", import.meta.url), "utf8")) as StrategyInput;
+  }
+  const deck = strategyInput.decks[deckId];
+  if (!deck) throw new Error(`eval: no stored overview for deck ${deckId}; run eval:strategy-input first`);
+  return { deck, universal: strategyInput.universal };
+}
+
+const STRATEGY_RULES = (universal: string[]) => [
+  "Make 4 or 5 suggestions when the deck supports that many.",
+  "Size suggestions to the gap. A role that is one short of its target gets one suggestion; if you offer two for it, say in each rationale that they are alternatives to each other.",
+  "Prefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move a role count toward its target.",
+  "Never suggest cutting a Key card listed under \"How this deck plays\".",
+  `Never suggest cutting ${universal.join(", ")} just to fix a role count.`,
+].join("\n");
+
+TUNING_VARIANTS.strategy = {
+  id: "strategy",
+  reason: "Round 3: the deck's own stored overview (strategy and Key cards, never cut), 4 to 5 suggestions sized to the gap, decklist-grounded swaps, and no universal staple cut for a count. From Hugh's blind round 1 notes.",
+  prompt: (m, _pack, deckId) => {
+    const { deck, universal } = strategyOf(deckId);
+    const plain = (t: string) => t.replace(/\[\[([^\]]+)\]\]/g, "$1");
+    const block = [
+      "How this deck plays (from its own overview):",
+      ...deck.strategy.map((s) => `- ${plain(s)}`),
+      `Key cards, never to be cut: ${deck.keyCards.join(", ")}.`,
+    ].join("\n");
+    return { system: `${m.system}\n${STRATEGY_RULES(universal)}`, user: `${m.user}\n\n${block}` };
+  },
+};

@@ -75,6 +75,44 @@ sonnet-low 3).
 Sonnet-low on such a prompt, asked for 4 to 5 suggestions, is the untested path to S's quality at
 40% of its cost.
 
+### The strategy variant, re-tested (round 3)
+
+Hugh approved a re-test on a prompt built from his round 1 notes (the `strategy` variant, a
+harness-side transform of the real builder's output). The model is given the deck's own stored
+overview (its strategy steps, and its Key cards to be left in), and is told:
+- make 4 to 5 suggestions, sized to each gap;
+- prefer swaps grounded in the decklist over pure role-count swaps;
+- never cut a universal staple just to fix a count.
+
+It cost $1.41. The held-out run used one trial per deck rather than three, because at 4 to 5
+suggestions S costs more per answer and three trials would have passed Hugh's "about $2".
+
+Held-out, trial 0, over the suggestions that survived checking (`pnpm eval:tuning-strategy`). A
+role count is read from each suggestion's own `mix` citations, whether or not they are written
+with a colon (`draw 4 of 10` or `draw: 4 of 10`):
+
+| cell / prompt | kept per answer | answers filling a one-slot gap twice | threshold-only share | Key-card cuts | universal-staple cuts | $/answer |
+|---|---|---|---|---|---|---|
+| S / base | 2.73 | 4 | 85% | 0 | 0 | $0.051 |
+| S / strategy | 3.07 | 1 | 41% | 0 | 0 | $0.083 |
+| sonnet-low / base | 2.40 | 3 | 56% | 0 | 0 | $0.016 |
+| sonnet-low / strategy | 3.20 | 5 | 63% | 0 | 0 | $0.020 |
+
+- **S on the new prompt** moves clearly toward Hugh's notes. It is more grounded, keeps more
+  suggestions and fills a one-slot gap twice on 1 answer instead of 4, and it costs about 60% more
+  per answer.
+- **Sonnet-low** keeps the most suggestions, but it follows neither the grounding rule nor the
+  gap-sizing rule: it double-fills a one-slot gap on 5 answers, up from 3.
+
+**The Key-card gate passes against the wrong list.** Both setups still cut Lotus Petal from
+Yuriko on the new prompt. The deck's own overview names Yuriko, Sol Ring, Dimir Signet, the
+ninjas, Snuff Out and Kaito as its Key cards. It never names Lotus Petal or Ornithopter, the two
+cards Hugh called load-bearing. The base prompt scored 0 on the same definition, so no run could
+have caught this. What a player knows is load-bearing has to come from the player, as a stated
+intent or a "never cut" mark on a card. The model's own overview cannot supply it.
+
+Hugh's blind read of the two setups on this prompt is round 3 on the same page: ROUND3_TBD.
+
 ## Overview
 
 S truncates or malforms a third of its answers. Its median attempt hits the 8,000 ceiling: 69 of
@@ -233,4 +271,4 @@ For reference, these are the largest whole allowances the pre-registered rule
 
 ## Spend
 
-**$16.94 of $25**, from `ledger.jsonl`: 52 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+**$18.35 of $25**, from `ledger.jsonl`: 60 entries, none left pending. $16.94 of that was spent before the round 3 re-test, which cost $1.41. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.

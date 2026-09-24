@@ -70,7 +70,7 @@ export async function openTuning() {
         })) as DeckGame[];
       }
       const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned, now: new Date(OVERLAY_ANCHOR) });
-      const { pack: shown, messages } = applyVariant(variant, pack, buildPrompt);
+      const { pack: shown, messages } = applyVariant(variant, pack, buildPrompt, deckId);
       out.push({ deckId, pack: shown, ...messages });
     }
     return out;

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildPlayGroup } from "../../../src/lib/profile/play";
 import type { EvidencePack } from "../../../src/lib/tuning/evidence";
 import { buildPrompt } from "../../../src/lib/tuning/prompt";
-import { applyVariant, TUNING_VARIANTS } from "./tuning.mjs";
+import { applyVariant, setStrategyInput, TUNING_VARIANTS } from "./tuning.mjs";
 
 const pack: EvidencePack = {
   commanders: [{ oracleId: "c", name: "Gisa, Glorious Resurrector" }],
@@ -19,6 +19,9 @@ const pack: EvidencePack = {
   year: 2026,
 };
 
+// The strategy variant reads stored per-deck context; the test supplies it rather than a file.
+setStrategyInput({ universal: ["Sol Ring"], decks: { "deck-1": { strategy: ["Attack with [[X]]."], keyCards: ["X"] } } });
+
 describe("tuning variants", () => {
   it("base is the app's prompt, byte for byte", () => {
     expect(applyVariant(TUNING_VARIANTS.base, pack, buildPrompt).messages).toEqual(buildPrompt(pack));
@@ -30,9 +33,9 @@ describe("tuning variants", () => {
     it(`${v.id} starts from buildPrompt's own output`, () => {
       let received: unknown = null;
       const probe = v.prompt
-        ? { ...v, prompt: (m: { system: string; user: string }, p: EvidencePack) => { received = m; return v.prompt!(m, p); } }
+        ? { ...v, prompt: (m: { system: string; user: string }, p: EvidencePack, d: string) => { received = m; return v.prompt!(m, p, d); } }
         : v;
-      const { pack: shown, messages } = applyVariant(probe, pack, buildPrompt);
+      const { pack: shown, messages } = applyVariant(probe, pack, buildPrompt, "deck-1");
       if (v.prompt) expect(received).toEqual(buildPrompt(shown));
       else expect(messages).toEqual(buildPrompt(shown));
     });
@@ -42,5 +45,29 @@ describe("tuning variants", () => {
     const { pack: shown } = applyVariant(TUNING_VARIANTS.trim, pack, buildPrompt);
     expect(shown.staples.map((s) => s.name)).toEqual(pack.staples.slice(0, 15).map((s) => s.name));
     expect({ ...shown, staples: [] }).toEqual({ ...pack, staples: [] });
+  });
+});
+
+describe("the strategy variant", () => {
+  const { messages } = applyVariant(TUNING_VARIANTS.strategy, pack, buildPrompt, "deck-1");
+  const base = buildPrompt(pack);
+
+  it("adds the deck's own strategy and Key cards to the user message, marks stripped", () => {
+    expect(messages.user.startsWith(base.user)).toBe(true);
+    expect(messages.user).toContain("How this deck plays (from its own overview):\n- Attack with X.");
+    expect(messages.user).toContain("Key cards, never to be cut: X.");
+  });
+
+  it("adds the count, gap, grounding, Key-card and universal-staple rules to the system message", () => {
+    expect(messages.system.startsWith(base.system)).toBe(true);
+    expect(messages.system).toContain("Make 4 or 5 suggestions");
+    expect(messages.system).toContain("one short of its target gets one suggestion");
+    expect(messages.system).toContain("grounded in how this deck plays");
+    expect(messages.system).toContain("Never suggest cutting a Key card");
+    expect(messages.system).toContain("Never suggest cutting Sol Ring just to fix a role count.");
+  });
+
+  it("fails a deck with no stored overview rather than running without it", () => {
+    expect(() => applyVariant(TUNING_VARIANTS.strategy, pack, buildPrompt, "no-such-deck")).toThrow(/no stored overview/);
   });
 });
