@@ -30,6 +30,8 @@ export type SwapTools = {
   standIns: DeckDetailCard | null;
   openStandIns: (card: DeckDetailCard) => void;
   closeStandIns: () => void;
+  /** Speak a sentence in the page's swap live region, which outlives the control that spoke it. */
+  announce: (text: string) => void;
 };
 
 /**
@@ -42,8 +44,13 @@ export type SwapReceipt = {
   cutOracleId: string;
   cut: string;
   add: string;
-  /** The type group the cut sat in, so the receipt draws in its slot. */
-  group: string;
+  /**
+   * The Shopping sections the cut could have sat in, first match wins: its type group under `By type`,
+   * its role (or `other`) under `By role`. `groupLabel` heads a section of its own when the cut was the
+   * last row of its section and the section has gone.
+   */
+  sections: string[];
+  groupLabel: string;
   /** From the take's own read, never the list's (audit note). */
   free: boolean;
   /** Copies of the cut still in the draft: the row stays and the receipt sits under it. */
@@ -66,18 +73,20 @@ export function SwapToolsProvider({
   const [receipts, setReceipts] = useState<SwapReceipt[]>([]);
   const [standIns, setStandIns] = useState<DeckDetailCard | null>(null);
   const closeStandIns = useCallback(() => setStandIns(null), []);
+  const [announcement, setAnnouncement] = useState("");
   const addReceipt = useCallback((r: SwapReceipt) => setReceipts((all) => [...all.filter((x) => x.swapId !== r.swapId), r]), []);
   const dropReceipt = useCallback((swapId: string) => setReceipts((all) => all.filter((x) => x.swapId !== swapId)), []);
   const value = useMemo(
     () => ({
       deckId, deckName, storedLimitCents, limitCents: effectiveLimit(storedLimitCents),
-      receipts, addReceipt, dropReceipt, standIns, openStandIns: setStandIns, closeStandIns,
+      receipts, addReceipt, dropReceipt, standIns, openStandIns: setStandIns, closeStandIns, announce: setAnnouncement,
     }),
     [deckId, deckName, storedLimitCents, receipts, addReceipt, dropReceipt, standIns, closeStandIns],
   );
   return (
     <SwapToolsContext.Provider value={value}>
       {children}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</span>
     </SwapToolsContext.Provider>
   );
 }

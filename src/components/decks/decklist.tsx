@@ -6,6 +6,7 @@
 
 import { useSwapTools } from "../../lib/swaps/context";
 import { StandInsSheet } from "./stand-ins-sheet";
+import { SwapReceiptRow } from "./swap-receipt";
 import { isOverLimit } from "../../lib/swaps/limit";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -43,7 +44,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -650,6 +651,16 @@ export function Decklist({
     // Prev/Next in the card detail modal walks the list the eye does, so the
     // ids come from the rendered groups rather than from `shoppingCards`, whose
     // deck order the role grouping below discards.
+    // Where each receipt draws (swap tools, PR 4b). Under its row while copies of the cut remain;
+    // else in the first section it could have sat in; else, the section gone, in one of its own.
+    const receipts = swapTools?.receipts ?? [];
+    const onList = new Set(shoppingSections.flatMap((s) => s.cards.map((c) => c.oracleId)));
+    const receiptsUnder = (oracleId: string) => receipts.filter((r) => r.cutOracleId === oracleId);
+    const homeOf = (r: (typeof receipts)[number]) => r.sections.find((k) => shoppingSections.some((s) => s.key === k));
+    const receiptsInSection = (key: string) =>
+      receipts.filter((r) => !onList.has(r.cutOracleId) && homeOf(r) === key);
+    const orphanReceipts = receipts.filter((r) => !onList.has(r.cutOracleId) && homeOf(r) === undefined);
+
     const shoppingOrderedIds = shoppingSections
       .flatMap((section) => section.cards.map((c) => c.oracleId))
       .filter((id) => id !== spentCard?.oracleId);
@@ -721,7 +732,11 @@ export function Decklist({
               section and a type one is the label and whether a clause rides
               beside it; three near-identical blocks is how the two groupings
               came to disagree about what a Shopping row looks like. */}
-          {shoppingSections.map(({ key, label, cards: groupCards, gapClause }) => (
+          {[
+            ...shoppingSections,
+            // A receipt whose section has gone (the cut was its last row) heads a section of its own.
+            ...orphanReceipts.map((r) => ({ key: `receipt-${r.swapId}`, label: r.groupLabel, cards: [] as DeckDetailCard[], gapClause: undefined })),
+          ].map(({ key, label, cards: groupCards, gapClause }) => (
             <div key={key} className="mb-[16px] md:mb-[20px]">
               <DecklistGroupHeader
                 label={label}
@@ -733,17 +748,22 @@ export function Decklist({
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
                 {groupCards.map((card) => (
-                  <DecklistRow
-                    key={card.oracleId}
-                    deckId={deckId}
-                    card={card}
-                    siblings={shoppingOrderedIds}
-                    spent={card.oracleId === spentCard?.oracleId}
-                    shoppingFigure={figureFor(card.oracleId)}
-                    inShopping
-                    newestAsOf={newestAsOf}
-                  />
+                  <Fragment key={card.oracleId}>
+                    <DecklistRow
+                      deckId={deckId}
+                      card={card}
+                      siblings={shoppingOrderedIds}
+                      spent={card.oracleId === spentCard?.oracleId}
+                      shoppingFigure={figureFor(card.oracleId)}
+                      inShopping
+                      newestAsOf={newestAsOf}
+                    />
+                    {/* One copy fewer: the row stays, and the receipt sits directly under it. */}
+                    {receiptsUnder(card.oracleId).map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
+                  </Fragment>
                 ))}
+                {/* The cut's own row has gone: its receipt takes the section's last slot. */}
+                {receiptsInSection(key).map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
               </div>
             </div>
           ))}

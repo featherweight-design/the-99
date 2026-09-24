@@ -244,7 +244,6 @@ export function StandInsSheet({
   const [failedTake, setFailedTake] = useState<string | null>(null);
   const [undoing, setUndoing] = useState(false);
   const [undoFailed, setUndoFailed] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
 
   if (!tools) return null;
   const model = load.state === "ready" ? sheetModel(load.read) : null;
@@ -262,9 +261,10 @@ export function StandInsSheet({
         setTaken({ addId: row.oracleId, add: row.name, swapId: result.swapId });
         tools.addReceipt({
           swapId: result.swapId, cutOracleId: card.oracleId, cut: name, add: row.name,
-          group: card.cardTypeGroup, free: result.addWasFree, cutLeft: result.cutLeft,
+          sections: [card.cardTypeGroup, card.role, "other"], groupLabel: card.cardTypeGroup,
+          free: result.addWasFree, cutLeft: result.cutLeft,
         });
-        setAnnouncement(swapToolsCopy.announce.taken(name, row.name));
+        tools.announce(swapToolsCopy.announce.taken(name, row.name));
       } else {
         setRefused({ addId: row.oracleId, reason: result.reason });
       }
@@ -283,7 +283,7 @@ export function StandInsSheet({
       const { ok } = await undoSwapAction(taken.swapId);
       if (ok) {
         tools.dropReceipt(taken.swapId);
-        setAnnouncement(swapToolsCopy.announce.undone(name, taken.add));
+        tools.announce(swapToolsCopy.announce.undone(name, taken.add));
         setTaken(null);
       } else {
         setUndoFailed(true);
@@ -425,7 +425,6 @@ export function StandInsSheet({
           </section>
         ))}
 
-        <span className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</span>
         {model?.foot && provenance ? (
           <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>{copy.foot(provenance.when)}</p>
         ) : null}
