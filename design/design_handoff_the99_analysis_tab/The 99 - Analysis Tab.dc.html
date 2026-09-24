@@ -303,10 +303,12 @@
   </section>
 
   <section id="5" style="display:flex;flex-direction:column;gap:16px;max-width:1180px;">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">5 · <span style="color:var(--accent);">the About entry, batched at launch</span></div>
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">5 · <span style="color:var(--accent);">the About entries, batched at launch · r2, for finding 18</span></div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Three changes, one bump.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</span> 9 → 10 covers all of them; both new entries take <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since: 10</span>. Filled §G templates, not canvas edits; full slots, fixtures and reasons are in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT-entry.md</span>. No em dash in any new line; captions and keys are queued for <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/copy-review</span>.</p>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="5a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">5a</span><span style="font-size:14px;font-weight:600;color:var(--fg);">deck-analysis · the whole line</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:26px;">
       <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;">
-        <sc-for list="{{ about }}" as="a" hint-placeholder-count="8">
+        <sc-for list="{{ about }}" as="a" hint-placeholder-count="10">
           <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-bottom:1px solid var(--border);">
             <span style="padding:10px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ a.k }}</span>
             <span style="padding:10px 14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">{{ a.v }}</span>
@@ -314,9 +316,36 @@
         </sc-for>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
-        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">A filled §G template, not a canvas edit</b>, as R5's two were. Full slots, fixture and the phone reduction are in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT-entry.md</span>.</p>
-        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Specimen:</b> the bracket box and the climb from 2f, at the plate width, with fixture props — the one slice that carries what no other route has (a range, an answer, the rungs). The findings and sheets are named in key lines rather than drawn: a whole-tab figure is what cropped every earlier chapter-03 attempt.</p>
-        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">since</b> is whatever <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</span> the launch batch takes; one bump for the batch, not one per round.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Route:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/decks</span> and <i>opens a deck</i>, as every deck entry does. The tab has no address About can link to, so the caption names it instead.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Coverage added:</b> the header and tile chip and the version comparison in the caption; the lean and its reasoning as key 4. Key 3 now says the chip holds after an edit (ruling 4). r1's <i>Nothing re-reads until you press</i> is cut: a commit now runs an analysis (ruling 2).</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Specimen</b> unchanged: the bracket box and climb from 2f. 2f is a range, and a range never leans, so the lean is named, not drawn.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Phone:</b> one column, bracket box, climb, findings as rows in one box, mix; declaration chips as two 44px halves; the climb keeps its mark on every rung (22 / 26).</p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;margin-top:10px;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:12px;"><span id="5b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">5b</span><span style="font-size:14px;font-weight:600;color:var(--fg);">card-marks · new entry</span></div>
+        <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+          <sc-for list="{{ aboutMarks }}" as="a" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:110px minmax(0,1fr);border-bottom:1px solid var(--border);">
+              <span style="padding:10px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ a.k }}</span>
+              <span style="padding:10px 14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">{{ a.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.65;color:var(--fg-muted);">Its own entry because the marks live on two surfaces and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decklist-marks</span> is at its four-key cap. Sits beside it in chapter 03.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:12px;"><span id="5c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">5c</span><span style="font-size:14px;font-weight:600;color:var(--fg);">deck-page · ordinary edit</span></div>
+        <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+          <sc-for list="{{ aboutDeck }}" as="a" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:110px minmax(0,1fr);border-bottom:1px solid var(--border);">
+              <span style="padding:10px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ a.k }}</span>
+              <span style="padding:10px 14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">{{ a.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.65;color:var(--fg-muted);">Nine slots and all three key lines stand. Not a material change on its own; it rides the batch's bump.</p>
       </div>
     </div>
   </section>
@@ -482,16 +511,36 @@ class Component extends DCLogic {
     };
     const about = [
       { k: "Title", v: "What bracket this deck is, and why" },
-      { k: "Route", v: "/decks/[id] · Analysis tab" },
-      { k: "Opens", v: "opens the deck on its Analysis tab" },
-      { k: "Chapter", v: "03 — Building the 99" },
+      { k: "Route", v: "/decks" },
+      { k: "Opens", v: "opens a deck" },
+      { k: "Chapter", v: "03 · Building the 99, after deck-page" },
       { k: "Width", v: "plate" },
-      { k: "since", v: "the launch batch's ABOUT_VERSION" },
-      { k: "Caption", v: "Press Analyze and we read the whole list against the Commander Format Panel's bracket rules. The answer is the bracket your cards permit — sometimes two, when the difference is how you play, and then it is yours to say which. Every count opens to the cards behind it, and the lowest rung says what would have to go to come down one. The reading is kept with the deck; edit the list and the tab says so and offers Re-analyze. Nothing re-reads until you press." },
-      { k: "Key lines", v: "1 · a range is two brackets the cards allow; the chips under it are the only question on the page. 2 · the climb states, the findings open: every figure with cards behind it is a button, a zero is not. 3 · after an edit the tab says the bracket might not be accurate and offers Re-analyze; it never guesses whether the edit mattered." },
+      { k: "since", v: "10" },
+      { k: "Caption", v: "Press Analyze on a deck’s Analysis tab and we read the whole list against the Commander Format Panel’s bracket rules. The answer is the bracket your cards permit, and sometimes two, when the difference is how you play; then it is yours to say which. Every count opens to the cards behind it, and the lowest rung says what would have to go to come down one. The bracket then rides the deck’s header and its tile on your decks page, and the chip in the header opens the tab. A committed version that reads differently from the one before it says both, in one sentence." },
+      { k: "Key 1", v: "a range is two brackets the cards allow; the chips under it are the only question on the page." },
+      { k: "Key 2", v: "the climb states, the findings open: every figure with cards behind it is a button, a zero is not." },
+      { k: "Key 3", v: "after an edit the header and the tile keep the last bracket, and the tab says the deck has changed since it was analyzed and offers Re-analyze. It never guesses whether the edit mattered." },
+      { k: "Key 4 · lean", v: "a single bracket can carry a lean: one sentence naming the two-card infinite that decided it, and why the deck can reach both halves, from its library or its command zone. `see the reasoning` shows where each half is found." },
+    ];
+    const aboutMarks = [
+      { k: "id · title", v: "card-marks · Bracket facts on a card" },
+      { k: "Route", v: "/collection (lands on the page; no opens)" },
+      { k: "Chapter", v: "03, after decklist-marks · plate · since 10" },
+      { k: "Caption", v: "Four facts a card carries whatever deck it is in: it is on the Game Changer list, it counts as mass land denial, it takes extra turns, or it is a tutor. Each has its own glyph, all four in the same ink, and they sit after the card’s name on your collection and on a decklist. The key above the cards names them, and a card’s own page spells them out under Bracket facts." },
+      { k: "Key 1", v: "a tutor is a search that can find something other than a land. A land-only search is ramp, and carries no mark." },
+      { k: "Key 2", v: "no mark means nothing to report, not a card we checked and cleared. Only the Game Changer list is complete; the other three are detected, and detection misses some." },
+      { k: "Key 3", v: "a mark is about the card and never counts anything. How many a deck holds, and what that does to its bracket, is the Analysis tab’s answer." },
+      { k: "Specimen", v: "MarkKey (six entries) over two DecklistRows: Demonic Tutor (game changer, tutor) and Time Warp (extra turns). Two rows so the CARD_FACTS order shows." },
+      { k: "Phone", v: "rows full width and unchanged, glyphs 14px; the key wraps between whole entries. Must not abbreviate a name, drop an entry, or put a word on a row." },
+    ];
+    const aboutDeck = [
+      { k: "Was", v: "Four tabs sit under the header: the deck, cards worth considering, the games you have played with it, and its committed versions." },
+      { k: "Now", v: "Five tabs sit under the header: the deck, what bracket it is and why, cards worth considering, the games you have played with it, and its committed versions." },
+      { k: "Fixture", v: "DECK_TABS gains Analysis, second, with no count (key 2 already covers it)." },
+      { k: "Phone", v: "art, title, status and bar stack; five tabs scroll as one row; the chips row (status pill, bracket chip) under the commander line. Must not drop a tab or its count." },
     ];
     return {
-      theme, order, states, gcCards, prov, about, fGc,
+      theme, order, states, gcCards, prov, about, aboutMarks, aboutDeck, fGc,
       m3: svg("bracket-3-upgraded", 26, "var(--bracket-3)"),
       m3c: svg("bracket-3-upgraded-chip", 22, "var(--bracket-3)"),
       m2c: svg("bracket-2-core-chip", 22, "var(--bracket-2)"),
