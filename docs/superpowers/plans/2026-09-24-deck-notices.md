@@ -161,8 +161,9 @@ known surface.
   from a zero basis, so a count that fits is never squeezed. That check stays, recorded as an invariance.
 - Tests: `bracket-chip.test.tsx` (face off, and the call sites unchanged) and `resume-decks.test.tsx` (the sr-only line;
   no chip without a bracket).
-- A design table, `docs/superpowers/design-tables/home-bracket-chip.md`, and chip rows in
-  `docs/superpowers/inventories/home-parity.json`.
+- A design table, `docs/superpowers/design-tables/home-bracket-chip.md`. No new inventory rows: `home-parity.json`
+  already photographs Home at both widths, and its cells stop at the viewport above the resume block, so the chip's
+  visual record is the probe's own resume-block screenshots at 390 and 1300 plus its geometry checks.
 - This plan.
 
 ### PR 2 · The log, the marks, and the catalog's entries (about 12 files)

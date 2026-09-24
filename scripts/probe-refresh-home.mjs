@@ -33,6 +33,10 @@
 //      stored reading is an unanswered range, moves its `last_edited_at` to now
 //      so it is one of the four rows, and puts the stamp back in a `finally`.
 //      No such deck FAILS the run rather than measuring singles and passing.
+//      A single-mark deck joins them, so the 28px check has a subject, and it
+//      refuses the staging and production branches before its first write,
+//      holding the stamps it moves in a file so an interrupted run is put right
+//      by the next one.
 //      A chip-less deck is touched a second earlier, so the first pair mixes the
 //      two and N4 is measured rather than skipped. Three mutations fail it: the
 //      chip's face left on (16 checks), line two's stated height removed (names
@@ -40,6 +44,9 @@
 //
 // Run: `node scripts/probe-refresh-home.mjs`, against local dev.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
@@ -196,10 +203,10 @@ async function main() {
     });
     const page = await context.newPage();
     await signIn(page);
-    if (rangeFixture === undefined) rangeFixture = await surfaceRange(page);
+    if (rangeFixture === undefined) rangeFixture = await surfaceFixtures(page);
     if (rangeFixture === null) {
       console.error(
-        "PREREQUISITE: this account needs a deck whose stored reading is an unanswered range AND a deck with no reading.",
+        "PREREQUISITE: this account needs a deck whose stored reading is an unanswered range, one whose reading is a single mark, and one with no reading.",
       );
       failures += 1;
       await context.close();
@@ -433,6 +440,7 @@ async function main() {
       [],
     );
     check(`${vp.label}: the range deck is on Home`, chip.rows.some((r) => r.chip?.range), true);
+    check(`${vp.label}: a single-mark deck is on Home`, chip.rows.some((r) => r.chip && !r.chip.range), true);
     check(
       `${vp.label}: nothing but the commander shrinks on line two`,
       chip.rows.filter((r) => !r.platesWhole).map((r) => r.name),
@@ -499,16 +507,7 @@ async function main() {
   } finally {
     // Put the stamp back, whatever happened above: the fixture moved a real deck
     // to the head of this account's Home.
-    // Each on its own, so one failing cannot skip the other.
-    for (const f of rangeFixture ?? []) {
-      try {
-        await sql`update decks set last_edited_at = ${f.lastEditedAt} where id = ${f.id}`;
-        console.log(`      (restored ${f.id}'s last_edited_at)`);
-      } catch (error) {
-        console.error(`RESTORE FAILED for ${f.id}: set last_edited_at back to ${f.lastEditedAt}`, error);
-        failures += 1;
-      }
-    }
+    if (rangeFixture) await restoreHeld();
   }
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
@@ -519,37 +518,88 @@ main().catch((error) => {
   process.exit(1);
 });
 
+// WHERE THIS PROBE MAY WRITE. It moves `last_edited_at` on three real decks, so it refuses any
+// database that is not a scratch one before the first write, by the Neon BRANCH it reports
+// rather than by the URL (a copied URL names the wrong database as readily as the right one).
+// Fail closed: an unreadable branch is refused too.
+const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
+const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
+
+async function refuseSharedDatabase() {
+  const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
+  if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH || process.env.VERCEL_ENV === "production") {
+    throw new Error(
+      `probe:home writes deck stamps and refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`,
+    );
+  }
+}
+
+// The stamps it moved, held ON DISK before the first write, so a run killed before its `finally`
+// is put right by the next run rather than leaving three decks reordered on Home. Held as TEXT: the
+// column is microsecond-precise and a JS Date is not, and `touchDeck`'s guards compare it as text.
+const HOLD = path.join(os.tmpdir(), "the99-probe-home-hold.json");
+
+async function restoreHeld() {
+  let held;
+  try {
+    held = JSON.parse(readFileSync(HOLD, "utf8"));
+  } catch {
+    return;
+  }
+  let ok = true;
+  // Each on its own, so one failing cannot skip the others.
+  for (const f of held) {
+    try {
+      await sql`update decks set last_edited_at = ${f.lastEditedAt}::timestamp where id = ${f.id}`;
+      console.log(`      (restored ${f.id}'s last_edited_at)`);
+    } catch (error) {
+      ok = false;
+      failures += 1;
+      console.error(`RESTORE FAILED for ${f.id}: set last_edited_at back to ${f.lastEditedAt}`, error);
+    }
+  }
+  // Kept on any failure, so the next run tries again.
+  if (ok) rmSync(HOLD, { force: true });
+}
+
 /**
- * Finds a deck of the signed-in account whose stored reading is an unanswered range, and makes it
- * the most recently edited, so it is one of Home's four rows. The previous stamp is returned, and
- * `main`'s `finally` writes it back. Unanswered: an answered range draws its answer alone.
+ * Puts the three decks the chip checks need among Home's four rows, by making them the most
+ * recently edited: a deck whose stored reading is an unanswered RANGE (the width the row is sized
+ * for; an answered range draws its answer alone), a deck with NO reading touched a second later so
+ * the first desktop pair mixes a chip row with a chip-less one (N4), and a deck whose reading is a
+ * SINGLE mark, so the 28px check measures something. Any of the three missing refuses the run.
  */
-async function surfaceRange(page) {
+async function surfaceFixtures(page) {
+  await refuseSharedDatabase();
+  await restoreHeld();
   const userId = await page.evaluate(() => window.Clerk.user.id);
-  const [row] = await sql`
-    select d.id, d.last_edited_at
+  const [range] = await sql`
+    select d.id, d.last_edited_at::text as last_edited_at
     from decks d join deck_profiles p on p.deck_id = d.id
     where d.user_id = ${userId}
       and cardinality(p.permits) = 2
       and (d.declared_bracket is null or not (d.declared_bracket = any(p.permits)))
     order by d.id
     limit 1`;
-  if (!row) return null;
-  // And a deck with NO reading, touched a second earlier, so the first pair on a desktop mixes a
-  // chip row with a chip-less one: N4's level names are only measurable in that pair.
   const [bare] = await sql`
-    select d.id, d.last_edited_at
+    select d.id, d.last_edited_at::text as last_edited_at
     from decks d left join deck_profiles p on p.deck_id = d.id
     where d.user_id = ${userId} and p.deck_id is null
     order by d.id
     limit 1`;
-  if (!bare) return null;
-  await sql`update decks set last_edited_at = now() where id = ${row.id}`;
+  const [single] = await sql`
+    select d.id, d.last_edited_at::text as last_edited_at
+    from decks d join deck_profiles p on p.deck_id = d.id
+    where d.user_id = ${userId} and cardinality(p.permits) = 1
+    order by d.id
+    limit 1`;
+  if (!range || !bare || !single) return null;
+  const fixtures = [range, bare, single].map((r) => ({ id: r.id, lastEditedAt: r.last_edited_at }));
+  writeFileSync(HOLD, JSON.stringify(fixtures));
+  await sql`update decks set last_edited_at = now() where id = ${range.id}`;
   await sql`update decks set last_edited_at = now() - interval '1 second' where id = ${bare.id}`;
-  return [
-    { id: row.id, lastEditedAt: row.last_edited_at },
-    { id: bare.id, lastEditedAt: bare.last_edited_at },
-  ];
+  await sql`update decks set last_edited_at = now() - interval '2 seconds' where id = ${single.id}`;
+  return fixtures;
 }
 
 /** Each resume row's three lines, its chip, its plates, its count and its bar. */
