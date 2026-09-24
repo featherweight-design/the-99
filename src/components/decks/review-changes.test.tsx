@@ -5,7 +5,7 @@
 // asserted here is only which rows are given one.
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -1586,5 +1586,52 @@ describe("ReviewChanges — the second door", () => {
     const options = screen.getAllByRole("radio").map((o) => o.getAttribute("aria-label") ?? "");
     expect(options[0]).toContain("Other deck");
     expect(options[1]).toContain("This deck");
+  });
+});
+
+// The decklist and the top-off list already show the card under the pointer.
+// This page names the same cards and showed nothing, so a reader weighing a cut
+// had to open each one. The rule is the shared provider's and
+// `hover-preview.test.tsx` owns it; asserted here is that this page mounts one
+// and hands every row its art, both columns alike.
+describe("ReviewChanges — the hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === "(hover: hover)",
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it.each([
+    ["an add", { in: [row({ imageUri: "https://img/sol.jpg" })], out: [] }],
+    [
+      "a cut",
+      { in: [], out: [row({ imageUri: "https://img/sol.jpg", direction: "out", from: 1, to: 0 })] },
+    ],
+  ])("shows the card's art over %s", (_, rows) => {
+    render(
+      <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={rows} {...SHAPE} state={STATE} cardCount={CARD_COUNT} />,
+    );
+    expect(screen.queryByTestId("hover-preview")).toBeNull();
+    fireEvent.mouseEnter(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }), { clientX: 100, clientY: 100 });
+    act(() => {
+      vi.advanceTimersByTime(240);
+    });
+    expect(screen.getByTestId("hover-preview").style.background).toContain("https://img/sol.jpg");
   });
 });

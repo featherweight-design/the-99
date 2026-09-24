@@ -11,7 +11,13 @@
 // describe its own column layout, and cannot cover what the reader is pointing
 // at. Because the rule lives in one shared provider, every surface inherits it —
 // and inheritance is the thing worth checking rather than assuming, which is why
-// this walks both rather than trusting that one implies the other.
+// this walks all three — the decklist, the top-off list and the review page
+// (`/decks/[id]/changes`) — rather than trusting that one implies the others.
+//
+// The review page needs a deck with a draft, since a clean deck has no changes
+// to list. Name one with `PROBE_CHANGES_DECK`, or the probe opens the review
+// page of each of the account's first twelve decks until one lists rows, and
+// FAILS when none does.
 //
 // Asserted as a RELATION to the cursor, never against a column's position: the
 // box moves with the pointer and sits clear of it. A column-relative assertion
@@ -96,6 +102,27 @@ async function findDeck(page) {
   });
 }
 
+/** A deck whose review page lists rows, or null. Read-only: it only visits. */
+async function findChangesDeck(page) {
+  if (process.env.PROBE_CHANGES_DECK) return `/decks/${process.env.PROBE_CHANGES_DECK}/changes`;
+  await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+  // The tiles stream in after the shell, so an immediate read can find none
+  // and report "no deck has a draft" about an account that has one.
+  await onPage(page, "li article").first().waitFor({ timeout: 15_000 }).catch(() => {});
+  const hrefs = await page.evaluate(() => [
+    ...new Set(
+      [...document.querySelectorAll('main li article a[href^="/decks/"]')]
+        .map((a) => a.getAttribute("href"))
+        .filter((h) => /^\/decks\/[^/]+$/.test(h ?? "")),
+    ),
+  ]);
+  for (const href of hrefs.slice(0, 12)) {
+    await page.goto(`${BASE}${href}/changes`, { waitUntil: "networkidle" });
+    if ((await onPage(page, "[data-diff-row]").count()) > 0) return `${href}/changes`;
+  }
+  return null;
+}
+
 /**
  * One surface, measured the same way: hover a row, then move the pointer and
  * read the box against it.
@@ -137,7 +164,16 @@ async function measure(page, surface, rowLocator) {
   if (opened === null) return;
 
   const at = await rowLocator.nth(index).boundingBox();
-  const x = Math.round(at.x + at.width / 2);
+  // Both ends of the move must keep the box on the pointer's RIGHT, or it flips
+  // mid-move and `left` jumps the other way on a working build. Mid-row alone
+  // did not guarantee that: the review page's second column starts right of
+  // centre, and mid-row plus 160 crosses the flip. 18 + 252 + 8 is the
+  // provider's gutter, width and margin.
+  const flipAt = (await page.evaluate(() => window.innerWidth)) - 18 - 252 - 8;
+  const x = Math.max(
+    Math.round(at.x) + 4,
+    Math.min(Math.round(at.x + at.width / 2), flipAt - 160),
+  );
   const y = Math.round(at.y + at.height / 2);
   await page.mouse.move(x, y);
   await page.waitForTimeout(150);
@@ -248,6 +284,17 @@ async function run() {
           onPage(page, '[data-top-off-rows] > div:has(input[type="checkbox"])'),
         );
       }
+    }
+
+    // 3 · THE REVIEW PAGE, both columns. Desktop draws them side by side, so
+    // one locator reaches the adds and the cuts alike.
+    const changes = await findChangesDeck(page);
+    if (changes === null) {
+      report("review · a deck with a draft", false, "none of the first 12 has one — NOT a pass");
+    } else {
+      await page.goto(`${BASE}${changes}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(2_000);
+      await measure(page, "review", onPage(page, "[data-diff-row]"));
     }
 
     await context.close();

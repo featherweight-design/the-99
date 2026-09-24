@@ -1294,8 +1294,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   Makes no writes. Point it at `local-dev`, **never production**.
 
-- `pnpm probe:hover-preview` walks EVERY surface that draws a card preview — the decklist and
-  the top-off list — at 1300x900, and proves the box follows the pointer.
+- `pnpm probe:hover-preview` walks EVERY surface that draws a card preview — the decklist,
+  the top-off list and the review page (`/decks/[id]/changes`) — at 1300x900, and proves the box
+  follows the pointer. The review page needs a deck with a draft: `PROBE_CHANGES_DECK` names one,
+  or the probe tries the first twelve decks' review pages and FAILS when none lists a row.
 
   It used to be placed against the ROW it belonged to. That works while a row is about as wide
   as the box and fails completely when it is not: a top-off row spans the whole list, so

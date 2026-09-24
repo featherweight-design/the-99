@@ -32,6 +32,7 @@ import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
 import { DISCARD_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { DecklistGroupHeader } from "./decklist-group-header";
+import { HoverPreviewProvider } from "./hover-preview";
 import { PullControl } from "./pull-control";
 import { ContestedCardRow } from "./contested-card-row";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
@@ -295,6 +296,7 @@ export function Column({
             // being a card the player owns a copy of. Zeroed with the price when
             // the claim read failed, where every shortfall is 0 by absence.
             shortfall: claimsKnown ? row.shortfall : 0,
+            imageUri: row.imageUri,
           };
           // The row prints the pair itself, inside the name: a caption under the
           // row named the card a second time, and the card is already the row
@@ -861,8 +863,10 @@ export function ReviewChanges({
       {/* `w-full` is load-bearing: the shell's `<main>` is a flex column, and a
           flex item with `margin-inline: auto` loses `align-items: stretch` and
           sizes to its content. Without it this page drew ~870px wide on a
-          1300px desktop instead of filling to 1180. */}
-      <div className="mx-auto w-full" style={{ maxWidth: 1180 }}>
+          1300px desktop instead of filling to 1180. The page's box is the
+          preview provider's own wrapper: one preview for both columns, as the
+          decklist and the top-off list have, with the rows reporting hover. */}
+      <HoverPreviewProvider className="mx-auto w-full max-w-[1180px]">
         {/* Its own block on the phone, ruled off and full-bleed, because the back
             link and the heading are what the reader lands on before the list
             starts. Desktop has no such division: the heading opens the page. */}
@@ -1104,7 +1108,7 @@ export function ReviewChanges({
             </div>
           )}
         </div>
-      </div>
+      </HoverPreviewProvider>
     </CardDetailProvider>
   );
 }
