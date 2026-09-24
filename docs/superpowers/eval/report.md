@@ -167,7 +167,8 @@ against 44%). Not worth it.
 $20 hard stop and the $10 alarm unchanged.
 
 **What that means at full use.** The worst case is every unit of every player used on every day
-of a 30-day month. It is priced at the overview's A+B cost, $0.049 per answer, which is the
+of a 30-day month. It is priced at the overview's A+B cost PER ANSWER, $0.049, not the $0.051 per ACCEPTED answer
+quoted above: a unit is spent on every answer, accepted or not, and 96% are accepted. That is the
 higher of the two features:
 
 | | per full day | per 30 days |
