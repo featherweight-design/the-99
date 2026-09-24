@@ -19,10 +19,36 @@ if (SYNOPSIS_REAPER_CUTOFF_MS >= RESERVATION_TTL_MS) {
   throw new Error("SYNOPSIS_REAPER_CUTOFF_MS must be below RESERVATION_TTL_MS");
 }
 
-/** One budget across the client's two attempts. */
-export const SYNOPSIS_DEADLINE_MS = 90_000;
-/** Room for every section at its maximum count and budget, with headroom for JSON. */
-export const SYNOPSIS_MAX_TOKENS = 3_000;
+/**
+ * One budget across the client's two attempts. 110s, as tuning's (#902): at an 8,000-token ceiling
+ * adaptive thinking plus the in-deadline retry runs 83-100s, and `probe:synopsis --live` timed out
+ * three calls of five at 90s. The action runs from the deck page, whose `maxDuration` (120s, set by
+ * tuning D1) must stay above this or the platform kills the call before it can refund.
+ */
+export const SYNOPSIS_DEADLINE_MS = 110_000;
+/**
+ * The answer's worst case, from the contract's own counts and budgets (below), since a reply past
+ * them is refused anyway. At every section's maximum: overview 576, strategy 5 × 144, mulligan
+ * 6 × 80, tips 4 × 176 plus their card lists, key cards 8 × 60 plus names and claims, weaknesses
+ * 3 × 176. About 4,700 characters of text and 1,000 more of names, marks and JSON keys: roughly
+ * 1,500 tokens, rounded up to 2,000.
+ */
+export const SYNOPSIS_ANSWER_TOKENS_WORST_CASE = 2_000;
+
+/**
+ * Room for ADAPTIVE THINKING. `callModel` sends no `thinking` field, so Sonnet 5 thinks adaptively,
+ * and that thinking counts inside `max_tokens`. Tuning's ceiling, sized for its answer alone at
+ * 3,000, truncated on 2 of 4 decks even after the client's retry, with one reply that was all
+ * thinking (eval harness, 2026-09-24). This one was sized the same way and would do the same.
+ */
+export const SYNOPSIS_THINKING_HEADROOM_TOKENS = 6_000;
+
+/**
+ * The output ceiling: the answer's worst case plus the thinking headroom. A STOPGAP, mirroring
+ * tuning's (#902): effort and thinking settings are the eval harness's call (sub-project 10), and
+ * none is set here. `limits.test.ts` pins the ceiling above the sum.
+ */
+export const SYNOPSIS_MAX_TOKENS = 8_000;
 
 /**
  * Counts per section (`SYNOPSIS-modal.md` §4.2). Checked by the validator, never by the schema:

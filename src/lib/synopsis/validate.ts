@@ -113,6 +113,8 @@ class Resolver {
   reason: RefusalReason | null = null;
   /** The deck's names as printed, full names and faces, for the unmarked-name rule. */
   readonly names: string[];
+  /** The commanders' names, checked by that rule whatever their length. */
+  commanders: string[] = [];
 
   constructor(
     private readonly deck: Map<string, Card>,
@@ -153,8 +155,10 @@ function check(
   deck: Map<string, Card>,
   found: Record<string, Card>,
   catalog: ReadonlyMap<string, Card> | null,
+  commanders: string[] = [],
 ): SectionVerdict {
   const r = new Resolver(deck, found, catalog);
+  r.commanders = commanders;
   run(r);
   // EVERY RULE RUNS. A section stops at nothing, so its `failed` / `total` count every name in it
   // and the slot's "N of M cards failed checking" is the section's whole figure. The reason is
@@ -168,12 +172,14 @@ function check(
 /**
  * The deck names a text states without marking them. Every card name must open the card
  * (brief §3.2), and an unmarked one renders as plain text. Deliberately CONSERVATIVE, because a
- * false hit refuses a whole section: only names of two words or more, matched case-sensitively
- * on word boundaries, so "a forest of tokens" is not `Forest` and "opt out" is not `Opt`.
+ * false hit refuses a whole section: names of two words or more, plus the COMMANDERS' names
+ * whatever their length (the name a synopsis repeats most, and a proper noun rather than a word),
+ * matched case-sensitively on word boundaries, so "a forest of tokens" is not `Forest` and "opt
+ * out" is not `Opt`. Other one-word names are asked for by the prompt and not checked.
  */
-export function unmarkedNames(text: string, names: readonly string[]): string[] {
+export function unmarkedNames(text: string, names: readonly string[], always: readonly string[] = []): string[] {
   const bare = unmarked(text);
-  return names.filter((name) => name.includes(" ") && new RegExp(`(^|[^\\w])${escapeRegExp(name)}($|[^\\w])`).test(bare));
+  return names.filter((name) => (name.includes(" ") || always.includes(name)) && new RegExp(`(^|[^\\w])${escapeRegExp(name)}($|[^\\w])`).test(bare));
 }
 
 function escapeRegExp(s: string): string {
@@ -184,7 +190,7 @@ function escapeRegExp(s: string): string {
 function prose(r: Resolver, text: string, budget: number): void {
   if (!endsSentence(text)) r.refuse("partial_sentence");
   // An unmarked name is a name the section states and fails to check, so it counts in the figure.
-  const bare = unmarkedNames(text, r.names);
+  const bare = unmarkedNames(text, r.names, r.commanders);
   r.total += bare.length;
   r.failed += bare.length;
   if (bare.length > 0) r.refuse("unmarked_card");
@@ -213,7 +219,7 @@ export function validateSynopsis(
 
   const overview = check("overview", (r) => {
     prose(r, reply.overview, CHAR_BUDGETS.overview);
-  }, deck, found, null);
+  }, deck, found, null, facts.commanders);
 
   const primer = check("primer", (r) => {
     const { strategy, mulligan, tips } = reply.primer;
@@ -244,7 +250,7 @@ export function validateSynopsis(
       if (listedIds.size < TIP_MIN_CARDS) r.refuse("tip_too_few_cards");
       if (markedIds.size !== listedIds.size || [...listedIds].some((id) => !markedIds.has(id))) r.refuse("tip_not_in_deck");
     }
-  }, deck, found, null);
+  }, deck, found, null, facts.commanders);
 
   const keyCards = check("keyCards", (r) => {
     count(r, reply.keyCards, SECTION_COUNTS.keyCards);
@@ -257,14 +263,14 @@ export function validateSynopsis(
       seen.add(card.oracleId);
       if (!jobSupported(k, categories.get(card.oracleId) ?? new Set())) r.refuse("job_unsupported");
     }
-  }, deck, found, null);
+  }, deck, found, null, facts.commanders);
 
   const weaknesses = check("weaknesses", (r) => {
     count(r, reply.weaknesses, SECTION_COUNTS.weaknesses);
     for (const w of reply.weaknesses) {
       prose(r, w, CHAR_BUDGETS.weakness);
     }
-  }, deck, found, catalog);
+  }, deck, found, catalog, facts.commanders);
 
   const ok = (v: SectionVerdict) => v.status === "ok";
   return {

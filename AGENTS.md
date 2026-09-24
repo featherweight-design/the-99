@@ -430,6 +430,29 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `readStoredPermits` (the deck header) and `storedPermitsSql`, the deck list's correlated
   subquery. Neither carries a freshness clause, and after an edit both still read the last
   analyzed bracket.
+- `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
+  (sub-project 6) by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
+  `readVersionSynopsis` and `pinSynopsisToVersion`. Every rule those apply to what they READ is
+  unit tested. What only a database answers is what they WROTE: the run row and its allowance
+  unit settled in one transaction, the partial index that allows one run per deck, the reaper that
+  frees a deck a crash left pending, and the version copy taken once, at the commit, onto the
+  newest version only.
+
+  **The model is injected and spends nothing.** Outside production the synopsis never calls the
+  real model unless `SYNOPSIS_LIVE=1` is set; `src/lib/synopsis/stub.ts` answers instead, built from
+  the deck it is asked about, and `SYNOPSIS_STUB` switches it to `partial`, `refused`, `malformed`,
+  `busy` or `timeout`. So a dev server and every UI probe run free. `--live` is the one path that
+  opts in: it needs `ANTHROPIC_API_KEY`, runs `--max-calls` (default 3, capped at 5) real calls,
+  and prints tokens and an estimated cost after each, inside Hugh's $25 eval budget. To measure a
+  real list, `pull:staging` a deck and name it with `PROBE_SYNOPSIS_DECK`: its cards are COPIED onto
+  the run's own fixture deck, so nothing of the named deck or its owner is ever written.
+
+  **Each path of the reaper is proved on its own stranded run**, and that is a lesson paid for:
+  with one stranded run read before the write, removing the WRITE's reap passed, because the read
+  had already reaped it. Seven mutations fail it: reuse keyed on nothing, a charge that ignores
+  what was shown, a failed retry charged, either reap removed, the pin's list guard removed, and the
+  pin made an upsert. It writes a fixture under a per-run `user_id` and deletes it, and its ledger
+  rows, in a `finally`. Point it at `local-dev` or a scratch branch, **never production**.
 - `pnpm probe:bracket-chip` walks the bracket chip on the deck tile and in the deck header at
   1300x900 and 390x844: the header draws it on a FRESH load, from the stored analysis, before any
   tab is pressed; both copies are the handoff's chip, 22px on a phone and 24px from `md`, with a

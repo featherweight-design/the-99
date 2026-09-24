@@ -221,8 +221,16 @@ describe("every deck name is marked", () => {
       .toEqual({ section: "overview", status: "refused", reason: "unmarked_card", failed: 1, total: 2 });
   });
 
+  it("refuses the commander named without its mark, however short its name", () => {
+    const reply = good();
+    reply.overview = "Kratos swings, and [[Impact Tremors]] finishes the table.";
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "overview")).toMatchObject({ reason: "unmarked_card", failed: 1 });
+  });
+
   it("does not read a one-word name, a lowercase phrase or a marked name as unmarked", () => {
-    expect(unmarkedNames("Cast [[Sol Ring]], then chaos warp nothing, then Kratos swings.", ["Sol Ring", "Chaos Warp", "Kratos"])).toEqual([]);
+    expect(unmarkedNames("Cast [[Sol Ring]], then chaos warp nothing, then Opt.", ["Sol Ring", "Chaos Warp", "Opt"])).toEqual([]);
+    // A commander's name is checked whatever its length.
+    expect(unmarkedNames("Then Kratos swings.", ["Kratos"], ["Kratos"])).toEqual(["Kratos"]);
     expect(unmarkedNames("Sol Ring's mana matters.", ["Sol Ring"])).toEqual(["Sol Ring"]);
   });
 });

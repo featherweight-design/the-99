@@ -23,7 +23,7 @@ import type { CheckedSynopsis, SectionId } from "./types";
 const SYSTEM = [
   "You write a synopsis of a Magic: The Gathering Commander deck: how it plays, for the player who built it first and for their playgroup second. Nothing may make sense only to the builder.",
   "Say how the deck plays, never how strong it is. Never mention a bracket, power level, tier, score, rating or cEDH, never call the deck or a card strong, powerful, efficient or similar, and never rate anything out of ten. Facts of the game are fine (\"deals 16 damage\").",
-  "Write every card name exactly as the decklist spells it, wrapped in double square brackets: [[Sol Ring]]. Name only cards in the decklist, except in weaknesses, which may name a card the deck lacks.",
+  "Write every card name exactly as the decklist spells it, wrapped in double square brackets: [[Sol Ring]]. EVERY mention, every time, including the commander's own name and a name repeated in the same sentence: a card name written without brackets fails its whole section. Name only cards in the decklist, except in weaknesses, which may name a card the deck lacks.",
   "Write in US English.",
   "Every item is one or more whole sentences ending in a period, question mark or exclamation mark.",
   "Sections:",
@@ -31,7 +31,7 @@ const SYSTEM = [
   `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters.`,
   `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, each at most ${CHAR_BUDGETS.mulligan} characters, about what opening hand to keep and what to send back. Use only the figures given under "Mulligan figures"; state no other number.`,
   `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice. List the tip's cards in "cards", and name exactly those cards in its text. Each text at most ${CHAR_BUDGETS.tip} characters.`,
-  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, each with one line, at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. Do not describe a card as ramp, card draw, removal, a wipe, a tutor or a combo piece unless the decklist gives it that category.`,
+  `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, each with one line, at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
   `- weaknesses: ${range(SECTION_COUNTS.weaknesses)} weaknesses of how the deck plays, untiered and unranked, each at most ${CHAR_BUDGETS.weakness} characters.`,
 ].join("\n");
 

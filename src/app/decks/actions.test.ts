@@ -421,6 +421,7 @@ vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
 // The pin after a commit (ruling 2) is a whole analysis; what these tests own is that the commit
 // SCHEDULES it, off its own path, for the version it wrote.
 vi.mock("../../lib/profile/stored", () => ({ pinAnalysisToVersion: vi.fn() }));
+vi.mock("../../lib/synopsis/pin", () => ({ pinSynopsisToVersion: vi.fn() }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
 vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
 
@@ -1300,6 +1301,7 @@ const aVersion = () => ({
 
 const { cachedDeckProfile } = await import("../../lib/profile/load");
 const { pinAnalysisToVersion } = await import("../../lib/profile/stored");
+const { pinSynopsisToVersion } = await import("../../lib/synopsis/pin");
 const { slotDeck } = await import("../../lib/bracket/slot");
 
 describe("commitDeckVersion", () => {
@@ -1353,6 +1355,8 @@ describe("commitDeckVersion", () => {
     expect(pinAnalysisToVersion).toHaveBeenCalledWith(
       DECK_ID, USER_ID, { versionId: VERSION_ID, list: expect.stringMatching(/^[0-9a-f]{16,}$/) },
     );
+    // The synopsis is copied with the same pin, never written (ruling 7).
+    expect(pinSynopsisToVersion).toHaveBeenCalledWith(DECK_ID, USER_ID, vi.mocked(pinAnalysisToVersion).mock.calls[0][2]);
   });
 
   it("schedules no pin when the commit is refused", async () => {
