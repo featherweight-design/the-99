@@ -200,9 +200,14 @@ async function run() {
     let href = null;
     for (const candidate of (await deckHrefs(page)).slice(0, 12)) {
       const [{ n }] = await sql`select count(*)::int as n from deck_synopses where deck_id = ${candidate.split("/")[2]}::uuid`;
-      if (n === 0) { href = candidate; break; }
+      // Enough distinct spells for the stub to write a WHOLE overview: a deck padded with one basic
+      // gives it too few cards to name, its primer is refused, and the Mulligan (and its fixed
+      // land line) never draws.
+      const [{ k }] = await sql`select count(distinct c.oracle_id)::int as k from deck_cards c join cards x using (oracle_id)
+        where c.deck_id = ${candidate.split("/")[2]}::uuid and x.type_line not ilike '%Land%'`;
+      if (n === 0 && k >= 5) { href = candidate; break; }
     }
-    if (!report("a deck with no overview", href !== null, href ?? "every one of the first 12 decks has one")) return;
+    if (!report("a deck with no overview, and spells enough for a whole one", href !== null, href ?? "none of the first 12 decks qualifies")) return;
     const deckId = href.split("/")[2];
     walked = deckId;
     walkStart = await nowAt();
