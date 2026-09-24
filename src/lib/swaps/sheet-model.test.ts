@@ -58,6 +58,13 @@ describe("the stand-ins sheet's model", () => {
       ],
     }));
     expect(m.job).toBe(`${copy.jobColors("white and red")} · ${copy.givesUpNothing}`);
+    // A utility land does something of its own, so its line never says it gives up nothing (H3).
+    const cavern = sheetModel(read({
+      job: { kind: "land", colors: ["W"] },
+      original: card("Cavern of Souls", "Land", "As Cavern of Souls enters, choose a creature type.\n{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a creature spell of the chosen type, and that spell can't be countered."),
+      cheapest: [standIn("Plains")],
+    }));
+    expect(cavern.job).toBe(copy.jobColors("white"));
     expect(m.lead).toBe(copy.leadLands("white and red"));
     expect(m.groups.map((g) => g.heading)).toEqual([copy.groupCheapest]);
     const facts = m.groups[0].rows.map((r) => r.facts);

@@ -10,7 +10,7 @@ import { isLandFace } from "../cards/facet";
 import { shortName } from "../cards/short-name";
 import { formatCents } from "../decks/price";
 import type { StandInsRead } from "./gather";
-import { drawbacks, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
+import { drawbacks, nonManaAbilities, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
 import type { SpellRole, StandIn } from "./stand-ins";
 
 const copy = swapToolsCopy.sheet;
@@ -101,9 +101,16 @@ export function sheetModel(read: StandInsRead): SheetModel {
   const landColors: Color[] = job.kind === "land" ? job.colors : job.kind === "fetch" ? job.types.map((t) => TYPE_COLOR[t]) : [];
 
   const jobLine =
-    // A land's own line says what it costs, or that it costs nothing (the handoff's Plateau).
+    // A land's own line says what it costs, or, for a plain land that costs nothing and does nothing
+    // else (the handoff's Plateau), `gives up nothing`. Never for a utility land: Cavern of Souls does
+    // something no stand-in will, and H3 forbids the phrase wherever it is not true.
     job.kind === "land"
-      ? [copy.jobColors(colorsText(job.colors)), ...(own.length ? own.map((d) => drawbackText(d, job.colors)) : [copy.givesUpNothing])].join(" · ")
+      ? [
+          copy.jobColors(colorsText(job.colors)),
+          ...(own.length
+            ? own.map((d) => drawbackText(d, job.colors))
+            : nonManaAbilities(original).length === 0 ? [copy.givesUpNothing] : []),
+        ].join(" · ")
     : job.kind === "fetch" ? [copy.jobFinds(typesText(job.types)), ...own.map((d) => drawbackText(d, landColors))].join(" · ")
     : copy.jobRole(rolesText(job.roles), job.mv);
 
