@@ -43,8 +43,9 @@ if (existsSync(runsDir)) {
     if (!existsSync(f)) continue;
     // A run over `all` decks is split back into its development and held-out decks, because the
     // decision rule reads the held-out decks alone.
-    const meta = JSON.parse(readFileSync(new URL(`${run}/meta.json`, runsDir), "utf8")) as { split: { dev: string[] } };
-    const dev = new Set(meta.split.dev);
+    const meta = JSON.parse(readFileSync(new URL(`${run}/meta.json`, runsDir), "utf8")) as { split?: { dev: string[] } };
+    // A repair run carries no split; its rows are follow-ups, filtered out by feature below.
+    const dev = new Set(meta.split?.dev ?? []);
     for (const line of readFileSync(f, "utf8").split("\n")) {
       if (!line.trim()) continue;
       const row = JSON.parse(line) as Row;

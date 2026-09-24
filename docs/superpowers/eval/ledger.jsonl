@@ -48,3 +48,5 @@
 {"at":"2026-09-24T09:50:53.366Z","runId":"2026-09-24T08-30-40-506Z-synopsis-heldout-trim/a2","source":"msgbatch_01GqEfF6n1bdSQ89GuK9QRwE","usd":0.048853,"requests":3,"settles":"2026-09-24T08-30-40-506Z-synopsis-heldout-trim/a2"}
 {"at":"2026-09-24T09:51:18.611Z","runId":"2026-09-24T09-51-18-556Z-synopsis-repair-sonnet-low-budgets-plus/a1","source":"pending","usd":3.8839124999999997,"requests":37,"pending":"2026-09-24T09-51-18-556Z-synopsis-repair-sonnet-low-budgets-plus/a1"}
 {"at":"2026-09-24T09:54:01.409Z","runId":"2026-09-24T09-51-18-556Z-synopsis-repair-sonnet-low-budgets-plus/a1","source":"msgbatch_01Y5itVocwFqq18mcdyPHg3v","usd":0.6678050000000001,"requests":37,"settles":"2026-09-24T09-51-18-556Z-synopsis-repair-sonnet-low-budgets-plus/a1"}
+{"at":"2026-09-24T09:55:05.850Z","runId":"2026-09-24T09-55-05-800Z-tuning-cache/a1","source":"pending","usd":2.1114800000000002,"requests":16,"pending":"2026-09-24T09-55-05-800Z-tuning-cache/a1"}
+{"at":"2026-09-24T10:00:32.606Z","runId":"2026-09-24T09-55-05-800Z-tuning-cache/a1","source":"realtime:16","usd":0.3555594,"requests":16,"settles":"2026-09-24T09-55-05-800Z-tuning-cache/a1"}
