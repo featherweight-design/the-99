@@ -147,6 +147,8 @@ export function mergeRetry(
     primer: take("primer") ? fresh.primer : stored.primer,
     keyCards: take("keyCards") ? fresh.keyCards : stored.keyCards,
     weaknesses: take("weaknesses") ? fresh.weaknesses : stored.weaknesses,
+    // The land range is the facts', not a section's: the fresh check read the same facts.
+    lands: fresh.lands ?? stored.lands,
     cards: { ...stored.cards, ...fresh.cards },
   };
   const anyRetriedPassed = verdicts.some((v) => take(v.section) && v.status === "ok");

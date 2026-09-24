@@ -55,6 +55,14 @@ describe("the run's outcome and charge", () => {
 describe("mergeRetry", () => {
   const stored = content([ok("overview"), no("primer"), ok("keyCards"), no("weaknesses")], "old");
 
+  // The fixed land line survives a repair and a retry: it is the facts', not a section's.
+  it("carries the land range through the merge", () => {
+    const lands = { keep: { low: 2, high: 4 }, sendBack: { none: 0, under: 1, over: 5 } };
+    const fresh = { ...content([ok("overview"), ok("primer"), ok("keyCards"), ok("weaknesses")], "new"), lands };
+    expect(mergeRetry(stored, fresh, refusedSections(stored)).content.lands).toEqual(lands);
+    expect(mergeRetry({ ...stored, lands }, content([ok("overview")], "new"), refusedSections(stored)).content.lands).toEqual(lands);
+  });
+
   it("keeps every passing section byte for byte and takes only the retried ones", () => {
     const fresh = content([ok("overview"), ok("primer"), ok("keyCards"), ok("weaknesses")], "new");
     const { content: merged, anyRetriedPassed } = mergeRetry(stored, fresh, refusedSections(stored));
