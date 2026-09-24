@@ -1,5 +1,6 @@
 /**
- * `pnpm eval:blind --feature tuning --base <runId>:<cell>:<variant> --candidate <runId>:<cell>:<variant>`
+ * `pnpm eval:blind --feature tuning|synopsis --round <n> --title <shown title>
+ *   --base <runId>:<cell>:<variant> --candidate <runId>:<cell>:<variant>`
  *
  * Builds the pairs for Hugh's blind read from rows already on disk. It sends nothing and reads no
  * database. It writes two files under `docs/superpowers/eval/blind/`:

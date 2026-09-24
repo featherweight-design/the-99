@@ -23,8 +23,15 @@ export async function connectStaging() {
   const pool = db.$client as unknown as {
     on(event: "connect", fn: (client: { query(sql: string): Promise<unknown> }) => void): void;
   };
+  // A client runs its queries in order, and the pool emits `connect` before it hands the client
+  // out, so this statement is always the first on its connection: every query the harness or the
+  // imported app code issues on that client runs after it. If it FAILS, the connection would be
+  // writable, so the process stops rather than carry on with that client.
   pool.on("connect", (client) => {
-    void client.query("set default_transaction_read_only = on");
+    client.query("set default_transaction_read_only = on").catch((err: unknown) => {
+      console.error(`eval: could not make a staging connection read-only (${err instanceof Error ? err.message : String(err)}); stopping`);
+      process.exit(1);
+    });
   });
 
   const { sql } = await import("drizzle-orm");
