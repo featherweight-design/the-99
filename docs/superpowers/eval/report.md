@@ -87,19 +87,22 @@ overview (its strategy steps, and its Key cards to be left in), and is told:
 It cost $1.41. The held-out run used one trial per deck rather than three, because at 4 to 5
 suggestions S costs more per answer and three trials would have passed Hugh's "about $2".
 
-Held-out, trial 0, over the suggestions that survived checking (`pnpm eval:tuning-strategy`):
+Held-out, trial 0, over the suggestions that survived checking (`pnpm eval:tuning-strategy`). A
+role count is read from each suggestion's own `mix` citations, whether or not they are written
+with a colon (`draw 4 of 10` or `draw: 4 of 10`):
 
 | cell / prompt | kept per answer | answers filling a one-slot gap twice | threshold-only share | Key-card cuts | universal-staple cuts | $/answer |
 |---|---|---|---|---|---|---|
 | S / base | 2.73 | 4 | 85% | 0 | 0 | $0.051 |
-| S / strategy | 3.07 | 0 | 41% | 0 | 0 | $0.083 |
+| S / strategy | 3.07 | 1 | 41% | 0 | 0 | $0.083 |
 | sonnet-low / base | 2.40 | 3 | 56% | 0 | 0 | $0.016 |
-| sonnet-low / strategy | 3.20 | 3 | 63% | 0 | 0 | $0.020 |
+| sonnet-low / strategy | 3.20 | 5 | 63% | 0 | 0 | $0.020 |
 
-- **S on the new prompt** moves clearly toward Hugh's notes. It is more grounded, sizes each gap
-  and keeps more suggestions, and it costs about 60% more per answer.
+- **S on the new prompt** moves clearly toward Hugh's notes. It is more grounded, keeps more
+  suggestions and fills a one-slot gap twice on 1 answer instead of 4, and it costs about 60% more
+  per answer.
 - **Sonnet-low** keeps the most suggestions, but it follows neither the grounding rule nor the
-  gap-sizing rule.
+  gap-sizing rule: it double-fills a one-slot gap on 5 answers, up from 3.
 
 **The Key-card gate passes against the wrong list.** Both setups still cut Lotus Petal from
 Yuriko on the new prompt. The deck's own overview names Yuriko, Sol Ring, Dimir Signet, the

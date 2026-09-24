@@ -7,7 +7,7 @@
  *    `strategy` variant, which tells the model so);
  *  - universal-staple cuts: a cut naming a universal staple;
  *  - one-slot double fills: two or more suggestions filling a role that is exactly one short, read
- *    off their own `mix` citations (`role: have of target` with have below target);
+ *    off their own `mix` citations (`role: have of target`, with or without the colon with have below target);
  *  - threshold-only share: suggestions whose only citations are role counts.
  * Reads `runs/strategy-overviews.json` for the Key cards and the universal set. Sends nothing.
  */
@@ -47,7 +47,7 @@ for (const run of args.runs.split(",")) {
       if (universal.has(s.cut.toLowerCase())) g.universalCut += 1;
       if (s.evidence.every((e) => e.kind === "mix")) g.thresholdOnly += 1;
       for (const e of s.evidence) {
-        const m = e.kind === "mix" ? /^(.+?): (\d+) of (\d+)$/.exec(e.value) : null;
+        const m = e.kind === "mix" ? /^(.+?):? (\d+) of (\d+)$/.exec(e.value) : null;
         if (m && Number(m[2]) < Number(m[3])) {
           const f = fills.get(m[1]) ?? { n: 0, gap: Number(m[3]) - Number(m[2]) };
           f.n += 1;
