@@ -354,12 +354,16 @@ async function run() {
     verdicts: verdicts(ok), overview: null, primer: null, keyCards: null, weaknesses: null, cards: {},
   });
   const [anyCall] = await rows<{ model_call_id: string }>(sql`select model_call_id from deck_synopses where deck_id = ${deck.id}::uuid limit 1`);
-  const refusedRun = (ok: boolean, offset: string) => fixture.execute(sql`
+  const refusedRun = (ok: boolean, offset: string, by: string = USER) => fixture.execute(sql`
     insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content, created_at)
-    values (${deck.id}::uuid, ${USER}, ${list()}, ${SYNOPSIS_CONTRACT_VERSION}, 'probe-stub', ${anyCall.model_call_id}::uuid,
+    values (${deck.id}::uuid, ${by}, ${list()}, ${SYNOPSIS_CONTRACT_VERSION}, 'probe-stub', ${anyCall.model_call_id}::uuid,
       'done', 'refused', ${refusedContent(ok)}::jsonb, now() + ${offset}::interval)`);
   const shownBefore = (await state()).synopsis?.id ?? null;
   check("with no newer refusal, lastRefused is null", (await state()).lastRefused, null);
+  // Scoped to the reader: a newer run held for another principal on the same deck is not theirs.
+  await refusedRun(false, "1 second", "someone-else");
+  check("another principal's newer run is not the reader's lastRefused", (await state()).lastRefused, null);
+  await fixture.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid and user_id = 'someone-else'`);
   await refusedRun(false, "2 seconds");
   check("a newer run refused everywhere sums its sections", (await state()).lastRefused, { failed: 10, total: 16 });
   check("…and the overview on screen stays", (await state()).synopsis?.id ?? null, shownBefore);

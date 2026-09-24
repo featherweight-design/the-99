@@ -78,7 +78,7 @@ export async function readSynopsisState(
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
     readShownSynopsis(deckId, userId),
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content })
-      .from(deckSynopses).where(eq(deckSynopses.deckId, deckId))
+      .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
     readAllowance(userId, now),
   ]);
