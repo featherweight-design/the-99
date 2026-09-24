@@ -8,7 +8,7 @@
 
 Build it, with the engineering corrections below. Design answered all seven §4 questions, nothing contradicts a
 §2 or §5 ruling, and every state is drawn at 390 and 1300 with two small exceptions eng can derive (F14). Nothing
-goes back to Design. Four decisions go to Hugh (§4), and one of them (F1) blocks the build as specified: without it
+goes back to Design. Six decisions go to Hugh (§4), and one of them (H1, behind F1) blocks the build as specified: without it
 the notices foot's Re-analyze clears nothing.
 
 ---
