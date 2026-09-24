@@ -103,7 +103,9 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
     .where(inArray(cards.oracleId, [...new Set([...currentIds, ...data.flatMap((d) => d.cards.map((c) => c.oracleId))])]));
   const byId = new Map(facts.map((f) => [f.oracleId, f]));
   const nameOf = (id: string) => byId.get(id)?.name ?? id;
-  for (const d of data) d.cards = d.cards.map((c) => ({ oracleId: c.oracleId, name: nameOf(c.oracleId) }));
+  // The catalog's name first; the name the entry was written with when the catalog no longer has
+  // the card (a removed combo keeps `detail.names` for exactly this).
+  for (const d of data) d.cards = d.cards.map((c) => ({ oracleId: c.oracleId, name: byId.get(c.oracleId)?.name ?? c.name }));
 
   const present = (ids: readonly string[]) => ids.map((id) => byId.get(id)).filter((f) => f !== undefined);
   const violations = rulesViolations(present(currentIds.filter((id) => !commanderIds.includes(id))), present(commanderIds));
@@ -159,7 +161,7 @@ export async function pendingEntries(marks: ReadingMarks): Promise<DataNotice[]>
         seq: r.seq,
         group,
         direction: r.direction as ChangeDirection,
-        cards: r.oracleIds.map((id) => ({ oracleId: id, name: id })),
+        cards: entryCards(r.oracleIds, detail),
         detail: {
           produces: Array.isArray(detail.produces) ? (detail.produces as string[]) : undefined,
           rule: typeof detail.rule === "string" ? detail.rule : undefined,
@@ -168,6 +170,16 @@ export async function pendingEntries(marks: ReadingMarks): Promise<DataNotice[]>
         publishedAt: r.publishedAt,
       }];
     });
+}
+
+/**
+ * An entry's cards with the names it was WRITTEN with: a combo entry keeps `detail.names` in piece
+ * order, so a removed variant still reads by name after its rows are gone. Anything else, or a
+ * name that is missing or not a string, falls back to the id until the catalog resolves it.
+ */
+export function entryCards(oracleIds: readonly string[], detail: Record<string, unknown>): NoticeCard[] {
+  const names = Array.isArray(detail.names) ? detail.names : [];
+  return oracleIds.map((id, i) => ({ oracleId: id, name: typeof names[i] === "string" ? (names[i] as string) : id }));
 }
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
