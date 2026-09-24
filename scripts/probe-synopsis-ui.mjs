@@ -377,10 +377,11 @@ async function run() {
     report("390px · the aside is drawn once, in the body", head.asides === 1, `${head.asides} drawn`);
     await phone.close();
 
-    // 6e: a version's overview, from its EXPANDED panel. A version is pinned only at commit, so
-    // the probe pins this run's own overview to the newest version of a deck that has one and no
-    // pin yet, and deletes that pin in the `finally`. The reader does not check which deck an
-    // overview came from, so the walk measures the link and the sheet, which is all 6e is.
+    // 6e: a version's overview, from its EXPANDED panel. A version is pinned only at commit, and
+    // the walked deck may have no version at all, so the probe COPIES this run's overview onto the
+    // deck whose version it pins: a pin whose overview came from another deck is a state no commit
+    // can produce, and the sheet would name that other deck's cards. The copy joins `ours`, so the
+    // `finally` deletes it and the pin goes with it (the pin cascades on its overview).
     const [target] = await sql`select v.id as "versionId", v.number, v.deck_id as "deckId" from deck_versions v
       join decks d on d.id = v.deck_id
       where d.user_id = ${userId}
@@ -392,7 +393,15 @@ async function run() {
     const pinnable = ours.find((r) => r.status === "done") ?? ours[0];
     if (report("6e: a version to pin an overview to", Boolean(target && pinnable), target ? `v${target.number}` : "no deck with a version")) {
       pinned = target.versionId;
-      await sql`insert into deck_version_synopses (version_id, synopsis_id) values (${target.versionId}::uuid, ${pinnable.id}::uuid)`;
+      const [copy] = await sql`insert into deck_synopses
+          (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
+        select ${target.deckId}::uuid, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content
+        from deck_synopses where id = ${pinnable.id}::uuid
+        returning id, model, status`;
+      // First in `ours`, and with no call of its own: it borrows the original's ledger row, so it
+      // has to be deleted before `dropOurs` deletes that row with the original.
+      ours.unshift({ ...copy, model_call_id: null });
+      await sql`insert into deck_version_synopses (version_id, synopsis_id) values (${target.versionId}::uuid, ${copy.id}::uuid)`;
       for (const [label, viewport] of [["1300", DESKTOP], ["390", PHONE]]) {
         const vctx = await browser.newContext({ viewport });
         const v = await vctx.newPage();
