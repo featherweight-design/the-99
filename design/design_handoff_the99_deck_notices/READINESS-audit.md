@@ -4,6 +4,26 @@
 **Brief:** `docs/superpowers/design-briefs/2026-09-23-deck-notices.md` (§2 and §5 locked, §4 open, §6 engineering's).
 **Package:** this folder, committed as delivered. Design's own `READINESS.md` is answered in §5 below.
 
+## Hugh's rulings (2026-09-24)
+
+Hugh approved this audit on 2026-09-24 and ruled on all six §4 questions, so nothing below blocks the build.
+H5 and H6 were settled by the orchestrator as the only defensible answers, and both are engineering's.
+
+- **H1: Re-analyze recomputes when the data under the deck changed since its analysis, even on an unedited
+  list.** It is free (no model call) and clears the notice. An unedited deck with no data change still returns
+  the stored reading. This amends ruling 5, and it unblocks F1: build F1's correction as written.
+- **H2: the notices sheet's foot offers Re-analyze too.** This amends the analysis tab's "only the banner offers
+  it". F2 and F3 stand as corrections to that press.
+- **H3: an illegal deck's SAVED overview stays shown**, with a "not legal right now" warning. It is never
+  withheld. Writing a NEW overview still follows the earlier ruling that Analyze is disabled on an illegal deck.
+  The lane's plan confirms how the two interact.
+- **H4: a notice-driven re-analysis updates the bracket only.** The saved overview stands, marked as possibly out
+  of date, with *Write a new overview*.
+- **H5 (orchestrator): `Not legal` must clear 4.5:1.** The same treatment applies to the existing `Over` pill:
+  text in `--fg`, with red on the border and tint only. This is engineering's, not Design's, and it replaces
+  F17's "does the `Over` precedent cover it" question.
+- **H6 (orchestrator): last played on the phone tile is accepted**, as HANDOFF §1a draws it.
+
 ## Verdict: Orange
 
 Build it, with the engineering corrections below. Design answered all seven §4 questions, nothing contradicts a
