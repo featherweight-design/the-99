@@ -36,6 +36,7 @@ import { pinSynopsisToVersion } from "../src/lib/synopsis/pin";
 import { readSynopsisState, readVersionSynopsis } from "../src/lib/synopsis/read";
 import type { SynopsisResponse } from "../src/lib/synopsis/response-schema";
 import { STUB_MODEL, stubReply, type StubMode } from "../src/lib/synopsis/stub";
+import { isRepair } from "../src/lib/synopsis/prompt";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_REAPER_CUTOFF_MS, SYNOPSIS_REPAIR_MIN_MS } from "../src/lib/synopsis/limits";
 
 neonConfig.webSocketConstructor = ws;
@@ -78,6 +79,9 @@ const deps: GenerateDeps = {
     calls += 1;
     if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
     const out = stubReply(facts, queue.shift() ?? "survived");
+    // A repair's reply words its primer differently, so a merge that took a PASSING section from
+    // the repair rather than keeping the first answer's is visible, not identical by construction.
+    if (out.ok && isRepair(req.user)) out.value.primer.strategy[0] = "Build your mana early in the game.";
     seen.push({ user: req.user, deadlineMs: req.deadlineMs, reply: out.ok ? out.value : null });
     return out;
   },
