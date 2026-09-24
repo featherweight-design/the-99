@@ -1,5 +1,6 @@
 import { connectStaging } from "./staging.mjs";
 import { splitDecks } from "./split.mjs";
+import { outsideMarks } from "./line-rule.mjs";
 import { applySynopsisVariant, type SynopsisVariant } from "../variants/synopsis.mjs";
 
 /**
@@ -68,13 +69,14 @@ export async function openSynopsis() {
 
   /** The accept contract, with the app's own catalog read for names Weaknesses uses. */
   async function score(facts: SynopsisFacts, reply: SynopsisResponse) {
-    const checked = validateSynopsis(reply, facts, await catalogFor(reply, facts));
+    const catalog = await catalogFor(reply, facts);
+    const checked = validateSynopsis(reply, facts, catalog);
     return {
       outcome: outcomeOf(checked.verdicts),
       verdicts: checked.verdicts,
       sectionsPassed: checked.verdicts.filter((v) => v.status === "ok").length,
-      // Names the model gave that resolve to no card: the `unknown_card` refusals' failed marks.
-      outsideNames: checked.verdicts.reduce((n, v) => n + (v.status === "refused" && v.reason === "unknown_card" ? v.failed : 0), 0),
+      // Names the model gave that resolve to no card, over every section whatever it was refused for.
+      outsideNames: outsideMarks(reply, facts, catalog),
       shown: checked,
     };
   }

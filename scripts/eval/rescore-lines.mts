@@ -14,7 +14,7 @@ import "../lib/env.mjs";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { DESIGN_MINIMUMS, dropLineRule, flatMinimums, mulliganFigureFailures, shippedRule, type SectionPass } from "./lib/line-rule.mjs";
+import { DESIGN_MINIMUMS, dropLineRule, flatMinimums, mulliganFigureFailures, outsideMarks, shippedRule, type SectionPass } from "./lib/line-rule.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
 import { SYNOPSIS_VARIANTS } from "./variants/synopsis.mjs";
@@ -32,7 +32,7 @@ const RULES: [string, (r: never, f: never, c: never) => SectionPass][] = [
   ["drop line, minimum 3", (r, f, c) => dropLineRule(r, f, c, flatMinimums(3))],
 ];
 
-const groups = new Map<string, { n: number; usd: number; pass: Map<string, SectionPass[]>; figureRefusals: number; figureLines: number }>();
+const groups = new Map<string, { n: number; usd: number; pass: Map<string, SectionPass[]>; figureRefusals: number; figureLines: number; outside: number }>();
 const disagreements: string[] = [];
 const seen = new Set<string>();
 for (const run of readdirSync(runsDir).filter((r) => r.includes("-synopsis-")).sort()) {
@@ -58,7 +58,7 @@ for (const run of readdirSync(runsDir).filter((r) => r.includes("-synopsis-")).s
     const once = `${k}|${row.deckId}|${row.trial}`;
     if (seen.has(once)) continue;
     seen.add(once);
-    const g = groups.get(k) ?? { n: 0, usd: 0, pass: new Map(RULES.map(([name]) => [name, [] as SectionPass[]])), figureRefusals: 0, figureLines: 0 };
+    const g = groups.get(k) ?? { n: 0, usd: 0, pass: new Map(RULES.map(([name]) => [name, [] as SectionPass[]])), figureRefusals: 0, figureLines: 0, outside: 0 };
     groups.set(k, g);
     g.n += 1;
     g.usd += row.usdRealtime;
@@ -71,6 +71,7 @@ for (const run of readdirSync(runsDir).filter((r) => r.includes("-synopsis-")).s
     const app_ = app.validate(row.reply, fx, catalog).verdicts;
     g.figureRefusals += app_.filter((v) => v.status === "refused" && v.reason === "uncomputed_figure").length;
     g.figureLines += mulliganFigureFailures(row.reply, fx);
+    g.outside += outsideMarks(row.reply, fx, catalog) > 0 ? 1 : 0;
     const mine = shippedRule(row.reply, fx, catalog);
     for (const v of app_) {
       const ok = v.status === "ok";
@@ -87,16 +88,16 @@ if (disagreements.length > 0) {
 
 const pct = (n: number, d: number) => (d === 0 ? "–" : `${((100 * n) / d).toFixed(0)}%`);
 const lines = ["# The overview under \"drop the line, not the section\"", "",
-  `A what-if, measured on the stored answers${args["fresh-facts"] ? ", re-validated against facts rebuilt with the current `factsFor`" : ""}. The line checks agree with \`validateSynopsis\` on every stored answer under the shipped rule (the self-test above passed). "Figure" counts primer sections refused for \`uncomputed_figure\`, then the mulligan lines naming a figure the facts do not carry.`, "",
-  "| set | cell | variant | rule | n | all 4 render | overview | primer | keyCards | weaknesses | $/answer | $/all-4 answer | figure refusals / lines |",
-  "|---|---|---|---|---|---|---|---|---|---|---|---|---|"];
+  `A what-if, measured on the stored answers${args["fresh-facts"] ? ", re-validated against facts rebuilt with the current `factsFor`" : ""}. The line checks agree with \`validateSynopsis\` on every stored answer under the shipped rule (the self-test above passed). "Figure" counts primer sections refused for \`uncomputed_figure\`, then the mulligan lines naming a figure the facts do not carry. "Outside" is the share of answers naming a card that resolves to neither the deck nor the catalog, counted over every section whatever it was refused for (the per-run \`outside names\` in metrics-synopsis.md counts only \`unknown_card\` refusals, and undercounts).`, "",
+  "| set | cell | variant | rule | n | all 4 render | overview | primer | keyCards | weaknesses | $/answer | $/all-4 answer | figure refusals / lines | outside |",
+  "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"];
 for (const [k, g] of [...groups].sort()) {
   const [set, cell, variant] = k.split("|");
   for (const [name] of RULES) {
     const p = g.pass.get(name)!;
     const all = p.filter((s) => s.overview && s.primer && s.keyCards && s.weaknesses).length;
     const sec = (s: keyof SectionPass) => pct(p.filter((x) => x[s]).length, g.n);
-    lines.push(`| ${set} | ${cell} | ${variant} | ${name} | ${g.n} | ${pct(all, g.n)} | ${sec("overview")} | ${sec("primer")} | ${sec("keyCards")} | ${sec("weaknesses")} | $${(g.usd / g.n).toFixed(4)} | ${all ? `$${(g.usd / all).toFixed(4)}` : "–"} | ${name === "shipped" ? `${g.figureRefusals} / ${g.figureLines}` : ""} |`);
+    lines.push(`| ${set} | ${cell} | ${variant} | ${name} | ${g.n} | ${pct(all, g.n)} | ${sec("overview")} | ${sec("primer")} | ${sec("keyCards")} | ${sec("weaknesses")} | $${(g.usd / g.n).toFixed(4)} | ${all ? `$${(g.usd / all).toFixed(4)}` : "–"} | ${name === "shipped" ? `${g.figureRefusals} / ${g.figureLines}` : ""} | ${name === "shipped" ? pct(g.outside, g.n) : ""} |`);
   }
 }
 const text = lines.join("\n") + "\n";
