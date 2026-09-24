@@ -86,6 +86,14 @@ describe("SynopsisOverview", () => {
     expect(onWrite).toHaveBeenCalledOnce();
   });
 
+  // Credits audit, finding 4: the note says what the PRESS does. A write the server would answer
+  // from what it already holds spends nothing, so no credit is named beside it.
+  it("names no credit beside a write that would spend none", () => {
+    draw(synopsisState({ synopsis: null, lastFailed: true, wouldSpend: false }));
+    expect(screen.getByRole("button", { name: copy.tryAgain })).toBeTruthy();
+    expect(screen.queryByText(/credit/i)).toBeNull();
+  });
+
   it("draws Round 0's refused state, with no entry point, when every section was refused", () => {
     draw(synopsisState({ synopsis: null, lastRefused: { failed: 3, total: 8 }, wouldSpend: true }));
     expect(screen.getByText(copy.notWritten)).toBeTruthy();
