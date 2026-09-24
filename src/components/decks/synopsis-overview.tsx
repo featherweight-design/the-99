@@ -75,7 +75,9 @@ export function SynopsisOverview({
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,
   // which is false when the list already has its overview; a section retry always spends. Every
   // credit out says so, whatever the press.
-  const spentNote = creditsCopy.spent(allowance.limit, allowance.nextAt);
+  // Spent, the credit comes back at `reopensAt`, which can be later than the earliest expiry
+  // when more units count than the limit (a reservation beside spent units): as the tuning panel.
+  const spentNote = creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
   const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = spent ? spentNote : spendNote;

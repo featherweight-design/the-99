@@ -9,6 +9,7 @@ import { checkedSynopsis, synopsisRow, synopsisState } from "./__fixtures__/syno
 import { HoverPreviewProvider } from "./hover-preview";
 import { SynopsisOverview } from "./synopsis-overview";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { clockTime } from "../../lib/copy/credits";
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
 
@@ -83,6 +84,15 @@ describe("SynopsisOverview", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() } }));
     expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
     expect(screen.getByText(/0 of 3 left · next one at/)).toBeTruthy();
+  });
+
+  it("names when a credit truly comes back once every one is out, not the earliest expiry", () => {
+    const next = new Date("2026-09-24T10:00:00");
+    const reopens = new Date("2026-09-24T15:30:00");
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 4, limit: 3, reopensAt: reopens, nextAt: next } }));
+    const note = screen.getByText(/0 of 3 left/).textContent ?? "";
+    expect(note).toContain(clockTime(reopens));
+    expect(note).not.toContain(clockTime(next));
   });
 
   it("says a failed write failed, and offers Try again", () => {
