@@ -1,5 +1,5 @@
 {
-  "id": "5c9bb60c-ef15-4f88-84a1-e4dc5cf2b7da",
+  "id": "4f1a05af-f555-4f74-8135-3f6cd0980773",
   "prevId": "410aa606-63a9-407f-a12c-4a23ffe04537",
   "version": "7",
   "dialect": "postgresql",
@@ -2393,6 +2393,19 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deck_synopses_retry_of_deck_synopses_id_fk": {
+          "name": "deck_synopses_retry_of_deck_synopses_id_fk",
+          "tableFrom": "deck_synopses",
+          "tableTo": "deck_synopses",
+          "columnsFrom": [
+            "retry_of"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

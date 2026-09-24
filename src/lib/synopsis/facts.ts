@@ -46,7 +46,9 @@ const LIBRARY = 99;
  */
 export function keepableLands(lands: number): { low: number; high: number } {
   const e = (HAND_SIZE * lands) / LIBRARY;
-  const low = Math.max(2, Math.floor(e) - 1);
+  // Both ends inside 2–5, whatever the land count: a deck of nearly all lands would otherwise
+  // push the low end past the high cap.
+  const low = Math.min(5, Math.max(2, Math.floor(e) - 1));
   const high = Math.max(low, Math.min(5, Math.ceil(e) + 1));
   return { low, high };
 }

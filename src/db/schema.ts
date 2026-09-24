@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique, foreignKey, uniqueIndex,
+  unique, foreignKey, uniqueIndex, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
@@ -1651,7 +1651,7 @@ export const deckSynopses = pgTable("deck_synopses", {
   inputTokens: integer("input_tokens"),
   outputTokens: integer("output_tokens"),
   /** The run a section retry built on: its passing sections are carried over byte for byte. */
-  retryOf: uuid("retry_of"),
+  retryOf: uuid("retry_of").references((): AnyPgColumn => deckSynopses.id, { onDelete: "set null" }),
 }, (t) => [
   check("deck_synopses_status_check", sql`${t.status} in ('pending', 'done')`),
   check(

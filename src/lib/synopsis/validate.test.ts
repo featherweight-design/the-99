@@ -106,6 +106,18 @@ describe("validateSynopsis", () => {
     expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "tip_not_in_deck", failed: 1 });
   });
 
+  it("matches a tip's list to its prose by card, so a face and its full name agree", () => {
+    const reply = good();
+    reply.primer.tips[1] = { cards: ["Kratos", "Fire // Ice"], text: "Cast [[Fire]] with [[Kratos]] out to double the damage." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer").status).toBe("ok");
+  });
+
+  it("counts a listed name the prose never marks", () => {
+    const reply = good();
+    reply.primer.tips[0] = { cards: ["Sol Ring", "Gamble", "Mana Crypt"], text: "Use [[Gamble]] to find [[Sol Ring]]." };
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "primer")).toMatchObject({ reason: "tip_not_in_deck", failed: 1 });
+  });
+
   it("refuses a tip whose prose names a card its list does not", () => {
     const reply = good();
     reply.primer.tips[0] = { cards: ["Sol Ring", "Gamble"], text: "Use [[Gamble]] to find [[Sol Ring]] and [[Chaos Warp]]." };
@@ -222,14 +234,17 @@ describe("the contract's helpers", () => {
     expect(rendered("Play [[Sol Ring]].")).toBe("Play Sol Ring.");
   });
 
-  it("reads figures in digits and words", () => {
+  it("reads figures in digits and words, past ten", () => {
     expect(figuresIn("Keep 2 to four lands.")).toEqual([2, 4]);
+    expect(figuresIn("Keep eleven lands, or a dozen.")).toEqual([11, 12]);
   });
 
   it("does not read a creature's power as strength talk", () => {
     expect(strengthClaim("A creature with power 4 or greater.")).toBe(false);
     expect(strengthClaim("A high-power table.")).toBe(true);
     expect(strengthClaim("Rates a 7/10.")).toBe(true);
+    expect(strengthClaim("Seven out of ten.")).toBe(true);
+    expect(strengthClaim("Above most power levels.")).toBe(true);
   });
 
   it("holds a job to the categories the card has", () => {

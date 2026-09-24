@@ -52,7 +52,7 @@ function endsSentence(text: string): boolean {
  */
 const STRENGTH = [
   /\bbrackets?\b/i,
-  /\bpower[- ]level\b/i,
+  /\bpower[- ]levels?\b/i,
   /\bcEDH\b/i,
   /\bcompetitive\b/i,
   /\bcasual\b/i,
@@ -62,6 +62,7 @@ const STRENGTH = [
   /\bscores?\b/i,
   /\bratings?\b/i,
   /\b\d+\s*\/\s*10\b/,
+  /\bout of (10|ten)\b/i,
   /\b(strong|stronger|strongest|powerful|brutal|efficient|respectable|oppressive|busted|top[- ]tier)\b/i,
 ];
 
@@ -85,7 +86,10 @@ const CATEGORY_WORDS: Partial<Record<Category, RegExp>> = {
 
 const NUMBER_WORDS: Record<string, number> = {
   zero: 0, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  eleven: 11, twelve: 12, dozen: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+  seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50,
 };
+const NUMBER_WORD = new RegExp(`\\b(${Object.keys(NUMBER_WORDS).join("|")})\\b`, "g");
 
 /**
  * Every figure a line states, as digits or as a number word, outside card names. "one" is not
@@ -95,7 +99,7 @@ const NUMBER_WORDS: Record<string, number> = {
 export function figuresIn(text: string): number[] {
   const out: number[] = [];
   for (const m of unmarked(text).matchAll(/\b(\d+)\b/g)) out.push(Number(m[1]));
-  for (const m of unmarked(text).toLowerCase().matchAll(/\b(zero|two|three|four|five|six|seven|eight|nine|ten)\b/g)) {
+  for (const m of unmarked(text).toLowerCase().matchAll(NUMBER_WORD)) {
     out.push(NUMBER_WORDS[m[1]]);
   }
   return out;
@@ -201,14 +205,19 @@ export function validateSynopsis(
     }
     for (const tip of tips) {
       prose(r, tip.text, CHAR_BUDGETS.tip);
-      const listed = new Set(tip.cards.map(normalizeName));
-      if (listed.size < TIP_MIN_CARDS) r.refuse("tip_too_few_cards");
-      // Counted once, through the marks above: the list must equal them, so a listed card that
-      // is not in the deck is also a mark that failed.
+      // A listed name is counted through the marks above when the prose marks it, and below when
+      // it does not, so each name counts once.
       if (tip.cards.some((name) => !deck.has(normalizeName(name)))) r.refuse("tip_not_in_deck");
-      // The list and the prose must be the same cards: a tip may not list two and talk about a third.
-      const marked = new Set(marksIn(tip.text).map(normalizeName));
-      if (marked.size !== listed.size || [...listed].some((n) => !marked.has(n))) r.refuse("tip_not_in_deck");
+      // The list and the prose must be the same CARDS, compared by what each name resolves to, so
+      // `Fire` in the list and `[[Fire // Ice]]` in the prose agree. A tip may not list two and
+      // talk about a third.
+      const idOf = (name: string) => deck.get(normalizeName(name))?.oracleId ?? `?${normalizeName(name)}`;
+      const listedIds = new Set(tip.cards.map(idOf));
+      const markedIds = new Set(marksIn(tip.text).map(idOf));
+      // A listed name the prose never marks is still a name the tip made, and is counted.
+      for (const name of tip.cards) if (!markedIds.has(idOf(name))) r.deckCard(name);
+      if (listedIds.size < TIP_MIN_CARDS) r.refuse("tip_too_few_cards");
+      if (markedIds.size !== listedIds.size || [...listedIds].some((id) => !markedIds.has(id))) r.refuse("tip_not_in_deck");
     }
   }, deck, found, null);
 

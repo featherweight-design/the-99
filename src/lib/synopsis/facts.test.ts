@@ -12,6 +12,8 @@ describe("keepableLands", () => {
     [43, 2, 5],
     [28, 2, 3],
     [20, 2, 3],
+    [99, 5, 5],
+    [0, 2, 2],
   ])("at %i lands keeps %i to %i", (lands, low, high) => {
     expect(keepableLands(lands)).toEqual({ low, high });
   });
