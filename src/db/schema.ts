@@ -1311,8 +1311,12 @@ export const catalogRefreshes = pgTable("catalog_refreshes", {
  * A deck's notices are the entries past its reading's `deck_profiles.seen_seq` whose
  * `oracle_ids` its analyzed list wholly holds (`oracle_ids <@ analyzed_oracle_ids`, hence the
  * GIN index), plus `rules` entries past its reading's `rules_version`. A `rules` entry names no
- * cards, and the unique index on its version means a deploy writes it once however many builds
- * run. `detail` carries what the entry needs to be read after the row it describes is gone: a
+ * cards, and the unique index on its version means it can be written only once however many
+ * deploys try.
+ *
+ * Writers today: the card ingest (`gameChanger`, `notLegal`). The Combo refresh's flag and combo
+ * entries and the deploy's `rules` entry are the deck notices plan's PR 3; the kinds are declared
+ * here now so the table does not change shape under them. `detail` carries what the entry needs to be read after the row it describes is gone: a
  * removed combo's card names and result (readiness F16), a rule's name and what it now reads.
  *
  * Written only by the ingests and the deploy, never by a player, and never the reason an ingest
@@ -1544,7 +1548,9 @@ export const deckProfiles = pgTable("deck_profiles", {
    * all three, and `computed_at`, so it never swallows a notice (brief §6, readiness F4).
    *
    * `notices_read_seq` is the last entry the player opened the notices at. Reading quiets data
-   * notices; only a re-analysis clears them (the handoff's §3).
+   * notices (the handoff's §3). A re-analysis that RECOMPUTES moves `seen_seq` past them; a press
+   * on an unchanged list answers from the store (ruling 5) and moves nothing, until the plan's
+   * PR 4 makes such a press recompute when an entry touches the deck (Hugh's H1).
    */
   seenSeq: bigint("seen_seq", { mode: "number" }).notNull().default(0),
   noticesReadSeq: bigint("notices_read_seq", { mode: "number" }).notNull().default(0),
@@ -1720,7 +1726,8 @@ export const deckSynopses = pgTable("deck_synopses", {
   retryOf: uuid("retry_of").references((): AnyPgColumn => deckSynopses.id, { onDelete: "set null" }),
   /**
    * The change log head the analysis this overview was written from had seen (plan D11). A
-   * notice-driven re-analysis keeps the list and moves only the data, so the overview is marked
+   * notice-driven re-analysis (Hugh's H1, the plan's PR 4) keeps the list and moves only the data,
+   * so the overview is marked
    * possibly out of date when this is below the reading's `seen_seq`. 0 for every overview
    * written before the log existed, which the log's first entry therefore dates correctly.
    */

@@ -1,8 +1,8 @@
 // probe:notices-log — the deck notices change log's WRITE half, against a real Postgres.
 //
 // The diff is pure and unit-tested (`src/lib/notices/log.test.ts`). What no unit test here can
-// reach is what a transaction wrote: that a card batch and its entries commit together, that a
-// batch which throws writes neither, that a log write which throws still lets the batch publish
+// reach is what a transaction wrote: that a card batch writes its entry, that a batch which
+// throws writes neither, that a log write which throws still lets the batch publish
 // (the ingest runs weekly against production, and a failed log write must never fail it), and
 // that a quiet rebuild of an old-format reading keeps the notices marks and the analysis date.
 //
@@ -18,7 +18,10 @@
 //
 // Mutations run against it, each failing it:
 //   - the savepoint in `writeEntries` removed (the insert on the outer transaction): the rejected
-//     log write aborts the batch, and "the batch still published" reads the flipped value;
+//     log write aborts the batch, and "the batch still published" reads the flipped value. That
+//     is also the proof the upsert and its entries share ONE transaction: without it, the rejected
+//     insert could not have undone the upsert. Case 3 cannot show that, because its failure is
+//     inside the upsert statement itself and would roll back with or without a transaction;
 //   - the rebuild's `seenSeq` carry removed from `computeAndStoreProfile`: the rebuilt row reads
 //     the log head instead of 4242.
 //   - the rebuild's date carry removed (`computed_at = now()` on every write): the date reads the
@@ -39,6 +42,8 @@ import { upsertCardBatch } from "../src/lib/scryfall/seed";
 import type { CardRow } from "../src/lib/scryfall/transform";
 import { holdProfile } from "./lib/profile-hold.mjs";
 
+const SENTINEL_ID = "00000000-0000-4000-8000-0000000000aa";
+const SENTINEL_IDS = `{${SENTINEL_ID}}`;
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 
@@ -142,11 +147,9 @@ async function main() {
     release = await holdProfile(neon(process.env.DATABASE_URL!), reading.deck_id);
     const stamp = "2026-01-02 03:04:05.123456";
     await db.execute(sql`
-      update deck_profiles set seen_seq = 4242, rules_version = 1, computed_at = ${stamp}::timestamp,
-        profile_version = ${PROFILE_VERSION - 1}
+      update deck_profiles set seen_seq = 4242, rules_version = 0, computed_at = ${stamp}::timestamp,
+        analyzed_oracle_ids = ${SENTINEL_IDS}::uuid[], profile_version = ${PROFILE_VERSION - 1}
       where deck_id = ${reading.deck_id}::uuid`);
-    const [idsBefore] = await rows<{ ids: string[] }>(sql`
-      select analyzed_oracle_ids as ids from deck_profiles where deck_id = ${reading.deck_id}::uuid`);
     const deps: StoredProfileDeps = { generation: readCatalogGeneration, compute: loadDeckProfile };
     const rebuilt = await readStoredReading(reading.deck_id, reading.user_id, deps);
     const [after] = await rows<{ v: number; seen: number; rules: number; at: string; ids: string[] }>(sql`
@@ -155,8 +158,10 @@ async function main() {
       from deck_profiles where deck_id = ${reading.deck_id}::uuid`);
     check("5 · the rebuild ran", after.v, PROFILE_VERSION);
     check("5 · it kept the mark", after.seen, 4242);
-    check("5 · it kept the rules version", after.rules, 1);
-    check("5 · it kept the analyzed list", after.ids, idsBefore.ids);
+    // Each mark is planted at a value a recompute would NOT write (rules 0 against the current
+    // version's 1, a list of one id the deck does not hold), so a dropped carry reads differently.
+    check("5 · it kept the rules version", after.rules, 0);
+    check("5 · it kept the analyzed list", after.ids, [SENTINEL_ID]);
     check("5 · it kept the analysis date", after.at, stamp);
     check("5 · and reports that date to the reader",
       rebuilt?.analyzedAt.toISOString().slice(0, 19), "2026-01-02T03:04:05");
