@@ -8,6 +8,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { deckProfiles } from "../../db/schema";
 import { readProfileHead } from "../profile/load";
+import { noticesEnabled } from "./flag";
 import { analyzedOracleIds } from "./log";
 import { movedWithin } from "./read";
 
@@ -37,6 +38,8 @@ export async function overviewDataMoved(
  * H1 read it; taken as stored it would hold no card and nothing would ever move.
  */
 export async function overviewDataMovedFor(deckId: string, userId: string, overviewSeen: number): Promise<boolean> {
+  // Behind the notices switch: off, no overview is marked stale by data it cannot show.
+  if (!noticesEnabled()) return false;
   // The reading's marks and the deck's list from ONE snapshot: read apart, an edit or an analysis
   // committing between them pairs a reading with a list it never described.
   const read = await db.transaction(async (tx) => {

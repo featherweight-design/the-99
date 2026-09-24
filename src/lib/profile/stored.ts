@@ -10,6 +10,7 @@ import { newestVersion, versionCards } from "../decks/versions";
 import { analyzedOracleIds, LOG_HEAD_SQL, readLogHead } from "../notices/log";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, loadDeckProfile, readProfileHead, type ProfileHead } from "./load";
+import { noticesEnabled } from "../notices/flag";
 import { readingMoved } from "../notices/read";
 import { PROFILE_VERSION } from "./version";
 import type { Bracket } from "../bracket/types";
@@ -275,7 +276,8 @@ export async function computeAndStoreProfile(
   // pending, the press answers from the store exactly as before.
   const isPress = !pinTo && !rebuildOf;
   const sameAnswer = row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list;
-  const dataMoved = Boolean(isPress && sameAnswer && row && (await readingMoved({
+  // Behind the notices switch (Hugh's release ruling): off, a press keeps ruling 5 unamended.
+  const dataMoved = Boolean(isPress && sameAnswer && row && noticesEnabled() && (await readingMoved({
     seenSeq: row.seenSeq,
     rulesVersion: row.rulesVersion,
     // An empty list is a legacy row (schema note), read as the list this press is guarded to.

@@ -36,9 +36,10 @@ const FILL_ALPHA = "18%";
 /**
  * Where the drawing departs from the flat rule. Absent status = the flat rule.
  *
- * TWO members, and both are the PHASE: `New` and `Draft` are the only values
- * whose token is a text colour rather than a signal hue, so they take a lighter
- * fill and a quieter label than the five that key off one.
+ * TWO of them are the PHASE: `New` and `Draft` are the only values whose token
+ * is a text colour rather than a signal hue, so they take a lighter fill and a
+ * quieter label than the five that key off one. The third is `Over`, for
+ * contrast alone (H5, below).
  *
  * THE DASH BELONGS TO `Draft` NOW. A dashed edge has meant *provisional* since
  * the refresh, and it is the one status signal that survives greyscale and
@@ -48,10 +49,14 @@ const FILL_ALPHA = "18%";
  * meaning rather than changing it. `Building` takes the flat rule.
  */
 const PILL_EXCEPTION: Partial<
-  Record<StatusPill, { fillAlpha: string; label: string; borderStyle?: CSSProperties["borderStyle"] }>
+  Record<StatusPill, { fillAlpha: string; label: string; borderStyle?: CSSProperties["borderStyle"]; edge?: string }>
 > = {
   New: { fillAlpha: "16%", label: "--fg-muted" },
   Draft: { fillAlpha: "14%", label: "--fg-body", borderStyle: "dashed" },
+  // H5 (deck notices readiness, 2026-09-24): `--danger` as 10.5px text reads under 4.5:1 on every
+  // theme's plate, so the label is `--fg` and the red moves to the hairline, beside the tint the
+  // flat rule already gives it. The notice's `Not legal` tag takes the same treatment.
+  Over: { fillAlpha: FILL_ALPHA, label: "--fg", edge: "--danger" },
 };
 
 /**
@@ -77,7 +82,7 @@ export function statusPillStyle(status: StatusPill): CSSProperties {
   return {
     color: `var(${exception ? exception.label : token})`,
     background: plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
-    border: `1px ${exception?.borderStyle ?? "solid"} var(--border-strong)`,
+    border: `1px ${exception?.borderStyle ?? "solid"} var(${exception?.edge ?? "--border-strong"})`,
     // `text-shadow` is an inherited property, and every band that carries a pill
     // over art puts a cover shadow on the block around it — so the pill picked up
     // ink it is the stated exception to. It plates itself, so it needs none, and

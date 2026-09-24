@@ -41,6 +41,7 @@ import { statusPill, type StatusPill } from "./status";
 import { chipAnswer } from "../bracket/chip-answer";
 import { isReachablePermits } from "../bracket/verdict-head";
 import { storedPermitsSql } from "../profile/stored-sql";
+import { noticeSummarySql, type NoticeSummary } from "../notices/summary-sql";
 import type { DeckSort } from "./sort";
 
 // ---------------------------------------------------------------------------
@@ -663,6 +664,8 @@ export type DeckListItem = {
    * last edit, which draws no chip ("a deck we have not read draws no chip", Round 0 §5).
    */
   bracket: TileBracket | null;
+  /** The deck's notice for its tile (deck notices plan D6). Null or absent: none. */
+  notice?: NoticeSummary;
 };
 
 export type TileBracket = { permits: Bracket[]; answered: Bracket | null };
@@ -888,6 +891,12 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
+    /**
+     * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on
+     * `includeBracket`: Home asks for the bracket on its resume rows and draws no notice, and this is
+     * a correlated subquery per deck on the list's hot path.
+     */
+    includeNotice?: boolean;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -983,6 +992,7 @@ export async function listDecksWithStats(
         ? storedPermitsSql()
         : sql<number[] | null>`null::int[]`,
       declaredBracket: decks.declaredBracket,
+      notice: opts.includeNotice ? noticeSummarySql() : sql<NoticeSummary>`null::json`,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -1163,6 +1173,7 @@ export async function listDecksWithStats(
       inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
       bracket: tileBracket(row.bracketPermits, row.declaredBracket),
+      notice: row.notice ?? null,
     };
   });
 }
