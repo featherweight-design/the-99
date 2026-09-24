@@ -96,3 +96,5 @@
 {"at":"2026-09-24T21:32:26.664Z","runId":"2026-09-24T21-18-55-788Z-tuning-round4-medium-terse-b/a1","source":"msgbatch_018E6s2CQuDWQ9iCLuC2qWGx","usd":0.163662,"requests":8,"settles":"2026-09-24T21-18-55-788Z-tuning-round4-medium-terse-b/a1"}
 {"at":"2026-09-24T21:32:26.674Z","runId":"2026-09-24T21-18-55-788Z-tuning-round4-medium-terse-b/a2","source":"pending","usd":0.0456525,"requests":1,"pending":"2026-09-24T21-18-55-788Z-tuning-round4-medium-terse-b/a2"}
 {"at":"2026-09-24T21:35:50.451Z","runId":"2026-09-24T21-18-55-788Z-tuning-round4-medium-terse-b/a2","source":"msgbatch_01RwEKaNBM34C2gSS9Chez2p","usd":0.031787,"requests":1,"settles":"2026-09-24T21-18-55-788Z-tuning-round4-medium-terse-b/a2"}
+{"at":"2026-09-24T23:31:43.053Z","runId":"2026-09-24T23-31-42-973Z-tuning-latency-medium-terse-b/a1","source":"pending","usd":1.47251,"requests":8,"pending":"2026-09-24T23-31-42-973Z-tuning-latency-medium-terse-b/a1"}
+{"at":"2026-09-24T23:36:15.578Z","runId":"2026-09-24T23-31-42-973Z-tuning-latency-medium-terse-b/a1","source":"realtime:8","usd":0.311084,"requests":8,"settles":"2026-09-24T23-31-42-973Z-tuning-latency-medium-terse-b/a1"}

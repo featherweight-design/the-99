@@ -13,7 +13,7 @@ Costs are at real-time prices per answer, with the app's one retry included, unl
 | feature | model and prompt | held-out result | $/accepted |
 |---|---|---|---|
 | Tuning | **Sonnet 5 at `effort: "medium"` on the strategy prompt with the rationale rules**: sonnet-low failed Hugh's blind reads in rounds 1 and 3; this passed round 4, 7–0, against S-default | 8 of 8 answered, 4.00 kept per answer, ~48s | $0.0489 per answer |
-| Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget's second version, with the app's repair | all four sections: 100%, 12% of Mulligan lines dropped (v6: 17%), universal staples 0, 71% specific Mulligan lines | $0.044 (S: $6.13) |
+| Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget's second version, with the app's repair | all four sections: 100%, 12% of Mulligan lines dropped (v6: 17%), universal staples 0, 75% specific Mulligan lines | $0.044 (S: $6.13) |
 
 The overview contract (A+B) was Hugh's ruling. The first Mulligan budget went to the synopsis lane as #934 and was held when its pre-open pass found it dropping lines; the second version replaces it. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
 
@@ -328,7 +328,7 @@ Held-out, 3 trials, sonnet-low:
 | answers needing the repair | 37 | 30 | 21 |
 | $ per accepted answer | $0.051 | $0.063 | $0.051 |
 | universal staples as Key cards | 12 of 15 overviews | 0 of 333 | 0 of 328 |
-| specific Mulligan lines | 21% (round 2) | 71% | 78% |
+| specific Mulligan lines | 21% (round 2, tagged by hand) | 76% | 82% |
 
 After the repair, v6 as shipped rendered each section as follows: overview 96%, primer 93%, Key
 cards 100%, weaknesses 100%. With the Mulligan budget: overview 98%, primer 100%, Key cards 100%,
@@ -343,7 +343,7 @@ shipped prompt already said "aim for about 55", so the fix states the budget in 
 - two worked lines, both naming a card or a curve point.
 
 The first version, whose second example named nothing, held the budget on the dev decks but let
-the specific share fall from 77% to 56%. The version after it (`primer-budget-b`) is the one measured
+the specific share fall from 73% to 65% on the dev first writes. The version after it (`primer-budget-b`) is the one measured
 on held-out here, and it went to the synopsis lane as a patch, #934. It is verified byte for byte: with it, the app's own
 builder reproduces all 15 held-out first-write prompts and all 21 repair prompts the measurement
 sent.
@@ -381,10 +381,16 @@ below, and a specific share above 60%. Held-out, 3 trials, sonnet-low:
 | $ per accepted answer | $0.063 | $0.051 | **$0.044** |
 | Mulligan lines dropped, rendered sections | 17% (28 of 168) | 15% (27 of 179) | 12% (22 of 178) |
 | ... of which for a figure the deck lacks | 0 | 21 | 0 |
-| specific Mulligan lines, as drawn | 71% | 78% | 71% |
+| specific Mulligan lines, as drawn | 76% | 82% | 75% |
 | Key-card lines dropped | 6% | 8% | 8% |
 | tips / weaknesses dropped | 4% / 4% | 2% / 5% | 0% / 6% |
 | universal staples as Key cards | 0 of 333 | 0 of 328 | 0 of 330 |
+
+The specific share is `mulliganSpecific` in `line-rule.mts`: a line naming a card, or a curve point
+or line of play by its words, including a mana figure in any form ("four-mana", "10-mana", "3 mana").
+Review of #946 found the first version recognised only one- to three-mana, which understated every
+share by 4 to 5 points; the figures here are the corrected rule's, and round 2's 21% is Hugh's read
+tagged by hand, not this rule.
 
 **It passes on all three**, and it is the cheapest of the three, because fewer answers need the
 repair. The dev check before it ($0.19) read the same way: 13% of Mulligan lines dropped, against
