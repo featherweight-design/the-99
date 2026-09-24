@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
 
-import { synopsisStatus } from "./read";
+import { pressWrites, synopsisStatus } from "./read";
 
 // \`nextAt\` follows the allowance rule: set whenever a credit is in use, whether or not any are left.
 const left = { used: 1, limit: 5, reopensAt: null, nextAt: new Date() };
@@ -38,5 +38,20 @@ describe("synopsisStatus", () => {
 
   it("never writes without a reading", () => {
     expect(synopsisStatus({ reading: null, synopsis: null, allowance: left, pending: false })).toEqual({ stale: false, wouldSpend: false });
+  });
+});
+
+describe("pressWrites", () => {
+  it("writes when the live list has no overview", () => {
+    expect(pressWrites("list-b", null)).toBe(true);
+    expect(pressWrites("list-b", { fingerprint: "list-a" })).toBe(true);
+  });
+  // 7d, reached by a revert: the list is back to the one its overview describes, so the press
+  // returns that overview and spends nothing, whatever the banner says about the reading.
+  it("does not write when the live list already has its overview", () => {
+    expect(pressWrites("list-a", { fingerprint: "list-a" })).toBe(false);
+  });
+  it("does not write for a deck it cannot read", () => {
+    expect(pressWrites(null, null)).toBe(false);
   });
 });

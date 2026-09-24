@@ -87,6 +87,13 @@ export function useDeckProfile(
    * stale. It is never withdrawn (the lifecycle rulings, 2026-09-23).
    */
   listKey?: string,
+  /**
+   * Called once when a PRESS lands a fresh reading over the very list it asked about, and never
+   * otherwise: not for a peek (a stored reading painted on open writes nothing), not for a reply an
+   * edit overtook (that reading is already stale), not for a failure or a refusal. The shell hangs
+   * the overview's write on it (synopsis plan, decision 1), which is how an Analyze also writes.
+   */
+  onFresh?: (deckId: string) => void,
 ): {
   state: ProfileState;
   /** Ask, or ask again. Safe to call repeatedly — a request in flight is not duplicated. */
@@ -151,6 +158,13 @@ export function useDeckProfile(
   }, [listKey]);
   const [readyKey, setReadyKey] = useState<string | undefined>(undefined);
 
+  // Read from the reply's continuation, so a new callback each render neither re-creates `request`
+  // nor is missed by a press already in flight.
+  const onFreshRef = useRef(onFresh);
+  useEffect(() => {
+    onFreshRef.current = onFresh;
+  }, [onFresh]);
+
   const request = useCallback(() => {
     if (inFlightFor.current === deckId) return;
     inFlightFor.current = deckId;
@@ -193,7 +207,9 @@ export function useDeckProfile(
       }
       else if (result.ok) {
         setReadyKey(askedAbout);
-        setState({ kind: "ready", ...readingOf(result) });
+        const reading = readingOf(result);
+        setState({ kind: "ready", ...reading });
+        if (reading.fresh && askedAbout === latestKey.current) onFreshRef.current?.(deckId);
       }
       else if (result.reason === "illegal") {
         setState({ kind: "illegal", built: result.built, size: result.size, held });
