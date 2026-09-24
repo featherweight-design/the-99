@@ -308,4 +308,56 @@ describe("AnalysisPanel", () => {
       expect(screen.getByTestId("analysis-empty")).toBeInTheDocument();
     });
   });
+
+  // The overview (synopsis plan, decision 6): one grid item, rendered once. It leads the phone's
+  // reading order, and at 1300 heads the left column over the climb while the box spans both
+  // rows. The geometry is `probe:synopsis-ui`'s; this pins the order and the one mount.
+  describe("the overview slot", () => {
+    const withOverview = (state: ProfileState) =>
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={state} onRequest={onRequest} overview={<div>the overview</div>}>
+            <div>{MIX}</div>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+
+    it("draws once, before the box and the climb, over a reading", () => {
+      withOverview(ready());
+      const overview = screen.getAllByText("the overview");
+      expect(overview).toHaveLength(1);
+      const box = screen.getByTestId("verdict-name");
+      const climb = screen.getAllByTestId("climb-rung")[0];
+      expect(overview[0].compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(box.compareDocumentPosition(climb) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("heads the left column at 1300, with the climb under it and the box spanning both", () => {
+      withOverview(ready());
+      const cell = screen.getByText("the overview").parentElement!;
+      expect(cell.className).toMatch(/md:col-start-1/);
+      expect(cell.className).toMatch(/md:row-start-1/);
+      const grid = cell.parentElement!;
+      const [, boxCell, climbCell] = Array.from(grid.children);
+      expect(boxCell.className).toMatch(/md:row-span-2/);
+      expect(climbCell.className).toMatch(/md:row-start-2/);
+    });
+
+    it("adds no second row, and no row gap, without an overview", () => {
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={ready()} onRequest={onRequest}>
+            <div>{MIX}</div>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+      const grid = screen.getByTestId("verdict-cell").parentElement!;
+      expect(grid.className).not.toMatch(/grid-rows|gap-y/);
+    });
+
+    it("is absent before a first reading", () => {
+      withOverview({ kind: "idle" });
+      expect(screen.queryByText("the overview")).toBeNull();
+    });
+  });
 });

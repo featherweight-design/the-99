@@ -33,9 +33,10 @@ import { VerdictBlock } from "./verdict-block";
  * take, and the mix appearing first and then being joined by a reading reads as the flash 8a
  * exists to remove.
  *
- * NO OVERVIEW SECTION, AND NO SPACE RESERVED FOR ONE. The synopsis does not exist until
- * sub-project 6, and the handoff forbids a placeholder (§6.2), so the tab draws nothing where it
- * will go (readiness finding 6). A current reading carries no re-analyze control either: the
+ * THE OVERVIEW is handed in by the shell, which holds its state, and drawn only over a reading: it
+ * leads the tab on the phone, and at 1300 it heads the left column above the climb while the box
+ * spans both rows beside them (synopsis plan, decision 6). One grid item, rendered once, so no
+ * width ever mounts a second copy. A current reading carries no re-analyze control either: the
  * handoff offers re-analysis only from the banner a changed deck draws (2i), which holds the
  * reading whole under it; a failed re-read over that reading is 2d.
  */
@@ -47,6 +48,7 @@ export function AnalysisPanel({
   legality,
   tuning,
   opening = "off",
+  overview,
   children,
 }: {
   state: ProfileState;
@@ -72,6 +74,8 @@ export function AnalysisPanel({
    * current or held, so its bracket flag is worded against the reading the reader sees.
    */
   tuning?: (permits: readonly Bracket[]) => ReactNode;
+  /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
+  overview?: ReactNode;
   children: ReactNode;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
@@ -123,6 +127,7 @@ export function AnalysisPanel({
             versionNumber={held.versionNumber}
             art={art}
             declaration={declaration}
+            overview={overview}
           />
         </>
       ) : state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (
@@ -159,6 +164,7 @@ function Verdict({
   versionNumber,
   art,
   declaration,
+  overview,
 }: {
   profile: import("../../lib/profile/types").DeckProfile;
   analyzedAt: string;
@@ -166,14 +172,17 @@ function Verdict({
   versionNumber: number | null;
   art: FindingArt;
   declaration?: DeclarationControl;
+  overview?: ReactNode;
 }) {
   const verdict = slotDeck(profile);
   return (
     <>
-      {/* The box first in the DOM, so the phone reads it first; at 1300 the grid puts the climb in
-          the left column and the box in the right. */}
-      <div className="flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:items-start md:gap-[30px]">
-        <div className="min-w-0 md:col-start-2 md:row-start-1">
+      {/* DOM order is the phone's reading order: the overview, the box, then the climb. At 1300 the
+          grid puts the overview over the climb in the left column and spans the box down the right;
+          the second row takes any slack, so a tall box never opens a gap under the overview. */}
+      <div className={`flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:items-start ${overview ? "md:grid-rows-[auto_1fr] md:gap-x-[30px] md:gap-y-[26px]" : "md:gap-[30px]"}`}>
+        {overview ? <div className="min-w-0 md:col-start-1 md:row-start-1">{overview}</div> : null}
+        <div data-testid="verdict-cell" className={`min-w-0 md:col-start-2 md:row-start-1 ${overview ? "md:row-span-2" : ""}`}>
           <VerdictBlock
             verdict={verdict}
             profile={profile}
@@ -195,7 +204,7 @@ function Verdict({
             }
           />
         </div>
-        <div className="flex min-w-0 flex-col md:col-start-1 md:row-start-1 md:gap-[26px]">
+        <div data-testid="climb-cell" className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
           <BracketClimb verdict={verdict} profile={profile} />
         </div>
       </div>

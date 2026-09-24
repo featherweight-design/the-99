@@ -1,0 +1,38 @@
+{
+  "feature": "Deck overview (sub-project 6), PR 3: the Overview on the Analysis tab and the full-overview sheet",
+  "note": "Needs a server with ANALYSIS_TAB_ENABLED=true and the stub model (no SYNOPSIS_LIVE). OVERVIEW_DECK is a deck the signed-in account owns that holds a fresh stored reading AND an overview written for its list: on local-dev, press Analyze and then Write one on it once (probe:synopsis-ui does exactly this, but cleans up after itself, so do it by hand before the sheet). ABSENT_DECK holds a fresh reading and no overview. Every row reaches the tab by a PRESS: BuilderTabs is client state and has no address.",
+  "rows": [
+    {
+      "id": "overview-present",
+      "label": "/decks/[id] Analysis: the Overview heading the left column over the climb at 1300, first on the phone",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "steps": [
+        { "goto": "/decks/${OVERVIEW_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='synopsis-overview']", "settle": 900 }
+      ]
+    },
+    {
+      "id": "overview-sheet",
+      "label": "/decks/[id] Analysis: the full overview, 700 wide on desktop, a sheet on the phone",
+      "view": "src/components/decks/synopsis-body.tsx",
+      "steps": [
+        { "goto": "/decks/${OVERVIEW_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='synopsis-overview']", "settle": 900 },
+        { "clickRole": "button", "name": "View full overview", "settle": 300 },
+        { "wait": "[data-testid='receipt-modal']", "settle": 500 }
+      ]
+    },
+    {
+      "id": "overview-absent",
+      "label": "/decks/[id] Analysis: Write one, with its credit note, over a fresh reading and no overview",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "steps": [
+        { "goto": "/decks/${ABSENT_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
+        { "wait": "[data-testid='synopsis-overview']", "settle": 1500 }
+      ]
+    }
+  ]
+}
