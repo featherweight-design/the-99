@@ -10,6 +10,9 @@ Hugh approved this audit on 2026-09-24.
   applies: each quote needs a source that actually contains it.
 - **Exhibition contrast (finding 1): back to Design as a revision.** This audit merges now, and the revision
   gets its own re-audit when it returns.
+- **R2-A confirmed by Hugh, 2026-09-24:** the sheet is neutral reference, and the reader's bracket stays on
+  the climb and the header chip. Revision 2's removal of the reader's bracket marking stands (see R2-A under
+  Revision 2).
 
 **Verdict: 🟠 Orange.** Audited 2026-09-24 against `origin/main` at `dac4fd5c` (#901). Every
 figure on the sheet matches the code, the chrome is `ModalChrome` with no new props, every token
