@@ -105,7 +105,8 @@ These follow from the rulings. Hugh has not ruled on them one by one, and he may
   Shopping list uses. A card never stocked has no price and is left out of a budgeted fill. That rule is
   for the cards the fill chooses. A build-around card is placed anyway, because the player asked for it.
   When it has never been stocked the budget cannot count it, so the fill caps the rest as usual and the
-  row says the build-around card's price is unknown. Design draws that state.
+  row says the build-around card's price is unknown, never $0. The row's "about $X to buy" then says
+  it leaves that card out. Design draws that state.
 - **After a model read**, words it could not map stay visible as "not understood". Editing any chip
   afterwards is free.
 
@@ -146,6 +147,8 @@ States:
 - ordered by a theme, by several themes, by a card, and by a theme plus a card;
 - ordered by ownership because no theme or card was given, with the suggestion to add one;
 - too narrow (ruling 8): few results or none, with the answer that removes the most named;
+- a build-around card that has never been stocked (§3.0): its price reads unknown, never $0, and the
+  row's "about $X to buy" says it leaves that card out;
 - the list loading, and a row whose ownership figures are still loading or failed while the others show
   (each row runs a trial fill, §6);
 - the whole list failing.
