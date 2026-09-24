@@ -14,6 +14,8 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
+import { CHAR_BUDGETS } from "../../src/lib/synopsis/limits";
+
 const { values: args } = parseArgs({
   options: {
     feature: { type: "string", default: "tuning" },
@@ -83,6 +85,7 @@ for (const r of mine) {
 const lines: string[] = [];
 lines.push(`# Automatic metrics: ${args.feature}`, "");
 lines.push(`Recomputed from ${mine.length} rows in ${new Set(mine.map((r) => r.runId)).size} runs, one per set, cell, variant, deck and trial (${duplicates} later repeats set aside). Costs at real-time prices.`, "");
+if (args.feature === "tuning") {
 lines.push("| set | cell | variant | n | survived | ungrounded | malformed | upstream | kept/run | returned/run | outside names | in tok | out tok (p95) | visible out (est.) | cache r/w | $/answer | $/accepted |");
 lines.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
 const dropLines: string[] = [];
@@ -106,6 +109,40 @@ for (const [k, g] of [...groups].sort()) {
   dropLines.push(`- **${set} / ${cell} / ${variant}**: survived by trial ${byTrial.join(", ")}; drops ${[...drops].sort((a, b) => b[1] - a[1]).map(([d, c]) => `${d} ${c}`).join(", ") || "none"}.`);
 }
 lines.push("", "## Drops by rule, and stability across trials", "", ...dropLines, "");
+
+}
+
+// ---- The overview: sections, refusals, the job line, latency ------------------------------
+type Verdict = { section: string; status: string; reason?: string };
+type SynReply = { keyCards: { job: string }[]; primer: { mulligan: { keep: string[]; sendBack: string[] } } };
+if (args.feature === "synopsis") {
+  const SECTIONS = ["overview", "primer", "keyCards", "weaknesses"];
+  const rendered = (t: string) => t.replace(/\[\[([^\]]+)\]\]/g, "$1");
+  lines.push("| set | cell | variant | n | all 4 pass | overview | primer | keyCards | weaknesses | malformed | upstream | outside names | in tok | out tok (p95) | latency p50/p90/max s | $/answer | $/accepted |");
+  lines.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+  const detail: string[] = [];
+  for (const [k, g] of [...groups].sort()) {
+    const [set, cell, variant] = k.split("|");
+    const n = g.length;
+    const verdicts = (r: Row) => ((r as unknown as { verdicts?: Verdict[] }).verdicts ?? []);
+    const ok = (sec: string) => g.filter((r) => verdicts(r).some((v) => v.section === sec && v.status === "ok")).length;
+    const survived = g.filter((r) => r.outcome === "survived").length;
+    const outs = g.flatMap((r) => r.usage.map((u) => u.output_tokens));
+    const ins = g.flatMap((r) => r.usage.map((u) => u.input_tokens));
+    const lat = g.flatMap((r) => ((r as unknown as { latencyMs?: number[] }).latencyMs ?? []).map((ms) => ms / 1000)).sort((a, b) => a - b);
+    const usd = g.reduce((a, r) => a + r.usdRealtime, 0);
+    const q = (xs: number[], p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))];
+    const latency = lat.length ? `${q(lat, 0.5).toFixed(0)}/${q(lat, 0.9).toFixed(0)}/${lat[lat.length - 1].toFixed(0)}` : "batch";
+    lines.push(`| ${set} | ${cell} | ${variant} | ${n} | ${pct(survived, n)} | ${SECTIONS.map((sec) => pct(ok(sec), n)).join(" | ")} | ${pct(g.filter((r) => r.outcome === "malformed").length, n)} | ${pct(g.filter((r) => r.outcome === "upstream_busy").length, n)} | ${pct(g.filter((r) => (r.outsideNames ?? 0) > 0).length, n)} | ${mean(ins).toFixed(0)} | ${mean(outs).toFixed(0)} (${p95(outs)}) | ${latency} | $${(usd / n).toFixed(4)} | ${survived ? `$${(usd / survived).toFixed(4)}` : "–"} |`);
+
+    const reasons = new Map<string, number>();
+    for (const r of g) for (const v of verdicts(r)) if (v.status === "refused") reasons.set(`${v.section}:${v.reason}`, (reasons.get(`${v.section}:${v.reason}`) ?? 0) + 1);
+    const jobs = g.flatMap((r) => ((r.reply as SynReply | null)?.keyCards ?? []).map((c) => rendered(c.job).length)).sort((a, b) => a - b);
+    const mull = g.flatMap((r) => { const m = (r.reply as SynReply | null)?.primer.mulligan; return m ? [...m.keep, ...m.sendBack].map((t) => rendered(t).length) : []; }).sort((a, b) => a - b);
+    detail.push(`- **${set} / ${cell} / ${variant}**: refusals ${[...reasons].sort((a, b) => b[1] - a[1]).map(([rsn, c]) => `${rsn} ${c}`).join(", ") || "none"}. Key-card job line: median ${jobs.length ? q(jobs, 0.5) : "–"}, p90 ${jobs.length ? q(jobs, 0.9) : "–"}, ${jobs.filter((l) => l > CHAR_BUDGETS.job).length} of ${jobs.length} over ${CHAR_BUDGETS.job}. Mulligan line: median ${mull.length ? q(mull, 0.5) : "–"}, ${mull.filter((l) => l > CHAR_BUDGETS.mulligan).length} of ${mull.length} over ${CHAR_BUDGETS.mulligan}.`);
+  }
+  lines.push("", "## Refusals by section, and the budgeted lines", "", ...detail, "");
+}
 
 // ---- The decision rule, as the plan wrote it before any result (plan, "The decision rule") ----
 // Computed on the HELD-OUT decks, and on the overlay for tuning, against S = `--baseline`.

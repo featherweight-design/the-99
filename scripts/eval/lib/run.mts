@@ -82,8 +82,12 @@ export async function runRequests<T>(opts: {
   writeFileSync(new URL("prepared.json", dir), `${JSON.stringify(opts.prepared)}\n`);
 
   const modelOf = new Map(first.map((s) => [s.customId, s.params.model]));
-  const send = async (batch: Sent[], pass: string): Promise<Got[]> => {
+  // A batch is recorded at its worst case BEFORE it is submitted and settled at its real cost after
+  // (`ledger.mts`), so a crash between paying and settling leaves the worst case counted.
+  const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[]> => {
     if (batch.length === 0) return [];
+    const pendingId = `${runId}/${pass}`;
+    record(LEDGER, { at: new Date().toISOString(), runId: pendingId, source: "pending", usd: worstUsd, requests: batch.length, pending: pendingId });
     let got: Got[];
     let source: string;
     if (realtime) {
@@ -96,13 +100,14 @@ export async function runRequests<T>(opts: {
     }
     appendFileSync(new URL(`raw-${pass}.jsonl`, dir), got.map((g) => JSON.stringify(g)).join("\n") + "\n");
     const usd = got.reduce((n, g) => n + (g.ok ? costUsd(modelOf.get(g.customId.replace(/-r$/, ""))!, g.message.usage as Usage, { batch: !realtime }) : 0), 0);
-    const after = record(LEDGER, { at: new Date().toISOString(), runId: `${runId}/${pass}`, source, usd, requests: batch.length });
+    const after = record(LEDGER, { at: new Date().toISOString(), runId: `${runId}/${pass}`, source, usd, requests: batch.length, settles: pendingId });
     log(`${pass}: ${batch.length} answers, $${usd.toFixed(4)}; ledger total $${spent(after).toFixed(2)}`);
     return got;
   };
 
   const attempts = new Map<string, Got[]>();
-  for (const g of await send(first, "a1")) attempts.set(g.customId, [g]);
+  // The first pass is held at the whole worst case, a retry included.
+  for (const g of await send(first, "a1", worst)) attempts.set(g.customId, [g]);
   const retry = first.filter((s) => {
     const g = attempts.get(s.customId)?.[0];
     return !g || !g.ok || !parseReply(schema, g.message).ok;
@@ -110,7 +115,9 @@ export async function runRequests<T>(opts: {
   // The retry is never refused: the worst case checked above already counted a second attempt for
   // every request, so the cap was cleared for it, and skipping it would record first-attempt
   // failures as final ones the app would have retried.
-  for (const g of await send(retry.map((s) => ({ ...s, customId: `${s.customId}-r` })), "a2")) {
+  const tokensOf = (s: Sent) => counted.get(createHash("sha256").update(JSON.stringify(s.params)).digest("hex"))!;
+  const retryWorst = retry.reduce((n, s) => n + worstCaseUsd(s.params.model, tokensOf(s), s.params.max_tokens, { batch: !realtime }) / 2, 0);
+  for (const g of await send(retry.map((s) => ({ ...s, customId: `${s.customId}-r` })), "a2", retryWorst)) {
     attempts.get(g.customId.replace(/-r$/, ""))?.push(g);
   }
 

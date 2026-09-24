@@ -58,6 +58,28 @@ SYNOPSIS_VARIANTS.budgets = {
   prompt: (m) => ({ system: `${m.system}\n${BUDGET_RULES}`, user: m.user }),
 };
 
+/**
+ * Round 2. On the dev decks, round 1 fixed Key cards for both Sonnet cells (sonnet-low 8% to 75%
+ * passing, job median 54 to 48 characters) but not for Haiku (median 80 to 65: it does not count
+ * characters). What refused next, on the same decks: `uncomputed_figure` in the mulligan lines
+ * (a turn number, or a count the facts do not hold), `strength_claim`, and `unmarked_card` (a deck
+ * card named without its marks, the commander most often). So this adds a WORD target for the job
+ * line, this deck's own allowed figures, the words the checker refuses, and the marking rule for
+ * every mention. The figures are the facts' own `figures`, never restated.
+ */
+const PLUS_RULES = (facts: SynopsisFacts) => [
+  "A Key card's job is 4 to 8 words.",
+  `In the mulligan lines, every number, written as digits or as a word like "two", must be one of: ${facts.figures.join(", ")}. Do not name a turn number; say "early" or "late" instead.`,
+  "Never use these words anywhere: strong, powerful, efficient, competitive, casual, optimized, tier, score, rating, bracket, power level, brutal, busted, oppressive, respectable.",
+  "Mark EVERY mention of a card in the decklist, the commander included and every repeat: [[Name]] each time.",
+].join("\n");
+
+SYNOPSIS_VARIANTS["budgets-plus"] = {
+  id: "budgets-plus",
+  reason: "Round 2: round 1's budgets, plus a word target for the job line, the deck's own mulligan figures, the refused words, and marking every mention.",
+  prompt: (m, facts) => ({ system: `${m.system}\n${BUDGET_RULES}\n${PLUS_RULES(facts)}`, user: m.user }),
+};
+
 export function applySynopsisVariant(variant: SynopsisVariant, facts: SynopsisFacts, build: (f: SynopsisFacts) => Messages) {
   const shown = variant.facts ? variant.facts(facts) : facts;
   const built = build(shown);
