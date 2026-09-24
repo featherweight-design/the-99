@@ -8,6 +8,7 @@
  * reader is H3's: a stand-in names what the original did that it does not, and never claims to give
  * up nothing when the original's text holds something it cannot account for.
  */
+import { frontFaceOracle } from "../recs/faces";
 import { ANY_COLOR } from "../recs/mana";
 
 export type Color = "W" | "U" | "B" | "R" | "G";
@@ -23,7 +24,7 @@ export type LandText = { name: string; typeLine: string; oracleText: string | nu
 
 /** The front face's text: the land that is played. A modal back face is not this card's job. */
 function frontText(card: LandText): string {
-  return (card.oracleText ?? "").split("\n//\n")[0].toLowerCase();
+  return frontFaceOracle(card.oracleText).toLowerCase();
 }
 
 /** Reminder text is the rules restating themselves, never an ability. */
@@ -180,7 +181,7 @@ export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/\bbecomes? an? [^.]*\bcreature\b/, "becoming a creature"],
   [/^channel\b/, "its channel ability"],
   [/^hideaway\b|\bplay the exiled card\b/, "hideaway"],
-  [/\bfor each\b|\badd (?:\{[wubrgc]\}){2,}/, "its extra mana"],
+  [/\badd\b[^.]*\bfor each\b|\badd (?:\{[wubrgc]\}){2,}/, "its extra mana"],
   [/\bdestroy target (?:nonbasic )?land\b/, "land destruction"],
   [/\bexile [^.]*\bgraveyards?\b/, "graveyard hate"],
   [/\b(?:destroy|exile) (?:all|each)\b/, "a board wipe"],

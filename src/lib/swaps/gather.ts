@@ -198,7 +198,9 @@ function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[] }) {
         and u.color_identity <@ ${a.identity}::text[]
         and u.cmc <= ${a.mv}
         and u.oracle_id <> all(${a.draft}::uuid[])
-        and u.oracle_text ~* ${roleWords(a.roles)}
+        -- The FRONT face's text, as the role reader reads it: a spell whose back face is a land
+        -- would otherwise spend a place on words only its back face carries.
+        and split_part(u.oracle_text, E'\\n//\\n', 1) ~* ${roleWords(a.roles)}
       group by p.oracle_id
       -- Ties broken by NAME, the order the sheet draws within a price, so the pool is the first
       -- rows the sheet would show rather than a uuid-ordered slice of a large tie at the floor.

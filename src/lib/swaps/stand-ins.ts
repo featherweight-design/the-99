@@ -8,6 +8,7 @@
  */
 import { isLandFace } from "../cards/facet";
 import { priceOf, priceState, type PriceFact } from "../decks/price";
+import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import {
   drawbacks, fetchFinds, givesUp, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
@@ -38,8 +39,10 @@ export type Job =
 
 const ORDER: readonly Color[] = ["W", "U", "B", "R", "G"];
 
+/** The front face's roles only: a spell whose back face is a land (Agadeem's Awakening) is not ramp. */
 function spellRoles(card: CardRow): SpellRole[] {
-  return classifyRoles(card).filter((r): r is SpellRole => r !== "land");
+  return classifyRoles({ ...card, oracleText: frontFaceOracle(card.oracleText) })
+    .filter((r): r is SpellRole => r !== "land");
 }
 
 export function jobOf(card: CardRow): Job {

@@ -115,6 +115,7 @@ describe("nameAbility: one case per pattern", () => {
     ["{1}: this land becomes a 2/2 artifact creature until end of turn.", "becoming a creature"],
     ["channel — {1}{g}, discard this card: destroy target artifact.", "its channel ability"],
     ["{t}: add {g} for each creature you control.", "its extra mana"],
+    ["{t}: add {c}{c}. this land deals 2 damage to you.", "its extra mana"],
     ["{t}, sacrifice this land: destroy target land.", "land destruction"],
     ["{3}, {t}: exile target creature.", "removal"],
     ["{2}{u}, {t}: counter target spell.", "a counterspell"],
@@ -151,6 +152,10 @@ describe("nameAbility: one case per pattern", () => {
 
   it.each(cases)("%s → %s", (sentence, label) => {
     expect(nameAbility(sentence, "This Land")).toEqual({ kind: "named", label });
+  });
+
+  it("names extra mana only in an add clause, and quotes a 'for each' that adds none", () => {
+    expect(nameAbility("{2}, {t}: for each opponent, tap target creature that player controls.", "X").kind).toBe("quoted");
   });
 
   it("quotes an ability no pattern covers, from the card's own text", () => {

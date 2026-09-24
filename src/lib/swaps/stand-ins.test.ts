@@ -44,6 +44,13 @@ describe("jobOf", () => {
     expect(jobOf(VAULT)).toEqual({ kind: "spell", roles: ["ramp"], mv: 1 });
   });
 
+  it("reads a double-faced spell by its FRONT face: a land back face is not ramp", () => {
+    const awakening = card("Agadeem's Awakening // Agadeem, the Undercrypt", "Sorcery // Land",
+      "Return from your graveyard to the battlefield any number of target creature cards that each have a different mana value X or less.\n//\nAs Agadeem, the Undercrypt enters, you may pay 3 life. If you don't, it enters tapped.\n{T}: Add {B}.", 3);
+    expect(jobOf(awakening)).toEqual({ kind: "none" });
+    expect(sameJob(jobOf(VAULT), { ...awakening, cmc: 1 })).toBeNull();
+  });
+
   it("gives no job to a card with no role, or a land that neither makes a color nor fetches", () => {
     expect(jobOf(GRAVE_PACT)).toEqual({ kind: "none" });
     expect(jobOf(STRIP)).toEqual({ kind: "none" });
