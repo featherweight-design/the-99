@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 
 /**
@@ -42,6 +42,30 @@ export function record(path: string, entry: LedgerEntry): Ledger {
   mkdirSync(dirname(path), { recursive: true });
   appendFileSync(path, `${JSON.stringify(entry)}\n`);
   return readLedger(path);
+}
+
+/**
+ * ONE RUN AT A TIME. The cap is checked before sending, and the spend is recorded after, so two runs
+ * started together would each pass the check against the same total and could cross the cap
+ * between them. The lock is a file created exclusively beside the ledger and removed when the
+ * process exits; a second run refuses to start while it exists. A lock left by a killed run names
+ * its pid, and is removed by hand once that pid is gone.
+ */
+export function acquireRunLock(ledgerPath: string): void {
+  const lockPath = `${ledgerPath}.lock`;
+  mkdirSync(dirname(lockPath), { recursive: true });
+  let fd: number;
+  try {
+    fd = openSync(lockPath, "wx");
+  } catch {
+    const holder = existsSync(lockPath) ? readFileSync(lockPath, "utf8").trim() : "unknown";
+    throw new Error(`eval: another run holds the ledger lock (${lockPath}, ${holder}). Wait for it, or delete the file if that process is gone.`);
+  }
+  appendFileSync(fd, `pid ${process.pid}, started ${new Date().toISOString()}\n`);
+  closeSync(fd);
+  process.on("exit", () => {
+    try { unlinkSync(lockPath); } catch { /* already gone */ }
+  });
 }
 
 /**

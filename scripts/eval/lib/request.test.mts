@@ -34,7 +34,12 @@ describe("buildParams", () => {
 
   it("applies each variant knob, and only that knob", () => {
     const base = { model: "claude-haiku-4-5", system: "SYS", user: "USER", maxTokens: 3000, schema: tuningResponseSchema };
+    const plain = JSON.parse(JSON.stringify(buildParams(base)));
     const p = JSON.parse(JSON.stringify(buildParams(base, { effort: "low", maxTokens: 1200, cache: true })));
+    // What no knob touches stays exactly as the app builds it.
+    expect(p.model).toBe(plain.model);
+    expect(p.output_config.format).toEqual(plain.output_config.format);
+    expect(Object.keys(p).sort()).toEqual(Object.keys(plain).sort());
     expect(p).toMatchObject({
       max_tokens: 1200,
       output_config: { effort: "low" },

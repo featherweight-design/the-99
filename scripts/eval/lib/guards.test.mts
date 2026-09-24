@@ -47,3 +47,15 @@ describe("splitDecks", () => {
     expect(s.overlay).toEqual(s.heldOut.slice(0, OVERLAY_COUNT));
   });
 });
+
+describe("acquireRunLock", () => {
+  it("refuses a second run while the first holds the ledger", async () => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { acquireRunLock } = await import("./ledger.mjs");
+    const ledger = join(mkdtempSync(join(tmpdir(), "eval-lock-")), "ledger.jsonl");
+    acquireRunLock(ledger);
+    expect(() => acquireRunLock(ledger)).toThrow(/another run holds the ledger lock/);
+  });
+});

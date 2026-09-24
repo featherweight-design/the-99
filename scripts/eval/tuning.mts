@@ -26,7 +26,7 @@ import { execSync } from "node:child_process";
 import { parseArgs } from "node:util";
 
 import { sendBatch, sendRealtime, countTokens, type Got, type Sent } from "./lib/batch.mjs";
-import { readLedger, record, refusal, spent } from "./lib/ledger.mjs";
+import { acquireRunLock, readLedger, record, refusal, spent } from "./lib/ledger.mjs";
 import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply, type Cell } from "./lib/request.mjs";
 import { openTuning, type OverlayDeck } from "./lib/tuning-app.mjs";
@@ -118,6 +118,7 @@ for (const s of first) {
   inputSum += n;
   worst += worstCaseUsd(s.params.model, n, s.params.max_tokens, { batch: !args.realtime });
 }
+if (!args["dry-run"]) acquireRunLock(LEDGER);
 const ledger = readLedger(LEDGER);
 log(`${first.length} requests, ${inputSum} input tokens; worst case $${worst.toFixed(2)}; spent so far $${spent(ledger).toFixed(2)}`);
 if (args["dry-run"]) process.exit(0);
@@ -172,10 +173,11 @@ const retry = first.filter((s) => {
   const g = attempts.get(s.customId)?.[0];
   return !g || !g.ok || !parseReply(tuningResponseSchema, g.message).ok;
 });
+// The retry is never refused: the worst case checked above already counted a second attempt for
+// every request, so the cap was cleared for it, and skipping it would record first-attempt
+// failures as final ones the app would have retried.
 if (retry.length > 0) {
-  const stop2 = refusal(readLedger(LEDGER), 0, Number(args["plan-done"]));
-  if (stop2) log(`retry pass NOT SENT: ${stop2}`);
-  else for (const g of await send(retry.map((s) => ({ ...s, customId: `${s.customId}-r` })), "a2")) {
+  for (const g of await send(retry.map((s) => ({ ...s, customId: `${s.customId}-r` })), "a2")) {
     attempts.get(g.customId.replace(/-r$/, ""))?.push(g);
   }
 }
@@ -212,7 +214,8 @@ for (const a of answers) {
     runId, feature: "tuning", cell: cell.id, model: cell.model, variant: variant.id,
     set: args.overlay ? (args.set === "dev" ? "dev-overlay" : "overlay") : args.decks ? "custom" : args.set, deckId: deck.deckId, trial,
     attempts: a.attempts.length, usage, usdAsRun, usdRealtime, ...scored,
-    // Real-time runs only: seconds from request to final token, per attempt.
+    // Real-time runs only: milliseconds from request to final token, per attempt.
+    maxTokens: cell.maxTokens ?? TUNING_MAX_TOKENS,
     latencyMs: a.attempts.flatMap((t) => (t.ok && t.elapsedMs !== undefined ? [t.elapsedMs] : [])),
     reply: a.value,
   })}\n`);

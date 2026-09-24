@@ -5,7 +5,8 @@
  * ids and the seed. The first `DEV_COUNT` are the development decks, used only to develop Haiku
  * prompt variants. The rest are held out: every decision-rule figure is computed on them, and
  * they are the decks of Hugh's blind read. The first `OVERLAY_COUNT` held-out decks carry the
- * synthetic evidence overlay, in this same order.
+ * synthetic evidence overlay, in this same order. For prompt development the overlay is also laid,
+ * in order, over the development decks (`--overlay --set dev`), reported as `dev-overlay`.
  */
 export const SPLIT_SEED = 20260923;
 export const DEV_COUNT = 4;

@@ -30,7 +30,7 @@ const wanted = args.runs ? new Set(args.runs.split(",")) : null;
 type Row = {
   runId: string; feature: string; cell: string; model: string; variant: string; set: string; deckId: string; trial: number;
   attempts: number; usage: { input_tokens: number; output_tokens: number; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null }[];
-  usdRealtime: number; outcome: string; returned?: number; kept?: number; drops?: string[]; outsideNames?: number; reply: unknown;
+  usdRealtime: number; maxTokens: number; outcome: string; returned?: number; kept?: number; drops?: string[]; outsideNames?: number; reply: unknown;
 };
 
 const rows: Row[] = [];
@@ -47,6 +47,10 @@ if (existsSync(runsDir)) {
       if (!line.trim()) continue;
       const row = JSON.parse(line) as Row;
       if (row.set === "all") row.set = dev.has(row.deckId) ? "dev" : "heldOut";
+      // A cell is named by what it SENT: the same id can mean a different ceiling after the app's
+      // own constant moves (D1 raised tuning's from 3,000 to 8,000), and pooling the two would
+      // rule on neither.
+      row.cell = `${row.cell.replace(/@max\d+$/, "")}@max${row.maxTokens}`;
       rows.push(row);
     }
   }
