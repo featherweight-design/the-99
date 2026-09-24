@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildPlayGroup } from "../../../src/lib/profile/play";
 import type { EvidencePack } from "../../../src/lib/tuning/evidence";
 import { buildPrompt } from "../../../src/lib/tuning/prompt";
-import { applyVariant, TUNING_VARIANTS } from "./tuning.mjs";
+import { applyVariant, setStrategyInput, TUNING_VARIANTS } from "./tuning.mjs";
 
 const pack: EvidencePack = {
   commanders: [{ oracleId: "c", name: "Gisa, Glorious Resurrector" }],
@@ -19,6 +19,9 @@ const pack: EvidencePack = {
   year: 2026,
 };
 
+// The strategy variant reads stored per-deck context; the test supplies it rather than a file.
+setStrategyInput({ universal: ["Sol Ring"], decks: { "deck-1": { strategy: ["Attack with [[X]]."], keyCards: ["X"] } } });
+
 describe("tuning variants", () => {
   it("base is the app's prompt, byte for byte", () => {
     expect(applyVariant(TUNING_VARIANTS.base, pack, buildPrompt).messages).toEqual(buildPrompt(pack));
@@ -30,9 +33,9 @@ describe("tuning variants", () => {
     it(`${v.id} starts from buildPrompt's own output`, () => {
       let received: unknown = null;
       const probe = v.prompt
-        ? { ...v, prompt: (m: { system: string; user: string }, p: EvidencePack) => { received = m; return v.prompt!(m, p); } }
+        ? { ...v, prompt: (m: { system: string; user: string }, p: EvidencePack, d: string) => { received = m; return v.prompt!(m, p, d); } }
         : v;
-      const { pack: shown, messages } = applyVariant(probe, pack, buildPrompt);
+      const { pack: shown, messages } = applyVariant(probe, pack, buildPrompt, "deck-1");
       if (v.prompt) expect(received).toEqual(buildPrompt(shown));
       else expect(messages).toEqual(buildPrompt(shown));
     });
