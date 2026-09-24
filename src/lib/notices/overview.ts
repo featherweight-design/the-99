@@ -9,28 +9,26 @@ import { db } from "../../db";
 import { deckProfiles } from "../../db/schema";
 import { readProfileHead } from "../profile/load";
 import { analyzedOracleIds } from "./log";
-import { pendingEntries } from "./read";
+import { movedWithin } from "./read";
 
 /**
  * Whether a change log entry touching this deck landed after the overview's reading and at or
  * before the current one (plan D11). The marks alone cannot say so: `seen_seq` moves on every
  * recompute, including one after an edit that was undone, so "the reading's mark is higher" would
- * mark an overview stale when nothing about its cards changed. Counted by `pendingEntries`, the
- * notices' own rule; a rules entry counts once it lies in the window.
+ * mark an overview stale when nothing about its cards changed. Counted by H1's own rule
+ * (`movedWithin`), bans included: a ban recomputes the reading, so the overview written from the
+ * reading before it describes a deck that is no longer there. A rules entry counts once it lies in
+ * the window.
  */
 export async function overviewDataMoved(
   overviewSeen: number,
   readingSeen: number,
   deck: { analyzed: readonly string[]; commanders: readonly string[] },
 ): Promise<boolean> {
-  if (overviewSeen >= readingSeen) return false;
-  const entries = await pendingEntries({
-    seenSeq: overviewSeen,
-    rulesVersion: 0,
-    analyzedOracleIds: deck.analyzed,
-    commanderOracleIds: deck.commanders,
-  });
-  return entries.some((e) => e.seq > overviewSeen && e.seq <= readingSeen);
+  return movedWithin(
+    { seenSeq: overviewSeen, rulesVersion: 0, analyzedOracleIds: deck.analyzed, commanderOracleIds: deck.commanders },
+    { after: overviewSeen, upTo: readingSeen },
+  );
 }
 
 /**

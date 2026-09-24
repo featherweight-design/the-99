@@ -230,6 +230,11 @@ async function run() {
   computes = 0; freshComputes = 0;
   await computeAndStoreProfile(deck.id, USER, deps);
   check("13 · but a press on the unchanged list recomputes past it", { computes, freshComputes }, { computes: 0, freshComputes: 1 });
+  // ...and the overview written from the reading before the ban describes a deck that is no longer
+  // there (D11 by H1's rule), while a ban on a card this deck does not hold moves nothing.
+  check("13 · which marks the overview stale", (await overview()).stale, true);
+  const otherBan = await plant("notLegal", [outsider]);
+  check("13 · a ban on another card does not move it", await overviewDataMoved(otherBan - 1, otherBan, deckIds), false);
 }
 
 run()

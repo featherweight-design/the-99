@@ -169,9 +169,26 @@ export async function readingMoved(marks: ReadingMarks): Promise<boolean> {
   return (await touchingEntries(marks, { withBans: true })).length > 0;
 }
 
+/**
+ * Whether an entry touching these marks landed in `(after, upTo]` of the log (plan D11): the
+ * overview's check, by `readingMoved`'s rule, so a ban that made the reading recompute moves the
+ * overview built from the reading before it. The window bounds every branch in SQL, the rules
+ * branch included.
+ */
+export async function movedWithin(marks: ReadingMarks, window: { after: number; upTo: number }): Promise<boolean> {
+  if (window.after >= window.upTo) return false;
+  return (await touchingEntries(marks, { withBans: true, window })).length > 0;
+}
+
 /** The log entries that touch a reading, by `touches`; bans only when asked. Oldest first. */
-async function touchingEntries(marks: ReadingMarks, { withBans }: { withBans: boolean }) {
+async function touchingEntries(
+  marks: ReadingMarks,
+  { withBans, window }: { withBans: boolean; window?: { after: number; upTo: number } },
+) {
   const excluded = withBans ? sql`('rules')` : sql`('rules', 'notLegal')`;
+  const bounded = window
+    ? sql` and ${deckDataChanges.seq} > ${window.after} and ${deckDataChanges.seq} <= ${window.upTo}`
+    : sql``;
   const rows = await db
     .select({
       seq: deckDataChanges.seq,
@@ -187,7 +204,7 @@ async function touchingEntries(marks: ReadingMarks, { withBans }: { withBans: bo
       or (${deckDataChanges.kind} not in ${excluded}
           and ${deckDataChanges.seq} > ${marks.seenSeq}
           and ${deckDataChanges.oracleIds} <@ ${`{${marks.analyzedOracleIds.join(",")}}`}::uuid[])
-    )`)
+    )${bounded}`)
     .orderBy(deckDataChanges.seq);
   return rows.filter((r) => touches(r as LoggedEntry, marks));
 }
