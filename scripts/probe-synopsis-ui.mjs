@@ -386,7 +386,9 @@ async function run() {
       where d.user_id = ${userId}
         and v.number = (select max(number) from deck_versions w where w.deck_id = v.deck_id)
         and not exists (select 1 from deck_version_synopses p where p.version_id = v.id)
-      order by v.deck_id limit 1`;
+      -- A version with a predecessor first: its header carries stat boxes and a larger margin,
+      -- which is the layout a fixed offset got wrong. A v1 is measured only when none exists.
+      order by (v.number > 1) desc, v.deck_id limit 1`;
     const pinnable = ours.find((r) => r.status === "done") ?? ours[0];
     if (report("6e: a version to pin an overview to", Boolean(target && pinnable), target ? `v${target.number}` : "no deck with a version")) {
       pinned = target.versionId;
@@ -401,6 +403,9 @@ async function run() {
         await onPageRole(v, "tab", /versions/i).first().click();
         const row = onPage(v, 'button[aria-expanded="false"]').first();
         await row.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+        // The link draws only after a server read, so a count taken at once would read 0 on a
+        // build that drew it on the collapsed row. Wait out a round trip first.
+        await v.waitForTimeout(2500);
         const collapsed = await onPage(v, '[data-testid="synopsis-version-link"]').count();
         report(`${label}px · 6e: no link on the collapsed row`, collapsed === 0, `${collapsed} drawn`);
         await row.click();
@@ -424,7 +429,7 @@ async function run() {
           };
         });
         if (label === "1300") {
-          report("1300px · 6e: the link sits 10px under the panel's note", g !== null && g.belowNote !== null && g.belowNote >= 6 && g.belowNote <= 14,
+          report("1300px · 6e: the link sits 10px under the panel's note", g !== null && g.belowNote !== null && Math.abs(g.belowNote - 10) <= 1,
             JSON.stringify(g));
         } else {
           report("390px · 6e: the link opens the panel, directly under the row, as a 44px target",

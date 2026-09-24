@@ -19,9 +19,10 @@ type Found = { versionNumber: number; committedAt: Date; content: CheckedSynopsi
  * `fetchVersionSynopsis` on mount, so nothing rides the page for rows nobody opens. Until it answers,
  * and for a version committed without one, NOTHING draws: no link, no placeholder, no reserved line.
  *
- * ONE MOUNT at both widths (the-99-d9's ruling on the undrawn phone state, 2026-09-24): at 1300
- * it sits 10px under the panel header's note; at 390, where that header is desktop-only, it opens
- * the panel, directly under the row that carries the note, as a 44px target.
+ * ONE MOUNT at both widths (the-99-d9's ruling on the undrawn phone state, 2026-09-24), in the
+ * panel header's note column: at 1300, 10px under the note, whatever the header's other column
+ * holds; at 390, where the rest of that header is desktop-only, it is the one thing the header
+ * draws, so it opens the panel directly under the row that carries the note, as a 44px target.
  */
 export function VersionOverviewLink({ versionId }: { versionId: string }) {
   const [found, setFound] = useState<Found | null>(null);
@@ -48,7 +49,7 @@ export function VersionOverviewLink({ versionId }: { versionId: string }) {
   if (!found) return null;
   return (
     <>
-      <div className="flex min-h-[44px] items-center md:min-h-0 md:mt-[-4px] md:mb-[16px]">
+      <div className="flex min-h-[44px] items-center md:min-h-0 md:mt-[10px]">
         <button
           type="button"
           onClick={() => setOpen(true)}
