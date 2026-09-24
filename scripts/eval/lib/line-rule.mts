@@ -206,7 +206,7 @@ export function dropLineContent(reply: SynopsisResponse, facts: SynopsisFacts, c
  * when it names a card or a curve point or line of play. A heuristic, stated so it can be argued
  * with, and shared so every count of it is the same count.
  */
-const PLAY_WORDS = /\b(turn|drop|mana value|cmc|curve|cheap|one-mana|two-mana|three-mana|\d-mana|early play|interaction|counterspell|removal|draw|tutor)\b/i;
+const PLAY_WORDS = /\b(turn|drop|mana value|cmc|curve|cheap|one-mana|two-mana|three-mana|\d-mana|early play|line of play|interaction|counterspell|removal|draw|tutor)\b/i;
 export function mulliganSpecific(line: string): boolean {
   return marksIn(line).length > 0 || PLAY_WORDS.test(line);
 }

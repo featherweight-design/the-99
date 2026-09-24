@@ -12,8 +12,8 @@
  * and two from his round 3 notes (round 4):
  *  - chip restatements: kept suggestions whose rationale states an `N of M` figure one of its own
  *    citations already shows as a chip;
- *  - repeated openings: kept rationales that open (in their first four words) on the same role an
- *    earlier rationale in the same answer opened on;
+ *  - repeated openings: kept rationales that open (in their first four words) on the same role, or
+ *    the same `N of M` count, as an earlier rationale in the same answer (the rule forbids both);
  * with malformed answers and output tokens per answer, since S lost two answers at ~6,000 thinking
  * tokens.
  * Reads `runs/strategy-overviews.json` for the Key cards and the universal set. Sends nothing.
@@ -44,11 +44,11 @@ function figuresOf(text: string): Set<string> {
   return out;
 }
 
-/** The first pack role named in a rationale's first four words, or null. */
-function openingRole(rationale: string, pack: EvidencePack): string | null {
+/** What a rationale opens on, in its first four words: the first pack role it names and any `N of M` count. */
+function opening(rationale: string, pack: EvidencePack): string[] {
   const head = rationale.toLowerCase().split(/\s+/).slice(0, 4).join(" ");
   const hit = pack.targets.roles.find((c) => new RegExp(`\\b${c.role.replace(/s$/, "").toLowerCase()}`).test(head));
-  return hit?.role ?? null;
+  return [...(hit ? [`role:${hit.role}`] : []), ...[...figuresOf(head)].map((f) => `count:${f}`)];
 }
 
 /**
@@ -99,9 +99,9 @@ for (const run of args.runs.split(",")) {
       g.kept += 1;
       const chips = new Set(s.evidence.flatMap((e) => [...figuresOf(e.value)]));
       if ([...figuresOf(s.rationale)].some((f) => chips.has(f))) g.chip += 1;
-      const role = openingRole(s.rationale, packs.get(r.deckId)!);
-      if (role && opened.has(role)) g.repeated += 1;
-      if (role) opened.add(role);
+      const keys = opening(s.rationale, packs.get(r.deckId)!);
+      if (keys.some((k) => opened.has(k))) g.repeated += 1;
+      for (const k of keys) opened.add(k);
       if (keyCards.has(s.cut.toLowerCase())) g.keyCut += 1;
       if (universal.has(s.cut.toLowerCase())) g.universalCut += 1;
       if (s.evidence.every((e) => e.kind === "mix")) g.thresholdOnly += 1;
