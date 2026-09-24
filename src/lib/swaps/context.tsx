@@ -6,8 +6,9 @@
  * surface reading `null` draws nothing of the swap tools. That is how the flag reaches a row
  * without threading a prop through every component between the page and it.
  */
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
+import type { DeckDetailCard } from "../decks/grouping";
 import { effectiveLimit } from "./limit";
 
 export type SwapTools = {
@@ -18,6 +19,35 @@ export type SwapTools = {
   storedLimitCents: number | null;
   /** The limit rows are marked against: the stored one, or the default. */
   limitCents: number;
+  /** The takes made on this visit, each drawn in its cut row's slot until it is undone. */
+  receipts: SwapReceipt[];
+  addReceipt: (r: SwapReceipt) => void;
+  dropReceipt: (swapId: string) => void;
+  /**
+   * The row whose stand-ins sheet is open, as it was when pressed. Held here rather than by the row,
+   * because a take removes the row from the list and the sheet has to outlive it to show `taken`.
+   */
+  standIns: DeckDetailCard | null;
+  openStandIns: (card: DeckDetailCard) => void;
+  closeStandIns: () => void;
+};
+
+/**
+ * What a take leaves on the Shopping list. It lives for the visit, like any client cache here: the
+ * swap itself is stored (`deck_swaps`) and Undo swap reads it back by id, but the receipt is the
+ * page's note that it happened, and a reload shows the deck as it now stands.
+ */
+export type SwapReceipt = {
+  swapId: string;
+  cutOracleId: string;
+  cut: string;
+  add: string;
+  /** The type group the cut sat in, so the receipt draws in its slot. */
+  group: string;
+  /** From the take's own read, never the list's (audit note). */
+  free: boolean;
+  /** Copies of the cut still in the draft: the row stays and the receipt sits under it. */
+  cutLeft: number;
 };
 
 const SwapToolsContext = createContext<SwapTools | null>(null);
@@ -33,8 +63,20 @@ export function SwapToolsProvider({
   storedLimitCents: number | null;
   children: ReactNode;
 }) {
+  const [receipts, setReceipts] = useState<SwapReceipt[]>([]);
+  const [standIns, setStandIns] = useState<DeckDetailCard | null>(null);
+  const closeStandIns = useCallback(() => setStandIns(null), []);
+  const addReceipt = useCallback((r: SwapReceipt) => setReceipts((all) => [...all.filter((x) => x.swapId !== r.swapId), r]), []);
+  const dropReceipt = useCallback((swapId: string) => setReceipts((all) => all.filter((x) => x.swapId !== swapId)), []);
+  const value = useMemo(
+    () => ({
+      deckId, deckName, storedLimitCents, limitCents: effectiveLimit(storedLimitCents),
+      receipts, addReceipt, dropReceipt, standIns, openStandIns: setStandIns, closeStandIns,
+    }),
+    [deckId, deckName, storedLimitCents, receipts, addReceipt, dropReceipt, standIns, closeStandIns],
+  );
   return (
-    <SwapToolsContext.Provider value={{ deckId, deckName, storedLimitCents, limitCents: effectiveLimit(storedLimitCents) }}>
+    <SwapToolsContext.Provider value={value}>
       {children}
     </SwapToolsContext.Provider>
   );

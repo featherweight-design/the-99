@@ -4,7 +4,7 @@
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -26,7 +26,6 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
-import { StandInsSheet } from "./stand-ins-sheet";
 import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
@@ -196,7 +195,6 @@ export function DecklistRow({
   // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and the meta line an
   // `over $X`. Shopping only, and only where the tools are on (`swapTools` is null otherwise).
   const swapTools = useSwapTools();
-  const [standInsOpen, setStandInsOpen] = useState(false);
   const overLimit = swapTools !== null && inShopping && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // A land in Shopping over the limit carries the line even with no EDHREC figure to put on it:
@@ -664,7 +662,7 @@ export function DecklistRow({
             <button
               type="button"
               aria-label={swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents))}
-              onClick={() => setStandInsOpen(true)}
+              onClick={() => swapTools.openStandIns(card)}
               className="flex flex-none items-center justify-center w-[44px] h-[44px] -mr-[9px] md:mr-0 md:w-[22px] md:h-[20px] rounded-[6px] font-mono text-[13px] leading-none bg-transparent border-0 p-0 cursor-pointer text-[color:var(--warning)]"
             >
               ⇄
@@ -672,13 +670,6 @@ export function DecklistRow({
           ) : (
             <span aria-hidden="true" className="hidden md:block flex-none w-[22px]" />
           )
-        ) : null}
-        {standInsOpen ? (
-          // The sheet sits inside the row's click target, and React bubbles a portal's events through
-          // it: a press on the backdrop or on the sheet's text would otherwise open the row's card too.
-          <div className="contents" onClick={(event) => event.stopPropagation()}>
-            <StandInsSheet card={card} newestAsOf={newestAsOf} onClose={() => setStandInsOpen(false)} />
-          </div>
         ) : null}
 
         {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the

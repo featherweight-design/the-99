@@ -5,6 +5,7 @@
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
 import { useSwapTools } from "../../lib/swaps/context";
+import { StandInsSheet } from "./stand-ins-sheet";
 import { isOverLimit } from "../../lib/swaps/limit";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -788,6 +789,11 @@ export function Decklist({
 
   return (
     <div className="flex flex-col">
+      {/* The stand-ins sheet, mounted here rather than by its row: a take takes the row away,
+          and the sheet has to stay to say so. */}
+      {swapTools?.standIns ? (
+        <StandInsSheet card={swapTools.standIns} newestAsOf={newestAsOf} onClose={swapTools.closeStandIns} />
+      ) : null}
       {/* Toggle bar */}
       <GroupToggle
         allCount={built}

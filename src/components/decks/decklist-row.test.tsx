@@ -16,7 +16,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { markerAria } from "../ui/availability-marker";
 import { recommendedMix } from "../../lib/decks/mix";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
-import { SwapToolsProvider } from "../../lib/swaps/context";
+import { SwapToolsProvider, useSwapTools } from "../../lib/swaps/context";
 import { OVER_LIMIT_RING } from "./buy-tag";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
@@ -1065,19 +1065,21 @@ describe("DecklistRow over the Shopping limit (swap tools)", () => {
     expect(screen.queryByText(swapToolsCopy.row.over("$10"))).toBeNull();
   });
 
-  it("draws the ⇄ on an over row only, and opens the stand-ins sheet for that card", async () => {
+  it("draws the ⇄ on an over row only, and opens that card's stand-ins", async () => {
     const swap = () => screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
+    // The sheet itself is the Decklist's (a take removes the row that opened it); the row says which card.
+    function Open() {
+      return <div data-testid="open-stand-ins">{useSwapTools()?.standIns?.oracleId ?? ""}</div>;
+    }
     inTools(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
     expect(swap()).toBeNull();
     cleanup();
     inTools(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />);
     expect(swap()).toBeNull();
     cleanup();
-    inTools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    inTools(<><DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} /><Open /></>);
+    expect(screen.getByTestId("open-stand-ins")).toHaveTextContent("");
     await act(async () => swap()!.click());
-    expect(screen.getByRole("dialog", { name: swapToolsCopy.sheet.title })).toBeInTheDocument();
-    expect(loadStandInsAction).toHaveBeenCalledWith("d1", "sol-ring");
-    // The action answered null: the sheet says so and offers another try.
-    expect(screen.getByRole("alert")).toHaveTextContent(swapToolsCopy.sheet.failed.heading);
+    expect(screen.getByTestId("open-stand-ins")).toHaveTextContent("sol-ring");
   });
 });
