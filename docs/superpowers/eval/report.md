@@ -491,7 +491,7 @@ For reference, these are the largest whole allowances the pre-registered rule
 
 ## Spend
 
-**$23.41 of $25**, from `ledger.jsonl`: 98 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+**$23.72 of $25**, from `ledger.jsonl`: 100 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
 
 | stage | $ | running total |
 |---|---|---|
@@ -501,6 +501,7 @@ For reference, these are the largest whole allowances the pre-registered rule
 | overview, the Mulligan budget's second version (dev, held-out, repair) | $1.18 | $22.47 |
 | tuning round 4, the rationale rules and effort (3 dev checks) | $0.74 | $23.22 |
 | tuning round 4, the blind round (8 held-out decks, medium) | $0.20 | $23.41 |
+| tuning v2, the real-time latency measurement that sets the retry floor | $0.31 | $23.72 |
 
 Each stage is its ledger entries summed and then rounded, so the rounded stages need not sum to the
 running total.
