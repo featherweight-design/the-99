@@ -62,7 +62,7 @@ export type Allowance = {
   /** Present while the app-wide spend cap refuses every call: until the 1st of next UTC month.
    *  OPTIONAL, so an Allowance written without it (every fixture) still type-checks. */
   paused?: { until: Date };
-  /** True for the owner once his month's testing share cannot fit one more call. */
+  /** True for the owner once their month's testing share cannot fit one more call. */
   ownerShare?: boolean;
 };
 

@@ -50,6 +50,6 @@ export const creditsCopy = {
     `Paused until ${monthName(until)} 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.`,
   /** The same refusal from the server, where no date is formatted in the reader's clock. */
   pausedServer: "Paused until the 1st of next month. Nothing you did caused this.",
-  /** The owner alone: his month's testing share is used. `month` is any instant in that month. */
+  /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
   ownerShare: (month: Date) => `You’ve used your testing share for ${monthName(month)}. Friends aren’t affected.`,
 } as const;

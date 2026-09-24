@@ -19,7 +19,7 @@ export const HARD_STOP_USD = 20;
 export const BUDGET_USD = 10;
 /** Percentages of `BUDGET_USD` at which a settle that crosses them says so in the logs. */
 export const ALARM_PCTS = [50, 80] as const;
-/** The owner's own month-to-date ceiling, so his testing cannot eat the friends' budget. */
+/** The owner's own month-to-date ceiling, so their testing cannot eat the friends' budget. */
 export const OWNER_SHARE_USD = 5;
 
 export const MICRO = 1_000_000;

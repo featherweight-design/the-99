@@ -191,7 +191,7 @@ describe("TuningPanel", () => {
     expect(d.run).not.toHaveBeenCalled();
   });
 
-  it("disables the owner's press once his testing share is used, with its own note", async () => {
+  it("disables the owner's press once their testing share is used, with its own note", async () => {
     const d = deps([{ ...results, stale: true, allowance: { used: 1, limit: 10, reopensAt: null, nextAt: null, ownerShare: true } }]);
     await draw(d);
     expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");

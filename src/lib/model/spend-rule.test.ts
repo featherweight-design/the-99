@@ -73,7 +73,7 @@ describe("spendRefusal", () => {
     expect(spendRefusal({ appMonthMicro: stop - call + 1, ownerMonthMicro: null, callMicro: call })).toBe("paused");
   });
 
-  it("holds the owner to his share, and a friend never", () => {
+  it("holds the owner to their share, and a friend never", () => {
     expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: share - call + 1, callMicro: call })).toBe("ownerShare");
     expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: share - call, callMicro: call })).toBeNull();
     expect(spendRefusal({ appMonthMicro: share, ownerMonthMicro: null, callMicro: call })).toBeNull();

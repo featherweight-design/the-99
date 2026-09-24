@@ -279,7 +279,7 @@ async function run() {
     const seeded: string[] = [];
     try {
       seeded.push(await seed(owner, "spent", usdToMicro(OWNER_SHARE_USD) - W));
-      check("f · the owner reserves while one call still fits his share", kindOf(await reserve(owner)), "reserved");
+      check("f · the owner reserves while one call still fits their share", kindOf(await reserve(owner)), "reserved");
       check("f · then the owner is refused ownerShare", kindOf(await reserve(owner)), "ownerShare");
       check("f · readAllowance says ownerShare for the owner", (await readAllowance(owner)).ownerShare, true);
       check("f · a friend at the same moment still reserves", kindOf(await reserve(friend)), "reserved");
