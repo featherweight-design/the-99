@@ -396,9 +396,16 @@ export async function ingestCombos(opts: {
   // Names from the WHOLE catalog, not the legal one above: a combo REMOVED because one of its
   // pieces became illegal names that piece, and the entry must carry its name once the variant
   // row is gone. Only read when the log is being written.
-  const names = logging
-    ? new Map((await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)).map((c) => [c.oracleId, c.name]))
-    : new Map<string, string>();
+  // Non-fatal like the rest of the log: a failed read costs the entries their names (they keep the
+  // oracle ids) and never the variant publish.
+  let names = new Map<string, string>();
+  if (logging) {
+    try {
+      names = new Map((await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)).map((c) => [c.oracleId, c.name]));
+    } catch (error) {
+      log(`notices: card names unread, entries keep oracle ids (${error instanceof Error ? error.message : String(error)})`);
+    }
+  }
   await publishVariants(variantRows, cardRows, logging, notices, (id) => names.get(id) ?? id);
   log(`variants: published`);
 

@@ -6,7 +6,8 @@
  * five hours, so everything here is bounded by a statement timeout and an overall deadline, every
  * failure is one warn line, and the build's exit code does not depend on it.
  */
-import { Pool } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
 import { BRACKET_RULES_VERSION, RULES_CHANGES } from "../bracket/rules-version";
 
@@ -23,6 +24,10 @@ const DEADLINE_MS = 10_000;
 
 /** A client with a 5s statement timeout on the migration database. */
 export function neonRulesEntryDb(databaseUrl: string): RulesEntryDb {
+  // As `src/db/index.ts` does: `vercel-migrate.ts` imports this module and never `src/db`, so without
+  // it the pool has no WebSocket on a Node runtime that lacks a global one, and every deploy's entry
+  // would fail into the warn line unseen.
+  neonConfig.webSocketConstructor = ws;
   const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 5_000 });
   const query = async (text: string, params: unknown[] = []) => {
     const client = await pool.connect();
