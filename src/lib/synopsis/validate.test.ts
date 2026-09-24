@@ -413,6 +413,10 @@ describe("validateSynopsis — the Mulligan", () => {
     ["the commander in hand", "A hand with [[Kratos]] and a ramp piece is ideal.", "commander_in_hand"],
     ["the commander in the opening hand", "Having [[Kratos]] in your opening hand is ideal.", "commander_in_hand"],
     ["the heading's word", "Keep a hand with [[Gamble]] early.", "heading_prefix"],
+    ["a hyphenated count", "A one-land hand falls behind the table.", "land_count"],
+    ["a hyphenated figure", "A 2-land hand needs early ramp.", "land_count"],
+    ["a landless hand", "A landless hand stalls badly.", "land_count"],
+    ["the commander later in the hand", "A hand with [[Sol Ring]] and [[Kratos]] is ideal.", "commander_in_hand"],
   ])("drops a line stating %s", (_label, line, reason) => {
     const r = withKeep(line);
     expect(verdictOf(r, "primer").status).toBe("ok");
@@ -424,8 +428,8 @@ describe("validateSynopsis — the Mulligan", () => {
 
   // The-99-d9's condition: the two good lines that NAME the commander as a thing to cast.
   it.each([
-    ["Kratos", "A hand that can develop mana toward [[Kratos]]'s attacks is ideal."],
-    ["Yuriko", "A hand that can cast [[Kratos]] via ninjutsu soon is ideal."],
+    ["the Kratos line's shape", "A hand that can develop mana toward [[Kratos]]'s attacks is ideal."],
+    ["the Yuriko line's shape", "A hand that can cast [[Kratos]] via ninjutsu soon is ideal."],
   ])("keeps a line naming the commander to cast (%s)", (_label, line) => {
     expect(withKeep(line).primer!.mulligan.keep).toContain(line);
   });

@@ -93,15 +93,17 @@ export function manaLetters(text: string, identity: readonly string[]): string[]
 
 const COUNT_WORD = "(?:\\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten)";
 const LAND_COUNT = [
-  new RegExp(`\\b${COUNT_WORD}(?:\\s+(?:to|or)\\s+${COUNT_WORD})?(?:\\s+or\\s+more)?\\s+(?:total\\s+)?lands?\\b`, "i"),
+  // A space or a hyphen between the count and the word: "2 lands", "a one-land hand".
+  new RegExp(`\\b${COUNT_WORD}(?:\\s+(?:to|or)\\s+${COUNT_WORD})?(?:\\s+or\\s+more)?(?:\\s+|-)(?:total\\s+)?lands?\\b`, "i"),
   /\bno lands?\b/i,
+  /\blandless\b/i,
   /\ball[- ]spells?\b/i,
 ];
 
 /**
  * A Mulligan line stating a land count (Hugh, 2026-09-24: 56% of lines restated the range). The
  * app now draws the range itself as a fixed line, so any count here repeats it: a figure next to
- * "land(s)", "no lands" or an all-spell hand. Read outside card marks. Against the eval harness's
+ * "land(s)" (spaced or hyphenated), "no lands", "landless" or an all-spell hand. Read outside card marks. Against the eval harness's
  * 82 tagged lines it agrees with the REDUNDANT tag on 71.
  */
 export function statesLandCount(text: string): boolean {
@@ -117,7 +119,9 @@ export function statesLandCount(text: string): boolean {
 export function commanderInHand(text: string, commanders: readonly string[]): boolean {
   return commanders.some((name) => {
     const mark = `\\[\\[${escapeRegExp(name)}\\]\\]`;
-    return new RegExp(`\\b(?:with|holding|containing|includes?|including|has)\\s+${mark}`, "i").test(text)
+    // Anywhere in the list a hand is said to hold: "with [[Sol Ring]] and [[Kratos]]" holds both.
+    const held = `(?:\\[\\[[^\\]]+\\]\\],?\\s+(?:(?:and|or|plus)\\s+)?)*`;
+    return new RegExp(`\\b(?:with|holding|containing|includes?|including|has)\\s+${held}${mark}`, "i").test(text)
       || new RegExp(`\\[\\[${escapeRegExp(name)}\\]\\]\\s+in\\s+(?:your\\s+|the\\s+|an?\\s+)?(?:opening\\s+)?hand`, "i").test(text);
   });
 }
