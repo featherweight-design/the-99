@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
-  unique, foreignKey, uniqueIndex, type AnyPgColumn,
+  unique, foreignKey, uniqueIndex, bigint, type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
@@ -1519,6 +1519,17 @@ export const modelCalls = pgTable("model_calls", {
   feature: text("feature").notNull(),
   status: text("status").notNull().default("reserved"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // THE SPEND CAP'S METERS (migration 0057). `model` is written at reserve, so a reservation in
+  // flight can be priced at its worst case; the rest at settle, whenever the call returned usage,
+  // refunded or spent. Null on every row from before the cap, and on a settle with no usage (a
+  // reaper, a Stop). `cost_micro_usd` is integer micro-dollars from `src/lib/model/prices.ts`;
+  // only a `spent` row's cost counts toward the month's spend.
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  cacheReadTokens: integer("cache_read_tokens"),
+  cacheWriteTokens: integer("cache_write_tokens"),
+  model: text("model"),
+  costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
 }, (t) => [
   check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
