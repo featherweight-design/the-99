@@ -8,7 +8,7 @@ vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("../../lib/decks/tuning-read", () => ({
-  EVIDENCE_STEPS: ["games", "notes", "decklist", "intent"],
+  EVIDENCE_STEPS: ["games", "notes", "decklist", "intent", "collection"],
   tuningInputs: async () => {
     calls.inputs += 1;
     return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp" };

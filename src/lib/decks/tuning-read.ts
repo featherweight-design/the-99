@@ -283,11 +283,11 @@ async function readItems(
 }
 
 /**
- * The generating manifest's four reads, one per step (Task 13). Each is cheap and authorised,
+ * The generating manifest's reads, one per row (Task 13). Each is cheap and authorised,
  * and the panel calls them in sequence so a tick lands on a read that actually finished. The
  * run rebuilds its evidence from scratch: this is disclosure, never input.
  */
-export const EVIDENCE_STEPS = ["games", "notes", "decklist", "intent"] as const;
+export const EVIDENCE_STEPS = ["games", "notes", "decklist", "intent", "collection"] as const;
 export type EvidenceStep = (typeof EVIDENCE_STEPS)[number];
 
 export async function readEvidenceStep(
@@ -316,5 +316,11 @@ export async function readEvidenceStep(
     }
     case "intent":
       return deck.intent === null ? 0 : 1;
+    case "collection": {
+      // Distinct cards owned: what the run reads to say which adds the player already has.
+      const [r] = await db.select({ n: sql<number>`count(distinct ${collectionItems.oracleId})::int` })
+        .from(collectionItems).where(eq(collectionItems.userId, userId));
+      return r?.n ?? 0;
+    }
   }
 }

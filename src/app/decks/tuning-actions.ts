@@ -154,7 +154,7 @@ export async function readTuningPanel(deckId: string): Promise<TuningState | nul
 }
 
 /**
- * One of the generating manifest's four reads. The panel calls them in turn, so each tick lands
+ * One of the generating manifest's reads. The panel calls them in turn, so each tick lands
  * on a read that finished. Disclosure only: the run rebuilds everything itself.
  */
 export async function readTuningEvidence(deckId: string, step: EvidenceStep): Promise<number | null> {
