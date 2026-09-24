@@ -32,7 +32,7 @@ export function synopsisLive(env: Record<string, string | undefined> = process.e
   return env.NODE_ENV === "production" || env.SYNOPSIS_LIVE === "1";
 }
 
-const USAGE = { inputTokens: 0, outputTokens: 0 };
+const USAGE = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
 export function stubReply(facts: SynopsisFacts, mode: StubMode): ModelOutcome<SynopsisResponse> {
   if (mode === "malformed") return { ok: false, errorClass: "malformed" };

@@ -7,7 +7,8 @@ import { callModel, type ModelDeps } from "./client";
 const schema = z.object({ answer: z.string() });
 const req = { model: "caller-model", system: "s", user: "u", maxTokens: 100, schema, deadlineMs: 90_000 };
 
-const reply = (value: unknown, usage = { input_tokens: 10, output_tokens: 2 }) => ({ parsed_output: value, usage, stop_reason: "end_turn" });
+type ApiUsage = { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null };
+const reply = (value: unknown, usage: ApiUsage = { input_tokens: 10, output_tokens: 2 }) => ({ parsed_output: value, usage, stop_reason: "end_turn" });
 const busy = () => new Anthropic.InternalServerError(529, undefined, "overloaded", new Headers());
 const rateLimited = () => new Anthropic.RateLimitError(429, undefined, "slow down", new Headers());
 const badShape = () => new Anthropic.AnthropicError("Failed to parse structured output");
@@ -41,7 +42,7 @@ describe("callModel", () => {
   it("returns the parsed value and the usage the response reported", async () => {
     const { messages } = scripted([reply({ answer: "x" }, { input_tokens: 812, output_tokens: 90 })]);
     expect(await callModel(req, { messages, log: quiet })).toEqual({
-      ok: true, value: { answer: "x" }, usage: { inputTokens: 812, outputTokens: 90 },
+      ok: true, value: { answer: "x" }, usage: { inputTokens: 812, outputTokens: 90, cacheReadTokens: 0, cacheWriteTokens: 0 },
     });
   });
 
@@ -82,7 +83,38 @@ describe("callModel", () => {
 
   it("treats a reply that parsed to nothing (a refusal, a cut-off) as malformed", async () => {
     const { messages } = scripted([reply(null), reply(null)]);
-    expect(await callModel(req, { messages, log: quiet })).toEqual({ ok: false, errorClass: "malformed" });
+    expect(await callModel(req, { messages, log: quiet })).toEqual({
+      ok: false, errorClass: "malformed",
+      // Both replies came back, so both were billed: the failure carries their sum.
+      usage: { inputTokens: 20, outputTokens: 4, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    });
+  });
+
+  it("reads the cache meters, null as zero", async () => {
+    const { messages } = scripted([reply({ answer: "x" }, {
+      input_tokens: 5, output_tokens: 1, cache_read_input_tokens: 300, cache_creation_input_tokens: null,
+    })]);
+    const out = await callModel(req, { messages, log: quiet });
+    expect(out.ok && out.usage).toEqual({ inputTokens: 5, outputTokens: 1, cacheReadTokens: 300, cacheWriteTokens: 0 });
+  });
+
+  it("accumulates a malformed first reply's usage into a successful retry's", async () => {
+    const { messages } = scripted([
+      reply(null, { input_tokens: 100, output_tokens: 8000, cache_read_input_tokens: 7, cache_creation_input_tokens: 3 }),
+      reply({ answer: "x" }, { input_tokens: 100, output_tokens: 500, cache_read_input_tokens: 1, cache_creation_input_tokens: 2 }),
+    ]);
+    expect(await callModel(req, { messages, log: quiet })).toEqual({
+      ok: true, value: { answer: "x" },
+      usage: { inputTokens: 200, outputTokens: 8500, cacheReadTokens: 8, cacheWriteTokens: 5 },
+    });
+  });
+
+  it("keeps a malformed first reply's usage when the retry is lost upstream", async () => {
+    const { messages } = scripted([reply(null, { input_tokens: 40, output_tokens: 9 }), busy()]);
+    expect(await callModel(req, { messages, log: quiet })).toEqual({
+      ok: false, errorClass: "upstream_busy",
+      usage: { inputTokens: 40, outputTokens: 9, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    });
   });
 
   it("spends its one retry once, even when the two failures differ", async () => {

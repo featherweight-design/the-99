@@ -28,9 +28,22 @@ import type { z } from "zod";
 
 export type ModelErrorClass = "upstream_busy" | "timeout" | "malformed";
 
+/**
+ * What the call was billed for, ACCUMULATED across both attempts: a malformed first reply still
+ * came back, and still burned its tokens. The cache meters are zero while the app sends no
+ * `cache_control`, and are read anyway so a price can never silently leave them out.
+ */
+export type ModelUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+};
+
 export type ModelOutcome<T> =
-  | { ok: true; value: T; usage: { inputTokens: number; outputTokens: number } }
-  | { ok: false; errorClass: ModelErrorClass };
+  | { ok: true; value: T; usage: ModelUsage }
+  /** `usage` is present whenever any attempt got a response back, and absent when none did. */
+  | { ok: false; errorClass: ModelErrorClass; usage?: ModelUsage };
 
 export type ModelRequest<T> = {
   /** The caller's. This module names none. */
@@ -53,9 +66,41 @@ export type ModelDeps = {
 };
 
 type Attempt<T> =
-  | { kind: "ok"; value: T; usage: { inputTokens: number; outputTokens: number } }
-  | { kind: "retryable"; errorClass: "upstream_busy" | "malformed" }
-  | { kind: "final"; errorClass: ModelErrorClass };
+  | { kind: "ok"; value: T; usage: ModelUsage }
+  | { kind: "retryable"; errorClass: "upstream_busy" | "malformed"; usage?: ModelUsage }
+  | { kind: "final"; errorClass: ModelErrorClass; usage?: ModelUsage };
+
+type ApiUsage = {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens?: number | null;
+  cache_creation_input_tokens?: number | null;
+};
+
+function usageOf(u: ApiUsage): ModelUsage {
+  return {
+    inputTokens: u.input_tokens,
+    outputTokens: u.output_tokens,
+    cacheReadTokens: u.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: u.cache_creation_input_tokens ?? 0,
+  };
+}
+
+function addUsage(a: ModelUsage | undefined, b: ModelUsage | undefined): ModelUsage | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+    cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
+  };
+}
+
+/** A failure outcome, carrying the usage only when some attempt got a response. */
+function failed<T>(errorClass: ModelErrorClass, usage: ModelUsage | undefined): ModelOutcome<T> {
+  return usage ? { ok: false, errorClass, usage } : { ok: false, errorClass };
+}
 
 export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): Promise<ModelOutcome<T>> {
   const now = deps.now ?? Date.now;
@@ -66,17 +111,19 @@ export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): 
 
   const deadline = now() + req.deadlineMs;
   let last: ModelErrorClass = "upstream_busy";
+  let usage: ModelUsage | undefined;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const remaining = deadline - now();
-    if (remaining <= 0) return { ok: false, errorClass: attempt === 0 ? "timeout" : last };
+    if (remaining <= 0) return failed(attempt === 0 ? "timeout" : last, usage);
 
     const result = await tryOnce(messages, req, remaining, log);
-    if (result.kind === "ok") return { ok: true, value: result.value, usage: result.usage };
-    if (result.kind === "final") return { ok: false, errorClass: result.errorClass };
+    usage = addUsage(usage, result.usage);
+    if (result.kind === "ok") return { ok: true, value: result.value, usage: usage ?? result.usage };
+    if (result.kind === "final") return failed(result.errorClass, usage);
     last = result.errorClass;
   }
-  return { ok: false, errorClass: last };
+  return failed(last, usage);
 }
 
 function realMessages(log: (line: string) => void): Messages | null {
@@ -110,13 +157,9 @@ async function tryOnce<T>(
     // A refusal or a reply cut off at max_tokens parses to nothing: the shape was not met.
     if (response.parsed_output == null) {
       log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
-      return { kind: "retryable", errorClass: "malformed" };
+      return { kind: "retryable", errorClass: "malformed", usage: usageOf(response.usage) };
     }
-    return {
-      kind: "ok",
-      value: response.parsed_output as T,
-      usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens },
-    };
+    return { kind: "ok", value: response.parsed_output as T, usage: usageOf(response.usage) };
   } catch (err) {
     return classify(err, controller.signal.aborted, log);
   } finally {
