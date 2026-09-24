@@ -350,12 +350,14 @@ async function live(fixtureDeck: string) {
     await fixture.execute(sql`delete from deck_version_synopses where synopsis_id in (select id from deck_synopses where deck_id = ${deckId}::uuid)`);
     await fixture.execute(sql`delete from deck_synopses where deck_id = ${deckId}::uuid`);
     await computeAndStoreProfile(deckId, userId, profileDeps);
+    const started = Date.now();
     const result = await writeSynopsisFor(deckId, userId, { ...defaultDeps(), profile: profileDeps });
+    const seconds = ((Date.now() - started) / 1000).toFixed(1);
     const [r] = await rows<{ outcome: string; input_tokens: number | null; output_tokens: number | null; content: unknown }>(sql`
       select outcome, input_tokens, output_tokens, content from deck_synopses where deck_id = ${deckId}::uuid
       order by created_at desc limit 1`);
     const cost = ((r?.input_tokens ?? 0) * IN + (r?.output_tokens ?? 0) * OUT) / 1e6;
-    console.log(`LIVE ${i + 1}/${max}  ${result.kind} ${r?.outcome}  in ${r?.input_tokens} out ${r?.output_tokens}  ~$${cost.toFixed(4)}`);
+    console.log(`LIVE ${i + 1}/${max}  ${result.kind} ${r?.outcome}  in ${r?.input_tokens} out ${r?.output_tokens}  ~$${cost.toFixed(4)}  ${seconds}s`);
     if (r?.content) console.log(JSON.stringify((r.content as { verdicts: unknown }).verdicts));
   }
 }
