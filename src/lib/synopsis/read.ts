@@ -131,27 +131,34 @@ export async function readSynopsisState(
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
-  const named = synopsis ? [...new Set(Object.values(synopsis.content.cards).map((c) => c.oracleId))] : [];
-  const art = named.length === 0 ? {} : Object.fromEntries(
-    (await db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)))
-      .map((r) => [r.oracleId, r.imageUri]),
-  );
+  const art = synopsis ? await namedArt(synopsis.content) : {};
   return {
     synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRefused, art,
     pending: newest?.status === "pending",
   };
 }
 
+/** The preview art for every card an overview names, by oracle id. */
+async function namedArt(content: CheckedSynopsis): Promise<Record<string, string | null>> {
+  const named = [...new Set(Object.values(content.cards).map((c) => c.oracleId))];
+  if (named.length === 0) return {};
+  const rows = await db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named));
+  return Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri]));
+}
+
 /** A version's synopsis, as copied at its commit, or null. Never stale (`SYNOPSIS-modal.md` §4.4). */
 export async function readVersionSynopsis(
   versionId: string,
   userId: string,
-): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis } | null> {
+): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null> } | null> {
   const [row] = await db
     .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, content: deckSynopses.content })
     .from(deckVersionSynopses)
     .innerJoin(deckSynopses, eq(deckSynopses.id, deckVersionSynopses.synopsisId))
     .innerJoin(deckVersions, eq(deckVersions.id, deckVersionSynopses.versionId))
     .where(and(eq(deckVersionSynopses.versionId, versionId), eq(deckSynopses.userId, userId)));
-  return row?.content ? { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content } : null;
+  if (!row?.content) return null;
+  // The art for every card it names, as the draft read carries: a version can name cards the deck
+  // no longer holds, and the page's own art covers only the deck as it is now.
+  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art: await namedArt(row.content) };
 }

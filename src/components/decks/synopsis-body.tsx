@@ -9,6 +9,7 @@ import type { CheckedSynopsis, SectionId, SectionVerdict } from "../../lib/synop
 import { ModalChrome, type FindingArt } from "./receipt-modal";
 import { RefusedSlot } from "./synopsis-controls";
 import { CardName, SynopsisText } from "./synopsis-text";
+import { formatDeckDate } from "../../lib/decks/format";
 import { analyzedWhen } from "./verdict-block";
 
 /**
@@ -89,6 +90,45 @@ export function SynopsisModal({
           </div>
         ) : null}
         <SynopsisSections content={synopsis.content} art={art} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
+      </div>
+    </ModalChrome>
+  );
+}
+
+/**
+ * A version's overview (SYNOPSIS-modal.md §4, 6e): the same chrome and sections, read only. The
+ * aside names the version and its commit; one record line opens the body; there is no write
+ * control and no retry, and it is never stale, since it describes the list that version froze.
+ */
+export function VersionSynopsisModal({
+  versionNumber,
+  committedAt,
+  content,
+  art,
+  onClose,
+}: {
+  versionNumber: number;
+  committedAt: Date;
+  content: CheckedSynopsis;
+  art: FindingArt;
+  onClose: () => void;
+}) {
+  const aside = synopsisCopy.version.aside(versionNumber, formatDeckDate(committedAt));
+  return (
+    <ModalChrome
+      title={synopsisCopy.modal.title}
+      // Desktop only in the header, as the draft's sheet: the phone's 43px header holds the title.
+      aside={<span className="hidden md:inline">{aside}</span>}
+      closeLabel={synopsisCopy.modal.close}
+      onClose={onClose}
+      width={700}
+    >
+      <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
+        <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
+        <p data-testid="synopsis-version-record" className="m-0 border-b border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
+          {synopsisCopy.version.record(versionNumber)}
+        </p>
+        <SynopsisSections content={content} art={art} onRetry={null} busy={false} />
       </div>
     </ModalChrome>
   );

@@ -23,6 +23,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 import type { VersionDiffCard, VersionSummary } from "../../lib/decks/versions";
 import { CostTrack } from "../ui/cost-pips";
 import { DecklistGroupHeader } from "./decklist-group-header";
+import { VersionOverviewLink } from "./synopsis-version";
 
 const copy = deckVersioningCopy.history;
 
@@ -346,6 +347,9 @@ export function VersionDiff({
           </div>
         )}
       </div>
+      {/* The version's overview, when it was committed with one (6e): directly under the note,
+          which is this header's at 1300 and the row's above the panel at 390. One mount. */}
+      <VersionOverviewLink versionId={version.id} />
 
       {/* Outside the header, which is desktop-only: who was at the helm is the
           version's substance and not its chrome, and a phone that lost the

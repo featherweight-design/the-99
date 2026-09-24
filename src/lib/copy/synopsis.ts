@@ -50,6 +50,17 @@ export const synopsisCopy = {
   failedCount: (failed: number, total: number) =>
     `${failed} of ${total} ${total === 1 ? "card" : "cards"} failed checking`,
 
+  /**
+   * A version's overview (SYNOPSIS-modal.md §4, 6e): read only, opened from the version's expanded
+   * panel, never stale and never written to. "Overview" per Hugh's 2026-09-23 word.
+   */
+  version: {
+    entry: "Overview for this version",
+    aside: (n: number, date: string) => `version ${n} · committed ${date}`,
+    record: (n: number) =>
+      `Written for version ${n} when it was committed. It describes that list, not your deck as it is now.`,
+  },
+
   modal: {
     title: "Overview",
     close: "Close overview",
