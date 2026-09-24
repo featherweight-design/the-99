@@ -8,13 +8,13 @@ const at = new Date("2026-09-07T10:00:00Z");
 const run = (status: TuningRun["status"], errorClass: string | null = null): TuningRun => ({
   id: "run_1", status, errorClass, createdAt: at, droppedCount: 0,
 });
-const open: Allowance = { used: 0, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null };
-const spent: Allowance = { used: MODEL_DAILY_ALLOWANCE, limit: MODEL_DAILY_ALLOWANCE, reopensAt: at };
+const open: Allowance = { used: 0, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null, nextAt: null };
+const spent: Allowance = { used: MODEL_DAILY_ALLOWANCE, limit: MODEL_DAILY_ALLOWANCE, reopensAt: at, nextAt: at };
 
 // A deck that has never generated, and has no games: neither is a reason to refuse.
 const fresh: TuningState = {
   run: null, items: [], lastOkFingerprint: null, lastOkAt: null,
-  stale: true, modelVersionMoved: false, retired: null, allowance: open, gameCount: 0,
+  stale: true, modelVersionMoved: false, retired: null, allowance: open, gameCount: 0, newestPriceAsOf: null,
 };
 const settled: TuningState = { ...fresh, run: run("ok"), lastOkFingerprint: "fp", lastOkAt: at, stale: false };
 

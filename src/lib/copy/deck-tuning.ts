@@ -64,11 +64,165 @@ export const deckTuningCopy = {
   run: {
     refused: "We couldn\u2019t read that deck.",
   },
+
+  // ── Suggested changes: the panel (placement addendum v2, sections A, C, D, E) ──
+  // Transcribed from canvas v2's strings (:727-781) at up to five swaps, with the handoff's
+  // state 5 and failure strings rewritten: every one of those said three swaps or one note and
+  // carried a dash. The eng-written forms are marked; all of them are owed to /copy-review.
+  panel: {
+    heading: "Suggested changes",
+    suggest: "Suggest changes",
+    again: "Suggest again",
+    // A counted word, as the canvas writes it: "Nine games in, and cards in hand has been marked
+    // against you in 7 of 9."
+    readyLead: (gamesWord: string, axis: string, marked: number, games: number) =>
+      `${gamesWord} games in, and ${axis} has been marked against you in ${marked} of ${games}. We will read everything below and suggest up to five swaps, each a card out, a card in, and the reason.`,
+    noGamesLead:
+      "No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five swaps. Log a game and suggestions can also cite how the deck played.",
+    unmarkedLead: (gamesWord: string) =>
+      `${gamesWord} games logged, and none is marked for what worked or hurt. We will read the results, your game notes, this list and what you own, and suggest up to five swaps. Mark what decided a game and suggestions can point at it.`,
+    loadingHeading: "Shuffling through your deck\u2026",
+    loadingLead:
+      "Reading your deck. This takes a few seconds, and the list below stays on screen when the suggestions arrive.",
+    reading: "Reading\u2026",
+    stop: "Stop",
+    resultsLead: (nWord: string) =>
+      `${nWord} swaps, each a card out and a card in. Nothing moves until you apply one.`,
+    // Eng-written: the singular the canvas does not draw.
+    resultsLeadOne: "One swap, a card out and a card in. Nothing moves until you apply it.",
+    // Replaces `resultsLead` when the checks dropped some: the count is never padded back.
+    fewerLead: (nWord: string, droppedWord: string) =>
+      `${nWord} swaps this time. ${droppedWord} more did not hold up to checking.`,
+    fewerLeadOne: (droppedWord: string) =>
+      `One swap this time. ${droppedWord} more did not hold up to checking.`,
+    allDoneLead: (totalWord: string, applied: number, rejected: number) =>
+      `All ${totalWord} answered: ${applied} applied, ${rejected} rejected. Suggest again for a new set, read from the deck as it is now.`,
+    allDoneLeadOne: (applied: boolean) =>
+      `Answered: ${applied ? "applied" : "rejected"}. Suggest again for a new set, read from the deck as it is now.`,
+    // Eng-written for a deck with no version when the set was read.
+    retiredLead: (from: number | null, to: number) =>
+      from === null
+        ? `Your last suggestions were read before this deck had a version. Committing version ${to} cleared them, so a new set reads the list you committed.`
+        : `Your last suggestions were for version ${from}. Committing version ${to} cleared them, so a new set reads the list you committed.`,
+    tally: (applied: number, total: number, rejected: number) =>
+      rejected > 0 ? `${applied} of ${total} applied · ${rejected} rejected` : `${applied} of ${total} applied`,
+    // State 5, rewritten count-neutral. A successful run with an honest answer, in ordinary ink.
+    unchanged: (when: string) =>
+      `Nothing has changed since ${when}: no new game, no edit to the list or to what this deck is for, so a new run would only repeat these.`,
+    unchangedReasonGamesKey: "games",
+    unchangedReasonGames: (n: number, when: string) =>
+      n === 0 ? "none logged yet" : `${n} of ${n} already read, none logged since ${when}`,
+    unchangedReasonAxisKey: "weakest axis",
+    unchangedReasonAxis: (axis: string, hurt: number, games: number) =>
+      `${axis}, marked against you in ${hurt} of ${games}`,
+    unchangedReasonIntentKey: "this deck is for",
+    unchangedReasonIntent: "unchanged since you wrote it",
+    unchangedReasonIntentEmpty: "still blank",
+    unchangedTail:
+      "Log a game or edit what this deck is for, and there will be something new to read.",
+    unchangedCta: "Suggest again anyway",
+  },
+
+  // ── The manifest: what a run reads, one row per read, ticked when the read lands ──
+  manifest: {
+    games: "Your games",
+    gamesCount: (n: number) => (n === 1 ? "1 game" : `${n} games`),
+    gamesUnmarked: (n: number) => (n === 1 ? "1 game · no marks" : `${n} games · no marks`),
+    noneLogged: "none logged",
+    logGame: "Log a game \u2192",
+    notes: "Notes on your games",
+    notesCount: (m: number, n: number) => `on ${m} of ${n} games`,
+    // C1 names the list alone; the no-games and unmarked frames (D1, E5) name the mix beside it.
+    list: "This list",
+    listVsMix: "This list, against the recommended mix",
+    listCount: (n: number) => `${n} cards`,
+    // Eng-written: r2 gives the intent its own row and no label (README :88).
+    intent: "What you said this deck is for",
+    intentCount: "your words",
+    collection: "What you own, and what a card costs",
+    collectionCount: "your collection",
+    progress: (done: number, total: number) => `${done} of ${total} read`,
+    // The collapsed form above results: parts joined with " · ".
+    readFrom: (parts: readonly string[]) => `read from ${parts.join(" · ")}`,
+    readGames: (n: number) => (n === 1 ? "1 game" : `${n} games`),
+    readNotes: (n: number) => (n === 1 ? "1 game note" : `${n} game notes`),
+    readCards: (n: number) => `${n} cards`,
+    readMix: "the recommended mix",
+    readCollection: "your collection",
+    readNoGames: "no games logged",
+  },
+
+  // ── The failure classes: tag, body, what survived, one Try again ────────
+  // Rewritten from the handoff's four (every one said "your note" or three swaps, and carried a
+  // dash). `interrupted` is undrawn: built from the drawn four's shape (audit finding A). Every
+  // failed run is refunded (Hugh, 2026-09-23), so "nothing was charged" is true of all five.
+  failure: {
+    retry: "Try again",
+    unavailable: {
+      tag: "unavailable",
+      heading: "We couldn\u2019t reach the service",
+      body: "It is not something you did, and it is usually back within a few minutes.",
+      kept: "Your games, your notes and your list are untouched. Nothing was changed and no credit was used.",
+      note: "or come back later: the button will be here",
+    },
+    timeout: {
+      tag: "timed out",
+      heading: "This one took too long",
+      body: "We stopped it before it came back. A long list and a full game log are a lot to read, and now and then it does not finish.",
+      kept: "Nothing was applied and no credit was used.",
+      note: "trying again usually works",
+    },
+    malformed: {
+      tag: "unusable answer",
+      heading: "We couldn\u2019t use that answer",
+      body: "We are not going to show you a guess at what it meant.",
+      kept: "Your games, your notes and your list are untouched, nothing was applied, and no credit was used.",
+      note: "this one is on us",
+    },
+    ungrounded: {
+      tag: "nothing held up",
+      heading: "None of the swaps held up",
+      body: "Each failed a check: a card outside the deck\u2019s colors, a cut the deck does not hold, or a reason with nothing countable behind it. We would rather show you none than one we cannot back.",
+      kept: "Nothing was applied, your list is untouched, and no credit was used.",
+      note: "log another game and there is more to go on",
+    },
+    interrupted: {
+      tag: "interrupted",
+      heading: "That run did not finish",
+      body: "Nothing you did caused it.",
+      kept: "Nothing was applied and no credit was used.",
+      note: "",
+    },
+  },
+
+  // ── The suggestion card ────────────────────────────────────────────────
   card: {
+    apply: "Apply",
+    applying: "Applying\u2026",
+    reject: "Reject",
+    applied: "applied",
+    undo: "Put it back",
+    rejected: "rejected",
+    restore: "Show it again",
+    noLongerApplies: "no longer applies",
+    cutGone: (name: string) => `${name} has left the deck, so this swap cannot be applied.`,
+    // Eng-written: the add's half of the rule, undrawn.
+    addAlreadyIn: (name: string) => `${name} is already in the deck, so this swap cannot be applied.`,
+    // The bracket flag. Compare the LOWEST bracket each set permits (READINESS-r3-audit.md, note
+    // 1): higher raises, lower lowers, and an equal lowest with a different set changes. The
+    // third is eng-written.
+    bracketRaises: "Applying it raises the deck\u2019s bracket to",
+    bracketLowers: "Applying it lowers the deck\u2019s bracket to",
+    bracketChanges: "Applying it changes the deck\u2019s bracket to",
+    // Citation chips: source · value. The source is the evidence kind, named for a reader.
+    cite: { games: "games", note: "note", decklist: "list", intent: "you said", mix: "mix" },
+    open: (name: string) => `Open ${name}`,
+    swap: (cut: string, add: string) => `Swap ${cut} for ${add}`,
     applyRefused: "We couldn\u2019t make that swap. The deck is unchanged.",
     undoRefused: "We couldn\u2019t undo that swap. The deck is unchanged.",
     verdictRefused: "That did not save. Try again.",
   },
+
 
   // ── The rules a suggestion must obey (validator rule text) ─────────────
   // Handed to the model VERBATIM as its instructions, and named by the validator for each drop,
@@ -94,15 +248,21 @@ export const deckTuningCopy = {
   announce: {
     started: "Reading your deck",
     unchanged: "No new suggestions. Nothing has changed since the last run.",
+    ready: (n: number) => (n === 1 ? "One suggested swap is ready." : `${n} suggested swaps are ready.`),
+    stopped: "Stopped. No credit was used.",
+    applied: (cut: string, add: string) => `Applied. ${add} is in the deck and ${cut} is out.`,
+    undone: (cut: string) => `Put back. ${cut} is in the deck again.`,
+    rejected: "Rejected.",
+    restored: "Shown again.",
+    intentSaved: "Saved what this deck is for.",
   },
 
-  // ── The shared model allowance, spent ──────────────────────────────────
-  // PLACEHOLDER, eng-written: the handoff predates the allowance (Hugh, 2026-09-23) and draws no
-  // state for it. The placement addendum returns the drawn wording, with the synopsis in view,
-  // since both features show it; until then this is the refusal a press gets. No time in it —
-  // the panel names when the next unit returns, in the reader's own clock.
+  // ── The shared model allowance, spent: the refusal a press gets ────────
+  // The panel draws `creditsCopy.spent` with the time; this is what a stale tab or a replayed
+  // request is told, where there is no clock of the reader's to name a time in. PLACEHOLDER,
+  // owed to /copy-review.
   allowance: {
-    spent: "You have used today\u2019s suggestions. They come back within a day.",
+    spent: "No credits left. The next one comes back within a day.",
   },
 
   // ── The game note (Surface 1, amends #9's form) ────────────────────────

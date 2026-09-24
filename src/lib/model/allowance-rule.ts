@@ -14,9 +14,9 @@
 /**
  * Model runs per player per rolling 24 hours, across every feature.
  *
- * A PLACEHOLDER until a call's cost is measured. The rule that sets it is fixed in the deck
- * tuning plan's Cost section: floor(B / (2 × c)), where `c` is one attempt's measured cost and
- * `B` is the per-player daily spend Hugh names — the 2 covers a run that needed its retry.
+ * Five, Hugh's ruling of 2026-09-23: five per player on a rolling 24 hours, shared by tuning and
+ * the synopsis. Ten was weighed and refused, because its worst case ran past his $100 a month
+ * ceiling; five puts that worst case near $52.
  */
 export const MODEL_DAILY_ALLOWANCE = 5;
 
@@ -52,6 +52,9 @@ export type Allowance = {
   limit: number;
   /** When the oldest counted unit leaves the window. Null while units remain. */
   reopensAt: Date | null;
+  /** When the NEXT counted unit leaves the window, spent or not: the credit line's "next one at"
+   *  while credits remain as well as once they are gone. Null when nothing counts. */
+  nextAt: Date | null;
 };
 
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */
@@ -75,12 +78,13 @@ export function allowanceFrom(
     .map(expiresAt)
     .sort((a, b) => a - b);
   const used = expiries.length;
-  if (used < limit) return { used, limit, reopensAt: null };
+  const nextAt = used > 0 ? new Date(expiries[0]) : null;
+  if (used < limit) return { used, limit, reopensAt: null, nextAt };
   // A limit of 0 with nothing counted: the allowance is shut, and no unit is waiting to expire,
   // so there is no honest time to name. (Indexing below would read past the end.)
-  if (used === 0) return { used, limit, reopensAt: null };
+  if (used === 0) return { used, limit, reopensAt: null, nextAt };
   // Spent: a unit is free once enough rows stop counting that one fewer than `limit` remain —
   // the (used - limit)th earliest EXPIRY, which is the earliest when the count sits at the
   // limit. By expiry, not by age: a reservation frees its unit ten minutes in, not a day in.
-  return { used, limit, reopensAt: new Date(expiries[used - limit]) };
+  return { used, limit, reopensAt: new Date(expiries[used - limit]), nextAt };
 }

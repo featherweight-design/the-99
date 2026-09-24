@@ -26,7 +26,8 @@ import type { TuningItem, TuningRun, TuningState } from "../tuning/state";
 import type { ValidatedSuggestion } from "../tuning/validate";
 import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
-import { priceOf, priceState } from "./price";
+import type { Availability } from "./availability";
+import { loadAvailability } from "./availability-query";
 
 /**
  * Deck tuning's reads. SERVER-ONLY: it imports the database.
@@ -179,8 +180,12 @@ export async function readTuningState(
   ]);
 
   const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;
-  // The items belong to the newest run only: a failed run after a good one shows no stale cards.
-  const items = run?.status === "ok" ? await readItems(run.id, deckId, userId) : [];
+  // The items are the newest OK run's. A failed or stopped re-run leaves the set it would have
+  // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
+  // run, and nothing the player had was changed by it.
+  const { items, newestPriceAsOf } = lastOk
+    ? await readItems(lastOk.id, deckId, userId)
+    : { items: [], newestPriceAsOf: null };
 
   return {
     run,
@@ -194,6 +199,7 @@ export async function readTuningState(
       : false,
     allowance,
     gameCount: games?.count ?? 0,
+    newestPriceAsOf,
   };
 }
 
@@ -213,20 +219,31 @@ async function readRetired(deckId: string, runId: string): Promise<TuningState["
   return { from: r.read_version, to: r.newest };
 }
 
-async function readItems(runId: string, deckId: string, userId: string): Promise<TuningItem[]> {
+async function readItems(
+  runId: string,
+  deckId: string,
+  userId: string,
+): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
   const rows = await db.execute<{
     id: string; add_oracle_id: string; add_name: string; add_type_line: string;
     cut_oracle_id: string; cut_name: string; rationale: string; rationale_short: string;
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
+    add_image_uri: string | null; cut_image_uri: string | null; cut_in_deck: boolean;
+    add_in_deck: boolean;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
+           a.image_uri as add_image_uri, c.image_uri as cut_image_uri,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
            i.position, i.verdict, i.bracket_after,
            coalesce((
              select sum(ci.quantity) from ${collectionItems} ci
              where ci.user_id = ${userId} and ci.oracle_id = i.add_oracle_id
            ), 0)::int as owned_quantity,
+           exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
+             as cut_in_deck,
+           exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)
+             as add_in_deck,
            -- The swap can still be made: the cut is in the deck, and the add is not (a basic
            -- may be held already; the apply adds a copy). The apply checks the same rule.
            (exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
@@ -240,9 +257,25 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
       and exists (select 1 from ${deckSuggestionRuns} r where r.id = i.run_id and r.deck_id = ${deckId})
     order by i.position
   `);
-  const { prices, newestAsOf } = await loadPrices(rows.rows.map((r) => r.add_oracle_id));
-  return rows.rows.map((r) => {
-    const fact = prices.get(r.add_oracle_id);
+  const addIds = rows.rows.map((r) => r.add_oracle_id);
+  // The add's claims are read from THIS deck's vantage, as the decklist reads its own cards: the
+  // swap would put the card in this deck, so this deck's own claim is not a rival for it.
+  // Both are decoration on a card that stands without them, so each fails soft, as the deck page's
+  // own price and claim rollups do: a card with no price draws no figure, and one with no claim
+  // picture draws no mark, rather than the whole set failing to draw.
+  const [{ prices, newestAsOf }, claims] = await Promise.all([
+    loadPrices(addIds).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
+      console.error("tuning items: price read failed", e);
+      return { prices: new Map(), newestAsOf: null };
+    }),
+    addIds.length > 0
+      ? loadAvailability(userId, { oracleIds: addIds, excludeDeckId: deckId }).catch((e) => {
+          console.error("tuning items: claim read failed", e);
+          return new Map<string, Availability>();
+        })
+      : new Map<string, Availability>(),
+  ]);
+  const items = rows.rows.map((r): TuningItem => {
     return {
       id: r.id,
       addOracleId: r.add_oracle_id,
@@ -255,21 +288,27 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
       evidence: r.evidence,
       position: r.position,
       verdict: r.verdict,
+      addImageUri: r.add_image_uri,
+      cutImageUri: r.cut_image_uri,
       owned: r.owned_quantity > 0,
       ownedQuantity: r.owned_quantity,
-      priceCents: fact ? priceOf(fact, priceState(fact, newestAsOf)) : null,
+      availability: r.owned_quantity > 0 ? claims.get(r.add_oracle_id) ?? null : null,
+      price: prices.get(r.add_oracle_id) ?? null,
       bracketAfter: r.bracket_after,
       applies: r.applies,
+      cutInDeck: r.cut_in_deck,
+      addInDeck: r.add_in_deck,
     };
   });
+  return { items, newestPriceAsOf: newestAsOf };
 }
 
 /**
- * The generating manifest's four reads, one per step (Task 13). Each is cheap and authorised,
+ * The generating manifest's reads, one per row (Task 13). Each is cheap and authorised,
  * and the panel calls them in sequence so a tick lands on a read that actually finished. The
  * run rebuilds its evidence from scratch: this is disclosure, never input.
  */
-export const EVIDENCE_STEPS = ["games", "notes", "decklist", "intent"] as const;
+export const EVIDENCE_STEPS = ["games", "notes", "decklist", "intent", "collection"] as const;
 export type EvidenceStep = (typeof EVIDENCE_STEPS)[number];
 
 export async function readEvidenceStep(
@@ -298,5 +337,11 @@ export async function readEvidenceStep(
     }
     case "intent":
       return deck.intent === null ? 0 : 1;
+    case "collection": {
+      // Distinct cards owned: what the run reads to say which adds the player already has.
+      const [r] = await db.select({ n: sql<number>`count(distinct ${collectionItems.oracleId})::int` })
+        .from(collectionItems).where(eq(collectionItems.userId, userId));
+      return r?.n ?? 0;
+    }
   }
 }

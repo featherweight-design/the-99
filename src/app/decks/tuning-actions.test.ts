@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
-const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0 }));
+const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("../../lib/decks/tuning-read", () => ({
-  EVIDENCE_STEPS: ["games", "notes", "decklist", "intent"],
+  EVIDENCE_STEPS: ["games", "notes", "decklist", "intent", "collection"],
   tuningInputs: async () => {
     calls.inputs += 1;
     return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp" };
@@ -16,7 +16,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
   readTuningState: async () => ({
     run: { id: "r", status: "ok" }, items: [], lastOkFingerprint: "fp", lastOkAt: new Date(),
-    stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null }, gameCount: 0,
+    stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
   }),
   readEvidenceStep: async () => 1,
   readOwnedOracleIds: async () => new Set(),
@@ -25,7 +25,11 @@ vi.mock("../../lib/decks/tuning-read", () => ({
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
   saveIntent: async () => { calls.saved += 1; return "saved"; },
-  startRun: async () => { calls.started += 1; return { kind: "in_flight" }; },
+  startRun: async (...args: unknown[]) => {
+    calls.started += 1;
+    calls.startOpts = args[4];
+    return { kind: "in_flight" };
+  },
   finishRun: async () => true,
   persistRun: async () => true,
   cancelRun: async () => true,
@@ -63,6 +67,17 @@ describe("runTuning's `anyway`", () => {
 });
 
 describe("ids off the wire", () => {
+  it("hands the panel's run id to startRun, and refuses one that is not a uuid", async () => {
+    const RUN = "22222222-2222-4222-8222-222222222222";
+    await runTuning(DECK, { anyway: true, runId: RUN });
+    expect(calls.startOpts).toEqual({ runId: RUN });
+    for (const runId of ["not-a-uuid", 7, {}]) {
+      const result = await runTuning(DECK, { anyway: true, runId } as unknown as { runId: string });
+      expect(result.ok).toBe(false);
+    }
+    expect(calls.started).toBe(1);
+  });
+
   it("refuses a deck id that is not a uuid before reading anything", async () => {
     expect((await runTuning("not-a-uuid")).ok).toBe(false);
     expect(calls.inputs).toBe(0);
@@ -74,7 +89,7 @@ describe("ids off the wire", () => {
   });
 
   it("reads no evidence step it does not know", async () => {
-    expect(await readTuningEvidence(DECK, "collection" as never)).toBeNull();
+    expect(await readTuningEvidence(DECK, "prices" as never)).toBeNull();
     expect(await readTuningEvidence(DECK, "games")).toBe(1);
   });
 });

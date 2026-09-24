@@ -227,4 +227,38 @@ describe("AnalysisPanel", () => {
     fireEvent.click(within(screen.getByTestId("analysis-empty")).getByRole("button", { name: copy.idle.cta }));
     expect(onRequest).toHaveBeenCalledTimes(1);
   });
+
+  // Suggested changes follows the analysis: drawn last, after the mix, and only over a reading,
+  // current or held, handed the permits that reading slots to.
+  describe("the tuning slot", () => {
+    const withTuning = (state: ProfileState) => {
+      const tuning = vi.fn((permits: readonly number[]) => <div>tuning for {permits.join(",")}</div>);
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={state} onRequest={onRequest} tuning={tuning}>
+            <div>{MIX}</div>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+      return tuning;
+    };
+
+    it("draws after the mix over a current reading", () => {
+      withTuning(ready());
+      const mix = screen.getByText(MIX);
+      const tuning = screen.getByText(/^tuning for/);
+      expect(mix.compareDocumentPosition(tuning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("stays over a held reading while the deck has changed", () => {
+      withTuning(ready({ fresh: false }));
+      expect(screen.getByText(/^tuning for/)).toBeInTheDocument();
+    });
+
+    it("is absent before a first reading", () => {
+      const tuning = withTuning({ kind: "idle" });
+      expect(tuning).not.toHaveBeenCalled();
+      expect(screen.queryByText(/^tuning for/)).toBeNull();
+    });
+  });
 });

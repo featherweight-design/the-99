@@ -101,6 +101,7 @@
     "probe:fill": "tsx scripts/probe-fill.ts",
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
+    "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "check:tuning": "tsx scripts/check-tuning.ts"
   },
   "dependencies": {

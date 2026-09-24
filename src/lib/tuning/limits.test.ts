@@ -1,6 +1,35 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { intentTooLong, seededIntent } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, intentTooLong, seededIntent } from "./limits";
+
+// The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
+// under it with room for the reads and writes around the call. Read from the page's source:
+// Next requires the export to be a literal, and importing the page would pull in the server.
+describe("MODEL_TIMEOUT_MS", () => {
+  it("fits under the deck page's maxDuration, leaving time for the rest of the run", () => {
+    // import.meta.url, not __dirname: Vitest runs tests as ESM.
+    const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/decks/[id]/page.tsx"), "utf8");
+    const match = page.match(/export const maxDuration = (\d+);/);
+    expect(match).not.toBeNull();
+    const maxDurationMs = Number(match![1]) * 1000;
+    expect(MODEL_TIMEOUT_MS).toBeLessThan(maxDurationMs);
+    expect(maxDurationMs - MODEL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
+  });
+});
+
+describe("TUNING_MAX_TOKENS", () => {
+  it("holds the schema's worst-case answer and room for adaptive thinking over it", () => {
+    // The schema's caps, per suggestion: add, cut, rationale, short rationale, four citations.
+    const chars = 200 + 200 + 400 + 80 + 4 * 160;
+    // About four characters a token, and about 60 tokens of JSON keys and punctuation.
+    const perSuggestion = Math.ceil(chars / 4) + 60;
+    expect(ANSWER_TOKENS_WORST_CASE).toBeGreaterThanOrEqual(perSuggestion * MAX_SUGGESTIONS);
+    expect(TUNING_MAX_TOKENS).toBeGreaterThanOrEqual(ANSWER_TOKENS_WORST_CASE + THINKING_HEADROOM_TOKENS);
+  });
+});
 
 describe("intentTooLong", () => {
   it("accepts an intent at the cap and refuses one over it", () => {

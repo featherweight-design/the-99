@@ -766,7 +766,7 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 | state 3 text | `3 of 4 read` | `3 of 4 read` |
 | state 4 text | `3 of 3 still open` (shortened) | `3 of 3 still open · these stay until you replace them` |
 | state 5 text | `3 of 3 from Tuesday still open` | `3 of 3 from Tuesday still open` |
-| state 6a text | `or come back later — the button will be here` | same |
+| state 6a text | `or come back later: the button will be here` (em dash set as a colon, 2026-09-13 sweep) | same |
 | state 6b text | `stopped at 3 of 4 read` | same |
 | state 6c text | `this one is on us` | same |
 | state 6d text | `log another game and there is more to go on` | same |
@@ -1205,7 +1205,7 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 | Tuning panel (S4) | (transition) Stop | `Stop` pressed during state 3 | Returns to state 2 with the manifest unchecked; no error, no tag; announcement `Stopped. Nothing was changed.` | — |
 | Tuning panel (S4) | 4 · Results | Run returned ≥ 1 usable (validated) suggestion | Heading; collapsed manifest as one mono line; results sentence; the suggestion cards; primary `Suggest again`; note `{open} of {total} still open · these stay until you replace them` | manifest parts for the collapsed line, suggestion list, open/applied/dismissed counts |
 | Tuning panel (S4) | 5 · Nothing has changed | Run returned the same set, or nothing new | Ordinary ink, no `--danger` anywhere; collapsed manifest line; sentence; the reason in exactly three countable rows (games / weakest axis / this deck is for); tail line; primary `Suggest again anyway`; note `{open} of {total} from {when} still open` | last-run date, games read + total, weakest axis + `{marked} of {count}`, intent-changed flag, previous suggestion count |
-| Tuning panel (S4) | 6a · Unavailable | Provider unreachable | `--danger` tag `unavailable` beside the heading; one plain sentence; mono line stating what survived (games, note, list, nothing charged); primary `Try again`; note `or come back later — the button will be here` | game count for the kept line |
+| Tuning panel (S4) | 6a · Unavailable | Provider unreachable | `--danger` tag `unavailable` beside the heading; one plain sentence; mono line stating what survived (games, note, list, nothing charged); primary `Try again`; note `or come back later: the button will be here` (em dash set as a colon, 2026-09-13 sweep) | game count for the kept line |
 | Tuning panel (S4) | 6b · Timed out | Run exceeded its budget | Tag `timed out`; sentence; kept line (previous suggestions still below, or `keptNone`); primary `Try again`; note `stopped at {done} of {total} read` | done/total reads, game count, card count, whether prior suggestions exist |
 | Tuning panel (S4) | 6c · Unusable answer | Response could not be parsed | Tag `unusable answer`; sentence; kept line; primary `Try again`; note `this one is on us` | — |
 | Tuning panel (S4) | 6d · Nothing held up | Every candidate failed post-generation validation | Tag `nothing held up`; sentence naming the classes of failure; kept line `0 of {rejected} suggestions survived checking. …`; primary `Try again`; note `log another game and there is more to go on` | commander name, rejected-candidate count |

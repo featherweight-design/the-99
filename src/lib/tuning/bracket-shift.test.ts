@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { slotDeck } from "../bracket/slot";
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "../profile/build";
 import type { ComboRef, DetectionCoverage, FlagSource } from "../profile/types";
-import { bracketAfter } from "./bracket-shift";
+import { bracketAfter, bracketShift } from "./bracket-shift";
 
 const DETECTION: DetectionCoverage = {
   massLandDenial: { methods: ["m"], basis: "t" },
@@ -57,5 +57,24 @@ describe("bracketAfter", () => {
   it("reads the combo verdict from the after profile, not a patch of the before", () => {
     const withCombo = profile({ twoCardCombos: [combo] });
     expect(bracketAfter({ before: profile(), after: withCombo, declared: 2 })).toEqual(slotDeck(withCombo, 2).permits);
+  });
+});
+
+describe("bracketShift", () => {
+  it("raises when the lowest permitted bracket goes up", () => {
+    expect(bracketShift([3], [4])).toBe("raises");
+    expect(bracketShift([2], [4, 5])).toBe("raises");
+  });
+  it("lowers when the lowest goes down, a widening range included", () => {
+    expect(bracketShift([4], [3])).toBe("lowers");
+    expect(bracketShift([2], [1, 2])).toBe("lowers");
+  });
+  it("changes when the lowest holds and the set does not", () => {
+    expect(bracketShift([4], [4, 5])).toBe("changes");
+    expect(bracketShift([4, 5], [4])).toBe("changes");
+  });
+  it("draws nothing without a flag, or when the flag agrees with the reading now", () => {
+    expect(bracketShift([3], null)).toBeNull();
+    expect(bracketShift([4, 5], [4, 5])).toBeNull();
   });
 });

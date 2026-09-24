@@ -75,10 +75,19 @@ export async function saveDeckIntent(deckId: string, formData: FormData): Promis
  * pending row, committed before any network call. Everything after that sits in one `try`, so a
  * throw anywhere fails the run and refunds its unit: no unit is ever spent on a call never made.
  */
-export async function runTuning(deckId: string, opts: { anyway?: boolean } = {}): Promise<DeckMutationResult> {
+export async function runTuning(
+  deckId: string,
+  opts: { anyway?: boolean; runId?: string } = {},
+): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
+  // The panel names its run so its Stop can cancel that run and no other. Anything but a uuid is
+  // refused rather than dropped: a Stop keyed on an id the row does not carry could never land.
+  const requested = typeof opts === "object" && opts !== null ? opts.runId : undefined;
+  if (requested !== undefined && (typeof requested !== "string" || !isUuid(requested))) {
+    return { ok: false, message: deckTuningCopy.run.refused };
+  }
 
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
@@ -87,11 +96,11 @@ export async function runTuning(deckId: string, opts: { anyway?: boolean } = {})
   const gate = gateReason(await readTuningState(deckId, userId, fingerprint));
   if (gate && !(gate.kind === "unchanged" && anyway)) return { ok: false, message: gate.message };
 
-  const started = await startRun(userId, deckId, fingerprint, readVersion);
+  const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested });
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
-  const { runId } = started;
 
+  const { runId } = started;
   const fail = async (errorClass: Parameters<typeof finishRun>[1]["errorClass"], droppedCount?: number) => {
     if (await finishRun(runId, { status: "failed", errorClass, droppedCount })) revalidateDeck(deckId);
     return { ok: true } as const;
@@ -154,7 +163,7 @@ export async function readTuningPanel(deckId: string): Promise<TuningState | nul
 }
 
 /**
- * One of the generating manifest's four reads. The panel calls them in turn, so each tick lands
+ * One of the generating manifest's reads. The panel calls them in turn, so each tick lands
  * on a read that finished. Disclosure only: the run rebuilds everything itself.
  */
 export async function readTuningEvidence(deckId: string, step: EvidenceStep): Promise<number | null> {

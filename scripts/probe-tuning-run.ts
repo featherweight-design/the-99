@@ -34,6 +34,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 
 import { readAllowance } from "../src/lib/model/allowance";
 import { MODEL_DAILY_ALLOWANCE } from "../src/lib/model/allowance-rule";
@@ -173,12 +174,16 @@ async function run() {
     check("1 · no items were written", await itemCount(started.runId), 0);
   }
 
-  // 2 · The player pressed Stop.
+  // 2 · The player pressed Stop. The panel names its run, so Stop cancels that id and no other;
+  // a Stop that beats the row writes nothing, and the row then lands under the named id.
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const started = await startRun(u, deck, "fp", null);
+    const chosen = randomUUID();
+    check("2 · a Stop before the row exists finds nothing", await cancelRun(chosen, deck, u), false);
+    const started = await startRun(u, deck, "fp", null, { runId: chosen });
     if (started.kind !== "started") return fail("case 2 start", started.kind);
+    check("2 · the run is written under the id the panel chose", started.runId, chosen);
     check("2 · the Stop lands", await cancelRun(started.runId, deck, u), true);
     const wrote = await finishRun(started.runId, { status: "failed", errorClass: "timeout" });
     check("2 · a late failure after the Stop reports superseded", wrote, false);
@@ -230,6 +235,8 @@ async function run() {
       where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
     await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
     const { itemId } = await answered(u, deck, c);
+    const before = (await readTuningState(deck, u, "fp")).items.find((i) => i.id === itemId);
+    check("5 · before the apply the add is not in the deck", before?.addInDeck, false);
 
     check("7 · another reader cannot apply the item", await applyItem(itemId, newUser()), null);
 
@@ -238,6 +245,10 @@ async function run() {
     check("5 · the add arrives as one chosen copy", await cardRow(deck, c.add), { quantity: 1, auto: false });
     check("5 · the verdict and the snapshot land with it", await verdictOf(itemId),
       { verdict: "accepted", snapshot: true });
+    // The card reads the add's claim with this deck's own ask subtracted, and marks it self-excluded
+    // exactly when the deck holds the add. Before the apply it did not; now it does.
+    const applied = (await readTuningState(deck, u, "fp")).items.find((i) => i.id === itemId);
+    check("5 · the panel reads the applied add as in the deck", applied?.addInDeck, true);
 
     check("6 · a second apply is refused", await applyItem(itemId, u), null);
     check("6 · and changes no row", [await cardRow(deck, cut), await cardRow(deck, c.add)],
@@ -344,6 +355,13 @@ async function run() {
     check("9 · an unchanged deck gates as unchanged", gateReason(same)?.kind ?? null, "unchanged");
     const moved = await readTuningState(deck, u, "fp-2");
     check("9 · a changed deck is stale and ungated", [moved.stale, gateReason(moved)], [true, null]);
+    // A failed re-run leaves the last good set on screen, still open: the failure is the new
+    // run's, and nothing the player had changed (STATES-tuning-panel.md :42).
+    const rerun = await startRun(u, deck, "fp-2", null);
+    if (rerun.kind !== "started") return fail("case 9 re-run start", rerun.kind);
+    await finishRun(rerun.runId, { status: "failed", errorClass: "timeout" });
+    const kept = await readTuningState(deck, u, "fp-2");
+    check("9 · a failed re-run keeps the last set's items", [kept.run?.status, kept.items.length], ["failed", 1]);
   }
 
   // 12 · A commit retires the set, and an item the deck has moved past no longer applies.
