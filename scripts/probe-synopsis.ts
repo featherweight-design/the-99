@@ -223,6 +223,21 @@ async function run() {
   check("a run reaped mid-call reports superseded", (await writeSynopsisFor(deck.id, USER, reapingModel)).kind, "superseded");
   check("…and charges nothing", (await ledger()).find((r) => r.status === "spent"), undefined);
 
+  // 8c · A throw AFTER the reservation (here, a reply the checks cannot read) settles the run as a
+  // refunded upstream failure at once, rather than leaving it pending for the reaper.
+  await ageLedger();
+  const throwingModel: GenerateDeps = {
+    ...deps,
+    model: async (req, facts) => {
+      const out = await deps.model(req, facts);
+      return out.ok ? { ...out, value: { ...out.value, weaknesses: null as unknown as string[] } } : out;
+    },
+  };
+  const threw = await writeSynopsisFor(deck.id, USER, throwingModel);
+  check("a throw after the reservation ends as a refunded upstream failure",
+    [threw.kind === "written" && threw.outcome, (await ledger()).find((r) => r.status === "refunded")?.n, (await state()).pending],
+    ["upstream_busy", 1, false]);
+
   // 9 · THE REAPER, on both paths: a run a crash left pending is failed, refunded, and frees the
   // deck, whether the next thing to arrive is a write or a read. Each path is proved on its own
   // stranded run, because a read reaping first would hide a write that never reaps.

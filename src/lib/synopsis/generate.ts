@@ -309,37 +309,46 @@ async function run(
   const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry);
   if (started.kind !== "started") return started;
 
-  let outcome: ModelOutcome<SynopsisResponse>;
+  // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
+  // read, the checks, the store) is settled as a refunded upstream failure, so the unit comes
+  // straight back and the one-pending index does not hold the deck until the reaper.
   try {
-    outcome = await deps.model(prompt, facts);
+    let outcome: ModelOutcome<SynopsisResponse>;
+    try {
+      outcome = await deps.model(prompt, facts);
+    } catch (error) {
+      console.error("synopsis model call threw", error);
+      outcome = { ok: false, errorClass: "upstream_busy" };
+    }
+
+    if (!outcome.ok) {
+      const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded" }, deps.now());
+      return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
+    }
+
+    const checked = validateSynopsis(outcome.value, facts, await catalogFor(outcome.value, facts));
+    let content = checked;
+    let charge: "spent" | "refunded" = shown(checked) ? "spent" : "refunded";
+    if (base && refused) {
+      const merged = mergeRetry(base.content, checked, refused);
+      content = merged.content;
+      charge = merged.anyRetriedPassed ? "spent" : "refunded";
+    }
+    const result = outcomeOf(content.verdicts);
+    const written = await finishRun(started.runId, { outcome: result, content, usage: outcome.usage, charge }, deps.now());
+    if (!written) return { kind: "superseded" };
+    return {
+      kind: "written",
+      outcome: result,
+      synopsis: shown(content)
+        ? { id: started.runId, fingerprint: reading.list, contractVersion: SYNOPSIS_CONTRACT_VERSION, createdAt: deps.now(), content }
+        : null,
+    };
   } catch (error) {
-    console.error("synopsis model call threw", error);
-    outcome = { ok: false, errorClass: "upstream_busy" };
+    console.error("synopsis write failed after its reservation", error);
+    const settled = await finishRun(started.runId, { outcome: "upstream_busy", content: null, usage: null, charge: "refunded" }, deps.now());
+    return settled ? { kind: "written", outcome: "upstream_busy", synopsis: null } : { kind: "superseded" };
   }
-
-  if (!outcome.ok) {
-    const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded" }, deps.now());
-    return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
-  }
-
-  const checked = validateSynopsis(outcome.value, facts, await catalogFor(outcome.value, facts));
-  let content = checked;
-  let charge: "spent" | "refunded" = shown(checked) ? "spent" : "refunded";
-  if (base && refused) {
-    const merged = mergeRetry(base.content, checked, refused);
-    content = merged.content;
-    charge = merged.anyRetriedPassed ? "spent" : "refunded";
-  }
-  const result = outcomeOf(content.verdicts);
-  const written = await finishRun(started.runId, { outcome: result, content, usage: outcome.usage, charge }, deps.now());
-  if (!written) return { kind: "superseded" };
-  return {
-    kind: "written",
-    outcome: result,
-    synopsis: shown(content)
-      ? { id: started.runId, fingerprint: reading.list, contractVersion: SYNOPSIS_CONTRACT_VERSION, createdAt: deps.now(), content }
-      : null,
-  };
 }
 
 /** Write the deck's synopsis, or return the one already written for this list. */
