@@ -164,7 +164,7 @@ async function run() {
     // answer, which is the one that enables the press, before reading what it says.
     await page.waitForFunction(() => {
       const b = [...document.querySelectorAll('[data-testid="synopsis-overview"] button')].find((e) => e.textContent === "Write one");
-      return b && !b.disabled;
+      return b && b.getAttribute("aria-disabled") !== "true";
     }, null, { timeout: 15_000 }).catch(() => {});
     if (!report("1300px · Write one is offered over the fresh reading", (await writeOne.count()) === 1, `${await writeOne.count()} found`)) return;
     // Read AT the moment the press enables, never after a wait: an enabled press with no note
