@@ -16,7 +16,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
   readTuningState: async () => ({
     run: { id: "r", status: "ok" }, items: [], lastOkFingerprint: "fp", lastOkAt: new Date(),
-    stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null }, gameCount: 0,
+    stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
   }),
   readEvidenceStep: async () => 1,
   readOwnedOracleIds: async () => new Set(),

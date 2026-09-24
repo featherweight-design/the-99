@@ -26,7 +26,7 @@ import type { TuningItem, TuningRun, TuningState } from "../tuning/state";
 import type { ValidatedSuggestion } from "../tuning/validate";
 import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
-import { priceOf, priceState } from "./price";
+import { loadAvailability } from "./availability-query";
 
 /**
  * Deck tuning's reads. SERVER-ONLY: it imports the database.
@@ -180,7 +180,9 @@ export async function readTuningState(
 
   const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;
   // The items belong to the newest run only: a failed run after a good one shows no stale cards.
-  const items = run?.status === "ok" ? await readItems(run.id, deckId, userId) : [];
+  const { items, newestPriceAsOf } = run?.status === "ok"
+    ? await readItems(run.id, deckId, userId)
+    : { items: [], newestPriceAsOf: null };
 
   return {
     run,
@@ -194,6 +196,7 @@ export async function readTuningState(
       : false,
     allowance,
     gameCount: games?.count ?? 0,
+    newestPriceAsOf,
   };
 }
 
@@ -213,14 +216,20 @@ async function readRetired(deckId: string, runId: string): Promise<TuningState["
   return { from: r.read_version, to: r.newest };
 }
 
-async function readItems(runId: string, deckId: string, userId: string): Promise<TuningItem[]> {
+async function readItems(
+  runId: string,
+  deckId: string,
+  userId: string,
+): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
   const rows = await db.execute<{
     id: string; add_oracle_id: string; add_name: string; add_type_line: string;
     cut_oracle_id: string; cut_name: string; rationale: string; rationale_short: string;
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
+    add_image_uri: string | null; cut_image_uri: string | null;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
+           a.image_uri as add_image_uri, c.image_uri as cut_image_uri,
            i.cut_oracle_id, c.name as cut_name, i.rationale, i.rationale_short, i.evidence,
            i.position, i.verdict, i.bracket_after,
            coalesce((
@@ -240,9 +249,14 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
       and exists (select 1 from ${deckSuggestionRuns} r where r.id = i.run_id and r.deck_id = ${deckId})
     order by i.position
   `);
-  const { prices, newestAsOf } = await loadPrices(rows.rows.map((r) => r.add_oracle_id));
-  return rows.rows.map((r) => {
-    const fact = prices.get(r.add_oracle_id);
+  const addIds = rows.rows.map((r) => r.add_oracle_id);
+  // The add's claims are read from THIS deck's vantage, as the decklist reads its own cards: the
+  // swap would put the card in this deck, so this deck's own claim is not a rival for it.
+  const [{ prices, newestAsOf }, claims] = await Promise.all([
+    loadPrices(addIds),
+    addIds.length > 0 ? loadAvailability(userId, { oracleIds: addIds, excludeDeckId: deckId }) : new Map(),
+  ]);
+  const items = rows.rows.map((r): TuningItem => {
     return {
       id: r.id,
       addOracleId: r.add_oracle_id,
@@ -255,13 +269,17 @@ async function readItems(runId: string, deckId: string, userId: string): Promise
       evidence: r.evidence,
       position: r.position,
       verdict: r.verdict,
+      addImageUri: r.add_image_uri,
+      cutImageUri: r.cut_image_uri,
       owned: r.owned_quantity > 0,
       ownedQuantity: r.owned_quantity,
-      priceCents: fact ? priceOf(fact, priceState(fact, newestAsOf)) : null,
+      availability: r.owned_quantity > 0 ? claims.get(r.add_oracle_id) ?? null : null,
+      price: prices.get(r.add_oracle_id) ?? null,
       bracketAfter: r.bracket_after,
       applies: r.applies,
     };
   });
+  return { items, newestPriceAsOf: newestAsOf };
 }
 
 /**

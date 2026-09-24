@@ -1,4 +1,6 @@
 import type { TuningCitation } from "../../db/schema";
+import type { Availability } from "../decks/availability";
+import type { PriceFact } from "../decks/price";
 import type { Allowance } from "../model/allowance-rule";
 
 /**
@@ -19,11 +21,18 @@ export type TuningItem = {
   evidence: TuningCitation[];
   position: number;
   verdict: "pending" | "accepted" | "dismissed";
+  /** Printed art for the two thumbnails and the hover preview. Null when the catalog has none. */
+  addImageUri: string | null;
+  cutImageUri: string | null;
   /** Facts about the collection, never a ranking. */
   owned: boolean;
   ownedQuantity: number;
-  /** Cents, formatted by the card through formatCents. Null when unpriced. */
-  priceCents: number | null;
+  /** The add's claim picture from this deck's vantage, drawn with the shipped marks. Null when
+   *  the player owns no copy: an unowned add draws the buy tag instead. */
+  availability: Availability | null;
+  /** The add's price row, for the shipped buy tag, which judges it against `TuningState`'s
+   *  `newestPriceAsOf`. Null when the feed has never listed it. */
+  price: PriceFact | null;
   /** The bracket flag: the deck's permits with this swap, or null when it moves nothing. */
   bracketAfter: number[] | null;
   /** Whether the swap can still be made: the deck still holds the cut, and does not already
@@ -63,4 +72,6 @@ export type TuningState = {
   allowance: Allowance;
   /** What the evidence will hold, for the panel's copy. Gates nothing. */
   gameCount: number;
+  /** The price table's newest `as_of`, which the buy tag measures a price's liveness against. */
+  newestPriceAsOf: Date | null;
 };

@@ -24,7 +24,22 @@ describe("allowanceFrom", () => {
 
   it("names no reopening time while units remain", () => {
     const rows = Array.from({ length: MODEL_DAILY_ALLOWANCE - 1 }, (_, i) => spent(hoursAgo(i + 1)));
-    expect(allowanceFrom(rows, now)).toEqual({ used: MODEL_DAILY_ALLOWANCE - 1, limit: MODEL_DAILY_ALLOWANCE, reopensAt: null });
+    expect(allowanceFrom(rows, now)).toEqual({
+      used: MODEL_DAILY_ALLOWANCE - 1,
+      limit: MODEL_DAILY_ALLOWANCE,
+      reopensAt: null,
+      // The credit line names the next one while credits remain: the oldest unit's expiry.
+      nextAt: new Date(hoursAgo(MODEL_DAILY_ALLOWANCE - 1).getTime() + ALLOWANCE_WINDOW_MS),
+    });
+  });
+
+  it("names no next time when nothing counts", () => {
+    expect(allowanceFrom([{ status: "refunded", createdAt: hoursAgo(1) }], now).nextAt).toBeNull();
+  });
+
+  it("names a reservation's TTL as the next time when it expires first", () => {
+    const a = allowanceFrom([spent(hoursAgo(1)), reserved(minutesAgo(2))], now);
+    expect(a.nextAt).toEqual(new Date(minutesAgo(2).getTime() + RESERVATION_TTL_MS));
   });
 
   it("reopens when the oldest counted call leaves the window", () => {
@@ -42,7 +57,7 @@ describe("allowanceFrom", () => {
   });
 
   it("names no reopening time, and no invalid one, when the limit is zero and nothing counts", () => {
-    expect(allowanceFrom([], now, 0)).toEqual({ used: 0, limit: 0, reopensAt: null });
+    expect(allowanceFrom([], now, 0)).toEqual({ used: 0, limit: 0, reopensAt: null, nextAt: null });
   });
 
   it("reopens when a reservation's TTL runs out, not a day later", () => {
