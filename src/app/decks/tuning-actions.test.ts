@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
-  reachModel: false, finished: [] as unknown[][] }));
+  reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -44,11 +44,14 @@ vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", u
 // A reply that came back, billed, and names cards: the catalog read after it is what throws here,
 // since `db` is a stub.
 vi.mock("../../lib/model/client", () => ({
-  callModel: async () => ({
-    ok: true,
-    value: { suggestions: [{ add: "Sol Ring", cut: "Island" }] },
-    usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
-  }),
+  callModel: async (req: unknown) => {
+    calls.modelRequest = req;
+    return calls.modelOutcome ?? {
+      ok: true,
+      value: { suggestions: [{ add: "Sol Ring", cut: "Island" }] },
+      usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    };
+  },
 }));
 vi.mock("../../lib/tuning/verdicts", () => ({
   applyItem: async () => { calls.applied += 1; return "deck"; },
@@ -70,6 +73,8 @@ beforeEach(() => {
   calls.startKind = "in_flight";
   calls.reachModel = false;
   calls.finished = [];
+  calls.modelRequest = undefined;
+  calls.modelOutcome = undefined;
 });
 
 describe("runTuning after the call returned", () => {
@@ -81,6 +86,28 @@ describe("runTuning after the call returned", () => {
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
       { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 } },
+    ]]);
+  });
+});
+
+describe("runTuning's model call (v2)", () => {
+  it("asks for medium effort, with the retry floor inside the one deadline", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    await runTuning(DECK, { anyway: true }).catch(() => undefined);
+    expect(calls.modelRequest).toMatchObject({ model: "claude-sonnet-5", effort: "medium", deadlineMs: 110_000, retryFloorMs: 70_000 });
+  });
+
+  it("settles a run the floor refused a retry as failed, which refunds its unit and records what it burned", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    const usage = { inputTokens: 4_000, outputTokens: 3_600, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    calls.modelOutcome = { ok: false, errorClass: "malformed", usage };
+    await runTuning(DECK, { anyway: true });
+    expect(calls.finished).toEqual([[
+      { runId: "run_1", callId: "call_1" },
+      { status: "failed", errorClass: "malformed", droppedCount: undefined },
+      { model: "claude-sonnet-5", usage },
     ]]);
   });
 });

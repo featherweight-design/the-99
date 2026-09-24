@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, intentTooLong, seededIntent } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong, seededIntent } from "./limits";
 
 // The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
 // under it with room for the reads and writes around the call. Read from the page's source:
@@ -17,6 +17,15 @@ describe("MODEL_TIMEOUT_MS", () => {
     const maxDurationMs = Number(match![1]) * 1000;
     expect(MODEL_TIMEOUT_MS).toBeLessThan(maxDurationMs);
     expect(maxDurationMs - MODEL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
+  });
+});
+
+describe("TUNING_RETRY_FLOOR_MS", () => {
+  it("leaves a first attempt room to fail and still retry inside the deadline", () => {
+    // A floor at or past the deadline would forbid every retry; one under the p50 attempt (32s)
+    // would let most doomed retries start.
+    expect(TUNING_RETRY_FLOOR_MS).toBeLessThan(MODEL_TIMEOUT_MS);
+    expect(TUNING_RETRY_FLOOR_MS).toBeGreaterThan(32_000);
   });
 });
 

@@ -21,7 +21,41 @@ import { noteDate } from "./note-date";
  * rendering an empty summary a model might read as "0 of 0".
  */
 export function buildPrompt(pack: EvidencePack): { system: string; user: string } {
-  return { system: SYSTEM, user: renderPack(pack) };
+  const universal = pack.universal ?? [];
+  const system = [SYSTEM, ...strategyRules(universal.map((u) => u.name), !!pack.strategy), ...RATIONALE_RULES].join("\n");
+  const block = pack.strategy ? strategyBlock(pack.strategy) : null;
+  return { system, user: block ? `${renderPack(pack)}\n\n${block}` : renderPack(pack) };
+}
+
+/**
+ * v2's rules (Hugh's ruling, 2026-09-24), the text round 4 of the eval ran and he rated 7 to 0
+ * (`strategy-terse-b` in `scripts/eval/variants/tuning.mts`). Where the deck has an overview the
+ * system and user messages are that run's, byte for byte, and `prompt.test.ts` pins it. With no
+ * overview, the two lines that name one are left out rather than pointing at nothing.
+ */
+function strategyRules(universal: string[], hasOverview: boolean): string[] {
+  return [
+    "Make 4 or 5 suggestions when the deck supports that many.",
+    "Size suggestions to the gap. A role that is one short of its target gets one suggestion; if you offer two for it, say in each rationale that they are alternatives to each other.",
+    "Prefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move a role count toward its target.",
+    ...(hasOverview ? ["Never suggest cutting a Key card listed under \"How this deck plays\"."] : []),
+    ...(universal.length > 0 ? [`Never suggest cutting ${universal.join(", ")} just to fix a role count.`] : []),
+  ];
+}
+
+/** Each rationale is drawn above its citation chips, so it never restates their figures. */
+const RATIONALE_RULES = [
+  "Each rationale is drawn above its citations, which the player sees as chips. Never restate a chip's FIGURE in the rationale (a role count such as \"removal: 5 of 6\", or a game count): say \"one short on removal\", not \"Removal is 5 of 6\", and spend the words on what the added card does in this deck and why the cut card can go.",
+  "A note citation is the exception: its note must still be quoted, word for word and in quotation marks, in the rationale.",
+  "Never open two rationales the same way: no two may begin with the same role or the same count.",
+];
+
+function strategyBlock(strategy: NonNullable<EvidencePack["strategy"]>): string {
+  return [
+    "How this deck plays (from its own overview):",
+    ...strategy.steps.map((step) => `- ${step}`),
+    ...(strategy.keyCards.length > 0 ? [`Key cards, never to be cut: ${strategy.keyCards.map((k) => k.name).join(", ")}.`] : []),
+  ].join("\n");
 }
 
 const SYSTEM = [

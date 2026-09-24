@@ -15,7 +15,8 @@ import type { z } from "zod";
  *    budget could outrun the route's `maxDuration` and leave no time to record the failure.
  *  - AT MOST ONE RETRY, spent on whichever retryable condition comes first: an overloaded or
  *    unreachable upstream (429, 5xx, 529, a dropped connection) or a reply that fails the
- *    caller's schema. A timeout is never retried.
+ *    caller's schema. A timeout is never retried, and a caller's `retryFloorMs` refuses a retry
+ *    that would start with too little of the deadline left to finish.
  *  - IT NEVER THROWS for an upstream, configuration or unexpected fault. A bad key, a retired model id or a
  *    malformed request comes back as `upstream_busy` with a server-side log line naming it, so
  *    the caller always reaches a terminal outcome (and refunds the allowance unit) rather than
@@ -57,6 +58,10 @@ export type ModelRequest<T> = {
   /** The reasoning effort (`output_config.effort`, Sonnet 5). Omitted, the request carries none
    *  and is byte for byte what it was before the field existed. */
   effort?: "low" | "medium" | "high";
+  /** The least of the deadline a RETRY needs to start. A retry that cannot finish still bills its
+   *  tokens and keeps the player waiting for a certain failure, so with less than this left the
+   *  call fails with the first attempt's class instead. Omitted, a retry takes whatever is left. */
+  retryFloorMs?: number;
 };
 
 /**
@@ -125,6 +130,10 @@ export async function callModel<T>(req: ModelRequest<T>, deps: ModelDeps = {}): 
   for (let attempt = 0; attempt < 2; attempt++) {
     const remaining = deadline - now();
     if (remaining <= 0) return failed(attempt === 0 ? "timeout" : last, usage);
+    if (attempt > 0 && req.retryFloorMs !== undefined && remaining < req.retryFloorMs) {
+      log(`[model] retry skipped: ${Math.round(remaining / 1000)}s left, ${Math.round(req.retryFloorMs / 1000)}s needed`);
+      return failed(last, usage);
+    }
 
     const result = await tryOnce(messages, req, remaining, log);
     usage = addUsage(usage, result.usage);

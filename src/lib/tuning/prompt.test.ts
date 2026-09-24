@@ -88,3 +88,34 @@ describe("buildPrompt", () => {
     expect(buildPrompt(pack).user).toContain("Gisa, Glorious Resurrector (Legendary Creature) [commander]");
   });
 });
+
+describe("v2's strategy and rationale rules", () => {
+  const withV2: EvidencePack = {
+    ...pack,
+    strategy: { steps: ["Attack with [[Oxen]] early."], keyCards: [{ oracleId: "ox", name: "Oxen" }] },
+    universal: [{ oracleId: "ring", name: "Sol Ring" }, { oracleId: "sig", name: "Arcane Signet" }],
+  };
+
+  it("appends the deck's own strategy and Key cards to the user message, after the pack", () => {
+    const { user } = buildPrompt(withV2);
+    expect(user.startsWith(buildPrompt(pack).user)).toBe(true);
+    expect(user.endsWith("\n\nHow this deck plays (from its own overview):\n- Attack with [[Oxen]] early.\nKey cards, never to be cut: Oxen.")).toBe(true);
+  });
+
+  it("names every universal staple in the order it is given, and the Key-card rule, in the system message", () => {
+    const { system } = buildPrompt(withV2);
+    expect(system).toContain("Never suggest cutting Sol Ring, Arcane Signet just to fix a role count.");
+    expect(system).toContain("Never suggest cutting a Key card listed under \"How this deck plays\".");
+    expect(system).toContain("Never restate a chip's FIGURE in the rationale");
+    expect(system).toContain("A note citation is the exception: its note must still be quoted, word for word");
+    expect(system).toContain("Never open two rationales the same way");
+  });
+
+  it("leaves out what would point at nothing: no overview, no block and no Key-card rule; no staples, no staple rule", () => {
+    const { system, user } = buildPrompt(pack);
+    expect(user).not.toContain("How this deck plays");
+    expect(system).not.toContain("Key card");
+    expect(system).not.toContain("just to fix a role count");
+    expect(system).toContain("Make 4 or 5 suggestions when the deck supports that many.");
+  });
+});
