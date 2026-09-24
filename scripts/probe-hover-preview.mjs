@@ -161,7 +161,16 @@ async function measure(page, surface, rowLocator) {
   if (opened === null) return;
 
   const at = await rowLocator.nth(index).boundingBox();
-  const x = Math.round(at.x + at.width / 2);
+  // Both ends of the move must keep the box on the pointer's RIGHT, or it flips
+  // mid-move and `left` jumps the other way on a working build. Mid-row alone
+  // did not guarantee that: the review page's second column starts right of
+  // centre, and mid-row plus 160 crosses the flip. 18 + 252 + 8 is the
+  // provider's gutter, width and margin.
+  const flipAt = (await page.evaluate(() => window.innerWidth)) - 18 - 252 - 8;
+  const x = Math.max(
+    Math.round(at.x) + 4,
+    Math.min(Math.round(at.x + at.width / 2), flipAt - 160),
+  );
   const y = Math.round(at.y + at.height / 2);
   await page.mouse.move(x, y);
   await page.waitForTimeout(150);
