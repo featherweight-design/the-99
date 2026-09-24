@@ -206,6 +206,22 @@ async function run() {
   check("a double press writes once and refuses the other as in flight",
     [a.kind, b.kind].sort(), ["in_flight", "written"]);
 
+  // 8b · A run the reaper failed while the model was answering reports `superseded`, never
+  // `written`, and its answer is neither stored nor charged.
+  await ageLedger();
+  await swap(body[3]); // left the deck in section 7
+  await analyze(deck.id);
+  const reapingModel: GenerateDeps = {
+    ...deps,
+    model: async (req, facts) => {
+      await fixture.execute(sql`update deck_synopses set status = 'done', outcome = 'interrupted'
+        where deck_id = ${deck.id}::uuid and status = 'pending'`);
+      return deps.model(req, facts);
+    },
+  };
+  check("a run reaped mid-call reports superseded", (await writeSynopsisFor(deck.id, USER, reapingModel)).kind, "superseded");
+  check("…and charges nothing", (await ledger()).find((r) => r.status === "spent"), undefined);
+
   // 9 · THE REAPER, on both paths: a run a crash left pending is failed, refunded, and frees the
   // deck, whether the next thing to arrive is a write or a read. Each path is proved on its own
   // stranded run, because a read reaping first would hide a write that never reaps.

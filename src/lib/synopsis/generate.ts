@@ -50,6 +50,9 @@ export type WriteResult =
   | { kind: "no_reading" }
   | { kind: "allowance" }
   | { kind: "in_flight" }
+  /** The reaper failed this run as `interrupted` before its answer landed; the answer was discarded
+   *  and nothing was charged. */
+  | { kind: "superseded" }
   /** A retry with nothing to retry, or a retry over a list the synopsis no longer describes. */
   | { kind: "nothing_to_retry" };
 
@@ -147,15 +150,26 @@ export async function readShownSynopsis(deckId: string, userId: string): Promise
   return row?.content ? (row as SynopsisRow) : null;
 }
 
-/** The fresh reading a write works from, with the list it describes. Null when there is none. */
+/**
+ * The fresh reading a write works from, with the list it describes. Null when there is none.
+ *
+ * ONE STORED ROW, checked either side of the reading. `readStoredReading` answers from its own
+ * transaction, so the row is read before and after it and must not have moved: a new analysis
+ * stored, or an edit marking it dirty, between the two would otherwise hand the model one list's
+ * profile under another list's fingerprint, and the synopsis would be stamped with a list its
+ * facts do not describe.
+ */
 async function freshReading(deckId: string, userId: string, deps?: StoredProfileDeps) {
-  const reading = await readStoredReading(deckId, userId, deps);
-  if (!reading?.fresh) return null;
-  const [row] = await db
-    .select({ list: deckProfiles.fingerprint })
+  const stamp = async () => (await db
+    .select({ list: deckProfiles.fingerprint, at: deckProfiles.computedAt, dirty: deckProfiles.dirty })
     .from(deckProfiles)
-    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
-  return row ? { profile: reading.profile, list: row.list } : null;
+    .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))))[0];
+  const before = await stamp();
+  const reading = await readStoredReading(deckId, userId, deps);
+  const after = await stamp();
+  if (!reading?.fresh || !before || !after || after.dirty) return null;
+  if (before.list !== after.list || before.at.getTime() !== after.at.getTime()) return null;
+  return { profile: reading.profile, list: after.list };
 }
 
 async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]): Promise<SynopsisFacts> {
@@ -281,8 +295,8 @@ async function run(
   }
 
   if (!outcome.ok) {
-    await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded" }, deps.now());
-    return { kind: "written", outcome: outcome.errorClass, synopsis: null };
+    const settled = await finishRun(started.runId, { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded" }, deps.now());
+    return settled ? { kind: "written", outcome: outcome.errorClass, synopsis: null } : { kind: "superseded" };
   }
 
   const checked = validateSynopsis(outcome.value, facts, await catalogFor(outcome.value, facts));
@@ -295,7 +309,7 @@ async function run(
   }
   const result = outcomeOf(content.verdicts);
   const written = await finishRun(started.runId, { outcome: result, content, usage: outcome.usage, charge }, deps.now());
-  if (!written) return { kind: "in_flight" };
+  if (!written) return { kind: "superseded" };
   return {
     kind: "written",
     outcome: result,
