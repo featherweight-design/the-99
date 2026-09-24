@@ -104,13 +104,14 @@ function ResumeRow(
   });
   const bodySize = deckBodySize(partnerName !== null);
   const count = `${deck.built} / ${bodySize}`;
-  // Decision 23. The long form leaves negative room for a name at all — 62px of
-  // pill, 28px of gaps and a 113px count against the 200px this line gets — so
-  // something has to not render, and it is never a partly truncated figure:
-  // `86 / 9…` reads as a different number in a way `Bruse Ta…` does not. A pair
-  // row therefore drops the clause outright. One boolean, no measurement, and
-  // not a new state — a deck with no roll-up entry already draws the count
-  // alone. The figure survives in the row's accessible name.
+  // Decision 23: a pair row draws the count alone, and the to-buy figure lives in
+  // the row's accessible name. The rule was made when the count shared line two
+  // with the pill and a pair's two names, which left it no room. The bracket-chip
+  // addendum moved the count to its own line beside the bar and kept the rule as
+  // it was (section C: the clause draws for "a roll-up entry and not a pair"), so
+  // it stands as Design's call rather than as a width this line cannot give. One
+  // boolean, and not a new state: a deck with no roll-up entry already draws the
+  // count alone.
   const clause = copies !== null && partnerName === null;
   return (
     <Link

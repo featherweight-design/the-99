@@ -570,7 +570,15 @@ const READ_CHIP_ROWS = `() => {
     // Line two's plates group: the pill, and the chip when there is one. Whole means laid out at
     // its content width: nothing in it gave way to the commander.
     const plates = lines[1]?.firstElementChild;
-    const platesWhole = plates ? plates.scrollWidth <= plates.clientWidth + 0.5 : false;
+    // By EDGE, against the row: the group is flex-none, so its own scroll and client widths
+    // agree on every build, and a pill and chip pushed past the row's right edge would be cut by
+    // the row's overflow while still reading whole. Its right edge must sit inside the row, and
+    // left of the commander beside it.
+    const pb = plates?.getBoundingClientRect();
+    const beside = plates?.nextElementSibling?.getBoundingClientRect();
+    const platesWhole = plates
+      ? pb.right <= r.right + 0.5 && (!beside || pb.right <= beside.left + 0.5) && pb.width > 0
+      : false;
     const count = a.querySelector('[data-resume-count]');
     const cb = count?.getBoundingClientRect();
     const countWhole = count

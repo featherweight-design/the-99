@@ -242,9 +242,9 @@ describe("ResumeDecks", () => {
     expect(screen.getByText("Ishai").style.textOverflow).toBe("ellipsis");
   });
 
-  // Decision 23. The long-form clause leaves negative room for a name at all,
-  // and a partly truncated figure is never the answer — so a pair row drops the
-  // clause outright and the figure survives in the accessible name.
+  // Decision 23, kept by the bracket-chip addendum (section C) when the count
+  // moved to its own line: a pair row drops the clause, and the figure survives
+  // in the accessible name.
   it("drops the to-buy clause on a pair row and keeps it in the accessible name", () => {
     render(
       <ResumeDecks
