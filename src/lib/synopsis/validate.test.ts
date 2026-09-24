@@ -281,3 +281,63 @@ describe("the contract's helpers", () => {
     expect(jobSupported({ claims: ["commander"], job: "Leads the deck from the command zone." }, new Set(["commander"]))).toBe(true);
   });
 });
+
+// Contract A (Hugh, 2026-09-24): a list drops the failing line; prose fails whole.
+describe("validateSynopsis — drop the line, not the section", () => {
+  it("drops a failing Key card and renders the rest when the minimum survives", () => {
+    const reply = good();
+    reply.keyCards.push({ card: "Gamble", claims: ["ramp"], job: "Ramps you out." });
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "keyCards")).toEqual({ section: "keyCards", status: "ok", failed: 0, total: 6 });
+    expect(r.keyCards!.map((k) => k.card)).toEqual(["Kratos", "Sol Ring", "Rhystic Study", "Chaos Warp", "Impact Tremors"]);
+  });
+
+  it("refuses a list whose survivors fall under its minimum, with the failing line's reason", () => {
+    const reply = good();
+    reply.keyCards[1] = { card: "Sol Ring", claims: ["ramp"], job: "Ramps you a turn ahead of every other player at the table, all game long." };
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "keyCards")).toMatchObject({ status: "refused", reason: "over_budget" });
+    expect(r.keyCards).toBeNull();
+  });
+
+  it("refuses a list past its maximum whole, even when every line passes", () => {
+    const reply = good();
+    reply.weaknesses = ["One gap shows.", "Two gaps show.", "Three gaps show.", "Four gaps show."];
+    expect(verdictOf(validateSynopsis(reply, FACTS, CATALOG), "weaknesses")).toMatchObject({ status: "refused", reason: "wrong_count" });
+  });
+
+  it("keeps the first Key card that checks out for a card named twice", () => {
+    const reply = good();
+    reply.keyCards.push({ card: "Sol Ring", claims: ["ramp"], job: "Ramps again." });
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "keyCards").status).toBe("ok");
+    expect(r.keyCards!.filter((k) => k.card === "Sol Ring").map((k) => k.job)).toEqual(["Ramps you a turn ahead."]);
+  });
+
+  it("drops a failing tip and a failing mulligan line inside a passing primer", () => {
+    const reply = good();
+    reply.primer.tips.push({ cards: ["Gamble"], text: "Find [[Gamble]] early." });
+    reply.primer.mulligan.keep.push("Keep a hand with 9 lands.");
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "primer").status).toBe("ok");
+    expect(r.primer!.tips).toEqual(good().primer.tips);
+    expect(r.primer!.mulligan.keep).toEqual(good().primer.mulligan.keep);
+    // A dropped line's marks never reach the card map the renderer reads.
+    expect(r.cards["gamble"]).toBeUndefined();
+  });
+
+  it("refuses the primer whole on a failing strategy step, whatever its lists do", () => {
+    const reply = good();
+    reply.primer.strategy.push("Play [[Craterhoof Behemoth]] last.");
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(verdictOf(r, "primer")).toMatchObject({ status: "refused", reason: "unknown_card" });
+    expect(r.primer).toBeNull();
+  });
+
+  it("drops a failing weakness and keeps one that checks out", () => {
+    const reply = good();
+    reply.weaknesses = ["A powerful deck in the wrong hands.", "Slow starts leave you exposed."];
+    const r = validateSynopsis(reply, FACTS, CATALOG);
+    expect(r.weaknesses).toEqual(["Slow starts leave you exposed."]);
+  });
+});
