@@ -46,13 +46,18 @@ export function isOpening({
  * the tab out of `idle`, which ends it. The one way a press's reply meets the hold is the
  * deck-change case `isOpening` names.
  */
-export function useOpeningGate(active: boolean): "off" | "wait" | "loader" {
+export function useOpeningGate(active: boolean, deckId: string): "off" | "wait" | "loader" {
   const [phase, setPhase] = useState<"off" | "wait" | "loader">(active ? "wait" : "off");
   const shownAt = useRef(0);
   // A fetch starting is adjusted during render, so the tab never paints its answer-less state once.
-  const [prevActive, setPrevActive] = useState(active);
-  if (prevActive !== active) {
-    setPrevActive(active);
+  const [prev, setPrev] = useState({ active, deckId });
+  if (prev.deckId !== deckId) {
+    // A NEW DECK starts its own opening: it never inherits the last deck's elapsed delay, and a
+    // loader held for the last deck is dropped, so a deck with nothing stored answers at once.
+    setPrev({ active, deckId });
+    setPhase(active ? "wait" : "off");
+  } else if (prev.active !== active) {
+    setPrev({ active, deckId });
     if (active && phase !== "loader") setPhase("wait");
   }
 
@@ -71,7 +76,8 @@ export function useOpeningGate(active: boolean): "off" | "wait" | "loader" {
       const t = setTimeout(() => setPhase("off"), Math.max(0, left));
       return () => clearTimeout(t);
     }
-  }, [phase, active]);
+  // The deck is a dependency so a new deck restarts the timers even when its phase reads the same.
+  }, [phase, active, deckId]);
 
   // Answered inside the delay: the answer, this render, with no frame of the waiting block.
   return phase === "wait" && !active ? "off" : phase;

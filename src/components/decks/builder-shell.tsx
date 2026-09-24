@@ -322,6 +322,7 @@ export function BuilderShell({
       storedPermits,
       peekSettled: profile.peekSettled,
     }),
+    deck.id,
   );
   const counts = deckCounts(cards, unresolvedCount);
 

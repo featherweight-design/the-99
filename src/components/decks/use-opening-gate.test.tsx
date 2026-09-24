@@ -14,13 +14,13 @@ const advance = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
 
 describe("useOpeningGate", () => {
   it("is off while nothing is being fetched", () => {
-    const { result } = renderHook(({ active }) => useOpeningGate(active), { initialProps: { active: false } });
+    const { result } = renderHook(({ active }) => useOpeningGate(active, "d1"), { initialProps: { active: false } });
     expect(result.current).toBe("off");
   });
 
   // A fast fetch goes straight to the answer: no loader, not even for a frame.
   it("never draws the loader for a fetch that answers inside the delay", () => {
-    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active), { initialProps: { active: true } });
+    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active, "d1"), { initialProps: { active: true } });
     expect(result.current).toBe("wait");
     advance(OPENING_DELAY_MS - 10);
     rerender({ active: false });
@@ -30,14 +30,14 @@ describe("useOpeningGate", () => {
   });
 
   it("draws the loader once the delay passes", () => {
-    const { result } = renderHook(({ active }) => useOpeningGate(active), { initialProps: { active: true } });
+    const { result } = renderHook(({ active }) => useOpeningGate(active, "d1"), { initialProps: { active: true } });
     advance(OPENING_DELAY_MS);
     expect(result.current).toBe("loader");
   });
 
   // Once drawn it never blinks: the answer waits behind it until the hold has run.
   it("holds a drawn loader for the full hold, even when the fetch answers at once", () => {
-    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active), { initialProps: { active: true } });
+    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active, "d1"), { initialProps: { active: true } });
     advance(OPENING_DELAY_MS);
     rerender({ active: false });
     expect(result.current).toBe("loader");
@@ -48,7 +48,7 @@ describe("useOpeningGate", () => {
   });
 
   it("releases at once when the fetch outlasted the hold", () => {
-    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active), { initialProps: { active: true } });
+    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active, "d1"), { initialProps: { active: true } });
     advance(OPENING_DELAY_MS + OPENING_HOLD_MS + 200);
     rerender({ active: false });
     advance(0);
@@ -57,9 +57,31 @@ describe("useOpeningGate", () => {
 
   // Turned on by a render (the tab opening), never a frame late: the flash lives in that frame.
   it("is waiting in the very render that starts the fetch", () => {
-    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active), { initialProps: { active: false } });
+    const { result, rerender } = renderHook(({ active }) => useOpeningGate(active, "d1"), { initialProps: { active: false } });
     rerender({ active: true });
     expect(result.current).toBe("wait");
+  });
+});
+
+describe("useOpeningGate across a deck change", () => {
+  const useGate = (props: { active: boolean; deckId: string }) => useOpeningGate(props.active, props.deckId);
+
+  it("starts the next deck's delay from zero rather than inheriting the last one's", () => {
+    const { result, rerender } = renderHook(useGate, { initialProps: { active: true, deckId: "a" } });
+    advance(OPENING_DELAY_MS - 20);
+    rerender({ active: true, deckId: "b" });
+    advance(40);
+    expect(result.current).toBe("wait");
+    advance(OPENING_DELAY_MS);
+    expect(result.current).toBe("loader");
+  });
+
+  it("drops a held loader for a next deck with nothing stored, at once", () => {
+    const { result, rerender } = renderHook(useGate, { initialProps: { active: true, deckId: "a" } });
+    advance(OPENING_DELAY_MS);
+    expect(result.current).toBe("loader");
+    rerender({ active: false, deckId: "b" });
+    expect(result.current).toBe("off");
   });
 });
 
