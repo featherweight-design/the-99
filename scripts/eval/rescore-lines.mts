@@ -5,16 +5,20 @@
  * `--fresh-facts`, for the facts themselves: each run's decks are rebuilt with the CURRENT
  * `factsFor` and the stored answers are re-validated against them (a facts fix, measured free).
  *
- * SELF-TEST FIRST. The line checks, rolled up under the shipped rule, must give exactly the
- * verdicts `validateSynopsis` gives on every answer. One disagreement and nothing is printed but
- * the disagreements, because a what-if built on checks that differ from the app's measures nothing.
+ * SELF-TEST FIRST. Since #918 the app's own contract IS the drop-the-line rule (contract A):
+ * `validateSynopsis` returns each section's surviving lines. So the line checks, rolled up under
+ * `dropLineRule` at Design's minimums, must give exactly the app's verdict for every section of
+ * every stored answer, and `dropLineContent` exactly the lines it kept. One disagreement and
+ * nothing is printed but the disagreements, because a what-if built on checks that differ from the
+ * app's measures nothing. `shippedRule` (the whole-section contract before #918) is no longer in
+ * the app to be checked against; it stays a pure function for the historical tables.
  */
 import "../lib/env.mjs";
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { DESIGN_MINIMUMS, dropLineRule, flatMinimums, mulliganFigureFailures, outsideMarks, shippedRule, type SectionPass } from "./lib/line-rule.mjs";
+import { DESIGN_MINIMUMS, dropLineContent, dropLineRule, flatMinimums, mulliganFigureFailures, outsideMarks, shippedRule, type SectionPass } from "./lib/line-rule.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { openSynopsis } from "./lib/synopsis-app.mjs";
 import { SYNOPSIS_VARIANTS } from "./variants/synopsis.mjs";
@@ -68,14 +72,21 @@ for (const run of readdirSync(runsDir).filter((r) => r.includes("-synopsis-")).s
       continue;
     }
     const catalog = await app.catalog(row.reply, fx);
-    const app_ = app.validate(row.reply, fx, catalog).verdicts;
+    const checked = app.validate(row.reply, fx, catalog);
+    const app_ = checked.verdicts;
     g.figureRefusals += app_.filter((v) => v.status === "refused" && v.reason === "uncomputed_figure").length;
     g.figureLines += mulliganFigureFailures(row.reply, fx);
     g.outside += outsideMarks(row.reply, fx, catalog) > 0 ? 1 : 0;
-    const mine = shippedRule(row.reply, fx, catalog);
+    const mine = dropLineRule(row.reply, fx, catalog, DESIGN_MINIMUMS);
+    const kept = dropLineContent(row.reply, fx, catalog);
+    const shownByApp = { overview: checked.overview, primer: checked.primer, keyCards: checked.keyCards, weaknesses: checked.weaknesses };
+    const shownByMe = { overview: kept.overview, primer: kept.primer, keyCards: kept.keyCards, weaknesses: kept.weaknesses };
     for (const v of app_) {
+      const s = v.section as keyof SectionPass;
       const ok = v.status === "ok";
-      if (mine[v.section as keyof SectionPass] !== ok) disagreements.push(`${run} ${row.cell} ${row.deckId} t${row.trial} ${v.section}: app ${v.status}${"reason" in v ? ` (${v.reason})` : ""}, line checks ${mine[v.section as keyof SectionPass] ? "ok" : "refused"}`);
+      const where = `${run} ${row.cell} ${row.deckId} t${row.trial} ${s}`;
+      if (mine[s] !== ok) disagreements.push(`${where}: app ${v.status}${"reason" in v ? ` (${v.reason})` : ""}, line checks ${mine[s] ? "ok" : "refused"}`);
+      else if (ok && JSON.stringify(shownByApp[s]) !== JSON.stringify(shownByMe[s])) disagreements.push(`${where}: both pass, but the kept lines differ`);
     }
     for (const [name, rule] of RULES) g.pass.get(name)!.push(rule(row.reply, fx as never, catalog as never));
   }
@@ -88,7 +99,7 @@ if (disagreements.length > 0) {
 
 const pct = (n: number, d: number) => (d === 0 ? "–" : `${((100 * n) / d).toFixed(0)}%`);
 const lines = ["# The overview under \"drop the line, not the section\"", "",
-  `A what-if, measured on the stored answers${args["fresh-facts"] ? ", re-validated against facts rebuilt with the current `factsFor`" : ""}. The line checks agree with \`validateSynopsis\` on every stored answer under the shipped rule (the self-test above passed). "Figure" counts primer sections refused for \`uncomputed_figure\`, then the mulligan lines naming a figure the facts do not carry. "Outside" is the share of answers naming a card that resolves to neither the deck nor the catalog, counted over every section whatever it was refused for (the per-run \`outside names\` in metrics-synopsis.md counts only \`unknown_card\` refusals, and undercounts).`, "",
+  `A what-if, measured on the stored answers${args["fresh-facts"] ? ", re-validated against facts rebuilt with the current `factsFor`" : ""}. The line checks agree with \`validateSynopsis\` (contract A, #918) on every section of every stored answer, verdict and kept lines both (the self-test above passed); the \"shipped\" rows are the whole-section contract before #918. "Figure" counts primer sections refused for \`uncomputed_figure\`, then the mulligan lines naming a figure the facts do not carry. "Outside" is the share of answers naming a card that resolves to neither the deck nor the catalog, counted over every section whatever it was refused for (the per-run \`outside names\` in metrics-synopsis.md counts only \`unknown_card\` refusals, and undercounts).`, "",
   "| set | cell | variant | rule | n | all 4 render | overview | primer | keyCards | weaknesses | $/answer | $/all-4 answer | figure refusals / lines | outside |",
   "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"];
 for (const [k, g] of [...groups].sort()) {

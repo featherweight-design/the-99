@@ -4,16 +4,19 @@ import type { SynopsisResponse } from "../../../src/lib/synopsis/response-schema
 import { figuresIn, jobSupported, marksIn, rendered, strengthClaim, unmarked, unmarkedNames } from "../../../src/lib/synopsis/validate";
 
 /**
- * A WHAT-IF contract, measured for Hugh (orchestrator, 2026-09-24): "drop the line, not the section".
+ * "Drop the line, not the section": measured for Hugh as a what-if (orchestrator, 2026-09-24),
+ * then shipped as the app's contract A (#918).
  * In the list sections a line that fails is dropped, and the section still renders when at least
  * `min` lines survive. Prose (the overview, and the primer's strategy steps) keeps whole-section
  * refusal.
  *
  * The line checks are the validator's own exported pieces: `strengthClaim`, `figuresIn`,
  * `unmarkedNames`, `rendered`, `marksIn`, `jobSupported`. Two small things the validator does not
- * export are restated, and that is why `shippedRule` exists: rolled up with the shipped
- * whole-section rule, these checks must reproduce `validateSynopsis`'s verdict on every stored
- * answer, and `rescore-lines.mts` refuses to print anything if they disagree once.
+ * export are restated. That is why `rescore-lines.mts` self-tests them: rolled up by
+ * `dropLineRule` and `dropLineContent`, they must reproduce `validateSynopsis`'s verdict and kept
+ * lines on every stored answer, or it prints nothing. `shippedRule`, the whole-section contract
+ * before #918, is no longer the app's and is checked against nothing; it stays for the historical
+ * tables.
  */
 type Card = { oracleId: string; name: string };
 type Catalog = ReadonlyMap<string, Card>;
@@ -134,4 +137,30 @@ export function outsideMarks(reply: SynopsisResponse, facts: SynopsisFacts, cata
   const unmark = (n: string) => n.replace(/^\[\[(.*)\]\]$/, "$1");
   const names = [...texts.flatMap(marksIn), ...tips.flatMap((t) => t.cards).map(unmark), ...reply.keyCards.map((k) => unmark(k.card))];
   return names.filter((n) => !known(n)).length;
+}
+
+/**
+ * What a section SHOWS under the drop-the-line rule: the passing lines of each list, in order, and
+ * the prose whole. Only meaningful for a section `dropLineRule` passes; a Key card named twice
+ * keeps its first passing line, as the rule counts it once.
+ */
+export function dropLineContent(reply: SynopsisResponse, facts: SynopsisFacts, catalog: Catalog) {
+  const c = lineChecks(facts, catalog);
+  const seen = new Set<string | null>();
+  return {
+    overview: reply.overview,
+    primer: {
+      strategy: reply.primer.strategy,
+      mulligan: { keep: reply.primer.mulligan.keep.filter(c.mulligan), sendBack: reply.primer.mulligan.sendBack.filter(c.mulligan) },
+      tips: reply.primer.tips.filter(c.tip),
+    },
+    keyCards: reply.keyCards.filter((k) => {
+      if (!c.keyCard(k)) return false;
+      const id = c.keyCardId(k);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }),
+    weaknesses: reply.weaknesses.filter(c.weakness),
+  };
 }

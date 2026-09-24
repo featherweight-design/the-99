@@ -52,6 +52,7 @@
   .decklist li { break-inside: avoid; padding: 1px 0; }
   .decklist .qty { font: 500 12px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); display: inline-block; min-width: 2.2ch; }
   .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .pair.single { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
   @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
   .side { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: grid; gap: 14px; align-content: start; }
   .side h3 { margin: 0; font: 600 13px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -66,6 +67,7 @@
   .cite { font: 12px/1.4 var(--mono); background: var(--sunken); padding: 3px 7px; border-radius: 4px; }
   .cite b { font-weight: 500; color: var(--muted); margin-right: 6px; }
   .empty { color: var(--muted); font-style: italic; margin: 0; }
+  .badge { justify-self: start; width: max-content; border: 1px solid var(--cut); color: var(--cut); border-radius: 999px; padding: 2px 8px; font: 500 9.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
   .prose p, .prose li { max-width: 65ch; }
   .prose h4 { margin: 8px 0 2px; font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .prose ul { margin: 0; padding-left: 18px; }
@@ -86,7 +88,7 @@
     <div style="display:grid;gap:6px">
       <span class="label">The 99 · deck analysis · blind read</span>
       <h1>Which answer reads better?</h1>
-      <p class="lede">Each deck shows two answers to the same question, written by two different setups. Which is which is hidden, and the sides are shuffled per deck. Pick the one you'd rather get as a player, or Same if neither is better. Your picks save as you go.</p>
+      <p class="lede">Each round is its own read. In a comparison round, each deck shows two answers written by two different setups; which is which is hidden, and the sides are shuffled per deck. Pick the one you'd rather get as a player, or Same. In an overview round, each deck shows one overview exactly as a player would see it; say whether you'd show it to your pod. Your picks save as you go.</p>
     </div>
     <div class="tabs" role="group" aria-label="Round" id="tabs"></div>
   </header>
@@ -119,7 +121,9 @@ const el = (tag, attrs = {}, ...kids) => {
 function rounds() {
   const seen = new Map();
   for (const p of state.pairs) if (!seen.has(p.round)) seen.set(p.round, p.roundTitle || p.round);
-  return [...seen].sort((a, b) => a[0].localeCompare(b[0]));
+  // By round NUMBER, so round 1 stays first whatever its feature is called.
+  const num = (id) => Number(/(\d+)$/.exec(id)?.[1] ?? 0);
+  return [...seen].sort((a, b) => num(a[0]) - num(b[0]));
 }
 function visible() { return state.pairs.filter((p) => p.round === state.round).sort((a, b) => a.order - b.order); }
 
@@ -164,7 +168,12 @@ function synopsisSide(a) {
   const out = [];
   for (const s of a.sections) {
     out.push(el("h4", {}, s.title));
-    if (s.refused) out.push(el("p", { class: "empty" }, "This section failed checking and would not be shown."));
+    if (s.refused) {
+      // The app's refused slot: its badge, its sentence and its failed count.
+      if (s.badge) out.push(el("span", { class: "badge" }, s.badge));
+      out.push(el("p", { class: "empty" }, typeof s.refused === "string" ? s.refused : "This section failed checking and would not be shown."));
+      if (s.detail) out.push(el("p", { class: "status" }, s.detail));
+    }
     else if (s.paragraph) out.push(el("p", {}, strip(s.paragraph)));
     else out.push(el("ul", {}, s.items.map((t) => el("li", {}, strip(t)))));
   }
@@ -205,18 +214,25 @@ function render() {
   const pair = list[Math.min(state.index, list.length - 1)];
   const side = pair.feature === "tuning" ? tuningSide : synopsisSide;
   const answer = state.answers[pair.id];
+  // An ABSOLUTE round shows one answer and asks whether it is good enough, not which is better.
+  const absolute = pair.mode === "absolute";
+  const question = absolute ? "Would you show this to your pod?" : "Which would you rather get?";
+  const choices = absolute ? [["yes", "Yes"], ["close", "Close"], ["no", "No"]] : [["left", "A is better"], ["same", "Same"], ["right", "B is better"]];
   main.append(
     el("section", { class: "deck" }, el("span", { class: "label" }, `Deck ${state.index + 1} of ${list.length}`), el("h2", {}, pair.deckName), el("span", { class: "status" }, pair.commander),
       ...(pair.decklist?.length ? [el("details", { class: "decklist" },
         el("summary", {}, `Decklist (${pair.decklist.reduce((n, c) => n + c.quantity, 0)} cards)`),
         el("ul", {}, pair.decklist.map((c) => el("li", {}, el("span", { class: "qty" }, String(c.quantity)), " ", c.name))))] : [])),
-    el("section", { class: "pair" },
-      el("article", { class: "side", "aria-label": "Answer A" }, el("h3", {}, "Answer A"), ...side(pair.left)),
-      el("article", { class: "side", "aria-label": "Answer B" }, el("h3", {}, "Answer B"), ...side(pair.right))),
+    absolute
+      ? el("section", { class: "pair single" },
+        el("article", { class: "side", "aria-label": "The overview" }, el("h3", {}, "The overview"), ...side(pair.answer)))
+      : el("section", { class: "pair" },
+        el("article", { class: "side", "aria-label": "Answer A" }, el("h3", {}, "Answer A"), ...side(pair.left)),
+        el("article", { class: "side", "aria-label": "Answer B" }, el("h3", {}, "Answer B"), ...side(pair.right))),
     el("section", { class: "verdict" },
-      el("span", { class: "label" }, "Which would you rather get?"),
+      el("span", { class: "label" }, question),
       el("div", { class: "picks" },
-        [["left", "A is better"], ["same", "Same"], ["right", "B is better"]].map(([k, t]) =>
+        choices.map(([k, t]) =>
           el("button", { class: "pick", "aria-pressed": String(answer?.pick === k), disabled: state.writable ? null : "", onclick: () => choose(pair, k) }, t))),
       el("label", { class: "label", for: "note" }, "Why, if you want to say (optional)"),
       el("textarea", { id: "note", onblur: () => saveNote(pair) }, answer?.note ?? ""),
