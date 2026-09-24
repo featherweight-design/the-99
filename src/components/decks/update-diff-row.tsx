@@ -34,6 +34,7 @@ import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips, CostTrack } from "..
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_RADIUS, ROW_SHELL } from "../ui/row-shell";
 import { BuyTag } from "./buy-tag";
+import { usePreviewRow } from "./hover-preview";
 import { ProxyTag } from "./proxy-tag";
 
 const copy = deckImportCopy.update.diff;
@@ -155,6 +156,9 @@ export type DiffRowCard = {
    * it has always had.
    */
   shortfall?: number;
+  /** Review page only: the art the hover preview shows. The update flow passes
+   *  none and mounts no `HoverPreviewProvider`, so its rows stay inert. */
+  imageUri?: string | null;
 };
 
 /** A copy count that moved rather than a card arriving or leaving whole. */
@@ -427,9 +431,12 @@ export function DiffRowOut({
   recount?: DiffRowRecount;
 } & DiffRowNameExtras) {
   const openRow = useRowOpen(card, siblings, review);
+  const previewHandlers = usePreviewRow(card.imageUri);
   return (
     <div
       onClick={openRow}
+      {...previewHandlers}
+      data-diff-row
       className={[
         ROW_SHELL,
         // Same wrap, and the same reason, as the adds column's first line: a
@@ -536,6 +543,7 @@ export function DiffRowIn({
   heldBy?: string | null;
 } & DiffRowNameExtras) {
   const openRow = useRowOpen(card, siblings, review);
+  const previewHandlers = usePreviewRow(card.imageUri);
   // Two lines on the phone, one above it. Only a row carrying a decision earns
   // the second line: a plain add has nothing on its right but a tag.
   const stacked = review && action !== null;
@@ -614,6 +622,8 @@ export function DiffRowIn({
   return (
     <div
       onClick={openRow}
+      {...previewHandlers}
+      data-diff-row
       className={[
         stacked ? ROW_SHELL_STACKED : ROW_SHELL,
         stacked ? ROW_BOX_STACKED : review ? ROW_BOX : ROW_BOX_IN_IMPORT,
