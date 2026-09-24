@@ -36,6 +36,9 @@ for (const run of readdirSync(runsDir).filter((r) => r.includes("-synopsis-")).s
   if (wanted && !wanted.has(run)) continue;
   const f = new URL(`${run}/rows.jsonl`, runsDir);
   if (!existsSync(f)) continue;
+  // First writes only: a repair run's rows describe a follow-up, not an answer of their own.
+  const firstRow = readFileSync(f, "utf8").split("\n").find(Boolean);
+  if (!firstRow || (JSON.parse(firstRow) as { feature: string }).feature !== "synopsis") continue;
   const meta = JSON.parse(readFileSync(new URL(`${run}/meta.json`, runsDir), "utf8")) as { split: { dev: string[] } };
   const facts = new Map((JSON.parse(readFileSync(new URL(`${run}/prepared.json`, runsDir), "utf8")) as { deckId: string; facts: never }[]).map((p) => [p.deckId, p.facts]));
   for (const line of readFileSync(f, "utf8").split("\n").filter(Boolean)) {
