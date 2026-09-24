@@ -26,3 +26,9 @@
 {"at":"2026-09-24T07:21:21.979Z","runId":"2026-09-24T07-10-12-181Z-tuning-heldout-cite-rules/a2","source":"msgbatch_01LADMKfNuvdcGtdDfSeXw6c","usd":0.007253,"requests":2}
 {"at":"2026-09-24T07:23:35.483Z","runId":"2026-09-24T07-21-32-794Z-tuning-heldout-cite-rules-overlay/a1","source":"msgbatch_018juQBJMvUDmq6XLqao4Ljx","usd":0.06326000000000001,"requests":18}
 {"at":"2026-09-24T07:24:58.034Z","runId":"2026-09-24T07-21-32-794Z-tuning-heldout-cite-rules-overlay/a2","source":"msgbatch_01Lx2HdTtrB3FKpsKZA6j2X3","usd":0.006745,"requests":2}
+{"at":"2026-09-24T07:38:26.035Z","runId":"2026-09-24T07-32-04-975Z-synopsis-calibration/a1","source":"realtime:12","usd":0.5112610000000001,"requests":12}
+{"at":"2026-09-24T07:40:42.961Z","runId":"2026-09-24T07-32-04-975Z-synopsis-calibration/a2","source":"realtime:2","usd":0.18230200000000002,"requests":2}
+{"at":"2026-09-24T07:48:10.107Z","runId":"2026-09-24T07-44-46-679Z-synopsis-dev-base/a1","source":"msgbatch_01Y14Fwm2HLnd1UoVjb9mAZj","usd":0.683269,"requests":36}
+{"at":"2026-09-24T07:51:33.385Z","runId":"2026-09-24T07-44-46-679Z-synopsis-dev-base/a2","source":"msgbatch_019uaTPRwNwLZL4Woh4dyW9V","usd":0.188676,"requests":4}
+{"at":"2026-09-24T07:54:49.389Z","runId":"2026-09-24T07-51-45-350Z-synopsis-dev-budgets/a1","source":"msgbatch_01VKsG8jBnc6mEA28qvPaVyX","usd":0.7887184999999998,"requests":36}
+{"at":"2026-09-24T07:57:12.100Z","runId":"2026-09-24T07-51-45-350Z-synopsis-dev-budgets/a2","source":"msgbatch_01UBsCJ8Uv3mrj5FQvQAu7LA","usd":0.230209,"requests":6}
