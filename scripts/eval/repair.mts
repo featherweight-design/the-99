@@ -31,7 +31,7 @@ import "../lib/env.mjs";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { DESIGN_MINIMUMS, dropLineRule, mulliganSpecific, type SectionPass } from "./lib/line-rule.mjs";
+import { DESIGN_MINIMUMS, droppedLines, dropLineRule, mulliganSpecific, type Dropped, type SectionPass } from "./lib/line-rule.mjs";
 import type { Got } from "./lib/batch.mjs";
 import { deckNameIndex, normalizeName } from "../../src/lib/synopsis/facts";
 import { buildParams, parseReply } from "./lib/request.mjs";
@@ -154,6 +154,13 @@ const add = (k: string, passed: boolean, usdOfAnswer: number) => { tally[k][0] +
 const allPass = (p: SectionPass) => Object.values(p).every(Boolean);
 /** Over what the app draws after its repair: Key cards, universal staples among them, mulligan lines and how many are specific, and refusals by reason. */
 const drawn = { keyCards: 0, universalKeyCards: 0, mulliganLines: 0, specific: 0, refusals: new Map<string, number>() };
+/**
+ * The lines contract A dropped from every section that RENDERS, read off the reply that section was
+ * drawn from (the repair's, for a section the repair replaced). Invisible to the all-four verdict,
+ * which is how round 3b's number words went unseen; a refused section is counted in `refusals`.
+ */
+const dropped = { mulligan: { lines: 0, dropped: 0, reasons: {} }, tips: { lines: 0, dropped: 0, reasons: {} }, keyCards: { lines: 0, dropped: 0, reasons: {} }, weaknesses: { lines: 0, dropped: 0, reasons: {} } } as Record<string, Dropped>;
+const SECTION_LISTS: Record<string, string[]> = { primer: ["mulligan", "tips"], keyCards: ["keyCards"], weaknesses: ["weaknesses"] };
 // Each repaired answer, with the sections its repair was asked for.
 const repaired = new Map<string, { answer: Answer<unknown>; refused: SectionId[] }>();
 if (stored) for (const [k, v] of stored.byAnswer) repaired.set(k, v);
@@ -172,16 +179,20 @@ for (const f of firsts) {
   const facts = factsOf.get(f.row.deckId)!;
   const firstDrop = f.row.reply ? dropLineRule(f.row.reply, facts, await app.catalog(f.row.reply, facts), DESIGN_MINIMUMS) : null;
   let repairDrop: SectionPass | null = null;
+  let repairLines: ReturnType<typeof droppedLines> | null = null;
+  let retakenNow: SectionId[] = [];
   if (rep) {
     repairRow = commonRow(cell, rep.answer, false, app.maxTokens);
     // Only a section refused now AND repaired then takes the repair's version: under fresh facts a
     // section the repair rewrote may pass on the first answer, and that one is kept.
     const retaken = rep.refused.filter((s) => f.refused.includes(s));
+    retakenNow = retaken;
     if (rep.answer.value) {
       const value = rep.answer.value as Reply;
       const catalog = await app.catalog(value, facts);
       const fresh = app.validate(value, facts, catalog);
       repairDrop = dropLineRule(value, facts, catalog, DESIGN_MINIMUMS);
+      repairLines = droppedLines(value, facts, catalog);
       const merged = mergeRetry(f.checked!, fresh, retaken).content;
       mergedVerdicts = merged.verdicts;
       shown = merged;
@@ -208,6 +219,17 @@ for (const f of firsts) {
       drawn.mulliganLines += 1;
       if (mulliganSpecific(line)) drawn.specific += 1;
     }
+    const firstLines = f.row.reply ? droppedLines(f.row.reply, facts, await app.catalog(f.row.reply, facts)) : null;
+    for (const v of mergedVerdicts) {
+      if (v.status !== "ok" || !SECTION_LISTS[v.section]) continue;
+      const source = retakenNow.includes(v.section) && repairLines ? repairLines : firstLines;
+      for (const list of SECTION_LISTS[v.section]) {
+        const d: Dropped = source![list as keyof ReturnType<typeof droppedLines>];
+        dropped[list].lines += d.lines;
+        dropped[list].dropped += d.dropped;
+        for (const [r, n] of Object.entries(d.reasons)) dropped[list].reasons[r] = (dropped[list].reasons[r] ?? 0) + n;
+      }
+    }
     for (const v of mergedVerdicts) if (v.status === "refused") drawn.refusals.set(`${v.section}:${v.reason}`, (drawn.refusals.get(`${v.section}:${v.reason}`) ?? 0) + 1);
   }
   if (out) appendFileSync(out, `${JSON.stringify({
@@ -218,11 +240,14 @@ for (const f of firsts) {
 }
 // "shipped" and (B) read the app's OWN verdicts (`validateSynopsis`, `mergeRetry`), so under the
 // contract in force they are the app's first write and the app's write-plus-repair. (A) and (A+B)
-// read this harness's drop-the-line rules as measured before #918; from contract v6 on, the app's
-// own verdict is stricter than they are, and the app's answer is (B).
-for (const [k, name] of [["shipped", "the app's first write"], ["a", "(A) drop the line, pre-#918 rules"], ["b", "(B) the app's write plus its repair"], ["ab", "(A+B), pre-#918 rules"]] as const) {
+// read this harness's drop-the-line rules, which since round 3c restate v6's (the rescore-lines
+// self-test holds them to it), so (A) matches the app's first write and the app's answer is (B).
+for (const [k, name] of [["shipped", "the app's first write"], ["a", "(A) drop the line"], ["b", "(B) the app's write plus its repair"], ["ab", "(A+B)"]] as const) {
   const [n, u] = tally[k];
   log(`${name}: all four sections on ${n} of ${firsts.length} (${Math.round((100 * n) / firsts.length)}%); $${(u / Math.max(1, n)).toFixed(4)} per accepted answer at real-time prices`);
 }
 log(`as drawn after the repair: ${drawn.universalKeyCards} of ${drawn.keyCards} Key cards are universal staples; ${drawn.specific} of ${drawn.mulliganLines} mulligan lines specific (${Math.round((100 * drawn.specific) / Math.max(1, drawn.mulliganLines))}%); refusals left: ${[...drawn.refusals].map(([k, n]) => `${k} ${n}`).join(", ") || "none"}`);
+for (const [list, d] of Object.entries(dropped)) {
+  log(`dropped lines in rendered sections, ${list}: ${d.dropped} of ${d.lines} (${Math.round((100 * d.dropped) / Math.max(1, d.lines))}%)${d.dropped ? `: ${Object.entries(d.reasons).map(([r, n]) => `${r} ${n}`).join(", ")}` : ""}`);
+}
 process.exit(0);

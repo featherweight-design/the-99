@@ -111,7 +111,40 @@ cards Hugh called load-bearing. The base prompt scored 0 on the same definition,
 have caught this. What a player knows is load-bearing has to come from the player, as a stated
 intent or a "never cut" mark on a card. The model's own overview cannot supply it.
 
-Hugh's blind read of the two setups on this prompt is round 3 on the same page: ROUND3_TBD.
+### Hugh's blind read, round 3
+
+S against sonnet-low again, both on the `strategy` prompt, on the same 15 held-out decks.
+**Hugh preferred S on 8, sonnet-low on 4, and called 1 even (Mutant Menace).** Two decks went
+unanswered, Sultai Arisen and Scrappy Survivors: S's side was empty on both, because its answer
+came back malformed after two attempts, with about 6,000 thinking tokens against the 8,000 ceiling.
+The pre-registered rule fails on its first clause either way (8 is more than 5), even with both
+empty decks scored for sonnet-low (8 against 6). **Sonnet-low fails again, so S stays for tuning.**
+
+His notes, verbatim (A is the left side, B the right):
+
+- **HD - Kratos** (sonnet-low): "I like that A has more options, but several of the justifications are redundant: "Ramp remains far above", "Ramp is still above", "Ramp sits far above". This looks bad/unpolished."
+- **HD - Avatar Aang** (S): "Again, I prefer more options in A, but the text is repetitive "Removal remains under", "With removal at 2 or 3", "Removal sits at 2 of 3""
+- **HD - Gods** (S): "Much more thorough and helpful analysis here. This is the best one I've read so far."
+- **HD Tune - Counter Intelligence** (S): "Both of these are strong, but A is slightly better."
+- **HD - Soldiers** (S): "B is better, but I will say that some of these responses are a bit too verbose"
+- **HD - Tovolar** (sonnet-low): "Mostly the same, but a slight preference towards B"
+- **HD Tune - Mutant Menace** (even): "Quality of response in A is better, but number of suggestions in B is better."
+- **HD Tune - Prismari Artistry** (sonnet-low): "Both similar, but slight preference towards A"
+- No note on Wizards, Yuriko, Zombies or Elves (S), or on Eldrazi (sonnet-low).
+
+What the notes add to round 1's:
+
+1. **More options still read better** (Kratos, Avatar Aang, Mutant Menace). Unchanged from round 1.
+2. **Repeated openings read as unpolished.** Each swap that restates the same role count ("Ramp
+   remains far above", "Ramp is still above") was named on an S side and on a sonnet-low side, so it
+   is the prompt's to fix rather than the model's: the tuning lane can ask that no two rationales
+   open on the same count.
+3. **The strategy prompt is his best-rated answer yet** (Gods, S). With round 3's automatic
+   metrics above, it moves S toward his round 1 notes.
+
+**Recommendation for tuning:** S on the `strategy` prompt, plus the repeated-opening rule. The
+tuning lane should also look at the two malformed answers before it ships, since a player would see
+each as a failed run. The cost is under Allowances.
 
 ## Overview
 
@@ -266,6 +299,19 @@ answer), the same use comes to $34.86 a month. Hugh accepted this knowing there 
 holds 0 rows, so every figure here is a worst case, not a forecast.
 
 **Revisit when** `model_calls` shows real monthly spend passing $10.
+
+**Tuning on the strategy prompt doubles its line.** Round 3's recommendation, S on the
+`strategy` prompt, costs $0.0828 per answer ($0.0956 per accepted answer, 13 of 15), against
+$0.0415 on the base prompt:
+
+| tuning, full use | per full day | per 30 days | $10 alarm | $20 stop |
+|---|---|---|---|---|
+| S, base prompt | $1.16 | $34.86 | day 9 | day 18 |
+| S, strategy prompt | $2.32 | $69.55 | day 5 | day 9 |
+| the owner alone, S, strategy prompt | $0.83 | $24.84 | | owner's $5 share on day 7 |
+
+Still a worst case with no usage behind it; it is here so the allowance ruling is made knowing
+it.
 
 The overview's cost per answer under v6 with the Mulligan budget is $0.050 ($0.051 per accepted
 answer, 44 of 45 accepted), against the $0.049 these figures use. That is a cent, and it moves no

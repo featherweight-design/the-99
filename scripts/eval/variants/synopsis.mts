@@ -125,3 +125,24 @@ SYNOPSIS_VARIANTS["primer-budget-b"] = {
   reason: "Round 3b on v6: primer-budget with every mulligan line naming a card or a curve point, and a worked line that names a card. The first version held the budget and lost the specific share.",
   prompt: (m) => ({ system: `${m.system}\n${PRIMER_BUDGET_RULES_B}`, user: m.user }),
 };
+
+/**
+ * Round 3c (v2 of the patch). primer-budget-b's worked lines taught number words: "two-drop" and
+ * "three-drop" read as 2 and 3 to the figures rule, so 22 of 184 held-out mulligan lines named a
+ * figure the deck lacks and contract A dropped them unseen (0 of 180 under v6). The synopsis lane's
+ * pre-open pass on #934 found it. So the worked lines carry no number at all, the rule restores the
+ * app's "a line of play" rather than narrowing it, and the one length target is the app's own,
+ * read from `CHAR_BUDGETS` as the system message already states it.
+ */
+const PRIMER_BUDGET_RULES_C = [
+  `Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters as rendered, and aim for about ${CHAR_BUDGETS.mulligan - 25}. Write 8 to 12 words.`,
+  "Every mulligan line names one card from the decklist, as [[Name]], a point on the curve, or a line of play, never a list of cards. Any number in it still has to be one of the mulligan figures.",
+  "The land range the app shows above the Mulligan is not one of your lines and does not count toward any line's length.",
+  'Two lines sized to the budget: "[[Sol Ring]] with nothing to cast after it stalls out." (50), and "Early ramp backed by a way to draw more cards." (46).',
+].join("\n");
+
+SYNOPSIS_VARIANTS["primer-budget-c"] = {
+  id: "primer-budget-c",
+  reason: "Round 3c on v6: primer-budget-b with number-free worked lines, the app's own length target, and 'a line of play' allowed. b's worked lines taught number words the figures rule drops.",
+  prompt: (m) => ({ system: `${m.system}\n${PRIMER_BUDGET_RULES_C}`, user: m.user }),
+};
