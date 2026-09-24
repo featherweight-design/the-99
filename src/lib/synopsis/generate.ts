@@ -171,7 +171,8 @@ async function freshReading(deckId: string, userId: string, deps?: StoredProfile
   return { profile: reading.profile, list: row.list };
 }
 
-async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]): Promise<SynopsisFacts> {
+/** Exported for the eval harness, which must run this exact input builder rather than a copy. */
+export async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]): Promise<SynopsisFacts> {
   const ids = profile.cards.map((c) => c.oracleId);
   const texts = ids.length === 0 ? [] : await db
     .select({ oracleId: cards.oracleId, oracleText: cards.oracleText })
@@ -180,8 +181,9 @@ async function factsFor(profile: Parameters<typeof buildSynopsisFacts>[0]): Prom
   return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])));
 }
 
-/** The catalog cards Weaknesses names that the deck does not hold. */
-async function catalogFor(reply: SynopsisResponse, facts: SynopsisFacts): Promise<Map<string, Card>> {
+/** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,
+ *  which must run this exact read rather than a copy. */
+export async function catalogFor(reply: SynopsisResponse, facts: SynopsisFacts): Promise<Map<string, Card>> {
   const deck = deckNameIndex(facts.cards);
   const keys = [...new Set(reply.weaknesses.flatMap(marksIn).map(normalizeName))].filter((k) => !deck.has(k));
   if (keys.length === 0) return new Map();

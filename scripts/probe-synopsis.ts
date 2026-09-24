@@ -322,6 +322,13 @@ async function run() {
   const { version: v3 } = await commitVersion(deck.id, null);
   check("a commit whose list only an OLDER synopsis describes pins nothing",
     await pinSynopsisToVersion(deck.id, USER, { versionId: v3.id, list: committedList }), false);
+  // AT COMMIT: a run for the committed list that lands AFTER the commit, before its after() pin
+  // runs, is not what the version was committed with, and is never copied into it.
+  await fixture.execute(sql`insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content, created_at)
+    select deck_id, user_id, ${committedList}, contract_version, model, model_call_id, 'done', outcome, content, now() + interval '1 second'
+    from deck_synopses where id = ${latest.id}::uuid`);
+  check("a synopsis written after the commit is not copied into it",
+    await pinSynopsisToVersion(deck.id, USER, { versionId: v3.id, list: committedList }), false);
 
   // 12 · The allowance: spent, the write says so, the analysis is untouched.
   await swap(body[1]); // left the deck in section 5

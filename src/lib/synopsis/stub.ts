@@ -41,7 +41,9 @@ export function stubReply(facts: SynopsisFacts, mode: StubMode): ModelOutcome<Sy
 
   const commander = facts.commanders[0] ?? facts.cards[0].name;
   // Four DISTINCT other cards: tips and key cards must name different cards. Spells first, then
-  // lands, so a land-heavy deck still passes; a whole deck always has four.
+  // lands, so a land-heavy deck still passes. A deck with fewer than four distinct cards besides
+  // its commander (99 copies of one basic) gets a refused key-cards section, as the real contract
+  // would give it; `survived` means the stub TRIED to pass, not that it always can.
   const others = [...new Set([
     ...facts.cards.filter((c) => !c.categories.includes("land")),
     ...facts.cards.filter((c) => c.categories.includes("land")),
