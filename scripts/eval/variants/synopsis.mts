@@ -133,6 +133,10 @@ SYNOPSIS_VARIANTS["primer-budget-b"] = {
  * pre-open pass on #934 found it. So the worked lines carry no number at all, the rule restores the
  * app's "a line of play" rather than narrowing it, and the one length target is the app's own,
  * read from `CHAR_BUDGETS` as the system message already states it.
+ *
+ * Shipped as the app's own prompt in #934 (contract 7), so from then on `base` IS this text, and
+ * these three budget variants add a second copy on top of it. They are kept to reproduce the
+ * contract v6 measurements in the report, which were taken before it shipped.
  */
 const PRIMER_BUDGET_RULES_C = [
   `Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters as rendered, and aim for about ${CHAR_BUDGETS.mulligan - 25}. Write 8 to 12 words.`,
