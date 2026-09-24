@@ -1,5 +1,6 @@
 /**
- * `pnpm eval:repair --from <runId> --cell sonnet-low --variant budgets-plus [--dry-run]`
+ * `pnpm eval:repair --from <runId> --cell sonnet-low --variant budgets-plus [--fresh-facts] [--dry-run]`
+ * `pnpm eval:repair --from <runId> --cell … --variant … [--fresh-facts] --rescore <repairRunId>`
  *
  * A WHAT-IF for Hugh (orchestrator, 2026-09-24): after a first write, ONE follow-up call per answer
  * that had a section refused, asking for those sections again with the reasons they failed.
@@ -20,7 +21,8 @@
  * `--fresh-facts` rebuilds every deck's facts with the CURRENT `factsFor` first, so the first
  * answers are judged, and the repair is asked for and judged, under the contract as it now ships
  * (a facts fix landing after the first write, measured on the path production would take).
- * `--rescore <repairRunId>` sends nothing: it re-reads that run's stored repair replies and scores
+ * `--rescore <repairRunId>` sends nothing, and takes the same `--from`, `--cell` and `--variant` the
+ * repair run was sent with: it re-reads that run's stored repair replies and scores
  * everything again.
  */
 import "../lib/env.mjs";

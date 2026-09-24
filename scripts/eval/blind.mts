@@ -4,7 +4,9 @@
  *
  * Builds the pairs for Hugh's blind read from rows already on disk. It sends nothing and reads no
  * database. It writes two files under `docs/superpowers/eval/blind/`:
- *  - `<feature>-<round>-pairs.json`, the documents seeded into the page's `pairs` collection. Each holds a
+ *  - `<feature>-<round>-pairs.json`, the documents to seed into the page's `pairs` collection. This
+ *    command writes the file only: Claude seeds it with the Artifact tool's `write_db`, one document
+ *    per pair, since only the artifact's owner session can write that store. Each holds a
  *    deck's name, its commander, its decklist and the two answers, as `left` and `right`, with no cell, model or
  *    cost anywhere in it;
  *  - `<feature>-<round>-key.json`, which side is which. It never goes to the page. It un-blinds the answers
