@@ -56,7 +56,13 @@ export type ModelRequest<T> = {
   deadlineMs: number;
 };
 
-type Messages = Pick<Anthropic["messages"], "parse">;
+/**
+ * `create`, never the SDK's `parse`. `parse` is `create(...).then(parseMessage)`, and a reply that
+ * fails the schema THROWS out of the second half — after the reply arrived and was billed, with
+ * its usage on the message the throw discards. Calling `create` and parsing here keeps the usage
+ * of every reply that came back, malformed or not.
+ */
+type Messages = Pick<Anthropic["messages"], "create">;
 
 export type ModelDeps = {
   /** Injected in tests; the real client otherwise. */
@@ -143,28 +149,47 @@ async function tryOnce<T>(
 ): Promise<Attempt<T>> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), remainingMs);
+  // Built inside the `try`: a fault converting the schema is still a terminal outcome, never a throw.
+  let format: ReturnType<typeof zodOutputFormat<z.ZodType<T>>>;
+  let response: Anthropic.Message;
   try {
-    const response = await messages.parse(
+    format = zodOutputFormat(req.schema);
+    response = await messages.create(
       {
         model: req.model,
         max_tokens: req.maxTokens,
         system: req.system,
         messages: [{ role: "user", content: req.user }],
-        output_config: { format: zodOutputFormat(req.schema) },
+        output_config: { format },
       },
       { signal: controller.signal, timeout: remainingMs, maxRetries: 0 },
     );
-    // A refusal or a reply cut off at max_tokens parses to nothing: the shape was not met.
-    if (response.parsed_output == null) {
-      log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
-      return { kind: "retryable", errorClass: "malformed", usage: usageOf(response.usage) };
-    }
-    return { kind: "ok", value: response.parsed_output as T, usage: usageOf(response.usage) };
   } catch (err) {
     return classify(err, controller.signal.aborted, log);
   } finally {
     clearTimeout(timer);
   }
+
+  // The reply is here and billed: every outcome from now on carries its usage.
+  const usage = usageOf(response.usage);
+  // The first text block, as the SDK's own parser reads it. None at all — a refusal, or a reply
+  // that was all thinking when it hit max_tokens — is the shape not met.
+  const text = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
+  let parsed: T | null = null;
+  if (text) {
+    try {
+      parsed = format.parse(text.text) as T;
+    } catch (err) {
+      // The zod output format throws when the reply is not JSON or fails the schema.
+      log(`[model] malformed: ${err instanceof Error ? err.message : String(err)}`);
+      return { kind: "retryable", errorClass: "malformed", usage };
+    }
+  }
+  if (parsed == null) {
+    log(`[model] malformed: no parsed output (stop_reason ${response.stop_reason})`);
+    return { kind: "retryable", errorClass: "malformed", usage };
+  }
+  return { kind: "ok", value: parsed, usage };
 }
 
 /** Most specific first: every timeout class extends a connection or abort error. */

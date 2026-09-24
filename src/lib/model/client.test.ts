@@ -8,9 +8,22 @@ const schema = z.object({ answer: z.string() });
 const req = { model: "caller-model", system: "s", user: "u", maxTokens: 100, schema, deadlineMs: 90_000 };
 
 type ApiUsage = { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null };
-const reply = (value: unknown, usage: ApiUsage = { input_tokens: 10, output_tokens: 2 }) => ({ parsed_output: value, usage, stop_reason: "end_turn" });
+const u10 = { input_tokens: 10, output_tokens: 2 };
+/** A reply as `messages.create` returns it: the value as its text, or no text block at all for
+ *  null (a refusal, or a reply that was all thinking when it hit max_tokens). */
+const reply = (value: unknown, usage: ApiUsage = u10) => ({
+  content: value === null ? [] : [{ type: "text", text: JSON.stringify(value) }],
+  usage,
+  stop_reason: value === null ? "max_tokens" : "end_turn",
+});
+/** A reply that CAME BACK, billed, and fails the schema: `answer` should be a string. */
+const badShapeReply = (usage: ApiUsage = u10) => ({ content: [{ type: "text", text: '{"answer": 3}' }], usage, stop_reason: "end_turn" });
+/** A reply that is not JSON at all, cut off mid-object. */
+const truncatedReply = (usage: ApiUsage = u10) => ({ content: [{ type: "text", text: '{"answ' }], usage, stop_reason: "max_tokens" });
 const busy = () => new Anthropic.InternalServerError(529, undefined, "overloaded", new Headers());
 const rateLimited = () => new Anthropic.RateLimitError(429, undefined, "slow down", new Headers());
+/** An SDK-side parse failure THROWN rather than returned: still classified, though `create` itself
+ *  no longer parses. */
 const badShape = () => new Anthropic.AnthropicError("Failed to parse structured output");
 const unauthorized = () => new Anthropic.AuthenticationError(401, undefined, "bad key", new Headers());
 const badRequest = () => new Anthropic.BadRequestError(400, undefined, "bad model", new Headers());
@@ -21,7 +34,7 @@ type Call = { body: { model: string }; opts: { timeout?: number; maxRetries?: nu
 function scripted(script: Array<unknown | Error>) {
   const calls: Call[] = [];
   const messages = {
-    parse: vi.fn(async (body: Call["body"], opts: Call["opts"]) => {
+    create: vi.fn(async (body: Call["body"], opts: Call["opts"]) => {
       calls.push({ body, opts });
       const step = script[calls.length - 1];
       if (step instanceof Error) throw step;
@@ -69,7 +82,7 @@ describe("callModel", () => {
 
   it("logs a reply that failed the schema", async () => {
     const lines: string[] = [];
-    const { messages } = scripted([badShape(), badShape()]);
+    const { messages } = scripted([badShapeReply(), truncatedReply()]);
     await callModel(req, { messages, log: (l) => lines.push(l) });
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatch(/^\[model\] malformed:/);
@@ -79,6 +92,31 @@ describe("callModel", () => {
     const { messages, calls } = scripted([badShape(), badShape()]);
     expect(await callModel(req, { messages, log: quiet })).toEqual({ ok: false, errorClass: "malformed" });
     expect(calls).toHaveLength(2);
+  });
+
+  it("keeps the usage of a reply whose TEXT fails the schema, into the retry's success", async () => {
+    // The reply arrived and was billed; only its shape was wrong. The SDK's `parse` would have
+    // thrown here and taken the usage with it.
+    const { messages, calls } = scripted([
+      badShapeReply({ input_tokens: 300, output_tokens: 8_000 }),
+      reply({ answer: "x" }, { input_tokens: 300, output_tokens: 700 }),
+    ]);
+    expect(await callModel(req, { messages, log: quiet })).toEqual({
+      ok: true, value: { answer: "x" },
+      usage: { inputTokens: 600, outputTokens: 8_700, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    });
+    expect(calls).toHaveLength(2);
+  });
+
+  it("keeps the usage of two replies that fail the schema, into the failed outcome", async () => {
+    const { messages } = scripted([
+      badShapeReply({ input_tokens: 300, output_tokens: 8_000 }),
+      truncatedReply({ input_tokens: 300, output_tokens: 8_000 }),
+    ]);
+    expect(await callModel(req, { messages, log: quiet })).toEqual({
+      ok: false, errorClass: "malformed",
+      usage: { inputTokens: 600, outputTokens: 16_000, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    });
   });
 
   it("treats a reply that parsed to nothing (a refusal, a cut-off) as malformed", async () => {
@@ -158,7 +196,7 @@ describe("callModel", () => {
     vi.useFakeTimers();
     const calls: number[] = [];
     const messages = {
-      parse: (_body: unknown, opts: { signal: AbortSignal }) => new Promise((_r, reject) => {
+      create: (_body: unknown, opts: { signal: AbortSignal }) => new Promise((_r, reject) => {
         calls.push(1);
         opts.signal.addEventListener("abort", () => reject(new Anthropic.APIUserAbortError()));
       }),
@@ -184,8 +222,8 @@ describe("callModel", () => {
     let clock = 0;
     const { messages, calls } = scripted([busy(), reply({ answer: "x" })]);
     const timed = {
-      parse: async (body: Call["body"], opts: Call["opts"]) => {
-        const out = messages!.parse(body as never, opts as never);
+      create: async (body: Call["body"], opts: Call["opts"]) => {
+        const out = messages!.create(body as never, opts as never);
         clock += 89_000;
         return out;
       },
@@ -199,8 +237,8 @@ describe("callModel", () => {
     let clock = 0;
     const { messages, calls } = scripted([busy(), reply({ answer: "x" })]);
     const slow = {
-      parse: async (body: Call["body"], opts: Call["opts"]) => {
-        const out = messages!.parse(body as never, opts as never);
+      create: async (body: Call["body"], opts: Call["opts"]) => {
+        const out = messages!.create(body as never, opts as never);
         clock += 90_000;
         return out;
       },
