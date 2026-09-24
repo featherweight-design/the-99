@@ -91,6 +91,42 @@ export function manaLetters(text: string, identity: readonly string[]): string[]
     .filter((run) => new Set(run).size === run.length && [...run].sort().join("") === own);
 }
 
+const COUNT_WORD = "(?:\\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten)";
+const LAND_COUNT = [
+  new RegExp(`\\b${COUNT_WORD}(?:\\s+(?:to|or)\\s+${COUNT_WORD})?(?:\\s+or\\s+more)?\\s+(?:total\\s+)?lands?\\b`, "i"),
+  /\bno lands?\b/i,
+  /\ball[- ]spells?\b/i,
+];
+
+/**
+ * A Mulligan line stating a land count (Hugh, 2026-09-24: 56% of lines restated the range). The
+ * app now draws the range itself as a fixed line, so any count here repeats it: a figure next to
+ * "land(s)", "no lands" or an all-spell hand. Read outside card marks. Against the eval harness's
+ * 82 tagged lines it agrees with the REDUNDANT tag on 71.
+ */
+export function statesLandCount(text: string): boolean {
+  const bare = unmarked(text);
+  return LAND_COUNT.some((re) => re.test(bare));
+}
+
+/**
+ * A Mulligan line that puts the commander IN the opening hand, which it never is: it starts in the
+ * command zone. Only a hand HOLDING it ("with [[Kratos]]", "[[Kratos]] in hand"); naming the
+ * commander as a thing to cast ("hands that can cast [[Yuriko]] soon") is fine.
+ */
+export function commanderInHand(text: string, commanders: readonly string[]): boolean {
+  return commanders.some((name) => {
+    const mark = `\\[\\[${escapeRegExp(name)}\\]\\]`;
+    return new RegExp(`\\b(?:with|holding|containing|includes?|including|has)\\s+${mark}`, "i").test(text)
+      || new RegExp(`\\[\\[${escapeRegExp(name)}\\]\\]\\s+in\\s+(?:your\\s+|the\\s+|an?\\s+)?(?:opening\\s+)?hand`, "i").test(text);
+  });
+}
+
+/** A Mulligan line opening with its heading's own word, which the box already says. */
+export function headingPrefix(text: string): boolean {
+  return /^\s*(?:keep|send(?:\s+it)?\s+back|mulligan)\b/i.test(text);
+}
+
 export function strengthClaim(text: string): boolean {
   return STRENGTH.some((re) => re.test(text));
 }
@@ -298,6 +334,9 @@ export function validateSynopsis(
   const mulliganLine = (text: string) => line((r) => {
     prose(r, text, CHAR_BUDGETS.mulligan);
     if (figuresIn(text).some((n) => !allowedFigures.has(n))) r.refuse("uncomputed_figure");
+    if (statesLandCount(text)) r.refuse("land_count");
+    if (commanderInHand(text, facts.commanders)) r.refuse("commander_in_hand");
+    if (headingPrefix(text)) r.refuse("heading_prefix");
   });
   const tipLine = (tip: SynopsisResponse["primer"]["tips"][number]) => line((r) => {
     prose(r, tip.text, CHAR_BUDGETS.tip);
@@ -348,6 +387,7 @@ export function validateSynopsis(
   const [, keep, sendBack, keptTips] = primer.kept;
   return {
     verdicts: [overview.verdict, primer.verdict, keyCards.verdict, weaknesses.verdict],
+    lands: { keep: facts.keep, sendBack: facts.sendBack },
     overview: ok(overview.verdict) ? reply.overview : null,
     primer: ok(primer.verdict)
       ? { strategy, mulligan: { keep: keep as string[], sendBack: sendBack as string[] }, tips: keptTips as SynopsisResponse["primer"]["tips"] }

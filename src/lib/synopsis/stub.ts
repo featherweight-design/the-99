@@ -56,7 +56,6 @@ export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false):
     ...facts.cards.filter((c) => c.categories.includes("land")),
   ].filter((c) => !c.universalStaple).map((c) => c.name).filter((n) => n !== commander))];
   const pick = (i: number) => others[i] ?? commander;
-  const { low, high } = facts.keep;
 
   const reply: SynopsisResponse = {
     overview: `[[${commander}]] leads this deck, and [[${pick(0)}]] and [[${pick(1)}]] carry its plan.`,
@@ -67,8 +66,8 @@ export function stubReply(facts: SynopsisFacts, mode: StubMode, repair = false):
         `Close the game with [[${commander}]].`,
       ],
       mulligan: {
-        keep: [`Keep a hand with ${low === high ? low : `${low} to ${high}`} lands.`, `Keep a hand with [[${pick(2)}]] in it.`],
-        sendBack: ["Send back a hand with no lands.", "Send back a hand with nothing to cast early."],
+        keep: [`A hand with [[${pick(2)}]] in it gets the plan going.`],
+        sendBack: ["A hand with nothing to cast early falls behind."],
       },
       tips: [
         { cards: [commander, pick(0)], text: `Cast [[${pick(0)}]] after [[${commander}]] is out.` },

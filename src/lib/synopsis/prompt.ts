@@ -36,7 +36,7 @@ const SYSTEM = [
   "Sections:",
   `- overview: one paragraph, at most ${CHAR_BUDGETS.overview} characters: what the deck is and how it wins.`,
   `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters.`,
-  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, each at most ${CHAR_BUDGETS.mulligan} characters, about what opening hand to keep and what to send back. Use only the figures given under "Mulligan figures"; state no other number.`,
+  `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, each at most ${CHAR_BUDGETS.mulligan} characters, about what opening hand to keep and what to send back. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells": each line names a card, a point on the curve, or a line of play instead. Do not begin a line with "Keep", "Send back" or "Mulligan"; the heading says it. The commander starts in the command zone, never in the opening hand: never write a hand "with" or "holding" it. Use only the figures given under "Mulligan figures"; state no other number.`,
   `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice. List the tip's cards in "cards", and name exactly those cards in its text. Each text at most ${CHAR_BUDGETS.tip} characters.`,
   `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, never one marked "universal staple" (a card nearly every deck plays says nothing about this one), each with one line, at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
   `- weaknesses: ${range(SECTION_COUNTS.weaknesses)} weaknesses of how the deck plays, untiered and unranked, each at most ${CHAR_BUDGETS.weakness} characters.`,
@@ -91,8 +91,9 @@ export function buildSynopsisPrompt(
   lines.push("", "Mulligan figures (the only numbers the mulligan lines may state):");
   lines.push(`- Lands, counting land-backed double-faced cards: ${facts.lands}`);
   lines.push(`- Ramp pieces: ${facts.ramp}`);
-  lines.push(`- A keepable seven-card hand holds ${facts.keep.low} to ${facts.keep.high} lands.`);
-  lines.push(`- Send back a hand with ${facts.sendBack.none} to ${facts.sendBack.under} lands, or ${facts.sendBack.over} or more.`);
+  // The land range itself is drawn by the app as a fixed line (contract 6). It is stated here so the
+  // lines can agree with it, and flagged so they do not repeat it.
+  lines.push(`- Shown by the app, not to be restated: a keepable seven-card hand holds ${facts.keep.low} to ${facts.keep.high} lands; send back ${facts.sendBack.none} to ${facts.sendBack.under} lands, or ${facts.sendBack.over} or more.`);
   if (facts.commanderManaValues.length > 0) {
     lines.push(`- Commander mana value (a turn to cast it on is this number): ${facts.commanderManaValues.join(" and ")}`);
   }

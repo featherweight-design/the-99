@@ -42,7 +42,8 @@ describe("buildSynopsisPrompt", () => {
   // given and is refused for them (the harness's 56 lines).
   it("states the send-back bounds and each commander's mana value", () => {
     const { user } = buildSynopsisPrompt({ ...FACTS, sendBack: { none: 0, under: 1, over: 5 }, commanderManaValues: [4, 3] });
-    expect(user).toContain("Send back a hand with 0 to 1 lands, or 5 or more.");
+    expect(user).toContain("send back 0 to 1 lands, or 5 or more.");
+    expect(user).toContain("Shown by the app, not to be restated");
     expect(user).toContain("Commander mana value (a turn to cast it on is this number): 4 and 3");
   });
 
