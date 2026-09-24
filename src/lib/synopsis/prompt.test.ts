@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SynopsisFacts } from "./facts";
 import { CHAR_BUDGETS, SECTION_COUNTS } from "./limits";
 import { buildSynopsisPrompt } from "./prompt";
+import { figuresIn } from "./validate";
 import type { CheckedSynopsis } from "./types";
 
 const FACTS: SynopsisFacts = {
@@ -117,9 +118,22 @@ describe("buildSynopsisPrompt", () => {
     const repair = buildSynopsisPrompt(FACTS, { keep, refused: ["primer"] }).system;
     for (const system of [first, repair]) {
       expect(system).toContain(`Mulligan lines are the tightest budget in the answer: at most ${CHAR_BUDGETS.mulligan} characters`);
-      expect(system).toContain("names ONE card from the decklist, as [[Name]], or ONE point on the curve");
+      expect(system).toContain(`aim for about ${CHAR_BUDGETS.mulligan - 25}. Write 8 to 12 words.`);
+      expect(system).toContain("a point on the curve, or a line of play, never a list of cards");
       // Last, after the plus rules, as measured: the harness verified the prompt byte for byte.
-      expect(system.endsWith("stalls out.\" (49).")).toBe(true);
+      expect(system.endsWith("draw more cards.\" (46).")).toBe(true);
+    }
+  });
+
+  it("gives worked lines that state no figure, so a model copying them is never refused for one", () => {
+    // The first version's examples said "two-drop" and "three-drop": `figuresIn` reads both as
+    // figures, and a line copying them on a deck without a 2 or a 3 was dropped silently.
+    const system = buildSynopsisPrompt(FACTS).system;
+    const worked = [...system.split("\n").at(-1)!.matchAll(/"([^"]+)" \(\d+\)/g)].map((m) => m[1]);
+    expect(worked).toHaveLength(2);
+    for (const line of worked) {
+      expect(figuresIn(line), line).toEqual([]);
+      expect(line.replace(/\[\[|\]\]/g, "").length, line).toBeLessThanOrEqual(CHAR_BUDGETS.mulligan);
     }
   });
 });

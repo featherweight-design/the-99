@@ -17,8 +17,8 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 //    are named (Gruul), never written as mana letters.
 // 6: the Mulligan's land range is a fixed line the model does not write; a generated line may not
 //    state a land count, hold the commander in hand, or open with its heading's word.
-// 7: the Mulligan's budget restated in the prompt (eval harness round 3b): all four sections
-//    rendered on 98% of held-out answers, against 89% on 6. The validator is unchanged.
+// 7: the Mulligan's budget restated in the prompt (eval harness, primer-budget-c): all four
+//    sections rendered on 100% of held-out answers, against 89% on 6. The validator is unchanged.
 export const SYNOPSIS_CONTRACT_VERSION = 7;
 
 /** A pending run older than this was abandoned; the read-time reaper fails it as `interrupted`
