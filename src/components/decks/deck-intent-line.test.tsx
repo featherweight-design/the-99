@@ -47,6 +47,14 @@ describe("DeckIntentLine", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(copy.refused);
   });
 
+  it("says the save failed and frees the field when the action rejects", async () => {
+    draw("go wide", false, vi.fn<Save>(() => Promise.reject(new Error("network"))));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.save })));
+    expect(screen.getByRole("alert")).toHaveTextContent(copy.refused);
+    expect(screen.getByRole("button", { name: copy.save })).not.toBeDisabled();
+  });
+
   it("clears the row when the line is saved empty", async () => {
     const save = draw("go wide");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: copy.editAria })));

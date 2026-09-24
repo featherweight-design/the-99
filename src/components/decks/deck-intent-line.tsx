@@ -53,7 +53,10 @@ export function DeckIntentLine({
     setRefused(null);
     const form = new FormData();
     form.set("intent", draft.trim());
-    const result = await save(deckId, form);
+    // A rejection is a refusal: the field must never stay locked with nothing said.
+    const result = await save(deckId, form).catch(
+      (): DeckMutationResult => ({ ok: false, message: copy.refused }),
+    );
     setSaving(false);
     if (!result.ok) {
       setRefused(result.message);
