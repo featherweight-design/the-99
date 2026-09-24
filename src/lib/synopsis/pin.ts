@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { deckSynopses, deckVersionSynopses } from "../../db/schema";
+import { deckProfiles, deckSynopses, deckVersionSynopses } from "../../db/schema";
 import { isNewestVersion, type CommitPin } from "../profile/stored";
 
 /**
@@ -35,6 +35,13 @@ export async function pinSynopsisToVersion(deckId: string, userId: string, pin: 
     // THE DRAFT'S synopsis, then its list: an older run written for this same list (write A, write
     // B, revert to A, commit) is history, not what the player was reading, and is never copied.
     if (!match || match.fingerprint !== pin.list) return false;
+    // AND THE DRAFT IS NOT STALE. A synopsis for A, an edit to B and a revert to A leaves the deck
+    // dirty: the synopsis reads as stale, and a commit made from a stale draft records none (brief
+    // §2.4). The commit's `after()` runs this BEFORE the analysis pin, which may clear `dirty`.
+    const [reading] = await db.select({ list: deckProfiles.fingerprint, dirty: deckProfiles.dirty })
+      .from(deckProfiles)
+      .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId)));
+    if (!reading || reading.dirty || reading.list !== pin.list) return false;
     const written = await db
       .insert(deckVersionSynopses)
       .select(db

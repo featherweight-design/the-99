@@ -250,6 +250,17 @@ async function run() {
   await state();
   check("a read reaps a stranded run too", await fate(onRead), { status: "done", outcome: "interrupted", unit: "refunded" });
 
+  // 9a · The write's reap survives a spent allowance: the reservation is refused and rolled back,
+  // and the reap before it must have committed on its own, or the deck stays locked.
+  await swap(body[4]); // left the deck in section 9
+  await analyze(deck.id);
+  const spentFill = await rows<{ id: string }>(sql`insert into model_calls (user_id, feature, status)
+    select ${USER}, 'synopsis', 'spent' from generate_series(1, 10) returning id`);
+  const onSpent = await strand();
+  check("a write with the allowance spent is refused", (await writeSynopsisFor(deck.id, USER, deps)).kind, "allowance");
+  check("…but its reap still committed", (await fate(onSpent)).outcome, "interrupted");
+  await fixture.execute(sql`delete from model_calls where id in (${sql.join(spentFill.map((r) => sql`${r.id}::uuid`), sql`, `)})`);
+
   // 9b · A first write refused in EVERY section shows nothing, so it costs nothing.
   await ageLedger();
   await swap(body[2]); // left the deck in section 6
@@ -295,6 +306,16 @@ async function run() {
   // for another list makes the committed list's own run stale, and a commit then pins nothing.
   const [latest] = await rows<{ id: string }>(sql`select id from deck_synopses where deck_id = ${deck.id}::uuid
     and status = 'done' order by created_at desc limit 1`);
+  await fixture.execute(sql`insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
+    select deck_id, user_id, 'another-list', contract_version, model, model_call_id, 'done', outcome, content
+    from deck_synopses where id = ${latest.id}::uuid`);
+  // A draft that is DIRTY records no synopsis, even when its list matches the synopsis's.
+  await fixture.execute(sql`delete from deck_synopses where fingerprint = 'another-list' and deck_id = ${deck.id}::uuid`);
+  await fixture.execute(sql`update deck_profiles set dirty = true where deck_id = ${deck.id}::uuid`);
+  const { version: vDirty } = await commitVersion(deck.id, null);
+  check("a commit from a dirty draft pins no synopsis",
+    await pinSynopsisToVersion(deck.id, USER, { versionId: vDirty.id, list: committedList }), false);
+  await fixture.execute(sql`update deck_profiles set dirty = false where deck_id = ${deck.id}::uuid`);
   await fixture.execute(sql`insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
     select deck_id, user_id, 'another-list', contract_version, model, model_call_id, 'done', outcome, content
     from deck_synopses where id = ${latest.id}::uuid`);
@@ -351,7 +372,21 @@ async function live(fixtureDeck: string) {
     await fixture.execute(sql`delete from deck_synopses where deck_id = ${deckId}::uuid`);
     await computeAndStoreProfile(deckId, userId, profileDeps);
     const started = Date.now();
-    const result = await writeSynopsisFor(deckId, userId, { ...defaultDeps(), profile: profileDeps });
+    const liveDeps = defaultDeps();
+    const debug = process.argv.includes("--debug");
+    const result = await writeSynopsisFor(deckId, userId, { ...liveDeps, profile: profileDeps, model: async (req, facts) => {
+      const out = await liveDeps.model(req, facts);
+      // --debug: what the refusals were ABOUT, which the stored run keeps only for passing sections.
+      if (debug && out.ok) {
+        const { unmarkedNames } = await import("../src/lib/synopsis/validate");
+        const names = [...new Set(facts.cards.flatMap((c) => [c.name, ...c.name.split(" // ")]))];
+        const texts = [out.value.overview, ...out.value.primer.strategy, ...out.value.primer.mulligan.keep,
+          ...out.value.primer.mulligan.sendBack, ...out.value.primer.tips.map((t) => t.text), ...out.value.keyCards.map((k) => k.job), ...out.value.weaknesses];
+        for (const t of texts) { const bare = unmarkedNames(t, names); if (bare.length) console.log(`UNMARKED ${JSON.stringify(bare)} in: ${t}`); }
+        for (const k of out.value.keyCards) console.log(`JOB ${k.job.length}: ${k.job}`);
+      }
+      return out;
+    } });
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     const [r] = await rows<{ outcome: string; input_tokens: number | null; output_tokens: number | null; content: unknown }>(sql`
       select outcome, input_tokens, output_tokens, content from deck_synopses where deck_id = ${deckId}::uuid

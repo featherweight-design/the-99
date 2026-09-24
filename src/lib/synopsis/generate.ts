@@ -203,12 +203,28 @@ async function startRun(
   model: string,
   now: Date,
   retryOf: string | null,
-): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" }> {
+  /** False on a retry, which rewrites the synopsis for this very list on purpose. */
+  checkReuse: boolean,
+): Promise<{ kind: "started"; runId: string } | { kind: "allowance" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
+  // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
+  // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
+  // the deck for as long as the allowance stays spent.
+  await db.transaction((tx) => reapSynopses(tx, deckId, now));
   try {
     const runId = await db.transaction(async (tx) => {
-      await reapSynopses(tx, deckId, now);
       const unit = await reserveModelCall(tx, userId, "synopsis", now);
       if (!unit) throw new AllowanceSpentError();
+      // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
+      // read "no synopsis" before either wrote; if the first finished before the second got here,
+      // the one-pending index is clear again and only this check stops a second, charged write.
+      if (checkReuse) {
+        const [shownNow] = await tx.select({ id: deckSynopses.id, fingerprint: deckSynopses.fingerprint })
+          .from(deckSynopses)
+          .where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId), eq(deckSynopses.status, "done"),
+            sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`))
+          .orderBy(desc(deckSynopses.createdAt)).limit(1);
+        if (shownNow?.fingerprint === list) throw new AlreadyWrittenError();
+      }
       const [row] = await tx.insert(deckSynopses).values({
         deckId, userId, fingerprint: list, contractVersion: SYNOPSIS_CONTRACT_VERSION,
         model, modelCallId: unit.id, status: "pending", retryOf, createdAt: now,
@@ -218,10 +234,16 @@ async function startRun(
     return { kind: "started", runId };
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: "allowance" };
+    if (err instanceof AlreadyWrittenError) {
+      const synopsis = await readShownSynopsis(deckId, userId);
+      if (synopsis) return { kind: "reused", synopsis };
+    }
     if (isUniqueViolation(err)) return { kind: "in_flight" };
     throw err;
   }
 }
+
+class AlreadyWrittenError extends Error {}
 
 /**
  * The outcome and the unit, together. Guarded on `pending`, so a run the reaper already failed
@@ -282,7 +304,7 @@ async function run(
   const refused = base ? refusedSections(base.content) : null;
   const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined);
 
-  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null);
+  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry);
   if (started.kind !== "started") return started;
 
   let outcome: ModelOutcome<SynopsisResponse>;

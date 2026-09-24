@@ -40,9 +40,13 @@ export function stubReply(facts: SynopsisFacts, mode: StubMode): ModelOutcome<Sy
   if (mode === "timeout") return { ok: false, errorClass: "timeout" };
 
   const commander = facts.commanders[0] ?? facts.cards[0].name;
-  // Spells, not lands: a tip and a key card read as a stub, and a basic's name repeats.
-  const spells = facts.cards.filter((c) => !c.categories.includes("land") && c.name !== commander);
-  const pick = (i: number) => spells[i % Math.max(1, spells.length)]?.name ?? commander;
+  // Four DISTINCT other cards: tips and key cards must name different cards. Spells first, then
+  // lands, so a land-heavy deck still passes; a whole deck always has four.
+  const others = [...new Set([
+    ...facts.cards.filter((c) => !c.categories.includes("land")),
+    ...facts.cards.filter((c) => c.categories.includes("land")),
+  ].map((c) => c.name).filter((n) => n !== commander))];
+  const pick = (i: number) => others[i] ?? commander;
   const { low, high } = facts.keep;
 
   const reply: SynopsisResponse = {

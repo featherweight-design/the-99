@@ -81,6 +81,18 @@ describe("the stub", () => {
     expect(run("malformed")).toBe("malformed");
   });
 
+  it("passes on a deck of lands with only a few spells, naming distinct cards", () => {
+    const landHeavy: SynopsisFacts = {
+      ...facts,
+      cards: ["Kratos", "Sol Ring", "Mountain", "Forest", "Command Tower", "Exotic Orchard"].map((name) => ({
+        oracleId: `id-${name}`, name, typeLine: "Card", quantity: 1,
+        categories: ["Kratos", "Sol Ring"].includes(name) ? [] : ["land" as const], oracleText: null,
+      })),
+    };
+    const reply = stubReply(landHeavy, "survived");
+    expect(reply.ok && validateSynopsis(reply.value, landHeavy, new Map()).verdicts.map((v) => v.status)).toEqual(["ok", "ok", "ok", "ok"]);
+  });
+
   it("is the model everywhere but production, unless a run opts in", () => {
     expect(synopsisLive({ NODE_ENV: "development" })).toBe(false);
     expect(synopsisLive({ NODE_ENV: "test" })).toBe(false);

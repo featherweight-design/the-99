@@ -1671,13 +1671,15 @@ export async function commitDeckVersion(
   // alone. `pinAnalysisToVersion` writes nothing when an edit has moved the deck off this list
   // since, and nothing for a version that is not a whole deck (ruling 1). The synopsis is COPIED
   // beside it, never written: a commit writes no prose (ruling 7), and the version keeps the draft's
-  // synopsis only when it was written for exactly this list (brief §2.4). Both are best-effort.
+  // synopsis only when it was written for exactly this list from a draft that is not stale (brief
+  // §2.4). The synopsis goes FIRST: the analysis pin may clear `dirty`, which the synopsis pin reads.
+  // Both are best-effort.
   const committed = pin;
   if (committed) {
-    after(() => Promise.all([
-      pinAnalysisToVersion(deckId, userId, committed),
-      pinSynopsisToVersion(deckId, userId, committed),
-    ]));
+    after(async () => {
+      await pinSynopsisToVersion(deckId, userId, committed);
+      await pinAnalysisToVersion(deckId, userId, committed);
+    });
   }
   revalidateClaims(deckId, userId);
   return result;

@@ -19,8 +19,13 @@ if (SYNOPSIS_REAPER_CUTOFF_MS >= RESERVATION_TTL_MS) {
   throw new Error("SYNOPSIS_REAPER_CUTOFF_MS must be below RESERVATION_TTL_MS");
 }
 
-/** One budget across the client's two attempts. */
-export const SYNOPSIS_DEADLINE_MS = 90_000;
+/**
+ * One budget across the client's two attempts. 110s, as tuning's (#902): at an 8,000-token ceiling
+ * adaptive thinking plus the in-deadline retry runs 83-100s, and `probe:synopsis --live` timed out
+ * three calls of five at 90s. The action runs from the deck page, whose `maxDuration` (120s, set by
+ * tuning D1) must stay above this or the platform kills the call before it can refund.
+ */
+export const SYNOPSIS_DEADLINE_MS = 110_000;
 /**
  * The answer's worst case, from the contract's own counts and budgets (below), since a reply past
  * them is refused anyway. At every section's maximum: overview 576, strategy 5 × 144, mulligan
