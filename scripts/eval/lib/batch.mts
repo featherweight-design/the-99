@@ -55,7 +55,9 @@ export async function countTokens(params: Params): Promise<number> {
  */
 export async function sendBatch(requests: Sent[], log: (line: string) => void): Promise<{ batchId: string; results: Got[] }> {
   const api = anthropic().messages.batches;
-  const batch = await api.create({ requests: requests.map((r) => ({ custom_id: r.customId, params: r.params })) });
+  // Never retried: a connection lost after the server accepted the batch would submit and bill a
+  // second one the run holds no id or ledger entry for. A failed create ends the run instead.
+  const batch = await api.create({ requests: requests.map((r) => ({ custom_id: r.customId, params: r.params })) }, { maxRetries: 0 });
   log(`batch ${batch.id}: ${requests.length} requests submitted`);
   let status = batch.processing_status;
   let last = "";

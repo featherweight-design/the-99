@@ -82,7 +82,10 @@ heldOut.forEach((deckId, order) => {
   // Both answers must come from the same deck as the page shows it: a deck edited on staging
   // between the two runs would put the base's decklist beside a candidate written for another.
   const prepared = base.prepared.get(deckId);
-  if (!prepared || JSON.stringify(prepared.pack) !== JSON.stringify(candidate.prepared.get(deckId)?.pack)) {
+  // The DECK is compared, not the whole pack: a variant such as `trim` rewrites the evidence it adds
+  // (the staples) while the deck under it is the same one.
+  const deckOf = (p?: { pack: { commanders: unknown; cards: unknown } }) => JSON.stringify(p && [p.pack.commanders, p.pack.cards]);
+  if (!prepared || deckOf(prepared) !== deckOf(candidate.prepared.get(deckId))) {
     throw new Error(`deck ${deckId}: the two runs saw different packs; build pairs from runs over the same deck snapshot`);
   }
   pairs.push({

@@ -181,7 +181,7 @@ for (const f of firsts) {
   const firstUsd = f.row.usdRealtime;
   const repairUsd = (repairRow.usdRealtime as number | undefined) ?? 0;
   const aPass = !!firstDrop && allPass(firstDrop);
-  const abPass = aPass || (!!firstDrop && (Object.keys(firstDrop) as SectionId[]).every((s) => firstDrop[s] || (!!rep?.refused.includes(s) && !!repairDrop?.[s])));
+  const abPass = aPass || (!!firstDrop && (Object.keys(firstDrop) as SectionId[]).every((s) => firstDrop[s] || (!!rep?.refused.includes(s) && f.refused.includes(s) && !!repairDrop?.[s])));
   add("shipped", before, firstUsd);
   add("a", aPass, firstUsd);
   add("b", after, firstUsd + repairUsd);
