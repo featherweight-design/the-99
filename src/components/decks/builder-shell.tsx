@@ -1169,8 +1169,8 @@ export function BuilderShell({
                         busy={synopsis.view.busy}
                         deckName={deck.name}
                         art={findingArt}
-                        // A write is offered only over a current reading AND a state read for it.
-                        readingFresh={readingFresh && synopsis.view.current}
+                        readingFresh={readingFresh}
+                        settled={synopsis.view.current}
                         onWrite={synopsis.write}
                         onRetry={synopsis.retry}
                         onReanalyze={profile.request}

@@ -36,6 +36,7 @@ export function SynopsisOverview({
   deckName,
   art,
   readingFresh,
+  settled,
   onWrite,
   onRetry,
   onReanalyze,
@@ -46,6 +47,9 @@ export function SynopsisOverview({
   art: FindingArt;
   /** The reading beside it is current: a write control is offered only over one. */
   readingFresh: boolean;
+  /** The state was read for the list and reading on screen. Until it is, what it says about a
+   *  write is about the moment before, so no press is live over it. */
+  settled: boolean;
   onWrite: () => void;
   onRetry: (synopsisId: string) => void;
   /** The banner's Re-analyze, for the modal over a reading that is itself stale (6d). */
@@ -57,7 +61,7 @@ export function SynopsisOverview({
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
   const left = Math.max(0, allowance.limit - allowance.used);
   const spent = left === 0;
-  const canWrite = readingFresh && !state.pending;
+  const canWrite = readingFresh && settled && !state.pending;
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,
   // which is false when the list already has its overview; a section retry always spends. Every
   // credit out says so, whatever the press.
@@ -65,6 +69,16 @@ export function SynopsisOverview({
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
   const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = spent ? spentNote : spendNote;
+
+  // Ruling D, drawn under whatever the older overview shows (its paragraph, or its refused
+  // Overview slot): the write it offers, or what became of the last one.
+  const followUp = stale && readingFresh
+    ? state.lastRefused
+      ? <RefusedSlot sentence={synopsisCopy.overviewRefused} failed={state.lastRefused.failed} total={state.lastRefused.total} onRetry={canWrite ? onWrite : null} busy={busy} note={note} spent={spent} />
+      : state.lastFailed
+      ? <WriteRow line={synopsisCopy.failed} label={synopsisCopy.tryAgain} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
+      : <WriteRow line={synopsisCopy.olderThanList} label={synopsisCopy.writeNew} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
+    : null;
 
   let body: React.ReactNode;
   if (!synopsis && state.lastRefused) {
@@ -90,13 +104,7 @@ export function SynopsisOverview({
         <p className="text-[13.5px] leading-[1.65] md:text-[15px] md:leading-[1.7] md:max-w-[760px] text-[var(--fg-body)] [text-wrap:pretty]">
           <SynopsisText text={content.overview} cards={content.cards} art={art} />
         </p>
-        {stale && readingFresh ? (
-          state.lastRefused
-            ? <RefusedSlot sentence={synopsisCopy.overviewRefused} failed={state.lastRefused.failed} total={state.lastRefused.total} onRetry={canWrite ? onWrite : null} busy={busy} note={note} spent={spent} />
-            : state.lastFailed
-            ? <WriteRow line={synopsisCopy.failed} label={synopsisCopy.tryAgain} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
-            : <WriteRow line={synopsisCopy.olderThanList} label={synopsisCopy.writeNew} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
-        ) : null}
+        {followUp}
       </>
     );
   } else if (overviewVerdict?.status === "refused") {
@@ -111,6 +119,8 @@ export function SynopsisOverview({
         spent={spent}
       />
     );
+    // A stale overview's own refused section is not retried; ruling D's write replaces it.
+    if (followUp) body = <>{body}{followUp}</>;
   }
 
   return (

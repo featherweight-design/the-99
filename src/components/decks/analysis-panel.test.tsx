@@ -343,6 +343,18 @@ describe("AnalysisPanel", () => {
       expect(climbCell.className).toMatch(/md:row-start-2/);
     });
 
+    it("adds no second row, and no row gap, without an overview", () => {
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={ready()} onRequest={onRequest}>
+            <div>{MIX}</div>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+      const grid = screen.getByTestId("verdict-cell").parentElement!;
+      expect(grid.className).not.toMatch(/grid-rows|gap-y/);
+    });
+
     it("is absent before a first reading", () => {
       withOverview({ kind: "idle" });
       expect(screen.queryByText("the overview")).toBeNull();

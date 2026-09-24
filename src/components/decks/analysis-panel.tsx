@@ -180,7 +180,7 @@ function Verdict({
       {/* DOM order is the phone's reading order: the overview, the box, then the climb. At 1300 the
           grid puts the overview over the climb in the left column and spans the box down the right;
           the second row takes any slack, so a tall box never opens a gap under the overview. */}
-      <div className="flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[30px] md:gap-y-[26px]">
+      <div className={`flex flex-col gap-[22px] md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:items-start ${overview ? "md:grid-rows-[auto_1fr] md:gap-x-[30px] md:gap-y-[26px]" : "md:gap-[30px]"}`}>
         {overview ? <div className="min-w-0 md:col-start-1 md:row-start-1">{overview}</div> : null}
         <div data-testid="verdict-cell" className={`min-w-0 md:col-start-2 md:row-start-1 ${overview ? "md:row-span-2" : ""}`}>
           <VerdictBlock

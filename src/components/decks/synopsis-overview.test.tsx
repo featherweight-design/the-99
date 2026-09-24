@@ -15,7 +15,7 @@ const onWrite = vi.fn();
 const onRetry = vi.fn();
 const onReanalyze = vi.fn();
 const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
-const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean }> = {}) =>
+const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean }> = {}) =>
   render(
     <CardDetailProvider fetchCard={async () => null}>
       <SynopsisOverview
@@ -24,6 +24,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         deckName="Hoof"
         art={new Map()}
         readingFresh={over.readingFresh ?? true}
+        settled={over.settled ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
         onReanalyze={onReanalyze}
@@ -118,7 +119,7 @@ describe("SynopsisOverview", () => {
     expect(screen.getByRole("button", { name: new RegExp(copy.entry) })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.tryAgain }));
     expect(onRetry).toHaveBeenCalledWith("syn-1");
-    // A section retry spends whatever `wouldSpend` says about a whole write.
+    // A section retry always spends a credit, whatever `wouldSpend` says about a whole write.
     expect(screen.getByText(/Uses a credit/)).toBeTruthy();
   });
 
@@ -197,6 +198,33 @@ describe("SynopsisOverview", () => {
     fireEvent.click(press);
     expect(onRetry).not.toHaveBeenCalled();
     expect(within(section).getByText(/0 of 3 left/)).toBeTruthy();
+  });
+
+  it("holds the press while the state has not been read for the reading on screen", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false }), { settled: false });
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
+  });
+
+  it("keeps the modal's write, not Re-analyze, over a fresh reading the state has not caught up to", () => {
+    draw(synopsisState({ stale: true, wouldSpend: true }), { settled: false });
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: "Re-analyze" })).toBeNull();
+    expect(inert(within(dialog).getByRole("button", { name: copy.writeNew }))).toBe(true);
+  });
+
+  it("offers ruling D's write under a stale overview whose Overview section was refused", () => {
+    const content = checkedSynopsis({
+      overview: null,
+      verdicts: checkedSynopsis().verdicts.map((v) =>
+        v.section === "overview" ? { section: "overview", status: "refused", reason: "over_budget", failed: 1, total: 2 } : v,
+      ),
+    });
+    draw(synopsisState({ synopsis: synopsisRow(content), stale: true, wouldSpend: true }));
+    expect(screen.getByText(copy.overviewRefused)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: copy.tryAgain })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: copy.writeNew }));
+    expect(onWrite).toHaveBeenCalledOnce();
   });
 
   it("draws a refused section's slot in the modal, under its own label", () => {
