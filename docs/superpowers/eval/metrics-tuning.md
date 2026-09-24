@@ -1,6 +1,6 @@
 # Automatic metrics: tuning
 
-Recomputed from 447 rows in 12 runs, one per set, cell, variant, deck and trial (58 later repeats set aside). Costs at real-time prices.
+Recomputed from 463 rows in 13 runs, one per set, cell, variant, deck and trial (58 later repeats set aside). Costs at real-time prices.
 
 | set | cell | variant | n | survived | ungrounded | malformed | upstream | kept/run | returned/run | outside names | in tok | out tok (p95) | visible out (est.) | cache r/w | $/answer | $/accepted |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -12,6 +12,8 @@ Recomputed from 447 rows in 12 runs, one per set, cell, variant, deck and trial 
 | dev | haiku@max3000 | cite-menu | 12 | 92% | 0% | 8% | 0% | 3.42 | 3.58 | 0% | 3805 | 614 (887) | 497 | 0/0 | $0.0074 | $0.0081 |
 | dev | haiku@max3000 | cite-names | 12 | 100% | 0% | 0% | 0% | 3.17 | 3.92 | 0% | 3706 | 613 (757) | 490 | 0/0 | $0.0068 | $0.0068 |
 | dev | haiku@max3000 | cite-rules | 12 | 92% | 8% | 0% | 0% | 3.42 | 4.25 | 8% | 3632 | 678 (897) | 538 | 0/0 | $0.0076 | $0.0083 |
+| dev | sonnet+cache@max8000 | base | 8 | 100% | 0% | 0% | 0% | 2.63 | 2.63 | 0% | 2 | 2790 (5126) | 368 | 2775/1616 | $0.0325 | $0.0325 |
+| dev | sonnet-low+cache@max3000 | base | 8 | 100% | 0% | 0% | 0% | 2.13 | 2.75 | 0% | 2 | 734 (878) | 329 | 2775/1616 | $0.0119 | $0.0119 |
 | dev | sonnet-low@max3000 | base | 12 | 100% | 0% | 0% | 0% | 2.75 | 3.42 | 0% | 4394 | 770 (1176) | 390 | 0/0 | $0.0165 | $0.0165 |
 | dev | sonnet@max3000 | base | 12 | 58% | 0% | 42% | 0% | 1.17 | 1.50 | 0% | 4436 | 2629 (3000) | 327 | 0/0 | $0.0527 | $0.0904 |
 | dev | sonnet@max8000 | base | 12 | 92% | 8% | 0% | 0% | 2.75 | 3.00 | 0% | 4369 | 3019 (4680) | 381 | 0/0 | $0.0422 | $0.0460 |
@@ -36,6 +38,8 @@ Recomputed from 447 rows in 12 runs, one per set, cell, variant, deck and trial 
 - **dev / haiku@max3000 / cite-menu**: survived by trial 75%, 100%, 100%; drops citation 2.
 - **dev / haiku@max3000 / cite-names**: survived by trial 100%, 100%, 100%; drops citation 8, quotedNote 1.
 - **dev / haiku@max3000 / cite-rules**: survived by trial 100%, 100%, 75%; drops citation 7, quotedNote 2, cardExists 1.
+- **dev / sonnet+cache@max8000 / base**: survived by trial 100%, 100%; drops none.
+- **dev / sonnet-low+cache@max3000 / base**: survived by trial 100%, 100%; drops citation 4, addNotLegal 1.
 - **dev / sonnet-low@max3000 / base**: survived by trial 100%, 100%, 100%; drops citation 7, duplicate 1.
 - **dev / sonnet@max3000 / base**: survived by trial 50%, 50%, 75%; drops citation 4.
 - **dev / sonnet@max8000 / base**: survived by trial 100%, 75%, 100%; drops citation 3.

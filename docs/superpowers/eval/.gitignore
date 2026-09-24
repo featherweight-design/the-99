@@ -2,3 +2,7 @@
 # by the harness and summarised in metrics-*.md; the ledger and the reports are committed.
 runs/
 ledger.json
+ledger.jsonl.lock
+# The blind key and the pairs it decodes stay out of the tree until Hugh has answered.
+blind/*-key.json
+blind/*-pairs.json

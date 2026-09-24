@@ -198,6 +198,34 @@ beside it: thinking tokens per answer, and their share of cost, for Sonnet 5 as 
 A result the rule did not anticipate, such as the blind read and the automatic metrics pointing
 opposite ways by a wide margin, goes to the orchestrator rather than being resolved here.
 
+## Rulings during the run (recorded as they were made)
+
+- **S is Sonnet 5 on the shipped prompt with an 8,000 ceiling** (orchestrator, 2026-09-24). Calibration
+  found shipped tuning truncating at its 3,000 ceiling on half the decks. Shipped Sonnet stays in
+  the tables as a measured cell. D1 then raised `TUNING_MAX_TOKENS` to 8,000 and `MODEL_TIMEOUT_MS`
+  to 110 s, so a cell is named by the ceiling it SENT (`sonnet@max3000`, `sonnet@max8000`), and rows
+  from before and after that change are never pooled.
+- **Two blind rounds for tuning were offered**: sonnet-low against S first, and best-Haiku against S
+  only if a Haiku variant passes the automatic gates. None did (Haiku + cite-rules failed the
+  names-outside-the-deck gate by 2 points), so tuning has one blind round.
+- **The overview's refusals are contract-shaped, not model-shaped.** Two what-ifs are measured for
+  Hugh, and neither changes the pre-registered rule, which still decides:
+  (A) "drop the line, not the section", re-scored on stored answers at no cost, with line checks
+  self-tested against `validateSynopsis` on every answer; (B) one repair call per answer with a
+  refused section, on the app's own section retry and merge.
+- **The overview's character budgets are not loosened.** Prompting fits the 60-character job line
+  for both Sonnet cells; Haiku needs a word target.
+- **The harness calls api.anthropic.com directly**, as production does, and never follows a shell's
+  `ANTHROPIC_BASE_URL`.
+- **The overview's blind read is held, and will likely be an ABSOLUTE read** (orchestrator, 2026-09-24).
+  This departs from the pre-registered rule, and the report says so: S failed on viability, not on
+  quality. At an 8,000 ceiling it truncates or malforms a third of its answers and takes over a
+  minute each, so a side-by-side against S compares sonnet-low with mostly-refused pages. The read
+  becomes Hugh judging sonnet-low alone, under whichever contract he picks from shipped, (A), (B)
+  and A+B. No overview pairs are seeded until that answer is relayed.
+- **(B) is measured for sonnet-low + budgets-plus alone**, and A+B is derived from the same run
+  rather than sent a second time.
+
 ## Deliverables and PR boundaries (no stacking; each merges before the next opens)
 
 1. **PR 1: the plan, the harness and the tuning runs.** This file, `scripts/eval/**`, the overlay

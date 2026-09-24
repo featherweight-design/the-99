@@ -49,9 +49,9 @@ export function buildParams<T>(req: Pick<ModelRequest<T>, "model" | "system" | "
 }
 
 /**
- * The reply's structured output, parsed exactly as `messages.parse` parses it: the zod format's own
- * `parse` over the text. A reply with no text, one cut off at `max_tokens`, or one that fails the
- * schema is `malformed`, which is how `callModel` classes each of them.
+ * The reply's structured output, parsed exactly as `callModel` parses it: the zod format's own
+ * `parse` over every text block, joined. A reply with no text, one cut off at `max_tokens`, or one
+ * that fails the schema is `malformed`, which is how `callModel` classes each of them.
  */
 export function parseReply<T>(schema: z.ZodType<T>, message: Pick<Anthropic.Message, "content" | "stop_reason">):
   | { ok: true; value: T }
