@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, intentTooLong, seededIntent } from "./limits";
@@ -9,7 +10,8 @@ import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_H
 // Next requires the export to be a literal, and importing the page would pull in the server.
 describe("MODEL_TIMEOUT_MS", () => {
   it("fits under the deck page's maxDuration, leaving time for the rest of the run", () => {
-    const page = readFileSync(join(__dirname, "../../app/decks/[id]/page.tsx"), "utf8");
+    // import.meta.url, not __dirname: Vitest runs tests as ESM.
+    const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/decks/[id]/page.tsx"), "utf8");
     const match = page.match(/export const maxDuration = (\d+);/);
     expect(match).not.toBeNull();
     const maxDurationMs = Number(match![1]) * 1000;

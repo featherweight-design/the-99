@@ -38,6 +38,7 @@ const item: TuningItem = {
   bracketAfter: null,
   applies: true,
   cutInDeck: true,
+  addInDeck: false,
 };
 
 const ok = async () => ({ ok: true as const });
@@ -126,6 +127,19 @@ describe("SuggestionCard", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.apply })); });
     expect(screen.getByRole("alert")).toHaveTextContent(copy.applyRefused);
     expect(screen.getByRole("button", { name: copy.apply })).not.toBeDisabled();
+  });
+
+  // The claim is read with this deck's own ask subtracted. When the deck already holds the add, a
+  // free of 0 is that copy sitting where it belongs, not a rival holding it.
+  it("reads the add's claim as self-excluded exactly when the deck holds the add", () => {
+    const held: TuningItem = { ...item, availability: { owned: 1, hard: 0, soft: 0, free: 0, claims: [] } };
+    const { unmount } = render(
+      <SuggestionCard item={{ ...held, addInDeck: true }} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />,
+    );
+    expect(screen.queryByText(/none free/)).toBeNull();
+    unmount();
+    render(<SuggestionCard item={held} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />);
+    expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
   });
 
   it("collapses an applied swap to a row that can be put back", async () => {

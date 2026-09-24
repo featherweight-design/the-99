@@ -41,6 +41,9 @@ export type TuningItem = {
   applies: boolean;
   /** Which half of `applies` failed, for the row's sentence: the cut left, or the add is in. */
   cutInDeck: boolean;
+  /** The deck already holds the add (an applied swap, or a basic). Its claim is then read with this
+   *  deck's own ask subtracted, so `free === 0` means "holds what it needs", not contention. */
+  addInDeck: boolean;
 };
 
 export type TuningRun = {

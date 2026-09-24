@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { cssUrl } from "../../lib/collection/browse";
-import { drawsMarker } from "../../lib/decks/availability";
+import { availabilityState } from "../../lib/decks/availability";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { bracketShift } from "../../lib/tuning/bracket-shift";
 import type { TuningItem } from "../../lib/tuning/state";
@@ -100,13 +100,18 @@ export function SuggestionCard({
   }
 
   const shift = bracketShift(permits, item.bracketAfter);
-  const marked = item.owned && drawsMarker({ owned: item.owned, availability: item.availability });
+  // `availability` is read from this deck's vantage, which subtracts the deck's own ask. That
+  // only changes the reading when the deck holds the add, so it is self-excluded exactly then.
+  const selfExcluded = item.addInDeck;
+  const marked = item.owned && item.availability !== null
+    && availabilityState(item.availability, { selfExcluded }) !== "free";
   const addMark = !item.owned ? (
     <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
   ) : marked ? (
     <AvailabilityMarker
       availability={item.availability!}
       nameless
+      selfExcluded={selfExcluded}
       spoken={false}
       seam="var(--surface)"
       className="flex-none font-mono text-[10.5px]"

@@ -235,6 +235,8 @@ async function run() {
       where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
     await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
     const { itemId } = await answered(u, deck, c);
+    const before = (await readTuningState(deck, u, "fp")).items.find((i) => i.id === itemId);
+    check("5 · before the apply the add is not in the deck", before?.addInDeck, false);
 
     check("7 · another reader cannot apply the item", await applyItem(itemId, newUser()), null);
 
@@ -243,6 +245,10 @@ async function run() {
     check("5 · the add arrives as one chosen copy", await cardRow(deck, c.add), { quantity: 1, auto: false });
     check("5 · the verdict and the snapshot land with it", await verdictOf(itemId),
       { verdict: "accepted", snapshot: true });
+    // The card reads the add's claim with this deck's own ask subtracted, and marks it self-excluded
+    // exactly when the deck holds the add. Before the apply it did not; now it does.
+    const applied = (await readTuningState(deck, u, "fp")).items.find((i) => i.id === itemId);
+    check("5 · the panel reads the applied add as in the deck", applied?.addInDeck, true);
 
     check("6 · a second apply is refused", await applyItem(itemId, u), null);
     check("6 · and changes no row", [await cardRow(deck, cut), await cardRow(deck, c.add)],
