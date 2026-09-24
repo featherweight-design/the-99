@@ -28,7 +28,7 @@ const badShape = () => new Anthropic.AnthropicError("Failed to parse structured 
 const unauthorized = () => new Anthropic.AuthenticationError(401, undefined, "bad key", new Headers());
 const badRequest = () => new Anthropic.BadRequestError(400, undefined, "bad model", new Headers());
 
-type Call = { body: { model: string }; opts: { timeout?: number; maxRetries?: number } };
+type Call = { body: { model: string; output_config?: Record<string, unknown> }; opts: { timeout?: number; maxRetries?: number } };
 
 /** A fake `messages` whose attempts play out a script: a value to return or an error to throw. */
 function scripted(script: Array<unknown | Error>) {
@@ -73,6 +73,16 @@ describe("callModel", () => {
     await callModel(req, { messages, log: quiet });
     expect(calls[0].body.model).toBe("caller-model");
     expect(calls[0].opts.maxRetries).toBe(0);
+  });
+
+  // Additive: a caller that names no effort sends the request it always sent.
+  it("sends an effort only when the caller names one", async () => {
+    const plain = scripted([reply({ answer: "x" })]);
+    await callModel(req, { messages: plain.messages, log: quiet });
+    expect(Object.keys(plain.calls[0].body.output_config ?? {})).toEqual(["format"]);
+    const low = scripted([reply({ answer: "x" })]);
+    await callModel({ ...req, effort: "low" }, { messages: low.messages, log: quiet });
+    expect(low.calls[0].body.output_config?.effort).toBe("low");
   });
 
   it("retries once on a 529 and succeeds", async () => {

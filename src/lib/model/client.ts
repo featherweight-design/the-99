@@ -54,6 +54,9 @@ export type ModelRequest<T> = {
   schema: z.ZodType<T>;
   /** One budget for the whole call, both attempts included. */
   deadlineMs: number;
+  /** The reasoning effort (`output_config.effort`, Sonnet 5). Omitted, the request carries none
+   *  and is byte for byte what it was before the field existed. */
+  effort?: "low" | "medium" | "high";
 };
 
 /**
@@ -160,7 +163,7 @@ async function tryOnce<T>(
         max_tokens: req.maxTokens,
         system: req.system,
         messages: [{ role: "user", content: req.user }],
-        output_config: { format },
+        output_config: req.effort ? { format, effort: req.effort } : { format },
       },
       { signal: controller.signal, timeout: remainingMs, maxRetries: 0 },
     );

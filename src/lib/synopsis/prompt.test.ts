@@ -57,9 +57,30 @@ describe("buildSynopsisPrompt", () => {
   });
 
   it("sends a retry the passing sections and names the refused ones", () => {
-    const keep = { overview: "Kept.", primer: null, keyCards: null, weaknesses: ["Kept too."] } as CheckedSynopsis;
+    const keep = {
+      verdicts: [
+        { section: "overview", status: "ok", failed: 0, total: 0 },
+        { section: "primer", status: "refused", reason: "over_budget", failed: 0, total: 3 },
+        { section: "keyCards", status: "refused", reason: "unknown_card", failed: 2, total: 6 },
+        { section: "weaknesses", status: "ok", failed: 0, total: 0 },
+      ],
+      overview: "Kept.", primer: null, keyCards: null, weaknesses: ["Kept too."], cards: {},
+    } as CheckedSynopsis;
     const { user } = buildSynopsisPrompt(FACTS, { keep, refused: ["primer", "keyCards"] });
     expect(user).toContain("did not pass checking last time: primer, keyCards.");
     expect(user).toContain('"overview":"Kept."');
+    // The repair names each refused section's reason, as the harness measured it (contract B).
+    expect(user).toContain(
+      "Those sections failed checking for these reasons; fix exactly these: primer: over_budget; keyCards: unknown_card (2 of 6 cards failed checking).",
+    );
+  });
+
+  // budgets-plus (sub-project 10), shipped as measured: read off the limits and this deck's figures.
+  it("carries the length and plus rules, with this deck's own figures", () => {
+    const { system } = buildSynopsisPrompt({ ...FACTS, figures: [2, 3, 5] });
+    expect(system).toContain(`- a Key card's job: at most ${CHAR_BUDGETS.job} characters`);
+    expect(system).toContain("A Key card's job is 4 to 8 words.");
+    expect(system).toContain("must be one of: 2, 3, 5.");
+    expect(system).toContain("Mark EVERY mention of a card in the decklist");
   });
 });

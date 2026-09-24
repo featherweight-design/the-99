@@ -17,7 +17,12 @@ import type { CheckedSynopsis, SectionId } from "./types";
  *
  * A RETRY (`retry`) sends the passing sections back as context and asks for all four again; the
  * generator keeps the stored passing sections byte for byte and takes only the refused ones from
- * the reply, so a retry can never change what the player already read.
+ * the reply, so a retry can never change what the player already read. It also names the reason
+ * each refused section failed, read off the verdicts it was given.
+ *
+ * The LENGTH and PLUS rules are the eval harness's `budgets-plus` prompt (sub-project 10), shipped
+ * as measured. On 15 held-out decks at `effort: "low"`, with the repair below, all four sections
+ * rendered on 96% of answers against 18% without them.
  */
 
 const SYSTEM = [
@@ -34,6 +39,28 @@ const SYSTEM = [
   `- keyCards: ${range(SECTION_COUNTS.keyCards)} different cards from the decklist, each with one line, at most ${CHAR_BUDGETS.job} characters, on the job it does in this deck. "claims" lists only categories the decklist shows in that card's brackets; leave it empty for a card with none. In a job, never use the words ramp, draw, removal, remove, destroy, wipe, sweeper, tutor, combo or infinite unless that card's brackets list the matching category.`,
   `- weaknesses: ${range(SECTION_COUNTS.weaknesses)} weaknesses of how the deck plays, untiered and unranked, each at most ${CHAR_BUDGETS.weakness} characters.`,
 ].join("\n");
+
+/**
+ * Lengths, restated with targets under each limit and one worked example. Asking for shorter text
+ * rather than loosening a budget: the job line ran 65 characters at the median against its 60.
+ */
+const LENGTH_RULES = [
+  "Lengths are counted in characters as the text renders ([[Name]] counts as the name alone). One item over its limit refuses its whole section, so stay well under:",
+  `- a Key card's job: at most ${CHAR_BUDGETS.job} characters; write one short clause of about ${CHAR_BUDGETS.job - 20}. For example: "Ramps two lands a turn off the top." (35).`,
+  `- a mulligan line: at most ${CHAR_BUDGETS.mulligan}; aim for about ${CHAR_BUDGETS.mulligan - 25}.`,
+  `- a tip: at most ${CHAR_BUDGETS.tip}; aim for about ${CHAR_BUDGETS.tip - 50}.`,
+  "Before you answer, count each job, mulligan line and tip, and shorten any that is near or over its limit.",
+].join("\n");
+
+/** A word target for the job line, this deck's own mulligan figures, the refused words, and marking every mention. */
+function plusRules(facts: SynopsisFacts): string {
+  return [
+    "A Key card's job is 4 to 8 words.",
+    `In the mulligan lines, every number, written as digits or as a word like "two", must be one of: ${facts.figures.join(", ")}. Do not name a turn number; say "early" or "late" instead.`,
+    "Never use these words anywhere: strong, powerful, efficient, competitive, casual, optimized, tier, score, rating, bracket, power level, brutal, busted, oppressive, respectable.",
+    "Mark EVERY mention of a card in the decklist, the commander included and every repeat: [[Name]] each time.",
+  ].join("\n");
+}
 
 function range(r: { min: number; max: number }): string {
   return `${r.min} to ${r.max}`;
@@ -76,9 +103,14 @@ export function buildSynopsisPrompt(
       keyCards: retry.keep.keyCards,
       weaknesses: retry.keep.weaknesses,
     }));
+    const reasons = retry.keep.verdicts.flatMap((v) =>
+      v.status === "refused" && retry.refused.includes(v.section)
+        ? [`${v.section}: ${v.reason}${v.failed ? ` (${v.failed} of ${v.total} cards failed checking)` : ""}`]
+        : []);
+    lines.push(`Those sections failed checking for these reasons; fix exactly these: ${reasons.join("; ")}.`);
   }
 
-  return { system: SYSTEM, user: lines.join("\n") };
+  return { system: `${SYSTEM}\n${LENGTH_RULES}\n${plusRules(facts)}`, user: lines.join("\n") };
 }
 
 /** Rules text on one line: a line break inside it would read as a new list item. */

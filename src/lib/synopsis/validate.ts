@@ -7,9 +7,12 @@ import type { Category, CheckedSynopsis, KeyCard, RefusalReason, SectionId, Sect
  * The synopsis accept contract (brief §2, §5, §6). Pure. Every rule is the app's own check: the
  * schema guarantees the reply's shape and nothing about its truth.
  *
- * A SECTION FAILS WHOLE. A failing section is refused with its first reason, and its content is
- * not returned, so nothing can render a trimmed section or a partial sentence (`STATES-synopsis.md`).
- * The other sections stand on their own checks, which is what lets the modal show the passing
+ * PROSE FAILS WHOLE; A LIST DROPS THE LINE (contract A, Hugh 2026-09-24). The overview and the
+ * primer's strategy steps are refused whole on any failing sentence. In the list sections (the
+ * mulligan lines, tips, Key cards and weaknesses) a failing line is dropped, and the section still
+ * renders when what survives keeps `SECTION_COUNTS`' minimum. Either way nothing renders a partial
+ * sentence or a line that failed (`STATES-synopsis.md`), and a refused section's content is not
+ * returned. The sections stand on their own checks, which is what lets the modal show the passing
  * sections beside a refused one (`SYNOPSIS-modal.md` §4.3).
  *
  * `catalog` maps the normalized names Weaknesses marks to the catalog card each one is, for every
@@ -149,33 +152,77 @@ class Resolver {
   }
 }
 
-function check(
-  section: SectionId,
+/** One line's own check: its reason, its name counts and the marks it resolved. */
+type LineResult = { reason: RefusalReason | null; failed: number; total: number; found: Record<string, Card> };
+
+function lineCheck(
   run: (r: Resolver) => void,
   deck: Map<string, Card>,
-  found: Record<string, Card>,
   catalog: ReadonlyMap<string, Card> | null,
-  commanders: string[] = [],
-): SectionVerdict {
+  commanders: string[],
+): LineResult {
+  const found: Record<string, Card> = {};
   const r = new Resolver(deck, found, catalog);
   r.commanders = commanders;
   run(r);
-  // EVERY RULE RUNS. A section stops at nothing, so its `failed` / `total` count every name in it
-  // and the slot's "N of M cards failed checking" is the section's whole figure. The reason is
-  // the first rule broken; a name that failed with no rule broken is `unknown_card`.
+  // EVERY RULE RUNS, so the line's `failed` / `total` count every name in it. The reason is the
+  // first rule broken; a name that failed with no rule broken is `unknown_card`.
   const reason = r.reason ?? (r.failed > 0 ? "unknown_card" : null);
-  return reason === null
-    ? { section, status: "ok", failed: 0, total: r.total }
-    : { section, status: "refused", reason, failed: r.failed, total: r.total };
+  return { reason, failed: r.failed, total: r.total, found };
+}
+
+/**
+ * A section built from its lines. `whole` lines must all pass (prose: the overview, the strategy
+ * steps); a `list` drops a failing line and passes when its survivors keep the list's minimum
+ * (contract A, Hugh 2026-09-24). A list past its MAXIMUM is refused whole, since the reply was then
+ * told something it ignored, and names `wrong_count` whatever its lines did: fixing a bad line
+ * would still leave the list too long, so the count is what the repair has to fix. A list under
+ * its minimum names its first failing line's reason, or `wrong_count` when every line passed.
+ */
+function section<T>(
+  id: SectionId,
+  parts: ({ kind: "whole"; lines: LineResult[]; range?: { min: number; max: number } }
+    | { kind: "list"; items: T[]; lines: LineResult[]; range: { min: number; max: number } })[],
+  found: Record<string, Card>,
+): { verdict: SectionVerdict; kept: T[][] } {
+  let total = 0;
+  let failed = 0;
+  let reason: RefusalReason | null = null;
+  const kept: T[][] = [];
+  for (const part of parts) {
+    for (const l of part.lines) {
+      total += l.total;
+      failed += l.failed;
+    }
+    const firstFail = part.lines.find((l) => l.reason !== null)?.reason ?? null;
+    if (part.kind === "whole") {
+      if (part.range && (part.lines.length < part.range.min || part.lines.length > part.range.max)) reason ??= "wrong_count";
+      if (firstFail) reason ??= firstFail;
+      kept.push([]);
+    } else {
+      const survivors = part.items.filter((_, i) => part.lines[i].reason === null);
+      if (part.items.length > part.range.max) reason ??= "wrong_count";
+      else if (survivors.length < part.range.min) reason ??= firstFail ?? "wrong_count";
+      kept.push(survivors);
+    }
+  }
+  if (reason !== null) return { verdict: { section: id, status: "refused", reason, failed, total }, kept };
+  // Only what renders resolves: a dropped line's marks never reach the stored card map.
+  for (const part of parts) {
+    part.lines.forEach((l) => {
+      if (l.reason === null) Object.assign(found, l.found);
+    });
+  }
+  return { verdict: { section: id, status: "ok", failed: 0, total }, kept };
 }
 
 /**
  * The deck names a text states without marking them. Every card name must open the card
  * (brief §3.2), and an unmarked one renders as plain text. Deliberately CONSERVATIVE, because a
- * false hit refuses a whole section: names of two words or more, plus the COMMANDERS' names
- * whatever their length (the name a synopsis repeats most, and a proper noun rather than a word),
- * matched case-sensitively on word boundaries, so "a forest of tokens" is not `Forest` and "opt
- * out" is not `Opt`. Other one-word names are asked for by the prompt and not checked.
+ * false hit refuses a line: names of two words or more, plus the COMMANDERS' names whatever their
+ * length (the name a synopsis repeats most, and a proper noun rather than a word), matched
+ * case-sensitively on word boundaries, so "a forest of tokens" is not `Forest` and "opt out" is
+ * not `Opt`. Other one-word names are asked for by the prompt and not checked.
  */
 export function unmarkedNames(text: string, names: readonly string[], always: readonly string[] = []): string[] {
   const bare = unmarked(text);
@@ -189,7 +236,7 @@ function escapeRegExp(s: string): string {
 /** The rules every item of prose keeps, and its marks resolved. */
 function prose(r: Resolver, text: string, budget: number): void {
   if (!endsSentence(text)) r.refuse("partial_sentence");
-  // An unmarked name is a name the section states and fails to check, so it counts in the figure.
+  // An unmarked name is a name the line states and fails to check, so it counts in the figure.
   const bare = unmarkedNames(text, r.names, r.commanders);
   r.total += bare.length;
   r.failed += bare.length;
@@ -199,13 +246,9 @@ function prose(r: Resolver, text: string, budget: number): void {
   r.marks(text);
 }
 
-function count(r: Resolver, items: readonly unknown[], range: { min: number; max: number }): void {
-  if (items.length < range.min || items.length > range.max) r.refuse("wrong_count");
-}
-
 /**
  * Checks a reply against the facts it was written from. Returns every section's verdict and the
- * content of the sections that passed.
+ * content that renders: a passing section with its failing list lines dropped (contract A).
  */
 export function validateSynopsis(
   reply: SynopsisResponse,
@@ -216,69 +259,72 @@ export function validateSynopsis(
   const categories = new Map(facts.cards.map((c) => [c.oracleId, new Set(c.categories)]));
   const allowedFigures = new Set(facts.figures);
   const found: Record<string, Card> = {};
+  const line = (run: (r: Resolver) => void, cat: ReadonlyMap<string, Card> | null = null) =>
+    lineCheck(run, deck, cat, facts.commanders);
 
-  const overview = check("overview", (r) => {
-    prose(r, reply.overview, CHAR_BUDGETS.overview);
-  }, deck, found, null, facts.commanders);
+  const overview = section("overview", [
+    { kind: "whole", lines: [line((r) => prose(r, reply.overview, CHAR_BUDGETS.overview))] },
+  ], found);
 
-  const primer = check("primer", (r) => {
-    const { strategy, mulligan, tips } = reply.primer;
-    count(r, strategy, SECTION_COUNTS.strategy);
-    count(r, mulligan.keep, SECTION_COUNTS.keep);
-    count(r, mulligan.sendBack, SECTION_COUNTS.sendBack);
-    count(r, tips, SECTION_COUNTS.tips);
-    for (const step of strategy) {
-      prose(r, step, CHAR_BUDGETS.strategy);
-    }
-    for (const line of [...mulligan.keep, ...mulligan.sendBack]) {
-      prose(r, line, CHAR_BUDGETS.mulligan);
-      if (figuresIn(line).some((n) => !allowedFigures.has(n))) r.refuse("uncomputed_figure");
-    }
-    for (const tip of tips) {
-      prose(r, tip.text, CHAR_BUDGETS.tip);
-      // A listed name is counted through the marks above when the prose marks it, and below when
-      // it does not, so each name counts once.
-      if (tip.cards.some((name) => !deck.has(normalizeName(name)))) r.refuse("tip_not_in_deck");
-      // The list and the prose must be the same CARDS, compared by what each name resolves to, so
-      // `Fire` in the list and `[[Fire // Ice]]` in the prose agree. A tip may not list two and
-      // talk about a third.
-      const idOf = (name: string) => deck.get(normalizeName(name))?.oracleId ?? `?${normalizeName(name)}`;
-      const listedIds = new Set(tip.cards.map(idOf));
-      const markedIds = new Set(marksIn(tip.text).map(idOf));
-      // A listed name the prose never marks is still a name the tip made, and is counted.
-      for (const name of tip.cards) if (!markedIds.has(idOf(name))) r.deckCard(name);
-      if (listedIds.size < TIP_MIN_CARDS) r.refuse("tip_too_few_cards");
-      if (markedIds.size !== listedIds.size || [...listedIds].some((id) => !markedIds.has(id))) r.refuse("tip_not_in_deck");
-    }
-  }, deck, found, null, facts.commanders);
+  const { strategy, mulligan, tips } = reply.primer;
+  const mulliganLine = (text: string) => line((r) => {
+    prose(r, text, CHAR_BUDGETS.mulligan);
+    if (figuresIn(text).some((n) => !allowedFigures.has(n))) r.refuse("uncomputed_figure");
+  });
+  const tipLine = (tip: SynopsisResponse["primer"]["tips"][number]) => line((r) => {
+    prose(r, tip.text, CHAR_BUDGETS.tip);
+    // A listed name is counted through the marks above when the prose marks it, and below when it
+    // does not, so each name counts once.
+    if (tip.cards.some((name) => !deck.has(normalizeName(name)))) r.refuse("tip_not_in_deck");
+    // The list and the prose must be the same CARDS, compared by what each name resolves to, so
+    // `Fire` in the list and `[[Fire // Ice]]` in the prose agree. A tip may not list two and talk
+    // about a third.
+    const idOf = (name: string) => deck.get(normalizeName(name))?.oracleId ?? `?${normalizeName(name)}`;
+    const listedIds = new Set(tip.cards.map(idOf));
+    const markedIds = new Set(marksIn(tip.text).map(idOf));
+    // A listed name the prose never marks is still a name the tip made, and is counted.
+    for (const name of tip.cards) if (!markedIds.has(idOf(name))) r.deckCard(name);
+    if (listedIds.size < TIP_MIN_CARDS) r.refuse("tip_too_few_cards");
+    if (markedIds.size !== listedIds.size || [...listedIds].some((id) => !markedIds.has(id))) r.refuse("tip_not_in_deck");
+  });
+  const primer = section<unknown>("primer", [
+    { kind: "whole", lines: strategy.map((step) => line((r) => prose(r, step, CHAR_BUDGETS.strategy))), range: SECTION_COUNTS.strategy },
+    { kind: "list", items: mulligan.keep, lines: mulligan.keep.map(mulliganLine), range: SECTION_COUNTS.keep },
+    { kind: "list", items: mulligan.sendBack, lines: mulligan.sendBack.map(mulliganLine), range: SECTION_COUNTS.sendBack },
+    { kind: "list", items: tips, lines: tips.map(tipLine), range: SECTION_COUNTS.tips },
+  ], found);
 
-  const keyCards = check("keyCards", (r) => {
-    count(r, reply.keyCards, SECTION_COUNTS.keyCards);
-    const seen = new Set<string>();
-    for (const k of reply.keyCards) {
-      prose(r, k.job, CHAR_BUDGETS.job);
-      const card = r.deckCard(k.card);
-      if (!card) continue;
-      if (seen.has(card.oracleId)) r.refuse("wrong_count");
-      seen.add(card.oracleId);
-      if (!jobSupported(k, categories.get(card.oracleId) ?? new Set())) r.refuse("job_unsupported");
+  // A Key card whose card an earlier PASSING line already named is a duplicate, and fails as one:
+  // the card is shown once, with the first job that checked out.
+  const named = new Set<string>();
+  const keyLines = reply.keyCards.map((k) => line((r) => {
+    prose(r, k.job, CHAR_BUDGETS.job);
+    const card = r.deckCard(k.card);
+    if (!card) return;
+    if (!jobSupported(k, categories.get(card.oracleId) ?? new Set())) r.refuse("job_unsupported");
+    if (r.reason === null && r.failed === 0) {
+      if (named.has(card.oracleId)) r.refuse("wrong_count");
+      named.add(card.oracleId);
     }
-  }, deck, found, null, facts.commanders);
+  }));
+  const keyCards = section("keyCards", [
+    { kind: "list", items: reply.keyCards, lines: keyLines, range: SECTION_COUNTS.keyCards },
+  ], found);
 
-  const weaknesses = check("weaknesses", (r) => {
-    count(r, reply.weaknesses, SECTION_COUNTS.weaknesses);
-    for (const w of reply.weaknesses) {
-      prose(r, w, CHAR_BUDGETS.weakness);
-    }
-  }, deck, found, catalog, facts.commanders);
+  const weaknesses = section("weaknesses", [
+    { kind: "list", items: reply.weaknesses, lines: reply.weaknesses.map((w) => line((r) => prose(r, w, CHAR_BUDGETS.weakness), catalog)), range: SECTION_COUNTS.weaknesses },
+  ], found);
 
   const ok = (v: SectionVerdict) => v.status === "ok";
+  const [, keep, sendBack, keptTips] = primer.kept;
   return {
-    verdicts: [overview, primer, keyCards, weaknesses],
-    overview: ok(overview) ? reply.overview : null,
-    primer: ok(primer) ? reply.primer : null,
-    keyCards: ok(keyCards) ? reply.keyCards : null,
-    weaknesses: ok(weaknesses) ? reply.weaknesses : null,
+    verdicts: [overview.verdict, primer.verdict, keyCards.verdict, weaknesses.verdict],
+    overview: ok(overview.verdict) ? reply.overview : null,
+    primer: ok(primer.verdict)
+      ? { strategy, mulligan: { keep: keep as string[], sendBack: sendBack as string[] }, tips: keptTips as SynopsisResponse["primer"]["tips"] }
+      : null,
+    keyCards: ok(keyCards.verdict) ? keyCards.kept[0] : null,
+    weaknesses: ok(weaknesses.verdict) ? weaknesses.kept[0] : null,
     cards: found,
   };
 }
