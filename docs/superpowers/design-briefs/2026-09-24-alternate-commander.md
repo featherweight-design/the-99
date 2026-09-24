@@ -80,7 +80,8 @@ Each row shows:
 - the commander, or the pair, whose name opens the card as names do everywhere;
 - the figure: "41 of 62 are in its decks";
 - ownership: free, a held mark when every copy the player owns is claimed by another deck (the usual
-  availability marks), or a buy tag and price.
+  availability marks), or a buy tag and price. A pair's two halves can differ (one free, one to buy);
+  how that reads and where a mixed pair sorts is §4 item 7.
 
 Owned candidates lead, and each group is ordered by the figure. Ties go alphabetically. A row can open
 the deck's cards its decks run, so the player can see what the figure counts.
@@ -120,6 +121,9 @@ review page (`/decks/[id]/changes`) shows for a commander change.
 4. **How a row opens the cards its figure counts:** inline or in a nested view.
 5. **How a pair reads** in a row and in the header's door.
 6. **Where the commander change sits** on the review page relative to the card diff.
+7. **A pair whose halves differ in ownership.** Each half has its own availability: free, held or to
+   buy. Design calls how a mixed pair reads, and whether it sorts with owned or unowned candidates.
+   Its price is the sum of the halves it has to buy, which is engineering's (§6).
 
 ## §5 Locked, and not open
 
@@ -157,6 +161,9 @@ All of it is deterministic, with no model call.
   - Discard restores the version's commander columns (`schema.ts:455-456`).
   - A brew has no version to discard back to. There, the confirm step says the swap can only be undone by
     changing commander again, and that is the only behaviour this brief asks for on a brew.
+- **A pair's availability is per half.** Each half is read through the usual availability model, and
+  the pair's price is the sum of the cheapest printings of the halves it has to buy (`loadPrices`,
+  `src/lib/decks/price-query.ts:67`). A pair with both halves free costs nothing.
 - **Claims.** Other decks see a committed deck's claim through its newest version's commander
   (the newest-version read at `src/lib/decks/availability-query.ts:49-58`, the commander arms at `:92-97`), so a swap moves that claim at commit. The deck's own
   draft ask and a brew's claim (`:107-115`) read the live columns and move at once. The new leader's `commander_since`
