@@ -93,8 +93,16 @@ export function useDeckProfile(
   request: () => void;
   /** Show a stored analysis if one matches the deck as it is. Once per deck; never computes. */
   peek: () => void;
+  /**
+   * Whether this deck's peek has answered, whatever it answered (a reading, a miss, a failure).
+   * Until it has, an `idle` tab does not yet know it is unanalyzed, so it must not say so: the
+   * shell draws the opening loader (8a) instead of the empty state.
+   */
+  peekSettled: boolean;
 } {
   const [state, setState] = useState<ProfileState>({ kind: "idle" });
+  /** Decks whose peek has answered in this mount. State, since the tab reads it during render. */
+  const [settled, setSettled] = useState<ReadonlySet<string>>(() => new Set());
   /**
    * The deck the state currently describes. STATE rather than a ref, because it is compared
    * during render and reading a ref there is forbidden — `react-hooks` catches it, and the rule
@@ -201,14 +209,17 @@ export function useDeckProfile(
     peeked.current.add(deckId);
     const mine = generation.current;
     const askedAbout = latestKey.current;
+    const settle = () => setSettled((s) => (s.has(deckId) ? s : new Set(s).add(deckId)));
     void (async () => {
       let result: StoredProfileFetch;
       try {
         result = await fetchStoredDeckProfile(deckId);
       } catch {
         // A failed peek is a miss. The press is still there, and it is the recovery.
+        settle();
         return;
       }
+      settle();
       // Any request made since — a press, or a peek for another deck — owns the state now.
       if (mine !== generation.current || current.current !== deckId) return;
       // Only `none` is a miss. `disabled` and `not-found` are answers the panel draws — the
@@ -241,5 +252,5 @@ export function useDeckProfile(
     if (state.fresh) setState({ ...state, fresh: false });
   }
 
-  return { state, request, peek };
+  return { state, request, peek, peekSettled: settled.has(deckId) };
 }

@@ -766,6 +766,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 
   /* Reading, still: the ring holds at full ink, and only the heading says it is reading. */
   .anim-at-wave { animation: none; opacity: 1; }
+  /* Opening, still (§8, 8a): the loader's row rests at half ink, so it never reads as the ring's
+     answered marks, and only the word says it is loading. */
+  .anim-at-wave.at-wave-rest { opacity: 0.5; }
 }
 
 /* The wash trades legibility against drama. A reader who has asked for less

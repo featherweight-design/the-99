@@ -7,6 +7,7 @@ import { bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { shownReading, type ProfileState } from "./use-deck-profile";
 import { AnalysisBanner } from "./analysis-banner";
 import { AnalysisEmpty } from "./analysis-empty";
+import { BracketMark } from "./bracket-mark";
 import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
@@ -24,9 +25,13 @@ import { VerdictBlock } from "./verdict-block";
  * shell — a panel that unmounts on every tab switch cannot own a cache — so this component takes
  * the state and renders it, which is also what makes every reading testable without a request.
  *
- * NOTHING HERE REPLACES THE MIX. It is counted from the list rather than from a profile, so it is
- * true in every state below, and `children` is where the shell hands it in. A reader whose
- * profile failed still has a true mix, which is the difference between a delay and an outage.
+ * NOTHING HERE REPLACES THE MIX, BUT ONE STATE WITHHOLDS IT. It is counted from the list rather
+ * than from a profile, so it is true in every state below, and `children` is where the shell hands
+ * it in. A reader whose profile failed still has a true mix, which is the difference between a
+ * delay and an outage. The exception is OPENING (§8, 8a): while the stored reading is fetched the
+ * tab draws only its loader, because anything else would be a guess at a shape the answer may not
+ * take, and the mix appearing first and then being joined by a reading reads as the flash 8a
+ * exists to remove.
  *
  * NO OVERVIEW SECTION, AND NO SPACE RESERVED FOR ONE. The synopsis does not exist until
  * sub-project 6, and the handoff forbids a placeholder (§6.2), so the tab draws nothing where it
@@ -41,9 +46,15 @@ export function AnalysisPanel({
   art = EMPTY_ART,
   legality,
   tuning,
+  opening = "off",
   children,
 }: {
   state: ProfileState;
+  /**
+   * Opening the tab (§8, 8a), timed by `useOpeningGate` in the shell: `wait` holds the block with
+   * nothing in it, `loader` draws the loader, and either withholds everything else.
+   */
+  opening?: "off" | "wait" | "loader";
   /** The body against a whole deck's size, from the shell's own list. Ruling 1: the press is
    *  disabled until they match, and the server refuses it as well. */
   legality?: { built: number; size: number };
@@ -82,6 +93,13 @@ export function AnalysisPanel({
     ? legality.built !== legality.size ? legality : null
     : state.kind === "illegal" ? state : null;
   const blocked = short ? deckAnalysisCopy.panel.illegal(short.built, short.size) : null;
+  if (opening !== "off") {
+    return (
+      <div className="px-[16px] pt-[18px] pb-[32px] md:px-[30px] md:pt-6 md:pb-10">
+        <OpeningLoader drawn={opening === "loader"} />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-[22px] px-[16px] pt-[18px] pb-[32px] md:gap-[28px] md:px-[30px] md:pt-6 md:pb-10">
       {held ? (
@@ -187,3 +205,34 @@ function Verdict({
 }
 
 const EMPTY_ART: FindingArt = new Map();
+
+/**
+ * The opening loader (§8, 8a): the five chip marks in a ROW at 22px under the `at-wave` light, and
+ * `Loading…`. A row rather than the ring, since the ring belongs to the empty state and to a real
+ * analysis, and showing it here would be the not-analyzed flash this state removes. It holds a
+ * 320 / 420px block from the first frame, so the tab does not jump, and is empty until drawn.
+ */
+function OpeningLoader({ drawn }: { drawn: boolean }) {
+  return (
+    <div
+      role="status"
+      data-opening-loader={drawn ? "drawn" : "waiting"}
+      className="flex min-h-[320px] flex-col items-center justify-center gap-[12px] md:min-h-[420px] md:gap-[14px]"
+    >
+      {drawn ? (
+        <>
+          <span aria-hidden className="flex items-center gap-[10px]">
+            {([1, 2, 3, 4, 5] as const).map((bracket, i) => (
+              <span key={bracket} className="anim-at-wave at-wave-rest" style={{ animationDelay: `${i * 0.16}s` }}>
+                <BracketMark bracket={bracket} px={22} />
+              </span>
+            ))}
+          </span>
+          <span className="font-mono text-[10.5px] tracking-[0.06em] text-[color:var(--fg-faint)] md:text-[11px]">
+            {deckAnalysisCopy.panel.opening}
+          </span>
+        </>
+      ) : null}
+    </div>
+  );
+}

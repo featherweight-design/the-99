@@ -18,6 +18,7 @@ import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { TuningPanel } from "./tuning-panel";
 import { useDeckProfile } from "./use-deck-profile";
+import { isOpening, useOpeningGate } from "./use-opening-gate";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
@@ -309,6 +310,19 @@ export function BuilderShell({
   useEffect(() => {
     if (view === "analysis") peekProfile();
   }, [view, peekProfile]);
+  // OPENING THE TAB (§8, 8a). Until the peek answers, an idle tab does not know whether this deck
+  // is analyzed, so it must not say "not analyzed". The stored permits say whether there is
+  // anything to fetch: none, and the empty state is the answer at once; some, and the tab draws
+  // the opening loader until the peek settles. Decided on the client from what the page already
+  // ships, rather than shipping the reading itself (see the PR's Settled).
+  const opening = useOpeningGate(
+    isOpening({
+      shown: view === "analysis",
+      kind: profile.state.kind,
+      storedPermits,
+      peekSettled: profile.peekSettled,
+    }),
+  );
   const counts = deckCounts(cards, unresolvedCount);
 
   // THE HEADER'S BRACKET, held across an edit and retired by a change of deck; see `useHeaderBracket`.
@@ -1097,7 +1111,7 @@ export function BuilderShell({
             </BuilderTabs>
 
             {view === "analysis" ? (
-              <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis">
+              <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis" aria-busy={opening !== "off" || undefined}>
                 {/* The readings sit ABOVE the strip, so the verdict arrives on top of the mix
                     rather than replacing it. The strip is counted from the list and is true in
                     every profile state, which is what makes a failed read a delay rather than an
@@ -1107,6 +1121,7 @@ export function BuilderShell({
                 <HoverPreviewProvider>
                 <AnalysisPanel
                   state={profile.state}
+                  opening={opening}
                   onRequest={profile.request}
                   legality={{ built, size: bodySize }}
                   declaration={{
