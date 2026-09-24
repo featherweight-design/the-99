@@ -220,6 +220,16 @@ async function run() {
   check("12 · the re-analysis marks it stale, and a press would write", [s12.stale, s12.wouldSpend], [true, true]);
   check("12 · Write a new overview writes one", (await writeSynopsisFor(deck.id, USER, generate)).kind, "written");
   check("12 · which is current", (await overview()).stale, false);
+
+  // 13 · A ban moves the reading too (H1): the stored profile carries `legality.banned`. It is never
+  //      LISTED as data (the live legality read names the card), but a press recomputes past it.
+  const ban = await plant("notLegal", [body[8]]);
+  const listed = (await loadDeckNotices(deck.id, USER))?.groups.flatMap((g) => g.items)
+    .some((i) => i.kind === "data" && i.seq === ban);
+  check("13 · a ban entry is not listed as data", listed, false);
+  computes = 0; freshComputes = 0;
+  await computeAndStoreProfile(deck.id, USER, deps);
+  check("13 · but a press on the unchanged list recomputes past it", { computes, freshComputes }, { computes: 0, freshComputes: 1 });
 }
 
 run()

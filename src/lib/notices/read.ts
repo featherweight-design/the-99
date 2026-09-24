@@ -138,26 +138,8 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
  * clause SQL cannot see, so the read and H1's recompute share one definition.
  */
 export async function pendingEntries(marks: ReadingMarks): Promise<DataNotice[]> {
-  const rows = await db
-    .select({
-      seq: deckDataChanges.seq,
-      kind: deckDataChanges.kind,
-      direction: deckDataChanges.direction,
-      oracleIds: deckDataChanges.oracleIds,
-      detail: deckDataChanges.detail,
-      publishedAt: deckDataChanges.publishedAt,
-    })
-    .from(deckDataChanges)
-    .where(sql`(
-      (${deckDataChanges.kind} = 'rules' and (${deckDataChanges.detail}->>'rulesVersion')::int > ${marks.rulesVersion})
-      or (${deckDataChanges.kind} not in ('rules', 'notLegal')
-          and ${deckDataChanges.seq} > ${marks.seenSeq}
-          and ${deckDataChanges.oracleIds} <@ ${`{${marks.analyzedOracleIds.join(",")}}`}::uuid[])
-    )`)
-    .orderBy(deckDataChanges.seq);
-  return rows
-    .filter((r) => touches(r as LoggedEntry, marks))
-    .flatMap((r) => {
+  const rows = await touchingEntries(marks, { withBans: false });
+  return rows.flatMap((r) => {
       const group = dataGroup(r.kind as ChangeKind);
       if (!group) return [];
       const detail = r.detail as Record<string, unknown>;
@@ -175,6 +157,39 @@ export async function pendingEntries(marks: ReadingMarks): Promise<DataNotice[]>
         publishedAt: r.publishedAt,
       }];
     });
+}
+
+/**
+ * Whether anything the reading was built from has moved since (H1): every entry `pendingEntries`
+ * lists, AND a ban. A `notLegal` entry is never LISTED (the live legality read names the card),
+ * but the stored reading carries `legality.banned`, so a ban of a card it analyzed makes that
+ * reading stale all the same and a press must compute it again.
+ */
+export async function readingMoved(marks: ReadingMarks): Promise<boolean> {
+  return (await touchingEntries(marks, { withBans: true })).length > 0;
+}
+
+/** The log entries that touch a reading, by `touches`; bans only when asked. Oldest first. */
+async function touchingEntries(marks: ReadingMarks, { withBans }: { withBans: boolean }) {
+  const excluded = withBans ? sql`('rules')` : sql`('rules', 'notLegal')`;
+  const rows = await db
+    .select({
+      seq: deckDataChanges.seq,
+      kind: deckDataChanges.kind,
+      direction: deckDataChanges.direction,
+      oracleIds: deckDataChanges.oracleIds,
+      detail: deckDataChanges.detail,
+      publishedAt: deckDataChanges.publishedAt,
+    })
+    .from(deckDataChanges)
+    .where(sql`(
+      (${deckDataChanges.kind} = 'rules' and (${deckDataChanges.detail}->>'rulesVersion')::int > ${marks.rulesVersion})
+      or (${deckDataChanges.kind} not in ${excluded}
+          and ${deckDataChanges.seq} > ${marks.seenSeq}
+          and ${deckDataChanges.oracleIds} <@ ${`{${marks.analyzedOracleIds.join(",")}}`}::uuid[])
+    )`)
+    .orderBy(deckDataChanges.seq);
+  return rows.filter((r) => touches(r as LoggedEntry, marks));
 }
 
 /**

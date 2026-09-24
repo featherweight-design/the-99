@@ -10,7 +10,7 @@ import { newestVersion, versionCards } from "../decks/versions";
 import { analyzedOracleIds, LOG_HEAD_SQL, readLogHead } from "../notices/log";
 import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, loadDeckProfile, readProfileHead, type ProfileHead } from "./load";
-import { pendingEntries } from "../notices/read";
+import { readingMoved } from "../notices/read";
 import { PROFILE_VERSION } from "./version";
 import type { Bracket } from "../bracket/types";
 import { isReachablePermits } from "../bracket/verdict-head";
@@ -275,13 +275,13 @@ export async function computeAndStoreProfile(
   // pending, the press answers from the store exactly as before.
   const isPress = !pinTo && !rebuildOf;
   const sameAnswer = row && row.profileVersion === PROFILE_VERSION && row.fingerprint === list;
-  const dataMoved = Boolean(isPress && sameAnswer && row && (await pendingEntries({
+  const dataMoved = Boolean(isPress && sameAnswer && row && (await readingMoved({
     seenSeq: row.seenSeq,
     rulesVersion: row.rulesVersion,
     // An empty list is a legacy row (schema note), read as the list this press is guarded to.
     analyzedOracleIds: row.analyzedOracleIds.length > 0 ? row.analyzedOracleIds : analyzedOracleIds(head),
     commanderOracleIds: [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])],
-  })).length > 0);
+  })));
 
   // RULING 5: the same list, under the same code, and the same data (H1), is the same answer. Clear
   // `dirty` (and take the commit's pin) on the row as it stands, guarded on the fingerprint and
