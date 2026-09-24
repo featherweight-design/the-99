@@ -49,41 +49,46 @@ function lineReasons(facts: SynopsisFacts, catalog: Catalog) {
   const allowed = new Set(facts.figures);
   const universal = new Set(facts.cards.filter((c) => c.universalStaple).map((c) => c.oracleId));
 
-  const prose = (text: string, budget: number, cat: Catalog | null): string | null => {
+  const prose = (text: string, budget: number): string | null => {
     if (!endsSentence(text)) return "partial_sentence";
     if (unmarkedNames(text, names, facts.commanders).length > 0) return "unmarked_card";
     if (rendered(text).trim().length > budget) return "over_budget";
     if (strengthClaim(unmarked(text))) return "strength_claim";
     if (manaLetters(text, facts.identity).length > 0) return "mana_letters";
-    if (!marksIn(text).every((n) => deck.has(normalizeName(n)) || !!cat?.has(normalizeName(n)))) return "unknown_card";
     return null;
   };
+  // A mark that resolves to nothing is `unknown_card` only when no rule refused the line: the
+  // validator counts it as a failed name and names it last (`lineCheck`, "a name that failed with
+  // no rule broken"), so a line with a bad mark AND a stray figure is `uncomputed_figure` there.
+  const lost = (text: string, cat: Catalog | null) => !marksIn(text).every((n) => deck.has(normalizeName(n)) || !!cat?.has(normalizeName(n)));
+  const last = (reason: string | null, text: string, cat: Catalog | null = null) => reason ?? (lost(text, cat) ? "unknown_card" : null);
 
   const idOf = (name: string) => deck.get(normalizeName(name))?.oracleId ?? `?${normalizeName(name)}`;
   return {
-    strategy: (t: string) => prose(t, CHAR_BUDGETS.strategy, null),
-    mulligan: (t: string) => prose(t, CHAR_BUDGETS.mulligan, null)
+    strategy: (t: string) => last(prose(t, CHAR_BUDGETS.strategy), t),
+    mulligan: (t: string) => last(prose(t, CHAR_BUDGETS.mulligan)
       ?? (figuresIn(t).every((n) => allowed.has(n)) ? null : "uncomputed_figure")
       ?? (statesLandCount(t) ? "land_count" : null)
       ?? (commanderInHand(t, facts.commanders) ? "commander_in_hand" : null)
-      ?? (headingPrefix(t) ? "heading_prefix" : null),
+      ?? (headingPrefix(t) ? "heading_prefix" : null), t),
     tip: (tip: { cards: string[]; text: string }) => {
       const listed = new Set(tip.cards.map(idOf));
       const marked = new Set(marksIn(tip.text).map(idOf));
-      return prose(tip.text, CHAR_BUDGETS.tip, null)
+      return last(prose(tip.text, CHAR_BUDGETS.tip)
         ?? (tip.cards.every((n) => deck.has(normalizeName(n))) ? null : "tip_not_in_deck")
         ?? (listed.size >= TIP_MIN_CARDS ? null : "tip_too_few_cards")
-        ?? (marked.size === listed.size && [...listed].every((id) => marked.has(id)) ? null : "tip_not_in_deck");
+        ?? (marked.size === listed.size && [...listed].every((id) => marked.has(id)) ? null : "tip_not_in_deck"), tip.text);
     },
     keyCard: (k: SynopsisResponse["keyCards"][number]) => {
       const card = deck.get(normalizeName(k.card));
-      return prose(k.job, CHAR_BUDGETS.job, null)
-        ?? (card ? null : "unknown_card")
-        ?? (jobSupported(k, categories.get(card!.oracleId) ?? new Set()) ? null : "job_unsupported")
-        ?? (universal.has(card!.oracleId) ? "universal_staple" : null);
+      // An unknown card stops the line's own checks, as `deckCard` returning null does there.
+      const reason = prose(k.job, CHAR_BUDGETS.job)
+        ?? (card && !jobSupported(k, categories.get(card.oracleId) ?? new Set()) ? "job_unsupported" : null)
+        ?? (card && universal.has(card.oracleId) ? "universal_staple" : null);
+      return reason ?? (!card || lost(k.job, null) ? "unknown_card" : null);
     },
-    overview: (t: string) => prose(t, CHAR_BUDGETS.overview, null),
-    weakness: (t: string) => prose(t, CHAR_BUDGETS.weakness, catalog),
+    overview: (t: string) => last(prose(t, CHAR_BUDGETS.overview), t),
+    weakness: (t: string) => last(prose(t, CHAR_BUDGETS.weakness), t, catalog),
   };
 }
 

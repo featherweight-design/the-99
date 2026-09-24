@@ -91,8 +91,8 @@ export function applySynopsisVariant(variant: SynopsisVariant, facts: SynopsisFa
  * to the primer, and the primer's overruns are its MULLIGAN lines: median 75 characters against an
  * 80 budget, 58 of 180 over, because a specific line names cards and runs longer. The shipped prompt
  * already says "aim for about 55", so this states the budget as words and as one idea per line, and
- * shows two lines sized to it. Neither example opens with the heading's word, and both name a
- * curve point, so the heading-prefix rule and the specific share are not traded for length. The
+ * shows two lines sized to it. Neither example opens with the heading's word. Only the first names
+ * a curve point, which cost the specific share on the dev decks (round 3b below). The
  * budget is read from `CHAR_BUDGETS`, never restated.
  */
 const PRIMER_BUDGET_RULES = [

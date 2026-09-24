@@ -54,7 +54,11 @@ describe("synopsis variants", () => {
 
 describe("primer-budget-c", () => {
   const { system } = applySynopsisVariant(SYNOPSIS_VARIANTS["primer-budget-c"], facts, (f) => buildSynopsisPrompt(f)).messages;
-  const worked = [...(/Two lines sized to the budget: (.*)$/m.exec(system)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  // Only what the VARIANT appends: since contract 7 the app's own prompt carries the same rules, so
+  // a read of the whole system message would pass on the app's copy with the variant's deleted.
+  const base = buildSynopsisPrompt(facts).system;
+  const rules = system.slice(base.length);
+  const worked = [...(/Two lines sized to the budget: (.*)$/m.exec(rules)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 
   // The first version's worked lines said "two-drop" and "three-drop", which the figures rule reads
   // as 2 and 3, so lines copied from them were dropped on every deck without those figures.
@@ -67,6 +71,7 @@ describe("primer-budget-c", () => {
   });
 
   it("allows a line of play, as the app's own prompt does", () => {
-    expect(system).toContain("a point on the curve, or a line of play");
+    expect(system.startsWith(base)).toBe(true);
+    expect(rules).toContain("a point on the curve, or a line of play");
   });
 });

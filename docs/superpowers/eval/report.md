@@ -169,7 +169,8 @@ read.
   dropped for its citation. The second wording exempts a note by name.
 - **S's malformed answers are its thinking, not the prompt.** On the plain strategy prompt the same
   deck failed on both attempts with all 8,000 output tokens spent thinking, and which deck fails
-  moves from run to run. At default effort every first attempt in the last run reached the ceiling.
+  moves from run to run. At default effort three of the last run's four first attempts reached the
+  8,000 ceiling and the fourth stopped at 7,991.
 - **That is also a latency problem the batch hides.** At about 80 output tokens a second, 8,000
   tokens is about 100s, against the app's 110s model timeout and the page's 120s limit, so an
   answer that needs its retry cannot finish in the app. Medium effort ran 19 to 49s.
@@ -342,8 +343,8 @@ shipped prompt already said "aim for about 55", so the fix states the budget in 
 - two worked lines, both naming a card or a curve point.
 
 The first version, whose second example named nothing, held the budget on the dev decks but let
-the specific share fall from 77% to 56%. The second version is the one measured on held-out, and
-it went to the synopsis lane as a patch. It is verified byte for byte: with it, the app's own
+the specific share fall from 77% to 56%. The version after it (`primer-budget-b`) is the one measured
+on held-out here, and it went to the synopsis lane as a patch, #934. It is verified byte for byte: with it, the app's own
 builder reproduces all 15 held-out first-write prompts and all 21 repair prompts the measurement
 sent.
 
@@ -432,8 +433,9 @@ day 15; the owner alone reaches his $5 share on day 11.
 Still a worst case with no usage behind it; it is here so the allowance ruling is made knowing
 it.
 
-The overview's cost per answer under v6 with the Mulligan budget is $0.050 ($0.051 per accepted
-answer, 44 of 45 accepted), against the $0.049 these figures use. That is a cent, and it moves no
+The overview's cost under v6 with the Mulligan budget's second version, as shipped in #934, is
+$0.0437 per answer and per accepted answer (45 of 45 accepted), against the $0.049 these figures
+use. That is half a cent lower, and it moves no
 whole allowance.
 
 For reference, these are the largest whole allowances the pre-registered rule
@@ -489,7 +491,10 @@ For reference, these are the largest whole allowances the pre-registered rule
 |---|---|---|
 | the plan's rounds, through tuning round 1 and overview round 2 | $16.94 | $16.94 |
 | tuning round 3 re-test (the `strategy` prompt) | $1.41 | $18.35 |
-| overview under contract v6, and the first Mulligan budget | $2.95 | $21.30 |
-| overview, the Mulligan budget's second version (dev, held-out, repair) | $1.17 | $22.47 |
-| tuning round 4, the rationale rules and effort (3 dev checks) | $0.75 | $23.22 |
-| tuning round 4, the blind round (8 held-out decks, medium) | $0.19 | $23.41 |
+| overview under contract v6, and the first Mulligan budget | $2.94 | $21.30 |
+| overview, the Mulligan budget's second version (dev, held-out, repair) | $1.18 | $22.47 |
+| tuning round 4, the rationale rules and effort (3 dev checks) | $0.74 | $23.22 |
+| tuning round 4, the blind round (8 held-out decks, medium) | $0.20 | $23.41 |
+
+Each stage is its ledger entries summed and then rounded, so the rounded stages need not sum to the
+running total.
