@@ -144,15 +144,17 @@ Recorded so the round is not asked about them:
   with #10 deck tuning (Hugh, 2026-09-23): a rolling 24 hours, and only a successful answer spends
   a credit. The client and the allowance are built (`src/lib/model/`, #886). When a re-analyze
   will also rewrite the synopsis, its banner says it uses a credit before the press. An unchanged
-  list (under an unchanged contract version, see Storage) returns its stored synopsis instead of
-  paying for new wording of the same facts.
+  list returns its stored synopsis instead of paying for new wording of the same facts, whatever
+  contract version wrote it (see Storage).
 - **Storage.** Beside the stored analysis (#874). A commit never GENERATES a synopsis; it copies the
   stored one into the version only when that synopsis was written for the exact list committed. Reuse
-  is keyed on two things: the LIST fingerprint (`listFingerprint`,
-  `src/lib/profile/fingerprint.ts:53-55`, the one `deck_profiles.fingerprint` stores) and a
-  synopsis contract version (the prompt, the accept contract and the length budgets). A row
-  whose list or contract version has moved is treated as stale, so a changed rule never serves
-  prose written under the old one. **A catalog refresh alone never stales it and never spends a
+  is keyed on the LIST fingerprint alone (`listFingerprint`,
+  `src/lib/profile/fingerprint.ts:53-55`, the one `deck_profiles.fingerprint` stores). **Only a
+  changed list makes a synopsis stale.** The row also records the synopsis contract version that
+  wrote it (the prompt, the accept contract and the length budgets), but a CONTRACT bump is **not
+  an edit** (Hugh, ruling B, 2026-09-23): the stored synopsis keeps showing, fresh, and the new
+  contract applies at the next write after an edit. Nothing rewrites a synopsis on its own, so a
+  contract bump spends no credit. **A catalog refresh alone never stales it and never spends a
   credit.** Hugh ruled that a catalog refresh never makes a reading stale (audit ruling 6,
   `design/design_handoff_the99_analysis_tab/READINESS-r1-audit.md:42-47`), and the catalog
   generation the stored profile records is read by nothing today (`src/db/schema.ts:1473-1474`).
