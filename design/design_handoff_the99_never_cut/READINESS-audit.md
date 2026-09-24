@@ -8,6 +8,21 @@ cut" so no tool suggests removing it, after tuning cut Lotus Petal and Ornithopt
 children. R1 (`The 99 - Never Cut.dc.html`, `Deck Rows`, `Card View`) is history, except that R1 1d holds the
 only drawing of the climb sheet. Design's own `READINESS.md` is answered in §5.
 
+## Hugh's rulings (2026-09-24)
+
+Hugh approved this audit on 2026-09-24 and ruled on H1 to H4 (§4).
+
+- **L1 (H1, F2): Undo and Put back return a removed card LOCKED**, exactly as it left. The lock ends only if
+  the removal stays.
+- **L2 (H2, F5a): Pull it NEVER offers a copy from a deck where the card is locked.** The row says the spare
+  copy is locked in the other deck.
+- **L3 (H3, F5b): Clear all auto skips locked cards**, and its note counts how many it left.
+- **L4 (H4): locks live on deck rows and tiles, through the Lock cards mode.** The card view (the card modal)
+  shows nothing about a lock.
+
+**F3, the real toolbar, goes to Design as an addendum.** The release ships behind its own switch,
+`NEVER_CUT_ENABLED`.
+
 ## Verdict: Orange
 
 Build the storage, the tuning filter, the row and tile marks and the mode now, with the engineering corrections
