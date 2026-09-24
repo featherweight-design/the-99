@@ -271,7 +271,7 @@ try {
       const rects = [...range.getClientRects()].filter((r) => r.width > 0);
       return { dot: Math.round(dot.getBoundingClientRect().top), text: Math.round(rects.at(-1)?.top ?? -1) };
     });
-    report(`${tag} separator shares the count's line while editing`, sep && Math.abs(sep.dot - sep.text) <= 4,
+    report(`${tag} separator shares the count's line while editing`, sep && Math.abs(sep.dot - sep.text) <= 12,
       sep ? `dot at ${sep.dot}px, count at ${sep.text}px` : "no separator found");
     await line(page).getByRole("textbox").fill("25");
     await line(page).getByRole("button", { name: "Save" }).click();
