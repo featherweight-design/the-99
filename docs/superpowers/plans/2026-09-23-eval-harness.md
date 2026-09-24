@@ -217,6 +217,14 @@ opposite ways by a wide margin, goes to the orchestrator rather than being resol
   for both Sonnet cells; Haiku needs a word target.
 - **The harness calls api.anthropic.com directly**, as production does, and never follows a shell's
   `ANTHROPIC_BASE_URL`.
+- **The overview's blind read is held, and will likely be an ABSOLUTE read** (orchestrator, 2026-09-24).
+  This departs from the pre-registered rule, and the report says so: S failed on viability, not on
+  quality. At an 8,000 ceiling it truncates or malforms a third of its answers and takes over a
+  minute each, so a side-by-side against S compares sonnet-low with mostly-refused pages. The read
+  becomes Hugh judging sonnet-low alone, under whichever contract he picks from shipped, (A), (B)
+  and A+B. No overview pairs are seeded until that answer is relayed.
+- **(B) is measured for sonnet-low + budgets-plus alone**, and A+B is derived from the same run
+  rather than sent a second time.
 
 ## Deliverables and PR boundaries (no stacking; each merges before the next opens)
 
