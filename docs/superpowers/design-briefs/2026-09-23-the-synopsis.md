@@ -7,8 +7,9 @@ Round 0 section (~:2116-2130), which deferred the synopsis's *content* design to
 **Chrome to reuse:** `ModalChrome` in `src/components/decks/receipt-modal.tsx`, which already carries
 three bodies: the card list and the combo (#863) and the reasoning (#865)
 
-**Verified against `origin/main` at `c476c931`.** The slot exists today as `SynopsisSlot` in
-`src/components/decks/analysis-panel.tsx:211`, drawing its absent reading only.
+**Verified against `origin/main` at `c476c931`; updated at `4ba8df85`.** The slot's placeholder,
+`SynopsisSlot`, was deleted by #887 (finding 6 of the Analysis-tab audit): until this feature
+ships, the tab draws no Overview section at all rather than a placeholder.
 
 This round asks: **what does a read-back of a finished deck look like, and how long is it?**
 
@@ -139,17 +140,26 @@ Recorded so the round is not asked about them:
 - **Themes.** The profile's theme slot is deliberately `null` (#724). The synopsis names the
   deck's strategy in prose, grounded in the cards it names, and never writes to or reads from a
   theme list.
-- **Cost.** One model call per press, an hourly cap per
-  player, and an unchanged list (under an unchanged contract and stamps, see Storage) returns its stored synopsis instead of paying for new wording of
-  the same facts. No model client exists under `src/` yet (the only caller is
-  `scripts/generate-commander-prose.ts`, with its own `fetch`); whichever of the synopsis and #10
-  deck tuning builds first creates it neutrally, for both.
-- **Storage.** Keyed on the profile fingerprint, beside the stored analysis (#874), and copied
-  into the version at commit. **The list fingerprint alone does not make a row reusable.** Each
-  row also stores a synopsis contract version (the prompt, the accept contract and the length
-  budgets) and the same freshness stamps the stored profile carries (the catalog generation, and
-  when it was computed). A row whose contract version or stamps have moved is treated as stale, so
-  a changed rule never serves prose written under the old one.
+- **Cost.** One model call per press, charged to the per-player allowance the synopsis shares
+  with #10 deck tuning (Hugh, 2026-09-23): a rolling 24 hours, and only a successful answer spends
+  a credit. The client and the allowance are built (`src/lib/model/`, #886). When a re-analyze
+  will also rewrite the synopsis, its banner says it uses a credit before the press. An unchanged
+  list returns its stored synopsis instead of paying for new wording of the same facts, whatever
+  contract version wrote it (see Storage).
+- **Storage.** Beside the stored analysis (#874). A commit never GENERATES a synopsis; it copies the
+  stored one into the version only when that synopsis was written for the exact list committed. Reuse
+  is keyed on the LIST fingerprint alone (`listFingerprint`,
+  `src/lib/profile/fingerprint.ts:53-55`, the one `deck_profiles.fingerprint` stores). **Only a
+  changed list makes a synopsis stale.** The row also records the synopsis contract version that
+  wrote it (the prompt, the accept contract and the length budgets), but a CONTRACT bump is **not
+  an edit** (Hugh, ruling B, 2026-09-23): the stored synopsis keeps showing, fresh, and the new
+  contract applies at the next write after an edit. Nothing rewrites a synopsis on its own, so a
+  contract bump spends no credit. **A catalog refresh alone never stales it and never spends a
+  credit.** Hugh ruled that a catalog refresh never makes a reading stale (audit ruling 6,
+  `design/design_handoff_the99_analysis_tab/READINESS-r1-audit.md:42-47`), and the catalog
+  generation the stored profile records is read by nothing today (`src/db/schema.ts:1473-1474`).
+  Telling a player that the data under their deck moved is the deck-notices feature's job
+  (`2026-09-23-deck-notices.md`), not the synopsis's.
 
 ## §7 Sequence
 
