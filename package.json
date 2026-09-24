@@ -42,6 +42,7 @@
     "probe:notices-tile": "node scripts/probe-notices-tile.mjs",
     "probe:synopsis": "tsx scripts/probe-synopsis.ts",
     "probe:swap-engine": "tsx scripts/probe-swap-engine.ts",
+    "probe:swap-take": "tsx scripts/probe-swap-take.ts",
     "probe:swap-coverage": "tsx scripts/probe-swap-coverage.ts",
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",

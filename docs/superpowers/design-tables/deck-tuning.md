@@ -1093,7 +1093,7 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 | text (owned) | — | `nothing added to your shopping list — you own it` |
 | text (unowned) | — | `Undead Augur is on your shopping list · $1.20` |
 
-### `Put it back` button
+### `Undo swap` button
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -1212,7 +1212,7 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 | Tuning panel (S4) | 6e · Interrupted (undrawn) | A pending run older than the cutoff, written to `failed` by the read-time reaper | Not drawn by Design — the merged spec's fifth class. Takes the identical failure shape: `--danger` tag, one sentence, one survived-line, one `Try again` | a fifth object in `deckTuningCopy.failure` |
 | Suggestion card (S5) | 1 · Open | Suggestion returned and passed validation, not yet acted on | Four rows: pair (cut → add, ownership, price if unowned), rationale, actions + citation chips, consequence in mono before the tap. Phone: pair over two lines, actions as two 44px halves, consequence below | cut name, add name + type line, ownership qty, price if unowned, rationale (long + short), ≥1 citation, consequence string |
 | Suggestion card (S5) | 2 · Applying | Apply pressed, mutation in flight | Card border unchanged; apply button reads `Applying…` and is non-interactive; dismiss disabled; nothing unmounts | — |
-| Suggestion card (S5) | 3 · Applied | Apply mutation succeeded | `1px --success` border, `--success` arrow and add-thumbnail border, add column relabelled `Added`, `applied` stamp, post-swap verdict in the shipped status wording, shopping clause, `Put it back` | post-swap count + status + shopping delta, returned by the mutation |
+| Suggestion card (S5) | 3 · Applied | Apply mutation succeeded | `1px --success` border, `--success` arrow and add-thumbnail border, add column relabelled `Added`, `applied` stamp, post-swap verdict in the shipped status wording, shopping clause, `Undo swap` | post-swap count + status + shopping delta, returned by the mutation |
 | Suggestion card (S5) | 4 · Apply refused | Apply mutation refused | Card returns to state 1 with the shipped `MutationError` under its own action row; nothing else on the panel changes | error from the mutation |
 | Suggestion card (S5) | 5 · Dismissed | `Not this one` pressed | Collapses to a one-line row in the same slot: `not this one` label + pair in `--fg-faint` + `Show it again`. No gap, no reorder, no animation out, no question asked | cut and add names |
 | Suggestion card (S5) | 6 · Restored | `Show it again` pressed on a dismissed row | Identical to state 1, in the same slot | the original suggestion payload |

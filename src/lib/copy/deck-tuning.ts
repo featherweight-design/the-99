@@ -203,7 +203,7 @@ export const deckTuningCopy = {
     applying: "Applying\u2026",
     reject: "Reject",
     applied: "applied",
-    undo: "Put it back",
+    undo: "Undo swap",
     rejected: "rejected",
     restore: "Show it again",
     noLongerApplies: "no longer applies",
