@@ -135,3 +135,29 @@ export function outsideMarks(reply: SynopsisResponse, facts: SynopsisFacts, cata
   const names = [...texts.flatMap(marksIn), ...tips.flatMap((t) => t.cards).map(unmark), ...reply.keyCards.map((k) => unmark(k.card))];
   return names.filter((n) => !known(n)).length;
 }
+
+/**
+ * What a section SHOWS under the drop-the-line rule: the passing lines of each list, in order, and
+ * the prose whole. Only meaningful for a section `dropLineRule` passes; a Key card named twice
+ * keeps its first passing line, as the rule counts it once.
+ */
+export function dropLineContent(reply: SynopsisResponse, facts: SynopsisFacts, catalog: Catalog) {
+  const c = lineChecks(facts, catalog);
+  const seen = new Set<string | null>();
+  return {
+    overview: reply.overview,
+    primer: {
+      strategy: reply.primer.strategy,
+      mulligan: { keep: reply.primer.mulligan.keep.filter(c.mulligan), sendBack: reply.primer.mulligan.sendBack.filter(c.mulligan) },
+      tips: reply.primer.tips.filter(c.tip),
+    },
+    keyCards: reply.keyCards.filter((k) => {
+      if (!c.keyCard(k)) return false;
+      const id = c.keyCardId(k);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }),
+    weaknesses: reply.weaknesses.filter(c.weakness),
+  };
+}
