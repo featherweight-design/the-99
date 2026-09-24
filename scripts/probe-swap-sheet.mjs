@@ -40,9 +40,16 @@ const KINDS = {
   land: ["Plateau", "Taiga", "Badlands", "Scrubland", "Tundra", "Volcanic Island", "Bayou", "Savannah"],
   fetch: ["Wooded Foothills", "Arid Mesa", "Misty Rainforest", "Scalding Tarn", "Verdant Catacombs", "Marsh Flats"],
   spell: ["Deadly Rollick", "Cyclonic Rift"],
+  // A utility land whose stand-ins all give up the same thing: said once in the lead (Hugh, 2026-09-24).
+  utility: ["Cavern of Souls"],
 };
 /** How each kind's lead opens, from the copy module's own templates. */
-const LEAD = { land: /^Every land here makes /, fetch: /^Every land here finds a /, spell: /^Every card here is / };
+const LEAD = {
+  land: /^Every land here makes /,
+  fetch: /^Every land here finds a /,
+  spell: /^Every card here is /,
+  utility: /^Every land here makes .*and each gives up /,
+};
 
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
@@ -213,6 +220,14 @@ try {
           headTag: [...sheet.querySelector("section").querySelectorAll("span")]
             .find((s) => s.textContent.trim().startsWith("buy"))?.textContent.replace(/\s+/g, " ").trim() ?? null,
           // Every row's thumb is painted from the card's art, not left as its empty frame.
+          // A row with nothing under its name draws no second line: its left cell is its name line.
+          emptyRows: [...sheet.querySelectorAll("li")].filter((li) => !li.querySelector("p")).length,
+          blankLines: [...sheet.querySelectorAll("li")].filter((li) => {
+            if (li.querySelector("p")) return false;
+            const cell = li.querySelector(":scope > div > div");
+            const line = cell?.firstElementChild;
+            return cell && line && cell.getBoundingClientRect().height > line.getBoundingClientRect().height + 1;
+          }).length,
           bareThumbs: [...sheet.querySelectorAll("li")].filter((li) => {
             const thumb = li.querySelector('span[aria-hidden="true"]');
             return !getComputedStyle(thumb).backgroundImage.includes("url(");
@@ -232,6 +247,10 @@ try {
       report(`${tag} ${kind}: the head's tag is the row's`, read.headTag !== null && read.headTag === rowTag,
         `head ${read.headTag}, row ${rowTag}`);
       report(`${tag} ${kind}: every row's thumb carries its art`, read.bareThumbs === 0, `${read.bareThumbs} bare of ${read.rows}`);
+      if (kind === "utility") {
+        report(`${tag} utility: rows left with nothing say nothing`, read.emptyRows > 0 && read.blankLines === 0,
+          `${read.emptyRows} rows with no line under the name, ${read.blankLines} holding an empty one`);
+      }
       report(`${tag} ${kind}: nothing wider than the sheet`, read.overflow <= 0, `${read.overflow}px`);
       if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/swap-sheet-${kind}-${w.label}.png` });
       await dialog.getByRole("button", { name: "Close cheaper stand-ins" }).click();
