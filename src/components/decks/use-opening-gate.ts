@@ -11,7 +11,13 @@ export const OPENING_HOLD_MS = 400;
  * Whether the tab is OPENING (§8, 8a): shown, still `idle`, with a stored analysis to fetch, and
  * the peek not yet answered. No stored permits means nothing to fetch, so the empty state is the
  * answer at once and is never held back. Anything past `idle` (a press, a reading) is an answer
- * too, and a press's reply is never gated.
+ * too, so a press made on the open tab is never gated.
+ *
+ * ONE EXCEPTION, decided rather than missed: press Analyze, move to another deck while it is in
+ * flight, and come back. The deck change resets the tab to `idle`, and the peek does not run for a
+ * deck with a press out, so the loader draws over that press and its reply waits out the hold, at
+ * most 400ms. Settling there instead would draw the not-analyzed ring over a running analysis.
+ * See `gap-report-analysis-tab-opening.md`.
  */
 export function isOpening({
   shown,
@@ -36,8 +42,9 @@ export function isOpening({
  * - `loader`: draw the loader. Once here, it holds for 400ms even if the fetch answers sooner,
  *   and the answer waits behind it.
  *
- * Only the OPENING fetch is gated. A press's reply is never held: the shell passes `active` for
- * the peek alone, and a press moves the tab out of `idle`, which ends it.
+ * Only the OPENING fetch is gated: the shell passes `active` for the peek alone, and a press moves
+ * the tab out of `idle`, which ends it. The one way a press's reply meets the hold is the
+ * deck-change case `isOpening` names.
  */
 export function useOpeningGate(active: boolean): "off" | "wait" | "loader" {
   const [phase, setPhase] = useState<"off" | "wait" | "loader">(active ? "wait" : "off");

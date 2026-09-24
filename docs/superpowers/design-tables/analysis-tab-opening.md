@@ -46,7 +46,7 @@ Sources are in `design/design_handoff_the99_analysis_tab/`. Abbreviations: **H**
 | Property | Both widths |
 |---|---|
 | Delay before showing | 150ms. A fetch that settles sooner goes straight to the answer with no loader (C:481; H:120; S:9) |
-| Minimum hold once drawn | 400ms (C:481; H:120; S:9). **(RA corr. 5)** This needs a new timer. The reading is held back until the 400ms have passed, and a press's reply is never held (RA:186-187) |
+| Minimum hold once drawn | 400ms (C:481; H:120; S:9). **(RA corr. 5)** This needs a new timer. The reading is held back until the 400ms have passed, and a press's reply is never held (RA:186-187). The build holds one reply: a press left in flight across a deck change and a return (`gap-report-analysis-tab-opening.md`, state 1, decided) |
 
 ## What is drawn and what is withheld during 8a
 
