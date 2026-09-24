@@ -29,7 +29,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         settled={over.settled ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
-        reanalyze={{ onPress: onReanalyze, disabled: over.reanalyzeBlocked ?? false }}
+        reanalyze={{ onPress: onReanalyze, disabled: over.reanalyzeBlocked ?? false, note: null }}
       />
     </CardDetailProvider>,
   );
@@ -93,6 +93,19 @@ describe("SynopsisOverview", () => {
     const note = screen.getByText(/0 of 3 left/).textContent ?? "";
     expect(note).toContain(clockTime(reopens));
     expect(note).not.toContain(clockTime(next));
+  });
+
+  it("holds Write one and says the app is paused while the spend cap holds", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until: new Date("2026-10-01T12:00:00Z") } } }));
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
+    expect(screen.getByText(/^Paused until/)).toBeTruthy();
+    expect(screen.queryByText(/Uses a credit/)).toBeNull();
+  });
+
+  it("holds Write one and names the owner's used share", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }));
+    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
+    expect(screen.getByText(/testing share/)).toBeTruthy();
   });
 
   it("says a failed write failed, and offers Try again", () => {
@@ -195,6 +208,24 @@ describe("SynopsisOverview", () => {
     expect(within(dialog).queryByRole("button", { name: copy.writeNew })).toBeNull();
   });
 
+  // Finding 5: the sheet's Re-analyze also writes, so it carries the banner's note.
+  it("draws the credit note beside the sheet's Re-analyze", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <SynopsisOverview
+          state={synopsisState({ stale: true })} busy={false} deckName="Hoof" art={new Map()}
+          readingFresh={false} settled onWrite={onWrite} onRetry={onRetry}
+          reanalyze={{ onPress: onReanalyze, disabled: false, note: "Also writes the overview, using a credit. 2 of 3 left." }}
+        />
+      </CardDetailProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
+    const dialog = screen.getByRole("dialog");
+    const press = within(dialog).getByRole("button", { name: "Re-analyze" });
+    const note = document.getElementById(press.getAttribute("aria-describedby")!);
+    expect(note?.textContent).toMatch(/^Also writes the overview/);
+  });
+
   it("holds the modal's Re-analyze exactly as the tab's banner holds it", () => {
     draw(synopsisState({ stale: true }), { readingFresh: false, reanalyzeBlocked: true });
     fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
@@ -279,7 +310,7 @@ describe("SynopsisOverview", () => {
             <SynopsisOverview
               state={synopsisState({ art: { craterhoof: "https://img/hoof.jpg" } })}
               busy={false} deckName="Hoof" art={new Map()} readingFresh settled
-              onWrite={onWrite} onRetry={onRetry} reanalyze={{ onPress: onReanalyze, disabled: false }}
+              onWrite={onWrite} onRetry={onRetry} reanalyze={{ onPress: onReanalyze, disabled: false, note: null }}
             />
           </HoverPreviewProvider>
         </CardDetailProvider>,

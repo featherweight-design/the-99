@@ -4,6 +4,8 @@ import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
+import { listFingerprint } from "../profile/fingerprint";
+import { readProfileHead } from "../profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { reapSynopses } from "./reaper";
@@ -29,6 +31,14 @@ export type SynopsisState = {
    * (credits audit, finding 4): after a revert the banner shows while the synopsis is current.
    */
   wouldSpend: boolean;
+  /**
+   * An Analyze or Re-analyze press would write an overview (the credits audit, item 2): the deck's
+   * LIVE list has none, by fingerprint alone (ruling B). A press reads the list as it is now, so
+   * this compares against the deck rather than against the stored reading, which after an edit
+   * describes the list before it. False when the list already has its overview (7d: the press
+   * returns it and spends nothing). The allowance, beside it, picks which note draws.
+   */
+  pressWrites: boolean;
   allowance: Allowance;
   /**
    * The deck's newest run failed after the synopsis on screen was written, without an answer
@@ -64,8 +74,15 @@ export function synopsisStatus(input: {
   const { reading, synopsis, allowance, pending } = input;
   const stale = !!synopsis && (!reading || !reading.fresh || synopsis.fingerprint !== reading.list);
   const forThisList = !!synopsis && !!reading && synopsis.fingerprint === reading.list;
-  const wouldSpend = !!reading?.fresh && !forThisList && !pending && allowance.used < allowance.limit;
+  // Paused (the app-wide cap) or the owner's share used: the reservation refuses, so nothing would spend.
+  const refused = !!allowance.paused || !!allowance.ownerShare;
+  const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && allowance.used < allowance.limit;
   return { stale, wouldSpend };
+}
+
+/** Pure: whether a press over the live list writes, which is whether that list has its overview. */
+export function pressWrites(live: string | null, synopsis: Pick<SynopsisRow, "fingerprint"> | null): boolean {
+  return live !== null && synopsis?.fingerprint !== live;
 }
 
 export async function readSynopsisState(
@@ -78,11 +95,19 @@ export async function readSynopsisState(
   if (!owned) return null;
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
 
-  const [reading, row, synopsis, newest, allowance] = await Promise.all([
+  // THE LIVE LIST AND ITS OVERVIEW, from ONE read-only repeatable-read snapshot. The list is two
+  // reads (the deck row and its cards), and the overview shown is the one written for that list:
+  // read apart, an edit landing between them pairs list A with A's overview while the deck is
+  // already B, and the press note would describe a list that is no longer live.
+  const { live, synopsis } = await db.transaction(async (tx) => {
+    const head = await readProfileHead(tx, deckId, userId);
+    const list = head ? listFingerprint(head) : null;
+    return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx) };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  const [reading, row, newest, allowance] = await Promise.all([
     readStoredReading(deckId, userId, deps),
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
-    readShownSynopsis(deckId, userId),
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
       .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
@@ -111,7 +136,10 @@ export async function readSynopsisState(
     (await db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)))
       .map((r) => [r.oracleId, r.imageUri]),
   );
-  return { synopsis, ...status, allowance, lastFailed, lastRefused, art, pending: newest?.status === "pending" };
+  return {
+    synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRefused, art,
+    pending: newest?.status === "pending",
+  };
 }
 
 /** A version's synopsis, as copied at its commit, or null. Never stale (`SYNOPSIS-modal.md` §4.4). */

@@ -48,8 +48,11 @@ const painted: string[] = [];
 /** Every (state, peek settled) pair painted, for the opening loader's rule. */
 const settledPaint: string[] = [];
 
+/** Every deck `onFresh` was called for: the overview's write hangs on it (synopsis PR 4). */
+const freshCalls: string[] = [];
+
 function Harness({ deckId = A, listKey }: { deckId?: string; listKey?: string }) {
-  const { state, request, peek, peekSettled } = useDeckProfile(deckId, listKey);
+  const { state, request, peek, peekSettled } = useDeckProfile(deckId, listKey, (d) => freshCalls.push(d));
   painted.push(`${deckId}:${state.kind}`);
   settledPaint.push(`${state.kind}:${peekSettled}`);
   return (
@@ -82,6 +85,7 @@ const peek = async (c: ReturnType<typeof render>) => {
 };
 
 beforeEach(() => {
+  freshCalls.length = 0;
   painted.length = 0;
   settledPaint.length = 0;
   stub.peeks = [];
@@ -452,5 +456,48 @@ describe("useDeckProfile peek", () => {
     // The end state alone cannot see this: the deck-changed reset would put a late `ready` back
     // to `idle` one render later. What must never happen is that render.
     expect(painted).not.toContain(`${B}:ready`);
+  });
+  // THE PRESS ALSO WRITES THE OVERVIEW (synopsis PR 4), and only a press that landed a fresh
+  // reading over the list it asked about. Everything else writes nothing.
+  describe("onFresh", () => {
+    it("fires once for a press that lands a fresh reading", async () => {
+      const c = render(<Harness listKey="a:1" />);
+      await ask(c);
+      expect(freshCalls).toEqual([A]);
+    });
+
+    it("does not fire for a peek, which paints a stored reading", async () => {
+      stub.stored = { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-23T00:00:00Z", fresh: true, versionNumber: null };
+      const c = render(<Harness listKey="a:1" />);
+      await peek(c);
+      expect(kind(c)).toBe("ready");
+      expect(freshCalls).toEqual([]);
+    });
+
+    it("does not fire for a reply an edit overtook", async () => {
+      stub.gate = () => {};
+      const c = render(<Harness listKey="a:1" />);
+      await ask(c);
+      c.rerender(<Harness listKey="a:1,b:1" />);
+      await act(async () => {});
+      const release = stub.gate;
+      stub.gate = null;
+      await act(async () => {
+        release?.();
+      });
+      expect(freshCalls).toEqual([]);
+    });
+
+    it("does not fire for a stale reading, a failure or a refusal", async () => {
+      stub.reply = { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-23T00:00:00Z", fresh: false, versionNumber: null };
+      const c = render(<Harness listKey="a:1" />);
+      await ask(c);
+      stub.throws = true;
+      await ask(c);
+      stub.throws = false;
+      stub.reply = { ok: false, reason: "illegal", built: 40, size: 99 };
+      await ask(c);
+      expect(freshCalls).toEqual([]);
+    });
   });
 });

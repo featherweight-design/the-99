@@ -24,9 +24,11 @@ export function clockTime(at: Date): string {
 
 /** A month's name, `October`, read in UTC: the spend cap's months are UTC calendar months, so
  *  a pause lifting at 00:00 UTC on the 1st is named for that month in every reader's clock. */
-function monthName(at: Date): string {
+export function monthName(at: Date): string {
   return at.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 }
+
+const PAUSED_REASON = "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.";
 
 /** The count and, when one is out, when the next comes back. */
 function standing(left: number, total: number, next: Date | null): string {
@@ -34,6 +36,12 @@ function standing(left: number, total: number, next: Date | null): string {
 }
 
 export const creditsCopy = {
+  /**
+   * The count and, when one is out, when the next comes back: `4 of 5 left · next one at 2:01 AM`.
+   * Exported so a surface composing its own lead around the shared line (the overview's press
+   * notes) says it in exactly this format rather than a copy of it.
+   */
+  standing,
   /** Beside a press that would spend a credit for the first time on this surface. */
   first: (left: number, total: number, next: Date | null) => `Uses a credit. ${standing(left, total, next)}.`,
   /** Beside a press that would replace what is on screen. */
@@ -46,8 +54,10 @@ export const creditsCopy = {
    * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is
    * disabled until `until`, the 1st of next month. DECIDED wording (orchestrator, 2026-09-24).
    */
-  paused: (until: Date) =>
-    `Paused until ${monthName(until)} 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.`,
+  paused: (until: Date) => `Paused until ${monthName(until)} 1. ${PAUSED_REASON}`,
+  /** `paused`'s reason alone, for a surface that names the pause in its own lead (the overview's
+   *  press note), so the reason is said in exactly these words and nowhere restated. */
+  pausedReason: PAUSED_REASON,
   /** The same refusal from the server, where no date is formatted in the reader's clock. */
   pausedServer: "Paused until the 1st of next month. Nothing you did caused this.",
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */

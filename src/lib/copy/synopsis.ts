@@ -21,6 +21,26 @@ export const synopsisCopy = {
   olderThanList: "This overview was written before your latest changes.",
   writeNew: "Write a new overview",
 
+  /**
+   * The note beside a press that also writes the overview (the credit note, `CREDITS-overview.md`
+   * 7a to 7e): Analyze in the empty state and Re-analyze in the banner or the sheet. The standing
+   * that follows each lead is the shared credits line.
+   */
+  pressNote: {
+    writes: (standing: string) => `Also writes the overview, using a credit. ${standing}.`,
+    /** 7b: the bracket is still free; only the overview waits. Followed by the used-up line. */
+    analyzeUsedUp: "Reads the bracket only; the overview waits for a credit.",
+    /** 7e: the overview on screen stays; the used-up line follows. */
+    reanalyzeUsedUp: "Reads the bracket only; the overview stays as it was.",
+    /**
+     * The app-wide cap: the player HAS credits, and it is the app that is paused, so "waits for a
+     * credit" would be false. Followed by the cap's own reason (the-99-d9's ruling, 2026-09-24).
+     */
+    paused: (month: string) => `Reads the bracket only; the overview is paused until ${month} 1.`,
+    /** The owner's testing share for the month is used. */
+    ownerShare: (month: string) => `Reads the bracket only; you’ve used your testing share for ${month}.`,
+  },
+
   /** Refused, in the tab (the Overview section itself) and in the modal (any one section). */
   notWritten: "not written",
   overviewRefused:

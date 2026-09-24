@@ -54,7 +54,7 @@ export function SynopsisOverview({
   onRetry: (synopsisId: string) => void;
   /** The banner's Re-analyze, for the modal over a reading that is itself stale (6d), held
    *  exactly as the tab's banner holds it: a short deck or a read in flight cannot press it. */
-  reanalyze: { onPress: () => void; disabled: boolean };
+  reanalyze: { onPress: () => void; disabled: boolean; note: string | null };
 }) {
   const [open, setOpen] = useState(false);
   // The page's art covers the deck; the read's covers every card the overview names, which is how
@@ -70,14 +70,20 @@ export function SynopsisOverview({
   const content = synopsis?.content ?? null;
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
   const left = Math.max(0, allowance.limit - allowance.used);
-  const spent = left === 0;
+  // No write can reserve: every credit out, the app-wide cap reached, or the owner's share used.
+  // Each disables the press in 7g's form and says which, never "uses a credit".
+  const spent = left === 0 || !!allowance.paused || !!allowance.ownerShare;
   const canWrite = readingFresh && settled && !state.pending;
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,
   // which is false when the list already has its overview; a section retry always spends. Every
   // credit out says so, whatever the press.
   // Spent, the credit comes back at `reopensAt`, which can be later than the earliest expiry
   // when more units count than the limit (a reservation beside spent units): as the tuning panel.
-  const spentNote = creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
+  const spentNote = allowance.paused
+    ? creditsCopy.paused(allowance.paused.until)
+    : allowance.ownerShare
+      ? creditsCopy.ownerShare(new Date())
+      : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
   const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = spent ? spentNote : spendNote;
@@ -167,7 +173,7 @@ export function SynopsisOverview({
           action={stale
             ? readingFresh
               ? { label: synopsisCopy.writeNew, line: null, note, disabled: !canWrite || spent, onPress: onWrite }
-              : { label: deckAnalysisCopy.banner.reanalyze, line: null, note: null, disabled: reanalyze.disabled, onPress: reanalyze.onPress }
+              : { label: deckAnalysisCopy.banner.reanalyze, line: null, note: reanalyze.note, disabled: reanalyze.disabled, onPress: reanalyze.onPress }
             : null}
           onRetry={canWrite && !stale ? () => onRetry(synopsis.id) : null}
           retryNote={retryNote}

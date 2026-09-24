@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import type { Bracket } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { BracketMark } from "./bracket-mark";
@@ -30,6 +32,7 @@ export function AnalysisEmpty({
   phase,
   onRequest,
   blocked = null,
+  note = null,
 }: {
   phase: "idle" | "loading" | "failed";
   onRequest: () => void;
@@ -38,7 +41,15 @@ export function AnalysisEmpty({
    * (Hugh, 2026-09-23; undrawn in the handoff, so it borrows the busy button's look).
    */
   blocked?: string | null;
+  /**
+   * The credit note when this press also writes the overview (`CREDITS-overview.md` 7a, 7b): after
+   * the button at 1300, with the provenance opener wrapped to its own line under the pair; centred
+   * under the full-width button at 390. None over a blocked deck (finding 10b).
+   */
+  note?: string | null;
 }) {
+  const noteId = useId();
+  const shownNote = blocked === null ? note : null;
   const text = phase === "loading" ? copy.loading : phase === "failed" ? copy.failed : copy.idle;
   const busy = phase === "loading";
   const disabled = busy || blocked !== null;
@@ -80,13 +91,13 @@ export function AnalysisEmpty({
               {copy.idle.bodyPersist}
             </p>
           ) : null}
-          <div className="mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-[20px]">
+          <div className={`mt-[20px] flex w-full flex-col items-center gap-[6px] md:mt-[22px] md:w-auto md:flex-row md:flex-wrap md:gap-x-[20px] ${shownNote ? "md:gap-y-[12px]" : "md:gap-y-[20px]"}`}>
             {/* A BUTTON, NEVER AUTOMATIC. A silent retry loop is how a wait becomes a bill. */}
             <button
               type="button"
               onClick={disabled ? undefined : onRequest}
               aria-disabled={disabled || undefined}
-              aria-describedby={blocked ? "analysis-blocked" : undefined}
+              aria-describedby={blocked ? "analysis-blocked" : shownNote ? noteId : undefined}
               className={
                 "inline-flex min-h-[44px] items-center justify-center self-stretch rounded-[8px] px-[22px] text-[14px] font-semibold md:self-auto md:text-[14.5px] "
                 + (disabled
@@ -96,7 +107,19 @@ export function AnalysisEmpty({
             >
               {phase === "failed" ? copy.failed.cta : copy.idle.cta}
             </button>
-            <ProvenanceOpener tone="accent" />
+            {shownNote ? (
+              <p
+                id={noteId}
+                data-testid="press-note"
+                className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:max-w-[340px] md:text-left md:text-[11px]"
+              >
+                {shownNote}
+              </p>
+            ) : null}
+            {/* With a note in the row, the opener takes its own line under the pair (7a). */}
+            <div className={shownNote ? "md:basis-full" : "contents"}>
+              <ProvenanceOpener tone="accent" />
+            </div>
             {/* IN the CTA row (the table's placement), on a line of its own under the press. */}
             {blocked ? (
               <p

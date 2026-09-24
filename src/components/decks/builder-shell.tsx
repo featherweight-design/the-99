@@ -17,6 +17,7 @@ import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { TuningPanel } from "./tuning-panel";
+import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
 import { useDeckSynopsis } from "./synopsis-state";
 import { shownReading, useDeckProfile } from "./use-deck-profile";
@@ -305,7 +306,12 @@ export function BuilderShell({
     () => cards.map((c) => `${c.oracleId}:${c.quantity}`).sort().join(","),
     [cards],
   );
-  const profile = useDeckProfile(deck.id, listKey);
+  // THE PRESS ALSO WRITES THE OVERVIEW (synopsis PR 4): hung on the profile's `onFresh`, which
+  // fires only for a press that landed a fresh reading over the list it asked about. Set in an
+  // effect below, once the synopsis state it calls exists.
+  const writeOnFresh = useRef<((deckId: string) => void) | null>(null);
+  const onFresh = useCallback((deckId: string) => writeOnFresh.current?.(deckId), []);
+  const profile = useDeckProfile(deck.id, listKey, onFresh);
   // Opening the Analysis tab shows an analysis already stored for this deck, if one matches it.
   // It never computes one; see `useDeckProfile`.
   const peekProfile = profile.peek;
@@ -336,6 +342,26 @@ export function BuilderShell({
     analysisEnabled && view === "analysis",
     `${listKey}|${reading?.analyzedAt ?? ""}|${readingFresh}`,
   );
+  // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
+  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze") : null;
+  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze") : null;
+  // A PRESS WRITES ONLY WHAT ITS NOTE SAID IT WOULD. Recorded when the press is made, so a note
+  // that was not drawn (the state not yet read, the list already written, no credit left) is a
+  // press that spends nothing, whatever the state says by the time the reading lands.
+  const pressWrites = useRef(false);
+  const requestAnalysis = useCallback(() => {
+    pressWrites.current = Boolean(analyzeNote?.writes);
+    profile.request();
+  }, [analyzeNote?.writes, profile]);
+  const writeSynopsisNow = synopsis.write;
+  useEffect(() => {
+    writeOnFresh.current = (landed: string) => {
+      if (landed !== deck.id || !pressWrites.current) return;
+      pressWrites.current = false;
+      // A refusal (reused, in flight, allowance) is a silent no-op: the Overview re-reads either way.
+      void writeSynopsisNow();
+    };
+  }, [deck.id, writeSynopsisNow]);
   const counts = deckCounts(cards, unresolvedCount);
 
   // THE HEADER'S BRACKET, held across an edit and retired by a change of deck; see `useHeaderBracket`.
@@ -1135,7 +1161,8 @@ export function BuilderShell({
                 <AnalysisPanel
                   state={profile.state}
                   opening={opening}
-                  onRequest={profile.request}
+                  onRequest={requestAnalysis}
+                  pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
@@ -1173,7 +1200,11 @@ export function BuilderShell({
                         settled={synopsis.view.current}
                         onWrite={synopsis.write}
                         onRetry={synopsis.retry}
-                        reanalyze={{ onPress: profile.request, disabled: profile.state.kind === "loading" || built !== bodySize }}
+                        reanalyze={{
+                          onPress: requestAnalysis,
+                          disabled: profile.state.kind === "loading" || built !== bodySize,
+                          note: built !== bodySize ? null : reanalyzeNote?.text ?? null,
+                        }}
                       />
                     ) : null
                   }

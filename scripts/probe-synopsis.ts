@@ -152,21 +152,49 @@ async function run() {
   check("…calling no model", calls, 1);
   check("…and charging nothing", await ledger(), [{ status: "spent", n: 1 }]);
   check("a current synopsis is not stale and would not spend", [(await state()).stale, (await state()).wouldSpend], [false, false]);
+  check("…and a press over its list writes nothing (7d)", (await state()).pressWrites, false);
   // A contract bump alone is not an edit either: the old synopsis is still the list's.
   await fixture.execute(sql`update deck_synopses set contract_version = 0 where deck_id = ${deck.id}::uuid`);
   check("a synopsis under an older contract is reused too", (await writeSynopsisFor(deck.id, USER, deps)).kind, "reused");
   check("…and reads as current", (await state()).stale, false);
 
   // 4 · An edit stales it; the write waits for a fresh reading, which Re-analyze gives.
+  const listA = list();
+  const outA = current[0];
   await swap(spares[0]);
   const edited = await state();
   check("an edit stales the synopsis", edited.stale, true);
+  // The press note keys on the LIVE list (the credits audit, item 2): an edit makes a press write
+  // before any reading describes the new list, and a revert (7d) would make it write nothing.
+  check("…and makes a press write, read off the live list", edited.pressWrites, true);
   check("…and a write over the stale reading is refused", (await writeSynopsisFor(deck.id, USER, deps)).kind, "no_reading");
   await analyze(deck.id);
   check("after Re-analyze a press would spend", (await state()).wouldSpend, true);
   const rewritten = await writeSynopsisFor(deck.id, USER, deps);
   check("the new list is written", rewritten.kind, "written");
   check("…and reads current", (await state()).stale, false);
+
+  // 4b · A REVERT (7d, finding 6). The list is A again, and A's overview is still A's: reuse is
+  // keyed on the fingerprint alone (ruling B), not on whichever overview is newest. So the tab
+  // shows A, a press writes nothing, and a write is reused at no charge.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`update deck_cards set oracle_id = ${outA.oracle_id}::uuid
+      where deck_id = ${deck.id}::uuid and oracle_id = ${spares[0].oracle_id}::uuid`);
+    current.splice(current.indexOf(spares[0]), 1);
+    current.unshift(outA);
+    await touchDeck(tx, deck.id);
+  });
+  check("the revert is back on list A", list(), listA);
+  const reverted = await state();
+  check("after a revert, the overview shown is list A's own", reverted.synopsis?.fingerprint, listA);
+  check("…and a press over it writes nothing", reverted.pressWrites, false);
+  await analyze(deck.id);
+  const callsBefore = calls;
+  const reusedA = await writeSynopsisFor(deck.id, USER, deps);
+  check("…and a write reuses A, calling no model", [reusedA.kind, calls - callsBefore], ["reused", 0]);
+  // Back to list B, exactly as the edit above left it, so every later section starts where it did.
+  await swap(spares[0]);
+  await analyze(deck.id);
 
   // 5 · A PARTIAL refusal, then a section retry that passes: the rest byte for byte.
   await ageLedger();
