@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --border:#2B241B; --border-strong:#3A3229; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --border:#181C26; --border-strong:#262A35; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;flex-direction:column;gap:64px;padding:48px 56px 80px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1500px;">
+
+  <header style="display:flex;flex-direction:column;gap:10px;max-width:1100px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The 99 · swap tools · addendum, 2026-09-25 · ranking rebuild</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1.15;">What the smarter ranking shows: the mana line, type groups, and the reason a deck fits</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">This amends the parent handoff and <a href="../addendum_staples_door_stacking/Swap Tools Addendum.dc.html">the staples addendum</a>, and replaces neither. It follows Hugh’s rulings of 2026-09-25. Nothing new is modelled: every figure is a plain share of decks, and rows stay as tall as they are today. Staples keep their treatment: the clause <i>staple, any commander</i> and no figure.</p>
+  </header>
+
+  <section id="1a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1a</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">A land row says what it makes</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The mana line leads, and the drawback follows it</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The fact line under the name now starts with the mana line, in body ink: <i>makes white and red, untapped</i>. If there’s a drawback, it follows after a dot, in muted ink: <i>· 1 damage for either</i>. The row keeps its two lines. The drawback isn’t replaced, because it’s the one fact the price can’t tell you.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">A condition joins the mana line</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">If the land comes in untapped only sometimes, the condition finishes the clause: <i>untapped if you pay 2 life</i>, <i>untapped with a Mountain or Plains</i>. A shockland then has no drawback segment, because the life it costs is the condition. The four forms are <i>untapped</i>, <i>untapped if / with …</i>, <i>tapped</i>, and a color made <i>once</i>.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One-time mana is named, not counted</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A tap-and-sacrifice ability no longer counts as making that color. The mana line lists only the colors the land makes every turn (<i>makes red, tapped</i>). The one-time color sits in the drawback segment instead: <i>white once, by sacrificing it</i>. Such lands fall to the last rung.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · stand-ins for Plateau · top 3</span><dc-import name="Stand-ins Sheet" kind="lands" theme="{{ theme }}" hint-size="640px,520px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same sheet</span><dc-import name="Stand-ins Sheet" kind="lands" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,640px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="1b" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1b</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Stand-ins grouped by card type</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Same type, then other types, three of each</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The <i>yours, free</i> and <i>to buy</i> groups give way to <i>same type · creatures</i> and then <i>other types</i>. Each group shows its top three, followed by a text row, <i>Show all 5 other types ▾</i>, that expands the group in place and becomes <i>Show fewer ▴</i>. A group of three or fewer gets no toggle. Ownership stays on the row as the green dot and the <i>free</i> tag.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Jobs go in the lead. Synergy stays two plain shares</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Every stand-in does every job the card does, so the lead says so once (<i>ramps and fixes</i>) and the rows don’t repeat it. What orders a group is how much more Gishath decks run a card than other Naya decks. The row shows both shares, <i>in 58% of Gishath decks, 41% of Naya</i>, and never the difference as a score. An other-types row starts with its type (<i>sorcery ·</i>).</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">For lands, the order is implied, not labelled</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Lands get one group, <i>same type · lands</i>, headed <i>best mana first</i>. The rungs have no labels or dividers, because the first words of each mana line already show the order: untapped, untapped if…, tapped, once. Within a rung, synergy comes first and then price, so free copies lead. <b style="color:var(--fg-body);font-weight:600;">Design’s readings, which Hugh may overrule:</b> a land isn’t offered non-land stand-ins, and a staple sorts after the synergy-ranked cards in its group.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · Lotus Cobra · collapsed</span><dc-import name="Stand-ins Sheet" kind="creature" theme="{{ theme }}" hint-size="640px,720px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · collapsed</span><dc-import name="Stand-ins Sheet" kind="creature" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · both groups shown in full · the staple sits last</span><dc-import name="Stand-ins Sheet" kind="creatureall" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · Plateau · every land, showing the ladder</span><dc-import name="Stand-ins Sheet" kind="landsall" theme="{{ theme }}" hint-size="640px,760px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><dc-import name="Stand-ins Sheet" kind="landsall" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="1c" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1c</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Find a deck: the reason line</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The reason replaces the commander chip</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The row’s second line is now one mono line. It gives the reason, then <i>· this deck ramp 7 of 10</i> when the card has a role. The two chips become one run of text, so the row isn’t taller even with a long card name. At 390 that run wraps between its segments. The <i>N% of X decks</i> figure is gone, because it’s no longer what orders the list.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One reason, the strongest there is</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">If there’s a combo, the line reads <i>Completes a combo with {card}</i>. The text is in full ink, and the card name is dotted, which opens its details. Failing that, <i>Joins {n} other {theme} cards</i>, in body ink. With neither, the line falls back to the two plain shares the list is ordered by. A staple still reads <i>staple · any commander</i>, as in the staples addendum.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Ordered by synergy, not by name</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The group’s order note changes from <i>by name</i> to <i>by each commander’s synergy</i>. A combo can include the deck’s own commander, as with Kinnan here. It counts only if every other piece is already in that deck’s draft. <i>Already holds it</i> is unchanged, and staples keep their by-name order.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the picker (560) · Basalt Monolith</span><dc-import name="Fits Your Decks" theme="{{ theme }}" hint-size="560px,500px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><dc-import name="Fits Your Decks" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,600px"></dc-import></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? "amonkhet" }; }
+}
+</script>
+</body>
+</html>
