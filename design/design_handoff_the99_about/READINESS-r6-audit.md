@@ -12,10 +12,10 @@ Code references were read on `origin/main` at the branch point of `design/about-
 ## Verdict: 🟢 Green (Hugh answered Q1 and Q2 on 2026-09-25; §4)
 
 Every ruling holds. None of the six rulings is broken, and every §5 call is made. Nothing needs a
-design round trip. Two things wait on Hugh (§4, Q1–Q2). The eng findings (E1–E9) are wording the plan must
-pin down, not design changes. Two of them (E8, E9) settle gaps in R6 itself, and each has only
-one defensible answer. R6's own open item (rail length) is a measurement engineering owes.
-Hugh answered both on 2026-09-25, so it is Green.
+design round trip. Hugh answered both questions (§4, Q1–Q2) on 2026-09-25. The eng findings (E1–E9)
+are wording the plan must pin down, not design changes. Two of them (E8, E9) settle gaps in R6
+itself, and each has only one defensible answer. R6's own open item (rail length) is a measurement
+engineering owes.
 
 ## §1 The six rulings
 
