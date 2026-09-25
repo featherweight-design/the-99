@@ -240,6 +240,41 @@ describe("StandInsSheet", () => {
       }
     });
 
+    it("lands on the receipt when the sheet was closed while the take was still in flight", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      let land!: (r: unknown) => void;
+      takeStandInAction.mockReturnValueOnce(new Promise((r) => { land = r; }));
+      const rects = vi.spyOn(Element.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+      const { SwapReceiptRow } = await import("./swap-receipt");
+      function Host() {
+        const tools = useSwapTools();
+        const [shown, setShown] = React.useState(true);
+        return (
+          <>
+            {shown ? <StandInsSheet card={original} newestAsOf={asOf} onClose={() => setShown(false)} /> : null}
+            {tools?.receipts.map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
+          </>
+        );
+      }
+      try {
+        await act(async () => {
+          render(
+            <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+              <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}><Host /></SwapToolsProvider>
+            </CardDetailProvider>,
+          );
+        });
+        await act(async () => takeButton("Chaos Warp").click());
+        await act(async () => screen.getByRole("button", { name: T.closeAria }).click());
+        await act(async () => land({ ok: true, swapId: "s2", addWasFree: false, cutLeft: 0 }));
+        await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+        const undo = screen.getByRole("button", { name: swapToolsCopy.row.undoSwapAria("Anguished Unmaking", "Chaos Warp") });
+        expect(document.activeElement).toBe(undo);
+      } finally {
+        rects.mockRestore();
+      }
+    });
+
     it("starts one swap for two presses before the first lands, and holds every Take while it runs", async () => {
       loadStandInsAction.mockReset().mockResolvedValue(READ);
       let land: (v: unknown) => void = () => {};

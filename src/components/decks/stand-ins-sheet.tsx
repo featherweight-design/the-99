@@ -381,7 +381,10 @@ export function StandInsSheet({
   useEffect(() => {
     takenSwap.current = fromCard ? null : taken?.swapId ?? null;
   });
+  // Whether the sheet is still up: a take the reader closed the sheet on lands after this has unmounted.
+  const mounted = useRef(true);
   useEffect(() => () => {
+    mounted.current = false;
     if (takenSwap.current) landOnReceipt(takenSwap.current);
   }, []);
 
@@ -407,6 +410,8 @@ export function StandInsSheet({
           free: result.addWasFree, cutLeft: result.cutLeft,
         });
         tools.announce(swapToolsCopy.announce.taken(name, row.name));
+        // Closed while the take was in flight: the unmount found no swap to land on, so the take does.
+        if (!mounted.current && !fromCard) landOnReceipt(result.swapId);
       } else {
         setRefused({ addId: row.oracleId, reason: result.reason });
       }
