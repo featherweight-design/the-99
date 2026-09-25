@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import {
   ABOUT_COOKIE,
@@ -6,7 +6,13 @@ import {
   gateApplies,
   gateDecision,
   gateHandles,
+  isDocumentLoad,
+  SHEET_COOKIE,
+  SHEET_HEADER,
+  sheetCookieIsCurrent,
+  sheetDecision,
 } from "./lib/about/gate";
+import { aboutSheetEnabled } from "./lib/about/flag";
 import { aboutVersionSeen } from "./lib/about/read";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
@@ -32,6 +38,8 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = isPublic(req) ? await auth() : await auth.protect();
   if (!userId) return;
 
+  if (aboutSheetEnabled()) return sheet(req, userId);
+
   const path = req.nextUrl.pathname;
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return;
 
@@ -55,14 +63,53 @@ export default clerkMiddleware(async (auth, req) => {
       : NextResponse.next();
 
   response.cookies.set(ABOUT_COOKIE, decision.cookie, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
+    ...COOKIE_OPTIONS,
     secure: req.nextUrl.protocol === "https:",
-    maxAge: 60 * 60 * 24 * 365,
   });
   return response;
 });
+
+const COOKIE_OPTIONS = {
+  path: "/",
+  httpOnly: true,
+  sameSite: "lax",
+  maxAge: 60 * 60 * 24 * 365,
+} as const;
+
+/**
+ * About R6: the one-time sheet in place of the redirect. Never redirects. It
+ * decides on a document load whether the root layout draws the sheet and says so
+ * on a request header, which `Shell` reads back through `headers()`.
+ *
+ * The header is stripped from EVERY request first, including the ones this
+ * ignores: a client that sends its own could otherwise summon the sheet, or
+ * forge the `seen` it lists entries from.
+ */
+async function sheet(req: NextRequest, userId: string) {
+  const headers = new Headers(req.headers);
+  headers.delete(SHEET_HEADER);
+  const pass = () => NextResponse.next({ request: { headers } });
+
+  if (!gateApplies(req.nextUrl.pathname) || !isDocumentLoad(req.method, req.headers)) return pass();
+  if (sheetCookieIsCurrent(req.cookies.get(SHEET_COOKIE)?.value, userId)) return pass();
+
+  // A failed read draws nothing and writes nothing, so the next load asks again.
+  let seen: number;
+  try {
+    seen = await aboutVersionSeen(userId);
+  } catch {
+    return pass();
+  }
+
+  const decision = sheetDecision({ userId, seen });
+  if (decision.show) headers.set(SHEET_HEADER, String(decision.seen));
+  const response = pass();
+  response.cookies.set(SHEET_COOKIE, decision.cookie, {
+    ...COOKIE_OPTIONS,
+    secure: req.nextUrl.protocol === "https:",
+  });
+  return response;
+}
 
 export const config = {
   matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)"],

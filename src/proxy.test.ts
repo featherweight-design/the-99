@@ -5,7 +5,7 @@
 // public "/" is judged at all.
 
 import { NextRequest, NextResponse } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const protect = vi.fn(async () => ({ userId: "user_1" }));
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
@@ -112,5 +112,100 @@ describe("requests the gate keeps its hands off", () => {
     // The page is a reference; the app is the point.
     aboutVersionSeen.mockRejectedValue(new Error("no database"));
     expect(await proxy(auth, request("/decks"))).toBeUndefined();
+  });
+});
+
+// The sheet (About R6). With the switch on the proxy never redirects: it decides
+// on a DOCUMENT load whether the root layout draws the sheet, and says so on a
+// request header the layout reads back.
+describe("with the sheet switch on", () => {
+  const sheetHeader = (res: NextResponse | undefined) =>
+    res?.headers.get("x-middleware-request-x-about-sheet") ?? null;
+  const overridden = (res: NextResponse | undefined) =>
+    (res?.headers.get("x-middleware-override-headers") ?? "").split(",");
+
+  beforeEach(() => {
+    process.env.ABOUT_SHEET_ENABLED = "true";
+  });
+  afterEach(() => {
+    delete process.env.ABOUT_SHEET_ENABLED;
+  });
+
+  it("never redirects a reader who is behind, and hands the layout their seen", async () => {
+    aboutVersionSeen.mockResolvedValue(8);
+    const res = await proxy(auth, request("/decks"));
+    expect(res?.status).not.toBe(307);
+    expect(res?.headers.get("location")).toBeNull();
+    expect(sheetHeader(res)).toBe("8");
+    expect(res?.cookies.get("about_sheet")?.value).toMatch(/^user_1\./);
+  });
+
+  it("hands the layout seen 0 for a brand-new account", async () => {
+    aboutVersionSeen.mockResolvedValue(0);
+    expect(sheetHeader(await proxy(auth, request("/")))).toBe("0");
+  });
+
+  it("draws nothing for a current reader, but marks the browser", async () => {
+    aboutVersionSeen.mockResolvedValue(99);
+    const res = await proxy(auth, request("/decks"));
+    expect(sheetHeader(res)).toBeNull();
+    expect(res?.cookies.get("about_sheet")?.value).toMatch(/^user_1\./);
+  });
+
+  it("leaves a client transition alone, so an undrawn sheet is never marked shown", async () => {
+    aboutVersionSeen.mockResolvedValue(8);
+    const res = await proxy(auth, request("/decks", { RSC: "1", accept: "*/*" }));
+    expect(res?.cookies.get("about_sheet")).toBeUndefined();
+    expect(sheetHeader(res)).toBeNull();
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
+  });
+
+  it("ignores the gate's about_v cookie, which means sent and not shown (E1)", async () => {
+    const { cookieValue } = await import("./lib/about/gate");
+    aboutVersionSeen.mockResolvedValue(8);
+    const res = await proxy(auth, request("/decks", {}, cookieValue("user_1")));
+    expect(sheetHeader(res)).toBe("8");
+  });
+
+  it("costs no read once this browser has shown the sheet", async () => {
+    const { cookieValue } = await import("./lib/about/gate");
+    const req = request("/decks");
+    req.cookies.set("about_sheet", cookieValue("user_1"));
+    const res = await proxy(auth, req);
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
+    expect(sheetHeader(res)).toBeNull();
+  });
+
+  it("strips a forged header even when it draws nothing", async () => {
+    aboutVersionSeen.mockResolvedValue(99);
+    const res = await proxy(auth, request("/decks", { "x-about-sheet": "0" }));
+    expect(sheetHeader(res)).toBeNull();
+    expect(overridden(res)).not.toContain("x-about-sheet");
+  });
+
+  it("strips a forged header on a request it otherwise ignores", async () => {
+    const res = await proxy(auth, request("/decks", { RSC: "1", "x-about-sheet": "0" }));
+    expect(sheetHeader(res)).toBeNull();
+    expect(overridden(res)).not.toContain("x-about-sheet");
+  });
+
+  it("never draws it over /about", async () => {
+    aboutVersionSeen.mockResolvedValue(8);
+    const res = await proxy(auth, request("/about"));
+    expect(sheetHeader(res)).toBeNull();
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
+  });
+
+  it("lets the reader through with no sheet when the read fails", async () => {
+    aboutVersionSeen.mockRejectedValue(new Error("no database"));
+    const res = await proxy(auth, request("/decks"));
+    expect(res?.headers.get("location") ?? null).toBeNull();
+    expect(sheetHeader(res)).toBeNull();
+    expect(res?.cookies.get("about_sheet")).toBeUndefined();
+  });
+
+  it("leaves a signed-out reader to Clerk", async () => {
+    session.mockResolvedValue({ userId: null });
+    expect(await proxy(auth, request("/"))).toBeUndefined();
   });
 });
