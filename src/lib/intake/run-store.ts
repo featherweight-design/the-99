@@ -85,6 +85,17 @@ class StoredFound extends Error {
   constructor(readonly read: StoredRead) { super("stored"); }
 }
 
+/**
+ * A delivered read by its id, for the results page that the read sent the player to (`r`): its
+ * chips mark the answers that came from it. Scoped to the reader, and only a read that delivered
+ * (`ok`): an id from someone else, or one that failed or was stopped, reads as none.
+ */
+export async function loadOwnRead(readId: string, userId: string): Promise<StoredRead | null> {
+  const [row] = await db.select({ chips: intakeReads.chips }).from(intakeReads)
+    .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "ok")));
+  return (row?.chips as StoredRead | undefined) ?? null;
+}
+
 /** The player's settled read of this ask, when there is one. */
 async function storedRead(tx: Tx, userId: string, hash: string): Promise<StoredRead | null> {
   const [row] = await tx.select({ chips: intakeReads.chips }).from(intakeReads)

@@ -122,16 +122,20 @@ export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
   }
 }
 
-export type AnswerChip = { kind: string; value: string };
+export type AnswerChip = { kind: string; value: string; /** Added by the deeper look (`d`). */ deeper: boolean };
 
-/** The *We read this as* bar's chips, in the form's order. */
-export function answerChips(p: ChooseParams, labels: Labels): AnswerChip[] {
+/**
+ * The *We read this as* bar's chips, in the form's order. `deeper` holds the marks the page has
+ * checked against the reader's own delivered read; an empty list marks nothing.
+ */
+export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly string[] = []): AnswerChip[] {
   const k = copy.readAs.kinds;
+  const marked = (m: string) => deeper.includes(m);
   return [
-    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors) }] : []),
-    ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s) })),
-    ...(p.card && labels.card ? [{ kind: k.card, value: labels.card }] : []),
-    ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}` }] : []),
-    ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}` }] : []),
+    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors), deeper: false }] : []),
+    ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s), deeper: marked(`t:${s}`) })),
+    ...(p.card && labels.card ? [{ kind: k.card, value: labels.card, deeper: marked("a") }] : []),
+    ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}`, deeper: marked("b") }] : []),
+    ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}`, deeper: marked("k") }] : []),
   ];
 }

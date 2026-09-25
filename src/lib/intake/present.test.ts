@@ -74,11 +74,16 @@ describe("narrowOptions", () => {
 describe("answerChips", () => {
   it("lists every answer in the form's order", () => {
     expect(answerChips(p({ colors: ["g", "r"], match: "exactly", themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels)).toEqual([
-      { kind: "exactly", value: "Red · Green" },
-      { kind: "theme", value: "Dinosaurs" },
-      { kind: "card", value: "Regisaur Alpha" },
-      { kind: "budget", value: "$150" },
-      { kind: "bracket", value: "2 · Core" },
+      { kind: "exactly", value: "Red · Green", deeper: false },
+      { kind: "theme", value: "Dinosaurs", deeper: false },
+      { kind: "card", value: "Regisaur Alpha", deeper: false },
+      { kind: "budget", value: "$150", deeper: false },
+      { kind: "bracket", value: "2 · Core", deeper: false },
     ]);
+  });
+
+  it("marks the answers a deeper look added, and nothing else", () => {
+    const chips = answerChips(p({ themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels, ["a", "k"]);
+    expect(chips.map((c) => [c.kind, c.deeper])).toEqual([["theme", false], ["card", true], ["budget", false], ["bracket", true]]);
   });
 });

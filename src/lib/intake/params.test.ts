@@ -6,10 +6,14 @@ const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const parse = (qs: string) => parseChooseParams(new URLSearchParams(qs));
 
 describe("the choose URL", () => {
+  it("keeps only well-formed deeper marks", () => {
+    expect(parse("d=t:dinosaurs,a,b,k,x,t:Bad Slug,t:dinosaurs").deeper).toEqual(["t:dinosaurs", "a", "b", "k"]);
+  });
+
   it("round-trips every answer", () => {
     const p: ChooseParams = {
       words: "big lizards", colors: ["r", "g"], match: "exactly", themes: ["dinosaurs", "landfall"],
-      card: CARD, budgetDollars: 150, bracket: 3, readId: null, notUsed: ["that stomp", "$200"], results: true,
+      card: CARD, budgetDollars: 150, bracket: 3, readId: null, notUsed: ["that stomp", "$200"], deeper: ["t:landfall", "b"], results: true,
     };
     expect(parse(serializeChooseParams(p).slice(1))).toEqual(p);
   });
