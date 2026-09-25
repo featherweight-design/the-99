@@ -68,19 +68,19 @@ export const swapToolsCopy = {
     jobNoRole: "no role we can name",
     givesUpNothing: "gives up nothing",
     leadLands: (colors: string) =>
-      `Every land here makes ${colors}. Free copies come first, then the cheapest, and each says what it gives up.`,
+      `Every land here makes ${colors}. Free copies come first, then untapped lands before tapped ones, and each says what it gives up.`,
     /** Hugh, 2026-09-24: every stand-in gives up the same thing, so the lead says it once. */
     leadLandsGivesUp: (colors: string, ability: string) =>
-      `Every land here makes ${colors}. Free copies come first, then the cheapest, and each gives up ${ability}.`,
+      `Every land here makes ${colors}. Free copies come first, then untapped lands before tapped ones, and each gives up ${ability}.`,
     leadFetchGivesUp: (types: string, ability: string) =>
-      `Every land here finds ${types}. Free copies come first, then the cheapest, and each gives up ${ability}.`,
+      `Every land here finds ${types}. Free copies come first, then untapped lands before tapped ones, and each gives up ${ability}.`,
     leadFetch: (types: string) =>
-      `Every land here finds ${types}. Free copies come first, then the cheapest, and each says what it gives up.`,
+      `Every land here finds ${types}. Free copies come first, then untapped lands before tapped ones, and each says what it gives up.`,
     leadSpells: (roles: string, mv: number, commander: string) =>
-      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the rest by how often ${commander} decks run them.`,
+      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the cards ${commander} decks favor most.`,
     /** H4, addendum canvas: a paid staples group sits between the free copies and the commander's ranking. */
     leadSpellsStaples: (roles: string, mv: number, commander: string) =>
-      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the rest by how often ${commander} decks run them.`,
+      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the cards ${commander} decks favor most.`,
     /** H4 with F14: staples to buy, and nothing the index lists. Composed from the two leads above; owed to /copy-review. */
     leadSpellsStaplesUnlisted: (roles: string, mv: number) =>
       `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the cheapest.`,
@@ -90,7 +90,7 @@ export const swapToolsCopy = {
     /** F5: a sold-out original lists free copies only. Owed to /copy-review. */
     leadSoldOut: "This card is sold out everywhere we check, so only the copies you already own are listed here.",
     groupFree: "yours, free",
-    groupCheapest: "to buy · cheapest first",
+    groupCheapest: "to buy · best mana first",
     /** H4, addendum §1: paid universal staples, between `yours, free` and the commander's ranking. */
     groupStaples: "to buy · staples, cheapest first",
     groupByCommander: (commander: string) => `to buy · by ${commander} decks`,
@@ -170,7 +170,7 @@ export const swapToolsCopy = {
     identity: (colors: string) => `${colors} · legal in Commander`,
     loadingHeading: "Checking your decks",
     loadingStatus: "reading each commander’s colors…",
-    groupJoin: "could take it · by name",
+    groupJoin: "could take it",
     groupHolds: "already holds it",
     copies: (owned: number, free: number) => (free > 0 ? `×${owned} · ${free} free` : `×${owned} · none free`),
     addUsesFree: "Add",

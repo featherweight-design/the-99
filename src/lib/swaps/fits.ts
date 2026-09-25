@@ -57,6 +57,8 @@ export type DeckRow = {
   holds: number;
   leads: boolean;
   inclusion: number | string | null;
+  /** The deck's commander (or pair) synergy for the card: the order of the picker, never drawn (Q2). */
+  synergy: number | string | null;
 };
 
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -74,6 +76,7 @@ export function shapeFits(
   staple = false,
 ): FitsRead {
   const fits: FitDeck[] = [];
+  const synergyOf = new Map<string, number>();
   const holds: FitsRead["holds"] = [];
   const excluded: FitsRead["excluded"] = [];
   for (const r of rows) {
@@ -89,6 +92,7 @@ export function shapeFits(
     const mix = mixes.get(mixKey({ commanderOracleId: r.commander_oracle_id, partnerOracleId: r.partner_oracle_id }));
     const role = card.role;
     const measured = role === "land" ? mix?.landMeasured === true : mix?.rolesUsable === true;
+    if (r.synergy !== null) synergyOf.set(r.id, Number(r.synergy));
     fits.push({
       id: r.id,
       name: r.name,
@@ -104,7 +108,10 @@ export function shapeFits(
     staple,
     owned: availability.owned,
     free: availability.free,
-    fits: fits.sort(byName),
+    // v2 item 9: by each deck's commander synergy for the card, then by name. A staple's figure is about
+    // every commander, so a staple's list stays by name (staples addendum; ranking addendum 1c).
+    fits: fits.sort((a, b) => staple ? byName(a, b)
+      : (synergyOf.get(b.id) ?? -Infinity) - (synergyOf.get(a.id) ?? -Infinity) || byName(a, b)),
     holds: holds.sort(byName),
     excluded: excluded.sort(byName),
   };
@@ -140,7 +147,16 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
             where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
               and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
               and s.oracle_id = ${oracleId}::uuid)
-        end as inclusion
+        end as inclusion,
+        case when d.partner_oracle_id is null then
+          (select s.synergy from commander_support_cards s
+            where s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = ${oracleId}::uuid)
+        else
+          (select s.synergy from commander_pair_support_cards s
+            where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
+              and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
+              and s.oracle_id = ${oracleId}::uuid)
+        end as synergy
       from decks d
       join cards cc on cc.oracle_id = d.commander_oracle_id
       left join cards pc on pc.oracle_id = d.partner_oracle_id

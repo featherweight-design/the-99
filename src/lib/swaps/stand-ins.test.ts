@@ -140,7 +140,8 @@ describe("rankStandIns", () => {
     expect([...g.byCommander, ...g.unlisted]).toEqual([]);
   });
 
-  it("orders spells the index lists by its figure, and the rest after them by price", () => {
+  // v2 item 8: synergy, not inclusion. The two disagree here, so the order says which one is read.
+  it("orders spells the index lists by the commander's synergy, and the rest after them by price", () => {
     const a = card("Listed Low", "Artifact", "{T}: Add {C}.", 1);
     const b = card("Listed High", "Artifact", "{T}: Add {C}.", 1);
     const c = card("Unlisted Cheap", "Artifact", "{T}: Add {C}.", 1);
@@ -153,11 +154,32 @@ describe("rankStandIns", () => {
       ]),
     };
     const g = rankStandIns(VAULT, [
-      cand(a, { inclusion: 12 }), cand(b, { inclusion: 61 }), cand(d), cand(c),
+      cand(a, { inclusion: 12, synergy: 0.4 }), cand(b, { inclusion: 61, synergy: 0.02 }), cand(d), cand(c),
     ], priced);
-    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed High", "Listed Low"]);
+    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed Low", "Listed High"]);
     expect(g.unlisted.map((s) => s.card.name)).toEqual(["Unlisted Cheap", "Unlisted Dear"]);
     expect(g.staples).toEqual([]);
+  });
+
+  // v2 item 2: lands on the ladder, never the alphabet or price alone. Plateau's stand-ins in HD - Gishath were
+  // an alphabetical wall of $0.15 lands.
+  it("orders land stand-ins by rung, then synergy, then price", () => {
+    const L = (name: string, text: string) => card(name, "Land", text);
+    const tapped = L("Aaa Tapped", "This land enters tapped.\n{T}: Add {R} or {W}.");
+    const check = L("Bbb Check", "This land enters tapped unless you control a Mountain or a Plains.\n{T}: Add {R} or {W}.");
+    const clean = L("Ccc Clean", "{T}: Add {R} or {W}.");
+    const cleanSyn = L("Ddd Clean Synergy", "{T}: Add {R} or {W}.");
+    const priced = {
+      newestAsOf: NOW,
+      prices: new Map([
+        [PLATEAU.oracleId, fact(40000)], [tapped.oracleId, fact(15)], [check.oracleId, fact(15)],
+        [clean.oracleId, fact(15)], [cleanSyn.oracleId, fact(900)],
+      ]),
+    };
+    const g = rankStandIns(PLATEAU, [
+      cand(tapped, { synergy: 0.9 }), cand(check), cand(clean), cand(cleanSyn, { synergy: 0.3 }),
+    ], priced);
+    expect(g.cheapest.map((s) => s.card.name)).toEqual(["Ddd Clean Synergy", "Ccc Clean", "Bbb Check", "Aaa Tapped"]);
   });
 
   it("moves a universal staple to buy into its own group, by price, and keeps a free one free (H4)", () => {

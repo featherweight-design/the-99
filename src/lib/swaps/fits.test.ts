@@ -7,7 +7,7 @@ import { shapeFits, type DeckRow, type FitsRead } from "./fits";
 const birds: FitsRead["card"] = { oracleId: "o-birds", name: "Birds of Paradise", colorIdentity: ["G"], commanderLegal: true, role: "ramp" };
 const deck = (over: Partial<DeckRow> & { id: string; name: string }): DeckRow => ({
   commander_oracle_id: `c-${over.id}`, partner_oracle_id: null, commander_names: [`Cmdr ${over.id}`],
-  identity: ["G", "R"], holds: 0, leads: false, inclusion: null, ...over,
+  identity: ["G", "R"], holds: 0, leads: false, inclusion: null, synergy: null, ...over,
 });
 const measured = { ...recommendedMix(null, false), rolesUsable: true, landMeasured: true };
 const flat = recommendedMix(null, false);
@@ -23,7 +23,7 @@ describe("mixKey", () => {
 });
 
 describe("shapeFits", () => {
-  it("sorts the decks into fit, holds and ruled out by colors, each by name", () => {
+  it("sorts the decks into fit, holds and ruled out by colors; with no synergy figure, each by name", () => {
     const rows = [
       deck({ id: "k", name: "Kinnan" }),
       deck({ id: "g", name: "Gishath", inclusion: "58.2" }),
@@ -39,6 +39,25 @@ describe("shapeFits", () => {
     expect(r.holds).toEqual([{ id: "a", name: "Atraxa", quantity: 1 }, { id: "t", name: "Tymna", quantity: 1 }]);
     expect(r.excluded).toEqual([{ id: "u", name: "Urza", commanders: ["Cmdr u"], outside: ["G"] }]);
     expect(r).toMatchObject({ owned: 2, free: 1, staple: false });
+  });
+
+  // v2 item 9: by each commander's synergy for the card, the deck with no figure last, then by name.
+  it("ranks the decks that could take it by synergy, never by inclusion", () => {
+    const r = shapeFits(birds, [
+      deck({ id: "a", name: "Alpha", inclusion: 90, synergy: 0.05 }),
+      deck({ id: "b", name: "Bravo", inclusion: 20, synergy: 0.61 }),
+      deck({ id: "c", name: "Charlie" }),
+      deck({ id: "d", name: "Delta", synergy: "0.3" }),
+    ], new Map(), new Map(), { owned: 1, free: 1 });
+    expect(r.fits.map((f) => f.name)).toEqual(["Bravo", "Delta", "Alpha", "Charlie"]);
+  });
+
+  it("keeps a staple's list by name, since its figure is about every commander", () => {
+    const r = shapeFits(birds, [
+      deck({ id: "a", name: "Alpha", synergy: 0.05 }),
+      deck({ id: "b", name: "Bravo", synergy: 0.61 }),
+    ], new Map(), new Map(), { owned: 1, free: 1 }, true);
+    expect(r.fits.map((f) => f.name)).toEqual(["Alpha", "Bravo"]);
   });
 
   it("carries the staple flag through, for the picker's staple form", () => {
