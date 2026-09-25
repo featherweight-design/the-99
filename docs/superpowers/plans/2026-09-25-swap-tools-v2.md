@@ -15,9 +15,13 @@ rules plus data we already store, with no per-use model calls and no hand-writte
   from `{T}: Add {G}`. "Pump" and "haste" are Hugh's words and are in no stored vocabulary. Neither is "mill", so
   "Joins 9 other mill cards" has nothing to count today. Themes are stored per COMMANDER (`commander_support.tags`),
   never per card. **Items 7 and 11 need a wider card vocabulary from text rules first** (question 5).
-- **Bug 1 is eight lands**: Lazotep Quarry, Abandoned Outpost, Timberland Ruins, Archaeological Dig, Heap Gate,
-  Ravaged Highlands, Bog Wreckage and Seafloor Debris. Each makes one color repeatably and "any color" once, by
-  sacrificing itself.
+- **Bug 1 is 16 lands**, found by reading each mana ability's COST on staging rather than grepping for "sacrifice":
+  - six make "any color" once by sacrificing themselves: Abandoned Outpost, Archaeological Dig, Bog Wreckage,
+    Ravaged Highlands, Seafloor Debris and Timberland Ruins;
+  - ten make fixed colors that way, such as Ancient Spring's {W}{B} and Sulfur Vent's {U}{R}.
+
+  An earlier count of eight named Lazotep Quarry and Heap Gate wrongly. The Quarry sacrifices a CREATURE, and Heap
+  Gate pays {1}; both are repeatable and still count.
 - **Hugh's decks for verification**: HD - Gishath (96 cards, 37 creatures) and HD - Wizards (65 cards, 21
   creatures), both on staging. They get pulled into a FRESH local Clerk test account, never `--replace` into the
   shared fixture account (see Verification).
@@ -84,7 +88,30 @@ Per the brief, one prompt through Hugh:
   it under data);
 - Find a deck's reason line for 10 and 11.
 
-## Questions for Hugh (product calls)
+## Hugh's answers (2026-09-25, through d9)
+
+- **Q1.** Painlands and shocklands go in rung 2.
+- **Q2.** The % comes OFF stand-in rows. A row shows what it SHARES with the card it replaces (type and jobs) and
+  what it GIVES UP:
+  - for a land, life loss or damage, entering tapped, conditions, and a one-shot;
+  - for any other card, a missing job.
+
+  The order stays by synergy, silently. Find a deck drops the % too and leads with its reason line: a combo, then a
+  theme. All of this goes to the Design addendum. His emphasis: "really dive into the card details. It's
+  important/helpful to know if a land makes me lose life, a creature provides extra benefits, etc." So C's
+  vocabulary must be rich enough for D's rows to surface it.
+- **Q3.** 5 per group before Show all.
+- **Q4.** Group by the main type; an artifact creature counts as a creature.
+- **Q5.** Build a holistic theme list in a couple of passes: the basics, nothing niche, plus LANDFALL and TRIBAL.
+  Tribal covers both "creature type matters" (lords, "Dinosaurs you control") and membership in the deck's key
+  type. Each pass is shown with catalog counts and known catches, and the final list goes to Hugh before C ships.
+- **Q6.** A stand-in shares at least one role, and more shared ranks higher.
+- **Q7.** Find a deck orders by combo, then theme, then synergy.
+- **Q8.** "Completes a combo" only when every other piece is already in the deck. "One card away" is not in this
+  round.
+- **Q9.** The one-shot lands are hidden now and revisited in D.
+
+## Questions for Hugh (as asked)
 
 1. **Pain lands and shocks: rung 1 or 2?** A painland taps for colorless with no drawback and hurts only for color;
    a shockland is untapped only if you pay 2 life. Proposed: both rung 2, with checklands and fastlands, since
