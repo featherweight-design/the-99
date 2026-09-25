@@ -206,6 +206,17 @@ describe("rankStandIns", () => {
     expect(rows(rank(orig, [cand(other)], priced))[0].sharedThemes).not.toContain("tribal");
   });
 
+  // Addendum §1a: a land that makes a job color only by sacrificing itself is offered, on the last rung.
+  it("offers a one-shot land on the last rung, naming the color it makes once", () => {
+    const highlands = card("Ravaged Highlands", "Land", "This land enters tapped.\n{T}: Add {R}.\n{T}, Sacrifice this land: Add one mana of any color.");
+    const tapped = card("Boros Guildgate", "Land — Gate", "This land enters tapped.\n{T}: Add {R} or {W}.");
+    const priced = { newestAsOf: NOW, prices: new Map([[PLATEAU.oracleId, fact(40000)], [highlands.oracleId, fact(15)], [tapped.oracleId, fact(90)]]) };
+    const g = rank(PLATEAU, [cand(highlands, { synergy: 0.9 }), cand(tapped)], priced);
+    expect(names(g)).toEqual(["Boros Guildgate", "Ravaged Highlands"]);
+    expect(rows(g)[1]).toMatchObject({ rung: 4, once: ["W"] });
+    expect(rows(g)[0].once).toEqual([]);
+  });
+
   // v2 item 2: lands on the ladder, never the alphabet or price alone. Plateau's stand-ins in HD - Gishath were
   // an alphabetical wall of $0.15 lands.
   it("orders land stand-ins by rung, then synergy, then price", () => {

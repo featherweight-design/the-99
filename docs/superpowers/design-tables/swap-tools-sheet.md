@@ -258,12 +258,12 @@ Clauses are joined by ` · ` in the component; no clause is a score and no figur
 
 | Kind | Keys, in order | Arguments |
 |---|---|---|
-| Land (colors) | one named drawback: `sheet.drawback.entersTapped` · `entersTappedUnless(cond)` · `damage(n, colors)` · `life(n, colors)` | `colors` = the colors the original makes |
+| Land (colors) | v2 D2 (addendum §1a): the mana line in `--fg-body`, `sheet.mana.line(colors, state)` with state `sheet.mana.untapped` · `untappedIf(cond)` (a price such as a shock's life) · `untappedWith(cond)` (`you control …`, basic types capitalized) · `tapped`; then, in `--fg-muted` after a ` · ` in `--border-strong`: `damage(n, colors)` · `life(n, colors)` named for the job's colors only, `sheet.mana.once(color)` for a color it makes only by sacrificing itself, and any give-up. A row with no cost says nothing after the mana line | `colors` = the job's colors the land makes again and again, else `sheet.mana.colorless` |
 | Land, unnamed drawback | `sheet.drawback.unnamed` (italic) | none |
 | Land, what it gives up (H3) | the stand-in's give-up clause for a utility original (e.g. Cavern of Souls: uncounterable creatures). **No key exists; owed to /copy-review.** Never `sheet.givesUpNothing` unless true | the original's non-mana ability, named |
 | Fetch | `sheet.drawback.basicOnly` · then `entersTapped` / `entersTappedUnless(cond)` / `lifeFetch(n)` | |
-| Spell, listed | role · `sheet.mv(n)`; no figure since v2 PR B (Hugh's Q2: the % is dropped and synergy orders silently) | |
-| Spell, unlisted | role · `sheet.mv(n)` (no figure) | |
+| Spell | v2 D2 (addendum R1): in `--fg-body`, `{type · }sheet.mv(n)`, then `sheet.also(jobs)` for up to two jobs beyond the original's, then `stapleFact` for a staple; in `--fg-muted`, `sheet.givesUp(jobs)` for up to two of the original's jobs it lacks. No role (the lead states it once) and no figure (Hugh's Q2) | `jobs` from `sheet.job`, a word named once |
+| Spell, a job every row lacks | said once as the lead's last sentence, `sheet.leadSpellsGivesUp(card, jobs)`, and dropped from each row | |
 | Foil-only stand-in (F6) | as its kind; the price cell draws BuyTag's foil figure | |
 
 ### 5.4 Price cell
@@ -485,7 +485,7 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Land, unnamed drawback | classifier returns "unnamed" for a stand-in | row facts `drawback.unnamed`, italic | `unnamed: true` |
 | Land, utility original (H3) | the original's text does more than make its colors | as Lands; each stand-in's facts add what it gives up | the original's named non-mana ability (new key) |
 | Fetch | original is a fetch land; stand-ins found by land types | head `jobFinds` + drawback, `leadFetch`, `groupSameType("lands")`, rows with `basicOnly` + drawback | types, `basicOnly`, entered-tapped / life drawbacks |
-| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with role · MV and no figure, an other-types row leading with its type (v2 D1) | roles, mv, commander short name |
+| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with `{type · }MV · also …` and `gives up …` (v2 D2) | roles, mv, commander short name |
 | Partner deck | spells kind, deck led by a pair | as Spells, `commander` = `A + B`, ordered by the pair's synergy from pair support | pair name |
 | Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | `leadSpellsOrderUnlisted` in the lead, the type groups as Spells | pair name |
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |

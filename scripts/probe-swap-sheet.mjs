@@ -277,8 +277,30 @@ try {
         `head ${read.headTag}, row ${rowTag}`);
       report(`${tag} ${kind}: every row's thumb carries its art`, read.bareThumbs === 0, `${read.bareThumbs} bare of ${read.rows}`);
       if (kind === "utility") {
-        report(`${tag} utility: rows left with nothing say nothing`, read.emptyRows > 0 && read.blankLines === 0,
-          `${read.emptyRows} rows with no line under the name, ${read.blankLines} holding an empty one`);
+        // D2: every land row says what it makes (addendum §1a), and none repeats the give-up the lead says once.
+        const second = read.lines.map((l) => l.replace(/^.*?(makes )/, "$1"));
+        report(`${tag} utility: each row's mana line, and no row repeats the lead's give-up`,
+          read.lines.length > 0 && second.every((l) => l.startsWith("makes ") && !l.includes("gives up")) && read.blankLines === 0,
+          second.slice(0, 3).map((l) => l.slice(0, 50)).join(" | "));
+      }
+      if (kind === "land") {
+        // D2: the mana line leads every land row, in --fg-body, and its cost follows in --fg-muted.
+        const inks = await dialog.locator("li p").evaluateAll((ps) => ps.slice(0, 8).map((p) => ({
+          first: p.firstElementChild ? getComputedStyle(p.firstElementChild).color : null,
+          line: getComputedStyle(p).color,
+          text: p.textContent.trim(),
+        })));
+        const body = await page.evaluate(() => {
+          const probe = document.createElement("span");
+          probe.style.color = "var(--fg-body)";
+          document.body.append(probe);
+          const c = getComputedStyle(probe).color;
+          probe.remove();
+          return c;
+        });
+        report(`${tag} land: the mana line leads each row in --fg-body`,
+          inks.length > 0 && inks.every((i) => i.text.startsWith("makes ") && i.first === body && i.line !== body),
+          inks.slice(0, 3).map((i) => i.text.slice(0, 48)).join(" | "));
       }
       // D1: the groups are types. A land or fetch draws the one lands group; a spell draws its own type
       // first and `other types` second, when it draws both.

@@ -65,13 +65,30 @@ export function sacrificesItself(ability: string, cardName: string): boolean {
  * grant, except an ability that sacrifices the land to pay for itself (`sacrificesItself`).
  */
 export function landColors(card: LandText): Set<Color> {
+  return readColors(card, false);
+}
+
+/**
+ * The colors a land makes ONLY by sacrificing itself: Ravaged Highlands' white, Lotus Field's nothing.
+ * Never a color it also makes again and again. The ranking-rebuild addendum shows these lands on the
+ * ladder's last rung, their once-color named (`white once, by sacrificing it`), instead of hiding them.
+ */
+export function landColorsOnce(card: LandText): Set<Color> {
+  const again = readColors(card, false);
+  return new Set([...readColors(card, true)].filter((c) => !again.has(c)));
+}
+
+/** Every color the land's abilities add: the repeatable ones, or (`once`) the self-sacrificing ones only. */
+function readColors(card: LandText, once: boolean): Set<Color> {
   const colors = new Set<Color>();
-  const typeLine = card.typeLine.split(" // ")[0].toLowerCase();
-  for (const t of BASIC_TYPES) if (new RegExp(`\\b${t}\\b`).test(typeLine)) colors.add(TYPE_COLOR[t]);
+  if (!once) {
+    const typeLine = card.typeLine.split(" // ")[0].toLowerCase();
+    for (const t of BASIC_TYPES) if (new RegExp(`\\b${t}\\b`).test(typeLine)) colors.add(TYPE_COLOR[t]);
+  }
 
   const text = stripReminders(frontText(card));
   for (const sentence of text.split(/(?<=\.)\s+|\n/)) {
-    if (sacrificesItself(sentence, card.name)) continue;
+    if (sacrificesItself(sentence, card.name) !== once) continue;
     if (ANY_COLOR.test(sentence) && !CONDITIONAL_GRANT.test(sentence)) {
       for (const c of COLORS) colors.add(c);
       continue;

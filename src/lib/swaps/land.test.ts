@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, makesFreely, nameAbility, nonManaAbilities, quote,
+  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, landColorsOnce, makesFreely, nameAbility, nonManaAbilities, quote,
   QUOTE_BUDGET, type LandText,
 } from "./land";
 
@@ -100,6 +100,13 @@ describe("landColors over every self-sacrificing land", () => {
   it("has the 17 staging lands", () => expect(SELF_SACRIFICE).toHaveLength(17));
   it.each(SELF_SACRIFICE)("%s counts only what it makes without sacrificing itself", (name, typeLine, text, without) => {
     expect(sorted(landColors(L(name, typeLine, text)))).toEqual(sorted(landColors(L(name, typeLine, without))));
+  });
+  // v2 D2: the colors it makes only once are read too, never one it also makes again and again.
+  it("reads a land's once-colors apart from its repeatable ones", () => {
+    expect(sorted(landColorsOnce(L("Ancient Spring", "Land", SELF_SACRIFICE[1][2])))).toEqual(["B", "W"]);
+    expect(sorted(landColorsOnce(L("Abandoned Outpost", "Land", SELF_SACRIFICE[0][2])))).toEqual(["B", "G", "R", "U"]);
+    expect(sorted(landColorsOnce(L("Dwarven Ruins", "Land", SELF_SACRIFICE[5][2])))).toEqual([]);
+    expect(sorted(landColorsOnce(PLATEAU))).toEqual([]);
   });
 });
 

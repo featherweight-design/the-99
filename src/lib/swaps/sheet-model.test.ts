@@ -10,7 +10,7 @@ const card = (name: string, typeLine = "Instant", oracleText = "", cmc = 2): Car
   ({ oracleId: `id-${name}`, name, typeLine, oracleText, keywords: [], cmc, imageUri: null });
 const standIn = (name: string, over: Partial<StandIn> = {}): StandIn => ({
   card: card(name), free: false, soft: 0, owned: 0, cents: 300, foilOnly: false, inclusion: null,
-  synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], rung: null, drawbacks: [], givesUp: [], ...over,
+  synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], extra: [], missing: [], once: [], rung: null, drawbacks: [], givesUp: [], ...over,
 } as StandIn);
 const read = (over: Partial<StandInsRead>): StandInsRead => ({
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
@@ -42,9 +42,10 @@ describe("the stand-ins sheet's model", () => {
       [copy.groupSameType("instants"), copy.orderMostShared, "instants"],
       [copy.groupOtherTypes, copy.orderMostShared, copy.groupOtherTypes],
     ]);
-    expect(m.groups[0].rows[1].facts).toEqual(["removal", copy.mv(2)]);
+    // The lead names the job once, so a row names only what differs from the original.
+    expect(m.groups[0].rows[1]).toMatchObject({ body: [copy.mv(2)], muted: [] });
     // An other-types row names its type first: its heading cannot.
-    expect(m.groups[1].rows[0].facts).toEqual(["sorcery", "removal", copy.mv(2)]);
+    expect(m.groups[1].rows[0]).toMatchObject({ body: ["sorcery", copy.mv(2)], muted: [] });
     expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
     expect(m.foot).toBe(true);
   });
@@ -58,7 +59,7 @@ describe("the stand-ins sheet's model", () => {
     const m = sheetModel(read({
       groups: [same([standIn("Path", { synergy: 0.1 }), standIn("Sol Ring", { isUniversal: true, free: true })])],
     }));
-    expect(m.groups[0].rows[1].facts).toEqual(["removal", copy.mv(2), copy.stapleFact]);
+    expect(m.groups[0].rows[1]).toMatchObject({ body: [copy.mv(2), copy.stapleFact], muted: [] });
     expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Anguished Unmaking", "Gishath"), copy.leadSpellsStaples].join(" "));
   });
 
@@ -90,12 +91,73 @@ describe("the stand-ins sheet's model", () => {
     expect(cavern.job).toBe(copy.jobColors("white"));
     expect(m.lead).toBe(copy.leadLands("white and red"));
     expect(m.groups.map((g) => [g.heading, g.order, g.noun])).toEqual([[copy.groupSameType("lands"), copy.orderBestMana, "lands"]]);
-    const facts = m.groups[0].rows.map((r) => r.facts);
-    expect(facts[0]).toEqual([copy.drawback.entersTappedUnless("you pay 2 life")]);
-    expect(facts[1]).toEqual([copy.givesUp("uncounterable creatures")]);
-    expect(facts[2]).toEqual([copy.givesUp("“Target player draws…”")]);
-    // `gives up nothing` only where nothing else was said.
-    expect(facts[3]).toEqual([copy.givesUpNothing]);
+    const lines = m.groups[0].rows.map((r) => [r.body, r.muted]);
+    const WR = (state: string) => [copy.mana.line("white and red", state)];
+    // A condition that is a price is the condition itself: no second segment (addendum §1a).
+    expect(lines[0]).toEqual([WR(copy.mana.untappedIf("you pay 2 life")), []]);
+    expect(lines[1]).toEqual([WR(copy.mana.untapped), [copy.givesUp("uncounterable creatures")]]);
+    expect(lines[2]).toEqual([WR(copy.mana.untapped), [copy.givesUp("“Target player draws…”")]]);
+    // A mana line says what the land does, so a row with no cost says nothing more (the addendum's Sacred Foundry).
+    expect(lines[3]).toEqual([WR(copy.mana.untapped), []]);
+  });
+
+  // Addendum §1a: the four forms of the mana line, and a one-shot color named in the cost segment.
+  it("writes each land's mana line from how it enters, and names a color it makes only once", () => {
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W", "R"] },
+      original: card("Plateau", "Land — Mountain Plains"),
+      groups: lands([
+        standIn("Clifftop Retreat", { drawbacks: [{ kind: "entersTappedUnless", condition: "you control a mountain or a plains" }] }),
+        standIn("Battlefield Forge", { drawbacks: [{ kind: "damage", amount: 1, colors: ["R", "W"] }] }),
+        standIn("Mana Confluence", { drawbacks: [{ kind: "life", amount: 1, colors: ["W", "U", "B", "R", "G"] }] }),
+        standIn("Ravaged Highlands", { once: ["W"], drawbacks: [{ kind: "entersTapped" }] }),
+      ]),
+    }));
+    const [retreat, forge, confluence, highlands] = m.groups[0].rows;
+    expect(confluence.muted).toEqual([copy.drawback.life(1, "white and red")]);
+    expect(retreat.body).toEqual([copy.mana.line("white and red", copy.mana.untappedWith("a Mountain or a Plains"))]);
+    expect(forge).toMatchObject({ body: [copy.mana.line("white and red", copy.mana.untapped)], muted: [copy.drawback.damage(1, "red and white")] });
+    expect(highlands).toMatchObject({ body: [copy.mana.line("red", copy.mana.tapped)], muted: [copy.mana.once("white")] });
+  });
+
+  it("names every job all the stand-ins lack in the lead, uncapped", () => {
+    const m = sheetModel(read({
+      groups: [same([standIn("A", { synergy: 0.2, missing: ["castFree", "counters", "haste"] }), standIn("B", { missing: ["castFree", "counters", "haste"] })])],
+    }));
+    expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", `${copy.job.castFree}, ${copy.job.counters} and ${copy.job.haste}`));
+  });
+
+  it("names what a land makes again and again when every job color is made only once", () => {
+    const highlands = { ...card("Ravaged Highlands", "Land", "This land enters tapped.\n{T}: Add {R}.\n{T}, Sacrifice this land: Add one mana of any color.") };
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W"] },
+      original: card("Plains-ish", "Land"),
+      groups: lands([standIn("Ravaged Highlands", { card: highlands, once: ["W"], drawbacks: [{ kind: "entersTapped" }] })]),
+    }));
+    expect(m.groups[0].rows[0].body).toEqual([copy.mana.line("red", copy.mana.tapped)]);
+  });
+
+  it("says a job every stand-in lacks once, in the lead, and not on each row", () => {
+    const m = sheetModel(read({
+      groups: [same([
+        standIn("A", { synergy: 0.2, missing: ["castFree", "counters"] }),
+        standIn("B", { missing: ["castFree"] }),
+      ])],
+    }));
+    expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", copy.job.castFree));
+    expect(m.groups[0].rows.map((r) => r.muted)).toEqual([[copy.givesUp(copy.job.counters)], []]);
+  });
+
+  // Addendum R1: a spell row's jobs beyond the original's (`also`), and the original's it lacks, two at most.
+  it("names a spell's extra jobs and what it gives up, a word once, two of each at most", () => {
+    const m = sheetModel(read({
+      // A second row that keeps the job, so the first row's give-up is its own rather than every row's.
+      groups: [same([standIn("Mulldrifter-ish", { extra: ["draw", "draw", "evasion", "blink"], missing: ["counters"] }), standIn("Keeps it")])],
+    }));
+    expect(m.groups[0].rows[0]).toMatchObject({
+      body: [copy.mv(2), copy.also(`${copy.job.draw} and ${copy.job.evasion}`)],
+      muted: [copy.givesUp(copy.job.counters)],
+    });
   });
 
   it("reads a fetch by the types it finds", () => {
@@ -107,7 +169,8 @@ describe("the stand-ins sheet's model", () => {
     }));
     expect(m.job.startsWith(copy.jobFinds("a Mountain or Forest"))).toBe(true);
     expect(m.lead).toBe(copy.leadFetch("a Mountain or a Forest"));
-    expect(m.groups[0].rows[0].facts).toEqual([copy.drawback.basicOnly, copy.drawback.entersTapped]);
+    // A fetch keeps its `finds …` reading: no mana line (addendum §1a).
+    expect(m.groups[0].rows[0]).toMatchObject({ body: [], muted: [copy.drawback.basicOnly, copy.drawback.entersTapped] });
   });
 
   it("says why there are no stand-ins for a card with no role, spell or land", () => {
@@ -171,7 +234,10 @@ describe("the stand-ins sheet's model", () => {
         ]),
       }));
       expect(m.lead).toBe(copy.leadLandsGivesUp("white and blue", "uncounterable spells"));
-      expect(m.groups[0].rows.map((r) => r.facts)).toEqual([[], [copy.drawback.entersTapped]]);
+      expect(m.groups[0].rows.map((r) => [r.body, r.muted])).toEqual([
+        [[copy.mana.line("white and blue", copy.mana.untapped)], []],
+        [[copy.mana.line("white and blue", copy.mana.tapped)], []],
+      ]);
     });
 
     it("quotes a shared unnamed ability in the lead too, and says a fetch's the same way", () => {
@@ -182,7 +248,7 @@ describe("the stand-ins sheet's model", () => {
         groups: lands([standIn("A", { givesUp: [quoted] }), standIn("B", { givesUp: [quoted] })]),
       }));
       expect(m.lead).toBe(copy.leadFetchGivesUp("an Island", "“Threshold — {U}, {T}…”"));
-      expect(m.groups[0].rows.every((r) => r.facts.length === 0)).toBe(true);
+      expect(m.groups[0].rows.every((r) => r.body.length === 0 && r.muted.length === 0)).toBe(true);
     });
 
     it("keeps each row's own clause on a sold-out sheet, whose lead names no give-up", () => {
@@ -193,7 +259,7 @@ describe("the stand-ins sheet's model", () => {
         groups: lands([standIn("Command Tower", { free: true, givesUp: [uncounterable] })]),
       }));
       expect(m.lead).toBe(copy.leadSoldOut);
-      expect(m.groups[0].rows[0].facts).toEqual([copy.givesUp("uncounterable spells")]);
+      expect(m.groups[0].rows[0].muted).toEqual([copy.givesUp("uncounterable spells")]);
     });
 
     it("keeps each row's own clause when the stand-ins give up different things", () => {
@@ -206,7 +272,7 @@ describe("the stand-ins sheet's model", () => {
         ]),
       }));
       expect(m.lead).toBe(copy.leadLands("white"));
-      expect(m.groups[0].rows.map((r) => r.facts)).toEqual([[copy.givesUp("uncounterable spells")], [copy.givesUp("card draw")]]);
+      expect(m.groups[0].rows.map((r) => r.muted)).toEqual([[copy.givesUp("uncounterable spells")], [copy.givesUp("card draw")]]);
     });
   });
 });

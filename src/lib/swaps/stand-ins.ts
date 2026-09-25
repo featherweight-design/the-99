@@ -12,7 +12,7 @@ import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import { cardThemes, type Theme } from "../recs/themes";
 import {
-  colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
+  colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, landColorsOnce, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
 
 /** How many stand-ins a group shows before `Show all` (Hugh's Q3). */
@@ -71,7 +71,9 @@ export function sameJob(job: Job, card: CardRow): { shared: SpellRole[] } | null
       return null;
     case "land": {
       if (!isLandFace(card.typeLine)) return null;
-      const colors = landColors(card);
+      // A color the land makes only by sacrificing itself still answers the job, once: the addendum shows
+      // those lands on the ladder's last rung (`colorSource` reads that color as utility), named on the row.
+      const colors = new Set([...landColors(card), ...landColorsOnce(card)]);
       return job.colors.every((c) => colors.has(c)) ? { shared: [] } : null;
     }
     case "fetch": {
@@ -127,6 +129,12 @@ export type StandIn = {
   shared: SpellRole[];
   /** The themes it shares with the original (`cardThemes`): a spell's second match, beside its roles (Q6). */
   sharedThemes: Theme[];
+  /** A spell's jobs beyond the original's, roles then themes: the row's `also …` (addendum R1). */
+  extra: (SpellRole | Theme)[];
+  /** The original's jobs this spell does not do, roles then themes: the row's `gives up …` (R1). */
+  missing: (SpellRole | Theme)[];
+  /** The job's colors this land makes only once, by sacrificing itself; its row names them. */
+  once: Color[];
   /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
   rung: 1 | 2 | 3 | 4 | null;
   drawbacks: Drawback[];
@@ -236,6 +244,7 @@ export function rankStandIns(
 ): StandInGroups {
   const job = jobOf(original);
   const originalThemes = job.kind === "spell" ? cardThemes(original, isCreatureType) : [];
+  const originalRoles = job.kind === "spell" ? spellRoles(original) : [];
   const originalPrice = stocked(original.oracleId, priced);
   const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [] };
   if (job.kind === "none") return read;
@@ -251,6 +260,8 @@ export function rankStandIns(
     const price = stocked(c.oracleId, priced);
     const free = freeAfterTake(c, c.owned, c.free);
     if (!free && !(price && originalPrice && price.cents < originalPrice.cents)) continue;
+    const roles = isLand ? [] : spellRoles(c);
+    const themes = originalThemes.length > 0 || !isLand ? cardThemes(c, isCreatureType) : [];
     const row: StandIn = {
       card: c,
       free,
@@ -261,8 +272,14 @@ export function rankStandIns(
       synergy: c.synergy,
       isUniversal: c.isUniversal,
       shared: match.shared,
-      sharedThemes: originalThemes.length > 0 ? cardThemes(c, isCreatureType).filter((t) => originalThemes.includes(t)) : [],
+      sharedThemes: themes.filter((t) => originalThemes.includes(t)),
+      extra: [...roles.filter((r) => !originalRoles.includes(r)), ...themes.filter((t) => !originalThemes.includes(t))],
+      missing: isLand ? [] : [
+        ...originalRoles.filter((r) => !roles.includes(r)),
+        ...originalThemes.filter((t) => !themes.includes(t)),
+      ],
       drawbacks: isLand ? drawbacks(c) : [],
+      once: job.kind === "land" ? job.colors.filter((color) => landColorsOnce(c).has(color)) : [],
       // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.
       rung: isLand ? landRung(drawbacks(c), sourceFor(c, job), landCatch(c)) : null,
       givesUp: isLand ? givesUp(original, c) : [],

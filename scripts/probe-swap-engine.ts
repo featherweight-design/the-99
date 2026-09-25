@@ -21,7 +21,7 @@ import { commitVersion } from "../src/lib/decks/versions";
 import { isLandFace } from "../src/lib/cards/facet";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 import { loadCreatureTypes, loadStandIns, type StandInsRead } from "../src/lib/swaps/gather";
-import { fetchFinds, landColors } from "../src/lib/swaps/land";
+import { fetchFinds, landColors, landColorsOnce } from "../src/lib/swaps/land";
 import { jobOf, mainType, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
 
@@ -128,8 +128,9 @@ async function main() {
   const landList = all(lands);
   check("land: a job read off the text", lands.job.kind === "land", JSON.stringify(lands.job));
   check("land: every stand-in makes white and red", landList.length > 0 && landList.every((s) => {
-    const c = landColors(s.card);
-    return c.has("R") && c.has("W");
+    // A one-shot land answers with the color it makes once (D2), on the last rung.
+    const c = new Set([...landColors(s.card), ...landColorsOnce(s.card)]);
+    return c.has("R") && c.has("W") && (s.once.length === 0 || s.rung === 4);
   }), `${landList.length}: ${names(landList).slice(0, 6).join(", ")}…`);
   check("land: the owned Command Tower is offered, free", names(freeRows(lands)).includes("Command Tower"), names(freeRows(lands)).join(", "));
   check("land: one group, `same type · lands`", lands.groups.length === 1 && lands.groups[0].same && lands.groups[0].type === "land",

@@ -86,6 +86,8 @@ export const swapToolsCopy = {
       `In each group, cards that do more of ${card}’s work come first, then the ones ${commander} decks favor most over other decks of their colors.`,
     /** F14: the index lists nothing for this commander or pair, so the order names no commander. */
     leadSpellsOrderUnlisted: (card: string) => `In each group, cards that do more of ${card}’s work come first, then the cheapest.`,
+    /** D2: a job every stand-in lacks is said once here, not on every row (as `leadLandsGivesUp` does). */
+    leadSpellsGivesUp: (card: string, jobs: string) => `None of them has ${card}’s ${jobs}.`,
     /** Drawn when a staple is in the list: it sorts last in its group (addendum §1b). */
     leadSpellsStaples: "Staples every commander plays come last.",
     /** F5: a sold-out original lists free copies only. Owed to /copy-review. */
@@ -100,6 +102,29 @@ export const swapToolsCopy = {
     showFewer: "Show fewer",
     free: "free",
     mv: (n: number) => `MV ${n}`,
+    // v2 D2 (addendum §1a): a land row's mana line, in --fg-body, then its costs in --fg-muted.
+    mana: {
+      line: (colors: string, state: string) => `makes ${colors}, ${state}`,
+      untapped: "untapped",
+      tapped: "tapped",
+      /** A condition that is a price (a shock's 2 life) is the condition: no separate cost segment. */
+      untappedIf: (condition: string) => `untapped if ${condition}`,
+      untappedWith: (what: string) => `untapped with ${what}`,
+      /** A color the land makes only by sacrificing itself. */
+      once: (color: string) => `${color} once, by sacrificing it`,
+      colorless: "colorless",
+    },
+    // v2 D2 (addendum R1): a spell row names its jobs beyond the original's, and the original's it lacks.
+    also: (jobs: string) => `also ${jobs}`,
+    /** Each theme and role as a row names it. Owed to /copy-review with the rest of D2. */
+    job: {
+      ramp: "ramp", draw: "draw", removal: "removal", wipes: "wipes",
+      counters: "+1/+1 counters", pump: "pumps", haste: "haste", evasion: "evasion", etbDraw: "draws on entering",
+      tokens: "tokens", treasure: "Treasure", protection: "protection", recursion: "recursion", blink: "blink",
+      finisher: "a finisher", castFree: "free casts", mill: "mill", sacOutlet: "a sacrifice outlet",
+      deathTrigger: "death triggers", lifegain: "life gain", drain: "drain", spellslinger: "spells matter",
+      landfall: "landfall", tribal: "tribal",
+    },
     /** Addendum §1: a staple's fact line ends here. No row draws a commander figure since v2 (Q2). */
     stapleFact: "staple, any commander",
     /** H3: what a stand-in for a utility land gives up, the ability named or quoted. Owed to /copy-review. */

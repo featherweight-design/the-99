@@ -10,7 +10,7 @@ import { isLandFace } from "../cards/facet";
 import { shortName } from "../cards/short-name";
 import { formatCents } from "../decks/price";
 import type { StandInsRead } from "./gather";
-import { drawbacks, nonManaAbilities, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
+import { drawbacks, landColors as repeatableColors, nonManaAbilities, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
 import { mainType, type MainType, type SpellRole, type StandIn } from "./stand-ins";
 
 const copy = swapToolsCopy.sheet;
@@ -58,7 +58,10 @@ export type SheetRow = {
   soft: number;
   cents: number | null;
   foilOnly: boolean;
-  facts: string[];
+  /** The row's second line, in --fg-body: a land's mana line, or a spell's type, MV and extra jobs. */
+  body: string[];
+  /** Then, in --fg-muted: what it costs or gives up (addendum §1a, R1). Joined to `body` by ` · `. */
+  muted: string[];
 };
 
 export type SheetGroup = {
@@ -86,11 +89,27 @@ export type SheetModel = {
   foot: boolean;
 };
 
-function row(s: StandIn, facts: string[]): SheetRow {
+function row(s: StandIn, line: { body: string[]; muted: string[] }): SheetRow {
   return {
     oracleId: s.card.oracleId, name: s.card.name, imageUri: s.card.imageUri,
-    free: s.free, soft: s.soft, cents: s.cents, foilOnly: s.foilOnly, facts,
+    free: s.free, soft: s.soft, cents: s.cents, foilOnly: s.foilOnly, ...line,
   };
+}
+
+/** How many extra or missing jobs a spell row names, so the row keeps its two lines at 390 (R1). */
+const JOBS_SHOWN = 2;
+/** A role and a theme can share a word (draw): the row names each word once. */
+const jobWords = (jobs: readonly (keyof typeof copy.job)[]) => [...new Set(jobs.map((j) => copy.job[j]))].slice(0, JOBS_SHOWN);
+
+const BASIC = /\b(plains|island|swamp|mountain|forest)\b/g;
+/** A land's state on entering, from its drawbacks: the mana line's second half (addendum §1a). */
+function entering(list: readonly Drawback[]): string {
+  const unless = list.find((d) => d.kind === "entersTappedUnless");
+  if (unless?.kind === "entersTappedUnless") {
+    const cond = unless.condition.replace(BASIC, (t) => t[0].toUpperCase() + t.slice(1));
+    return cond.startsWith("you control ") ? copy.mana.untappedWith(cond.slice("you control ".length)) : copy.mana.untappedIf(cond);
+  }
+  return list.some((d) => d.kind === "entersTapped") ? copy.mana.tapped : copy.mana.untapped;
 }
 
 export function sheetModel(read: StandInsRead): SheetModel {
@@ -139,22 +158,55 @@ export function sheetModel(read: StandInsRead): SheetModel {
       ? listWords(everyRow[0].givesUp.map(abilityText), "and")
       : null;
 
-  const facts = (s: StandIn): string[] => {
+  // The spells' counterpart: a job of the original's that EVERY stand-in lacks is said once, in the lead.
+  const lackedByAll = job.kind === "spell" && everyRow.length > 0
+    ? everyRow[0].missing.filter((j) => everyRow.every((s) => s.missing.includes(j)))
+    : [];
+  const line = (s: StandIn, same: boolean): { body: string[]; muted: string[] } => {
     if (job.kind === "spell") {
-      const out = [rolesText(s.shared), copy.mv(s.card.cmc)];
-      // Addendum §1: a staple's figure is about every commander, so the row says so rather than
-      // quoting it as this one's. A free staple keeps the clause too, last in its type group.
-      // Hugh's Q2: no % on a stand-in row. The list is ordered by synergy, which a printed inclusion
-      // figure would contradict (a 12% row above a 61% one). A staple still says it is one.
-      if (s.isUniversal) out.push(copy.stapleFact);
-      return out;
+      // The lead states the jobs once, so the row names only what differs (addendum §1b, R1): an
+      // other-types row its type, then MV, the jobs it does beyond the original's, and what it gives up.
+      // Hugh's Q2: no % on a stand-in row. A staple still says it is one (addendum §1).
+      const extra = jobWords(s.extra);
+      const missing = jobWords(s.missing.filter((j) => !lackedByAll.includes(j)));
+      return {
+        body: [
+          ...(same ? [] : [mainType(s.card.typeLine)]),
+          copy.mv(s.card.cmc),
+          ...(extra.length ? [copy.also(listWords(extra, "and"))] : []),
+          ...(s.isUniversal ? [copy.stapleFact] : []),
+        ],
+        muted: missing.length ? [copy.givesUp(listWords(missing, "and"))] : [],
+      };
     }
-    const costs = firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors));
-    // Said once in the lead: the row keeps only its costs, and may be left with nothing at all.
-    if (shared !== null) return costs;
-    const clauses = [...costs, ...s.givesUp.map(givenUpText)];
-    // H3: `gives up nothing` only when it is true, which is when nothing above was said.
-    return clauses.length ? clauses : [copy.givesUpNothing];
+    const giving = shared !== null ? [] : s.givesUp.map(givenUpText);
+    if (job.kind === "fetch") {
+      const clauses = [...firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors)), ...giving];
+      // H3: `gives up nothing` only when it is true, which is when nothing above was said.
+      return { body: [], muted: clauses.length || shared !== null ? clauses : [copy.givesUpNothing] };
+    }
+    // A land: `makes {colors}, {state}`, with the entering condition read into the line itself, then the
+    // costs that remain, the colors it makes only once, and what it gives up (addendum §1a).
+    const again = job.colors.filter((c) => !s.once.includes(c));
+    // A cost is named for the colors this job asks for: Mana Confluence's life is paid for white and red
+    // here, and naming all five would break the row's two lines at 390 to say nothing the reader asked.
+    const costs = s.drawbacks
+      .filter((d) => d.kind !== "entersTapped" && d.kind !== "entersTappedUnless")
+      .map((d) => drawbackText(
+        d.kind === "damage" || d.kind === "life" ? { ...d, colors: d.colors.filter((c) => job.colors.includes(c)) } : d,
+        again.length ? again : job.colors,
+      ));
+    return {
+      // Every job color made only once: the line names what the land makes again and again instead
+      // (Ravaged Highlands for a white job still taps for red), and colorless only when that is nothing.
+      body: [copy.mana.line(
+        again.length ? colorsText(again)
+          : (() => { const own = repeatableColors(s.card); const order: Color[] = ["W", "U", "B", "R", "G"];
+            return own.size ? colorsText(order.filter((c) => own.has(c))) : copy.mana.colorless; })(),
+        entering(s.drawbacks),
+      )],
+      muted: [...costs, ...s.once.map((c) => copy.mana.once(COLOR_WORD[c])), ...giving],
+    };
   };
 
   const order = job.kind === "spell" ? copy.orderMostShared : copy.orderBestMana;
@@ -165,7 +217,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
       order,
       noun,
       // An other-types row names its type first (addendum §1b): the heading cannot say it for the row.
-      rows: g.rows.map((s) => row(s, g.same ? facts(s) : [mainType(s.card.typeLine), ...facts(s)])),
+      rows: g.rows.map((s) => row(s, line(s, g.same))),
     };
   });
 
@@ -190,6 +242,8 @@ export function sheetModel(read: StandInsRead): SheetModel {
         // F14: nothing listed for this commander or pair, so the order clause names no commander.
         everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(original.name, commander) : copy.leadSpellsOrderUnlisted(original.name),
         ...(everyRow.some((s) => s.isUniversal) ? [copy.leadSpellsStaples] : []),
+        // Every one of them, uncapped: they are dropped from every row, so a job left out here is said nowhere.
+        ...(lackedByAll.length ? [copy.leadSpellsGivesUp(original.name, listWords([...new Set(lackedByAll.map((j) => copy.job[j]))], "and"))] : []),
       ].join(" ");
 
   return { job: jobLine, lead, groups, sentence: null, foot: true };
