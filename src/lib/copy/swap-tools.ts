@@ -97,7 +97,7 @@ export const swapToolsCopy = {
     groupUnlisted: (commander: string) => `not listed for ${commander} · cheapest first`,
     free: "free",
     mv: (n: number) => `MV ${n}`,
-    /** Addendum §1: a staple's fact line ends here instead of on `figure`. */
+    /** Addendum §1: a staple's fact line ends here. No row draws a commander figure since v2 (Q2). */
     stapleFact: "staple, any commander",
     /** H3: what a stand-in for a utility land gives up, the ability named or quoted. Owed to /copy-review. */
     givesUp: (ability: string) => `gives up ${ability}`,
