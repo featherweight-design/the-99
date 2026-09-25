@@ -33,6 +33,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
@@ -95,6 +96,7 @@ async function signIn(page: Page): Promise<string> {
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
     [userId, version],
   );
+  await clearAboutSheet(page, userId);
   return userId;
 }
 
