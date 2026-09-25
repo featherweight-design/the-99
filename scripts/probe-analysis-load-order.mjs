@@ -133,7 +133,16 @@ async function run() {
         await pressTab(page, "Analysis");
         await page.locator(`${PAGE} button:visible`, { hasText: /^Analyze/ }).first().click();
         await page.locator(`${PAGE} [data-testid='verdict-cell']`).first().waitFor({ timeout: 120_000 });
-        await page.waitForTimeout(8_000);
+        await page.waitForTimeout(3_000);
+      }
+      // A WRITTEN overview, not merely a reading: the Analyze press writes one only when its note
+      // said it would, so the fixture writes it through the overview's own "Write one".
+      const [{ written: hasOverview }] = await sql`select exists(select 1 from deck_synopses where deck_id = ${deck.id} and status = 'done') as written`;
+      if (!hasOverview) {
+        await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "domcontentloaded" });
+        await pressTab(page, "Analysis");
+        await page.locator(`${PAGE} [data-testid='synopsis-overview'] button:visible`, { hasText: "Write one" }).first().click();
+        await page.locator(`${PAGE} [data-testid='synopsis-overview'] button:visible`, { hasText: "View full overview" }).first().waitFor({ timeout: 120_000 });
       }
 
       // a/c: the opening, from a fresh document so nothing is held client-side.
@@ -154,7 +163,13 @@ async function run() {
         JSON.stringify(parts));
       report(at("nothing paints above a part already on screen"), above.length === 0,
         above.length ? above.map(([n]) => n).join(", ") : "none");
-      report(at("the overview is among them, written"), Boolean(parts.overview), JSON.stringify(parts.overview ?? null));
+      // WRITTEN, not merely its slot: the slot also draws the "write one" row on a deck with none,
+      // so the check reads the written overview's own entry link.
+      const written = await page.evaluate((scope) => {
+        const slot = document.querySelector(`${scope} [data-testid='synopsis-overview']`);
+        return Boolean(slot && [...slot.querySelectorAll("button")].some((b) => b.textContent.includes("View full overview")));
+      }, PAGE);
+      report(at("the overview is among them, written"), Boolean(parts.overview) && written, JSON.stringify({ painted: parts.overview ?? null, written }));
 
       // a, before any reading: the empty state and the credit note beside Analyze paint together.
       // A deck never analyzed, so nothing is stored and only the overview's read is waited on.

@@ -35,6 +35,18 @@ describe("useDeckSynopsis", () => {
     expect(failed.result.current.view.kind).toBe("idle");
   });
 
+  it("is not settled by an answer for an older key, until the key on screen answers", async () => {
+    let answer!: (v: unknown) => void;
+    const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d3", true, key), { initialProps: { key: "a" } });
+    await waitFor(() => expect(result.current.settled).toBe(true));
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { answer = r; }));
+    rerender({ key: "b" });
+    expect(result.current.view.kind).toBe("ready");
+    expect(result.current.settled).toBe(false);
+    await act(async () => answer(synopsisState()));
+    expect(result.current.settled).toBe(true);
+  });
+
   it("reads nothing while the tab is closed", () => {
     const { result } = renderHook(() => useDeckSynopsis("d1", false, "k"));
     expect(actions.fetchSynopsis).not.toHaveBeenCalled();

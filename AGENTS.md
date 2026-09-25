@@ -899,7 +899,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   HIDDEN behind the loader so its read can run, and `useOpenOnce` latches per visit so a press or
   refetch never brings the loader back. Two browser mutations fail it: the gate on the peek alone
   reproduces the overview landing above the verdict at both widths, and dropping the overview wait
-  delays the credit note ~700ms. Measure it on a staging-shaped deck set: `pull:staging` into a
+  delays the credit note ~700ms. Its fixture WRITES the overview through "Write one": an Analyze press writes one only when its note said it would, and the slot draws the "write one" row otherwise, which the first version of the check read as written. Measure it on a staging-shaped deck set: `pull:staging` into a
   scratch branch, and name the account with `PROBE_EMAIL` and the deck with `PROBE_DECK`. It
   writes one analysis and one overview on the deck it walks (stub, free), and the About row.
   Point `PROBE_TARGET_URL` at a scratch branch or `local-dev`, **never production**.

@@ -30,7 +30,7 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   // decks, and the previous deck's overview must never draw on the next one's tab.
   const [answer, setAnswer] = useState<{ state: SynopsisState; key: string; deckId: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  // A FIRST READ THAT FAILED, by deck: it settles the tab's opening as an answer would, so a
+  // A READ THAT FAILED, by deck and key: it settles the tab's opening as an answer would, so a
   // failed overview read never holds the tab's loader up (its slot then draws nothing, as today).
   const [failedFor, setFailedFor] = useState<string | null>(null);
   const generation = useRef(0);
@@ -64,11 +64,11 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
       (got) => {
         if (mine !== generation.current) return;
         if ("synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
-        else setFailedFor(deckId);
+        else setFailedFor(`${deckId}|${refreshKey}`);
       },
       // A failed read keeps what is on screen, never a stale `current`; the next key asks again.
       () => {
-        if (mine === generation.current) setFailedFor(deckId);
+        if (mine === generation.current) setFailedFor(`${deckId}|${refreshKey}`);
       },
     );
   }, [active, refreshKey, deckId]);
@@ -94,8 +94,12 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     : { kind: "idle" };
   return {
     view,
-    /** This deck's first read has answered, or failed: the tab's opening need not wait on it. */
-    settled: view.kind === "ready" || failedFor === deckId,
+    /**
+     * The read for the key ON SCREEN has answered, or failed: the tab's opening need not wait on
+     * it. An answer for an older key does not count: the reading that just landed changed the
+     * key, and until the re-read answers, what a write would cost (the credit notes) is unpriced.
+     */
+    settled: (view.kind === "ready" && view.current) || failedFor === `${deckId}|${refreshKey}`,
     write,
     retry,
   };
