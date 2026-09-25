@@ -221,11 +221,11 @@ danger/error `#C6533F`. Theme-independent, stated as such on the contract card: 
 | **F12** | **Unowned shelf heading** | Plex Mono `11px`, `letter-spacing: 0.14em`, uppercase | `#C9A24B` `--brass` | `gap: 10px`, `margin-bottom: 11px` | — | Uses the **existing `shelf.labels.edhrec`** label (`Top picks for {commander}`) — no new role, no new taxonomy | CV:567, RM:143-145 |
 | **F13** | Unowned shelf **coverage clause** | Plex Mono `11px`, **not uppercase** | `#E0913C` `--warning` | second item in the heading row | — | prints `not in your collection` | CV:568, RM:230 |
 | **F14** | Unowned shelf **count clause** | Plex Mono `11px` | `#8E8269` `--fg-faint` | third item | — | prints `· N to consider` | CV:569, RM:230 |
-| **F15** | Coverage shelf heading (context, unchanged) | Plex Mono `11px` uppercase `#C9A24B`; meta `11px` `#8E8269`; `Show all N →` `11px` `#C9A24B` at `margin-left: auto` | — | `margin-bottom: 11px` | — | The unowned five **never appear here** | CV:552-556 |
+| **F15** | Coverage shelf heading (context, unchanged) | Plex Mono `11px` uppercase `#C9A24B`; meta `11px` `#8E8269`; `Show all N →` `11px` `#C9A24B` at `margin-left: auto` | — | `margin-bottom: 11px` | — | The unowned staples (up to `SHELF_CAP`, 6) **never appear here** | CV:552-556 |
 | **F16** | Shelf grid | — | — | `gap: 14px`; coverage shelf `margin-bottom: 24px` | `grid-template-columns: repeat(6, 1fr)` desktop | — | CV:557, CV:571 |
 | **F17** | **Provenance line** | Plex Mono `10.5px` | `#8E8269` `--fg-faint` | in the Consider toolbar row, `gap: 14px` before the sort control | — | two forms — locked string when everything is owned, `provenanceWithUnowned` when the append put something on the shelves | CV:547, RM:146-148 |
 | **F18** | Sort control (context, unchanged) | `12.5px` `#EDE6D8` | `#2A241D` fill, `1px #3A3229` | `padding: 7px 12px` | `radius 8px` | reads `Coverage gaps first` | CV:548 |
-| **F19** | Cap marker | Plex Mono `9.5px` `#4A4033` | `1px dashed #2A241D` | `padding: 12px` | `radius 10px` | **Mock annotation only — do NOT build.** States the append is capped at 5 by `getDeckSuggestions()` | CV:577 |
+| **F19** | Cap marker | Plex Mono `9.5px` `#4A4033` | `1px dashed #2A241D` | `padding: 12px` | `radius 10px` | **Mock annotation only — do NOT build.** States the append is capped at `SHELF_CAP` (6) by `loadDeckSuggestions()` (5 until #391) | CV:577 |
 | **F20** | Mobile tile | — | — | — | — | **`(tile 2-up identical)`** — no phone frame is drawn for #176; the phone tile is asserted identical | RM:25 |
 
 ### 6.1 Behavioural contract
@@ -234,7 +234,7 @@ danger/error `#C6533F`. Theme-independent, stated as such on the contract card: 
 |---|---|---|
 | **F-B1** | Unowned suggestions **filter out of every coverage shelf** and into a single trailing shelf keyed `edhrec`. A shelf that says *you have 2 of 10* is about cards you can play tonight. | RM:141-143, RM:255-256, CV:580 |
 | **F-B2** | The unowned shelf **sorts last — after the targetless shelf**. | RM:144-145, RM:230 |
-| **F-B3** | `SHELF_CAP` **does not apply** to the unowned shelf; the append is already capped at 5. | RM:256 |
+| **F-B3** | The unowned shelf is capped by the loader, at the same `SHELF_CAP` (6) as every other shelf, so the panel's cap never has more to trim. Was "`SHELF_CAP` does not apply; the append is already capped at 5" until #391 made the two one number. | RM:256 |
 | **F-B4** | `provenanceWithUnowned` is used **only when `unownedCount > 0`**; the locked provenance string is unchanged when every suggestion is owned. | RM:146-148, RM:257, CP:161-168 |
 | **F-B5** | `suggestion.owned === false` is the **only** new branch in the tile: `buy` tag + secondary Add. **No note line.** The `#176` comment in the file comes out with it. | RM:253-254 |
 | **F-B6** | **Colour is never the sole signal.** Unowned is carried by three independent things: the tag word, its `aria-label`, and the shelf heading. | RM:285-286, CV:535, CV:652 |

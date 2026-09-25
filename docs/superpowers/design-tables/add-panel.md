@@ -106,7 +106,7 @@ them / the brand sheet names them.
 | Sort accessible name | `Sort suggestions` | copy.consider.sortAria |
 | Sort label (bare) | `Sort` | copy.consider.sortLabel |
 | Sort persistence | Plain component state; **resets on navigation** (like the decklist grouping toggle) | README §Gap report 6; READINESS §Non-blocking |
-| Owned/unowned filter in Consider | **None** as drawn. ⚠️ The stated reason is false: `loadDeckSuggestions()` appends up to `SHELF_CAP` (6) unowned EDHREC staples, and has since #25 (5 until #391). The absence of a filter still holds; the premise behind it does not — see #176 | README §Decision 5; Canvas F:613; `src/app/decks/actions.ts:113-178` |
+| Owned/unowned filter in Consider | **None** as drawn. ⚠️ The stated reason is false: `loadDeckSuggestions()` appends up to `SHELF_CAP` (6) unowned EDHREC staples, and has since #25 (5 until #391). The absence of a filter still holds; the premise behind it does not — see #176 | README §Decision 5; Canvas F:613; `src/lib/decks/suggestions-read.ts` (`unownedAppend`) |
 | Virtualisation | None — 99 tiles need no windowing | README §Notes for engineering |
 | Live region | The builder's **existing** live region; not a new one per surface | README §Accessibility contract |
 
