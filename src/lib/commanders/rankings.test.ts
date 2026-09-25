@@ -213,8 +213,11 @@ describe("loadCommanderRankings · the owned printing", () => {
 });
 
 describe("the list caches' payload versions", () => {
+  // v11 moved alone, deliberately (#712): a melded commander could sit in a warm
+  // rankings entry, but /discover lists commander_support rows and a melded card
+  // never had one, so its entry holds nothing to drop.
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey).toEqual(["commander-rankings", "v10"]);
+    expect(commanderRankingsKey).toEqual(["commander-rankings", "v11"]);
     expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v7"]);
   });
 

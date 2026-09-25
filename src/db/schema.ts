@@ -762,8 +762,14 @@ export const RANK_SCORE_UNWRITTEN = -1;
  * same shape and one column's MEANING moved, so a version-4 row looks perfectly current
  * while sorting an untracked commander above everything — exactly the blindness this
  * mechanism exists for. The deployment-window argument applies unchanged.
+ *
+ * Version 6 is the first writer that refuses a melded card as a commander (#712). A
+ * version-5 set can hold Brisela or Hanweir, scored and ranked, and nothing about the
+ * row says it should not be there: the same rows, a different verdict on which of
+ * them may exist. Refusing version 5 makes the next read recompute, and
+ * `persistScores` deletes every row it does not name.
  */
-export const SCORE_WRITER_CURRENT = 5;
+export const SCORE_WRITER_CURRENT = 6;
 
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
