@@ -34,6 +34,11 @@ describe("addFromFits", () => {
     expect(addCardToDeckFor).toHaveBeenCalledWith("user_1", DECK, CARD, { relock: false });
   });
 
+  it("says so when the deck already held the card, so the picker stamps no add", async () => {
+    vi.mocked(addCardToDeckFor).mockResolvedValueOnce({ result: { ok: true }, wrote: "held" });
+    expect(await addFromFits(DECK, CARD)).toEqual({ ok: true, held: true });
+  });
+
   it("defers its revalidation to after(), so the caller's page is not the reply", async () => {
     await addFromFits(DECK, CARD);
     expect(revalidateAdd).not.toHaveBeenCalled();
