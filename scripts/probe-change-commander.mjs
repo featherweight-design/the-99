@@ -92,11 +92,13 @@ async function signIn(page) {
 
 /** Cleanup handles, each set BEFORE the write it undoes, so a throw part-way through strands
  *  nothing. */
-let fixtureDeckId = null;
+/** Every fixture deck, in the order made. */
+const made = [];
 let restorePrefs = null;
 
-/** A committed mono-green deck holding three cards a real mono-green candidate's decks run. */
-async function buildFixture(userId) {
+/** A committed mono-green deck holding three cards a real mono-green candidate's decks run. With
+ *  `trade`, the target also sits in the 99, so choosing it trades places (STATES 21b). */
+async function buildFixture(userId, { trade = false } = {}) {
   const [lead] = await sql`
     select c.oracle_id from cards c join commander_support cs on cs.commander_oracle_id = c.oracle_id
     where c.commander_legal and c.color_identity = '{G}' and c.type_line ilike 'Legendary Creature%'
@@ -113,10 +115,11 @@ async function buildFixture(userId) {
     where sc.commander_oracle_id = ${target.oracle_id} and k.color_identity <@ '{G}'::text[]
       and k.type_line not ilike '%Land%' and sc.oracle_id not in (select oracle_id from format_staples)
     order by sc.oracle_id limit 3`;
+  if (trade) hits.push({ oracle_id: target.oracle_id });
   const [deck] = await sql`
     insert into decks (user_id, name, commander_oracle_id)
     values (${userId}, 'probe:change-commander', ${lead.oracle_id}) returning id`;
-  fixtureDeckId = deck.id;
+  made.push(deck.id);
   for (const h of hits) {
     await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${h.oracle_id}, 1)`;
   }
@@ -126,7 +129,7 @@ async function buildFixture(userId) {
   for (const h of hits) {
     await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${v.id}, ${h.oracle_id}, 1)`;
   }
-  return { deckId: deck.id, lead: lead.oracle_id };
+  return { deckId: deck.id, lead: lead.oracle_id, target: target.oracle_id };
 }
 
 const rect = (locator) => locator.evaluate((el) => {
@@ -283,9 +286,37 @@ async function main() {
     // The fixture moved only its commander: the card clause must not be drawn over zero cards.
     const whyText = (await why.first().textContent().catch(() => "")) ?? "";
     report("discard has no empty card clause", !/not stored anywhere|\.\s{2}/.test(whyText), whyText);
+
+    // A trade (STATES 21b): the chosen commander was in the 99, so on the review page its row in
+    // `Coming in` reads where it goes to, the old commander's row in `Going out` reads where it
+    // comes from, and neither offers its usual action (Pull it, Put back).
+    const traded = await buildFixture(userId, { trade: true });
+    await page.setViewportSize(WIDTHS[0].viewport);
+    await page.goto(`${BASE}/decks/${traded.deckId}`, { waitUntil: "domcontentloaded" });
+    await onPage(page, '[data-testid="change-commander-door"]').filter({ visible: true })
+      .getByRole("button", { name: "Change commander" }).click();
+    const tradeDialog = page.getByRole("dialog", { name: "Change commander" });
+    const tradeRow = tradeDialog.locator('[data-testid="change-commander-row"]').filter({ hasText: "trades places" }).first();
+    await tradeRow.waitFor({ state: "visible", timeout: 30_000 });
+    await tradeRow.locator("[data-choose]").click();
+    await tradeDialog.getByRole("button", { name: /^Make .* commander$/ }).click();
+    await tradeDialog.waitFor({ state: "hidden", timeout: 30_000 });
+    const [moved] = await sql`select commander_oracle_id as c from decks where id = ${traded.deckId}`;
+    report("trade write", moved.c === traded.target, `commander ${moved.c === traded.target ? "is the traded card" : "did not move to it"}`);
+    for (const width of WIDTHS) {
+      await page.setViewportSize(width.viewport);
+      await page.goto(`${BASE}/decks/${traded.deckId}/changes`, { waitUntil: "domcontentloaded" });
+      await onPage(page, '[data-testid="review-commander"]').waitFor({ state: "visible", timeout: 30_000 });
+      const columns = onPage(page, "#review");
+      // The phone draws one column at a time behind a segmented pair; read what the document holds.
+      const texts = await columns.evaluate((el) => el.textContent ?? "");
+      const hasTo = texts.includes("to the command zone");
+      const hasFrom = texts.includes("from the command zone");
+      report(`trade zone hints @${width.label}`, hasTo && hasFrom, `to: ${hasTo}, from: ${hasFrom}`);
+    }
   } finally {
     // Each step on its own, so one failing cannot skip the next.
-    if (fixtureDeckId) await sql`delete from decks where id = ${fixtureDeckId}`.catch((e) => { failures += 1; console.error(e); });
+    for (const id of made) await sql`delete from decks where id = ${id}`.catch((e) => { failures += 1; console.error(e); });
     if (restorePrefs) await restorePrefs().catch((e) => { failures += 1; console.error(e); });
     await browser.close();
   }
