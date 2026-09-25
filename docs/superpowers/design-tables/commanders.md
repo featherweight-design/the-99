@@ -1193,7 +1193,13 @@
 | margin-top | 6px | 5px |
 | text-shadow | 0 1px 3px rgba(0,0,0,0.7) | 0 1px 3px rgba(0,0,0,0.7) |
 
-### P/T line (oracle panel)
+### P/T line (oracle panel) · RETIRED
+
+> **Retired.** #297 replaced the commander page's oracle panel with the shared card modal (opened from
+> *Full card*), so nothing draws this line any more. #20, which asked for it because the schema had no
+> power/toughness, was closed as obsolete on 2026-09-25. The table below is kept as the record. Do not build
+> from it.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | text-align | right | right |
