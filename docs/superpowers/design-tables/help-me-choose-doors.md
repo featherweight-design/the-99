@@ -362,9 +362,9 @@ disagreements there. The canvas's layout wins for layout.
 
 ## Widened credit strings (F9) — keys only
 
-- `creditsCopy.spent` — its tail widens to name deeper looks (drawn: "Deeper looks, overviews and suggestions share
-  these credits."). The noun "overview" is Hugh's.
-- `PAUSED_REASON` (read by `creditsCopy.paused` and `creditsCopy.pausedReason`) — names two features; widen or shorten.
+- `creditsCopy.spent` — its tail widens to name deeper looks. Ruled by Hugh (2026-09-25, /copy-review): "Suggestions,
+  overviews and deeper looks share these credits." The canvas drew the list in the other order. The noun "overview" is Hugh's.
+- `PAUSED_REASON` (read by `creditsCopy.paused` and `creditsCopy.pausedReason`) — widened in the same order: "…monthly limit for suggestions, overviews and deeper looks."
 - `addPanelCopy.createPicker.sub` — the desktop picker sub (above).
 
 All three go through `/copy-review`.

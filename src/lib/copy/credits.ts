@@ -16,7 +16,8 @@
 // the line then gives the count alone, since no credit is out to come back. The feature noun in
 // `spent` is Hugh's (2026-09-23): "overview", the Analysis tab's word, where Design wrote
 // "Synopses". Help me choose widens `spent` and the pause's reason to name its deeper looks too
-// (READINESS-audit F9), since they spend the same units.
+// (READINESS-audit F9), since they spend the same units; Hugh's wording (2026-09-25) leads with
+// what the panel's reader just used, in one order in both.
 
 /** A time in the reader's clock, 12-hour: `2:20 PM`. Client-side only, where the clock is theirs. */
 export function clockTime(at: Date): string {
@@ -29,7 +30,7 @@ export function monthName(at: Date): string {
   return at.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 }
 
-const PAUSED_REASON = "The app has reached its monthly limit for deeper looks, suggestions and overviews. Nothing you did caused this.";
+const PAUSED_REASON = "The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this.";
 
 /** The count and, when one is out, when the next comes back. */
 function standing(left: number, total: number, next: Date | null): string {
@@ -50,7 +51,7 @@ export const creditsCopy = {
     `Replaces these suggestions and uses a credit. ${standing(left, total, next)}.`,
   /** Every credit is out: the press is disabled and this says when it comes back. */
   spent: (total: number, next: Date | null) =>
-    `${standing(0, total, next)}. Deeper looks, overviews and suggestions share these credits.`,
+    `${standing(0, total, next)}. Suggestions, overviews and deeper looks share these credits.`,
   /**
    * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is
    * disabled until `until`, the 1st of next month. DECIDED wording (orchestrator, 2026-09-24).
