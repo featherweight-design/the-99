@@ -61,6 +61,12 @@ export function buildReadPrompt(words: string, themeLabels: readonly string[]): 
   };
 }
 
+/** Whether `phrase` is a run of the player's own words, compared in the free match's one form. */
+function wrote(words: string, phrase: string): boolean {
+  const key = phraseKey(phrase);
+  return key.length > 0 && ` ${phraseKey(words)} `.includes(` ${key} `);
+}
+
 export type ReadResult = {
   /** The chips that survived, each marked as the deeper look's. */
   chips: Chip[];
@@ -73,11 +79,13 @@ export type ReadResult = {
 
 export function validateRead(args: {
   reply: ReadResponse;
+  /** The player's words, which every Not understood phrase must come from. */
+  words: string;
   index: PhraseIndex;
   /** What the player set with the controls, which beats anything read from words. */
   controls: { budgetDollars: number | null; bracket: number | null };
 }): ReadResult {
-  const { reply, index, controls } = args;
+  const { reply, index, controls, words } = args;
   const chips: Chip[] = [];
   const notUsed: string[] = [];
   const has = (c: Chip) => chips.some((x) => JSON.stringify(x) === JSON.stringify(c));
@@ -109,7 +117,9 @@ export function validateRead(args: {
   return {
     chips,
     notUsed,
-    notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) => p.length > 0))],
+    // Only phrases the player wrote: the prompt asks for them verbatim, and nothing the model adds
+    // may be shown as the player's own words.
+    notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) => p.length > 0 && wrote(words, p)))],
     useful: chips.length > 0,
   };
 }

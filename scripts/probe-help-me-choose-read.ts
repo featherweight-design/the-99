@@ -126,17 +126,32 @@ async function main() {
     check("the late answer's bill landed on the ledger", (late.cost ?? 0) > 0, true);
     check("the refused second press holds no unit", await units(USER), before);
 
+    check("a press reusing a settled read's id is refused as a reuse, not as in flight",
+      (await store.startRead(USER, "again", INTAKE_MODEL, { readId: ok })).kind, "reused");
+
     console.log("\n5. The reaper frees a stranded read");
     const stranded = randomUUID();
     const past = new Date(Date.now() - INTAKE_REAPER_CUTOFF_MS - 60_000);
     const start = await store.startRead(USER, "stranded", INTAKE_MODEL, { readId: stranded, now: past });
-    check("a press reusing a settled read's id is refused as a reuse, not as in flight",
-      (await store.startRead(USER, "again", INTAKE_MODEL, { readId: ok })).kind, "reused");
     check("a read started past the cutoff is pending", [start.kind, (await readRow(stranded)).status], ["started", "pending"]);
     const next = randomUUID();
     check("the next press is not refused by it", (await run(next, async () => reply(["Dinosaurs"]))).kind, "read");
     const reaped = await readRow(stranded);
     check("the stranded read failed as interrupted, its unit refunded", [reaped.status, reaped.error_class, reaped.unit], ["failed", "interrupted", "refunded"]);
+
+    console.log("\n6. A refused press still frees a stranded read");
+    // Spend the rest of the day's allowance, strand a read, then press: the reservation is refused,
+    // and the reap must not have been rolled back with it.
+    while ((await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind === "read") { /* spend a unit */ }
+    const stranded2 = randomUUID();
+    await fixture.execute(sql`insert into model_calls (user_id, feature, status, model, created_at)
+      values (${USER}, 'intake', 'reserved', ${INTAKE_MODEL}, ${past}) returning id`);
+    const [{ id: strandedCall }] = (await fixture.execute(sql`select id from model_calls where user_id = ${USER} and created_at = ${past} and status = 'reserved' limit 1`)).rows as { id: string }[];
+    await fixture.execute(sql`insert into intake_reads (id, user_id, words_hash, model, model_call_id, status, created_at)
+      values (${stranded2}, ${USER}, 'x', ${INTAKE_MODEL}, ${strandedCall}, 'pending', ${past})`);
+    check("with the allowance spent, the press is refused", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "allowance");
+    const after = await readRow(stranded2);
+    check("the stranded read was reaped all the same", [after.status, after.error_class, after.unit], ["failed", "interrupted", "refunded"]);
   } finally {
     await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER})`);
     await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER})`);

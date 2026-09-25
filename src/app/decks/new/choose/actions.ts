@@ -24,10 +24,13 @@ export async function lookDeeper(input: {
   bracket: number | null;
 }): Promise<LookDeeperResult> {
   const userId = await requireUserId();
+  // The argument is whatever a caller sent: shape first, before any field is read.
+  if (typeof input !== "object" || input === null) return { kind: "refused" };
   const words = typeof input.words === "string" ? input.words.trim() : "";
   const { budgetDollars, bracket } = input;
   if (
-    !isUuid(input.readId)
+    typeof input.readId !== "string"
+    || !isUuid(input.readId)
     || words.length === 0
     || words.length > READ_WORDS_MAX_CHARS
     || !(budgetDollars === null || (Number.isInteger(budgetDollars) && budgetDollars >= 1))
@@ -39,6 +42,6 @@ export async function lookDeeper(input: {
 /** False when there was nothing pending to stop: the read had already settled. */
 export async function stopDeeperRead(readId: string): Promise<boolean> {
   const userId = await requireUserId();
-  if (!isUuid(readId)) return false;
+  if (typeof readId !== "string" || !isUuid(readId)) return false;
   return cancelRead(readId, userId);
 }

@@ -20,7 +20,7 @@ describe("the deeper read's stub", () => {
   it("reads the words as the free match does, in a shape the validator keeps", () => {
     const out = stubReply("dinosaurs with Doubling Season and big energy", index, "mapped");
     if (!out.ok) throw new Error("expected a reply");
-    const read = validateRead({ reply: out.value, index, controls: none });
+    const read = validateRead({ reply: out.value, words: "dinosaurs with Doubling Season and big energy", index, controls: none });
     expect(read.chips).toEqual([
       { kind: "theme", slug: "dinosaurs", label: "Dinosaurs" },
       { kind: "card", oracleId: "ds", name: "Doubling Season" },
@@ -37,7 +37,7 @@ describe("the deeper read's stub", () => {
   it("switches to each outcome the panel draws", () => {
     const nothing = stubReply("dinosaurs", index, stubMode({ INTAKE_STUB: "nothing" }));
     if (!nothing.ok) throw new Error("expected a reply");
-    expect(validateRead({ reply: nothing.value, index, controls: none }).useful).toBe(false);
+    expect(validateRead({ reply: nothing.value, words: "dinosaurs", index, controls: none }).useful).toBe(false);
     expect(stubReply("x", index, "malformed")).toMatchObject({ ok: false, errorClass: "malformed" });
     expect(stubReply("x", index, "busy")).toMatchObject({ ok: false, errorClass: "upstream_busy" });
     expect(stubReply("x", index, "timeout")).toMatchObject({ ok: false, errorClass: "timeout" });

@@ -41,8 +41,8 @@ describe("runDeeperRead", () => {
   });
 
   it("validates BEFORE it settles, so a reply with nothing valid settles as not useful (F4)", async () => {
-    const out = await runDeeperRead("u", input, deps(reply({ themes: ["Pirates"], notUnderstood: ["arr"] })));
-    expect(out).toEqual({ kind: "nothing", notUnderstood: ["arr"] });
+    const out = await runDeeperRead("u", input, deps(reply({ themes: ["Pirates"], notUnderstood: ["lizards"] })));
+    expect(out).toEqual({ kind: "nothing", notUnderstood: ["lizards"] });
     expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
   });
 

@@ -11,7 +11,8 @@ const reply = (over: Partial<ReadResponse> = {}): ReadResponse => ({
   themes: [], cards: [], budgetDollars: null, bracket: null, notUnderstood: [], ...over,
 });
 const none: { budgetDollars: number | null; bracket: number | null } = { budgetDollars: null, bracket: null };
-const read = (r: ReadResponse, controls = none) => validateRead({ reply: r, index, controls });
+const WORDS = "arr big energy and more";
+const read = (r: ReadResponse, controls = none) => validateRead({ reply: r, words: WORDS, index, controls });
 
 describe("validateRead", () => {
   it("keeps a theme only when it is an offered label, or a singular of one", () => {
@@ -51,6 +52,11 @@ describe("validateRead", () => {
   it("is useful only when a chip survived, so an empty read is refunded (F4)", () => {
     expect(read(reply({ themes: ["Pirates"], notUnderstood: ["arr"] })).useful).toBe(false);
     expect(read(reply({ themes: ["Dinosaurs"] })).useful).toBe(true);
+  });
+
+  it("keeps a Not understood phrase only when the player wrote it", () => {
+    const r = read(reply({ notUnderstood: ["Big Energy", "tiny lizards", "energy and"] }));
+    expect(r.notUnderstood).toEqual(["Big Energy", "energy and"]);
   });
 
   it("dedupes chips and phrases", () => {

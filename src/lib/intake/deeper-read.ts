@@ -77,7 +77,7 @@ export async function runDeeperRead(
     const settled = await settleRead(started, { kind: "failed", errorClass: outcome.errorClass }, billed);
     return settled ? { kind: "failed", errorClass: outcome.errorClass } : { kind: "stopped" };
   }
-  const result = validateRead({ reply: outcome.value, index, controls: input.controls });
+  const result = validateRead({ reply: outcome.value, words: input.words, index, controls: input.controls });
   const settled = await settleRead(started, { kind: "read", result }, billed);
   if (!settled) return { kind: "stopped" };
   return result.useful

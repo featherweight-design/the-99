@@ -74,7 +74,7 @@ export async function reapReads(tx: Tx, userId: string, now: Date = new Date()):
 }
 
 /**
- * ONE transaction: reap, reserve a unit, insert the pending row. The allowance lock makes the last
+ * Reap first, in its own transaction; then ONE transaction reserves a unit and inserts the pending row. The allowance lock makes the last
  * unit single-winner; the partial unique index makes a second read in flight impossible, and
  * because the unit and the row share the transaction the loser of that race holds no unit.
  */
@@ -87,9 +87,11 @@ export async function startRead(
   opts: { readId?: string; now?: Date } = {},
 ): Promise<({ kind: "started" } & ReadHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
   const now = opts.now ?? new Date();
+  // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
+  // it back and leave the stranded read holding the one-pending slot.
+  await db.transaction((tx) => reapReads(tx, userId, now));
   try {
     const handle = await db.transaction(async (tx): Promise<ReadHandle> => {
-      await reapReads(tx, userId, now);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
