@@ -141,9 +141,13 @@ function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newest
             ) : null}
           </div>
           {/* A row left with nothing to say (its give-up said once in the lead) draws no second line. */}
-          {row.facts.length ? (
-            <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty]" style={{ color: "var(--fg-muted)" }}>
-              {row.facts.join(" · ")}
+          {row.body.length || row.muted.length ? (
+            // Addendum §1a: what the row does in --fg-body, what it costs or gives up in --fg-muted, one ` · `
+            // between them in --border-strong.
+            <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
+              {row.body.length ? <span className="text-[color:var(--fg-body)]">{row.body.join(" · ")}</span> : null}
+              {row.body.length && row.muted.length ? <span className="text-[color:var(--border-strong)]"> · </span> : null}
+              {row.muted.join(" · ")}
             </p>
           ) : null}
         </div>
