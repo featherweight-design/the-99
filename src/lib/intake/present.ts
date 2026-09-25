@@ -91,7 +91,7 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
     .filter((o) => o.n > 0)
     .sort((a, b) => b.n - a.n)
     .slice(0, NARROW_OPTIONS)
-    .map(({ n: _n, ...o }) => o);
+    .map((o) => ({ label: o.label, reason: o.reason, count: o.count, params: o.params }));
 }
 
 function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
