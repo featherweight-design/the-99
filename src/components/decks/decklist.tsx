@@ -6,6 +6,7 @@
 
 import { useSwapTools } from "../../lib/swaps/context";
 import { StandInsSheet } from "./stand-ins-sheet";
+import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
 import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
@@ -428,8 +429,19 @@ export function Decklist({
   const swapTools = useSwapTools();
   // The stand-ins sheet, mounted by the list rather than by its row: a take takes the row away, and
   // the sheet has to stay to say so. Both views mount it, since a take moves the reader nowhere.
-  const standInsSheet = swapTools?.standIns ? (
-    <StandInsSheet card={swapTools.standIns} newestAsOf={newestAsOf} onClose={swapTools.closeStandIns} />
+  const standInsSheet = swapTools ? (
+    <>
+      {swapTools.standIns ? (
+        <StandInsSheet
+          card={swapTools.standIns}
+          newestAsOf={newestAsOf}
+          onClose={swapTools.closeStandIns}
+          fromCard={swapTools.standInsFromCard}
+        />
+      ) : null}
+      {/* The card modal's door, for a card a Shopping row opened (swap tools PR 4c). */}
+      <StandInDoorRegistration shoppingCards={shoppingCards} newestAsOf={newestAsOf} />
+    </>
   ) : null;
   const shoppingOverCount = swapTools
     ? shoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length

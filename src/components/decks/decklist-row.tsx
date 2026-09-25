@@ -199,6 +199,8 @@ export function DecklistRow({
   // `over $X`. Shopping only, and only where the tools are on (`swapTools` is null otherwise).
   const swapTools = useSwapTools();
   const overLimit = swapTools !== null && inShopping && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
+  // From a Shopping row with the swap tools on, the card draws the door to its stand-ins (audit F17).
+  const opensDoor = swapTools !== null && inShopping;
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // A land in Shopping over the limit carries the line even with no EDHREC figure to put on it:
   // the marking is the one thing on it the reader needs.
@@ -380,7 +382,7 @@ export function DecklistRow({
       && (event.currentTarget.contains(selection.anchorNode)
         || event.currentTarget.contains(selection.focusNode));
     if (selectedHere) return;
-    open(card.oracleId, siblings);
+    open(card.oracleId, siblings, undefined, { door: opensDoor });
   }
 
   return (
@@ -451,6 +453,7 @@ export function DecklistRow({
                 oracleId={card.oracleId}
                 name={fullName}
                 siblings={siblings}
+                door={opensDoor}
                 className={nameTextClass}
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
@@ -526,6 +529,7 @@ export function DecklistRow({
               oracleId={card.oracleId}
               name={fullName}
               siblings={siblings}
+              door={opensDoor}
               className={nameTextClass}
               describedBy={describedBy}
               style={{ color: "var(--fg)" }}

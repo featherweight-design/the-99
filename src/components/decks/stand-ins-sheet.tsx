@@ -214,11 +214,14 @@ export function StandInsSheet({
   card,
   newestAsOf,
   onClose,
+  fromCard = false,
 }: {
   /** The Shopping row pressed. Its name and price draw the head before the list arrives. */
   card: DeckDetailCard;
   newestAsOf: Date | null;
   onClose: () => void;
+  /** Opened from the card modal's door: the sheet sits over that card, and its close goes back to it. */
+  fromCard?: boolean;
 }) {
   const tools = useSwapTools();
   const { close: closeCard } = useCardDetail();
@@ -378,6 +381,7 @@ export function StandInsSheet({
       width={640}
       backLabel={copy.backLabel}
       stackFooter={stackFooter}
+      overCard={fromCard ? { name, backAria: copy.backToCardAria(name) } : undefined}
     >
       <div data-testid="stand-ins-sheet" className="flex flex-col gap-[12px] md:gap-[14px] px-[16px] pt-[14px] pb-[24px] md:px-[18px] md:pt-[16px] md:pb-[18px]">
         <section

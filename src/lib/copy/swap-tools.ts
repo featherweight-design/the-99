@@ -8,6 +8,8 @@ export const swapToolsCopy = {
   // ── The limit line (under PriceStrip, Shopping only) ─────────────────
   limit: {
     lead: "Marking cards over",
+    /** The key under the line, after a `⇄` glyph: what a marked row's ⇄ does, and the door's second way in. */
+    key: "on a marked row opens its cheaper stand-ins. Any card’s stand-ins are also in its details.",
     editAria: (figure: string) => `Change the limit, now ${figure}`,
     defaultChip: "default",
     /** The figure is always the $10 default. */
@@ -38,6 +40,12 @@ export const swapToolsCopy = {
 
   // ── A stand-in's card, stacked over the sheet (CardModal footer slot) ──
   modal: {
+    /** The door on a card opened from a Shopping row (addendum §2). */
+    seeStandIns: "See cheaper stand-ins →",
+    underLimit: (figure: string) => `under your ${figure} limit`,
+    overLimit: (figure: string) => `over your ${figure} limit`,
+    /** The door after a take, in place of the link (addendum §3). Owed to /copy-review (F21). */
+    swapped: (add: string) => `swapped out · ${add} is in`,
     inPlaceOf: (cut: string, deck: string) => `in place of ${cut}, in ${deck}`,
     /** Phone footer: desktop reads "Take". */
     take: (add: string) => `Take ${add}`,
@@ -47,6 +55,8 @@ export const swapToolsCopy = {
   sheet: {
     title: "Cheaper stand-ins",
     closeAria: "Close cheaper stand-ins",
+    /** Opened over a card: the close is the way back to it (addendum §3). Owed to /copy-review (F21). */
+    backToCardAria: (card: string) => `Back to ${card}`,
     /** The stacked card's way back. */
     backLabel: "Cheaper stand-ins",
     replacing: (deck: string) => `replacing, in ${deck}`,

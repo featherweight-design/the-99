@@ -111,6 +111,7 @@ export function ModalChrome({
   ground = "var(--surface-raised)",
   titleClassName = "truncate leading-tight text-[15px] md:text-[16px]",
   stackFooter,
+  overCard,
   children,
 }: {
   mark?: React.ReactNode;
@@ -129,6 +130,13 @@ export function ModalChrome({
   titleClassName?: string;
   /** What a card stacked over this sheet draws in place of its Mana Pool link (the stand-ins' Take). */
   stackFooter?: SheetFooter;
+  /**
+   * The sheet opened over a card (the swap tools' door, addendum §3). The card stays under it, so
+   * the sheet sits a step lower (96 on the phone, 40px down on desktop) over a lighter scrim, and
+   * its close is the way back to that card: `← {name}` on desktop, a × named `Back to {name}` on
+   * the phone.
+   */
+  overCard?: { name: string; backAria: string };
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -142,9 +150,10 @@ export function ModalChrome({
     footerRef.current = stackFooter;
   });
   const hasFooter = stackFooter !== undefined;
+  const onCard = overCard !== undefined;
   useEffect(
-    () => registerSheet(backLabel, hasFooter ? (id, layout) => footerRef.current?.(id, layout) ?? null : undefined),
-    [registerSheet, backLabel, hasFooter],
+    () => registerSheet(backLabel, hasFooter ? (id, layout) => footerRef.current?.(id, layout) ?? null : undefined, onCard),
+    [registerSheet, backLabel, hasFooter, onCard],
   );
 
   // The card in front of this one. The sheet steps down a ground behind it, which is the second
@@ -153,10 +162,14 @@ export function ModalChrome({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+      className={
+        "fixed inset-0 z-50 flex items-end justify-center "
+        // Over a card, the sheet's top sits 40px under the card's, which is centred at its own height.
+        + (onCard ? "md:items-start md:pt-[calc((100vh-min(620px,85vh))/2+40px)]" : "md:items-center")
+      }
       role="presentation"
       onClick={onClose}
-      style={{ background: "color-mix(in oklab, var(--bg) 72%, transparent)" }}
+      style={{ background: `color-mix(in oklab, var(--bg) ${onCard ? 60 : 72}%, transparent)` }}
     >
       <div
         ref={ref}
@@ -169,8 +182,11 @@ export function ModalChrome({
         className={
           // Phone: a sheet from 52px down — the canvas's figure, and the top of the strip the
           // stacked card sheet leaves visible. Desktop: centered.
-          "flex flex-col w-full h-[calc(100%-52px)] rounded-t-[14px] border-t "
-          + "md:h-auto md:max-h-[85vh] md:rounded-[14px] md:border overflow-hidden "
+          "flex flex-col w-full rounded-t-[14px] border-t "
+          + (onCard ? "h-[calc(100%-96px)] " : "h-[calc(100%-52px)] ")
+          + "md:h-auto md:rounded-[14px] md:border overflow-hidden "
+          // Over a card its top is pushed down, so its height is capped to end 20px above the fold.
+          + (onCard ? "md:max-h-[calc((100vh+min(620px,85vh))/2-60px)] " : "md:max-h-[85vh] ")
           + WIDTH_CLASS[width]
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.
           + (behind ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)]")
@@ -202,11 +218,22 @@ export function ModalChrome({
               any taller is cut along its bottom edge by the sheet that exists to show it. The
               probe measured 46 before the pin. On desktop nothing stacks over the header, so it
               keeps its padding and the control is pulled back into it. */}
+          {overCard ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={overCard.backAria}
+              className="hidden md:inline-flex ml-auto flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] [border:1px_solid_var(--border-strong)]"
+            >
+              <span aria-hidden="true">←</span>
+              {overCard.name}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onClose}
-            aria-label={closeLabel}
-            className="ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
+            aria-label={overCard ? overCard.backAria : closeLabel}
+            className={(overCard ? "md:hidden " : "") + "ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"}
           >
             ×
           </button>

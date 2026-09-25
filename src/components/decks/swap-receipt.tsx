@@ -44,7 +44,7 @@ export function SwapReceiptRow({ receipt }: { receipt: SwapReceipt }) {
   };
 
   return (
-    <div data-testid="swap-receipt">
+    <div data-testid="swap-receipt" data-swap-id={receipt.swapId}>
       <div
         className="flex items-center gap-[9px] md:gap-[10px] min-h-[44px] md:min-h-[34px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px] rounded-[7px] border border-dashed border-[color:var(--border-strong)]"
         style={{ background: "var(--surface-sunken)" }}

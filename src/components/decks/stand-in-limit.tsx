@@ -141,6 +141,10 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
           {copy.limit.invalid}
         </p>
       ) : null}
+      {/* The key: what a marked row's ⇄ does, and that the card's details hold the same door. */}
+      <p className="m-0 font-mono text-[10px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
+        <span aria-hidden="true" style={{ color: "var(--warning)" }}>⇄</span> {copy.limit.key}
+      </p>
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>
     </div>
   );
