@@ -115,6 +115,41 @@ describe("the card modal's door (swap tools PR 4c)", () => {
   });
 });
 
+describe("focus after a take", () => {
+  const receipt: SwapReceipt = {
+    swapId: "s1", deckId: "d1", cutOracleId: "o-plateau", cut: "Plateau", add: "Rugged Prairie",
+    cutCard: PLATEAU, free: false, cutLeft: 0,
+  };
+  const frame = () => act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+
+  it("lands on the receipt's Undo swap when the swapped-out card closes, and not when it only pages", async () => {
+    render(
+      <>
+        {draw({ receipt })}
+        <div data-swap-id="s1"><button type="button">Undo swap</button></div>
+      </>,
+    );
+    const undo = screen.getByRole("button", { name: "Undo swap" });
+    await press("shop plateau");
+    // Paging to another card while the modal stays open: focus stays out of the page behind it.
+    await press("shop tower");
+    // Focus left on the page for a moment, as a real browser can while the next card mounts.
+    (document.activeElement as HTMLElement | null)?.blur();
+    await frame();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(document.activeElement).not.toBe(undo);
+
+    await press("shop plateau");
+    await act(async () => {
+      fireEvent.keyDown(window, { key: "Escape" });
+    });
+    (document.activeElement as HTMLElement | null)?.blur();
+    await frame();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(undo);
+  });
+});
+
 describe("a sheet over the card", () => {
   it("keeps the card mounted under it, inert, and hands the same node back when it goes", async () => {
     const view = render(draw());

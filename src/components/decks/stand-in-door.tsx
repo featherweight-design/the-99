@@ -64,6 +64,9 @@ export function StandInDoor({
       const id = takenId.current;
       if (!id) return;
       requestAnimationFrame(() => {
+        // Only when the card itself closed: paging or a combo partner replaces the door under a modal
+        // that is still open, and focus stays in that modal.
+        if (document.querySelector('[role="dialog"][aria-labelledby="card-modal-title"]')) return;
         if (document.activeElement && document.activeElement !== document.body) return;
         document.querySelector<HTMLButtonElement>(`[data-swap-id="${CSS.escape(id)}"] button`)?.focus();
       });
