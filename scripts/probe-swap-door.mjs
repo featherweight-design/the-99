@@ -239,6 +239,10 @@ try {
       const lb = await link.boundingBox();
       report(`${tag} door: a 44px target`, lb && Math.round(lb.height) >= 44, `${lb?.height}px`);
     }
+    const shot = async (name) => {
+      if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/swap-door-${name}-${w.label}.png` });
+    };
+    await shot("over");
     // Marked so its return can be told from a remount: the same node keeps its scroll.
     await card.evaluate((el) => { el.dataset.probeHeld = "1"; });
     const cardTop = await topOf(card);
@@ -257,6 +261,7 @@ try {
       ? sheet.getByRole("button", { name: `Back to ${cut}` })
       : sheet.getByRole("button", { name: `Back to ${cut}` }).filter({ hasText: cut });
     report(`${tag} sheet over card: its way back names the card`, await back.isVisible(), phone ? "× Back to …" : "← pill");
+    await shot("sheet-over-card");
     if (phone) {
       const heldTop = await topOf(page.locator('[data-probe-held="1"]'));
       const sheetTop = await topOf(sheet);
@@ -306,6 +311,7 @@ try {
     const swapped = card.locator('[data-testid="stand-in-door"]').filter({ visible: true });
     await swapped.waitFor({ timeout: 10_000 });
     const swappedText = (await swapped.textContent())?.trim();
+    await shot("swapped");
     const hasLink = await swapped.getByRole("button").count();
     report(`${tag} after Take: the door says what came in, and is not a control`,
       swappedText === `swapped out · ${addName} is in` && hasLink === 0, `${swappedText}, ${hasLink} controls`);

@@ -1,0 +1,133 @@
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { useEffect } from "react";
+import { describe, expect, it, vi } from "vitest";
+
+import type { BrowseCard } from "../../lib/collection/browse";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { SwapReceipt } from "../../lib/swaps/context";
+
+vi.mock("../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
+
+const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("../cards/card-detail-provider");
+const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
+const { StandInDoorRegistration } = await import("./stand-in-door");
+
+const asOf = new Date("2026-09-20T00:00:00Z");
+const browse = (oracleId: string, name: string): BrowseCard => ({
+  oracleId, name, typeLine: "Land", manaCost: null, cmc: 0, oracleText: null, keywords: [], rarity: "rare",
+  colorIdentity: [], imageUri: null, printedName: null, quantity: 0, printings: [], setCodes: [], primarySetCode: "",
+  preferredPrinting: null,
+});
+const row = (oracleId: string, name: string, cents: number) => ({
+  oracleId, name, typeLine: "Land", cardTypeGroup: "Lands", role: "land", cmc: 0, owned: false, quantity: 1, auto: false,
+  printedName: null, printedSetCode: null, printedCollectorNumber: null,
+  price: { cents, foilCents: null, etchedCents: null, asOf },
+}) as DeckDetailCard;
+
+const PLATEAU = row("o-plateau", "Plateau", 28_863);
+const TOWER = row("o-tower", "Command Tower", 50);
+const cards: Record<string, BrowseCard> = { "o-plateau": browse("o-plateau", "Plateau"), "o-tower": browse("o-tower", "Command Tower") };
+const fetchCard = async (id: string) => cards[id] ?? null;
+const copy = swapToolsCopy.modal;
+
+/** Declares a sheet opened over the open card, as the stand-ins sheet does from the door. */
+function OverCard() {
+  const { registerSheet } = useCardDetail();
+  useEffect(() => registerSheet("Cheaper stand-ins", undefined, true), [registerSheet]);
+  return null;
+}
+function Seed({ receipt }: { receipt?: SwapReceipt }) {
+  const add = useSwapTools()!.addReceipt;
+  useEffect(() => {
+    if (receipt) add(receipt);
+  }, [add, receipt]);
+  return null;
+}
+
+function draw({ sheet = false, receipt }: { sheet?: boolean; receipt?: SwapReceipt } = {}) {
+  return (
+    <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+      <CardDetailProvider fetchCard={fetchCard}>
+        <StandInDoorRegistration shoppingCards={[PLATEAU, TOWER]} newestAsOf={asOf} />
+        <Seed receipt={receipt} />
+        <CardDetailTrigger oracleId="o-plateau" name="Plateau" door>shop plateau</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-tower" name="Command Tower" door>shop tower</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-plateau" name="Plateau">all plateau</CardDetailTrigger>
+        {sheet ? <OverCard /> : null}
+      </CardDetailProvider>
+    </SwapToolsProvider>
+  );
+}
+
+async function press(text: string) {
+  await act(async () => {
+    fireEvent.click(screen.getByText(text));
+  });
+}
+const doors = () => screen.queryAllByTestId("stand-in-door");
+
+describe("the card modal's door (swap tools PR 4c)", () => {
+  it("draws only on a card a Shopping row opened (F17), over or under the limit, with the link", async () => {
+    render(draw());
+    await press("all plateau");
+    expect(doors()).toHaveLength(0);
+
+    await press("shop plateau");
+    // Two layouts are mounted and CSS shows one: the art column's and the phone's strip.
+    expect(doors()).toHaveLength(2);
+    expect(doors()[0]).toHaveTextContent(copy.overLimit("$10"));
+    expect(screen.getAllByRole("button", { name: /See cheaper stand-ins/ })).toHaveLength(2);
+
+    await press("shop tower");
+    expect(doors()[0]).toHaveTextContent(copy.underLimit("$10"));
+  });
+
+  it("says what came in after a take, and is no longer a control", async () => {
+    const receipt: SwapReceipt = {
+      swapId: "s1", deckId: "d1", cutOracleId: "o-plateau", cut: "Plateau", add: "Rugged Prairie",
+      cutCard: PLATEAU, free: false, cutLeft: 0,
+    };
+    render(draw({ receipt }));
+    await press("shop plateau");
+    expect(doors()[0]).toHaveTextContent(copy.swapped("Rugged Prairie"));
+    expect(screen.queryByRole("button", { name: /See cheaper stand-ins/ })).toBeNull();
+  });
+});
+
+describe("a sheet over the card", () => {
+  it("keeps the card mounted under it, inert, and hands the same node back when it goes", async () => {
+    const view = render(draw());
+    await press("shop plateau");
+    const card = screen.getByRole("dialog");
+    expect(card.closest("[inert]")).toBeNull();
+
+    await act(async () => view.rerender(draw({ sheet: true })));
+    const held = document.querySelector('[aria-labelledby="card-modal-title"]');
+    expect(held).toBe(card);
+    expect(held!.closest("[inert]")).not.toBeNull();
+
+    await act(async () => view.rerender(draw()));
+    const back = document.querySelector('[aria-labelledby="card-modal-title"]');
+    expect(back).toBe(card);
+    expect(back!.closest("[inert]")).toBeNull();
+    // Its door came back with it.
+    expect(doors()[0]).toHaveTextContent(copy.overLimit("$10"));
+  });
+
+  it("stacks a card opened from the sheet over both, leaving the held card where it was", async () => {
+    const view = render(draw());
+    await press("shop plateau");
+    const held = screen.getByRole("dialog");
+    await act(async () => view.rerender(draw({ sheet: true })));
+    await press("shop tower");
+    const dialogs = document.querySelectorAll('[aria-labelledby="card-modal-title"]');
+    expect(dialogs).toHaveLength(2);
+    expect(dialogs[0]).toBe(held);
+    // A stand-in over the sheet draws no door of its own.
+    expect(dialogs[1].querySelector('[data-testid="stand-in-door"]')).toBeNull();
+  });
+});
