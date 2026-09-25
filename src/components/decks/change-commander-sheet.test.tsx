@@ -265,3 +265,37 @@ describe("summedPrice", () => {
     expect(summedPrice([priced(150)], at)).toBeNull();
   });
 });
+
+// E2 (About launch entries): the row and the group heading are exported so the About figure can
+// mount them without the sheet's read. The export is only honest while a standalone mount draws
+// what the sheet draws, so both are compared against the sheet's own markup.
+describe("CandidateRow and CandidateGroupHeading, mounted alone", () => {
+  it("draw the same markup as the sheet's first Yours row and its heading", async () => {
+    const { CandidateRow, CandidateGroupHeading } = await import("./change-commander-sheet");
+    const d = data({ toBuy: [] });
+    readChangeCandidates.mockResolvedValue(d);
+    const sheet = mount();
+    const heading = await screen.findByText("Yours · 1");
+    const sheetHeading = heading.parentElement!.outerHTML;
+    const sheetRow = screen.getByTestId("change-commander-row").outerHTML;
+    sheet.unmount();
+
+    const alone = render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <CandidateGroupHeading label="Yours · 1" note="by figure" />
+        <CandidateRow
+          candidate={d.yours[0]}
+          pair={false}
+          current={{ cmc: 5, name: "Korvold" }}
+          newestAsOf={null}
+          siblings={[d.yours[0].halves[0].oracleId]}
+          open={false}
+          onToggle={() => {}}
+          onChoose={() => {}}
+        />
+      </CardDetailProvider>,
+    );
+    expect(alone.getByTestId("change-commander-row").outerHTML).toBe(sheetRow);
+    expect(alone.getByText("Yours · 1").parentElement!.outerHTML).toBe(sheetHeading);
+  });
+});

@@ -68,6 +68,19 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
  * under `By type`; under `By role` the pinned spoken-for group, else its targeted role, else `Other`.
  * A swap receipt draws there (swap tools, PR 4b).
  */
+/**
+ * The Lock cards mode's line, drawn where the mark key sits while the mode runs. Exported for the
+ * About page's Locked cards figure, which draws it above the rows in the mode.
+ */
+export function LockModeLine({ count }: { count: number }) {
+  return (
+    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
+      {lockedCardsCopy.mode.line}{" "}
+      <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(count)}</span>
+    </p>
+  );
+}
+
 export function receiptHome(card: DeckDetailCard, grouping: "role" | "type"): { key: string; label: string } {
   if (grouping === "type") return { key: card.cardTypeGroup, label: card.cardTypeGroup };
   if (isSpokenFor(card)) return { key: "spoken-for", label: recommendationsCopy.shopping.spokenForGroupLabel };
@@ -351,10 +364,7 @@ export function Decklist({
   // every row's ✕ and every tile's ✕ column is the toggle while it runs. Only Shopping ends it,
   // in the shell.
   const keyLine = lockMode ? (
-    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
-      {lockedCardsCopy.mode.line}{" "}
-      <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(lockedCardCount)}</span>
-    </p>
+    <LockModeLine count={lockedCardCount} />
   ) : (
     <MarkKey marks={markKey} regionAria={markKeyRegion} />
   );

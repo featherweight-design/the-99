@@ -101,6 +101,25 @@ type GroupToggleProps = {
   lockedAutoCount?: number;
 };
 
+/**
+ * `Lock cards`, which reads `Done` while the mode runs. Exported for the About page's Locked
+ * cards figure, which draws it above the rows in the mode.
+ */
+export function LockModeButton({ lockMode, onToggle }: { lockMode: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`${BULK_BUTTON_BASE} inline-flex items-center gap-[7px] min-w-[116px] justify-center ${
+        lockMode ? "text-accent border-accent" : "text-fg-body border-border-strong"
+      }`}
+    >
+      <LockMark ink={lockMode ? "var(--accent)" : "var(--fg-muted)"} />
+      {lockMode ? lockedCardsCopy.mode.done : lockedCardsCopy.mode.button}
+    </button>
+  );
+}
+
 export function GroupToggle({
   allCount,
   shoppingCount,
@@ -258,16 +277,7 @@ export function GroupToggle({
             (audit T6): the name is the visible label, and entering and leaving the mode are
             said in the builder's live region. */}
         {lockAvailable && !keepAsking && (
-          <button
-            type="button"
-            onClick={() => onLockModeChange(!lockMode)}
-            className={`${BULK_BUTTON_BASE} inline-flex items-center gap-[7px] min-w-[116px] justify-center ${
-              lockMode ? "text-accent border-accent" : "text-fg-body border-border-strong"
-            }`}
-          >
-            <LockMark ink={lockMode ? "var(--accent)" : "var(--fg-muted)"} />
-            {lockMode ? lockedCardsCopy.mode.done : lockedCardsCopy.mode.button}
-          </button>
+          <LockModeButton lockMode={lockMode} onToggle={() => onLockModeChange(!lockMode)} />
         )}
           </span>
         )}
