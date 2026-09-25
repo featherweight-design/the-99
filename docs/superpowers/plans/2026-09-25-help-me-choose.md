@@ -307,10 +307,10 @@ contact sheet (`docs/superpowers/inventories/help-me-choose.json`), never from a
 | Results: too narrow, a few fit | ☑ | ☑ | — | 5b-ii |
 | Results: none fit | ☑ | ☑ | — | 5b-ii |
 | Results: search failed, and a row failed with Retry | ☐ | ☐ | — | 5b-ii (probe and component tests; no URL reaches it) |
-| The create picker's door (`/decks/new`) | ☐ | ☐ | — | 6 |
-| Discover's door (`/discover`, carrying `c` and `m`) | ☐ | ☐ | — | 6 |
-| *Look deeper* panel | ☐ | ☐ | — | 6 |
-| The hand-off: *Built from your answers* on `/decks/new` | ☐ | ☐ | — | 6 |
+| The create picker's door (`/decks/new`) | ☑ | ☑ | — | 6b (#1011) |
+| Discover's door (`/discover`, carrying `c` and `m`) | ☑ | ☑ | — | 6b (#1011) |
+| *Look deeper* panel | ☑ | ☑ | — | 6a (#1000) |
+| The hand-off: *Built from your answers* on `/decks/new` | ☑ | ☑ | — | 6b (#1011) |
 
 **PR 6: Look deeper, the doors and the hand-off.**
 - **An early Stop is never charged (orchestrator, 2026-09-25; the follow-up from PR 4's round 10).**

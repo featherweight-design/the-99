@@ -130,7 +130,14 @@ function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
  * pool was selected, so the control silently removed rows from a list it only
  * claimed to reorder.
  */
-export function DiscoveryView({ encoded }: { encoded: EncodedDiscovery }) {
+export function DiscoveryView({
+  encoded,
+  chooseLink = false,
+}: {
+  encoded: EncodedDiscovery;
+  /** Help me choose's link on the result line; the route passes the feature's flag. */
+  chooseLink?: boolean;
+}) {
   // Decoded once per payload, and memoised on it: the cache below files rankings
   // by identity, so a fresh object every render would refile the same ranking on
   // every one of them.
@@ -566,6 +573,7 @@ export function DiscoveryView({ encoded }: { encoded: EncodedDiscovery }) {
         total={discovery.items.length}
         orderPending={navPending}
         excludedByExactly={excludedByExactly}
+        chooseLink={chooseLink}
       />
 
       {/* The inset the owned lane draws its list in, and for the same reason:

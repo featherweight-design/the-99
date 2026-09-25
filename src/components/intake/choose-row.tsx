@@ -22,20 +22,21 @@ import { AvailabilityGlyph } from "../ui/availability-marker";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
-import type { ChooseParams } from "../../lib/intake/params";
+import { serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
 import type { Figure } from "../../lib/intake/present";
 import type { CommanderMark, ResultRow } from "../../lib/intake/rows";
 import type { TrialFigures } from "../../lib/intake/trial";
 import { priceFactOf } from "./price-fact";
 
-/** The row's press: the create page with this commander, and the answers PR 6 will read. */
+/**
+ * The row's press: the create page with this commander, carrying the results screen's own params
+ * beside it. None of them collides with the create page's (`commander`, `select`), and carrying
+ * them whole is what lets that page both read the answers and send *Back to results* to the very
+ * screen the press came from (`handOffFrom`).
+ */
 export function handOffHref(oracleId: string, p: ChooseParams): string {
-  const sp = new URLSearchParams({ commander: oracleId });
-  if (p.budgetDollars !== null) sp.set("b", String(p.budgetDollars));
-  if (p.bracket !== null) sp.set("k", String(p.bracket));
-  if (p.card) sp.set("a", p.card);
-  if (p.themes.length > 0) sp.set("t", p.themes.join(","));
-  return `/decks/new?${sp.toString()}`;
+  const rest = serializeChooseParams({ ...p, results: true }).slice(1);
+  return `/decks/new?${new URLSearchParams({ commander: oracleId }).toString()}&${rest}`;
 }
 
 /** About a whole-dollar figure: the fill is an estimate, and cents would claim otherwise. */

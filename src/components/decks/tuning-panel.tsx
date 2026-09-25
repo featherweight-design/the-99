@@ -93,12 +93,16 @@ export function TuningPanel({
   facts,
   onLogGame,
   deps = SERVER,
+  deeperLooks = false,
 }: {
   deckId: string;
   permits: readonly Bracket[];
   facts: TuningFacts;
   onLogGame: () => void;
   deps?: TuningDeps;
+  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
+      they read exactly as before the looks existed. */
+  deeperLooks?: boolean;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
   // Reading: the counts that have landed, by step; null before a press.
@@ -352,13 +356,13 @@ export function TuningPanel({
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
   const credit = paused
-    ? creditsCopy.paused(paused.until)
+    ? creditsCopy.paused(paused.until, deeperLooks)
     : state.allowance.ownerShare
       ? creditsCopy.ownerShare(new Date())
       : spent
         // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
         // more counted than the limit the reader still has none left at that time.
-        ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
+        ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt, deeperLooks)
         : primary.again
           ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
           : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);

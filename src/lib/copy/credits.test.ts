@@ -2,6 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import { clockTime, creditsCopy } from "./credits";
 
+// Pinned by LITERAL, never by key: a key would pass any later edit of the string it names.
+describe("the lines naming what shares the credits, by Help me choose's switch", () => {
+  const next = new Date("2026-09-24T14:20:00");
+  it("read exactly as before the deeper looks with the switch off, which is the default", () => {
+    expect(creditsCopy.spent(3, null)).toBe("0 of 3 left. Your overview and suggestions share these credits.");
+    expect(creditsCopy.spent(3, next, false)).toBe(`0 of 3 left · next one at ${clockTime(next)}. Your overview and suggestions share these credits.`);
+    expect(creditsCopy.pausedReason()).toBe("The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.");
+  });
+
+  it("name the deeper looks, in Hugh's order, with the switch on", () => {
+    expect(creditsCopy.spent(3, null, true)).toBe("0 of 3 left. Suggestions, overviews and deeper looks share these credits.");
+    expect(creditsCopy.pausedReason(true)).toBe("The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this.");
+  });
+});
+
 describe("the spend cap's copy", () => {
   it("names the month a pause lifts in, read in UTC", () => {
     // 00:00 UTC on October 1 is still September 30 in every US clock: the name must be October.
@@ -32,6 +47,7 @@ describe("the spend cap's copy", () => {
 
   it("composes paused from its reason, so the reason is said in one place", () => {
     const until = new Date("2026-10-01T00:00:00Z");
-    expect(creditsCopy.paused(until)).toBe(`Paused until October 1. ${creditsCopy.pausedReason}`);
+    expect(creditsCopy.paused(until)).toBe(`Paused until October 1. ${creditsCopy.pausedReason()}`);
+    expect(creditsCopy.paused(until, true)).toBe(`Paused until October 1. ${creditsCopy.pausedReason(true)}`);
   });
 });

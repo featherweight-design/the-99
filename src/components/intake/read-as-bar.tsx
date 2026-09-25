@@ -108,14 +108,15 @@ export function ReadAsBar({
   );
 }
 
-function CardValue({ card }: { card: CardChip }) {
+/** The build-around card as the results bar draws it; the create page's answers block reuses it. */
+export function CardValue({ card, size = "chip" }: { card: CardChip; /** `row`: the answers block's 13.5px value. */ size?: "chip" | "row" }) {
   return (
     <>
       <CardDetailTrigger
         oracleId={card.oracleId}
         name={card.name}
         testId="card-chip-name"
-        className="min-w-0 truncate text-[12.5px] font-semibold text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer"
+        className={`min-w-0 truncate ${size === "row" ? "text-[13.5px]" : "text-[12.5px]"} font-semibold text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer`}
       >
         {card.name}
       </CardDetailTrigger>

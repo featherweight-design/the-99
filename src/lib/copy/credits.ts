@@ -15,7 +15,9 @@
 // with the rolling form and is undrawn; a reader with every credit in hand is undrawn too, and
 // the line then gives the count alone, since no credit is out to come back. The feature noun in
 // `spent` is Hugh's (2026-09-23): "overview", the Analysis tab's word, where Design wrote
-// "Synopses", in a singular-safe form.
+// "Synopses". Help me choose widens `spent` and the pause's reason to name its deeper looks too
+// (READINESS-audit F9), since they spend the same units; Hugh's wording (2026-09-25) leads with
+// what the panel's reader just used, in one order in both. The widening is flag-aware (below).
 
 /** A time in the reader's clock, 12-hour: `2:20 PM`. Client-side only, where the clock is theirs. */
 export function clockTime(at: Date): string {
@@ -28,7 +30,16 @@ export function monthName(at: Date): string {
   return at.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 }
 
-const PAUSED_REASON = "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.";
+/**
+ * Help me choose's deeper looks spend these credits too, so the lines that name what shares them
+ * name the looks as well, but only where the deployment draws them (`HELP_ME_CHOOSE_ENABLED`):
+ * production shows nothing of a feature until its switch flips (orchestrator, 2026-09-25). A caller
+ * passes the flag it was handed on the server; the default is the wording from before the looks.
+ */
+const pausedReason = (deeperLooks = false) =>
+  deeperLooks
+    ? "The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this."
+    : "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.";
 
 /** The count and, when one is out, when the next comes back. */
 function standing(left: number, total: number, next: Date | null): string {
@@ -48,16 +59,16 @@ export const creditsCopy = {
   again: (left: number, total: number, next: Date | null) =>
     `Replaces these suggestions and uses a credit. ${standing(left, total, next)}.`,
   /** Every credit is out: the press is disabled and this says when it comes back. */
-  spent: (total: number, next: Date | null) =>
-    `${standing(0, total, next)}. Your overview and suggestions share these credits.`,
+  spent: (total: number, next: Date | null, deeperLooks = false) =>
+    `${standing(0, total, next)}. ${deeperLooks ? "Suggestions, overviews and deeper looks share" : "Your overview and suggestions share"} these credits.`,
   /**
    * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is
    * disabled until `until`, the 1st of next month. DECIDED wording (orchestrator, 2026-09-24).
    */
-  paused: (until: Date) => `Paused until ${monthName(until)} 1. ${PAUSED_REASON}`,
+  paused: (until: Date, deeperLooks = false) => `Paused until ${monthName(until)} 1. ${pausedReason(deeperLooks)}`,
   /** `paused`'s reason alone, for a surface that names the pause in its own lead (the overview's
    *  press note), so the reason is said in exactly these words and nowhere restated. */
-  pausedReason: PAUSED_REASON,
+  pausedReason,
   /** The same refusal from the server, where no date is formatted in the reader's clock. */
   pausedServer: "Paused until the 1st of next month. Nothing you did caused this.",
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */

@@ -26,7 +26,8 @@ export type ValidAnswers = {
 
 /** Whole dollars, as the column's check requires, and no more than any real budget. */
 export const MAX_BUDGET_DOLLARS = 100_000;
-const MAX_THEMES = 8;
+/** The most theme labels a create takes: they write the brief, and the fill reads none of them. */
+export const MAX_THEMES = 8;
 const MAX_THEME_LABEL = 60;
 
 export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {

@@ -172,3 +172,24 @@ describe("CreatePicker — a renamed copy", () => {
     expect(screen.getByText("Freya, Queen of the Valkyries")).toBeTruthy();
   });
 });
+
+describe("CreatePicker — Help me choose's door", () => {
+  it("draws the door first in the list column, above the search, with the sub that offers it", () => {
+    render(<CreatePicker legalCommanders={commanders} helpDoor />);
+    const door = screen.getByTestId("help-me-choose-door");
+    expect(door.parentElement!.firstElementChild).toBe(door);
+    expect(screen.getByRole("link", { name: "Help me choose →" }).getAttribute("href")).toBe("/decks/new/choose");
+    expect(screen.getByText(addPanelCopy.createPicker.sub)).toBeTruthy();
+  });
+
+  it("is never in the dock", () => {
+    render(<CreatePicker legalCommanders={commanders} helpDoor />);
+    expect(screen.getByTestId("create-picker-dock").querySelector("[data-testid='help-me-choose-door']")).toBeNull();
+  });
+
+  it("is drawn only when the page passes the flag, and the sub then makes no offer", () => {
+    render(<CreatePicker legalCommanders={commanders} />);
+    expect(screen.queryByTestId("help-me-choose-door")).toBeNull();
+    expect(screen.getByText(addPanelCopy.createPicker.subAlone)).toBeTruthy();
+  });
+});

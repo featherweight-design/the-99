@@ -50,13 +50,14 @@ describe("a result row", () => {
     expect(screen.getByTestId("mark-buy").textContent).toBe("buy·$12.34");
   });
 
-  it("hands off to the create page with the commander and the answers PR 6 reads", () => {
+  it("hands off to the create page with the commander and the results' own params, so it can read the answers and go back", () => {
     draw();
     const href = new URL(screen.getByTestId("row-hand-off").getAttribute("href")!, "http://x");
     expect(href.pathname).toBe("/decks/new");
-    expect(Object.fromEntries(href.searchParams)).toEqual({
-      commander: ID, b: "150", k: "3", a: CARD, t: "dinosaurs,landfall",
-    });
+    expect(href.searchParams.get("commander")).toBe(ID);
+    // The results screen's params, whole: the create page parses them with the results' own parser.
+    const { commander: _, ...rest } = Object.fromEntries(href.searchParams);
+    expect(rest).toEqual({ t: "dinosaurs,landfall", a: CARD, b: "150", k: "3", v: "results" });
   });
 
   it("keeps the name a sibling of the row's press, never nested inside it", () => {

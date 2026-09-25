@@ -1,5 +1,5 @@
 {
-  "feature": "Help me choose (sub-project 8), PR 5b: the intake form and the results",
+  "feature": "Help me choose (sub-project 8): the intake form, the results, the deeper look, the doors and the hand-off",
   "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true. Every row is reached by URL: the form is /decks/new/choose, and a submit goes to v=submit, which resolves the words and redirects to the results. The deeper-done row needs the stub a dev server uses by default, with INTAKE_STUB=wider so the look adds a theme; it spends one credit of the fixture account's allowance per width.",
   "rows": [
     {
@@ -91,6 +91,49 @@
         {
           "wait": "[data-testid='deeper-look'][data-phase='done']",
           "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "door-picker",
+      "label": "/decks/new: the create picker's door (1a)",
+      "view": "src/components/decks/create-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "wait": "[data-testid='help-me-choose-door']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "door-discover",
+      "label": "/discover: the result line's link, carrying Red and Green (1b)",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        {
+          "goto": "/discover?c=R,G",
+          "wait": "[data-testid='discover-choose-link']",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "hand-off",
+      "label": "/decks/new: pre-filled from a result, with Built from your answers (6a)",
+      "view": "src/components/decks/create-pre-filled.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=dinosaurs&b=150&k=2&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-answers']",
+          "settle": 2000
         }
       ]
     }

@@ -291,3 +291,49 @@ describe("FilterRack while a ranking flip is in flight", () => {
     ).toBeInTheDocument();
   });
 });
+
+// Help me choose's Discover door (HANDOFF §1, audit F5). The route passes the feature's flag, and
+// with it off the rack must draw exactly what it drew before (orchestrator's condition).
+describe("FilterRack — Help me choose's link", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const discover = (over: Partial<LaneParams> = {}) => ({ ...defaultParams("discover"), ...over });
+  const withLink = (lane: Lane, params: LaneParams, chooseLink: boolean) => (
+    <FilterRack params={params} lane={lane} onChange={() => {}} shown={10} total={10} excludedByExactly={null} chooseLink={chooseLink} />
+  );
+
+  it.each([true, false])("draws nothing new with the flag off (wide %s)", (wide) => {
+    stubWidth(wide);
+    const off = render(withLink("discover", discover(), false)).container.innerHTML;
+    const without = render(rackEl("discover", discover(), 10, 10)).container.innerHTML;
+    expect(off).toBe(without);
+    expect(screen.queryByTestId("discover-choose-link")).toBeNull();
+  });
+
+  it("carries the colors lit on Discover, and Exactly, and nothing else", () => {
+    stubWidth(true);
+    render(withLink("discover", discover({ colors: ["R", "G"], match: "exactly", q: "dino" }), true));
+    const href = new URL(within(screen.getByTestId("discover-choose-link")).getByRole("link").getAttribute("href")!, "http://x");
+    expect(href.pathname).toBe("/decks/new/choose");
+    expect(Object.fromEntries(href.searchParams)).toEqual({ c: "r,g", m: "exact" });
+  });
+
+  it("sits at the result line's end on the wide rack, and on its own line under it on the compact one", () => {
+    stubWidth(true);
+    const wide = render(withLink("discover", discover(), true));
+    const row = wide.container.querySelector("[data-chassis-row='result']")!;
+    expect(row.contains(screen.getByTestId("discover-choose-link"))).toBe(true);
+    wide.unmount();
+    stubWidth(false);
+    const compact = render(withLink("discover", discover(), true));
+    const compactRow = compact.container.querySelector("[data-chassis-row='result']")!;
+    const link = screen.getByTestId("discover-choose-link");
+    expect(compactRow.contains(link)).toBe(false);
+    expect(link.className).toContain("min-h-[44px]");
+  });
+
+  it("is Discover's alone: the owned lane never draws it", () => {
+    stubWidth(true);
+    render(withLink("owned", defaultParams("owned"), true));
+    expect(screen.queryByTestId("discover-choose-link")).toBeNull();
+  });
+});
