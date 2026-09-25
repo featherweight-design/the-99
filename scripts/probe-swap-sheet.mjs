@@ -284,8 +284,11 @@ try {
       // first and `other types` second, when it draws both.
       const landish = kind === "land" || kind === "fetch" || kind === "utility";
       report(`${tag} ${kind}: type groups, its own type first`,
+        // The whole shape, not the first heading: one same-type group at most and first, then one `other
+        // types` at most. A collapse into one group, or a second same-type group, fails here.
         landish ? read.headings.length === 1 && read.headings[0] === LAND_GROUP
-          : read.headings.length > 0 && SAME_TYPE.test(read.headings[0]) || read.headings.join() === "other types",
+          : (read.headings.length === 1 && (SAME_TYPE.test(read.headings[0]) || read.headings[0] === "other types"))
+            || (read.headings.length === 2 && SAME_TYPE.test(read.headings[0]) && read.headings[1] === "other types"),
         read.headings.join(" / "));
       // D1 with Hugh's Q3: five rows, then a text button that expands the group in place. PRESSED, on every
       // group long enough to carry one, and read back: the count it names, aria-expanded, its height.
