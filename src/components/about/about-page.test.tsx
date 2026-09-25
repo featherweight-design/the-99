@@ -54,7 +54,7 @@ import { DECK_VERSIONS,
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.
-vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn() }));
+vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVisit: vi.fn() }));
 // `deck-import` mounts `ImportEntry`, which calls `useRouter`. There is no app
 // router in jsdom, and without this the hook throws during render — which took
 // down all 53 tests in this file rather than the one figure, because every
