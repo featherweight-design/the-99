@@ -151,7 +151,7 @@ async function buildDeck(userId, onDeck) {
 const q = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const swapButton = (page, name) =>
   onPageRole(page, "button", new RegExp(`^Cheaper stand-ins for ${q(name)},`)).first();
-const cardDialogs = (page) => page.locator('[role="dialog"][aria-labelledby="card-modal-title"]');
+const cardDialogs = (page) => page.locator('[role="dialog"][aria-labelledby^="card-modal-title"]');
 const sheetDialog = (page) => page.getByRole("dialog", { name: "Cheaper stand-ins" });
 const focused = (page) => page.evaluate(() => document.activeElement?.textContent?.trim() ?? "");
 const topOf = async (loc) => Math.round((await loc.boundingBox())?.y ?? -1);
@@ -279,7 +279,7 @@ try {
     // Sheet → stand-in: a third layer.
     const standInName = (await sheet.locator("li button").first().textContent())?.trim();
     await sheet.locator("li button").first().click();
-    await page.waitForFunction(() => document.querySelectorAll('[role="dialog"][aria-labelledby="card-modal-title"]').length === 2, null, { timeout: 15_000 });
+    await page.waitForFunction(() => document.querySelectorAll('[role="dialog"][aria-labelledby^="card-modal-title"]').length === 2, null, { timeout: 15_000 });
     const topY = await topOf(cardDialogs(page).nth(1));
     if (phone) report(`${tag} depths: the stand-in at 140`, topY === 140, `${topY}`);
     else {
@@ -305,7 +305,7 @@ try {
 
     // Escape peels one layer at a time.
     await page.keyboard.press("Escape");
-    await page.waitForFunction(() => document.querySelectorAll('[role="dialog"][aria-labelledby="card-modal-title"]').length === 1, null, { timeout: 5_000 });
+    await page.waitForFunction(() => document.querySelectorAll('[role="dialog"][aria-labelledby^="card-modal-title"]').length === 1, null, { timeout: 5_000 });
     await page.waitForTimeout(200);
     report(`${tag} Escape: to the sheet, on the stand-in's name`, (await sheet.isVisible()) && (await focused(page)) === standInName,
       `focus on ${await focused(page)}`);
