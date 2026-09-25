@@ -1,0 +1,94 @@
+// A feature switch flipping on, walked through the REAL proxy with a catalog that ties two
+// entries to switches (Hugh, 2026-09-25). No shipped entry has a switch yet, so the catalog
+// is mocked; everything between it and the response — `visibleEntries`, the cookie, the
+// decision, the header — is the code that ships.
+//
+// What it proves that the pure tests cannot: a browser holding the cookie from BEFORE a flip
+// is decided again after it, and the reader who met the first entry is shown only the second.
+// The same walk in a browser, against a server restarted with the switch on, is PR B's
+// `probe:about`, the first PR with a real switched entry to flip.
+
+import { NextRequest, NextResponse } from "next/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
+const stored = { version: 9, ids: [] as string[] };
+
+vi.mock("@clerk/nextjs/server", () => ({
+  clerkMiddleware: (fn: unknown) => fn,
+  createRouteMatcher: () => () => false,
+}));
+vi.mock("./lib/about/read", () => ({
+  aboutVersionSeen: async () => stored.version,
+  aboutSeen: async () => ({ version: stored.version, ids: [...stored.ids] }),
+}));
+vi.mock("./lib/copy/about", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./lib/copy/about")>();
+  const base = real.aboutEntries[0];
+  return {
+    ...real,
+    aboutEntries: [
+      ...real.aboutEntries,
+      { ...base, id: "locked-cards", since: 10, switch: "NEVER_CUT_ENABLED" },
+      { ...base, id: "change-commander", since: 10, switch: "CHANGE_COMMANDER_ENABLED" },
+    ],
+  };
+});
+
+const proxy = (await import("./proxy")).default as unknown as (
+  auth: unknown,
+  req: NextRequest,
+) => Promise<NextResponse | undefined>;
+const auth = Object.assign(session, { protect: vi.fn(async () => ({ userId: "user_1" })) });
+
+const load = (cookie?: string) => {
+  const req = new NextRequest("https://the99.test/decks", { headers: { accept: "text/html" } });
+  if (cookie) req.cookies.set("about_sheet", cookie);
+  return proxy(auth, req);
+};
+const header = (res: NextResponse | undefined) => res?.headers.get("x-middleware-request-x-about-sheet") ?? null;
+const cookieOf = (res: NextResponse | undefined) => res?.cookies.get("about_sheet")?.value;
+
+beforeEach(() => {
+  process.env.ABOUT_SHEET_ENABLED = "true";
+  stored.version = 9;
+  stored.ids = [];
+});
+afterEach(() => {
+  delete process.env.ABOUT_SHEET_ENABLED;
+  delete process.env.NEVER_CUT_ENABLED;
+  delete process.env.CHANGE_COMMANDER_ENABLED;
+});
+
+describe("a switch flipped on", () => {
+  it("is announced once, and a later flip announces only the new entry", async () => {
+    // Nothing switched on: a current reader sees nothing, and the browser is marked.
+    const quiet = await load();
+    expect(header(quiet)).toBeNull();
+    expect(cookieOf(quiet)).toBe("user_1.9");
+
+    // Change commander switched on: the old cookie no longer matches, so the proxy decides
+    // again, and names the one entry the reader has not met.
+    process.env.CHANGE_COMMANDER_ENABLED = "true";
+    const first = await load(cookieOf(quiet));
+    expect(header(first)).toBe("change-commander");
+    expect(cookieOf(first)).toBe("user_1.9+change-commander");
+
+    // The reader opens /about, which records the switched ids the page drew.
+    stored.ids = ["change-commander"];
+    expect(header(await load(cookieOf(first)))).toBeNull();
+
+    // Locked switched on LATER. A version number would call this reader current.
+    process.env.NEVER_CUT_ENABLED = "true";
+    const second = await load(cookieOf(first));
+    expect(header(second)).toBe("locked-cards");
+    expect(cookieOf(second)).toBe("user_1.9+locked-cards+change-commander");
+  });
+
+  it("costs no read once this browser has shown the sheet for these entries", async () => {
+    process.env.NEVER_CUT_ENABLED = "true";
+    const shown = await load();
+    stored.version = 0; // were the read made, a first-run sheet would draw
+    expect(header(await load(cookieOf(shown)))).toBeNull();
+  });
+});

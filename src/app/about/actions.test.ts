@@ -2,13 +2,24 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const requireUserId = vi.fn(async () => "user_1");
 const markAboutSeen = vi.fn(async () => {});
+const markAboutVisited = vi.fn(async () => {});
 const redirect = vi.fn((to: string) => {
   throw new Error(`REDIRECT:${to}`);
 });
 
 vi.mock("../../lib/auth", () => ({ requireUserId }));
-vi.mock("../../lib/about/read", () => ({ markAboutSeen }));
+vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited }));
 vi.mock("next/navigation", () => ({ redirect }));
+// What this deployment draws. The real rule, handed a catalog with a switched entry in it when a
+// test sets one: no shipped entry has a switch yet, and the write must still name them.
+const extraEntries: { id: string; switch?: string }[] = [];
+vi.mock("../../lib/about/visible", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../../lib/about/visible")>();
+  return {
+    ...real,
+    visibleEntries: () => [...real.visibleEntries(), ...extraEntries] as ReturnType<typeof real.visibleEntries>,
+  };
+});
 
 const { dismissAbout, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
@@ -28,6 +39,7 @@ async function dismiss(next?: string): Promise<string> {
 beforeEach(() => {
   requireUserId.mockClear();
   markAboutSeen.mockClear();
+  markAboutVisited.mockClear();
   redirect.mockClear();
 });
 
@@ -55,10 +67,22 @@ describe("dismissAbout", () => {
 });
 
 describe("recordAboutVisit (R6)", () => {
-  it("records the current version for the signed-in reader", async () => {
+  it("records the current version and the switched entries this deployment draws", async () => {
     await recordAboutVisit();
     expect(requireUserId).toHaveBeenCalledOnce();
-    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+    // No shipped entry has a switch yet, so the ids are empty; the entry-level rule is
+    // `visible.test.ts`'s, and the stored union is `read.test.ts`'s.
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
+  });
+
+  it("records every switched entry the deployment draws, and only those", async () => {
+    extraEntries.push({ id: "locked-cards", switch: "NEVER_CUT_ENABLED" });
+    try {
+      await recordAboutVisit();
+      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
+    } finally {
+      extraEntries.length = 0;
+    }
   });
 
   it("never redirects, so the index stays where the reader is reading it", async () => {

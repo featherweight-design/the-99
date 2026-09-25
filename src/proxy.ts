@@ -13,7 +13,8 @@ import {
   sheetDecision,
 } from "./lib/about/gate";
 import { aboutSheetEnabled } from "./lib/about/flag";
-import { aboutVersionSeen } from "./lib/about/read";
+import { aboutSeen, aboutVersionSeen } from "./lib/about/read";
+import { visibleEntries, type SeenState } from "./lib/about/visible";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
@@ -92,18 +93,21 @@ async function sheet(req: NextRequest, userId: string | null) {
 
   if (!userId) return pass();
   if (!gateApplies(req.nextUrl.pathname) || !isDocumentLoad(req.method, req.headers)) return pass();
-  if (sheetCookieIsCurrent(req.cookies.get(SHEET_COOKIE)?.value, userId)) return pass();
+  // The entries this deployment draws, read from its feature switches. They key the cookie, so a
+  // switch flipped on retires every browser's cookie and the next load decides again.
+  const visible = visibleEntries();
+  if (sheetCookieIsCurrent(req.cookies.get(SHEET_COOKIE)?.value, userId, visible)) return pass();
 
   // A failed read draws nothing and writes nothing, so the next load asks again.
-  let seen: number;
+  let seen: SeenState;
   try {
-    seen = await aboutVersionSeen(userId);
+    seen = await aboutSeen(userId);
   } catch {
     return pass();
   }
 
-  const decision = sheetDecision({ userId, seen });
-  if (decision.show) headers.set(SHEET_HEADER, String(decision.seen));
+  const decision = sheetDecision({ userId, seen, visible });
+  if (decision.show) headers.set(SHEET_HEADER, decision.header);
   const response = pass();
   response.cookies.set(SHEET_COOKIE, decision.cookie, {
     ...COOKIE_OPTIONS,

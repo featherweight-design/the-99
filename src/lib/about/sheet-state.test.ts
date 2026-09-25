@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutEntries } from "../copy/about";
+import { aboutEntries } from "../copy/about";
 import { readSheetState } from "./sheet-state";
 
 const h = (v?: string) => new Headers(v === undefined ? {} : { "x-about-sheet": v });
@@ -13,24 +13,18 @@ describe("readSheetState", () => {
     expect(readSheetState(h("0"))).toEqual({ kind: "firstRun" });
   });
 
-  it("lists the entries newer than the reader's seen, in page order", () => {
-    const seen = ABOUT_VERSION - 1;
-    const want = aboutEntries.filter((e) => e.since > seen).map((e) => ({ id: e.id, title: e.title }));
-    expect(want.length).toBeGreaterThan(0);
-    expect(readSheetState(h(String(seen)))).toEqual({ kind: "behind", entries: want });
+  it("lists the entries the proxy named, in page order whatever order it named them", () => {
+    const want = aboutEntries.slice(-3).map((e) => ({ id: e.id, title: e.title }));
+    const header = [...want].reverse().map((e) => e.id).join(",");
+    expect(readSheetState(h(header))).toEqual({ kind: "behind", entries: want });
   });
 
-  it("lists more for a reader further behind", () => {
-    const near = readSheetState(h(String(ABOUT_VERSION - 1)));
-    const far = readSheetState(h("1"));
-    expect(near.kind === "behind" && far.kind === "behind" && far.entries.length > near.entries.length).toBe(true);
-  });
-
-  it("draws nothing for a header that is not a bare non-negative integer", () => {
-    for (const v of ["", "x", "-1", "1.5", "8a"]) expect(readSheetState(h(v))).toEqual({ kind: "none" });
-  });
-
-  it("draws nothing when the header names nothing new", () => {
-    expect(readSheetState(h(String(ABOUT_VERSION)))).toEqual({ kind: "none" });
+  it("names nothing for an id the catalog does not hold, and draws nothing when that is all", () => {
+    const [one] = aboutEntries;
+    expect(readSheetState(h(`${one.id},no-such-entry`))).toEqual({
+      kind: "behind",
+      entries: [{ id: one.id, title: one.title }],
+    });
+    for (const v of ["", "no-such-entry", ","]) expect(readSheetState(h(v))).toEqual({ kind: "none" });
   });
 });

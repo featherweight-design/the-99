@@ -1442,17 +1442,24 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   sections alone; a legacy `about_v` cookie does not hide the sheet, and a forged
   `x-about-sheet` header summons nothing. Five mutations fail it; the counts are in its header.
 
-  It WRITES `user_prefs.about_version_seen` for the account it signs in as, HELD ON DISK before
-  the first write and restored in a `finally` — the `profile-hold.mjs` rule. Point it at
+  It WRITES the account's `user_prefs` row — `about_version_seen` and `about_seen_ids` — HELD ON
+  DISK before the first write and restored in a `finally`, the `profile-hold.mjs` rule. "Behind"
+  clears the ids as well as lowering the version: with an entry's switch on, a stale id would
+  mark that entry seen and the sheet would never draw. Point it at
   `local-dev`, **never production**.
 
   **Every probe that clears the About gate calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`)
-  as well as writing `about_version_seen` (audit E5). On every sign-in path today the write is
-  enough by itself — the first load is signed out and `Clerk.setActive` refreshes by RSC, and the
-  proxy decides on neither — so the helper is a GUARD: a probe that loads a document signed in
-  before its write would otherwise measure a page with a card over it, and say nothing. It sets
-  the sheet's cookie and presses Later if a card is up, and never touches the database. `about-clear.test.mts` sweeps every
-  probe that writes the column and fails one that does not call it.
+  as well as writing `about_version_seen` (audit E5). Since entries follow their features'
+  switches (Hugh, 2026-09-25) the version write covers only entries WITHOUT a switch: one tied to
+  a switch is seen by its id, so a switch left on in the server a probe runs against would still
+  put a card over the page. The helper is the one place a probe marks those seen — it raises the
+  version floor (never lowering it) and adds every catalog id to `about_seen_ids`, all of them because a probe cannot read the server's switches,
+  and does not put them back, which says no more than the version write already says. That write
+  is the guarantee. The cookie it also sets is only the proxy's fast path while no switch is on:
+  the proxy keys its cookie to the switched entries it draws, which a probe cannot know. It
+  presses Later if a card is already up. `about-clear.test.mts` sweeps every
+  probe that writes the column and fails one that does not call it, and pins the ids it reads
+  out of `about.ts` against `aboutEntries`.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the

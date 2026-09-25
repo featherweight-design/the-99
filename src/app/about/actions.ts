@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { ABOUT_VERSION } from "../../lib/copy/about";
 import { safeNext } from "../../lib/about/gate";
-import { markAboutSeen } from "../../lib/about/read";
+import { markAboutSeen, markAboutVisited } from "../../lib/about/read";
+import { switchedIds, visibleEntries } from "../../lib/about/visible";
 
 /**
  * The dismiss. Records the acknowledgement against the account and sends the
@@ -37,5 +38,7 @@ export async function dismissAbout(formData: FormData) {
  */
 export async function recordAboutVisit() {
   const userId = await requireUserId();
-  await markAboutSeen(userId, ABOUT_VERSION);
+  // The switched entries THIS deployment draws, decided here and never taken from the client:
+  // a visit records what the page could have shown, not what a caller claims it showed.
+  await markAboutVisited(userId, ABOUT_VERSION, switchedIds(visibleEntries()));
 }

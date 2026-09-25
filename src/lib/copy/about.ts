@@ -36,8 +36,21 @@ export const ABOUT_VERSION = 9;
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
 
+/**
+ * The feature switches an entry can be tied to (Hugh, 2026-09-25). An entry that names one
+ * renders only while that switch is on, and turning it on is what announces it. A closed
+ * union, so a misspelled switch is a type error rather than an entry that never appears.
+ */
+export type AboutSwitch =
+  | 'NEVER_CUT_ENABLED'
+  | 'SWAP_TOOLS_ENABLED'
+  | 'HELP_ME_CHOOSE_ENABLED'
+  | 'CHANGE_COMMANDER_ENABLED';
+
 export interface AboutEntry {
   id: string;
+  /** The feature switch this entry follows. None: always drawn, seen by `since`. */
+  switch?: AboutSwitch;
   chapter: AboutChapter;
   title: string;
   route: string;

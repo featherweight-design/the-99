@@ -8,7 +8,7 @@
 // somewhere else. `greatest` makes the write monotonic.
 
 import { describe, expect, it } from "vitest";
-import { markAboutSeenQuery } from "./read";
+import { markAboutSeenQuery, markAboutVisitedQuery } from "./read";
 
 /** The writer's OWN query, rendered — never a second copy of it written here.
  *  A hand-rolled twin passes for exactly as long as nobody edits the original,
@@ -34,5 +34,27 @@ describe("the acknowledgement upsert", () => {
   it("carries the version as a parameter rather than inlining it", () => {
     const { params } = emitted(2);
     expect(params).toContain(2);
+  });
+});
+
+describe("the visit upsert (switched entries by id)", () => {
+  const emittedVisit = (ids: string[]) => markAboutVisitedQuery("user_1", 9, ids).toSQL();
+
+  it("unions the stored ids with the incoming ones rather than replacing them", () => {
+    const { sql: text } = emittedVisit(["locked-cards"]);
+    const setClause = text.slice(text.indexOf("do update set"));
+    expect(setClause).toContain('"user_prefs"."about_seen_ids" ||');
+    expect(setClause).toContain("distinct unnest");
+    expect(setClause).not.toMatch(/"about_seen_ids"\s*=\s*\$\d+\s*$/);
+  });
+
+  it("carries each id as its own parameter inside an array", () => {
+    const { sql: text, params } = emittedVisit(["locked-cards", "change-commander"]);
+    expect(text).toMatch(/array\[\$\d+, \$\d+\]::text\[\]/);
+    expect(params).toEqual(expect.arrayContaining(["locked-cards", "change-commander"]));
+  });
+
+  it("still takes the greater version", () => {
+    expect(emittedVisit([]).sql).toContain("greatest");
   });
 });
