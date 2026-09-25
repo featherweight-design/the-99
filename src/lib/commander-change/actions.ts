@@ -25,8 +25,6 @@ export async function changeCommander(deckId: string, to: CommanderPair): Promis
   const result = await db.transaction((tx) => writeCommanderChange(tx, deckId, userId, {
     commanderOracleId: to.commanderOracleId, partnerOracleId: partner,
   }));
-  // After the response: a Server Action that revalidates during its run re-renders its caller's
-  // route into the reply.
   if (result.ok) {
     // IN the action, not deferred into `after()`: a Server Action that revalidates the route it
     // was called from returns that route's new payload, so the deck page redraws under the new

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/server", () => ({ after: vi.fn() }));
+const after = vi.fn();
+vi.mock("next/server", () => ({ after: (...a: unknown[]) => after(...a) }));
 vi.mock("../auth", () => ({ requireUserId: async () => "user_1" }));
 const transaction = vi.fn();
 vi.mock("../../db", () => ({ db: { transaction: (...a: unknown[]) => transaction(...a) } }));
 const loadChangeCandidates = vi.fn();
 vi.mock("./candidates", () => ({ loadChangeCandidates: (...a: unknown[]) => loadChangeCandidates(...a) }));
-vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: vi.fn() }));
+const revalidateClaims = vi.fn();
+vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: (...a: unknown[]) => revalidateClaims(...a) }));
 
 const { changeCommander, readChangeCandidates } = await import("./actions");
 const DECK = "00000000-0000-4000-8000-000000000001";
@@ -16,6 +18,8 @@ beforeEach(() => {
   process.env.CHANGE_COMMANDER_ENABLED = "true";
   transaction.mockReset();
   loadChangeCandidates.mockReset();
+  revalidateClaims.mockReset();
+  after.mockReset();
 });
 
 describe("changeCommander at the request boundary", () => {
@@ -32,6 +36,20 @@ describe("changeCommander at the request boundary", () => {
       .toEqual({ ok: false, reason: "illegal" });
     expect(await changeCommander(DECK, null as never)).toEqual({ ok: false, reason: "illegal" });
     expect(transaction).not.toHaveBeenCalled();
+  });
+
+  // In the action, not deferred: the reply then carries the deck page under the new commander,
+  // and the sheet needs no refresh that could race a deferred invalidation.
+  it("revalidates before it returns on a success, and not at all on a refusal", async () => {
+    transaction.mockResolvedValueOnce({ ok: true });
+    expect(await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null })).toEqual({ ok: true });
+    expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
+    expect(after).not.toHaveBeenCalled();
+
+    revalidateClaims.mockReset();
+    transaction.mockResolvedValueOnce({ ok: false, reason: "mismatch" });
+    await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null });
+    expect(revalidateClaims).not.toHaveBeenCalled();
   });
 
   it("refuses everything with the switch off", async () => {
