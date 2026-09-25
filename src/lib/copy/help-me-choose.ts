@@ -8,7 +8,7 @@
 //
 // Copy-reviewed with pictures on 2026-09-25 (plan: F6, F8): every `// canvas` string ships as
 // transcribed, and the unpriced row's line (F8) says the buy figure leaves the card out. The
-// owned-order sub takes the canvas's pair, and lands with the screens (PR 5b-ii).
+// owned-order sub is the canvas's pair.
 //
 // Never the words AI, model or LLM: the deeper read is "a deeper look" (audit wording rule).
 
@@ -68,7 +68,11 @@ export const helpMeChooseCopy = {
     subCard: (c: string) => `Each figure is how often that commander’s decks on EDHREC run ${c}. It goes in the deck whichever you pick.`,
     subSeveral: (lead: string, other: string) =>
       `Each commander ranks by the answer it fits least, so one that’s all ${lead} but rarely ${other} won’t outrank one that does both. Every figure is shown.`,
-    subOwned: "No theme or card yet, so these sort by how many of each commander’s cards you already own. Add a theme or a card to sort by fit instead.",
+    // The canvas's pair, ruled at copy review (2026-09-25): "owned or not" answers the marks beside
+    // each row, and the colors variant names the filter the player set.
+    subOwned: "You gave no theme or card, so these are commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.",
+    subOwnedColors: (colors: string) =>
+      `You gave colors but no theme or card, so these are ${colors} commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.`,
     figTheme: (pct: number, t: string) => `${pct}% of its decks are ${t}`,
     figCard: (pct: number, c: string) => `${pct}% of its decks run ${c}`,
     figOwned: (owned: number, total: number) => `${owned} of the ${total} cards its decks run are yours`,
@@ -80,7 +84,10 @@ export const helpMeChooseCopy = {
     setsRank: "SETS RANK",
     bestFits: "Best fits",
     moreCommanders: "More commanders",
-    ownLine: (owned: number, buy: string, cap?: string) => `you own ${owned} of its 99 · about ${buy} to buy${cap ? `, inside ${cap}` : ""}`,
+    // The ownership line's two figures, drawn as separate segments so the line wraps between them
+    // and never inside one (read as "you own 79 of its 99 · about $135 to buy").
+    ownCount: (owned: number) => `you own ${owned} of its 99`,
+    ownBuy: (buy: string, cap?: string) => `about ${buy} to buy${cap ? `, inside ${cap}` : ""}`,
     free: "owned · free",
     held: (deck: string | null) => (deck ? availabilityCopy.marker.hardIn(deck) : availabilityCopy.marker.hard),
     // F8, ruled at copy review (2026-09-25): the line says the buy figure leaves the card out.

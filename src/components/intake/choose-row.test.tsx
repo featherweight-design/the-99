@@ -1,0 +1,80 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+
+const { CardDetailProvider } = await import("../cards/card-detail-provider");
+const { ChooseRow } = await import("./choose-row");
+const { emptyParams } = await import("../../lib/intake/params");
+import type { ChooseParams } from "../../lib/intake/params";
+import type { ResultRow } from "../../lib/intake/rows";
+import type { Trial } from "./choose-row";
+
+const ID = "0000aaaa-0000-4000-8000-00000000000c";
+const CARD = "0000aaaa-0000-4000-8000-000000000001";
+const row = (over: Partial<ResultRow> = {}): ResultRow => ({
+  oracleId: ID, name: "Gishath, Sun's Avatar", colorIdentity: ["R", "G", "W"], imageUri: null, artCropUri: null,
+  mark: { kind: "free" }, themeFits: [], cardFit: null, ownedSupport: 0, supportTotal: 0, ...over,
+});
+const params: ChooseParams = { ...emptyParams(), results: true, themes: ["dinosaurs", "landfall"], card: CARD, budgetDollars: 150, bracket: 3 };
+
+const pending: Trial = { state: "pending" };
+function draw(r: ResultRow = row(), trial: Trial = pending, retry = vi.fn()) {
+  return render(
+    <CardDetailProvider fetchCard={vi.fn()}>
+      <ul>
+        <ChooseRow row={r} figures={[]} owned={false} params={params} cardName="Regisaur Alpha" trial={trial} retry={retry} />
+      </ul>
+    </CardDetailProvider>,
+  );
+}
+
+describe("a result row", () => {
+  it("marks a free commander, a held one with its deck, and an unowned one with its buy tag", async () => {
+    draw(row({ mark: { kind: "free" } }));
+    expect(screen.getByTestId("mark-free").textContent).toBe("owned · free");
+    draw(row({ mark: { kind: "held", deck: "Big Lizards" } }));
+    expect(screen.getByTestId("mark-held").textContent).toBe("none free, in Big Lizards");
+    draw(row({ mark: { kind: "buy", price: { kind: "priced", cents: 1234 } } }));
+    expect(screen.getByTestId("mark-buy").textContent).toBe("buy·$12.34");
+  });
+
+  it("hands off to the create page with the commander and the answers PR 6 reads", () => {
+    draw();
+    const href = new URL(screen.getByTestId("row-hand-off").getAttribute("href")!, "http://x");
+    expect(href.pathname).toBe("/decks/new");
+    expect(Object.fromEntries(href.searchParams)).toEqual({
+      commander: ID, b: "150", k: "3", a: CARD, t: "dinosaurs,landfall",
+    });
+  });
+
+  it("keeps the name a sibling of the row's press, never nested inside it", () => {
+    draw();
+    const press = screen.getByTestId("row-hand-off");
+    expect(press.contains(screen.getByTestId("row-name"))).toBe(false);
+    expect(press.querySelector("button, a")).toBeNull();
+  });
+
+  it("says it is counting, then shows the figures", () => {
+    const { unmount } = draw(row(), pending);
+    expect(screen.getByTestId("ownership-line").dataset.trial).toBe("pending");
+    expect(screen.getByText("Counting what you own…")).toBeTruthy();
+    unmount();
+    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 12_049, unpricedCard: null } });
+    // Each segment leads with its own separator: the text reads as the one sentence, dots between.
+    expect(screen.getByTestId("ownership-line").textContent).toContain("·you own 41 of its 99·about $120 to buy, inside $150");
+    expect(screen.queryByTestId("row-unpriced")).toBeNull();
+  });
+
+  it("says when the build-around card has no price and the figure leaves it out", () => {
+    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: "absent" } });
+    expect(screen.getByTestId("row-unpriced").textContent).toContain("Regisaur Alpha");
+  });
+
+  it("offers Retry when the count fails, and asks the list to count again", () => {
+    const retry = vi.fn();
+    draw(row(), { state: "failed" }, retry);
+    expect(screen.getByText("Couldn’t count what you own.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+});
