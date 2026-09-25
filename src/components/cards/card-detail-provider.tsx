@@ -500,13 +500,14 @@ export function CardDetailProvider({
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
       opts?: { door?: boolean },
     ) => {
-      setDoor(opts?.door ?? false);
+      // PENDING, not committed, and the door with it: the door belongs to the card the open asked
+      // for, so it moves when that card arrives and a failed read leaves the card on screen as it was.
       // PENDING, not committed. A second open while the first card is still painted must
       // not take the first card's printing away from it: the read may fail, and `load`
       // deliberately leaves that card standing. The printing commits in `show`, when the
       // card it describes actually arrives — and only if the read that asked for it is
       // still the current one.
-      void load(oracleId, list ?? [], atPrinting ?? null);
+      void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false });
     },
     [load],
   );

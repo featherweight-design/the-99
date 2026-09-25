@@ -121,6 +121,25 @@ describe("the card modal's door (swap tools PR 4c)", () => {
     expect(doors()).toHaveLength(0);
   });
 
+  // The door belongs to the card the open asked for, so it moves only when that card ARRIVES: an
+  // open whose read fails leaves the Shopping card on screen, door and all.
+  it("keeps the door on the card on screen when a plain open's read fails", async () => {
+    render(
+      <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+        <CardDetailProvider fetchCard={async (id) => { if (id === "o-fail") throw new Error("down"); return cards[id] ?? null; }}>
+          <StandInDoorRegistration shoppingCards={[PLATEAU]} newestAsOf={asOf} />
+          <CardDetailTrigger oracleId="o-plateau" name="Plateau" door>shop plateau</CardDetailTrigger>
+          <CardDetailTrigger oracleId="o-fail" name="Broken">all broken</CardDetailTrigger>
+        </CardDetailProvider>
+      </SwapToolsProvider>,
+    );
+    await press("shop plateau");
+    expect(doors()).toHaveLength(2);
+    await press("all broken");
+    expect(screen.getByRole("dialog", { name: /Plateau/ })).toBeInTheDocument();
+    expect(doors()).toHaveLength(2);
+  });
+
   it("draws no door on a card the Shopping list does not hold, flag or no flag", async () => {
     cards["o-other"] = browse("o-other", "Other Card");
     render(
@@ -182,7 +201,7 @@ describe("a sheet over the card", () => {
     expect(card.closest("[inert]")).toBeNull();
 
     await act(async () => view.rerender(draw({ sheet: true })));
-    const held = document.querySelector('[aria-labelledby="card-modal-title"]');
+    const held = document.querySelector('[aria-labelledby="card-modal-title-held"]');
     expect(held).toBe(card);
     expect(held!.closest("[inert]")).not.toBeNull();
 
@@ -200,8 +219,13 @@ describe("a sheet over the card", () => {
     const held = screen.getByRole("dialog");
     await act(async () => view.rerender(draw({ sheet: true })));
     await press("shop tower");
-    const dialogs = document.querySelectorAll('[aria-labelledby="card-modal-title"]');
+    const dialogs = document.querySelectorAll('[aria-labelledby^="card-modal-title"]');
     expect(dialogs).toHaveLength(2);
+    // Two dialogs, two names: the held card's title id is its own, or the top card is announced
+    // by the held card's heading.
+    expect(new Set([...dialogs].map((d) => d.getAttribute("aria-labelledby"))).size).toBe(2);
+    expect(dialogs[1].getAttribute("aria-labelledby")).toBe("card-modal-title");
+    expect(document.getElementById("card-modal-title")?.textContent).toBe("Command Tower");
     expect(dialogs[0]).toBe(held);
     // A stand-in over the sheet draws no door of its own.
     expect(dialogs[1].querySelector('[data-testid="stand-in-door"]')).toBeNull();

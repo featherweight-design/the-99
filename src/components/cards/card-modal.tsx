@@ -548,6 +548,10 @@ export function CardModal({
   }) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Two card modals are up at once while a card is stacked over a sheet over a card, so the
+  // covered one takes its own title id: shared, the top dialog would be named by the held card's
+  // heading. The top card keeps the canonical id every other reader of the modal looks for.
+  const titleId = covered ? "card-modal-title-held" : "card-modal-title";
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
   // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -1430,7 +1434,7 @@ export function CardModal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="card-modal-title"
+        aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
         // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg var(--surface-sunken))
         // Desktop: 820px centered, bg --surface-rail, border 1px --border-strong, radius 16px, shadow --modal-shadow
@@ -1712,7 +1716,7 @@ export function CardModal({
               )}
               <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
                 <h3
-                  id="card-modal-title"
+                  id={titleId}
                   className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
                   style={{ color: "var(--fg)" }}
                 >
