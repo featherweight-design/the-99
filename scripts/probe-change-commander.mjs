@@ -19,6 +19,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -84,6 +85,8 @@ async function signIn(page) {
   await sql`
     insert into user_prefs (user_id, about_version_seen) values (${userId}, ${version})
     on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
+  // The version bump's one-time sheet would otherwise sit over every page this walks (E5).
+  await clearAboutSheet(page, userId);
   return userId;
 }
 
