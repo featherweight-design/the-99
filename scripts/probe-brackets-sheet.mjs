@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -82,6 +83,7 @@ async function signIn(page) {
     values (${await page.evaluate(() => window.Clerk.user.id)}, ${version})
     on conflict (user_id) do update
       set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
+  await clearAboutSheet(page, await page.evaluate(() => window.Clerk.user.id));
 }
 
 /** Every deck on the account, asked of the page. */

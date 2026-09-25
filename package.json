@@ -85,6 +85,7 @@
     "probe:commander-art": "tsx scripts/probe-commander-art.ts",
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
+    "probe:about": "node scripts/probe-about.mjs",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "probe:delete-confirm": "node scripts/probe-delete-confirm.mjs",
     "probe:deck-locks": "node scripts/probe-deck-locks.mjs",

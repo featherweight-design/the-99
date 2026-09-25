@@ -23,6 +23,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 neonConfig.webSocketConstructor = ws;
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -104,6 +105,7 @@ async function signIn(page) {
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
     [userId, version],
   );
+  await clearAboutSheet(page, userId);
   return userId;
 }
 

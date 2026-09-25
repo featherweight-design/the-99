@@ -45,6 +45,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPageRole, PAGE } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { deck: DECK_VIEW } = { deck: { card: "Card view" } };
 const viewToggleCopy = { deck: DECK_VIEW };
@@ -116,6 +117,7 @@ async function signIn(page) {
     values (${await page.evaluate(() => window.Clerk.user.id)}, ${version})
     on conflict (user_id) do update
       set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
+  await clearAboutSheet(page, await page.evaluate(() => window.Clerk.user.id));
 }
 
 /**
