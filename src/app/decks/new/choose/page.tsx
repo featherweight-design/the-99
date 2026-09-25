@@ -82,12 +82,16 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // Three decorations, none of which may take the page down: the card's chip, the credit standing
   // the deeper look reads (only when there are words to look at), and the read `r` names.
   const [card, allowance, loaded] = await Promise.all([
-    p.card ? loadCardChip(userId, p.card).catch(() => null) : null,
+    // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
+    p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
     p.words.trim() ? readAllowance(userId, now, "intake").catch(() => null) : null,
     p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
   ]);
   const settled = readForThisAsk(p, loaded, wordsHash);
   const labels = { theme: (slug: string) => themeLabels[slug] ?? slug, card: card?.name ?? null };
+  // A carried `a` the search could not apply (stale, or hand-edited) is no answer: the look sees
+  // the answers the search ran on, so a card its read finds is not set aside for it.
+  const lookParams = card === null && p.card !== null ? { ...p, card: null } : p;
   // A change of answers is a new ask: it carries neither the read nor its marks.
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);
@@ -111,7 +115,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
             afterDeeper={settled !== null}
             offer={allowance && (
               // Keyed on the read: the look's own results are a new panel, drawn from what the page found.
-              <DeeperLook key={p.readId ?? "first"} params={p} settled={settled?.kind ?? null} standing={{
+              <DeeperLook key={p.readId ?? "first"} params={lookParams} settled={settled?.kind ?? null} standing={{
                 used: allowance.used,
                 limit: allowance.limit,
                 nextAt: allowance.nextAt?.toISOString() ?? null,
@@ -121,7 +125,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
                 now: now.toISOString(),
               }} />
             )}
-            card={card}
+            card={card ?? null}
             notUsed={p.notUsed}
             changeHref={changeHref}
             startOverHref={CHOOSE_PATH}
