@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, landColors, nameAbility, nonManaAbilities, quote,
+  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, landColors, makesFreely, nameAbility, nonManaAbilities, quote,
   QUOTE_BUDGET, type LandText,
 } from "./land";
 
@@ -258,4 +258,28 @@ describe("givesUp (H3)", () => {
       { kind: "quoted", text: "{1}, {T}: put a storage counter on this land" },
     ]);
   });
+});
+
+// v2 item 2, rung 4: the head of Plateau's $0.15 wall on Hugh's HD - Gishath (staging text, 2026-09-25).
+describe("makesFreely", () => {
+  const CAPITAL = L("Capital City", "Land", "{T}: Add {C}.\n{1}, {T}: Add one mana of any color.\nCycling {2}");
+  const HUB = L("Aether Hub", "Land", "When this land enters, you get {E} (an energy counter).\n{T}: Add {C}.\n{T}, Pay {E}: Add one mana of any color.");
+  const TOWER_HERO = L("Avengers Tower", "Land", "{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a Hero spell or to activate an ability of a Hero source.");
+  const TOWNSHIP = L("An-Havva Township", "Land", "{T}: Add {C}.\n{1}, {T}: Add {G}.\n{2}, {T}: Add {R} or {W}.");
+  const BRANCH = L("Branch of Vitu-Ghazi", "Land", "{T}: Add {C}.\nDisguise {3}\nWhen this land is turned face up, add two mana of any one color.");
+
+  it("reads the wall as utility mana: paid, restricted, or from a trigger", () => {
+    for (const land of [CAPITAL, HUB, TOWER_HERO, TOWNSHIP, BRANCH]) expect(makesFreely(land, "R")).toBe(false);
+  });
+
+  it("counts a basic type, a plain tap, a pain land and a life payment as free", () => {
+    expect(makesFreely(PLATEAU, "R")).toBe(true);
+    expect(makesFreely(FORGE, "W")).toBe(true);
+    expect(makesFreely(CONFLUENCE, "W")).toBe(true);
+    expect(makesFreely(CANYON, "R")).toBe(true);
+    expect(makesFreely(BRASS, "R")).toBe(true);
+    expect(makesFreely(TOWER, "W")).toBe(true);
+  });
+
+  it("does not make a color the land never makes", () => expect(makesFreely(MOUNTAIN, "W")).toBe(false));
 });

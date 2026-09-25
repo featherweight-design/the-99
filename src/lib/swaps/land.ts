@@ -81,6 +81,35 @@ export function landColors(card: LandText): Set<Color> {
   return colors;
 }
 
+/**
+ * Whether the land makes `color` FREELY: from a basic land type, or from an ability whose whole cost is
+ * {T} (or {T} and a life payment, which the drawbacks already price) and whose mana can be spent on
+ * anything. A land that makes a color only by paying for it (Capital City's `{1}, {T}`, Aether Hub's
+ * energy), only for a narrow use (Avengers Tower's `Spend this mana only to cast a Hero spell`), or only
+ * from a trigger (Branch of Vitu-Ghazi, turned face up) still makes that color, so it stays a stand-in;
+ * it is utility mana, and the ladder puts it last (v2 item 2, rung 4). Measured on Hugh's HD - Gishath,
+ * every land at the head of Plateau's $0.15 wall was one of these three.
+ */
+export function makesFreely(card: LandText, color: Color): boolean {
+  const typeLine = card.typeLine.split(" // ")[0].toLowerCase();
+  for (const t of BASIC_TYPES) if (TYPE_COLOR[t] === color && new RegExp(`\\b${t}\\b`).test(typeLine)) return true;
+  const text = stripReminders(frontText(card));
+  for (const line of text.split("\n")) {
+    const colon = line.indexOf(":");
+    if (colon < 0) continue;
+    const cost = line.slice(0, colon).toLowerCase();
+    const effect = line.slice(colon + 1).toLowerCase();
+    // The cost is {T}, and at most a life payment beside it: no mana, no energy, no sacrifice.
+    const rest = cost.replace(/\{t\}/, "").replace(/,?\s*pay \d+ life/, "").replace(/[,\s]/g, "");
+    if (!cost.includes("{t}") || rest !== "") continue;
+    if (/spend this mana only/.test(effect)) continue;
+    const makes = (ANY_COLOR.test(effect) && !CONDITIONAL_GRANT.test(effect))
+      || [...effect.matchAll(/\badd\b([^.]*)/g)].some((m) => m[1].includes(`{${color.toLowerCase()}}`));
+    if (makes) return true;
+  }
+  return false;
+}
+
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };
 
 const FETCH = /search your library for (?:up to (?:one|two) )?(an?|two) ([a-z ,]+?) cards?\b/;

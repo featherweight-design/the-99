@@ -11,7 +11,7 @@ import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import {
-  drawbacks, fetchFinds, givesUp, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
+  drawbacks, fetchFinds, givesUp, landColors, makesFreely, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
 
 /** How many stand-ins a group shows. A presentation cap, stated once: the design draws no count. */
@@ -122,6 +122,8 @@ export type StandIn = {
   synergy: number | null;
   isUniversal: boolean;
   shared: SpellRole[];
+  /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
+  rung: 1 | 2 | 3 | 4 | null;
   drawbacks: Drawback[];
   givesUp: GivenUp[];
 };
@@ -159,11 +161,12 @@ function stocked(id: string, priced: Priced): { cents: number; foilOnly: boolean
 /**
  * Where a land sits on the quality ladder (v2 item 2, Hugh's Q1), read from the drawbacks the row
  * already parses and never from a name list: 1 untapped with no cost; 2 untapped with a condition or a
- * price in life (check, fast, slow, shock, pain, pay life); 3 enters tapped. A one-shot never reaches
- * here, since `landColors` gives it no color to match (Q9). `basicOnly` is a limit on what a fetch
- * finds rather than a cost of playing it, so it moves nothing.
+ * price in life (check, fast, slow, shock, pain, pay life); 3 enters tapped; 4 utility, a land that
+ * makes the colors only by paying for them, only for a narrow use, or only once (`makesFreely`).
+ * `basicOnly` is a limit on what a fetch finds rather than a cost of playing it, so it moves nothing.
  */
-export function landRung(list: readonly Drawback[]): 1 | 2 | 3 {
+export function landRung(list: readonly Drawback[], freely = true): 1 | 2 | 3 | 4 {
+  if (!freely) return 4;
   if (list.some((d) => d.kind === "entersTapped")) return 3;
   if (list.some((d) => d.kind !== "basicOnly")) return 2;
   return 1;
@@ -190,7 +193,7 @@ const byPrice = (a: StandIn, b: StandIn) => (a.cents ?? Infinity) - (b.cents ?? 
 const bySynergy = (a: StandIn, b: StandIn) =>
   (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || byPrice(a, b);
 /** Lands on the ladder (item 2): the rung first, then synergy, then price, never the alphabet. */
-const byLadder = (a: StandIn, b: StandIn) => landRung(a.drawbacks) - landRung(b.drawbacks) || bySynergy(a, b);
+const byLadder = (a: StandIn, b: StandIn) => (a.rung ?? 1) - (b.rung ?? 1) || bySynergy(a, b);
 
 /**
  * The stand-ins for one original, grouped and ordered as the sheet draws them.
@@ -228,6 +231,8 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
       isUniversal: c.isUniversal,
       shared: match.shared,
       drawbacks: isLand ? drawbacks(c) : [],
+      // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.
+      rung: isLand ? landRung(drawbacks(c), job.kind !== "land" || job.colors.every((color) => makesFreely(c, color))) : null,
       givesUp: isLand ? givesUp(original, c) : [],
     };
     if (row.free) groups.free.push(row);

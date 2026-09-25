@@ -170,17 +170,19 @@ describe("rankStandIns", () => {
     const check = L("Bbb Check", "This land enters tapped unless you control a Mountain or a Plains.\n{T}: Add {R} or {W}.");
     const clean = L("Ccc Clean", "{T}: Add {R} or {W}.");
     const cleanSyn = L("Ddd Clean Synergy", "{T}: Add {R} or {W}.");
+    const paid = L("Aaa Paid", "{T}: Add {C}.\n{1}, {T}: Add one mana of any color.");
     const priced = {
       newestAsOf: NOW,
       prices: new Map([
         [PLATEAU.oracleId, fact(40000)], [tapped.oracleId, fact(15)], [check.oracleId, fact(15)],
-        [clean.oracleId, fact(15)], [cleanSyn.oracleId, fact(900)],
+        [clean.oracleId, fact(15)], [cleanSyn.oracleId, fact(900)], [paid.oracleId, fact(10)],
       ]),
     };
     const g = rankStandIns(PLATEAU, [
-      cand(tapped, { synergy: 0.9 }), cand(check), cand(clean), cand(cleanSyn, { synergy: 0.3 }),
+      cand(tapped, { synergy: 0.9 }), cand(check), cand(clean), cand(cleanSyn, { synergy: 0.3 }), cand(paid, { synergy: 0.95 }),
     ], priced);
-    expect(g.cheapest.map((s) => s.card.name)).toEqual(["Ddd Clean Synergy", "Ccc Clean", "Bbb Check", "Aaa Tapped"]);
+    // The paid land is cheapest, first by name and highest in synergy, and still last: it is utility mana.
+    expect(g.cheapest.map((s) => s.card.name)).toEqual(["Ddd Clean Synergy", "Ccc Clean", "Bbb Check", "Aaa Tapped", "Aaa Paid"]);
   });
 
   it("moves a universal staple to buy into its own group, by price, and keeps a free one free (H4)", () => {
@@ -243,6 +245,10 @@ describe("landRung", () => {
     expect(landRung([{ kind: "damage", amount: 1, colors: ["R", "W"] }])).toBe(2);
     expect(landRung([{ kind: "life", amount: 1, colors: ["R"] }])).toBe(2);
     expect(landRung([{ kind: "lifeFetch", amount: 1 }])).toBe(2);
+  });
+  it("puts utility mana fourth, ahead of everything else it costs", () => {
+    expect(landRung([], false)).toBe(4);
+    expect(landRung([{ kind: "entersTapped" }], false)).toBe(4);
   });
   it("puts entering tapped third, whatever else it costs", () => {
     expect(landRung([{ kind: "entersTapped" }])).toBe(3);
