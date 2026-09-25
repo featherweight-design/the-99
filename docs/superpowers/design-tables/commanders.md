@@ -1167,7 +1167,14 @@
 | G: background | #6B9E63 | #6B9E63 |
 | G: color | #0c1608 | #0c1608 |
 
-### Oracle text glass panel
+> **Retired: the oracle panel, these four tables.** Nothing draws the panel any more. The desktop copy was
+> removed in #93 (`22d1529f`), because the card scan already prints the name, cost, type line and oracle
+> text. The mobile copy went with the bespoke lightbox in #297 (`620e1a75`), which replaced it with the shared
+> card modal, opened from *Card details*. #20, which asked for the P/T line because the schema had no
+> power/toughness, was closed as obsolete on 2026-09-25. The tables are kept as the record. Do not build from
+> them.
+
+### Oracle text glass panel · RETIRED
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | background | rgba(10,7,4,0.5) | rgba(10,7,4,0.5) |
@@ -1176,7 +1183,7 @@
 | padding | 11px 13px | 10px 12px |
 | margin-top | auto | — (margin-top:auto on parent) |
 
-### Type line (oracle panel)
+### Type line (oracle panel) · RETIRED
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-size | 12px | 12px |
@@ -1184,7 +1191,7 @@
 | font-weight | 500 | 500 |
 | text-shadow | 0 1px 4px rgba(0,0,0,0.6) | 0 1px 4px rgba(0,0,0,0.6) |
 
-### Oracle text lines
+### Oracle text lines · RETIRED
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-size | 11px | 11px |
@@ -1194,11 +1201,6 @@
 | text-shadow | 0 1px 3px rgba(0,0,0,0.7) | 0 1px 3px rgba(0,0,0,0.7) |
 
 ### P/T line (oracle panel) · RETIRED
-
-> **Retired.** #297 replaced the commander page's bespoke lightbox with the shared card modal, opened from
-> *Card details*, and this oracle panel went with the lightbox, so nothing draws this line any more. #20, which asked for it because the schema had no
-> power/toughness, was closed as obsolete on 2026-09-25. The table below is kept as the record. Do not build
-> from it.
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
