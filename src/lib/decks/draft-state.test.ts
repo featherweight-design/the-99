@@ -277,15 +277,26 @@ describe("pullCandidate", () => {
     expect(chosen?.id).toBe("d-commander");
   });
 
-  // Until the locked guard tag exists (Locked PR 5), a locked holder draws NO control: the control
-  // offers a pull for anything neither commander nor pending, and the server refuses a locked pull.
-  it("hands no locked claim to the control, even beside a pending one", () => {
-    expect(pullCandidate(availability([claim({ locked: true })]))).toBeNull();
-    expect(pullCandidate(availability([claim({ locked: true, pending: true })]))).toBeNull();
+  // L2: a locked holder is a guard like the other two, so the row names the deck that holds the
+  // copy. Between them by permanence: commander, then locked, then pending (a commit frees none).
+  it("hands a locked claim to the control as a guard, between commander and pending", () => {
+    expect(pullCandidate(availability([claim({ id: "d-locked", locked: true })]))?.id).toBe("d-locked");
+    expect(pullCandidate(availability([
+      claim({ id: "d-pending", pending: true }),
+      claim({ id: "d-locked", locked: true }),
+    ]))?.id).toBe("d-locked");
     expect(pullCandidate(availability([
       claim({ id: "d-locked", locked: true }),
-      claim({ id: "d-pending", pending: true }),
-    ]))?.id).toBe("d-pending");
+      claim({ id: "d-commander", commander: true }),
+    ]))?.id).toBe("d-commander");
+  });
+
+  // A releasable holder still wins: a lock in one deck never hides a copy another deck can give.
+  it("offers the releasable holder over a locked one", () => {
+    expect(pullCandidate(availability([
+      claim({ id: "d-locked", locked: true }),
+      claim({ id: "d-free" }),
+    ]))?.id).toBe("d-free");
   });
 
   it("draws nothing for a card with no sleeved holder", () => {

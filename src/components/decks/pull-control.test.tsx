@@ -4,6 +4,7 @@
 // them is that the control prints what it was given rather than arithmetic of
 // its own.
 
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -202,6 +203,23 @@ describe("PullControl", () => {
     );
     expect(screen.getByText(copy.commanderGuardTag)).toBeTruthy();
     expect(screen.queryByText(copy.pullGuardTag)).toBeNull();
+  });
+
+  // L2: the player locked the card in the source deck. A tag and no control, its sentence left to
+  // the row like the other two guards', and ahead of pending, since a commit would not free it.
+  it("draws the locked guard and no control, ahead of pending", () => {
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claim={{ ...FREE_TO_PULL, locked: true, pending: true }}
+        onPulled={noop}
+      />,
+    );
+    const tag = screen.getByText(lockedCardsCopy.pull.tag);
+    expect(tag.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.queryByText(copy.pullGuardTag)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("announces once, not once per re-render", async () => {

@@ -174,11 +174,11 @@ export function pullCandidate(a: Availability | undefined): DeckClaim | null {
   const releasable = releasableClaims(a)[0];
   if (releasable) return releasable;
   const sleeved = (a?.claims ?? []).filter((c) => c.mature);
-  // A LOCKED claim is never handed back here (L2): `PullControl` draws an offer for any claim that
-  // is neither a commander nor pending, and the server refuses a locked pull, so returning it would
-  // draw a control that can only fail. It stays null (no control at all) until Locked PR 5 draws
-  // the locked guard tag beside `pending`'s and adds the fallback with it.
-  return sleeved.find((c) => c.commander && !c.locked) ?? sleeved.find((c) => c.pending && !c.locked) ?? null;
+  // A LOCKED claim is a guard like the other two (L2): `PullControl` draws its tag and no offer, so
+  // the row says the spare copy is locked in that deck. Between the two, by permanence: a commander
+  // never moves, a lock is the player's own choice in that deck, and a pending deck needs only a
+  // commit. `locked` is only ever set with NEVER_CUT_ENABLED on.
+  return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.locked) ?? sleeved.find((c) => c.pending) ?? null;
 }
 
 /**

@@ -39,6 +39,7 @@ import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { PutBackControl } from "./put-back-control";
 import { MutationError } from "./mutation-error";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DiffRowIn, DiffRowOut } from "./update-diff-row";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -259,6 +260,8 @@ export function Column({
           // the reason for the silence.
           const word = pullClaim?.commander
             ? copy.commanderGuardA11y(pullClaim.name, row.name)
+            : pullClaim?.locked
+              ? lockedCardsCopy.pull.a11y(pullClaim.name, row.name)
             : pullClaim?.pending
               ? copy.pullGuardA11y(pullClaim.name, row.name)
               // A full sentence for a printed add, shaped like the two guards
@@ -702,7 +705,9 @@ export function ReviewChanges({
         addRestoredId(card.oracleId);
         let result: Awaited<ReturnType<typeof addCardToDeck>>;
         try {
-          result = await addCardToDeck(deckId, card.oracleId);
+          // `relock` (L1): a card that left locked comes back locked. The server wakes the dormant
+          // lock only if there is one, so a card that was never locked returns as it left.
+          result = await addCardToDeck(deckId, card.oracleId, { relock: true });
         } catch {
           // The latch is NOT opened. A throw can be an add that landed and lost
           // its reply, so the next write would be computing its receipt — and
