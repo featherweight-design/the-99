@@ -67,3 +67,30 @@ how each value was read:
 | Clears | when the entry leaves the upper 30% band | cleared after a scroll away | measured |
 | Back | returns to where the jump started | back to `/about` | measured |
 | Gutter spill | 10px (8px on a phone), radius 6 | same | class |
+
+## The contents (PR 4, `contents-r6.tsx`, §Q)
+
+| Property | Design | Shipped | How |
+|---|---|---|---|
+| Rail | 216px sticky; label, then a 34px field that does not scroll, then a list scrolling inside | 216px; the field sits outside the scroll box | class; tested |
+| Chapters open in the rail | every chapter (Q1); **the current chapter only if under 60% is visible (§R9, audit E4)** | the current chapter only; a search opens every chapter with a match | measured: 39 entries, a 1,365px list in 702px, 51.4% visible at 1300×820; the fallback is approved |
+| Entry row, wide | 12.5/1.35 `--fg-muted`, 30px left, wraps | same | class |
+| Figure slot | `N new` in accent, else empty; a match count while searching | same | tested |
+| Tracking | `aria-current` and `--elevated` on the entry row once an entry is in the band, else the chapter row; one row at a time | same; the current entry is the LAST one in the band, which is where a jump puts it | tested; the rail walked at 1300 |
+| Phone list | label, 44px field, four 44px chapter rows; the title links, the figure and chevron are a 44px `aria-expanded` disclosure | same | class; tested |
+| Phone, opened | entry rows 44px min, 13.5px `--fg-body`, 26px indent; opening one closes none | same | class; tested |
+| New entries | mono accent `new`, trailing, at both widths | same | tested |
+| Behind reader, phone | chapters start collapsed | same | tested |
+
+## The search (PR 4, `lib/about/search.ts`, §R)
+
+| Property | Design | Shipped | How |
+|---|---|---|---|
+| Field | `SearchField`, `Find an entry`, named `Find an entry by title` | same | tested |
+| What it reads | titles only, ignoring case | titles only, a plain substring (never a RegExp) | tested |
+| Matches | chapters with none drop from the LIST; matched run `--fg`/600, rest `--fg-faint`; `m of n` and a clear; a polite live count | same | tested; the live region is class |
+| Page | nothing hidden, dimmed, collapsed or reordered (ruling 4) | the page's sections untouched | tested; `probe:about` (PR 5) compares them before and after at 390 and 1300 |
+| None | `Nothing titled “q”.`, the note, `Clear search` (44px on a phone) | same | tested |
+| Enter | jumps to the first match; the query stays | presses the first row's link, so a second Enter on the same query lands again | tested; the address is read in a browser by `probe:about` |
+| ↓ / Escape | into the list / clears | same | tested |
+| Cleared, phone | restores whichever chapters were open | same | tested |
