@@ -149,10 +149,16 @@ export function DeeperLook({
   async function stop() {
     const readId = own.current;
     if (!readId || stopping) return;
+    const mine = token.current;
     setStopping(true);
     const took = await deps.stop(readId).catch(() => false);
-    // Not taken: the read had already settled. Its press is about to answer, and owns the panel.
-    if (!took) return;
+    // Not taken: the read had already settled, and its press is about to answer and owns the
+    // panel; or the request itself failed, and the player can press Stop again. Either way the
+    // Stop is live again: a refused one only asks once more and is refused once more.
+    if (!took) {
+      if (token.current === mine) setStopping(false);
+      return;
+    }
     token.current += 1;
     own.current = null;
     setStopping(false);

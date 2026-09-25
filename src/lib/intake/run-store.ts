@@ -266,7 +266,10 @@ export async function cancelRead(readId: string, userId: string): Promise<boolea
     // Nothing pending by this id. A read that exists has settled and is past stopping. One that
     // does not exist yet is a press whose start has not reached the database: the Stop is left
     // for that start to find, so it refuses before reserving and the player is never charged.
-    const [exists] = await tx.select({ id: intakeReads.id }).from(intakeReads).where(eq(intakeReads.id, readId));
+    // This player's read, as every other step of the Stop is: another player's row with the id says
+    // nothing about this press, which must still find its stop.
+    const [exists] = await tx.select({ id: intakeReads.id }).from(intakeReads)
+      .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
     if (exists) return false;
     // Purged here as well as at a start: a player who presses Stop early and never starts another
     // look would otherwise leave every such stop behind for good.

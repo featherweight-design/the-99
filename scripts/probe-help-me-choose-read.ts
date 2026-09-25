@@ -147,7 +147,9 @@ async function main() {
     await inCall;
     const before = await units(USER);
     check("while it runs, a second press is refused as in flight", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "in_flight");
-    check("another reader's Stop cancels nothing", await store.cancelRead(stopped, OTHER), false);
+    // Another reader's Stop by this id is a stop for THEIR press, if they have one; this read stays.
+    await store.cancelRead(stopped, OTHER);
+    check("another reader's Stop cancels nothing", [(await readRow(stopped)).status, (await readRow(stopped)).unit], ["pending", "reserved"]);
     check("the reader's Stop cancels it", await store.cancelRead(stopped, USER), true);
     const mid = await readRow(stopped);
     check("the read is cancelled, its unit refunded, no bill yet", [mid.status, mid.unit, mid.cost], ["cancelled", "refunded", null]);
@@ -257,6 +259,14 @@ async function main() {
     check("a Stop is taken even when another player's stop names the same id", await store.cancelRead(both, EARLY), true);
     const mine = await store.startRead(EARLY, store.wordsHash(`both ${both}`, controls), INTAKE_MODEL, { readId: both });
     check("and that player's press is still refused, reserving nothing", [mine.kind, await units(EARLY)], ["stopped", unitsBoth]);
+    // Another player's READ with the id says nothing about this press either: the Stop's own
+    // existence check is this player's, as every other step of it is.
+    const theirRead = randomUUID();
+    const started = await store.startRead(OTHER, store.wordsHash(`their read ${theirRead}`, controls), INTAKE_MODEL, { readId: theirRead });
+    if (started.kind === "started") await store.cancelRead(theirRead, OTHER);
+    check("a Stop is taken though another player's read has that id", await store.cancelRead(theirRead, EARLY), true);
+    const mineToo = await store.startRead(EARLY, store.wordsHash(`their read, mine ${theirRead}`, controls), INTAKE_MODEL, { readId: theirRead });
+    check("and this player's press with it is refused", mineToo.kind, "stopped");
     // Purged at the Stop as well: a player who never starts another look leaves none behind.
     const stale = randomUUID();
     await fixture.execute(sql`insert into intake_read_stops (read_id, user_id, created_at) values (${stale}, ${EARLY}, now() - interval '25 hours')`);

@@ -82,6 +82,19 @@ describe("the deeper look", () => {
     expect(screen.getByTestId("results-dim").dataset.looking).toBeUndefined();
   });
 
+  it("puts Stop back when the request to stop failed, so the player can press it again", async () => {
+    const look = vi.fn(() => new Promise(() => {}));
+    const stop = vi.fn().mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(true);
+    draw({ look, stop });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
+    const again = screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement;
+    expect(again.disabled).toBe(false);
+    await act(async () => fireEvent.click(again));
+    expect(stop).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId("deeper-look").dataset.phase).toBe("offer");
+  });
+
   it("lets the press answer when the Stop came too late, so a paid read is still shown", async () => {
     let answer!: (v: unknown) => void;
     const look = vi.fn(() => new Promise((r) => { answer = r; }));
