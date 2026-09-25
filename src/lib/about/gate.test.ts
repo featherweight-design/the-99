@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION } from "../copy/about";
 import {
+  ABOUT_COOKIE,
   cookieIsCurrent,
   cookieValue,
   gateApplies,
   gateDecision,
   gateHandles,
+  isDocumentLoad,
   safeNext,
+  SHEET_COOKIE,
+  sheetCookieIsCurrent,
+  sheetDecision,
 } from "./gate";
 
 describe("safeNext", () => {
@@ -152,5 +157,43 @@ describe("gateDecision", () => {
     // An older deployment serving an older ABOUT_VERSION must not re-show the
     // page to someone who has already acknowledged a newer one.
     expect(gateDecision({ ...base, seen: 5 }).kind).toBe("pass");
+  });
+});
+
+describe("the sheet (R6)", () => {
+  it("shows the sheet to a reader who is behind, carrying their pre-visit seen", () => {
+    expect(sheetDecision({ userId: "u", seen: 8, version: 9 })).toEqual({ show: true, seen: 8, cookie: "u.9" });
+  });
+
+  it("shows the first-run variant at seen 0", () => {
+    expect(sheetDecision({ userId: "u", seen: 0, version: 9 })).toEqual({ show: true, seen: 0, cookie: "u.9" });
+  });
+
+  it("does not show it to a current reader, but still marks the browser", () => {
+    expect(sheetDecision({ userId: "u", seen: 9, version: 9 })).toEqual({ show: false, cookie: "u.9" });
+    expect(sheetDecision({ userId: "u", seen: 12, version: 9 })).toEqual({ show: false, cookie: "u.9" });
+  });
+
+  it("uses a new cookie, never the gate's (E1)", () => {
+    expect(SHEET_COOKIE).toBe("about_sheet");
+    expect(SHEET_COOKIE).not.toBe(ABOUT_COOKIE);
+  });
+
+  it("binds the cookie to the reader and the version", () => {
+    expect(sheetCookieIsCurrent("u.9", "u", 9)).toBe(true);
+    expect(sheetCookieIsCurrent("u.9", "other", 9)).toBe(false);
+    expect(sheetCookieIsCurrent("u.8", "u", 9)).toBe(false);
+    expect(sheetCookieIsCurrent(undefined, "u", 9)).toBe(false);
+  });
+
+  it("acts on document loads only, never a client transition or a prefetch", () => {
+    const h = (o: Record<string, string>) => new Headers(o);
+    expect(isDocumentLoad("GET", h({ accept: "text/html" }))).toBe(true);
+    expect(isDocumentLoad("GET", h({ accept: "text/html", RSC: "1" }))).toBe(false);
+    expect(isDocumentLoad("GET", h({ RSC: "1" }))).toBe(false);
+    expect(isDocumentLoad("GET", h({ accept: "text/html", "Next-Router-Prefetch": "1" }))).toBe(false);
+    expect(isDocumentLoad("GET", h({ accept: "text/html", purpose: "prefetch" }))).toBe(false);
+    expect(isDocumentLoad("POST", h({ accept: "text/html" }))).toBe(false);
+    expect(isDocumentLoad("GET", h({ accept: "application/json" }))).toBe(false);
   });
 });

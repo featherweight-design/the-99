@@ -145,3 +145,63 @@ export function gateDecision(args: {
   const to = `/about?next=${encodeURIComponent(args.pathname + args.search)}`;
   return { kind: "redirect", to, cookie };
 }
+
+// ---------------------------------------------------------------------------
+// The sheet (About R6). With `ABOUT_SHEET_ENABLED` on, nothing above redirects:
+// the proxy decides whether a document load draws the one-time sheet instead,
+// and hands that decision to the root layout on a request header.
+
+/**
+ * The sheet's cookie: "this browser has SHOWN the sheet for version N, as this
+ * account". A NEW name on purpose (R6 audit E1). `about_v` means "SENT to N",
+ * and a browser that was redirected and never acknowledged still holds
+ * `<userId>.9` — reading that as "shown" would hide the sheet from exactly the
+ * readers who are behind.
+ */
+export const SHEET_COOKIE = "about_sheet";
+
+/** Set by the proxy on a document load that draws the sheet; carries the pre-visit `seen`. */
+export const SHEET_HEADER = "x-about-sheet";
+
+/** True when this browser has already shown the sheet for this version, as this reader. */
+export function sheetCookieIsCurrent(
+  raw: string | undefined,
+  userId: string,
+  version: number = ABOUT_VERSION,
+): boolean {
+  return raw === cookieValue(userId, version);
+}
+
+/**
+ * A full document load — the only request that renders the root layout, and so
+ * the only one that can draw the sheet.
+ *
+ * The opposite of `gateHandles`'s rule on purpose. A redirect is followed on a
+ * client transition, so the gate acts on RSC requests; the sheet is DRAWN by the
+ * root layout, which a client transition keeps mounted and never re-renders. A
+ * sheet decided on an RSC request would be marked shown in the cookie without
+ * ever reaching the screen — a tab left open across the deploy would lose it.
+ */
+export function isDocumentLoad(method: string, headers: Headers): boolean {
+  if (method !== "GET") return false;
+  if (headers.get("Next-Router-Prefetch") === "1") return false;
+  if (headers.get("purpose") === "prefetch") return false;
+  if (headers.get("RSC") === "1") return false;
+  return (headers.get("accept") ?? "").includes("text/html");
+}
+
+export type SheetDecision =
+  | { show: false; cookie: string }
+  | { show: true; seen: number; cookie: string };
+
+/**
+ * Whether this document load draws the sheet. Both answers carry the cookie, so
+ * the sheet shows once per browser per version and a current reader costs one
+ * read, as the gate does.
+ */
+export function sheetDecision(args: { userId: string; seen: number; version?: number }): SheetDecision {
+  const version = args.version ?? ABOUT_VERSION;
+  const cookie = cookieValue(args.userId, version);
+  if (args.seen >= version) return { show: false, cookie };
+  return { show: true, seen: args.seen, cookie };
+}
