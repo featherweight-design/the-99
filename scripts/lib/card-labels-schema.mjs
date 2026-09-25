@@ -35,7 +35,19 @@ export const THEMES = [
 // Every job therefore carries the space it came from.
 export const SPACES = ["role", "theme"];
 
-/** E1's three kinds. A stand-in keeps `ramp` only when its kind matches. */
+// E1's three kinds. A stand-in keeps `ramp` only when its kind matches.
+//
+// `null` is a FOURTH state and not a fourth kind: it means none of the three
+// fits, and it is recorded rather than rounded off. Generator Servant --
+// `{T}, Sacrifice this creature: Add {C}{C}` -- is the case. It is not
+// `tapsForMana` (gone after one use), not `fetchesLand`, and not
+// `makesTreasure` (no token; the mana is added directly). `Blood Pet`, the
+// Eldrazi Scion tokens and every sacrifice-for-mana land are the same shape, so
+// the class is large rather than a curiosity. Raised with 2b 2026-09-25, whose
+// vocabulary it is; until they rule, a burst is labelled null and COUNTED, so
+// the report carries a measured figure instead of a forced kind. Forcing it to
+// `makesTreasure` would recreate the Warg-vs-Runadi false match, both being
+// "one-time mana".
 export const RAMP_KINDS = [
   "tapsForMana",    // a dork or a rock: mana every turn from a permanent's tap ability
   "fetchesLand",    // a search putting a land onto the battlefield or into hand
@@ -97,7 +109,8 @@ export function validateJob(job) {
   const vocab = job.space === "role" ? ROLES : THEMES;
   if (!vocab.includes(job.kind)) bad.push(`kind "${job.kind}" is not in ${job.space}`);
   if (job.kind === "ramp" && job.space === "role") {
-    if (!RAMP_KINDS.includes(job.rampKind)) bad.push(`rampKind "${job.rampKind}"`);
+    // null is permitted and meaningful; undefined is an omission.
+    if (job.rampKind !== null && !RAMP_KINDS.includes(job.rampKind)) bad.push(`rampKind "${job.rampKind}"`);
   } else if (job.rampKind !== undefined) {
     bad.push(`rampKind on a non-ramp job`);
   }

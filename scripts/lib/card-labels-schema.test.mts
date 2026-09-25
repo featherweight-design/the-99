@@ -53,6 +53,13 @@ describe("validateJob", () => {
     expect(validateJob({ ...warg, kind: "sparkle" })).toContain('kind "sparkle" is not in role');
   });
 
+  // A burst -- Generator Servant, Blood Pet -- fits none of E1's three kinds.
+  // Recorded as null and counted, never forced into makesTreasure, which would
+  // recreate the very false match the kinds exist to prevent.
+  it("permits a null rampKind, which means no kind fits", () => {
+    expect(validateJob({ ...warg, rampKind: null })).toEqual([]);
+  });
+
   it("requires a rampKind on ramp, and forbids one elsewhere", () => {
     expect(validateJob({ ...warg, rampKind: undefined })).toContain('rampKind "undefined"');
     expect(validateJob({ ...warg, space: "theme", kind: "treasure" }))
