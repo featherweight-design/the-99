@@ -160,7 +160,8 @@ async function main() {
     `${spellList.filter((s) => s.isUniversal).map((s) => s.card.name).join(", ") || "no staple among them"}`);
   // H4: a paid staple leaves the commander's ranking for its own group, by price.
   check("spell: staples to buy are all staples, cheapest first, and neither ranking holds one",
-    spells!.staples.every((s) => s.isUniversal) && ascending(spells!.staples.map((s) => s.cents!))
+    // Non-empty: `every` holds over nothing, and a run with no paid staple has measured nothing.
+    spells!.staples.length > 0 && spells!.staples.every((s) => s.isUniversal) && ascending(spells!.staples.map((s) => s.cents!))
       && [...spells!.byCommander, ...spells!.unlisted].every((s) => !s.isUniversal),
     `${spells!.staples.map((s) => `${s.card.name} ${s.cents}`).join(", ") || "no paid staple"}`);
   guards("spell", spells!);

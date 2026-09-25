@@ -80,7 +80,9 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   if (!deck) return null;
   const commanderIds = deck.partner ? [deck.commander, deck.partner] : [deck.commander];
 
-  const [cmdrRows, draftRows, originalRows] = await Promise.all([
+  // Read first, because the spell pool admits every staple by id (H4): one the commander's list
+  // does not carry, and the price slice does not reach, would otherwise never be ranked at all.
+  const [cmdrRows, draftRows, originalRows, staples] = await Promise.all([
     db.execute<{ oracle_id: string; name: string; color_identity: string[] }>(sql`
       select oracle_id, name, color_identity from cards where oracle_id = any(${sql.param(commanderIds)}::uuid[])
     `),
@@ -89,6 +91,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
       select oracle_id, name, type_line, oracle_text, keywords, cmc, image_uri, null::real as inclusion, null::int as owned
       from cards where oracle_id = ${cutOracleId}
     `),
+    loadUniversalStaples(),
   ]);
   const originalRow = originalRows.rows[0];
   if (!originalRow) return null;
@@ -102,15 +105,14 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const job = jobOf(original);
   const candidates: Row[] = job.kind === "none" ? [] : (await db.execute<Row>(
     job.kind === "spell"
-      ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId })
+      ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId, staples: sql.param([...staples]) })
       : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
   )).rows;
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
-  const [availability, priced, staples] = await Promise.all([
+  const [availability, priced] = await Promise.all([
     ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId }) : new Map(),
     loadPrices([cutOracleId, ...candidates.map((r) => r.oracle_id)]),
-    loadUniversalStaples(),
   ]);
 
   const pool: Candidate[] = candidates.map((r) => {
@@ -180,8 +182,8 @@ function landPool(a: PoolArgs) {
   `;
 }
 
-/** The commander's list, the player's own copies, and the cheapest unlisted cards (header). */
-function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[] }) {
+/** The commander's list, the player's own copies, the cheapest unlisted cards (header), and every universal staple. */
+function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[]; staples: ReturnType<typeof sql.param> }) {
   const guards = (alias: string) => sql.raw(`
     ${alias}.commander_legal
     and ${alias}.type_line !~* '^[^/]*\\mland\\M'
@@ -216,6 +218,9 @@ function spellPool(a: PoolArgs & { mv: number; roles: SpellRole[] }) {
       and c.cmc <= ${a.mv}
       and (c.oracle_id <> all(${a.draft}::uuid[]) or c.type_line ~* '\\mbasic\\M')
       and c.oracle_id <> ${a.cut}::uuid
-      and (s.oracle_id is not null or coalesce(o.owned, 0) > 0 or c.oracle_id in (select oracle_id from unlisted))
+      -- Every universal staple is admitted by id, under the same guards: it is the one card the
+      -- sheet names as a staple, so leaving it to the price slice would drop it silently (H4).
+      and (s.oracle_id is not null or coalesce(o.owned, 0) > 0 or c.oracle_id in (select oracle_id from unlisted)
+        or c.oracle_id = any(${a.staples}::uuid[]))
   `;
 }
