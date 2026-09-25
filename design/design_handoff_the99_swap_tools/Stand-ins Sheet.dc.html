@@ -67,7 +67,7 @@
         <h3 style="margin:8px 0 0;width:100%;font-family:var(--display);font-weight:700;font-size:18px;line-height:1.25;color:var(--fg);text-wrap:balance;">The stand-ins didn’t come back</h3>
         <p style="margin:10px 0 0;max-width:420px;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">We couldn’t read prices and your collection just now. It isn’t something you did, and it usually clears in a moment.</p>
         <p style="margin:8px 0 0;max-width:420px;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Plateau is still in the deck, and nothing was changed.</p>
-        <span style="{{ retryStyle }}">Try again</span>
+        <button type="button" style="{{ retryStyle }}">Try again</button>
       </div>
     </sc-if>
 
@@ -88,7 +88,7 @@
               <div style="margin:8px 0;display:flex;flex-wrap:wrap;align-items:center;gap:9px;border-radius:9px;padding:10px 12px;background:var(--surface);border:1px solid var(--success);">
                 <span style="flex:none;display:flex;align-items:center;gap:6px;"><span aria-hidden="true" style="width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:9px;border:1px solid var(--success);color:var(--success);">✓</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--success);">taken</span></span>
                 <span style="min-width:0;font-size:13px;color:var(--fg-body);">{{ orig.name }} <span style="font-family:'IBM Plex Mono',monospace;color:var(--success);">→</span> <b style="font-weight:600;color:var(--fg);">{{ r.name }}</b></span>
-                <span style="{{ putBackStyle }}">Undo swap</span>
+                <button type="button" style="{{ putBackStyle }}">Undo swap</button>
               </div>
             </sc-if>
             <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
@@ -107,7 +107,7 @@
                   <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
                 </div>
                 <div style="{{ r.takeCell }}">
-                  <sc-if value="{{ r.canTake }}" hint-placeholder-val="{{ true }}"><span style="{{ takeStyle }}">Take</span></sc-if>
+                  <sc-if value="{{ r.canTake }}" hint-placeholder-val="{{ true }}"><button type="button" style="{{ takeStyle }}">Take</button></sc-if>
                 </div>
               </div>
               <sc-if value="{{ r.refused }}" hint-placeholder-val="{{ false }}">
@@ -115,7 +115,7 @@
                   <div style="display:flex;align-items:center;gap:8px;"><span aria-hidden="true" style="width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid var(--danger);color:var(--danger);">!</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);">not taken</span></div>
                   <b style="font-size:13.5px;font-weight:600;line-height:1.35;color:var(--fg);">The deck changed before this swap could land</b>
                   <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">HD Gishath was edited after this list was read, in another tab or on another device. Nothing moved: Plateau is still in, and Sunbaked Canyon isn’t.</p>
-                  <div style="{{ refusedActions }}"><span style="{{ rereadStyle }}">Read the list again</span><span style="{{ dismissStyle }}">Close</span></div>
+                  <div style="{{ refusedActions }}"><button type="button" style="{{ rereadStyle }}">Read the list again</button><button type="button" style="{{ dismissStyle }}">Close</button></div>
                 </div>
               </sc-if>
             </sc-if>
@@ -215,11 +215,11 @@ class Component extends DCLogic {
       v.sentence = "Nothing cheaper does this job. All the other removal at mana value 1 or less in Gishath’s colors costs more than $1.84, and you have no free copy of any of it.";
     }
     const btn = phone
-      ? { display: "flex", alignItems: "center", justifyContent: "center", height: 44, width: 72, borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
-      : { display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "6px 13px", fontSize: 12.5, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" };
+      ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", height: 44, width: 72, borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+      : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "6px 13px", fontSize: 12.5, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" };
     const quiet = phone
-      ? { display: "inline-flex", alignItems: "center", minHeight: 44, borderRadius: 8, padding: "0 14px", fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
-      : { display: "inline-flex", alignItems: "center", minHeight: 32, borderRadius: 7, padding: "6px 11px", fontSize: 12, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" };
+      ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", minHeight: 44, borderRadius: 8, padding: "0 14px", fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
+      : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", minHeight: 32, borderRadius: 7, padding: "6px 11px", fontSize: 12, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" };
     const diamonds = (pulse, color) => React.createElement("span", { "aria-hidden": true, style: { display: "flex", alignItems: "center", gap: 9, height: 16 } },
       [8, 11, 8].map((d, i) => React.createElement("span", { key: i, className: pulse ? "anim-dots" : undefined, style: { display: "block", width: d, height: d, transform: "rotate(45deg)", background: color, ...(pulse ? { animation: "dots 1.2s ease-in-out infinite", animationDelay: `${i * 0.2}s` } : {}) } })));
     return {

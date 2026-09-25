@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --elevated:#29241F; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --warning:#DEAA29; --success:#6FA368; --danger:#C6533F; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --elevated:#20222A; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --warning:#E0913C; --success:#6FA368; --danger:#C6533F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;flex-direction:column;gap:64px;padding:48px 56px 80px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1500px;">
+
+  <header style="display:flex;flex-direction:column;gap:10px;max-width:1100px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The 99 · swap tools · addendum, 2026-09-24</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1.15;">Three undrawn pieces: the staple read, the door on the shipped modal, card → sheet → card</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">This amends the parent handoff and replaces none of it. Where they disagree, this file wins for these three questions only. Locked and unchanged: Undo swap everywhere; every stand-in names what it gives up; staples come from the shared definition; no single score.</p>
+  </header>
+
+  <section id="1a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1a</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">The staple read (audit F1)</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The figure is withheld, and the slot says why</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">For a card on the shared staples list, the commander chip keeps its place but drops the percentage. It reads <i>staple · any commander</i> in italic body ink. A 91% beside Gishath would say "suits Gishath". The true reading is "suits anything", so no number is shown. The chip stays, so every row still has two slots and the need fact still sits beside it.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One sentence up top, stated once</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A dashed note under the card plate explains the chip once rather than on every row. Dashed and neutral, it isn't a warning. Row order stays <i>by name</i>. When the staple has no role (Reliquary Tower, Rogue's Passage, Swiftfoot Boots), the need chip is omitted as usual. The row is left with the name, the staple chip and Add, and the note says that's all there is to say.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Stand-ins: same words, and their own group</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Yes, the stand-in row carries the same treatment. Its fact line ends <i>staple, any commander</i> instead of <i>in N% of Gishath decks</i>. Because spells are ranked by that figure, a staple can't rank by it either. Staples to buy get their own group, <i>staples, cheapest first</i>, between the free copies and the commander ranking. A free staple stays in <i>yours, free</i> with the same clause. <b style="color:var(--fg-body);font-weight:600;">Ordering is Design's reading; Hugh may overrule.</b></p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">560 · Fits your decks · Sol Ring (staple with a role)</span><dc-import name="Fits Your Decks" view="picker" state="staple" theme="{{ theme }}" hint-size="560px,560px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Sol Ring</span><dc-import name="Fits Your Decks" view="picker" state="staple" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,640px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">560 · Reliquary Tower (staple, no role)</span><dc-import name="Fits Your Decks" view="picker" state="staplenorole" theme="{{ theme }}" hint-size="560px,480px"></dc-import></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 sheet (640) · stand-ins for Grim Monolith · Arcane Signet is the staple</span><dc-import name="Stand-ins Sheet" kind="staple" theme="{{ theme }}" hint-size="640px,620px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same sheet</span><dc-import name="Stand-ins Sheet" kind="staple" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,760px"></dc-import></div>
+      <div style="max-width:360px;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px dashed var(--border-strong);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">For engineering</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">One predicate, <i>isUniversalStaple(oracleId)</i>, from the shared definition. Both surfaces read it, and neither hard-codes the five names. Sol Ring would qualify here (ramp, MV 1) but is left out because it's already in HD Gishath. The inclusion figure is still loaded for staples; it just isn't drawn or ranked on.</p></div>
+    </div>
+  </section>
+
+  <section id="1b" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1b</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">The door, on the modal as it ships</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Next to the price, where the price already is</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">This supersedes the parent's R2 placement under a buy tag. On desktop the door sits in the art column, under the shipped price tag: a mono limit line, then <i>⇄ See cheaper stand-ins →</i>. On the phone it's one 44px strip right under the art header, which holds the price. It's the limit line on the left and the link on the right. The content column and the fixed footer don't change.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The over-limit color is in the words</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The shipped price tag is --warning-outlined on every card, so the ring can't mark "over" here the way BuyTag's does. Instead, the limit line carries it: <i>over your $10 limit</i> in --warning, or <i>under your $10 limit</i> in faint ink. The link is accent in both states, and ⇄ uses the row's glyph so the two doors read as one tool.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Only when opened from a Shopping row</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Unchanged from the parent: the door needs a deck and a card to replace. Opened from the collection, search or a set page, the art column is as shipped. Prev/Next page through the Shopping list, and the door follows each card's own limit state.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Plateau, opened from its Shopping row · over the limit</span>
+        <div style="position:relative;width:1300px;height:760px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;">
+          <dc-import name="Shopping View" variant="default" theme="{{ theme }}" hint-size="1300px,760px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:238px;top:68px;"><dc-import name="Card Details" card="plateau" door="over" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Plateau · over</span>
+        <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;">
+          <dc-import name="Shopping View" phone="{{ true }}" variant="default" theme="{{ theme }}" hint-size="390px,1100px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;border-top:1px solid var(--border-strong);"><dc-import name="Card Details" phone="{{ true }}" card="plateau" door="over" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Karplusan Forest · under the limit</span>
+        <div style="position:relative;width:1300px;height:760px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;">
+          <dc-import name="Shopping View" variant="default" theme="{{ theme }}" hint-size="1300px,760px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:238px;top:68px;"><dc-import name="Card Details" card="karplusan" door="under" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Karplusan Forest · under</span>
+        <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;">
+          <dc-import name="Shopping View" phone="{{ true }}" variant="default" theme="{{ theme }}" hint-size="390px,1100px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;border-top:1px solid var(--border-strong);"><dc-import name="Card Details" phone="{{ true }}" card="karplusan" door="under" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="1c" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1c</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Card → sheet → card</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Does the original stay under the sheet? Yes.</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The sheet stacks over Plateau's card, the same way Find a deck's picker stacks over Card Details. The card stays mounted, dimmed, with its scroll kept. On desktop its 824px edges show around the 640px sheet. The sheet's × becomes a back pill, <i>← Plateau</i>, on desktop. On the phone the × stays, labelled <i>Back to Plateau</i>. That's the picker's pattern.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">What a stand-in stacks over: the sheet</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It's exactly the Shopping path: CardModal <i>stacked</i>, <i>← Cheaper stand-ins</i>, the Take footer and Prev/Next through the stand-ins. The only difference is one more layer underneath. The stacked card's footer replaces Buy and Find a deck with Take, so there's no fourth door. Three layers above the page is the cap: <b style="color:var(--fg-body);font-weight:600;">page · card · sheet · card</b>.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Phone: each layer starts 44px lower</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Shopping's path already steps by 44: the sheet at 52, then the card at 96. From a card it's the card at 52, the sheet at 96 and the stand-in at 140. Each layer's header stays visible above the one on top, as the tap-back target. A tap on the scrim works the same as Escape.</p></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0;max-width:1380px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:48px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:10px 16px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);"><span>step</span><span>on top</span><span>underneath</span><span>Escape lands on</span></div>
+      <div style="display:grid;grid-template-columns:48px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;line-height:1.5;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);">1</span><span>Plateau's card, door showing</span><span>Shopping list</span><span>Shopping, with focus on the Plateau row</span></div>
+      <div style="display:grid;grid-template-columns:48px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;line-height:1.5;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);">2</span><span>Cheaper stand-ins, <i>← Plateau</i></span><span>Plateau's card · Shopping</span><span>Plateau's card, focus on <i>See cheaper stand-ins</i></span></div>
+      <div style="display:grid;grid-template-columns:48px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;line-height:1.5;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--accent);">3</span><span>Sunbaked Canyon, <i>← Cheaper stand-ins</i></span><span>sheet · Plateau's card · Shopping</span><span>The sheet, scroll kept, focus on the Sunbaked Canyon name</span></div>
+      <div style="display:grid;grid-template-columns:48px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;line-height:1.5;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--success);">3 → Take</span><span>Take closes the card. The sheet shows the <i>taken</i> row with Undo swap</span><span>Plateau's card · Shopping</span><span>Plateau's card. The door is replaced by <i>swapped out · Sunbaked Canyon is in</i>. It says what happened and isn't a control</span></div>
+      <div style="display:grid;grid-template-columns:48px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:14px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;line-height:1.5;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;color:var(--success);">4</span><span>Plateau's card, swapped</span><span>Shopping</span><span>Shopping, focus on the take's receipt, where Undo swap lives, as in the parent's after-take state. Plateau's row is gone if that was its last copy</span></div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · step 2 · the sheet over Plateau's card</span>
+        <div style="position:relative;width:1300px;height:820px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;">
+          <dc-import name="Shopping View" variant="default" theme="{{ theme }}" hint-size="1300px,820px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:238px;top:68px;"><dc-import name="Card Details" card="plateau" door="over" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 60%,transparent);"></div>
+          <div style="position:absolute;left:330px;top:108px;"><dc-import name="Stand-ins Sheet" kind="lands" from="card" theme="{{ theme }}" hint-size="640px,620px"></dc-import></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · step 2 · sheet at 96</span>
+        <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;">
+          <dc-import name="Shopping View" phone="{{ true }}" variant="default" theme="{{ theme }}" hint-size="390px,1100px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;border-top:1px solid var(--border-strong);"><dc-import name="Card Details" phone="{{ true }}" card="plateau" door="over" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 60%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:96px;bottom:0;overflow:hidden;box-shadow:0 -12px 30px rgba(0,0,0,0.45);border-radius:14px 14px 0 0;"><dc-import name="Stand-ins Sheet" kind="lands" from="card" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,760px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · step 3 · Sunbaked Canyon over the sheet over Plateau</span>
+        <div style="position:relative;width:1300px;height:820px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;">
+          <dc-import name="Shopping View" variant="default" theme="{{ theme }}" hint-size="1300px,820px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:238px;top:68px;"><dc-import name="Card Details" card="plateau" door="over" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 60%,transparent);"></div>
+          <div style="position:absolute;left:330px;top:108px;"><dc-import name="Stand-ins Sheet" kind="lands" from="card" theme="{{ theme }}" hint-size="640px,620px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 60%,transparent);"></div>
+          <div style="position:absolute;left:238px;top:148px;"><dc-import name="Card Details" card="canyon" stacked="{{ true }}" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · step 3 · stand-in at 140</span>
+        <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;">
+          <dc-import name="Shopping View" phone="{{ true }}" variant="default" theme="{{ theme }}" hint-size="390px,1100px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;border-top:1px solid var(--border-strong);"><dc-import name="Card Details" phone="{{ true }}" card="plateau" door="over" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 60%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:96px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;"><dc-import name="Stand-ins Sheet" kind="lands" from="card" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,760px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 60%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:140px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;border-top:1px solid var(--border-strong);box-shadow:0 -12px 30px rgba(0,0,0,0.45);"><dc-import name="Card Details" phone="{{ true }}" card="canyon" stacked="{{ true }}" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · after Take, two Escapes: the sheet (taken row) is gone, and Plateau's card reads swapped</span>
+        <div style="position:relative;width:1300px;height:760px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;">
+          <dc-import name="Shopping View" variant="default" theme="{{ theme }}" hint-size="1300px,760px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:238px;top:68px;"><dc-import name="Card Details" card="plateau" door="swapped" theme="{{ theme }}" hint-size="824px,625px"></dc-import></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · Plateau, swapped</span>
+        <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;">
+          <dc-import name="Shopping View" phone="{{ true }}" variant="default" theme="{{ theme }}" hint-size="390px,1100px"></dc-import>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab,var(--bg) 72%,transparent);"></div>
+          <div style="position:absolute;left:0;right:0;top:52px;bottom:0;overflow:hidden;border-radius:14px 14px 0 0;border-top:1px solid var(--border-strong);"><dc-import name="Card Details" phone="{{ true }}" card="plateau" door="swapped" theme="{{ theme }}" hint-size="390px,900px"></dc-import></div>
+        </div>
+      </div>
+      <div style="max-width:360px;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Why no Undo on the card</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Undo swap already lives in two places: the sheet's taken row and the Shopping receipt. A third copy on a card that may no longer be in the deck would be one more thing to keep in sync. The success-ink line says what happened, and one more Escape lands on the receipt.</p></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? "amonkhet" }; }
+}
+</script>
+</body>
+</html>
