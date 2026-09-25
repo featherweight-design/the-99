@@ -102,6 +102,8 @@ describe("the leftover phrases", () => {
   it("splits at a clause mark inside a token, and leaves out a token that holds a match", () => {
     expect(match("big lizards (wide) and stomp,roar").phrases).toEqual(["big lizards", "wide", "stomp", "roar"]);
     expect(match("Dinosaurs-stomp with wings").phrases).toEqual(["wings"]);
+    // The mark sits inside a token here, so the stop word after it is trimmed from its own clause.
+    expect(match("big lizards,and stomp").phrases).toEqual(["big lizards", "stomp"]);
   });
 
   it("gives no phrase for words that are all stop words", () => {

@@ -182,6 +182,19 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
 const CLAUSE_BREAK = /[,.;:!?()]/;
 const CLAUSE_BREAK_ALL = /[,.;:!?()]/g;
 
+/** A clause's own text with the stop words at its two ends removed, spelling kept: "" when only
+ *  stop words are left. Done per clause, after the split, since a clause mark can sit mid-token. */
+function trimStopWords(part: string): string {
+  const tokens = [...part.matchAll(/[^\s]+/g)];
+  const isStop = (raw: string) => phraseWords(raw).every((w) => STOP_WORDS.has(w));
+  let a = 0;
+  let b = tokens.length - 1;
+  while (a <= b && isStop(tokens[a][0])) a++;
+  while (b >= a && isStop(tokens[b][0])) b--;
+  if (a > b) return "";
+  return part.slice(tokens[a].index, tokens[b].index + tokens[b][0].length).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+}
+
 function leftoverPhrases(
   text: string,
   rest: string,
@@ -219,9 +232,8 @@ function leftoverPhrases(
     const last = words[r[b]];
     const span = text.slice(first.at, last.at + last.raw.length);
     for (const part of span.split(CLAUSE_BREAK_ALL)) {
-      const phrase = part.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
-      // A part left as stop words alone once split is no phrase either.
-      if (phrase.length > 0 && phraseWords(phrase).some((w) => !STOP_WORDS.has(w)) && !out.includes(phrase)) out.push(phrase);
+      const phrase = trimStopWords(part);
+      if (phrase.length > 0 && !out.includes(phrase)) out.push(phrase);
     }
   }
   return out;
