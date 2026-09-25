@@ -6,7 +6,7 @@ import { hardDecks } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices, slotFor } from "../discovery/price";
 import type { Answers, CardFacts, Ranked, SearchResult } from "./rank";
-import { searchCommanders } from "./search";
+import { loadCardRow, searchCommanders } from "./search";
 
 /**
  * The results as the screen draws them (plan, PR 5a). SERVER-ONLY.
@@ -96,4 +96,24 @@ async function decorate(userId: string, slice: readonly Ranked[]): Promise<Resul
       supportTotal: c.supportTotal,
     };
   });
+}
+
+/** The *We read this as* bar's card chip: its name, whether the player owns it, and its price. */
+export type CardChip = {
+  oracleId: string;
+  name: string;
+  owned: boolean;
+  price: ReturnType<typeof slotFor>;
+};
+
+/**
+ * Read apart from the search, because the bar is drawn before the search finishes: the results
+ * stream in under it. Null for an id the catalog does not hold, which drops the chip.
+ */
+export async function loadCardChip(userId: string, oracleId: string): Promise<CardChip | null> {
+  // The search's own card read, so the chip names exactly the card the search applied: a card it
+  // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
+  const [row, prices] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId])]);
+  if (!row) return null;
+  return { oracleId, name: row.name, owned: row.owned, price: slotFor(prices.get(oracleId)) };
 }
