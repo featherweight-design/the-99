@@ -11,6 +11,7 @@
 //      head in every best-fit tile.
 //   4. No row overflows its own box or the page.
 //   5. Nothing moves (the STATES invariant): no running animation once the page settles.
+//   6. Find commanders, Change answers and Start over, each pressed.
 //
 // Needs a server with HELP_ME_CHOOSE_ENABLED=true. It makes no writes. Point it at local-dev.
 //
@@ -145,6 +146,34 @@ async function run() {
         report(`${at}: no separator starts or ends a line`, r.seps > 0 && r.dangling.length === 0, r.dangling.length ? r.dangling.slice(0, 3).join("; ") : `${r.seps} separators on ${r.states.length} lines`);
         report(`${at}: no row overflows`, r.overflow.length === 0, r.overflow.length ? JSON.stringify(r.overflow.slice(0, 3)) : "none");
         report(`${at}: nothing moves`, r.animations === 0, `${r.animations} running animation(s)`);
+      }
+      // 6. The three presses, as a player makes them (plan, PR 5 gates): Find commanders lands on
+      //    the results with the words resolved, Change answers returns the form holding them, and
+      //    Start over returns it blank. Pressed, never reached by address.
+      {
+        const at = `presses @ ${width}`;
+        const findButton = () => page.locator(`${PAGE} button:visible`, { hasText: "Find commanders" }).first();
+        // Idle first: typed before hydration, the box shows the words and the form's state holds
+        // none, so the press submits a blank form. That is the probe racing React, not the app.
+        await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
+        await page.locator(`${PAGE} textarea`).fill("dinosaurs that stomp");
+        await findButton().click();
+        await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 90_000 });
+        const landed = new URL(page.url());
+        report(`${at}: Find commanders lands on the results with the words resolved`,
+          landed.searchParams.get("v") === "results" && (landed.searchParams.get("t") ?? "").includes("dinosaurs"),
+          landed.search);
+        await page.locator(`${PAGE} a:visible`, { hasText: "Change answers" }).first().click();
+        await page.locator(`${PAGE} textarea`).waitFor({ timeout: 60_000 });
+        const kept = await page.locator(`${PAGE} textarea`).inputValue();
+        report(`${at}: Change answers returns the form holding the words`, kept === "dinosaurs that stomp", JSON.stringify(kept));
+        await findButton().click();
+        await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 90_000 });
+        await page.locator(`${PAGE} a:visible`, { hasText: "Start over" }).first().click();
+        await page.waitForURL((u) => u.pathname === "/decks/new/choose" && u.search === "", { timeout: 60_000 });
+        await page.locator(`${PAGE} textarea`).waitFor({ timeout: 60_000 });
+        const blank = await page.locator(`${PAGE} textarea`).inputValue();
+        report(`${at}: Start over returns the form blank`, blank === "", JSON.stringify(blank));
       }
       await context.close();
     }

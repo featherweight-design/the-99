@@ -295,6 +295,23 @@ and the screens instead, and every merge leaves staging whole:
 - Its gates: design-review, a probe at 390 and 1300 that presses *Find commanders*, *Change
   answers* and *Start over*, mutations, and feature-acceptance.
 
+**Route × viewport inventory (feature-acceptance).** Ticked against the running app, from the
+contact sheet (`docs/superpowers/inventories/help-me-choose.json`), never from a diff.
+
+| Surface | 390px | 1300px | Shares with | PR |
+|---|---|---|---|---|
+| `/decks/new/choose`: the form, blank (2a) | ☑ | ☑ | — (origin) | 5b-ii |
+| The form, pre-filled by *Change answers* (2b) | ☑ | ☑ | — | 5b-ii |
+| Results: a theme and words, best fits (4a) | ☑ | ☑ | — | 5b-ii |
+| Results: no theme or card, the owned order | ☑ | ☑ | — | 5b-ii |
+| Results: too narrow, a few fit | ☑ | ☑ | — | 5b-ii |
+| Results: none fit | ☑ | ☑ | — | 5b-ii |
+| Results: search failed, and a row failed with Retry | ☐ | ☐ | — | 5b-ii (probe and component tests; no URL reaches it) |
+| The create picker's door (`/decks/new`) | ☐ | ☐ | — | 6 |
+| Discover's door (`/discover`, carrying `c` and `m`) | ☐ | ☐ | — | 6 |
+| *Look deeper* panel | ☐ | ☐ | — | 6 |
+| The hand-off: *Built from your answers* on `/decks/new` | ☐ | ☐ | — | 6 |
+
 **PR 6: Look deeper, the doors and the hand-off.**
 - **An early Stop is never charged (orchestrator, 2026-09-25; the follow-up from PR 4's round 10).**
   A Stop that reaches the database before its press has even taken the ask lock finds no read,
