@@ -1554,7 +1554,7 @@ export function ChangeCommanderFigureBody() {
 export function HelpMeChooseFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <ul className="m-0 flex list-none flex-col p-0">
+      <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
         {CHOOSE.rows.map(({ row, trial }) => (
           <ChooseRow
             key={row.oracleId}

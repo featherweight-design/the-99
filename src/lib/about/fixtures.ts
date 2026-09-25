@@ -1760,7 +1760,6 @@ export const CHANGE_COMMANDER: {
  *
  * Shares are fractions, as `rankCommanders` returns them; `figures()` turns them into the drawn
  * percentages, so the lit figure follows the shipped rule rather than being written down here.
- * Pantlaza's buy price is not in Design's fixture; $3.49 is a stand-in, a figure plausible for it.
  */
 export const CHOOSE = {
   params: {
@@ -1780,7 +1779,7 @@ export const CHOOSE = {
         colorIdentity: ["R", "G", "W"],
         imageUri: null,
         artCropUri: null,
-        mark: { kind: "buy", price: { kind: "priced", cents: 349 } },
+        mark: { kind: "buy", price: { kind: "priced", cents: 110 } },
         themeFits: [{ slug: "dinosaurs", share: 0.74 }],
         cardFit: 0.41,
         ownedSupport: 0,
