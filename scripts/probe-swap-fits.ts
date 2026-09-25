@@ -67,6 +67,7 @@ async function signIn(page: Page): Promise<string> {
   await page.waitForFunction(() => (window as unknown as { Clerk?: { loaded: boolean } }).Clerk?.loaded, null, { timeout: 30_000 });
   const failure = await page.evaluate(async ([email, password]) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Clerk's browser global is untyped here, as in every .mjs probe
       const clerk = (window as unknown as { Clerk: any }).Clerk;
       const signIn = clerk.client.signIn;
       let attempt = email.includes("+clerk_test")

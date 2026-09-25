@@ -513,6 +513,12 @@ export function CardDetailProvider({
     [load],
   );
 
+  // Fits your decks (swap tools PR 5b): the card the picker is open for, stacked over that card. The
+  // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
+  // which leaves them absent while the swap tools are off (`fitsGate`), so no door is drawn then.
+  const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
+  const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks ? () => setFitsFor(c) : null);
+
   // Bumping `latest` is what abandons an in-flight fetch: without it, a card
   // requested before the close lands afterwards and re-opens the modal.
   // `failed` is cleared too, or the live region keeps announcing a failure the
@@ -529,7 +535,7 @@ export function CardDetailProvider({
     setFailed(false);
     setDoor(false);
     setFitsFor(null);
-  }, [show]);
+  }, [show, setFitsFor]);
 
   // The card a sheet opened OVER (the door's stand-ins sheet): lifted out of the live slot while the
   // sheet is up, so a card opened from the sheet stacks over both instead of replacing it, and put
@@ -577,12 +583,6 @@ export function CardDetailProvider({
   }, []);
 
   const [doorRender, setDoorRender] = useState<CardDoor | null>(null);
-
-  // Fits your decks (swap tools PR 5b): the card the picker is open for, stacked over that card. The
-  // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
-  // which leaves them absent while the swap tools are off (`fitsGate`), so no door is drawn then.
-  const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
-  const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks ? () => setFitsFor(c) : null);
   const registerDoor = useCallback((render: CardDoor) => {
     setDoorRender(() => render);
     return () => setDoorRender((current: CardDoor | null) => (current === render ? null : current));
