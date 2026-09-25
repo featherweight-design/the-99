@@ -250,6 +250,34 @@ async function main() {
     report("write", live.c !== fixture.lead, `commander ${live.c === fixture.lead ? "unchanged" : "moved"}`);
     const [v] = await sql`select commander_oracle_id as c from deck_versions where deck_id = ${fixture.deckId}`;
     report("write is a draft change", v.c === fixture.lead, "the version still holds the old commander");
+
+    // PR 4: the pending banner names the swap on its own line, and focus lands there.
+    const line = onPage(page, '[data-testid="banner-commander-line"]').filter({ visible: true });
+    await line.first().waitFor({ state: "visible", timeout: 30_000 });
+    report("banner line", (await line.count()) === 1, (await line.first().textContent()) ?? "");
+    report("focus lands on the banner line", await line.first().evaluate((el) => el === document.activeElement), "document.activeElement");
+
+    // The review page draws the Commander section first, at both widths.
+    for (const width of WIDTHS) {
+      await page.setViewportSize(width.viewport);
+      await page.goto(`${BASE}/decks/${fixture.deckId}/changes`, { waitUntil: "domcontentloaded" });
+      const section = onPage(page, '[data-testid="review-commander"]');
+      await section.waitFor({ state: "visible", timeout: 30_000 });
+      const first = await section.evaluate((el) => {
+        // Above the columns (`#review`), which the strip and the chips also sit above: a section
+        // mounted anywhere below the lede but inside the columns would fail this.
+        const columns = document.querySelector("main #review");
+        return columns !== null && el.getBoundingClientRect().bottom <= columns.getBoundingClientRect().top;
+      });
+      report(`review section first @${width.label}`, first, "above the columns");
+      report(`review rows @${width.label}`, (await section.locator("> div > div").count()) === 2, "was and now");
+    }
+
+    // Discard names the old commander back, then puts it back.
+    await page.goto(`${BASE}/decks/${fixture.deckId}`, { waitUntil: "domcontentloaded" });
+    await onPage(page, "button").filter({ hasText: /^Discard/ }).filter({ visible: true }).first().click();
+    const why = onPage(page, "p").filter({ hasText: "leads it again." }).filter({ visible: true });
+    report("discard names the old commander", (await why.count()) === 1, (await why.first().textContent().catch(() => "")) ?? "");
   } finally {
     // Each step on its own, so one failing cannot skip the next.
     if (fixtureDeckId) await sql`delete from decks where id = ${fixtureDeckId}`.catch((e) => { failures += 1; console.error(e); });
