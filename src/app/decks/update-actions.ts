@@ -14,6 +14,7 @@ import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../l
 import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
+import { pruneOrphanLocks } from "../../lib/decks/locks";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
@@ -347,6 +348,7 @@ export async function updateDeckFromList(
         ),
       );
       await pruneOrphanProxies(tx, input.deckId);
+      await pruneOrphanLocks(tx, input.deckId);
     }
 
     for (let i = 0; i < plan.in.length; i += INSERT_BATCH) {

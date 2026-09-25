@@ -58,11 +58,14 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
+import { pruneOrphanLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
   PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
 } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -620,6 +623,62 @@ export async function setCardProxied(
   return { ok: true };
 }
 
+/**
+ * Lock or unlock one card in one deck (Locked, sub-project 5.1): "never cut this". The tools that
+ * cut cards read it as a filter; nothing here changes what the deck holds.
+ *
+ * `setCardProxied`'s wire, for the same reasons. `on` and both ids are wire input, checked rather
+ * than trusted. The deck row is locked `for update` first, so this write and a concurrent
+ * removal's `pruneOrphanLocks` serialise and a lock cannot land on a card that has just left.
+ * MEMBERSHIP IS `deck_cards` ALONE: a commander is never cut, so it is never offered a lock.
+ *
+ * Locking UPSERTS with `removed_at = null`, so a stray dormant row can never swallow a lock.
+ * Unlocking deletes the row, live or dormant.
+ *
+ * Refused outright with the switch off (D3): a lock row must not be writable where nothing reads it.
+ */
+export async function setCardLocked(
+  deckId: string,
+  oracleId: string,
+  on: boolean,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  if (!neverCutEnabled()) return { ok: false, message: lockedCardsCopy.mode.refused };
+  if (typeof on !== "boolean") return { ok: false, message: lockedCardsCopy.mode.refused };
+  if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: lockedCardsCopy.mode.refused };
+  await requireDeck(deckId, userId);
+
+  const ok = await db.transaction(async (tx) => {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    const { rows: [member] } = await tx.execute<{ held: boolean }>(sql`
+      select exists (
+        select 1 from deck_cards dc where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
+      ) as held
+    `);
+    if (!member?.held) return false;
+    if (on) {
+      await tx.execute(sql`
+        insert into deck_locks (deck_id, oracle_id) values (${deckId}, ${oracleId})
+        on conflict (deck_id, oracle_id) do update set removed_at = null
+      `);
+    } else {
+      await tx.execute(sql`delete from deck_locks where deck_id = ${deckId} and oracle_id = ${oracleId}`);
+    }
+    // NO `touchDeck` and no dirty analysis (D5, F12): a lock edits no list.
+    return true;
+  });
+
+  if (!ok) return { ok: false, message: lockedCardsCopy.mode.refused };
+  // DEFERRED INTO `after()` (D7): the mode invites a run of toggles, and a revalidation during the
+  // action re-renders the calling page into every reply. This deck's surfaces, and every deck's
+  // review page by pattern: another deck must stop offering Pull it from this one (L2).
+  after(() => {
+    for (const path of deckSurfaces(deckId)) revalidatePath(path);
+    revalidatePath("/decks/[id]/changes", "page");
+  });
+  return { ok: true };
+}
+
 export async function removeCardFromDeck(deckId: string, oracleId: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
@@ -652,6 +711,7 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
       await tx.delete(deckCards).where(where);
       // The slot is gone, so the deck's statement about it goes with it.
       await pruneOrphanProxies(tx, deckId);
+      await pruneOrphanLocks(tx, deckId);
     }
     // Inside the `if (!row)` guard's shadow deliberately: a removal that found
     // nothing wrote nothing, and a stamp for a write that did not happen is the
@@ -831,6 +891,7 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
       .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
     if (rows.length > 0) {
       await pruneOrphanProxies(tx, deckId);
+      await pruneOrphanLocks(tx, deckId);
       await touchDeck(tx, deckId);
     }
     return rows;
@@ -1225,7 +1286,10 @@ export async function undoFillPass(
         inArray(deckCards.oracleId, oracleIds),
       )).returning({ quantity: deckCards.quantity });
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
-      if (deleted.length > 0) await pruneOrphanProxies(tx, deckId);
+      if (deleted.length > 0) {
+        await pruneOrphanProxies(tx, deckId);
+        await pruneOrphanLocks(tx, deckId);
+      }
     }
 
     const [built] = await tx
@@ -2007,6 +2071,7 @@ export async function pullCardFromDeck(
       await tx.delete(deckCards)
         .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
       await pruneOrphanProxies(tx, sourceDeckId);
+      await pruneOrphanLocks(tx, sourceDeckId);
     }
     // The source deck's list really did change, so the column stays truthful.
     // Both stamps are `clock_timestamp()`, so the commit on the next line is

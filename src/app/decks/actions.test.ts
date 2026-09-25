@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The action module imports the db client, which throws at module init without a live URL.
 /** A drizzle `sql` template rendered to something a test can match on.
@@ -445,10 +445,11 @@ vi.mock("../../lib/decks/draft-state", () => ({
 
 import {
   commitDeckVersion, createDeck, deleteGame, discardDeckDraft, fillDeck, getVersionDiff, logGame,
-  pullCardFromDeck, restoreAutoCards, setCardProxied, chooseBulkFill,
+  pullCardFromDeck, restoreAutoCards, setCardProxied, setCardLocked, chooseBulkFill,
 } from "./actions";
 import { PROXY_READ_FAILED } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt,
@@ -1671,6 +1672,93 @@ describe("setCardProxied", () => {
   });
 });
 
+
+describe("setCardLocked", () => {
+  const was = process.env.NEVER_CUT_ENABLED;
+  beforeEach(() => {
+    stub.state.decks = [OWNED_DECK];
+    stub.state.revalidated.length = 0;
+    stub.state.afters.length = 0;
+    process.env.NEVER_CUT_ENABLED = "true";
+  });
+  afterEach(() => {
+    if (was === undefined) delete process.env.NEVER_CUT_ENABLED;
+    else process.env.NEVER_CUT_ENABLED = was;
+  });
+
+  it("refuses with the switch off, before touching the database (D3)", async () => {
+    delete process.env.NEVER_CUT_ENABLED;
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardLocked(DECK_ID, CARD_A, true);
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: false, message: lockedCardsCopy.mode.refused });
+    expect(stub.state.executeTexts.join(" ")).not.toContain("deck_locks");
+  });
+
+  it("refuses a card the deck does not hold", async () => {
+    const result = await setCardLocked(DECK_ID, CARD_A, true);
+    expect(result).toEqual({ ok: false, message: lockedCardsCopy.mode.refused });
+    expect(stub.state.executeTexts.join(" ")).not.toContain("insert into deck_locks");
+  });
+
+  it("asks deck_cards alone for membership: a commander is never offered a lock", async () => {
+    stub.state.executeRows = [{ held: true }];
+    await setCardLocked(DECK_ID, CARD_A, true);
+    stub.state.executeRows = null;
+    const check = stub.state.executeTexts.find((t) => t.includes("as held"))!;
+    expect(check).toContain("deck_cards");
+    expect(check).not.toContain("commander_oracle_id");
+  });
+
+  it("refuses a bad id or a non-boolean flag without touching the database", async () => {
+    expect(await setCardLocked(DECK_ID, "not-a-uuid", true)).toEqual({ ok: false, message: lockedCardsCopy.mode.refused });
+    expect(await setCardLocked(DECK_ID, CARD_A, "false" as unknown as boolean)).toEqual({ ok: false, message: lockedCardsCopy.mode.refused });
+    expect(stub.state.executeTexts.join(" ")).not.toContain("deck_locks");
+  });
+
+  it("takes the deck row's lock before it validates", async () => {
+    stub.state.executeRows = [{ held: true }];
+    await setCardLocked(DECK_ID, CARD_A, true);
+    stub.state.executeRows = null;
+    const texts = stub.state.executeTexts;
+    const lock = texts.findIndex((t) => t.includes("for update"));
+    const check = texts.findIndex((t) => t.includes("as held"));
+    expect(lock).toBeGreaterThanOrEqual(0);
+    expect(lock).toBeLessThan(check);
+  });
+
+  it("locks by an upsert that wakes a dormant row, so a stray one never swallows a lock", async () => {
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardLocked(DECK_ID, CARD_A, true);
+    const texts = stub.state.executeTexts.join(" ");
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: true });
+    expect(texts).toContain("insert into deck_locks");
+    expect(texts).toContain("do update set removed_at = null");
+    expect(texts).not.toContain("delete from deck_locks");
+  });
+
+  it("unlocks by deleting the row", async () => {
+    stub.state.executeRows = [{ held: true }];
+    const result = await setCardLocked(DECK_ID, CARD_A, false);
+    const texts = stub.state.executeTexts.join(" ");
+    stub.state.executeRows = null;
+    expect(result).toEqual({ ok: true });
+    expect(texts).toContain("delete from deck_locks");
+    expect(texts).not.toContain("insert into deck_locks");
+  });
+
+  it("revalidates only in after(), and never stamps the deck as edited (D5, D7)", async () => {
+    stub.state.executeRows = [{ held: true }];
+    await setCardLocked(DECK_ID, CARD_A, true);
+    stub.state.executeRows = null;
+    expect(stub.state.revalidated).toEqual([]);
+    expect(stub.state.updateCalls.map((c) => c.table)).not.toContain("decks");
+    for (const fn of stub.state.afters) fn();
+    expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
+    expect(stub.state.revalidated).toContain("/decks/[id]/changes");
+  });
+});
 
 describe("getVersionDiff", () => {
   beforeEach(() => {
