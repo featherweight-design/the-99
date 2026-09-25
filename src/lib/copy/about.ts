@@ -159,7 +159,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'An import replaces your collection, so it can change what your decks can supply. The summary lists the cards your decks were billing, one row per card and the deck it was for. No deck is edited. A deck keeps every card it had; what changes is whether you own it.',
     keys: [
       'before and after, both printed, so the change is checkable rather than asserted.',
-      'a row is a card and the deck still billing it. Only a contested card gathers its decks under it, oldest claim first.',
+      'a row is a card and one deck. Only a contested card gathers its decks under it, oldest claim first.',
       'three sections, and each is a different answer: no longer to buy, still to buy, still short.',
       'and one choice: when two committed decks want the copy that arrived, the first to sleeve it keeps it unless you say otherwise.',
     ],
@@ -257,7 +257,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'plate',
     caption:
-      'Two commanders you could build today. We rank every commander you own and have not built yet by fit, and show you two of the top nine, changing the pair daily so Home is not the same every morning. Each card says how many of your cards fit its colors, and how many of those are already sleeved into a deck you have built.',
+      'Two commanders you could build today. We rank every commander you own and have not built yet by fit, and show you two of the top nine, changing the pair daily so Home is not the same every morning. Each card says how many of your cards fit its colors, and how many of those your built decks already hold every copy of.',
     keys: [
       "the top nine is a ranking, not a passing score. The ninth commander’s score moves as your collection grows; it is never a fixed number to beat.",
       'each card shows how many of your cards fit, then how many of those are already committed. The second figure is left out when it is zero.',
@@ -308,7 +308,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
       'the fit score is read against your whole collection, because you would own this commander if you bought it.',
-      'the line under each row names what this commander plays that none of your decks do, which is the reason to buy it.',
+      'the line under each row names what this commander plays that none of your decks do, which is the reason to buy it. When your decks already play all of it, the line names its top play styles instead.',
     ],
     since: 1,
   },
@@ -438,7 +438,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       // the two used to share one sentence as though they were one axis. The
       // page caps an entry at four keys, so this is the split that fits: by
       // WHAT IS BEING ANSWERED, which is the distinction that was missing.
-      'one mark, and only when there is something to say: `1 in a draft`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing.',
+      'a mark only when there is something to say: `1 in a draft`, `none free`, `short N`, which also turns the row’s edge red, `$` for a card you would have to buy, or `P` for one you are printing. On Shopping, a card another deck holds carries its buy tag beside the mark.',
       'a bright accent edge answers a different question: you have changed this row and not committed it yet, and the edge goes when you do.',
     ],
     since: 1,
@@ -568,7 +568,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // r2's "the deck whose commander suits the card best comes first" is stale: the shipped order
       // (`shapeFits`) is a combo, then a theme, then the commander's synergy, then the name.
-      "A card can belong in a deck you haven't thought of. Find a deck for it, in the details of any Commander-legal card, lists the decks that could take it and says why each fits. Add puts it in the chosen deck's draft.",
+      "A card can belong in a deck you haven't thought of. Find a deck for it, in the details of any Commander-legal card, lists the decks that could take it and says why a deck fits when it can. Add puts it in the chosen deck's draft.",
     keys: [
       "Only decks whose colors allow the card, and that don't already run it, are offered.",
       "Decks where it completes a combo come first, then decks whose theme it joins, the most cards first, then the rest by how much their commander's decks favor it.",
@@ -588,7 +588,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: "opens a deck’s Versions tab",
     width: 'plate',
     caption:
-      'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. Cards you add count against your collection for this deck straight away, but no other deck feels them until you commit.',
+      'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit.',
     keys: [
       'the changes are reviewable before they land: every add and cut beside the committed list, with nothing counted twice.',
       'a version shows how many games it held, and each game in the log names its version, so you can tell whether a change helped.',
@@ -607,7 +607,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // names to `Dockside ...` and `R. —`.
     width: 'plate',
     caption:
-      'Every card a deck wants and you cannot supply, priced, on that deck’s Shopping filter; each deck’s tile and Home add up the copies and the cost across your whole library. A card you own can be on this list: if another deck sleeved your only copy first, this one has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
+      'Every card a deck wants and you cannot supply, priced, on that deck’s Shopping filter; the deck’s tile carries its count and cost, and Home adds up the cost across your whole library. A card you own can be on this list: if another deck sleeved your only copy first, this one has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
     keys: [],
     since: 1,
   },
@@ -623,7 +623,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       "Some cards Shopping asks you to buy cost more than the job they do. A limit per card marks those rows, and a marked row's ⇄ opens cheaper cards, or free copies you own, that do the same job. Cards of the same type come first, then other types. A land's stand-ins say what they make and whether they come in untapped, best mana first. Nothing is picked for you, and taking one is an ordinary draft change you can undo.",
     keys: [
       'The line under the price strip is this deck\'s limit per card. Until you set your own, it says it is the default.',
-      "A row over the limit is marked, and its ⇄ opens the stand-ins. Any card on Shopping links to its stand-ins from its details too.",
+      "A row over the limit is marked, and its ⇄ opens the stand-ins. Any card on Shopping that isn't locked links to its stand-ins from its details too.",
       // Audit R2-A4-1: "each says what it gives up" is about every row, so it moves here. The order
       // within a group is the shipped lead's: shared work, then this commander's favor, staples last.
       "A spell's stand-ins do its job at its mana value or less. In each group, the cards that share more of its work lead, then the ones this commander's decks favor, and staples come last. Each says what it gives up, and a few show until you ask for all.",
@@ -680,7 +680,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the commander picker',
     width: 'plate',
     caption:
-      'The picker starts every deck with a commander you already own. It lists them all with the size of the pool each one opens up, meaning how many of your cards are legal in its colors, and a name is the only other thing a deck needs. Commanders that partner get a second slot, filtered to the ones they can legally pair with. Arriving from a commander’s own page skips the list: the commander is already chosen, any synergy picks you made there travel with you, and the page asks for the name.',
+      'The picker lists every commander you own, with the size of the pool each one opens up, meaning how many of your cards are legal in its colors, and a name is the only other thing a deck needs. Commanders that partner get a second slot, filtered to the ones they can legally pair with. Arriving from a commander’s own page skips the list: the commander is already chosen, any synergy picks you made there travel with you, and the page asks for the name.',
     keys: [
       'only commanders you own and could legally build are listed. The picker is your collection, not a catalog.',
       'the figure beside each one is how many of your cards are legal in its colors, which is the Pool part of a fit score seen from the other side.',
@@ -838,7 +838,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'inset',
     caption:
-      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many cards your committed decks ask for more times than you own copies; and what it would cost to buy everything your decks are short. The middle figure keeps its color at zero, because it is the row that would be red if it were not zero.',
+      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many of your cards your committed decks ask for more times than you own copies; and what it would cost to buy everything your decks are short. The middle figure keeps its color at zero, because it is the row that would be red if it were not zero.',
     keys: [],
     since: 1,
   },
