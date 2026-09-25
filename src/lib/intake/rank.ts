@@ -56,7 +56,7 @@ export type Candidate = ThemeRow & BracketFacts & {
   colorIdentity: string[];
   owned: boolean;
   priceCents: number | null;
-  /** How often this commander's decks run the build-around card; null when they never do. */
+  /** The share (0 to 1) of this commander's decks that run the build-around card; null when none. */
   cardInclusion: number | null;
   /** Two-card combos this commander completes with the build-around card, and how many loop turns. */
   combosWithCard: { combos: number; loops: number };

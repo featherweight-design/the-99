@@ -36,6 +36,7 @@
     "probe:commander-availability": "tsx scripts/probe-commander-availability.mjs",
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",
     "probe:declaration": "tsx scripts/probe-declaration.ts",
+    "probe:help-me-choose-search": "tsx scripts/probe-help-me-choose-search.ts",
     "probe:help-me-choose-plumbing": "tsx scripts/probe-help-me-choose-plumbing.ts",
     "probe:profile-store": "tsx scripts/probe-profile-store.ts",
     "probe:notices": "tsx scripts/probe-notices.ts",
