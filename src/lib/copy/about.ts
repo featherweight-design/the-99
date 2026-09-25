@@ -425,13 +425,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'NEVER_CUT_ENABLED',
     caption:
-      "Lock a card and no tool will offer to cut it. Suggested changes won't propose it, it is never offered cheaper stand-ins, and clearing the fill's auto cards leaves it in place. The ✕ still removes it: a lock binds the app's suggestions, not you. Lock cards, in the deck's toolbar, turns every row's ✕ into a lock until you press Done.",
+      "Lock a card and no tool will offer to cut it. Suggested changes won't propose it, it gets no cheaper stand-ins, and clearing the fill's auto cards leaves it in place. The ✕ still removes it: a lock binds the app's suggestions, not you. Lock cards, in the deck's toolbar, turns every row's ✕ into a lock until you press Done.",
     keys: [
-      // Audit L2: the lock sits beside the ✕ on a row, not after the name, and two things about
-      // the row do change.
-      "A locked card shows a closed lock beside its ✕ in the list, and on its tile's caption. A locked row offers no stand-ins, and Pull it shows locked instead.",
+      // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
+      // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
+      "A locked card shows a closed lock beside its ✕ in the list, and on its tile's caption.",
       'Lock cards turns each ✕ into a lock until you press Done. It is how you lock a card from a phone or a keyboard.',
-      'Clear all auto skips locked cards and says how many stayed. Pull it never takes a copy from a deck where the card is locked.',
+      'Clear all auto skips locked cards and says how many stayed. Pull it never takes a copy from a deck where the card is locked, and says locked instead.',
       // Audit L1: a discard brings a removed locked card back locked; a commit is what ends it.
       'Remove a locked card and bring it back with Undo, Put back or a discard, and it is still locked. Once a version is committed without it, the lock is gone.',
     ],
