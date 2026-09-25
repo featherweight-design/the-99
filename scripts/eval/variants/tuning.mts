@@ -28,6 +28,16 @@ export type TuningVariant = {
 /** How many staples the trimmed context keeps. The prompt calls the list "context, not a menu". */
 export const TRIM_STAPLES = 15;
 
+/**
+ * EVERY VARIANT HERE TRANSFORMS THE APP'S OWN PROMPT (`tuning-app.mts` applies them to
+ * `buildPrompt`'s output), and since tuning v2 (#948) that prompt already carries round 4's
+ * strategy and rationale rules. Rounds 1 to 4 of the report were all measured on the v1 prompt
+ * before it, so none of these variants reproduces a round's messages any more: `base` is v2,
+ * `trim` and the `cite-*` variants add their rules to v2's, and `strategy`, `strategy-terse` and
+ * `strategy-terse-b` append v2's own rules a second time. Round 4's messages are pinned by
+ * `scripts/fixtures/tuning-v2-round4.json`; reproducing any earlier round means running the
+ * harness at the commit before #948. A variant measured from here on is measured against v2.
+ */
 export const TUNING_VARIANTS: Record<string, TuningVariant> = {
   base: { id: "base", reason: "The shipped prompt, unchanged." },
   trim: {
