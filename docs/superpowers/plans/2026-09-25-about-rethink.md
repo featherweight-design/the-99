@@ -723,7 +723,7 @@ Record the counts in the probe's header.
 - `AGENTS.md`: the `probe:verdict-block` note about "Since #658 `proxy.ts` redirects…" gets "or, with `ABOUT_SHEET_ENABLED`, shows the sheet; probes clear both through `scripts/lib/about-clear.mjs`". Also a short `probe:about` entry.
 - `about.version.json`: re-pin the hash, version 9.
 
-**Q2 has no obvious target. No entry covers `/about`.** Checked: no `aboutEntries` item has `route: '/about'`. The one account-menu entry is `themes` (`about.ts:724-736`), which is about themes. This plan's reading: the "entry that covers the About page" is the page's own lede, `aboutCopy.pageIntro` (`about.ts:55-56`). Add one sentence to it: "When something new lands, a short note tells you once, and this page opens on it." It must pass `/copy-review`. **Hugh confirms or picks another target before Task 5.3 runs** (see "Questions for Hugh").
+**Q2, ruled by Hugh (2026-09-25):** no entry covers `/about`, so the edit goes into the page's own lede, `aboutCopy.pageIntro` (`about.ts:55-56`). Append this sentence, which is approved as written: "When something new lands, a short note tells you once, and this page opens on it."
 
 - [ ] Steps: edit, re-pin, send the copy to `/copy-review` with pictures through the orchestrator, run the full gate, commit, and open PR 5 (pre-open pass).
 
@@ -752,5 +752,5 @@ Record the counts in the probe's header.
 
 ## Questions for Hugh (through the-99-d9)
 
-1. **Q2's target.** No About entry covers `/about`. Should the edit go into the page's own lede (`pageIntro`), which is this plan's reading, or somewhere else?
+1. **Q2's target:** ruled 2026-09-25. Hugh chose `pageIntro` (Task 5.3).
 2. **Nothing else is open.** E1–E9 are all resolved in the tasks above: E1 in 1.1/1.2, E2 in 3.2, E3 by the version staying at 9 here, E4 in 4.1, E5 in 5.1, E6 in 5.3, E7 by reusing `anim-sheet-in`, E8 in the Global Constraints and 2.2, and E9 by the live search and jump in PR 3 and PR 4, which supersede `STATES-about.md:13`.
