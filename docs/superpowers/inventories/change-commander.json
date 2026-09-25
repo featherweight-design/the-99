@@ -1,6 +1,6 @@
 {
-  "feature": "Change commander (sub-project 7), PR 3: the door on the commander's art and the sheet",
-  "note": "Needs a server with CHANGE_COMMANDER_ENABLED=true. CC_DECK is a single-commander deck the signed-in account owns, with a commander crop (on local-dev, any of the account's decks).",
+  "feature": "Change commander (sub-project 7): the door, the sheet (PR 3), and the pending banner, the review page and Discard after a swap (PR 4)",
+  "note": "Needs a server with CHANGE_COMMANDER_ENABLED=true. CC_DECK is a single-commander deck the signed-in account owns, with a commander crop (on local-dev, any of the account's decks). CC_SWAPPED is a deck of the same account whose draft has changed its commander and nothing else (PR 4's rows).",
   "rows": [
     {
       "id": "door",
@@ -40,6 +40,31 @@
         { "clickRole": "button", "name": "Change commander", "settle": 600 },
         { "wait": "[data-testid='change-commander-row']", "settle": 600 },
         { "click": "[data-testid='change-commander-row'] [data-choose]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "banner",
+      "label": "/decks/[id] pending banner: the commander line, first in the names, after a swap",
+      "view": "src/components/decks/change-commander-banner.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_SWAPPED}", "wait": "[data-testid='banner-commander-line']:visible", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "review",
+      "label": "/decks/[id]/changes: the Commander section above the strip",
+      "view": "src/components/decks/change-commander-review.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_SWAPPED}/changes", "wait": "[data-testid='review-commander']", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "discard",
+      "label": "/decks/[id] Discard: the confirm names the old commander back",
+      "view": "src/components/decks/discard-draft.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_SWAPPED}", "wait": "[data-testid='banner-commander-line']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "^Discard", "settle": 800 }
       ]
     }
   ]
