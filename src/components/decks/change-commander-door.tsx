@@ -14,27 +14,32 @@ import { PENDING_OPACITY } from "../commanders/pending";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
+import { createPortal } from "react-dom";
+import { SwapGlyph } from "./change-commander-glyph";
 import { useChangeCommander } from "./change-commander-context";
+import { ChangeCommanderSheet } from "./change-commander-sheet";
 
 const PLATE =
   "pointer-events-none absolute rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]";
 
-/** The swap mark: two arrows, inline so it inks with `currentColor` in every theme. */
-export function SwapGlyph({ size = 15 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" fill="none">
-      <path
-        d="M2 5h10.5M9.5 2l3 3-3 3M14 11H3.5M6.5 8l-3 3 3 3"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+type Width = "desktop" | "mobile";
+
+/** The sheet, from the door that opened it. Portalled to the body: the other spine is
+ *  `display: none`, and a fixed sheet inside it would never draw. */
+function Sheet({ width }: { width: Width }) {
+  const door = useChangeCommander();
+  if (!door || door.openFrom !== width) return null;
+  return createPortal(
+    <ChangeCommanderSheet
+      deckId={door.deckId}
+      deckName={door.deckName}
+      pair={door.pair}
+      hasVersion={door.hasVersion}
+      onClose={door.closeSheet}
+    />,
+    document.body,
   );
 }
-
-type Width = "desktop" | "mobile";
 
 export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; width: Width }) {
   const door = useChangeCommander();
@@ -82,13 +87,14 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
         <span aria-hidden="true" className="relative" style={{ width: 1, height: 26, background: "var(--border-strong)" }} />
         <button
           type="button"
-          onClick={door.openSheet}
+          onClick={() => door.openSheet("desktop")}
           className="relative flex h-[44px] items-center bg-transparent p-0 font-mono whitespace-nowrap text-[color:var(--fg)]"
           style={{ gap: 6, padding: "0 9px", fontSize: 11, cursor: "pointer" }}
         >
           <SwapGlyph />
           <span style={{ lineHeight: 1 }}>{label}</span>
         </button>
+        <Sheet width="desktop" />
       </div>
     );
   }
@@ -115,7 +121,7 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
       <button
         type="button"
         aria-label={label}
-        onClick={door.openSheet}
+        onClick={() => door.openSheet("mobile")}
         className="absolute flex items-center justify-center bg-transparent p-0 text-[color:var(--fg)]"
         style={{ left: 0, width: 44, top: half - 44, height: 44, paddingTop: overhang, cursor: "pointer" }}
       >
@@ -131,6 +137,7 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
       >
         {detailsGlyph}
       </button>
+      <Sheet width="mobile" />
     </div>
   );
 }

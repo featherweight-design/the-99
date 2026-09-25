@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ModalChrome } from "./receipt-modal";
 import { BuyTag } from "./buy-tag";
-import { SwapGlyph } from "./change-commander-door";
+import { SwapGlyph } from "./change-commander-glyph";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CostPips } from "../ui/cost-pips";
 import { GhostButton, PrimaryButton } from "../ui/button";

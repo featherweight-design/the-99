@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { FullCardTrigger } from "../commanders/full-card-trigger";
+import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
@@ -264,11 +264,7 @@ export function SpineMobile({
         />
         {/* §G — with no crop there is no printing to open. */}
         {commander.artCropUri ? (
-          <FullCardTrigger
-            oracleId={commander.oracleId}
-            placement="deck-mobile"
-            bandTapTarget={false}
-          />
+          <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" />
         ) : null}
 
         <div

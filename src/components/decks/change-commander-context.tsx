@@ -1,12 +1,28 @@
 "use client";
-// Change commander's client state: whether the sheet is open, and for which deck. Mounted around
-// the deck page's shell ONLY with `CHANGE_COMMANDER_ENABLED` on, the way `SwapToolsProvider` is, so
-// with the switch off `useChangeCommander()` is null and every consumer draws what it drew before.
+// Change commander's client state: which door opened the sheet, and the deck it is for. Mounted
+// around the deck page's shell ONLY with `CHANGE_COMMANDER_ENABLED` on, the way
+// `SwapToolsProvider` is, so with the switch off `useChangeCommander()` is null and every consumer
+// draws what it drew before.
+//
+// The provider does NOT render the sheet. The card modal a name opens needs `CardDetailProvider`,
+// which lives inside the shell this wraps, so the door that was pressed renders it (through a
+// portal, since one of the two spines is always `display: none`).
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { ChangeCommanderSheet } from "./change-commander-sheet";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
-type Door = { pair: boolean; openSheet: () => void };
+export type DoorWidth = "desktop" | "mobile";
+
+type Door = {
+  deckId: string;
+  deckName: string;
+  pair: boolean;
+  /** False for a brew: the confirm then says only another change undoes it. */
+  hasVersion: boolean;
+  /** The door whose sheet is open, or null. */
+  openFrom: DoorWidth | null;
+  openSheet: (from: DoorWidth) => void;
+  closeSheet: () => void;
+};
 
 const Context = createContext<Door | null>(null);
 
@@ -20,25 +36,14 @@ export function ChangeCommanderProvider({
   deckId: string;
   deckName: string;
   pair: boolean;
-  /** False for a brew: the confirm's "where it lands" line then says only another change undoes it. */
   hasVersion: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-  const openSheet = useCallback(() => setOpen(true), []);
-  const value = useMemo(() => ({ pair, openSheet }), [pair, openSheet]);
-  return (
-    <Context.Provider value={value}>
-      {children}
-      {open ? (
-        <ChangeCommanderSheet
-          deckId={deckId}
-          deckName={deckName}
-          pair={pair}
-          hasVersion={hasVersion}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
-    </Context.Provider>
-  );
+  const [openFrom, setOpenFrom] = useState<DoorWidth | null>(null);
+  const value = useMemo(() => ({
+    deckId, deckName, pair, hasVersion, openFrom,
+    openSheet: (from: DoorWidth) => setOpenFrom(from),
+    closeSheet: () => setOpenFrom(null),
+  }), [deckId, deckName, pair, hasVersion, openFrom]);
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }

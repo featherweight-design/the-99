@@ -10,7 +10,7 @@ import { useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { IdentityPips } from "../commanders/commander-art";
-import { FullCardTrigger } from "../commanders/full-card-trigger";
+import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
@@ -228,11 +228,7 @@ export function SpineDesktop({
       {/* §G — with no crop there is no printing to open, so the pill is absent.
           It is absolutely positioned, so its absence shifts nothing. */}
       {commander.artCropUri ? (
-        <FullCardTrigger
-          oracleId={commander.oracleId}
-          placement="deck-desktop"
-          bandTapTarget={false}
-        />
+        <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" />
       ) : null}
 
       <div
