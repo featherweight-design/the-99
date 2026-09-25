@@ -45,13 +45,13 @@ describe("the stand-ins sheet's model", () => {
     expect(m.groups[0].rows[1].facts).toEqual(["removal", copy.mv(2)]);
     // An other-types row names its type first: its heading cannot.
     expect(m.groups[1].rows[0].facts).toEqual(["sorcery", "removal", copy.mv(2)]);
-    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Gishath")].join(" "));
+    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
     expect(m.foot).toBe(true);
   });
 
   it("drops the types sentence when only one group is drawn", () => {
     const m = sheetModel(read({ groups: [other([standIn("Chaos Warp", { synergy: 0.3 })])] }));
-    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Gishath")].join(" "));
+    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
   });
 
   it("says staples come last when one is listed, and keeps a staple's clause on its row", () => {
@@ -59,14 +59,14 @@ describe("the stand-ins sheet's model", () => {
       groups: [same([standIn("Path", { synergy: 0.1 }), standIn("Sol Ring", { isUniversal: true, free: true })])],
     }));
     expect(m.groups[0].rows[1].facts).toEqual(["removal", copy.mv(2), copy.stapleFact]);
-    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Gishath"), copy.leadSpellsStaples].join(" "));
+    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Anguished Unmaking", "Gishath"), copy.leadSpellsStaples].join(" "));
   });
 
   it("names a pair as A + B by short name, and drops the commander from the order when nothing is listed (F14)", () => {
     const m = sheetModel(read({ commanders: ["Tymna the Weaver", "Thrasios, Triton Hero"], groups: [same([standIn("Chaos Warp", { synergy: 0.2 })])] }));
-    expect(m.lead).toContain(copy.leadSpellsOrder("Tymna the Weaver + Thrasios"));
+    expect(m.lead).toContain(copy.leadSpellsOrder("Anguished Unmaking", "Tymna the Weaver + Thrasios"));
     const unlisted = sheetModel(read({ groups: [same([standIn("Chaos Warp")])] }));
-    expect(unlisted.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrderUnlisted].join(" "));
+    expect(unlisted.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "));
   });
 
   it("gives a land its colors, drawbacks and what each stand-in gives up (H3)", () => {

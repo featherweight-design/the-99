@@ -188,7 +188,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
         copy.leadSpellsJob(rolesText(job.roles), job.mv),
         ...(sameGroup && read.groups.length > 1 ? [copy.leadSpellsTypes(PLURAL[sameGroup.type])] : []),
         // F14: nothing listed for this commander or pair, so the order clause names no commander.
-        everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(commander) : copy.leadSpellsOrderUnlisted,
+        everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(original.name, commander) : copy.leadSpellsOrderUnlisted(original.name),
         ...(everyRow.some((s) => s.isUniversal) ? [copy.leadSpellsStaples] : []),
       ].join(" ");
 

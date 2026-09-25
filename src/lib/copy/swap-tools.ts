@@ -82,10 +82,10 @@ export const swapToolsCopy = {
     leadSpellsJob: (roles: string, mv: number) => `Every card here is ${roles} at mana value ${mv} or less.`,
     /** Drawn only when both groups are. */
     leadSpellsTypes: (plural: string) => `${plural[0].toUpperCase()}${plural.slice(1)} come first, then other types.`,
-    leadSpellsOrder: (commander: string) =>
-      `Each group runs from the cards that share the most of its work, then the ones ${commander} decks favor most over other decks of their colors.`,
+    leadSpellsOrder: (card: string, commander: string) =>
+      `In each group, cards that do more of ${card}’s work come first, then the ones ${commander} decks favor most over other decks of their colors.`,
     /** F14: the index lists nothing for this commander or pair, so the order names no commander. */
-    leadSpellsOrderUnlisted: "Each group runs from the cards that share the most of its work, then the cheapest.",
+    leadSpellsOrderUnlisted: (card: string) => `In each group, cards that do more of ${card}’s work come first, then the cheapest.`,
     /** Drawn when a staple is in the list: it sorts last in its group (addendum §1b). */
     leadSpellsStaples: "Staples every commander plays come last.",
     /** F5: a sold-out original lists free copies only. Owed to /copy-review. */
