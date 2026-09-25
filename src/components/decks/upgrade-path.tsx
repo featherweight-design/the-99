@@ -319,12 +319,16 @@ function Candidate({
   );
 }
 
-/** The climb candidate's lock (handoff R2 table): the mark, and a mono 10.5px word from `md`. */
+/** The climb candidate's lock (handoff R2 table): the mark, and a mono 10.5px word from `md`, with
+ *  one name for assistive tech at every width. */
 function Locked() {
   return (
     <span data-testid="climb-locked" className="inline-flex items-center gap-1">
       <LockMark title={lockedCardsCopy.mark.title} />
-      <span className="hidden font-mono text-[10.5px] font-normal text-[color:var(--fg-faint)] md:inline">
+      {/* THE NAME IS ALWAYS READ, AT EVERY WIDTH: the glyph is aria-hidden and the visible word
+          is display:none on a phone, so without this a partly locked combo says nothing there. */}
+      <span className="sr-only">{lockedCardsCopy.mark.title}</span>
+      <span aria-hidden="true" className="hidden font-mono text-[10.5px] font-normal text-[color:var(--fg-faint)] md:inline">
         {lockedCardsCopy.mark.key}
       </span>
     </span>

@@ -280,7 +280,10 @@ describe("locked candidates", () => {
     draw(five(), new Set(["B"]));
     fireEvent.click(trigger());
     expect(order()).toEqual(["A", "C", "D", "E", "B"]);
-    expect(within(panel()).getAllByTestId("climb-locked")).toHaveLength(1);
+    const lock = within(panel()).getByTestId("climb-locked");
+    // One accessible name at every width: the glyph and the desktop word are both hidden from it.
+    expect(within(lock).getByText(lockedCardsCopy.mark.title).className).toContain("sr-only");
+    expect(within(lock).getByText(lockedCardsCopy.mark.key).getAttribute("aria-hidden")).toBe("true");
     expect(within(panel()).getByText(upgradePathCopy.countRule.anyOf(2, 5))).toBeTruthy();
     expect(screen.getByTestId("climb-lock-note").textContent).toBe(lockedCardsCopy.climb.listedLast(["B"]));
   });

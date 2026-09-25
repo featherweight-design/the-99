@@ -15,10 +15,11 @@
 // The combo half is not walked: this deck's combo is neither a loop nor assembled, so Upgraded
 // does not list it, and a lock on it would measure nothing. `upgrade-path.test.tsx` pins it.
 //
-// IT WRITES `deck_locks` rows on that fixture deck and deletes exactly the rows it wrote in a
-// `finally`; it refuses to start when the deck already holds a lock, since clearing is not
-// restoring. It also raises the account's `user_prefs.about_version_seen`, as
-// `probe:verdict-block` does. Needs a server with NEVER_CUT_ENABLED=true and
+// IT NEVER WRITES TO THE FIXTURE DECK. Each run COPIES it (the deck row, its cards and its stored
+// reading) to a new deck under the same account, stamped with this probe's name, locks cards on
+// the copy, and deletes the copy in a `finally`; locks, cards and the reading cascade. A run that
+// dies before its `finally` leaves only a stamped copy, which the next run sweeps on its way in.
+// It also raises the account's `user_prefs.about_version_seen`, as every signed-in probe here does. Needs a server with NEVER_CUT_ENABLED=true and
 // ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3237 node scripts/probe-climb-locks.mjs
@@ -34,7 +35,9 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const SHOTS = process.env.PROBE_SHOTS ?? null;
-const DECK = process.env.PROBE_CLIMB_DECK ?? "d0000000-0000-4000-8000-00000000d5c1";
+const SOURCE = process.env.PROBE_CLIMB_DECK ?? "d0000000-0000-4000-8000-00000000d5c1";
+const STAMP = "probe:climb-locks copy";
+let DECK = null;
 const ABOUT_VERSION_FILE = new URL("../src/lib/copy/about.version.json", import.meta.url);
 const sql = neon(DATABASE_URL);
 
@@ -92,9 +95,9 @@ async function fixture(userId) {
   const [row] = await sql`
     select profile->'brackets'->'gameChangers' as gcs
     from deck_profiles p join decks d on d.id = p.deck_id
-    where p.deck_id = ${DECK} and d.user_id = ${userId}`;
-  if (!row) throw new Error(`No stored reading for ${DECK} under the signed-in account.`);
-  if (row.gcs.length !== 5) throw new Error(`${DECK} no longer holds five game changers; the states below assume it.`);
+    where p.deck_id = ${SOURCE} and d.user_id = ${userId}`;
+  if (!row) throw new Error(`No stored reading for ${SOURCE} under the signed-in account.`);
+  if (row.gcs.length !== 5) throw new Error(`${SOURCE} no longer holds five game changers; the states below assume it.`);
   return { gcs: row.gcs };
 }
 
@@ -128,22 +131,25 @@ function readSheet(page) {
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
-  const written = [];
   try {
     const context = await browser.newContext({ viewport: WIDTHS[0].viewport });
     const page = await context.newPage();
     const userId = await signIn(page);
     const { gcs } = await fixture(userId);
-    const [held] = await sql`select count(*)::int as n from deck_locks where deck_id = ${DECK}`;
-    if (held.n > 0) throw new Error(`${DECK} already holds ${held.n} lock(s); this probe clears only what it writes.`);
+    // Debris from a run that never reached its `finally`: stamped copies only, never the source.
+    await sql`delete from decks where user_id = ${userId} and name = ${STAMP} and id <> ${SOURCE}`;
+    const copy = crypto.randomUUID();
+    DECK = copy; // the `finally` deletes it from here on, even if a copy step below throws
+    await sql`insert into decks select (jsonb_populate_record(null::decks,
+      to_jsonb(d) || jsonb_build_object('id', ${copy}::text, 'name', ${STAMP}::text))).* from decks d where d.id = ${SOURCE}`;
+    await sql`insert into deck_cards select (jsonb_populate_record(null::deck_cards,
+      to_jsonb(c) || jsonb_build_object('deck_id', ${copy}::text))).* from deck_cards c where c.deck_id = ${SOURCE}`;
+    await sql`insert into deck_profiles select (jsonb_populate_record(null::deck_profiles,
+      to_jsonb(p) || jsonb_build_object('deck_id', ${copy}::text))).* from deck_profiles p where p.deck_id = ${SOURCE}`;
 
     const lock = async (ids) => {
       await sql`delete from deck_locks where deck_id = ${DECK}`;
-      written.length = 0;
-      for (const id of ids) {
-        written.push(id);
-        await sql`insert into deck_locks (deck_id, oracle_id) values (${DECK}, ${id})`;
-      }
+      for (const id of ids) await sql`insert into deck_locks (deck_id, oracle_id) values (${DECK}, ${id})`;
     };
 
     const states = [
@@ -186,9 +192,9 @@ async function run() {
       }
     }
   } finally {
-    // Exactly the rows this run wrote; the deck held none when it started.
+    // The copy and everything under it; the source deck was never written.
     try {
-      for (const id of written) await sql`delete from deck_locks where deck_id = ${DECK} and oracle_id = ${id}`;
+      if (DECK) await sql`delete from decks where id = ${DECK} and name = ${STAMP}`;
     } catch (err) {
       console.error("cleanup failed:", err);
       failures += 1;
