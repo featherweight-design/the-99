@@ -464,6 +464,9 @@ export function BuilderShell({
   // What a receipt tile draws for each card the findings can name: its own printed name and the
   // art of the copy this reader owns. Every one of them is a row here or a commander, so the map
   // is complete by construction and the profile never has to carry a printing.
+  // The deck's locked cards, for the climb's sheet (Locked, D5): read off the rows this page holds,
+  // so the sheet agrees with whatever the list shows, and the stored profile never sees a lock.
+  const lockedIds = useMemo(() => new Set(cards.filter((c) => c.locked).map((c) => c.oracleId)), [cards]);
   const findingArt = useMemo(() => {
     const art = new Map<string, { name: string; imageUri: string | null }>();
     for (const c of [...cards, deck.commander, ...(deck.partner ? [deck.partner] : [])]) {
@@ -1242,6 +1245,7 @@ export function BuilderShell({
                 <AnalysisPanel
                   state={profile.state}
                   opening={opening}
+                  locked={lockedIds}
                   onRequest={requestAnalysis}
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}

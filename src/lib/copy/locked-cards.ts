@@ -23,4 +23,25 @@ export const lockedCardsCopy = {
     promptTag: "locked",
     promptRule: "Never suggest cutting a card marked as a commander or as locked. The player chose to keep it.",
   },
+  mark: {
+    /** The word beside the mark on a desktop climb candidate (the phone draws the mark alone). */
+    key: "locked",
+    /** Pointer title on the at-rest mark. */
+    title: "Locked",
+  },
+  /** The climb's *What would have to go* sheet: a locked candidate is listed last and still counts. */
+  climb: {
+    listedLast: (cards: string[]) =>
+      cards.length === 1
+        ? `You locked ${cards[0]}, so it is listed last. It still counts.`
+        : `You locked ${cards.length} of these, so they are listed last. They still count.`,
+    /**
+     * The handoff's F11(a) grammar fixed (orchestrator, 2026-09-25): a single lock reads "is" and
+     * "it", and an item of one is "It", never "All 1".
+     */
+    unreachable: (n: number, total: number, bracket: string) => {
+      const lead = n === total ? (total === 1 ? "It is locked." : `All ${total} are locked.`) : n === 1 ? "1 of these is locked." : `${n} of these are locked.`;
+      return `${lead} ${bracket} can\u2019t be reached while ${n === 1 ? "it is" : "they are"}.`;
+    },
+  },
 } as const;

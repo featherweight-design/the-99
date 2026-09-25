@@ -44,9 +44,12 @@ export const YOURS_TINT = 0.12;
 export function BracketClimb({
   verdict,
   profile,
+  locked,
 }: {
   verdict: BracketVerdict;
   profile: DeckProfile;
+  /** The deck's locked cards, for the path's sheet (Locked, D5). */
+  locked: ReadonlySet<string>;
 }) {
   const copy = deckAnalysisCopy.climb;
   const rungs = climb(verdict.permits);
@@ -100,6 +103,7 @@ export function BracketClimb({
           profile={profile}
           verdict={verdict}
           target={targets[0]}
+          locked={locked}
           onClose={() => setOpen(false)}
         />
       ) : null}

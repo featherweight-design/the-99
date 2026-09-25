@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import type { ComboRef } from "../../lib/profile/types";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
@@ -29,11 +30,13 @@ const combo = (a: string, b: string): ComboRef => ({
 
 const gcs = (names: string[]) => names.map((n) => profileCard(n, n));
 
-function draw(profile: ReturnType<typeof deckProfile>) {
+const NONE: ReadonlySet<string> = new Set();
+
+function draw(profile: ReturnType<typeof deckProfile>, locked: ReadonlySet<string> = NONE) {
   const verdict = slotDeck(profile);
   render(
     <CardDetailProvider fetchCard={async () => null}>
-      <BracketClimb verdict={verdict} profile={profile} />
+      <BracketClimb verdict={verdict} profile={profile} locked={locked} />
     </CardDetailProvider>,
   );
   return verdict;
@@ -216,7 +219,7 @@ describe("the satisfied path", () => {
     const verdict = slotDeck(profile);
     render(
       <CardDetailProvider fetchCard={async () => null}>
-        <UpgradePathSheet profile={profile} verdict={verdict} target={2} onClose={() => {}} />
+        <UpgradePathSheet profile={profile} verdict={verdict} target={2} locked={NONE} onClose={() => {}} />
       </CardDetailProvider>,
     );
     expect(screen.getByTestId("upgrade-path").textContent).toContain(
@@ -265,3 +268,87 @@ describe("more of the rules", () => {
   });
 });
 
+
+// Locked, F6: the player's locks move ORDER and add one sentence under the rule. They never change
+// a count, and they never enter the stored profile (the set arrives as a prop).
+describe("locked candidates", () => {
+  const five = () => deckProfile({ cards: [COMMANDER, ...gcs(["A", "B", "C", "D", "E"])], gameChangerIds: new Set(["A", "B", "C", "D", "E"]) });
+  const order = () =>
+    within(panel()).getAllByRole("listitem").map((li) => li.textContent?.match(/^[A-E]/)?.[0]);
+
+  it("lists a locked candidate last, marked, and says so while the count holds", () => {
+    draw(five(), new Set(["B"]));
+    fireEvent.click(trigger());
+    expect(order()).toEqual(["A", "C", "D", "E", "B"]);
+    expect(within(panel()).getAllByTestId("climb-locked")).toHaveLength(1);
+    expect(within(panel()).getByText(upgradePathCopy.countRule.anyOf(2, 5))).toBeTruthy();
+    expect(screen.getByTestId("climb-lock-note").textContent).toBe(lockedCardsCopy.climb.listedLast(["B"]));
+  });
+
+  it("draws nothing for a deck with no locks", () => {
+    draw(five());
+    fireEvent.click(trigger());
+    expect(order()).toEqual(["A", "B", "C", "D", "E"]);
+    expect(screen.queryByTestId("climb-locked")).toBeNull();
+    expect(screen.queryByTestId("climb-lock-note")).toBeNull();
+  });
+
+  // Two must go from five: three unlocked is reachable, two is not. The unreachable sentence takes
+  // listedLast's slot, and the heading keeps the count.
+  it("holds the boundary: removeCount unlocked is reachable, one fewer is not", () => {
+    draw(five(), new Set(["A", "B"]));
+    fireEvent.click(trigger());
+    expect(screen.getByTestId("climb-lock-note").textContent).toBe(lockedCardsCopy.climb.listedLast(["A", "B"]));
+    cleanupSheet();
+    draw(five(), new Set(["A", "B", "C", "D"]));
+    fireEvent.click(trigger());
+    expect(screen.getByTestId("climb-lock-note").textContent).toBe(lockedCardsCopy.climb.unreachable(4, 5, "Upgraded"));
+    expect(within(sheet()).getByRole("heading", { name: upgradePathCopy.heading(3, 2) })).toBeTruthy();
+  });
+
+  it("puts the Forced state out of reach with one lock", () => {
+    draw(deckProfile({ cards: [COMMANDER, ...gcs(["A", "B"])], gameChangerIds: new Set(["A", "B"]) }), new Set(["B"]));
+    fireEvent.click(trigger());
+    expect(screen.getByTestId("climb-lock-note").textContent).toMatch(/^1 of these is locked\. .+ can\u2019t be reached while it is\.$/);
+  });
+
+  it("keeps a combo's pair in order and marks the locked piece; every piece locked is out of reach", () => {
+    const withCombo = () => deckProfile({
+      cards: [COMMANDER, profileCard("x", "Thassa's Oracle"), profileCard("y", "Demonic Consultation"), ...gcs(["A"])],
+      gameChangerIds: new Set(["A"]),
+      twoCardCombos: [combo("x", "y")],
+    });
+    draw(withCombo(), new Set(["x"]));
+    fireEvent.click(trigger());
+    expect(within(panel()).getAllByTestId("climb-locked")).toHaveLength(1);
+    // x is locked and still drawn first: its lock sits beside x, ahead of y.
+    const [x, y] = [/\bx$/, /\by$/].map((n) => within(panel()).getByRole("button", { name: n }));
+    expect(x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(x.parentElement!.contains(within(panel()).getByTestId("climb-locked"))).toBe(true);
+    expect(screen.queryByTestId("climb-lock-note")).toBeNull();
+    cleanupSheet();
+    draw(withCombo(), new Set(["x", "y"]));
+    fireEvent.click(trigger());
+    expect(screen.getByTestId("climb-lock-note").textContent).toMatch(/^All 2 are locked\. .+ can\u2019t be reached while they are\.$/);
+  });
+
+  // Two combos each wholly locked: each sentence sits on its own combo's row, never twice under
+  // the rule where "All 2" would read as the whole list.
+  it("puts a combo's sentence on its own row when there are several", () => {
+    draw(deckProfile({
+      cards: [COMMANDER, ...["w", "x", "y", "z"].map((id) => profileCard(id, id)), ...gcs(["A"])],
+      gameChangerIds: new Set(["A"]),
+      twoCardCombos: [combo("w", "x"), combo("y", "z")],
+    }), new Set(["w", "x", "y"]));
+    fireEvent.click(trigger());
+    const notes = screen.getAllByTestId("climb-lock-note");
+    expect(notes).toHaveLength(1);
+    expect(notes[0].textContent).toMatch(/^All 2 are locked\./);
+    expect(notes[0].parentElement!.contains(within(panel()).getByRole("button", { name: /\bw$/ }))).toBe(true);
+    expect(notes[0].parentElement!.contains(within(panel()).getByRole("button", { name: /\by$/ }))).toBe(false);
+  });
+});
+
+function cleanupSheet() {
+  cleanup();
+}

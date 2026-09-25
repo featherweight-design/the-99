@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/bracket/upgrade";
+import { lockedLast, unreachable, upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/bracket/upgrade";
 import {
   heldCount,
   leftInCommandZone,
@@ -15,12 +15,14 @@ import type { BracketVerdict } from "../../lib/bracket/types";
 import type { DeckProfile } from "../../lib/profile/types";
 import type { CardRef } from "../../lib/bracket/types";
 import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { BracketMark } from "./bracket-mark";
+import { LockMark } from "./lock-mark";
 import { ModalChrome } from "./receipt-modal";
 
 /**
@@ -42,10 +44,17 @@ export function UpgradePathSheet({
   profile,
   verdict,
   target,
+  locked,
   onClose,
 }: {
   profile: DeckProfile;
   verdict: BracketVerdict;
+  /**
+   * The deck's locked cards (Locked, D5): a display read handed down from the deck page, never
+   * part of the stored profile, so a lock toggled never dirties the analysis. It moves ORDER and
+   * adds a sentence; it never changes a count.
+   */
+  locked: ReadonlySet<string>;
   /**
    * ONE TARGET, the bracket directly below the reading (handoff §3, 3b). No chips choose another,
    * and a blocked target names no nearer one: the targets nest upward, so nothing between this
@@ -77,14 +86,14 @@ export function UpgradePathSheet({
         className="flex flex-col gap-[11px] px-[16px] py-[14px] md:gap-[13px] md:px-[18px] md:pt-4 md:pb-[18px]"
       >
         {path.blocked ? (
-          <Blocked path={path} profile={profile} />
+          <Blocked path={path} profile={profile} locked={locked} />
         ) : satisfied ? (
           <Satisfied target={target} verdict={verdict} />
         ) : (
           <>
             <div className="flex flex-col gap-[11px] md:gap-[13px]">
               {path.items.map((item) => (
-                <Item key={item.rule} item={item} target={target} profile={profile} />
+                <Item key={item.rule} item={item} target={target} profile={profile} locked={locked} />
               ))}
             </div>
             <Foot path={path} />
@@ -113,13 +122,19 @@ function Item({
   item,
   target,
   profile,
+  locked,
 }: {
   item: UpgradeItem;
   target: Target;
   profile: DeckProfile;
+  locked: ReadonlySet<string>;
 }) {
   const label = deckAnalysisCopy.climb.ruleNames[item.rule];
   if (item.rule === "twoCardCombos") {
+    const comboOut = (candidates: readonly CardRef[]) => {
+      const out = unreachable(candidates, 1, locked);
+      return out ? lockedCardsCopy.climb.unreachable(out.locked, out.total, BRACKET_NAMES[target]) : null;
+    };
     return (
       <ItemCard label={label}>
         <p className={sentence}>
@@ -141,7 +156,7 @@ function Item({
                   {/* A COMMANDER IS NEVER A CANDIDATE: `upgradePath` filtered it out, and it is
                       drawn as the card that cannot be cut rather than as one to open and cut. */}
                   {candidates.some((c) => c.oracleId === card.oracleId) ? (
-                    <Candidate card={card} profile={profile} />
+                    <Candidate card={card} profile={profile} locked={locked.has(card.oracleId)} />
                   ) : (
                     <CommanderChip card={card} profile={profile} />
                   )}
@@ -159,12 +174,29 @@ function Item({
                   {combo.produces[0]}
                 </span>
               ) : null}
+              {/* SEVERAL COMBOS: the sentence sits on the row of the combo it is about, as the
+                  clause beside it does, so "All 2" can never read as the whole list. */}
+              {item.combos.length > 1 && comboOut(candidates) ? (
+                <p data-testid="climb-lock-note" className={`${sentence} basis-full`}>
+                  {comboOut(candidates)}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>
+        {/* A PAIR KEEPS ITS ORDER: the locked piece is marked where it stands, not moved, so
+            `listedLast` is a count rule's sentence only. A combo whose every cuttable piece is
+            locked cannot be broken while they are (F6c); with one combo the sentence goes under
+            the rule, like a count's. */}
+        {item.combos.length === 1 && comboOut(item.combos[0].candidates) ? (
+          <LockNote>{comboOut(item.combos[0].candidates)}</LockNote>
+        ) : null}
       </ItemCard>
     );
   }
+  const candidates = lockedLast(item.candidates, locked);
+  const out = unreachable(item.candidates, item.removeCount, locked);
+  const lockedNames = candidates.filter((c) => locked.has(c.oracleId)).map((c) => c.name);
   const have = heldCount(profile, item.rule);
   const limit = targetLimit(target, item.rule);
   const forced = item.candidates.length === item.removeCount;
@@ -173,7 +205,7 @@ function Item({
       <p className={sentence}>
         {upgradePathCopy.countRule.limit(target, limit, have)}{" "}
         <b className="font-semibold text-[color:var(--fg)]">
-          {forced ? <Forced cards={item.candidates} profile={profile} /> : upgradePathCopy.countRule.anyOf(item.removeCount, item.candidates.length)}
+          {forced ? <Forced cards={candidates} profile={profile} locked={locked} /> : upgradePathCopy.countRule.anyOf(item.removeCount, item.candidates.length)}
         </b>
       </p>
       {forced ? null : (
@@ -181,14 +213,21 @@ function Item({
           <span className="hidden md:block" />
           {/* ONE PER LINE at 390, never a wrapped run: a run of names wraps mid-name there. */}
           <ul className="mt-0.5 flex flex-col items-start gap-[7px] md:mt-[5px] md:flex-row md:flex-wrap md:items-center md:gap-x-[14px] md:gap-y-1.5">
-            {item.candidates.map((card) => (
+            {candidates.map((card) => (
               <li key={card.oracleId}>
-                <Candidate card={card} profile={profile} />
+                <Candidate card={card} profile={profile} locked={locked.has(card.oracleId)} />
               </li>
             ))}
           </ul>
         </>
       )}
+      {/* THE NOTE UNDER THE RULE, one sentence. `unreachable` says everything `listedLast` does
+          and that the target is out of reach, so it takes the slot (orchestrator, 2026-09-25). */}
+      {out ? (
+        <LockNote>{lockedCardsCopy.climb.unreachable(out.locked, out.total, BRACKET_NAMES[target])}</LockNote>
+      ) : lockedNames.length > 0 ? (
+        <LockNote>{lockedCardsCopy.climb.listedLast(lockedNames)}</LockNote>
+      ) : null}
     </ItemCard>
   );
 }
@@ -208,13 +247,21 @@ function comboClause({ candidates }: { candidates: readonly CardRef[]; reason?: 
  * name opens its card, inside the sentence the copy module builds, so the joiner stays that
  * module's.
  */
-function Forced({ cards, profile }: { cards: readonly CardRef[]; profile: DeckProfile }) {
+function Forced({
+  cards,
+  profile,
+  locked,
+}: {
+  cards: readonly CardRef[];
+  profile: DeckProfile;
+  locked: ReadonlySet<string>;
+}) {
   const flat = upgradePathCopy.countRule.forced(cards.map((c) => c.name));
   const parts: ReactNode[] = [];
   let rest = flat;
   for (const card of cards) {
     const at = rest.indexOf(card.name);
-    parts.push(rest.slice(0, at), <Candidate key={card.oracleId} card={card} profile={profile} inSentence />);
+    parts.push(rest.slice(0, at), <Candidate key={card.oracleId} card={card} profile={profile} locked={locked.has(card.oracleId)} inSentence />);
     rest = rest.slice(at + card.name.length);
   }
   parts.push(rest);
@@ -231,10 +278,13 @@ function Forced({ cards, profile }: { cards: readonly CardRef[]; profile: DeckPr
 function Candidate({
   card,
   profile,
+  locked,
   inSentence = false,
 }: {
   card: CardRef;
   profile: DeckProfile;
+  /** The player locked it: the mark, and `locked` beside it from `md` (the phone draws the mark alone). */
+  locked: boolean;
   inSentence?: boolean;
 }) {
   const name = (
@@ -255,6 +305,7 @@ function Candidate({
         {name}
         <span className="ml-[5px] inline-flex items-center gap-1 align-[-3px]">
           <Marks card={card} profile={profile} />
+          {locked ? <Locked /> : null}
         </span>
       </>
     );
@@ -263,7 +314,32 @@ function Candidate({
     <span className="inline-flex items-center gap-[5px]">
       {name}
       <Marks card={card} profile={profile} />
+      {locked ? <Locked /> : null}
     </span>
+  );
+}
+
+/** The climb candidate's lock (handoff R2 table): the mark, and a mono 10.5px word from `md`. */
+function Locked() {
+  return (
+    <span data-testid="climb-locked" className="inline-flex items-center gap-1">
+      <LockMark title={lockedCardsCopy.mark.title} />
+      <span className="hidden font-mono text-[10.5px] font-normal text-[color:var(--fg-faint)] md:inline">
+        {lockedCardsCopy.mark.key}
+      </span>
+    </span>
+  );
+}
+
+/** One sentence under the rule, in the reading's own column: a fact, never a control. */
+function LockNote({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <span className="hidden md:block" />
+      <p data-testid="climb-lock-note" className={`${sentence} md:mt-[5px]`}>
+        {children}
+      </p>
+    </>
   );
 }
 
@@ -335,7 +411,15 @@ function Satisfied({ target, verdict }: { target: Target; verdict: BracketVerdic
  * "impossible". What can come out is still listed, and the commander is shown on a dashed edge
  * as the card that cannot.
  */
-function Blocked({ path, profile }: { path: UpgradePath; profile: DeckProfile }) {
+function Blocked({
+  path,
+  profile,
+  locked,
+}: {
+  path: UpgradePath;
+  profile: DeckProfile;
+  locked: ReadonlySet<string>;
+}) {
   const target = path.target;
   const commanders = new Set(profile.commanderOracleIds);
   // The item that blocks: a count whose candidates fall short, or a combo no removal breaks.
@@ -361,9 +445,9 @@ function Blocked({ path, profile }: { path: UpgradePath; profile: DeckProfile })
           </p>
           <span className="hidden md:block" />
           <ul className="mt-0.5 flex flex-col items-start gap-[7px] md:mt-[5px] md:flex-row md:flex-wrap md:items-center md:gap-x-[14px] md:gap-y-1.5">
-            {count.candidates.map((card) => (
+            {lockedLast(count.candidates, locked).map((card) => (
               <li key={card.oracleId}>
-                <Candidate card={card} profile={profile} />
+                <Candidate card={card} profile={profile} locked={locked.has(card.oracleId)} />
               </li>
             ))}
             {heldCards(profile, count.rule)
