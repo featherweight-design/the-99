@@ -52,6 +52,9 @@ async function main() {
   const theme = vocab[0];
   const index = await loadPhraseIndex(vocab);
   const matched = matchWords(`I want ${theme.label.toLowerCase()} with Sol Ring, under $150`, index);
+  const basics = matchWords("Snow-Covered Forest and Forest", index);
+  check("no basic land, a snow basic included, is ever a build-around card", basics.chips.every((c) => c.kind !== "card"),
+    JSON.stringify(basics.chips));
   check("a sentence yields its theme, its card and its budget", JSON.stringify(matched.chips.map((c) => c.kind)) === '["theme","card","budget"]',
     JSON.stringify(matched.chips));
 

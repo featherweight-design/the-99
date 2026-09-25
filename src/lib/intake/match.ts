@@ -7,7 +7,7 @@ import { singularForms } from "../edhrec/tag-kinds";
  *
  * WHAT IT MATCHES, and nothing else:
  *  - a theme tag's label, exactly, or one of its singular forms (`dinosaur` for `Dinosaurs`);
- *  - a card's name from the whole catalog, or one face of a two-faced card;
+ *  - a commander-legal card's name from the whole catalog, or one face of a two-faced card;
  *  - a dollar figure (`$200`, `200 dollars`, `150 bucks`) as the budget;
  *  - `bracket N` for N from 1 to 5.
  * Every other word is either a STOP WORD, which is dropped silently, or LEFTOVER, which the player

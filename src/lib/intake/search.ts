@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { notBuiltBy } from "../decks/built";
+import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
 import type { EdhrecTag } from "../edhrec/parse";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
@@ -31,15 +32,18 @@ export async function loadThemeVocabulary(): Promise<VocabularyTheme[]> {
 }
 
 /**
- * The free match's index: the theme vocabulary and every commander-legal card's name. Basic lands
- * are left out, since no player means a build-around Forest.
+ * The free match's index: the theme vocabulary and every COMMANDER-LEGAL card's name. A card the
+ * format bans could never be placed in the deck (`validateCardForDeck` refuses it), so it is not a
+ * build-around card either. Basic lands are left out through the repository's own rule,
+ * `isBasicLand`, which takes a snow basic too: no player means a build-around Forest.
  */
 export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promise<PhraseIndex> {
   const cards = (await db.execute(sql`
-    select c.oracle_id, c.name from cards c
-    where c.commander_legal and c.type_line not like 'Basic Land%'
-  `)).rows as { oracle_id: string; name: string }[];
-  return buildPhraseIndex(themes, cards.map((c) => ({ oracleId: c.oracle_id, name: c.name })));
+    select c.oracle_id, c.name, c.type_line from cards c where c.commander_legal
+  `)).rows as { oracle_id: string; name: string; type_line: string }[];
+  return buildPhraseIndex(themes, cards
+    .filter((c) => !isBasicLand(c.type_line))
+    .map((c) => ({ oracleId: c.oracle_id, name: c.name })));
 }
 
 export async function searchCommanders(userId: string, answers: Answers): Promise<SearchResult> {
