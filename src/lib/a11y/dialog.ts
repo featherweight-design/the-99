@@ -108,8 +108,6 @@ type BackEntry = {
   path: string;
   /** Whether the entry is still in the session history, unpopped. */
   onHistory: boolean;
-  /** Open and mounted. False from the moment the dialog's effect is cleaned up. */
-  live: boolean;
   /** A release waiting one task, so a remount in the same tick can reclaim the entry. */
   release: ReturnType<typeof setTimeout> | null;
 };
@@ -184,12 +182,13 @@ function onPopState() {
     return;
   }
   top.close();
-  // A close that stepped down a rung left the dialog up, and it needs an entry again
-  // or the next Back leaves the route. The wait covers React committing the close:
-  // a dialog that did close has had its effect cleaned up, and `live` says so.
-  setTimeout(() => {
-    if (top.live && !top.onHistory) arm(top);
-  }, 150);
+  // Re-armed at once, before React has committed the close, because until then no
+  // one can tell a rung from the whole dialog: the card modal's Escape closes its
+  // zoom and stays up. Waiting to find out left a window in which a second Back
+  // found no entry and left the route with the dialog still drawn. A dialog that
+  // DID close is cleaned up moments later, sees its entry still on the history,
+  // and takes it off by the same self-pop as any other close.
+  arm(top);
 }
 
 function listen() {
@@ -231,7 +230,6 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
       clearTimeout(reclaimed.release);
       reclaimed.release = null;
       entry = reclaimed;
-      entry.live = true;
       if (entry.onHistory) backStack.push(entry);
     } else {
       entry = {
@@ -240,14 +238,12 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
         key: null,
         path: "",
         onHistory: false,
-        live: true,
         release: null,
       };
       held.current = entry;
       arm(entry);
     }
     return () => {
-      entry.live = false;
       const i = backStack.indexOf(entry);
       if (i !== -1) backStack.splice(i, 1);
       if (!entry.onHistory) {

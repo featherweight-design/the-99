@@ -314,16 +314,33 @@ describe("useBackDismiss", () => {
   // a back() jsdom may answer with nothing, and the count it leaves expires after a
   // second — which is the rule, so it is waited out rather than reset.
   beforeAll(() => new Promise((r) => setTimeout(r, 1_100)));
+  // Every dialog a case opens is unmounted HERE, and its self-pop allowed to land,
+  // before the next case starts. A dialog still up at the end of a case holds an
+  // entry, and the back() its unmount issues would otherwise be counted by the
+  // next case's spy.
+  const mounted: { unmount: () => void }[] = [];
   afterEach(async () => {
-    await settle();
+    while (mounted.length) mounted.pop()?.unmount();
+    await new Promise((r) => setTimeout(r, 60));
     window.history.replaceState(null, "", "/");
   });
+  const track = <T extends { unmount: () => void }>(hook: T): T => {
+    let done = false;
+    const unmount = hook.unmount;
+    hook.unmount = () => {
+      if (done) return;
+      done = true;
+      unmount();
+    };
+    mounted.push(hook);
+    return hook;
+  };
 
   function open(onClose = vi.fn(), canClose?: () => boolean) {
-    const hook = renderHook(
+    const hook = track(renderHook(
       ({ isOpen }: { isOpen: boolean }) => useBackDismiss(isOpen, onClose, canClose),
       { initialProps: { isOpen: true } },
-    );
+    ));
     return { onClose, hook };
   }
 
@@ -367,7 +384,10 @@ describe("useBackDismiss", () => {
     window.history.back();
     await waitFor(() => expect(over.onClose).toHaveBeenCalledTimes(1));
     expect(under.onClose).not.toHaveBeenCalled();
+    // The top dialog re-armed after its rung, so closing it takes that entry off by a
+    // self-pop, which lands before the reader's next press.
     over.hook.unmount();
+    await settle();
     window.history.back();
     await waitFor(() => expect(under.onClose).toHaveBeenCalledTimes(1));
   });
@@ -417,7 +437,7 @@ describe("useBackDismiss", () => {
   // fresh entry, or the next Back would leave the route with it open.
   it("steps down one rung per Back, like Escape", async () => {
     const onClose = vi.fn();
-    renderHook(() => useBackDismiss(true, onClose));
+    track(renderHook(() => useBackDismiss(true, onClose)));
     const push = vi.spyOn(window.history, "pushState");
     window.history.back();
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
@@ -429,7 +449,7 @@ describe("useBackDismiss", () => {
 
   it("takes its entry off on a later close after refusing a Back", async () => {
     let refusing = true;
-    const hook = renderHook(() => useBackDismiss(true, vi.fn(), () => !refusing));
+    const hook = track(renderHook(() => useBackDismiss(true, vi.fn(), () => !refusing)));
     window.history.back();
     await settle();
     refusing = false;
@@ -443,7 +463,7 @@ describe("useBackDismiss", () => {
   it("pushes once under StrictMode's remount, and steps back not at all", async () => {
     const push = vi.spyOn(window.history, "pushState");
     const back = vi.spyOn(window.history, "back");
-    const hook = renderHook(() => useBackDismiss(true, vi.fn()), { wrapper: StrictMode });
+    const hook = track(renderHook(() => useBackDismiss(true, vi.fn()), { wrapper: StrictMode }));
     await settle();
     expect(push).toHaveBeenCalledTimes(1);
     expect(back).not.toHaveBeenCalled();

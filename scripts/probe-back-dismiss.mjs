@@ -165,6 +165,30 @@ async function run(width, height) {
       }
     }
 
+    // 5b · the same two rungs pressed in quick succession. The dialog is re-armed in
+    // the same task as its close, because a second Back arriving before React commits
+    // the first found no entry once and left the route with the modal still drawn.
+    await arrive(page, rows);
+    if (await press(cardTrigger(page), `${tag} · card modal opens for a quick double Back`)) {
+      await page.waitForTimeout(1_200);
+      const zoom = onPage(page, 'button[aria-label^="Look at"]:visible').first();
+      if (await press(zoom, `${tag} · the zoom opens again`)) {
+        await page.waitForTimeout(600);
+        await page.evaluate(() => {
+          history.back();
+          setTimeout(() => history.back(), 40);
+        });
+        await page.waitForTimeout(1_200);
+        const at = await where(page);
+        const up = await dialogs(page);
+        report(
+          `${tag} · two quick Backs from the zoom close it and the modal, and stay on the route`,
+          at.path === "/collection" && up.length === 0,
+          `${at.path} with dialogs ${JSON.stringify(up)}`,
+        );
+      }
+    }
+
     // 6 · a link inside the modal that navigates is not undone, and leaves no dead Back.
     // The claim list links each deck holding the card, so the list is narrowed to cards
     // some deck holds (`inuse`, `brew`) and the first row with a link is used.
