@@ -64,8 +64,17 @@ export function buildReadPrompt(words: string, themeLabels: readonly string[]): 
 
 /** Whether `phrase` is a run of the player's own words, compared in the free match's one form. */
 function wrote(words: string, phrase: string): boolean {
-  const key = phraseKey(phrase);
-  return key.length > 0 && ` ${phraseKey(words)} `.includes(` ${key} `);
+  const key = wordKey(phrase);
+  return key.length > 0 && ` ${wordKey(words)} `.includes(` ${key} `);
+}
+
+/**
+ * Words compared in a form that keeps every script: Unicode-normalized, case-folded, split on
+ * anything but letters and digits. NOT `phraseKey`, which keeps ASCII alone and would reduce
+ * `龙 foo` and `火 foo` both to `foo`, letting a phrase the player never wrote pass as theirs.
+ */
+function wordKey(text: string): string {
+  return text.normalize("NFKC").toLowerCase().split(/[^\p{L}\p{N}']+/u).filter((w) => w.length > 0).join(" ");
 }
 
 export type ReadResult = {

@@ -198,7 +198,8 @@ synopsis's.
   edited the intent yet, and it is the only moment the themes are known. `fillDeck` reads the
   stored budget, bracket and card, places the card first and fills under the gates, but writes no
   intent, by the rule that path already keeps (a cleared line reads like one never written). So
-  **`answer_intent_pending` is unused**; PR 4's migration drops it.
+  **`answer_intent_pending` is unused**. PR 4 removes it from the schema, and a later migration
+  drops it one deploy on (see PR 4 as built).
 - **The trial fill** (`trial.ts`) gives a row its figures: owned of the body, and the Shopping-list
   buy total. A never-stocked build-around card is flagged rather than priced at $0 (F8).
 - The stale "up to five" comment in `decks-builder.ts` now says six (orchestrator's note).
@@ -206,7 +207,8 @@ synopsis's.
 **PR 4: the deeper read.**
 - The model feature, moved from PR 1: `ModelFeature`, `FEATURE_CALLS` with its measured input
   ceiling, `src/lib/intake/limits.ts`, and a migration adding `'intake'` to
-  `model_calls_feature_check` and dropping the unused `decks.answer_intent_pending` (see PR 3).
+  `model_calls_feature_check`. The unused `decks.answer_intent_pending` (see PR 3) leaves the
+  schema here, and its column is dropped a deploy later (see PR 4 as built).
 - The prompt, the response schema, and the validator: vocabulary and catalog, with control beating
   words.
 - The run store and the reaper.

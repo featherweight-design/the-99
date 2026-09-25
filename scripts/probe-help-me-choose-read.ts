@@ -156,6 +156,9 @@ async function main() {
     const [{ id: strandedCall }] = (await fixture.execute(sql`select id from model_calls where user_id = ${USER} and created_at = ${past} and status = 'reserved' limit 1`)).rows as { id: string }[];
     await fixture.execute(sql`insert into intake_reads (id, user_id, words_hash, model, model_call_id, status, created_at)
       values (${stranded2}, ${USER}, 'x', ${INTAKE_MODEL}, ${strandedCall}, 'pending', ${past})`);
+    check("a settle carrying another player's id writes nothing to this one's read",
+      [await store.settleRead({ readId: stranded2, callId: strandedCall, userId: OTHER }, { kind: "failed", errorClass: "timeout" }),
+        (await readRow(stranded2)).status], [false, "pending"]);
     check("with the allowance spent, the press is refused", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "allowance");
     const after = await readRow(stranded2);
     check("the stranded read was reaped all the same", [after.status, after.error_class, after.unit], ["failed", "interrupted", "refunded"]);

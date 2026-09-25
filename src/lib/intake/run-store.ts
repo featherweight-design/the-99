@@ -174,7 +174,9 @@ export async function settleRead(
     await lockAsks(tx, userId);
     const rows = await tx.update(intakeReads)
       .set(set)
-      .where(and(eq(intakeReads.id, readId), eq(intakeReads.status, "pending")))
+      // The reader's own read only, as a Stop is scoped: a handle for another player's read settles
+      // nothing.
+      .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
       .returning({ callId: intakeReads.modelCallId });
     if (rows.length === 0) {
       if (billed) await recordModelUsage(tx, callId, billed);

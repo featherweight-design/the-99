@@ -60,6 +60,11 @@ describe("validateRead", () => {
     expect(r.notUnderstood).toEqual(["Big Energy", "energy and"]);
   });
 
+  it("keeps a phrase in any script only when the player wrote it", () => {
+    const r = validateRead({ reply: reply({ notUnderstood: ["火 foo", "龙 FOO"] }), words: "龙 foo", index, controls: none });
+    expect(r.notUnderstood).toEqual(["龙 FOO"]);
+  });
+
   it("dedupes chips and phrases", () => {
     const r = read(reply({ themes: ["Dinosaurs", "dinosaur"], notUnderstood: ["big energy", "big energy "] }));
     expect(r.chips).toHaveLength(1);
