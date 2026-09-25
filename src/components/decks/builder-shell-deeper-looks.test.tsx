@@ -58,7 +58,7 @@ function received(deeperLooks: boolean | undefined) {
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
       analysisEnabled initialView="analysis" {...(deeperLooks === undefined ? {} : { deeperLooks })} />,
   );
-  const panel = seen.panel as { overview: { props: { deeperLooks?: boolean } } | null; tuning: (permits: number[]) => { props: { deeperLooks?: boolean } } };
+  const panel = seen.panel as unknown as { overview: { props: { deeperLooks?: boolean } } | null; tuning: (permits: number[]) => { props: { deeperLooks?: boolean } } };
   return {
     overview: panel.overview?.props.deeperLooks,
     tuning: panel.tuning([]).props.deeperLooks,
