@@ -37,7 +37,8 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-swap-fits-${Date.now()}`;
 const OTHER = `${USER}-other`;
-let sentinel: { a: string; b: string; card: string } | null = null;
+// Asserted rather than annotated: set inside main(), so a plain `null` initialiser narrows it to never here.
+let sentinel = null as { a: string; b: string; card: string } | null;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
