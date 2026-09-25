@@ -1,3 +1,4 @@
+import type { SQL } from "drizzle-orm";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { ModalComboPartner } from "../combos/near-miss";
 // One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
@@ -137,6 +138,35 @@ export function catalogCard(
     result.imageUri = primary.imageUri;
   }
   return result;
+}
+
+/**
+ * The Fits door's gate, in one read: whether the card is Commander-legal, and whether the reader
+ * has a deck with a commander. Swallowed to an empty object on failure, which leaves the door shut.
+ */
+type GateReader = { execute: (q: SQL) => Promise<{ rows: unknown[] }> };
+export async function fitsGate(
+  userId: string,
+  oracleId: string,
+  on?: GateReader,
+  enabled?: boolean,
+): Promise<{ commanderLegal?: boolean; hasDecks?: boolean }> {
+  // Nothing reads the gate while the swap tools are off, so a deployment without them pays no
+  // round trip for it: the fields stay absent, which is also the door's closed state.
+  if (!(enabled ?? (await import("../swaps/flag")).swapToolsEnabled())) return {};
+  try {
+    const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
+    const { sql } = await import("drizzle-orm");
+    const { rows } = await reader.execute(sql`
+      select c.commander_legal,
+        exists (select 1 from decks d where d.user_id = ${userId} and d.commander_oracle_id is not null) as has_decks
+      from cards c where c.oracle_id = ${oracleId}
+    `);
+    const r = rows[0] as { commander_legal: boolean; has_decks: boolean } | undefined;
+    return r ? { commanderLegal: r.commander_legal, hasDecks: r.has_decks } : {};
+  } catch {
+    return {};
+  }
 }
 
 /**
@@ -288,16 +318,17 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // between the reader pressing a card and the modal filling in. Each still
     // fails on its own — `Promise.all` over two already-caught promises settles
     // with a null in the failed slot rather than rejecting the pair.
-    const [availability, prices, proxiedBy] = await Promise.all([
+    const [availability, prices, proxiedBy, gate] = await Promise.all([
       (async () => {
         const { loadAvailability } = await import("../decks/availability-query");
         return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
       })().catch(() => null),
       pricesFor(oracleId),
       proxyingDecks(userId, oracleId),
+      fitsGate(userId, oracleId),
     ]);
     return withComboPartners(
-      await withBracketFacts({ ...owned[0], availability, prices, proxiedBy }),
+      await withBracketFacts({ ...owned[0], availability, prices, proxiedBy, ...gate }),
       userId,
       deckOracleIds,
     );
@@ -337,6 +368,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // around — so a receipt that could only list printing decks for owned cards
   // would miss every one that matters.
   const proxiedBy = proxyingDecks(userId, oracleId);
+  const gate = fitsGate(userId, oracleId);
   const printingRows = await db
     .select({
       scryfallId: printings.scryfallId,
@@ -365,6 +397,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       facts: card.gameChanger ? ["gameChanger"] : undefined,
       prices: await prices,
       proxiedBy: await proxiedBy,
+      ...(await gate),
     }),
     userId,
     deckOracleIds,

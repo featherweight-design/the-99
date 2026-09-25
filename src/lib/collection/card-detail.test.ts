@@ -349,3 +349,27 @@ describe("loadCardDetail availability", () => {
     expect(card?.prices).toBeNull();
   });
 });
+
+// The gate's fail-soft half, with its reader injected: a read that throws, or finds no card, leaves
+// both fields absent, which keeps the door shut. The wiring into both branches of `loadCardDetail`
+// is `probe:swap-fits-data`'s, against a real database.
+describe("fitsGate", () => {
+  it("reads both flags off one row", async () => {
+    const { fitsGate } = await import("./card-detail");
+    const on = { execute: async () => ({ rows: [{ commander_legal: true, has_decks: false }] }) };
+    expect(await fitsGate("user_1", "o-1", on, true)).toEqual({ commanderLegal: true, hasDecks: false });
+  });
+
+  it("reads nothing while the swap tools are off", async () => {
+    const { fitsGate } = await import("./card-detail");
+    const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
+    expect(await fitsGate("user_1", "o-1", { execute }, false)).toEqual({});
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("is absent for a card it cannot find, and when the read fails", async () => {
+    const { fitsGate } = await import("./card-detail");
+    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) }, true)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, true)).toEqual({});
+  });
+});

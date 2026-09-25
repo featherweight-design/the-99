@@ -63,3 +63,53 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
     return recommendedMix(null, hasPartner);
   }
 }
+
+/** A deck's commanders, as `loadMixesForCommanders` keys them. */
+export type CommanderPair = { commanderOracleId: string; partnerOracleId: string | null };
+/** The pair's key, ORDER-SENSITIVE on purpose. The skeleton reads the pair row canonically, but its
+ *  fallback reads the FIRST commander's own row, so (A, B) and (B, A) can resolve different targets
+ *  once the pair row is absent or half-measured. Each deck is asked about in its own column order,
+ *  as the deck page asks it, so the need a picker quotes is the one that deck's page draws. */
+export const mixKey = (p: CommanderPair) => `${p.commanderOracleId}|${p.partnerOracleId ?? ""}`;
+
+/**
+ * The mix for MANY decks at once (Fits your decks), resolved once per distinct commander pair
+ * rather than once per deck: two decks led by the same commander ask the same question. The
+ * identities come from one read, and the chains run in parallel. Never throws; a pair whose chain
+ * fails gets the asserted baseline, exactly as `loadDeckMix` does.
+ */
+export async function loadMixesForCommanders(pairs: readonly CommanderPair[]): Promise<Map<string, RecommendedMix>> {
+  const distinct = [...new Map(pairs.map((p) => [mixKey(p), p])).values()];
+  const out = new Map<string, RecommendedMix>();
+  if (distinct.length === 0) return out;
+  let identityOf = new Map<string, string[]>();
+  try {
+    const ids = [...new Set(distinct.flatMap((p) => [p.commanderOracleId, p.partnerOracleId]).filter(
+      (v): v is string => typeof v === "string",
+    ))];
+    const rows = await db
+      .select({ oracleId: cards.oracleId, colorIdentity: cards.colorIdentity })
+      .from(cards)
+      .where(inArray(cards.oracleId, ids));
+    identityOf = new Map(rows.map((r) => [r.oracleId, r.colorIdentity ?? []]));
+  } catch (err) {
+    console.warn("loadMixesForCommanders: no identities — every pair quotes the asserted targets", err);
+    for (const p of distinct) out.set(mixKey(p), recommendedMix(null, p.partnerOracleId !== null));
+    return out;
+  }
+  await Promise.all(distinct.map(async (p) => {
+    const hasPartner = p.partnerOracleId !== null;
+    try {
+      const identity = new Set([
+        ...(identityOf.get(p.commanderOracleId) ?? []),
+        ...(p.partnerOracleId ? identityOf.get(p.partnerOracleId) ?? [] : []),
+      ]);
+      const { skeleton } = await loadSkeletonForCommanders(p.commanderOracleId, p.partnerOracleId, [...identity]);
+      out.set(mixKey(p), recommendedMix(skeleton, hasPartner));
+    } catch (err) {
+      console.warn("loadMixesForCommanders: no skeleton for a pair — it quotes the asserted targets", err);
+      out.set(mixKey(p), recommendedMix(null, hasPartner));
+    }
+  }));
+  return out;
+}
