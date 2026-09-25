@@ -76,7 +76,20 @@ export type StandInsRead = StandInGroups & {
  * theme's vocabulary, read from the Commander-legal catalog so a new set's type arrives with the weekly
  * refresh. The regex escapes are doubled: a template literal cooks `\m` to `m`, and `sql` sends the cooked text.
  */
-export async function loadCreatureTypes(): Promise<Set<string>> {
+let creatureTypesMemo: { at: number; types: Promise<Set<string>> } | null = null;
+/** An hour: the list moves only with the weekly catalog refresh, and the read costs ~200ms. */
+const CREATURE_TYPES_TTL_MS = 60 * 60 * 1000;
+
+export function loadCreatureTypes(): Promise<Set<string>> {
+  if (creatureTypesMemo && Date.now() - creatureTypesMemo.at < CREATURE_TYPES_TTL_MS) return creatureTypesMemo.types;
+  const types = readCreatureTypes();
+  creatureTypesMemo = { at: Date.now(), types };
+  // A failed read is not kept: the next caller reads again.
+  types.catch(() => { if (creatureTypesMemo?.types === types) creatureTypesMemo = null; });
+  return types;
+}
+
+async function readCreatureTypes(): Promise<Set<string>> {
   // A subtype on an artifact, enchantment or land that is not a creature is that card type's own
   // (Equipment, Treasure, Food, Saga, Forest), even where a creature also carries it (Dryad Arbor is a
   // Land Creature — Forest Dryad). Measured on staging: nine words, none of them a creature type.

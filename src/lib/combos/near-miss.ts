@@ -94,6 +94,16 @@ export function pairsWithOnePiece(args: {
         and exists (select 1 from ${spellbookVariantCards} vc2
                     where vc2.variant_id = v.variant_id
                       and vc2.oracle_id = any(${present}::uuid[]))
+        ${
+          // With the candidates named, a variant holding none of them yields no row below, so it is
+          // pruned here too, before the group: a deck's ~100 cards touch thousands of variants and a
+          // single candidate a handful (Find a deck asks about one card, ~160ms → the prune).
+          args.missingIn
+            ? sql`and exists (select 1 from ${spellbookVariantCards} vc3
+                              where vc3.variant_id = v.variant_id
+                                and vc3.oracle_id = any(${sql.param([...args.missingIn])}::uuid[]))`
+            : sql``
+        }
       group by v.variant_id
       -- TWO ROWS, not merely a card_count of 2 — that column keeps upstream's own uses
       -- length while this table is deduped by oracle id, so a variant naming one card twice
@@ -229,6 +239,11 @@ export async function loadCompletionPartners(args: {
   commanderOracleIds: readonly string[];
   /** The candidates on screen, or `null` for every completion this deck has. */
   candidateOracleIds: readonly string[] | null;
+  /**
+   * Names the caller already holds for the deck's cards and commanders (Find a deck reads them with the
+   * list), so naming the partner costs no round trip. Any id missing from it is still read.
+   */
+  knownNames?: ReadonlyMap<string, string>;
 }): Promise<Map<string, ComboPartner>> {
   const present = [...new Set([...args.deckOracleIds, ...args.commanderOracleIds])];
   // A null candidate list is "every card", which is the opposite of an empty one. Spelled out
@@ -252,7 +267,9 @@ export async function loadCompletionPartners(args: {
   // NOW FLIP. The row on screen is the CANDIDATE and the card being NAMED is the one already
   // in the deck, which is the opposite of how the query reads: there, what the reader has is
   // `present` and what they lack is `want`.
-  const names = await nameMap(castable.map((r) => r.present_id));
+  const known = args.knownNames ?? new Map<string, string>();
+  const read = await nameMap(castable.map((r) => r.present_id).filter((id) => !known.has(id)));
+  const names = new Map([...known, ...read]);
   const relabelled: PairRow[] = castable.map((r) => ({
     ...r,
     present_id: r.missing_id,

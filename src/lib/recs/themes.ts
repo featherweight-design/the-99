@@ -75,6 +75,9 @@ const RULES: readonly [Exclude<Theme, "tribal">, RegExp][] = [
   ["landfall", /(\blandfall\b|whenever (a|one or more) lands? (you control )?enters?|whenever you play a land)/],
 ];
 
+/** The approved themes in the order Hugh approved them: a tie between two themes goes to the earlier (d9). */
+export const THEME_ORDER: readonly Theme[] = [...RULES.map(([t]) => t), "tribal"];
+
 /**
  * The words that name a type in a "type matters" sentence, in the card's own case: `Dinosaurs you
  * control`, `Elf spells you cast`, `Dinosaur creature cards from among`, `each other Zombie`, `Other

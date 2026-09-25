@@ -28,7 +28,11 @@ import ws from "ws";
 import { addCardToDeckFor } from "../src/lib/decks/add-card";
 import { primaryRole } from "../src/lib/decks/read";
 import { commitVersion } from "../src/lib/decks/versions";
+import { loadCompletionPartners, pairsWithOnePiece, type PairRow } from "../src/lib/combos/near-miss";
+import { db as appDb } from "../src/db";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { loadFits } from "../src/lib/swaps/fits";
+import { cardThemes } from "../src/lib/recs/themes";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 
@@ -111,12 +115,10 @@ async function main() {
   check("groups: the deck holding it says one copy", r?.holds, [{ id: holds, name: "A holds", quantity: 1 }]);
   check("groups: the blue deck is ruled out by the card's colors", r?.excluded.map((d) => [d.id, d.outside]), [[blue, x.color_identity]]);
 
-  // 2. The facts on a fitting deck: the commander's inclusion, and the deck's need in the role.
+  // 2. The facts on a fitting deck: the deck's need in the role. (v2 D3: no commander figure is drawn.)
   const [targets] = await rows<{ t: number }>(sql`
     select ${sql.raw(`avg_${role}`)} as t from commander_support where commander_oracle_id = ${x.commander}::uuid`);
   const f = r?.fits[0];
-  check("fits: the inclusion is the support list's figure", f?.inclusion, Number(x.inclusion));
-  check("fits: a card on the support list is listed", f?.listed, true);
   check("fits: the need counts the deck's own cards in the role", f?.need, { role, have: 2, target: Math.round(Number(targets.t)) });
 
   // 3. Availability: two owned, one of them held by a committed deck.
@@ -165,7 +167,6 @@ async function main() {
   const pair = await makeDeck(USER, "D pair", blueLead.oracle_id, x.commander, []);
   const paired = await loadFits(USER, x.oracle_id);
   check("pair: fits, over the union of both identities", paired?.fits.some((d) => d.id === pair), true);
-  check("pair: its inclusion is the pair's figure", paired?.fits.find((d) => d.id === pair)?.inclusion, 42.5);
   check("pair: named with both commanders", paired?.fits.find((d) => d.id === pair)?.commanders.length, 2);
 
   // v2 PR B: the decks run by each one's synergy for the card, read from the pair's own row for a pair.
@@ -179,11 +180,75 @@ async function main() {
     where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid and oracle_id = ${x.oracle_id}::uuid`);
   check("synergy: and one favoring it less follows", await order(), [fits, pair]);
 
-  // A support row can carry no inclusion figure: that deck lists the card, and says so.
-  await fixture.execute(sql`update commander_pair_support_cards set inclusion = null
-    where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid and oracle_id = ${x.oracle_id}::uuid`);
-  const noFigure = (await loadFits(USER, x.oracle_id))?.fits.find((d) => d.id === pair);
-  check("pair: a row with no inclusion is listed, with no figure", [noFigure?.inclusion, noFigure?.listed], [null, true]);
+  // v2 D3: the reason line's combo, against the real Spellbook index. A deck led by a five-color legend holds
+  // one piece of a two-card variant; Find a deck for the other piece must name the combo. The pair is found
+  // by ASKING the shared read (`loadCompletionPartners`), never by restating its rules here.
+  const [legend] = await rows<{ oracle_id: string }>(sql`
+    select oracle_id from cards where commander_legal and type_line ~* 'legendary creature'
+      and cardinality(color_identity) = 5 order by name limit 1`);
+  const pairs = await rows<{ held: string; want: string }>(sql`
+    select a.oracle_id as held, b.oracle_id as want
+    from spellbook_variants v
+    join spellbook_variant_cards a on a.variant_id = v.variant_id and not a.must_be_commander
+    join spellbook_variant_cards b on b.variant_id = v.variant_id and b.oracle_id <> a.oracle_id and not b.must_be_commander
+    join cards ca on ca.oracle_id = a.oracle_id and ca.commander_legal and ca.type_line !~* 'land'
+    join cards cb on cb.oracle_id = b.oracle_id and cb.commander_legal and cb.type_line !~* 'land'
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+    order by v.popularity desc nulls last, v.variant_id limit 20`);
+  // Read straight off the index, NOT through `loadCompletionPartners`, so a prune dropping too much fails
+  // HERE rather than hiding the fixture from the check.
+  const raw = pairs[0];
+  // The pair read's candidate prune (v2 D3) drops only what could never be a row. EQUIVALENCE: for a deck
+  // holding this pair's piece AND a piece of an unrelated pair, the pruned read with the candidate named
+  // equals the unpruned read filtered to it, and the unpruned read has rows the prune had to drop.
+  const [other] = await rows<{ held: string }>(sql`
+    select a.oracle_id as held
+    from spellbook_variants v
+    join spellbook_variant_cards a on a.variant_id = v.variant_id and not a.must_be_commander
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      and not exists (select 1 from spellbook_variant_cards z where z.variant_id = v.variant_id
+                        and z.oracle_id in (${raw.want}::uuid, ${raw.held}::uuid))
+    order by v.popularity desc nulls last, v.variant_id limit 1`);
+  const args = { present: [raw.held, other.held], commanders: [legend.oracle_id] };
+  const key = (r: PairRow) => `${r.variant_id}|${r.present_id}|${r.missing_id}`;
+  const pruned = (await rows<PairRow>(pairsWithOnePiece({ ...args, missingIn: [raw.want] }))).map(key).sort();
+  const everything = await rows<PairRow>(pairsWithOnePiece({ ...args, missingIn: null }));
+  const filtered = everything.filter((r) => r.missing_id === raw.want).map(key).sort();
+  check("prune: the named-candidate read equals the unpruned read filtered to it", pruned, filtered);
+  check("prune: and the unpruned read held rows the prune had to drop",
+    pruned.length > 0 && everything.some((r) => r.missing_id !== raw.want), true);
+  let combo: { held: string; want: string; name: string } | null = null;
+  for (const p of pairs) {
+    const got = (await loadCompletionPartners({ deckOracleIds: [p.held], commanderOracleIds: [legend.oracle_id], candidateOracleIds: [p.want] })).get(p.want);
+    if (got) { combo = { ...p, name: got.partnerName }; break; }
+  }
+  if (!combo) {
+    check("combo: a two-card variant the shared read counts", false, true);
+  } else {
+    const holder = await makeDeck(USER, "E combo", legend.oracle_id, null, [combo.held]);
+    const read = await loadFits(USER, combo.want);
+    const row = read?.fits.find((d) => d.id === holder);
+    check("combo: the deck holding the other piece reads `Completes a combo with` it", row?.reason, { kind: "combo", with: { oracleId: combo.held, name: combo.name } });
+    check("combo: and it leads the list", read?.fits[0]?.id, holder);
+
+    // The partner's name comes from the list Find a deck already read (`knownNames`), never a second
+    // query. The boundary is the CALL SITE: every statement the app sends is recorded, and the name
+    // lookup `nameMap` issues must not be among them. Delete `knownNames` in fits.ts and this fails.
+    const sent: string[] = [];
+    const execute = appDb.execute.bind(appDb);
+    (appDb as { execute: typeof appDb.execute }).execute = ((q: Parameters<typeof appDb.execute>[0]) => {
+      sent.push(new PgDialect().sqlToQuery(q as ReturnType<typeof sql>).sql);
+      return execute(q);
+    }) as typeof appDb.execute;
+    try {
+      await loadFits(USER, combo.want);
+    } finally {
+      (appDb as { execute: typeof appDb.execute }).execute = execute;
+    }
+    check("combo: the partner is named from the list read, with no name query",
+      sent.some((q) => /spellbook_variant/.test(q)) && !sent.some((q) => /^select oracle_id, name from cards where oracle_id = any/.test(q.trim())), true);
+
+  }
 
   // 6. The add Fits calls is the deck page's add.
   const added = await addCardToDeckFor(USER, fits, x.oracle_id, { relock: false });
@@ -202,7 +267,34 @@ async function main() {
   //    the fixture card. An empty staple set fails rather than passing, since then no card could read true.
   const staples = [...(await loadUniversalStaples())].sort();
   if (staples.length === 0) throw new Error("format_staples names no universal staple on this database");
-  check("staple: a universal staple reads as one", (await loadFits(USER, staples[0]))?.staple, true);
+  const stapleRead = await loadFits(USER, staples[0]);
+  check("staple: a universal staple reads as one", stapleRead?.staple, true);
+
+  // A staple's row draws `staple · any commander`, never a reason, so loadFits computes none. The case has
+  // to be one a reason COULD be found for, or the check holds on any build: a colorless staple with a theme,
+  // and an open five-color deck holding another colorless card with that theme.
+  const texts = await rows<{ oracle_id: string; type_line: string; oracle_text: string | null; color_identity: string[] }>(sql`
+    select oracle_id, type_line, oracle_text, color_identity from cards
+    where oracle_id = any(${sql.param(staples)}::uuid[]) order by oracle_id`);
+  const themedStaple = texts.map((t) => ({ ...t, themes: cardThemes({ typeLine: t.type_line, oracleText: t.oracle_text }, () => false) }))
+    .find((t) => t.color_identity.length === 0 && t.themes.length > 0);
+  if (!themedStaple) {
+    check("staple: a colorless staple with a theme, to test the skip against", false, true);
+  } else {
+    const mates = await rows<{ oracle_id: string; type_line: string; oracle_text: string | null }>(sql`
+      select oracle_id, type_line, oracle_text from cards
+      where commander_legal and cardinality(color_identity) = 0 and oracle_id <> ${themedStaple.oracle_id}::uuid
+        and not (oracle_id = any(${sql.param(staples)}::uuid[])) and type_line !~* 'land'
+      order by name limit 400`);
+    const mate = mates.find((m) => cardThemes({ typeLine: m.type_line, oracleText: m.oracle_text }, () => false).includes(themedStaple.themes[0]));
+    if (!mate) {
+      check(`staple: a colorless card sharing ${themedStaple.themes[0]}`, false, true);
+    } else {
+      const themeDeck = await makeDeck(USER, "F staple theme", legend.oracle_id, null, [mate.oracle_id]);
+      const read = await loadFits(USER, themedStaple.oracle_id);
+      check("staple: no reason on any row, even where a theme is shared", read?.fits.find((f) => f.id === themeDeck)?.reason, null);
+    }
+  }
   check("staple: the fixture card does not", r?.staple, false);
 
   // 8. A card that does not exist reads as nothing.
