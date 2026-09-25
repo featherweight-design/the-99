@@ -32,20 +32,28 @@ const sql = neon(process.env.DATABASE_URL!);
 const goldNames = GOLD.map((r) => r.name);
 const cards = await sql`
   select name, mana_cost, type_line, oracle_text, keywords from cards where name = any(${goldNames})`;
-const byName = new Map(cards.map((c: any) => [c.name, c]));
+type CardRow = { name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; keywords: string[] | null };
+const byName = new Map((cards as CardRow[]).map((c) => [c.name, c]));
 
 // `cardThemes` needs the catalog's own creature subtypes, because the word before
 // "you control" is a creature type only sometimes. Read from type lines, as the
 // caller in the app does.
-const subtypeRows = await sql`
+const subtypeRows = (await sql`
   select distinct trim(word) as word from (
     select unnest(string_to_array(split_part(type_line, '—', 2), ' ')) as word
     from cards where type_line like '%Creature%—%'
-  ) w where length(trim(word)) > 2`;
-const creatureTypes = new Set(subtypeRows.map((r: any) => r.word));
+  ) w where length(trim(word)) > 2`) as { word: string }[];
+const creatureTypes = new Set(subtypeRows.map((r) => r.word));
 const isCreatureType = (w: string) => creatureTypes.has(w);
 
-const textRuleJobs = (card: any): Job[] => {
+/** A gold card missing from the catalog is a broken run, not a blank row. */
+const mustGet = (name: string): CardRow => {
+  const row = byName.get(name);
+  if (!row) throw new Error(`gold card not in the catalog: ${name}`);
+  return row;
+};
+
+const textRuleJobs = (card: CardRow): Job[] => {
   const roles = classifyRoles({ typeLine: card.type_line, oracleText: card.oracle_text, keywords: card.keywords ?? [] });
   const themes = cardThemes({ typeLine: card.type_line, oracleText: card.oracle_text }, isCreatureType);
   // The rules produce a KIND and nothing else. Every limit is filled with the
@@ -64,7 +72,7 @@ const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold"
 const limitValue = (j: Job, f: string) =>
   f === "threshold"
     ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
-    : String((j as any)[f] ?? "none");
+    : String((j as unknown as Record<string, unknown>)[f] ?? "none");
 
 // THE DEFAULT for each limit: the value a classifier that knows nothing about
 // limits would emit. The text rules emit exactly these, so any accuracy they
@@ -102,11 +110,13 @@ const loadModel = (key: string) => {
 const predictions: Record<string, Record<string, Job[] | null>> = Object.fromEntries([
   ["haiku", loadModel("haiku")],
   ["sonnet", loadModel("sonnet")],
-  ["textRules", Object.fromEntries(GOLD.map((r) => [r.name, textRuleJobs(byName.get(r.name))]))],
+  ["textRules", Object.fromEntries(GOLD.map((r) => [r.name, textRuleJobs(mustGet(r.name))]))],
 ].filter(([, v]) => v != null) as [string, Record<string, Job[] | null>][]);
 
-const report: any = { scoredAt: new Date().toISOString(), goldCards: GOLD.length, models: {} };
-const disagreements: any[] = [];
+type LimitStat = { accuracy: number | null; informativeAccuracy: number | null; right: number; wrong: number; infRight: number; infWrong: number };
+type ModelReport = { notReturned: number; jobs: Record<string, number | null>; limits: Record<string, LimitStat>; worstKinds: unknown[] };
+const report: { scoredAt: string; goldCards: number; models: Record<string, ModelReport> } = { scoredAt: new Date().toISOString(), goldCards: GOLD.length, models: {} };
+const disagreements: Record<string, unknown>[] = [];
 
 for (const [model, byCard] of Object.entries(predictions)) {
   const jobs = blankTally();
@@ -199,10 +209,10 @@ for (const [model, byCard] of Object.entries(predictions)) {
 writeFileSync("out/score.json", JSON.stringify(report, null, 1));
 writeFileSync("out/disagreements.json", JSON.stringify(disagreements, null, 1));
 
-for (const [m, r] of Object.entries<any>(report.models)) {
+for (const [m, r] of Object.entries(report.models)) {
   console.log(`\n=== ${m} ===  (${r.notReturned} cards not returned)`);
   console.log(`  JOB    precision ${r.jobs.precision}  recall ${r.jobs.recall}   tp=${r.jobs.tp} fp=${r.jobs.fp} fn=${r.jobs.fn}`);
-  for (const [f, v] of Object.entries<any>(r.limits)) {
+  for (const [f, v] of Object.entries(r.limits)) {
     const inf = v.informativeAccuracy === null ? "n/a" : String(v.informativeAccuracy);
     console.log(`  ${f.padEnd(13)} accuracy ${String(v.accuracy ?? "-").padEnd(5)} | NON-DEFAULT ${inf.padEnd(5)} (${v.infRight}/${v.infRight + v.infWrong})`);
   }

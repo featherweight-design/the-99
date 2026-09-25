@@ -115,7 +115,11 @@ describe("the gold set", () => {
 
   it("covers all four ramp kinds, including the one it found", async () => {
     const { GOLD } = await import("./card-labels-gold.mjs");
-    const kinds = new Set(GOLD.flatMap((r) => r.jobs).map((j) => j.rampKind).filter(Boolean));
+    const kinds = new Set(
+      GOLD.flatMap((r) => r.jobs as { rampKind?: string | null }[])
+        .map((j) => j.rampKind)
+        .filter(Boolean),
+    );
     expect([...kinds].sort()).toEqual(["burstMana", "fetchesLand", "makesTreasure", "tapsForMana"]);
   });
 });

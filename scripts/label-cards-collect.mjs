@@ -1,7 +1,7 @@
 // Polls the two batches, writes each model's parsed labels to out/, and prints
 // MEASURED tokens and cost. Separate from the runner so collecting never
 // re-submits, and separate from scoring so a scoring bug costs nothing.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import "./lib/env.mjs";
 
