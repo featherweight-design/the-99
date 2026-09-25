@@ -8,6 +8,22 @@ precedence:
 2. The R1 handoff, with the audit's F1 to F12 built to.
 3. The playbook's budget rules.
 
+## Rulings (Hugh, 2026-09-25)
+
+1. **The plan is approved**, and the deeper read is settled as written below: `claude-sonnet-5` at
+   `effort: "low"`, 3,000 output tokens, one credit per read, refunded on failure, on Stop and when
+   nothing valid comes back.
+2. **The optional Haiku check is declined.** It is not run and nothing is spent on it.
+3. **Migration 0061**, not 0060, which is pinned to the notices lane's Locked work. If this
+   migration is ready before 0060 is on main, the orchestrator is told first, so the journal keeps no
+   gap. Whichever lands second regenerates and re-stamps the ledger.
+4. **The fence is approved** and recorded in `boards/lanes/help-me-choose.md`. Shared files need their
+   owner's go first:
+   - `actions.ts` and `fill.ts`: the swap lane, and later the notices lane for its Locked sweep;
+   - `synopsis/read.ts`: the notices lane (the-99-d8).
+   `tuning/limits.ts`, `tuning-read.ts` and the credits copy are already this session's from v2.
+   `src/lib/recs/**` is import only.
+
 ## What ships
 
 A player who doesn't know what to build answers optional questions (their own words, colors,
@@ -51,7 +67,7 @@ synopsis's.
 - **Cost per read: about $0.010** (1,800 × $2/M in, plus about 600 out × $10/M). At the ceiling it is
   $0.034. A read spends one unit of the shared allowance (owner 10, friends 3, rolling 24h). At full
   use, reads cost everyone about $0.27 a day, against tuning's $1.37.
-- **One optional check, which can only lower that cost.** A 20-phrasing hand-written dev fixture
+- **One optional check, which could only have lowered that cost (declined, ruling 2).** A 20-phrasing hand-written dev fixture
   (themes, card names, a budget, a bracket, and words that map to nothing), run on `sonnet-low` and
   `haiku`. It measures valid chips, words a reader would map that stay unmapped, truncation at the
   ceiling, and $/read. Haiku replaces Sonnet only if it is as valid and never truncates, which would
@@ -92,7 +108,7 @@ synopsis's.
 ## PR boundaries (each 20 files or fewer)
 
 **PR 1: plumbing.**
-- Migration 0060, number to be confirmed by the-99-d9. It adds:
+- Migration 0061 (ruling 3). It adds:
   - `intake_reads`;
   - the answer columns on `decks`;
   - `'intake'` in `model_calls_feature_check`;
@@ -138,7 +154,6 @@ synopsis's.
   words.
 - The run store and the reaper.
 - The Server Actions to press and to Stop.
-- The dev fixture above, if it runs.
 - `probe:help-me-choose-read` against local-dev. It proves that a read's unit is:
   - spent only on valid chips;
   - refunded on failure, on Stop, and when nothing valid came back;
@@ -202,8 +217,4 @@ The lane's proposed fence, plus:
 
 ## Asks of the-99-d9 before any code
 
-- Confirm migration 0060. It is the next free number; the latest is `0059_swap_tools.sql`.
-- Confirm the fence additions above. The shared ones are `src/lib/model/**`, `src/lib/recs/**`,
-  `schema.ts`, `drizzle/**` and `package.json`.
-- Approve or decline the optional dev fixture (about $0.25). Without it the read ships on
-  `sonnet-low` as settled above.
+Settled by rulings 3 and 4.
