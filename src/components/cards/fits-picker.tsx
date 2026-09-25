@@ -28,13 +28,12 @@ type Added = { deckId: string; note: string };
 
 const colorsOf = (ids: string[]) => (ids.length === 0 ? "colorless" : colorWords(ids));
 
-/** The commander chip's value: the staple form, the figure, or not listed. */
+/** The commander chip's value: the staple form, the figure, listed with no figure, or not listed. */
 function commanderValue(deck: FitDeck, staple: boolean): { text: string; staple: boolean } {
   if (staple) return { text: copy.cmdrStaple, staple: true };
   const commander = deck.commanders.map(shortName).join(" + ");
-  return deck.inclusion === null
-    ? { text: copy.cmdrUnlisted(commander), staple: false }
-    : { text: copy.cmdrFigure(String(Math.round(deck.inclusion)), commander), staple: false };
+  if (deck.inclusion !== null) return { text: copy.cmdrFigure(String(Math.round(deck.inclusion)), commander), staple: false };
+  return { text: deck.listed ? copy.cmdrListedNoFigure(commander) : copy.cmdrUnlisted(commander), staple: false };
 }
 
 function Chip({ label, value, staple = false }: { label: string; value: string; staple?: boolean }) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, landColors, nameAbility, nonManaAbilities, quote,
+  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, makesFreely, nameAbility, nonManaAbilities, quote,
   QUOTE_BUDGET, type LandText,
 } from "./land";
 
@@ -257,5 +257,69 @@ describe("givesUp (H3)", () => {
     expect(givesUp(ring, L("Wastes", "Basic Land", "({T}: Add {C}.)"))).toEqual([
       { kind: "quoted", text: "{1}, {T}: put a storage counter on this land" },
     ]);
+  });
+});
+
+// v2 item 2, rung 4: the head of Plateau's $0.15 wall on Hugh's HD - Gishath (staging text, 2026-09-25).
+describe("makesFreely", () => {
+  const CAPITAL = L("Capital City", "Land", "{T}: Add {C}.\n{1}, {T}: Add one mana of any color.\nCycling {2}");
+  const HUB = L("Aether Hub", "Land", "When this land enters, you get {E} (an energy counter).\n{T}: Add {C}.\n{T}, Pay {E}: Add one mana of any color.");
+  const TOWER_HERO = L("Avengers Tower", "Land", "{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a Hero spell or to activate an ability of a Hero source.");
+  const TOWNSHIP = L("An-Havva Township", "Land", "{T}: Add {C}.\n{1}, {T}: Add {G}.\n{2}, {T}: Add {R} or {W}.");
+  const BRANCH = L("Branch of Vitu-Ghazi", "Land", "{T}: Add {C}.\nDisguise {3}\nWhen this land is turned face up, add two mana of any one color.");
+
+  it("reads the wall as utility mana: paid, restricted, or from a trigger", () => {
+    for (const land of [CAPITAL, HUB, TOWER_HERO, TOWNSHIP, BRANCH]) expect(makesFreely(land, "R")).toBe(false);
+  });
+
+  it("counts a basic type, a plain tap, a pain land and a life payment as free", () => {
+    expect(makesFreely(PLATEAU, "R")).toBe(true);
+    expect(makesFreely(FORGE, "W")).toBe(true);
+    expect(makesFreely(CONFLUENCE, "W")).toBe(true);
+    expect(makesFreely(CANYON, "R")).toBe(true);
+    expect(makesFreely(BRASS, "R")).toBe(true);
+    expect(makesFreely(TOWER, "W")).toBe(true);
+  });
+
+  it("does not make a color the land never makes", () => expect(makesFreely(MOUNTAIN, "W")).toBe(false));
+});
+
+// The rest of Plateau's rung 1 on HD - Gishath before this read (staging text, 2026-09-25): each has a catch.
+describe("colorSource and landCatch", () => {
+  const verge = L("Sunbillow Verge", "Land", "{T}: Add {W}.\n{T}: Add {R}. Activate only if you control a Mountain or a Plains.");
+  const havens = L("The Grey Havens", "Land", "When The Grey Havens enters, scry 1.\n{T}: Add {C}.\n{T}: Add one mana of any color among legendary creature cards in your graveyard.");
+  const plaza = L("Plaza of Heroes", "Land", "{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a legendary spell.\n{T}: Add one mana of any color among legendary permanents you control.");
+  const paliano = L("Paliano, the High City", "Legendary Land", "Reveal this card as you draft it.\n{T}: Add one mana of any color chosen as you drafted cards named Paliano, the High City.");
+  it("reads a verge's second color as conditional, like a checkland", () => {
+    expect(colorSource(verge, "W")).toBe("free");
+    expect(colorSource(verge, "R")).toBe("conditional");
+  });
+  it("reads a grant that holds only on a counter as conditional", () => {
+    const caverns = L("Gemstone Caverns", "Legendary Land", "If this card is in your opening hand and you're not the starting player, you may begin the game with it on the battlefield with a luck counter on it.\n{T}: Add {C}. If this land has a luck counter on it, instead add one mana of any color.");
+    expect(colorSource(caverns, "R")).toBe("conditional");
+  });
+  it("gives no color to a grant that depends on other cards or on a draft", () => {
+    expect(landColors(havens).size).toBe(0);
+    expect(landColors(paliano).size).toBe(0);
+    expect(colorSource(plaza, "R")).toBe("utility");
+  });
+  it.each([
+    ["Rainbow Vale", "{T}: Add one mana of any color. An opponent gains control of this land at the beginning of the next end step.", "utility"],
+    ["Undiscovered Paradise", "{T}: Add one mana of any color. During your next untap step, as you untap your permanents, return this land to its owner's hand.", "utility"],
+    ["Forsaken City", "This land doesn't untap during your untap step.\nAt the beginning of your upkeep, you may exile a card from your hand. If you do, untap this land.\n{T}: Add one mana of any color.", "utility"],
+    ["Glimmervoid", "At the beginning of the end step, if you control no artifacts, sacrifice this land.\n{T}: Add one mana of any color.", "condition"],
+    ["Rith's Grove", "When this land enters, sacrifice it unless you return a non-Lair land you control to its owner's hand.\n{T}: Add {R}, {G}, or {W}.", "condition"],
+    ["Lotus Vale", "If this land would enter, sacrifice two untapped lands instead. If you do, put this land onto the battlefield. If you don't, put it into its owner's graveyard.\n{T}: Add three mana of any one color.", "condition"],
+    ["Forbidden Orchard", "{T}: Add one mana of any color.\nWhenever you tap this land for mana, target opponent creates a 1/1 colorless Spirit creature token.", "condition"],
+  ])("%s has a %s catch", (name, text, want) => expect(landCatch(L(name, "Land", text))).toBe(want));
+  // Older templating names the card rather than saying `this land`; the catch reads the same.
+  it.each([
+    ["Undiscovered Paradise", "{T}: Add one mana of any color. During your next untap step, as you untap your permanents, return Undiscovered Paradise to its owner's hand.", "utility"],
+    ["Glimmervoid", "At the beginning of the end step, if you control no artifacts, sacrifice Glimmervoid.\n{T}: Add one mana of any color.", "condition"],
+  ])("%s named by its own name still has a %s catch", (name, text, want) => expect(landCatch(L(name, "Land", text))).toBe(want));
+  it("reads no catch in a fetch's own cost, or in a plain dual", () => {
+    expect(landCatch(FOOTHILLS)).toBeNull();
+    expect(landCatch(PLATEAU)).toBeNull();
+    expect(landCatch(FOUNDRY)).toBeNull();
   });
 });

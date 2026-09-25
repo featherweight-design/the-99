@@ -171,7 +171,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Sentence `p` | Typography | sans 13px, line-height 1.55, `var(--fg-body)`, `text-wrap:pretty`, `margin:0` | same |
 | Conditional | | `allHold`: the sentence, then the `already holds it` group listing every holding deck. Colors: the sentence alone, no groups | same |
 
-### 2.9 Group heading (`could take it · by name`, `already holds it`)
+### 2.9 Group heading (`could take it`, `already holds it`)
 
 | Element | Property | Mobile | Desktop |
 |---|---|---|---|
@@ -179,7 +179,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Heading | Typography | mono 9.5px, `letter-spacing:0.12em`, uppercase, `var(--fg-faint)` | same |
 | | Padding | `0 0 6px` | same |
 | | Border | `border-bottom: 1px solid var(--border)` | same |
-| Order | | `could take it` first, then `already holds it`. Rows A–Z by deck name (the heading says `by name`); the staple read does not change the order | same |
+| Order | | `could take it` first, then `already holds it`. Since v2 PR B, `could take it` rows run by each deck's commander (or pair) synergy for the card, never drawn, and the heading no longer says `by name`. A staple's rows stay by name, as the staples addendum drew them | same |
 | Conditional | | `could take it` renders only when at least one deck can take the card. `already holds it` renders when at least one deck holds it. No `can't play it` group (R4 removed it) | same |
 
 ### 2.10 Could-take-it row
@@ -247,7 +247,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Door hidden | Not Commander-legal, or no decks, or a stand-in stacked card (Take footer) | Nothing (no replacement state) | same flags |
 | Loading | Picker opened; payload not yet back | Head, card plate with copies line, loading block (§2.6) | `card`, `copies` (owned, free), reduced-motion via `LoadingScreen` |
 | Failed | Picker payload request errors | Head, card plate, failed block (§2.7) with Try again | `card`, `onRetry`; new copy (no key yet) |
-| Several decks fit | ≥1 deck can take the card (identity fits, not already holding) | `could take it · by name` group with rows (§2.10), then `already holds it` if any | `rows[] {deckId, deckName, commanderChip, need?}`, `holds[] {deckName, count}`, `copies` |
+| Several decks fit | ≥1 deck can take the card (identity fits, not already holding) | `could take it` group with rows (§2.10), then `already holds it` if any | `rows[] {deckId, deckName, commanderChip, need?}`, `holds[] {deckName, count}`, `copies` |
 | All hold it | Every deck that can play the card already holds it | Sentence `fits.allHold`, then `already holds it` group listing them; copies line (F15) | `card`, `holds[]`, `copies` |
 | Colors rule them out | No deck's commander identity covers the card | Sentence `noneByColorsOne` (one color) or `noneByColors` (several); no groups; copies line (F15) | `card`, card color words, `copies` |
 | Copies line, any copy free | `free > 0` | `×{owned} · {free} free` in `var(--fg-body)` | `owned`, `free` |
@@ -258,7 +258,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Brew add | Adding to a brew (soft claim) | Does not spend a free copy and never flips rows to Add to buy | deck `isCommitted` / brew flag |
 | Added | An Add on a row succeeded | That row: stamp `in the draft` in place of the button, note line + `Open the deck →`. Other rows re-evaluate Add vs Add to buy; the copies line updates. No undo in the picker | added deckId, note variant (`addedUsedLast` / `addedFree` / `addedToBuy`), deck href |
 | Refused add (`addRefused`) | The add action refuses | `MutationError` under that row with `fits.addRefused`; row keeps its button (undrawn; F4) | row id, error |
-| Ordinary commander chip | Card is not a universal staple | `commander` chip, upright `var(--fg-muted)`: `{pct}% of {commander} decks`, or `not listed for {commander}` | inclusion pct or unlisted, commander (or pair) name |
+| Ordinary commander chip | Card is not a universal staple | `commander` chip, upright `var(--fg-muted)`: `{pct}% of {commander} decks`; `listed for {commander}` when the index lists the card with no inclusion figure; or `not listed for {commander}` | inclusion pct, the `listed` flag, commander (or pair) name |
 | Staple commander chip | Card is a universal staple (`loadUniversalStaples` membership, F18) | `commander` chip, italic `var(--fg-body)`: `staple · any commander`, no % | `isUniversal` |
 | Staple note, with role | Universal staple that has a counted role (Sol Ring) | Dashed note under the plate, label `staple` + sentence; rows keep the need chip | `isUniversal`, role present |
 | Staple note, no role | Universal staple with no counted role (Reliquary Tower) | Dashed note (no-role variant); rows carry the staple chip only, no need chip | `isUniversal`, role absent |
@@ -288,7 +288,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Holds note | `holds` | `(n)` |
 | Deck link aria | `deckLinkAria` | `(deck)` |
 | Chip labels | `cmdrLabel`, `needLabel` | none |
-| Commander chip value | `cmdrFigure`, `cmdrUnlisted` | `(pct, commander)`, `(commander)` |
+| Commander chip value | `cmdrFigure`, `cmdrListedNoFigure`, `cmdrUnlisted` | `(pct, commander)`, `(commander)`, `(commander)` |
 | Need chip value | `need` | `(role, count, target)` |
 | All hold it | `allHold` | `(card)` |
 | Colors rule out | `noneByColorsOne`, `noneByColors` | `(card, color)`, `(card, colors)` |

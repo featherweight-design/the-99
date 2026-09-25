@@ -132,8 +132,9 @@ export function sheetModel(read: StandInsRead): SheetModel {
       const out = [rolesText(s.shared), copy.mv(s.card.cmc)];
       // Addendum §1: a staple's figure is about every commander, so the row says so rather than
       // quoting it as this one's. A free staple keeps the clause in `yours, free` too.
+      // Hugh's Q2: no % on a stand-in row. The list is ordered by synergy, which a printed inclusion
+      // figure would contradict (a 12% row above a 61% one). A staple still says it is one.
       if (s.isUniversal) out.push(copy.stapleFact);
-      else if (s.inclusion !== null) out.push(copy.figure(String(Math.round(s.inclusion)), commander));
       return out;
     }
     const costs = firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors));

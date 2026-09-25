@@ -70,9 +70,9 @@ async function main() {
   // THE CARD, chosen by what the code under test would say rather than by what a query matched: a
   // colored, non-blue card on some commander's support list with a figure, whose primary role is
   // one of the four the mix measures. Ordered, so the fixture is the same on every run.
-  const candidates = await rows<CardRow & { commander: string; inclusion: number; cmd_identity: string[] }>(sql`
+  const candidates = await rows<CardRow & { commander: string; inclusion: number; synergy: number | null; cmd_identity: string[] }>(sql`
     select c.oracle_id, c.name, c.type_line, c.oracle_text, c.keywords, c.color_identity,
-      s.commander_oracle_id as commander, s.inclusion, cmd.color_identity as cmd_identity
+      s.commander_oracle_id as commander, s.inclusion, s.synergy, cmd.color_identity as cmd_identity
     from commander_support_cards s
     join cards c on c.oracle_id = s.oracle_id
     join cards cmd on cmd.oracle_id = s.commander_oracle_id
@@ -116,6 +116,7 @@ async function main() {
     select ${sql.raw(`avg_${role}`)} as t from commander_support where commander_oracle_id = ${x.commander}::uuid`);
   const f = r?.fits[0];
   check("fits: the inclusion is the support list's figure", f?.inclusion, Number(x.inclusion));
+  check("fits: a card on the support list is listed", f?.listed, true);
   check("fits: the need counts the deck's own cards in the role", f?.need, { role, have: 2, target: Math.round(Number(targets.t)) });
 
   // 3. Availability: two owned, one of them held by a committed deck.
@@ -159,13 +160,30 @@ async function main() {
   if (!claimed) throw new Error("the sentinel's pair key already carries a row; refusing to write over it");
   sentinel = { a, b, card: x.oracle_id };
   await fixture.execute(sql`
-    insert into commander_pair_support_cards (commander_oracle_id, partner_oracle_id, oracle_id, inclusion, position)
-    values (${a}::uuid, ${b}::uuid, ${x.oracle_id}::uuid, 42.5, 1)`);
+    insert into commander_pair_support_cards (commander_oracle_id, partner_oracle_id, oracle_id, inclusion, synergy, position)
+    values (${a}::uuid, ${b}::uuid, ${x.oracle_id}::uuid, 42.5, 1, 1)`);
   const pair = await makeDeck(USER, "D pair", blueLead.oracle_id, x.commander, []);
   const paired = await loadFits(USER, x.oracle_id);
   check("pair: fits, over the union of both identities", paired?.fits.some((d) => d.id === pair), true);
   check("pair: its inclusion is the pair's figure", paired?.fits.find((d) => d.id === pair)?.inclusion, 42.5);
   check("pair: named with both commanders", paired?.fits.find((d) => d.id === pair)?.commanders.length, 2);
+
+  // v2 PR B: the decks run by each one's synergy for the card, read from the pair's own row for a pair.
+  // The single deck's synergy is the support list's; the pair's is set either side of it, and the order
+  // must follow. A projection reading the wrong table, or no synergy at all, leaves the order fixed.
+  const order = async () => (await loadFits(USER, x.oracle_id))?.fits.map((d) => d.id).filter((id) => id === pair || id === fits);
+  const single = x.synergy === null ? null : Number(x.synergy);
+  check(`synergy: the fixture's own synergy (${single}) sits inside the range`, single !== null && single > -1 && single < 1, true);
+  check("synergy: a pair favoring the card more leads", await order(), [pair, fits]);
+  await fixture.execute(sql`update commander_pair_support_cards set synergy = -1
+    where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid and oracle_id = ${x.oracle_id}::uuid`);
+  check("synergy: and one favoring it less follows", await order(), [fits, pair]);
+
+  // A support row can carry no inclusion figure: that deck lists the card, and says so.
+  await fixture.execute(sql`update commander_pair_support_cards set inclusion = null
+    where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid and oracle_id = ${x.oracle_id}::uuid`);
+  const noFigure = (await loadFits(USER, x.oracle_id))?.fits.find((d) => d.id === pair);
+  check("pair: a row with no inclusion is listed, with no figure", [noFigure?.inclusion, noFigure?.listed], [null, true]);
 
   // 6. The add Fits calls is the deck page's add.
   const added = await addCardToDeckFor(USER, fits, x.oracle_id, { relock: false });

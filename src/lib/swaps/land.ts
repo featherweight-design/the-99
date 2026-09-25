@@ -38,7 +38,9 @@ function stripReminders(text: string): string {
  * never matches) reads yours. Command Tower's grant is the commander's identity, which is every
  * color the deck can hold, so it counts in full.
  */
-const CONDITIONAL_GRANT = /\bcould produce\b|\bamong lands\b/;
+// Also `among legendary creature cards in your graveyard` (The Grey Havens), `among legendary permanents you
+// control` (Plaza of Heroes), and Paliano's colors `chosen as you drafted`, which a Commander game never has.
+const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|permanents))\b|\bas you drafted\b/;
 
 /**
  * A mana ability whose COST sacrifices the land itself makes its mana once, and then the land is
@@ -79,6 +81,66 @@ export function landColors(card: LandText): Set<Color> {
     }
   }
   return colors;
+}
+
+/**
+ * Whether the land makes `color` FREELY: from a basic land type, or from an ability whose whole cost is
+ * {T} (or {T} and a life payment, which the drawbacks already price) and whose mana can be spent on
+ * anything. A land that makes a color only by paying for it (Capital City's `{1}, {T}`, Aether Hub's
+ * energy), only for a narrow use (Avengers Tower's `Spend this mana only to cast a Hero spell`), or only
+ * from a trigger (Branch of Vitu-Ghazi, turned face up) still makes that color, so it stays a stand-in;
+ * it is utility mana, and the ladder puts it last (v2 item 2, rung 4). Measured on Hugh's HD - Gishath,
+ * every land at the head of Plateau's $0.15 wall was one of these three.
+ */
+export function makesFreely(card: LandText, color: Color): boolean {
+  return colorSource(card, color) !== "utility";
+}
+
+/**
+ * How a land makes `color`: `free` (a basic type, or {T} and at most a life payment), `conditional` (an
+ * ability that says `Activate only if…`: a verge's second color, like a checkland's), or `utility`
+ * (only by paying, only for a narrow use, or only from a trigger: `makesFreely` above).
+ */
+export function colorSource(card: LandText, color: Color): "free" | "conditional" | "utility" {
+  const typeLine = card.typeLine.split(" // ")[0].toLowerCase();
+  for (const t of BASIC_TYPES) if (TYPE_COLOR[t] === color && new RegExp(`\\b${t}\\b`).test(typeLine)) return "free";
+  let conditional = false;
+  const text = stripReminders(frontText(card));
+  for (const line of text.split("\n")) {
+    const colon = line.indexOf(":");
+    if (colon < 0) continue;
+    const cost = line.slice(0, colon).toLowerCase();
+    const effect = line.slice(colon + 1).toLowerCase();
+    // The cost is {T}, and at most a life payment beside it: no mana, no energy, no sacrifice.
+    const rest = cost.replace(/\{t\}/, "").replace(/,?\s*pay \d+ life/, "").replace(/[,\s]/g, "");
+    if (!cost.includes("{t}") || rest !== "") continue;
+    if (/spend this mana only/.test(effect)) continue;
+    const makes = (ANY_COLOR.test(effect) && !CONDITIONAL_GRANT.test(effect))
+      || [...effect.matchAll(/\badd\b([^.]*)/g)].some((m) => m[1].includes(`{${color.toLowerCase()}}`));
+    if (!makes) continue;
+    // `Activate only if…` (a verge), or a grant that replaces the plain one only `if` something holds
+    // (Gemstone Caverns' luck counter): the color is there on a condition.
+    if (/activate only\b|\bif\b[^.]*\binstead add\b|\binstead add\b/.test(effect)) conditional = true;
+    else return "free";
+  }
+  return conditional ? "conditional" : "utility";
+}
+
+/**
+ * A land's catch, read from the whole card rather than from its mana ability (v2 item 2): what the land
+ * costs you to keep, beside what it costs to tap. `utility` is a land that leaves or does not come back
+ * (Rainbow Vale goes to an opponent, Undiscovered Paradise returns to hand, Forsaken City does not untap);
+ * `condition` is one that asks something to stay or to be played (Glimmervoid's artifact, Rith's Grove's
+ * bounce, Forbidden Orchard's gift). The cost line of a fetch (`{T}, Sacrifice this land:`) is not a catch.
+ */
+export function landCatch(card: LandText): "condition" | "utility" | null {
+  // The catalog's current Oracle says `this land`; older templating names the card, so the name reads the same.
+  const self = card.name.split(" // ")[0].toLowerCase();
+  const text = stripReminders(frontText(card)).toLowerCase().split(self).join("this land");
+  if (/opponent gains control of this land|return this land to its owner's hand|doesn't untap during your untap step/.test(text)) return "utility";
+  // Lotus Vale's `sacrifice two untapped lands` is paid to put it into play, which is a catch too.
+  if (/sacrifice (this land|it) unless|if you control no [^.]*, sacrifice this land|opponent creates|sacrifice (two|an?) untapped lands?/.test(text)) return "condition";
+  return null;
 }
 
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };

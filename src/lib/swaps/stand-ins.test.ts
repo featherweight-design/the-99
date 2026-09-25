@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PriceFact } from "../decks/price";
 import {
-  freeAfterTake, jobOf, rankStandIns, sameJob, STAND_IN_GROUP_CAP, type Candidate, type CardRow,
+  freeAfterTake, jobOf, landRung, mainType, rankStandIns, sameJob, STAND_IN_GROUP_CAP, type Candidate, type CardRow,
 } from "./stand-ins";
 
 const NOW = new Date("2026-09-21T09:00:00Z");
@@ -13,9 +13,11 @@ const card = (name: string, typeLine: string, oracleText: string, cmc = 0): Card
   oracleId: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`,
   name, typeLine, oracleText, keywords: [], cmc, imageUri: null,
 });
-const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => ({
-  ...c, inclusion: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over,
-});
+const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => {
+  const x = { ...c, inclusion: null, synergy: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over };
+  // A support row carries a figure; `listed` states it when a test needs a row with none.
+  return { ...x, listed: over.listed ?? (x.inclusion !== null || x.synergy !== null) };
+};
 const fact = (cents: number | null, asOf = NOW, foilCents: number | null = null): PriceFact =>
   ({ cents, foilCents, etchedCents: null, asOf });
 
@@ -140,7 +142,8 @@ describe("rankStandIns", () => {
     expect([...g.byCommander, ...g.unlisted]).toEqual([]);
   });
 
-  it("orders spells the index lists by its figure, and the rest after them by price", () => {
+  // v2 item 8: synergy, not inclusion. The two disagree here, so the order says which one is read.
+  it("orders spells the index lists by the commander's synergy, and the rest after them by price", () => {
     const a = card("Listed Low", "Artifact", "{T}: Add {C}.", 1);
     const b = card("Listed High", "Artifact", "{T}: Add {C}.", 1);
     const c = card("Unlisted Cheap", "Artifact", "{T}: Add {C}.", 1);
@@ -148,16 +151,50 @@ describe("rankStandIns", () => {
     const priced = {
       newestAsOf: NOW,
       prices: new Map([
-        [VAULT.oracleId, fact(3000)], [a.oracleId, fact(50)], [b.oracleId, fact(900)],
+        // The higher-synergy card is the DEARER one, so neither inclusion nor price can produce this order.
+        [VAULT.oracleId, fact(3000)], [a.oracleId, fact(900)], [b.oracleId, fact(50)],
         [c.oracleId, fact(20)], [d.oracleId, fact(40)],
       ]),
     };
     const g = rankStandIns(VAULT, [
-      cand(a, { inclusion: 12 }), cand(b, { inclusion: 61 }), cand(d), cand(c),
+      cand(a, { inclusion: 12, synergy: 0.4 }), cand(b, { inclusion: 61, synergy: 0.02 }), cand(d), cand(c),
     ], priced);
-    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed High", "Listed Low"]);
+    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed Low", "Listed High"]);
     expect(g.unlisted.map((s) => s.card.name)).toEqual(["Unlisted Cheap", "Unlisted Dear"]);
     expect(g.staples).toEqual([]);
+  });
+
+  // A support row can carry a synergy and no inclusion; the index lists it all the same.
+  it("groups a listed card by its support row, not by whether its inclusion is set", () => {
+    const a = card("No Inclusion", "Artifact", "{T}: Add {C}.", 1);
+    const b = card("No Figures", "Artifact", "{T}: Add {C}.", 1);
+    const priced = { newestAsOf: NOW, prices: new Map([[VAULT.oracleId, fact(3000)], [a.oracleId, fact(90)], [b.oracleId, fact(80)]]) };
+    const g = rankStandIns(VAULT, [cand(a, { synergy: 0.3 }), cand(b, { listed: true })], priced);
+    expect(g.byCommander.map((s) => s.card.name)).toEqual(["No Inclusion", "No Figures"]);
+    expect(g.unlisted).toEqual([]);
+  });
+
+  // v2 item 2: lands on the ladder, never the alphabet or price alone. Plateau's stand-ins in HD - Gishath were
+  // an alphabetical wall of $0.15 lands.
+  it("orders land stand-ins by rung, then synergy, then price", () => {
+    const L = (name: string, text: string) => card(name, "Land", text);
+    const tapped = L("Aaa Tapped", "This land enters tapped.\n{T}: Add {R} or {W}.");
+    const check = L("Bbb Check", "This land enters tapped unless you control a Mountain or a Plains.\n{T}: Add {R} or {W}.");
+    const clean = L("Ccc Clean", "{T}: Add {R} or {W}.");
+    const cleanSyn = L("Ddd Clean Synergy", "{T}: Add {R} or {W}.");
+    const paid = L("Aaa Paid", "{T}: Add {C}.\n{1}, {T}: Add one mana of any color.");
+    const priced = {
+      newestAsOf: NOW,
+      prices: new Map([
+        [PLATEAU.oracleId, fact(40000)], [tapped.oracleId, fact(15)], [check.oracleId, fact(15)],
+        [clean.oracleId, fact(15)], [cleanSyn.oracleId, fact(900)], [paid.oracleId, fact(10)],
+      ]),
+    };
+    const g = rankStandIns(PLATEAU, [
+      cand(tapped, { synergy: 0.9 }), cand(check), cand(clean), cand(cleanSyn, { synergy: 0.3 }), cand(paid, { synergy: 0.95 }),
+    ], priced);
+    // The paid land is cheapest, first by name and highest in synergy, and still last: it is utility mana.
+    expect(g.cheapest.map((s) => s.card.name)).toEqual(["Ddd Clean Synergy", "Ccc Clean", "Bbb Check", "Aaa Tapped", "Aaa Paid"]);
   });
 
   it("moves a universal staple to buy into its own group, by price, and keeps a free one free (H4)", () => {
@@ -210,4 +247,42 @@ describe("rankStandIns", () => {
     const g = rankStandIns(cradle, [cand(forest)], { newestAsOf: NOW, prices: new Map([[cradle.oracleId, fact(90000)]]) });
     expect(g.free[0].givesUp).toEqual([{ kind: "named", label: "its extra mana" }]);
   });
+});
+
+// v2 item 2 and Hugh's Q1: the ladder is read from the parsed drawbacks, never from a name.
+describe("landRung", () => {
+  it("puts a land with no cost first", () => expect(landRung([])).toBe(1));
+  it("puts a condition or a life price second: check, fast, shock, pain, pay life", () => {
+    expect(landRung([{ kind: "entersTappedUnless", condition: "you control a Mountain" }])).toBe(2);
+    expect(landRung([{ kind: "damage", amount: 1, colors: ["R", "W"] }])).toBe(2);
+    expect(landRung([{ kind: "life", amount: 1, colors: ["R"] }])).toBe(2);
+    expect(landRung([{ kind: "lifeFetch", amount: 1 }])).toBe(2);
+  });
+  it("puts utility mana fourth, ahead of everything else it costs", () => {
+    expect(landRung([], "utility")).toBe(4);
+    expect(landRung([{ kind: "entersTapped" }], "utility")).toBe(4);
+    expect(landRung([], "free", "utility")).toBe(4);
+    expect(landRung([], "conditional")).toBe(2);
+    expect(landRung([], "free", "condition")).toBe(2);
+  });
+  it("puts entering tapped third, whatever else it costs", () => {
+    expect(landRung([{ kind: "entersTapped" }])).toBe(3);
+    expect(landRung([{ kind: "entersTapped" }, { kind: "basicOnly" }])).toBe(3);
+  });
+  it("moves nothing for finding only basics", () => expect(landRung([{ kind: "basicOnly" }])).toBe(1));
+});
+
+// Hugh's Q4: the front face's main type, an artifact creature counting as a creature.
+describe("mainType", () => {
+  it.each([
+    ["Artifact Creature — Golem", "creature"],
+    ["Enchantment Creature — God", "creature"],
+    ["Legendary Planeswalker — Ajani", "planeswalker"],
+    ["Instant", "instant"],
+    ["Sorcery // Sorcery", "sorcery"],
+    ["Artifact — Equipment", "artifact"],
+    ["Legendary Enchantment", "enchantment"],
+    ["Creature — Human // Land", "creature"],
+    ["Kindred Instant — Elf", "instant"],
+  ])("%s is %s", (typeLine, want) => expect(mainType(typeLine)).toBe(want));
 });

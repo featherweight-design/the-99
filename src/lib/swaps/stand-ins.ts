@@ -11,7 +11,7 @@ import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import {
-  drawbacks, fetchFinds, givesUp, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
+  colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
 
 /** How many stand-ins a group shows. A presentation cap, stated once: the design draws no count. */
@@ -98,6 +98,13 @@ export function freeAfterTake(card: { typeLine: string }, owned: number, free: n
 export type Candidate = CardRow & {
   /** This commander's inclusion figure, or the pair's. Null when the index does not list it. */
   inclusion: number | null;
+  /**
+   * EDHREC's synergy for this card under this commander (or pair): how much MORE its decks run it than
+   * decks of its colors do, -1..1. Null when the index does not list it. Orders, never drawn (Q2).
+   */
+  synergy: number | null;
+  /** The index holds a support row for this card, whatever figures that row carries. */
+  listed: boolean;
   isUniversal: boolean;
   owned: number;
   /** Copies free from this deck's vantage, from `loadAvailability`. Null when it owns none. */
@@ -114,8 +121,11 @@ export type StandIn = {
   cents: number | null;
   foilOnly: boolean;
   inclusion: number | null;
+  synergy: number | null;
   isUniversal: boolean;
   shared: SpellRole[];
+  /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
+  rung: 1 | 2 | 3 | 4 | null;
   drawbacks: Drawback[];
   givesUp: GivenUp[];
 };
@@ -150,10 +160,53 @@ function stocked(id: string, priced: Priced): { cents: number; foilOnly: boolean
   return cents === null ? null : { cents, foilOnly: state === "foilOnly" };
 }
 
+/**
+ * Where a land sits on the quality ladder (v2 item 2, Hugh's Q1), read from the drawbacks the row
+ * already parses and never from a name list: 1 untapped with no cost; 2 untapped with a condition or a
+ * price in life (check, fast, slow, shock, pain, pay life); 3 enters tapped; 4 utility, a land that
+ * makes the colors only by paying for them, only for a narrow use, or only once (`makesFreely`).
+ * `basicOnly` is a limit on what a fetch finds rather than a cost of playing it, so it moves nothing.
+ */
+export function landRung(
+  list: readonly Drawback[],
+  source: "free" | "conditional" | "utility" = "free",
+  catchOf: "condition" | "utility" | null = null,
+): 1 | 2 | 3 | 4 {
+  if (source === "utility" || catchOf === "utility") return 4;
+  if (list.some((d) => d.kind === "entersTapped")) return 3;
+  if (source === "conditional" || catchOf === "condition" || list.some((d) => d.kind !== "basicOnly")) return 2;
+  return 1;
+}
+
+/** The worst of the colors a land is asked for: one utility color makes the land utility for this job. */
+function sourceFor(card: CardRow, job: Job): "free" | "conditional" | "utility" {
+  if (job.kind !== "land") return "free";
+  const each = job.colors.map((color) => colorSource(card, color));
+  return each.includes("utility") ? "utility" : each.includes("conditional") ? "conditional" : "free";
+}
+
+const MAIN_TYPES = ["creature", "planeswalker", "battle", "instant", "sorcery", "artifact", "enchantment", "land"] as const;
+export type MainType = (typeof MAIN_TYPES)[number] | "other";
+
+/**
+ * A card's main type, off the front face (Q4): the first of MAIN_TYPES its type line carries, so an
+ * artifact creature is a creature, which is what a deck counting its creatures counts.
+ */
+export function mainType(typeLine: string): MainType {
+  const front = typeLine.split(" // ")[0].toLowerCase();
+  return MAIN_TYPES.find((t) => new RegExp(`\\b${t}\\b`).test(front)) ?? "other";
+}
+
 const byName = (a: StandIn, b: StandIn) => a.card.name.localeCompare(b.card.name);
 const byPrice = (a: StandIn, b: StandIn) => (a.cents ?? Infinity) - (b.cents ?? Infinity) || byName(a, b);
-const byInclusion = (a: StandIn, b: StandIn) =>
-  (b.inclusion ?? -Infinity) - (a.inclusion ?? -Infinity) || byPrice(a, b);
+/**
+ * By the commander's synergy (v2 items 8 and 9): how much MORE its decks run a card than decks of its
+ * colors do, rather than raw inclusion, which ranks every commander's staples first. Never drawn (Q2).
+ */
+const bySynergy = (a: StandIn, b: StandIn) =>
+  (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || byPrice(a, b);
+/** Lands on the ladder (item 2): the rung first, then synergy, then price, never the alphabet. */
+const byLadder = (a: StandIn, b: StandIn) => (a.rung ?? 1) - (b.rung ?? 1) || bySynergy(a, b);
 
 /**
  * The stand-ins for one original, grouped and ordered as the sheet draws them.
@@ -161,8 +214,9 @@ const byInclusion = (a: StandIn, b: StandIn) =>
  * - A free copy leads, whatever it costs, and never needs to be cheaper (brief §5).
  * - A buy must be STOCKED NOW and cost less than the original (F6). A price that is absent is never
  *   free, and a sold-out original has no price to beat, so it gets free copies only (F5).
- * - Lands and fetches order by price; spells by the commander's figure, with the cards its index
- *   does not list after them, by price (ruling 6, F14). A universal staple to buy is neither: it
+ * - Lands and fetches order by the ladder (`landRung`), then the commander's synergy, then price (v2
+ *   item 2); spells by the commander's synergy, with the cards its index does not list after them, by
+ *   price (ruling 6, F14; v2 item 8). A universal staple to buy is neither: it
  *   takes its own group, by price, ahead of the commander's ranking (H4).
  */
 export function rankStandIns(original: CardRow, candidates: readonly Candidate[], priced: Priced): StandInGroups {
@@ -186,24 +240,27 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
       cents: price?.cents ?? null,
       foilOnly: price?.foilOnly ?? false,
       inclusion: c.inclusion,
+      synergy: c.synergy,
       isUniversal: c.isUniversal,
       shared: match.shared,
       drawbacks: isLand ? drawbacks(c) : [],
+      // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.
+      rung: isLand ? landRung(drawbacks(c), sourceFor(c, job), landCatch(c)) : null,
       givesUp: isLand ? givesUp(original, c) : [],
     };
     if (row.free) groups.free.push(row);
     else if (price && originalPrice && price.cents < originalPrice.cents) {
       if (isLand) groups.cheapest.push(row);
       else if (c.isUniversal) groups.staples.push(row);
-      else if (c.inclusion !== null) groups.byCommander.push(row);
+      else if (c.listed) groups.byCommander.push(row);
       else groups.unlisted.push(row);
     }
   }
 
-  groups.free.sort(job.kind === "spell" ? byInclusion : byPrice);
-  groups.cheapest.sort(byPrice);
+  groups.free.sort(job.kind === "spell" ? bySynergy : byLadder);
+  groups.cheapest.sort(byLadder);
   groups.staples.sort(byPrice);
-  groups.byCommander.sort(byInclusion);
+  groups.byCommander.sort(bySynergy);
   groups.unlisted.sort(byPrice);
   for (const k of ["free", "cheapest", "staples", "byCommander", "unlisted"] as const) {
     groups[k] = groups[k].slice(0, STAND_IN_GROUP_CAP);
