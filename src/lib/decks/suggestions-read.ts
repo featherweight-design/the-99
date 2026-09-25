@@ -22,6 +22,7 @@ import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
+import { SHELF_CAP } from "./shelf-cap";
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
 // Consider panel can sort by cost without a second round trip.
@@ -138,6 +139,15 @@ export type DeckSuggestionsPayload = {
   mix: RecommendedMix;
 };
 
+/**
+ * The unowned staples the Top picks shelf is offered: the ranked list trimmed to one
+ * shelf. The same `SHELF_CAP` as every other shelf, so the sixth pick is not dropped
+ * here before the panel's cap ever sees it (#391).
+ */
+export function unownedAppend<T>(eligible: readonly T[]): T[] {
+  return eligible.slice(0, SHELF_CAP);
+}
+
 /** `shoppingFigures` is null when EDHREC is unreachable, and a map otherwise. An
     empty map says "we asked and these cards have no figure"; null says "we could
     not ask". The Shopping rows print an absence for the first and nothing at all
@@ -245,14 +255,15 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
     );
   });
 
-  // Unowned EDHREC staples: up to 5
+  // Unowned EDHREC staples: one shelf's worth.
   let unownedSuggestions: DeckSuggestion[] = [];
   if (topCards && topCards.length > 0) {
-    // unownedStaples returns the full ranked list; this loader caps at 5.
+    // unownedStaples returns the full ranked list; this loader trims it to the
+    // Top picks shelf, which draws SHELF_CAP like every other shelf (#391).
     const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
     const eligible = await unownedStaples(commanders, topCards, ownedByOracleId, excludeIds);
 
-    unownedSuggestions = eligible.slice(0, 5).map((c) =>
+    unownedSuggestions = unownedAppend(eligible).map((c) =>
       buildSuggestionPayload(
         {
           oracleId: c.oracleId,
