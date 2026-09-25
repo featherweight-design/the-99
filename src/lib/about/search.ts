@@ -16,7 +16,9 @@ export type TitleMatch =
 export function matchTitle(title: string, query: string): TitleMatch {
   const q = query.trim();
   if (!q) return { matched: false };
-  const at = title.toLocaleLowerCase().indexOf(q.toLocaleLowerCase());
+  // Not `toLocaleLowerCase`: in a Turkish locale `I` folds to dotless `ı`, and
+  // `i` would stop finding `Import a collection`.
+  const at = title.toLowerCase().indexOf(q.toLowerCase());
   if (at < 0) return { matched: false };
   return {
     matched: true,

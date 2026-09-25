@@ -1,7 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { filterChapters, matchTitle } from "./search";
 
 describe("matchTitle", () => {
+  it("folds case the same in every locale", () => {
+    // A Turkish-locale fold, where `I` becomes dotless `ı`.
+    const turkish = vi
+      .spyOn(String.prototype, "toLocaleLowerCase")
+      .mockImplementation(function (this: string) {
+        return this.replace(/I/g, "ı").toLowerCase();
+      });
+    try {
+      expect(matchTitle("Import a collection", "i").matched).toBe(true);
+    } finally {
+      turkish.mockRestore();
+    }
+  });
+
   it("splits a title around a case-insensitive match", () => {
     expect(matchTitle("The other half of a combo", "HALF")).toEqual({
       matched: true,
