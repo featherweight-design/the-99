@@ -50,6 +50,17 @@ E1 and E2 are extractions, not forks. One component serves both the feature and 
 - **No new copy module.** Every string in a figure comes from its surface's own copy file
   (`swap-tools.ts`, `locked-cards.ts`, `change-commander.ts`, `help-me-choose.ts`).
 
+## Revision r2 · 2026-09-25 (ranking rebuild)
+
+A3 and A4 are rewritten to describe the rebuilt swap-tools ranking (see
+`design_handoff_the99_swap_tools/addendum_ranking_rebuild/`). The earlier canvas and `.ts` stay as they are.
+- **Canvas:** `The 99 - About · Launch Entries r2.dc.html`. Only A3, A4 and §6 differ.
+- **Copy:** `about-launch-entries-r2.ts` holds the two replacement objects. Ids, positions and `since` are unchanged.
+- **A3 Find a deck for it:** the caption and key lines now say that decks are ordered by synergy and that each gives one reason (a combo, then a theme). The specimen is Basalt Monolith, with a combo row and a theme row. The two chips are now one reason line.
+- **A4 Cheaper stand-ins:** the caption and key lines cover the type groups and the land ladder with its mana line. The "free first" and Take/Undo lines are dropped: price is now a tiebreak, and the caption already covers undo. The locked-card rule stays in A2. The specimen adds one sheet group (lands, three rows, Show all). That needs **E3**: export `StandInGroup` unchanged.
+- Key lines still quote no figure, limit or price.
+- **Open:** if v10 has already shipped to readers, decide whether a rewrite of two entries needs a bump. R6 has no "revised" state, and Design's reading is that a rewrite doesn't need one.
+
 ## Open
 
 1. **Chapter 02's sub** says *Two lanes*. Help me choose is a door into those lanes, so the sub

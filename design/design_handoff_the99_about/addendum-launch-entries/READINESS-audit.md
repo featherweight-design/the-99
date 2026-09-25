@@ -141,3 +141,68 @@ the revision.
    partner deck almost always sees no candidates. Should the entry mention pairs before the pair
    index is widened, or say singles only for now?
 4. ~~What goes out at version 10?~~ **Answered (Hugh): each entry follows its own switch.** See G1.
+
+---
+
+## Revision r2 and the rulings (2026-09-25)
+
+Design's r2 (`about-launch-entries-r2.ts`, `The 99 - About · Launch Entries r2.dc.html`, and the
+README's "Revision r2" section) rewrites A3 and A4 for the swap-tools ranking rebuild. Ids,
+positions, routes and `since` are unchanged, and the other three entries are untouched. The r2
+drop is checked against the orchestrator's rulings rather than against code, because the rebuild
+is not built: `design_handoff_the99_swap_tools/addendum_ranking_rebuild/` is not on main yet.
+**Re-check both entries against the built ranking before they ship.**
+
+### A3 Find a deck for it (r2)
+- **R2-A3-1 (STALE by ruling). Key 3's last clause is false once built.** Find a deck never shows
+  the two shares; with no combo and no theme, a row shows the need alone (Hugh). Proposed key 3:
+  *"Each deck gives its strongest reason: a combo the card completes with that deck's own cards,
+  then the theme it would join. With neither, the deck shows only what it needs. A staple that
+  every deck runs says staple instead."* Proposed key 4, so it reads true with or without a
+  reason: *"The need is this deck's count for the card's role against its target, left out when
+  there's no role. Add uses a free copy if you have one. Otherwise the card joins as one to buy."*
+- Key 2 describes the synergy order without quoting a figure, which matches the ruling (synergy
+  orders the list and is never shown). KEEP.
+- **Open for the build:** what does a row show when it has no combo, no theme and no role? The
+  entry must not promise a line the row doesn't draw.
+
+### A4 Cheaper stand-ins (r2)
+- Key 4's order (untapped, then tapped, then lands that make a color only once, last) matches the
+  ruling, which accepted Design's reading. KEEP.
+- **R2-A4-1 (TIGHTEN).** "Each says what it gives up" sits at the end of the LAND key line, so it
+  reads as a land-only fact. Every stand-in row shows its jobs, its extra benefits and what it
+  gives up (Hugh), and no row shows a percentage. Proposed: move the clause to key 3,
+  *"…Each group is led by the cards this commander's decks favor, each says what it gives up,
+  and a few show until you ask for all."*, and end key 4 at the ladder.
+- r2 dropped "your free copies first", because price is now a tiebreak. Whether owned copies still
+  lead is a fact about the rebuilt ranking. Confirm it at build time, and do not restore the claim
+  unless the ranking does it.
+- **E3 accepted** (export `StandInGroup` unchanged), as E1 and E2 were.
+- **The README's open question (does a rewrite need a bump?) is moot.** Under the per-switch
+  model (G1) nothing is batched into a version, seen is recorded per entry id, and neither entry
+  has been shown to any reader. Once one has, a rewrite keeps its id and is not re-announced.
+
+### Q1–Q3, resolved
+- **Q2 (Locked and the climb):** the Locked entry stays about the lock. The climb ordering is an
+  ordinary edit to the analysis entry that covers the climb. L4 closes.
+- **Q3 (pairs):** #1002 widens the pair index before any production flip, so key 1 and the
+  caption may name pairs. **Condition:** #1002 was still OPEN at this writing. The build checks
+  that it has merged, and if not, it says singles only.
+- **Q1 (the intro against Help me choose):** settled by `/copy-review`, with no finding for Hugh.
+  See below.
+
+### /copy-review: the page intro, chapter 02's sub, and A1 (propose mode)
+
+| File | String | Class | Verdict | Replacement / reason |
+|---|---|---|---|---|
+| `about.ts` pageIntro | "Everything here is scored against the cards you actually own." | Teaching | KEEP | Still true: every surface measures against your collection, including Help me choose, whose every row shows what you own. The line is also **frozen**, quoted verbatim in the merged R6 handoff, so a change would go through Design and not this pass. |
+| `about.ts` chapter 02 sub | "Two lanes: what your collection already supports, and what it would support if you bought one card." | Teaching | KEEP | It describes the chapter's lanes, not every entry. The chapter already holds non-lane entries (role coverage, commander availability, partners), so Help me choose joining them breaks nothing. Frozen as above. |
+| A1 caption | "…ordered by how well each fits what you asked, not by what you own, and picking one…" | Teaching | TIGHTEN | *"The results are commanders ordered by how well each fits what you asked, and every row shows how much of it you already own. Picking one creates the deck and fills it under the same answers."* This removes the one clause that reads against the intro sitting directly above it, and it absorbs H3. |
+| A1 key 2 | "What you own is shown on the row but never orders it: …" | Teaching | TIGHTEN | *"Every row shows what you own: the commander's own mark, how much of its 99 you own, and roughly what the rest would cost. It orders the list only when you give no theme or card."* Absorbs H5. |
+| A1 keys 1, 4 | as proposed at H4 and H6 | Teaching | TIGHTEN | Already in this audit. |
+| A1 key 3 | "Your sentence is matched for free. A closer read of what's left costs one credit…" | Teaching | KEEP | Accurate once #1000 ships (H2). |
+
+The self-check passes: no cut literals, no two replacements open the same way, and no frozen string
+is changed. The intro and the sub stay as they are, and the contradiction is removed inside the
+entry. **Nothing here needs Hugh.** The replacements still go through /copy-review with pictures
+at build time.
