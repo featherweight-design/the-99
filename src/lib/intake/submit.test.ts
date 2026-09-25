@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildPhraseIndex } from "./match";
 import { emptyParams, parseChooseParams, READ_WORDS_MAX_CHARS } from "./params";
-import { submitTarget } from "./submit";
+import { deeperTarget, submitTarget } from "./submit";
 
 const DS = "0000aaaa-0000-4000-8000-000000000001";
 const SOL = "0000aaaa-0000-4000-8000-000000000002";
@@ -17,6 +17,12 @@ const landed = (url: string) => {
 };
 
 describe("the submit redirect", () => {
+  it("is a new ask whatever address it came from: an earlier read and its marks never ride along", () => {
+    const READ = "0000aaaa-0000-4000-8000-0000000000aa";
+    const p = landed(target({ words: "dinosaurs", readId: READ, deeper: ["t:dinosaurs"] }));
+    expect([p.readId, p.deeper]).toEqual([null, []]);
+  });
+
   it("lands on the results with the words resolved into answers and the words kept", () => {
     const p = landed(target({ words: "dinosaurs with Doubling Season under $150 bracket 2", colors: ["r", "g"] }));
     expect(p).toMatchObject({
@@ -76,9 +82,45 @@ describe("submitTarget's card and Not used order", () => {
     expect(p.notUsed).toEqual(["Doubling Season"]);
   });
 
+  it("reads a carried card's id in any case as the same card", () => {
+    const p = landed(submitTarget(parseChooseParams(new URLSearchParams(`a=${SOL.toUpperCase()}&w=with+Doubling+Season`)), index));
+    expect(p.card).toBe(SOL);
+    expect(p.notUsed).toEqual(["Doubling Season"]);
+  });
+
   it("lists the player's own phrases before a figure the controls set aside", () => {
     const p = landed(target({ words: "big energy under $300", budgetDollars: 100 }));
     expect(p.notUsed.indexOf("$300")).toBeGreaterThan(p.notUsed.indexOf("big energy"));
     expect(p.notUsed.indexOf("big energy")).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("deeperTarget", () => {
+  const READ = "0000aaaa-0000-4000-8000-0000000000dd";
+  const read = (chips: Parameters<typeof deeperTarget>[1]["chips"], notUnderstood: string[] = [], notUsed: string[] = []) =>
+    ({ chips, notUsed, notUnderstood });
+
+  it("folds the read's chips into the answers, names the read, and marks only what it added", () => {
+    const p = landed(deeperTarget(
+      { ...emptyParams(), results: true, words: "stompy lizards", themes: ["dinosaurs"], budgetDollars: 90 },
+      read([
+        { kind: "theme", slug: "dinosaurs", label: "Dinosaurs" },
+        { kind: "theme", slug: "landfall", label: "Landfall" },
+        { kind: "card", oracleId: DS, name: "Doubling Season" },
+        { kind: "budget", dollars: 200 },
+        { kind: "bracket", bracket: 3 },
+      ], ["stompy"]),
+      READ,
+    ));
+    expect(p).toMatchObject({ themes: ["dinosaurs", "landfall"], card: DS, budgetDollars: 90, bracket: 3, readId: READ, words: "stompy lizards" });
+    expect(p.deeper).toEqual(["t:landfall", "a", "k"]);
+    expect(p.notUsed).toEqual(["stompy", "$200"]);
+  });
+
+  it("keeps a card already given, and lists the read's other card as not used", () => {
+    const p = landed(deeperTarget({ ...emptyParams(), results: true, card: SOL }, read([{ kind: "card", oracleId: DS, name: "Doubling Season" }]), READ));
+    expect(p.card).toBe(SOL);
+    expect(p.deeper).toEqual([]);
+    expect(p.notUsed).toEqual(["Doubling Season"]);
   });
 });

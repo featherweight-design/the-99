@@ -1,5 +1,6 @@
 import { matchWords, type Chip, type MatchResult, type PhraseIndex } from "./match";
 import { READ_WORDS_MAX_CHARS, resolveWords, serializeChooseParams, type ChooseParams } from "./params";
+import type { StoredRead } from "./run-store";
 
 export const CHOOSE_PATH = "/decks/new/choose";
 
@@ -43,6 +44,43 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,
     notUsed: [...match.phrases, ...displaced, ...resolved.notUsed],
+    // A submit is a new ask: whatever address it came from, it carries no earlier read or marks.
+    readId: null,
+    deeper: [],
+    results: true,
+  })}`;
+}
+
+/**
+ * Where a delivered deeper look sends the player (plan, PR 6): the same answers with the read's
+ * chips folded in, as the submit folds the words' (a control, and a card already given, still win),
+ * `r` naming the read, and `d` marking what it added, so the bar can say which answers came from it.
+ * The read's leftovers replace *Not used*: what it could not place, then what it set aside.
+ */
+export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string): string {
+  const cards = read.chips.filter((c): c is Extract<Chip, { kind: "card" }> => c.kind === "card");
+  const resolved = resolveWords(p.card === null ? read.chips : read.chips.filter((c) => c.kind !== "card"), {
+    themes: p.themes,
+    budgetDollars: p.budgetDollars,
+    bracket: p.bracket,
+  });
+  const displaced = p.card === null ? [] : [...new Set(cards.filter((c) => c.oracleId !== p.card).map((c) => c.name))];
+  const card = p.card ?? resolved.card;
+  const deeper = [
+    ...resolved.themes.filter((t) => !p.themes.includes(t)).map((t) => `t:${t}`),
+    ...(p.card === null && card !== null ? ["a"] : []),
+    ...(p.budgetDollars === null && resolved.budgetDollars !== null ? ["b"] : []),
+    ...(p.bracket === null && resolved.bracket !== null ? ["k"] : []),
+  ];
+  return `${CHOOSE_PATH}${serializeChooseParams({
+    ...p,
+    themes: resolved.themes,
+    card,
+    budgetDollars: resolved.budgetDollars,
+    bracket: resolved.bracket,
+    readId,
+    notUsed: [...read.notUnderstood, ...read.notUsed, ...displaced, ...resolved.notUsed],
+    deeper,
     results: true,
   })}`;
 }

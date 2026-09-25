@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { emptyParams, type ChooseParams } from "./params";
-import { answerChips, figures, narrowOptions, orderLine } from "./present";
+import { answerChips, readForThisAsk, verifiedDeeperMarks, figures, narrowOptions, orderLine } from "./present";
 import type { ResultRow } from "./rows";
 
 const labels = { theme: (s: string) => ({ dinos: "Dinosaurs", tokens: "Tokens" })[s] ?? s, card: "Regisaur Alpha" };
@@ -56,6 +56,15 @@ describe("narrowOptions", () => {
     cardOverBracket: "gameChanger" as const,
   };
 
+  it("drops a deeper read and its marks from every option, since a new set of answers is a new ask", () => {
+    const READ = "0000aaaa-0000-4000-8000-0000000000aa";
+    // The look added the budget; dropping it must not hash back to the look's own ask.
+    const after = p({ ...ask, budgetDollars: 150, readId: READ, deeper: ["b"] });
+    for (const o of narrowOptions({ ...narrow, without: [...narrow.without, { answer: { kind: "budget" as const }, count: 30 }] }, after, labels)) {
+      expect([o.params.readId, o.params.deeper]).toEqual([null, []]);
+    }
+  });
+
   it("offers at most three, most restoring first, and none that brings nothing back", () => {
     expect(narrowOptions(narrow, ask, labels).map((o) => o.label)).toEqual([
       "Drop Regisaur Alpha", "Any Red · Green, not exactly", "Drop Dinosaurs",
@@ -74,11 +83,59 @@ describe("narrowOptions", () => {
 describe("answerChips", () => {
   it("lists every answer in the form's order", () => {
     expect(answerChips(p({ colors: ["g", "r"], match: "exactly", themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels)).toEqual([
-      { kind: "exactly", value: "Red · Green" },
-      { kind: "theme", value: "Dinosaurs" },
-      { kind: "card", value: "Regisaur Alpha" },
-      { kind: "budget", value: "$150" },
-      { kind: "bracket", value: "2 · Core" },
+      { kind: "exactly", value: "Red · Green", deeper: false },
+      { kind: "theme", value: "Dinosaurs", deeper: false },
+      { kind: "card", value: "Regisaur Alpha", deeper: false },
+      { kind: "budget", value: "$150", deeper: false },
+      { kind: "bracket", value: "2 · Core", deeper: false },
     ]);
+  });
+
+  it("marks the answers a deeper look added, and nothing else", () => {
+    const chips = answerChips(p({ themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels, ["a", "k"]);
+    expect(chips.map((c) => [c.kind, c.deeper])).toEqual([["theme", false], ["card", true], ["budget", false], ["bracket", true]]);
+  });
+});
+
+describe("verifiedDeeperMarks", () => {
+  const CARD = "0000aaaa-0000-4000-8000-000000000001";
+  const read = { chips: [
+    { kind: "theme", slug: "dinos", label: "Dinosaurs" },
+    { kind: "card", oracleId: CARD, name: "Regisaur Alpha" },
+    { kind: "budget", dollars: 150 },
+    { kind: "bracket", bracket: 3 },
+  ] as const };
+
+  it("honors d only when r named the reader's own delivered read", () => {
+    const q = p({ themes: ["dinos"], card: CARD, deeper: ["t:dinos", "a"] });
+    expect(verifiedDeeperMarks(q, { kind: "read", read })).toEqual(["t:dinos", "a"]);
+    expect(verifiedDeeperMarks(q, null)).toEqual([]);
+    expect(verifiedDeeperMarks(q, { kind: "nothing", read })).toEqual([]);
+  });
+
+  it("marks only what that read gave and the answers still hold, so an appended d marks nothing", () => {
+    const all = p({ themes: ["dinos", "tokens"], card: CARD, budgetDollars: 150, bracket: 3, deeper: ["t:dinos", "t:tokens", "a", "b", "k"] });
+    // Tokens was never in the read: a forged mark.
+    expect(verifiedDeeperMarks(all, { kind: "read", read })).toEqual(["t:dinos", "a", "b", "k"]);
+    // The same r reused under other answers: the read gave $150 and bracket 3, not these.
+    const moved = p({ budgetDollars: 90, bracket: 2, deeper: ["b", "k", "t:dinos"] });
+    expect(verifiedDeeperMarks(moved, { kind: "read", read })).toEqual([]);
+  });
+});
+
+describe("readForThisAsk", () => {
+  const hash = (words: string, c: { budgetDollars: number | null; bracket: number | null }) => JSON.stringify([words, c.budgetDollars, c.bracket]);
+  const read = { chips: [{ kind: "budget", dollars: 150 }] as const };
+
+  it("honors the read for the ask it answered, recovering a budget it added as unset at the press", () => {
+    const q = p({ words: "big lizards", budgetDollars: 150, deeper: ["b"] });
+    const loaded = { kind: "read" as const, read, wordsHash: hash("big lizards", { budgetDollars: null, bracket: null }) };
+    expect(readForThisAsk(q, loaded, hash)).toBe(loaded);
+  });
+
+  it("draws no finished look when r is carried onto other words or other controls", () => {
+    const loaded = { kind: "read" as const, read, wordsHash: hash("big lizards", { budgetDollars: null, bracket: null }) };
+    expect(readForThisAsk(p({ words: "tiny pirates", budgetDollars: 150, deeper: ["b"] }), loaded, hash)).toBeNull();
+    expect(readForThisAsk(p({ words: "big lizards", budgetDollars: 150, bracket: 3, deeper: ["b"] }), loaded, hash)).toBeNull();
   });
 });

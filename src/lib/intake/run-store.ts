@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { intakeReads } from "../../db/schema";
+import { intakeReadStops, intakeReads } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { ModelErrorClass } from "../model/client";
@@ -76,16 +76,58 @@ async function lockAsks(tx: Tx, userId: string): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`intake-read:${userId}`}, 0))`);
 }
 
-class StoredFound extends Error {
-  constructor(readonly read: StoredRead) { super("stored"); }
+/** How long an early Stop is kept for its press to find: far past any start's wait for the lock. */
+const STOP_KEPT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The most early stops one player may hold at once. One is left only when a Stop outruns its own
+ * press, so a real player holds a handful at most; the cap is what bounds the table, since the
+ * Stop route takes any id a signed-in caller sends. With every older stop purged first, the table
+ * holds at most this many rows per player, whether or not that player ever comes back.
+ */
+export const EARLY_STOPS_MAX = 20;
+
+/** This player's early stops past keeping: no start still waiting could be looking for them. */
+async function purgeStops(tx: Tx, userId: string, now: Date): Promise<void> {
+  await tx.delete(intakeReadStops)
+    .where(and(eq(intakeReadStops.userId, userId), lt(intakeReadStops.createdAt, new Date(now.getTime() - STOP_KEPT_MS))));
 }
 
-/** The player's settled read of this ask, when there is one. */
-async function storedRead(tx: Tx, userId: string, hash: string): Promise<StoredRead | null> {
-  const [row] = await tx.select({ chips: intakeReads.chips }).from(intakeReads)
-    .where(and(eq(intakeReads.userId, userId), eq(intakeReads.wordsHash, hash), eq(intakeReads.status, "ok")))
+class StoredFound extends Error {
+  constructor(readonly read: StoredRead, readonly readId: string, readonly useful: boolean) { super("stored"); }
+}
+
+/**
+ * A settled read by its id, for the results page the panel sent the player to (`r`). `read` is a
+ * delivered one, whose chips mark the answers that came from it; `nothing` found nothing to add and
+ * was refunded, and its leftovers are still worth showing. Scoped to the reader: an id from someone
+ * else, or a read that failed, was stopped or is still pending, reads as none.
+ */
+export async function loadOwnRead(readId: string, userId: string): Promise<{ kind: "read" | "nothing"; read: StoredRead; wordsHash: string } | null> {
+  const [row] = await db.select({ status: intakeReads.status, errorClass: intakeReads.errorClass, chips: intakeReads.chips, wordsHash: intakeReads.wordsHash })
+    .from(intakeReads)
+    .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
+  if (!row?.chips) return null;
+  const read = row.chips as StoredRead;
+  if (row.status === "ok") return { kind: "read", read, wordsHash: row.wordsHash };
+  if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", read, wordsHash: row.wordsHash };
+  return null;
+}
+
+/**
+ * The player's settled read of this ask, with its own id, when there is one: a delivered read, or
+ * one that found nothing to add. Both are the ask's answer, so neither is asked again; a repeat of
+ * a nothing read would otherwise call the model again for the same words.
+ */
+async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: string; read: StoredRead; useful: boolean } | null> {
+  const [row] = await tx.select({ id: intakeReads.id, chips: intakeReads.chips, status: intakeReads.status }).from(intakeReads)
+    .where(and(
+      eq(intakeReads.userId, userId),
+      eq(intakeReads.wordsHash, hash),
+      or(eq(intakeReads.status, "ok"), and(eq(intakeReads.status, "failed"), eq(intakeReads.errorClass, "nothing_valid"))),
+    ))
     .orderBy(desc(intakeReads.createdAt)).limit(1);
-  return (row?.chips as StoredRead | undefined) ?? null;
+  return row?.chips ? { id: row.id, read: row.chips as StoredRead, useful: row.status === "ok" } : null;
 }
 
 export function reapCutoff(now: Date): Date {
@@ -123,17 +165,28 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead; readId: string; useful: boolean } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.
   await db.transaction((tx) => reapReads(tx, userId, now));
   try {
-    const handle = await db.transaction(async (tx): Promise<ReadHandle> => {
+    const handle = await db.transaction(async (tx): Promise<ReadHandle | "stopped"> => {
       // An ask already read is offered once: its chips come back and no unit is reserved.
       await lockAsks(tx, userId);
+      // A Stop that beat this start to the database (`cancelRead` left its id): nothing is
+      // reserved, so nothing is spent. The stop has done its work and is consumed, in this
+      // transaction (returned, not thrown, so the delete commits): the per-player cap then counts
+      // only stops no press ever claimed. Older stops go in passing; a press's id is used once.
+      if (opts.readId) {
+        await purgeStops(tx, userId, now);
+        const consumed = await tx.delete(intakeReadStops)
+          .where(and(eq(intakeReadStops.readId, opts.readId), eq(intakeReadStops.userId, userId)))
+          .returning({ id: intakeReadStops.readId });
+        if (consumed.length > 0) return "stopped";
+      }
       const stored = await storedRead(tx, userId, hash);
-      if (stored) throw new StoredFound(stored);
+      if (stored) throw new StoredFound(stored.read, stored.id, stored.useful);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
@@ -142,9 +195,11 @@ export async function startRead(
       }).returning({ id: intakeReads.id });
       return { readId: row.id, callId: unit.id };
     });
+    if (handle === "stopped") return { kind: "stopped" };
     return { kind: "started", ...handle };
   } catch (err) {
-    if (err instanceof StoredFound) return { kind: "stored", read: err.read };
+    // The stored read's OWN id, not the press's: the results page verifies the read by it.
+    if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId, useful: err.useful };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.
     // The id is the panel's, so a press that reuses one names a read that already exists.
@@ -216,6 +271,24 @@ export async function cancelRead(readId: string, userId: string): Promise<boolea
       .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
       .returning({ callId: intakeReads.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, "refunded", undefined);
-    return rows.length > 0;
+    if (rows.length > 0) return true;
+    // Nothing pending by this id. A read that exists has settled and is past stopping. One that
+    // does not exist yet is a press whose start has not reached the database: the Stop is left
+    // for that start to find, so it refuses before reserving and the player is never charged.
+    // This player's read, as every other step of the Stop is: another player's row with the id says
+    // nothing about this press, which must still find its stop.
+    const [exists] = await tx.select({ id: intakeReads.id }).from(intakeReads)
+      .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
+    if (exists) return false;
+    // Purged here as well as at a start: a player who presses Stop early and never starts another
+    // look would otherwise leave every such stop behind for good.
+    await purgeStops(tx, userId, new Date());
+    const [{ held }] = await tx.select({ held: sql<number>`count(*)::int` }).from(intakeReadStops)
+      .where(eq(intakeReadStops.userId, userId));
+    // Past the cap the Stop is not taken: the panel puts Stop back, and the press answers as usual.
+    if (held >= EARLY_STOPS_MAX) return false;
+    // Keyed by player and id, so a conflict is this player's own earlier stop, which still stands.
+    await tx.insert(intakeReadStops).values({ readId, userId }).onConflictDoNothing();
+    return true;
   });
 }

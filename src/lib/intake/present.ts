@@ -1,6 +1,7 @@
 import { colorNames } from "../copy/color-labels";
 import { BRACKET_NAMES } from "../copy/deck-analysis";
 import { helpMeChooseCopy as copy } from "../copy/help-me-choose";
+import type { Chip } from "./match";
 import type { ChooseParams } from "./params";
 import type { AnswerKey, SearchResult } from "./rank";
 import type { ResultRow } from "./rows";
@@ -90,7 +91,8 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
       label: copy.narrow.widenColors(colorsPhrase(p.colors)),
       reason: null,
       count: copy.narrow.count(narrow.widen.count),
-      params: { ...p, match: "contains" },
+      // Widening is a change of answers too, so it carries no read either (`without`).
+      params: { ...p, match: "contains", readId: null, deeper: [] },
       n: narrow.widen.count,
     });
   }
@@ -111,27 +113,84 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
   }
 }
 
-/** The answers with one removed: a drop on the results, and what a chip's own drop does. */
+/**
+ * The answers with one removed: a drop on the results, and what a chip's own drop does. A new set of
+ * answers is a new ask, so it carries neither a deeper read (`r`) nor its marks (`d`): a read is
+ * bound to the ask it answered, and removing the very answer it added would otherwise hash back
+ * to that ask and draw its look as done over results it never produced.
+ */
 export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
+  const q = { ...p, readId: null, deeper: [] };
   switch (a.kind) {
-    case "colors": return { ...p, colors: [], match: "contains" };
-    case "theme": return { ...p, themes: p.themes.filter((s) => s !== a.slug) };
-    case "card": return { ...p, card: null };
-    case "budget": return { ...p, budgetDollars: null };
-    case "bracket": return { ...p, bracket: null };
+    case "colors": return { ...q, colors: [], match: "contains" };
+    case "theme": return { ...q, themes: p.themes.filter((s) => s !== a.slug) };
+    case "card": return { ...q, card: null };
+    case "budget": return { ...q, budgetDollars: null };
+    case "bracket": return { ...q, bracket: null };
   }
 }
 
-export type AnswerChip = { kind: string; value: string };
+/**
+ * The deeper marks the page may draw. `d` is honored only when `r` named the reader's own delivered
+ * read (`loadOwnRead`), and then only mark by mark: each must name an answer that read actually
+ * gave AND that the answers still hold. So an address with `d` appended, or `r` reused under other
+ * answers, marks nothing the read did not add.
+ */
+export function verifiedDeeperMarks(
+  p: ChooseParams,
+  settled: { kind: "read" | "nothing"; read: { chips: readonly Chip[] } } | null,
+): string[] {
+  if (settled?.kind !== "read") return [];
+  const chips = settled.read.chips;
+  return p.deeper.filter((m) => {
+    if (m.startsWith("t:")) {
+      const slug = m.slice(2);
+      return p.themes.includes(slug) && chips.some((c) => c.kind === "theme" && c.slug === slug);
+    }
+    if (m === "a") return p.card !== null && chips.some((c) => c.kind === "card" && c.oracleId === p.card);
+    if (m === "b") return p.budgetDollars !== null && chips.some((c) => c.kind === "budget" && c.dollars === p.budgetDollars);
+    if (m === "k") return p.bracket !== null && chips.some((c) => c.kind === "bracket" && c.bracket === p.bracket);
+    return false;
+  });
+}
 
-/** The *We read this as* bar's chips, in the form's order. */
-export function answerChips(p: ChooseParams, labels: Labels): AnswerChip[] {
+/**
+ * The controls the look was pressed under, recovered from its own results: a budget or bracket the
+ * read added (a verified `b` or `k`) was unset at the press, and every other one stood as it is now.
+ * Hashed with the words, this is the ask the read answered (`readForThisAsk`).
+ */
+export function pressControls(p: ChooseParams, marks: readonly string[]): { budgetDollars: number | null; bracket: number | null } {
+  return { budgetDollars: marks.includes("b") ? null : p.budgetDollars, bracket: marks.includes("k") ? null : p.bracket };
+}
+
+/**
+ * The read `r` names, honored only for the ask it answered: its stored hash must be this address's
+ * words under the controls the look was pressed with. So `r` carried onto other answers, by hand
+ * or by a stale link, draws no finished look and relabels nothing as still unused.
+ */
+export function readForThisAsk<T extends { kind: "read" | "nothing"; read: { chips: readonly Chip[] }; wordsHash: string }>(
+  p: ChooseParams,
+  loaded: T | null,
+  hash: (words: string, controls: { budgetDollars: number | null; bracket: number | null }) => string,
+): T | null {
+  if (loaded === null) return null;
+  return loaded.wordsHash === hash(p.words, pressControls(p, verifiedDeeperMarks(p, loaded))) ? loaded : null;
+}
+
+export type AnswerChip = { kind: string; value: string; /** Added by the deeper look (`d`). */ deeper: boolean };
+
+/**
+ * The *We read this as* bar's chips, in the form's order. `deeper` holds the marks the page has
+ * checked against the reader's own delivered read; an empty list marks nothing.
+ */
+export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly string[] = []): AnswerChip[] {
   const k = copy.readAs.kinds;
+  const marked = (m: string) => deeper.includes(m);
   return [
-    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors) }] : []),
-    ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s) })),
-    ...(p.card && labels.card ? [{ kind: k.card, value: labels.card }] : []),
-    ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}` }] : []),
-    ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}` }] : []),
+    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors), deeper: false }] : []),
+    ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s), deeper: marked(`t:${s}`) })),
+    ...(p.card && labels.card ? [{ kind: k.card, value: labels.card, deeper: marked("a") }] : []),
+    ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}`, deeper: marked("b") }] : []),
+    ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}`, deeper: marked("k") }] : []),
   ];
 }

@@ -26,6 +26,7 @@ export function ReadAsBar({
   changeHref,
   startOverHref,
   offer,
+  afterDeeper = false,
 }: {
   chips: readonly AnswerChip[];
   /** The build-around card's facts; its chip is the one in `chips` of kind `card`. */
@@ -34,6 +35,8 @@ export function ReadAsBar({
   changeHref: string;
   startOverHref: string;
   offer?: ReactNode;
+  /** A deeper look has settled on these answers: its leftovers are what even it could not place. */
+  afterDeeper?: boolean;
 }) {
   return (
     <section
@@ -55,7 +58,8 @@ export function ReadAsBar({
                   key={`${chip.kind}-${i}`}
                   data-testid="answer-chip"
                   // One line, always: a long card name truncates inside the chip rather than wrapping out of it.
-                  className="inline-flex items-center gap-[6px] max-w-full min-w-0 whitespace-nowrap h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
+                  data-deeper={chip.deeper || undefined}
+                  className={`inline-flex items-center gap-[6px] max-w-full min-w-0 whitespace-nowrap h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border ${chip.deeper ? "border-dashed border-[color:var(--accent)]" : "border-solid border-[color:var(--border-strong)]"} bg-[color:var(--surface)]`}
                 >
                   <span className="shrink-0 font-mono text-[9px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{chip.kind}</span>
                   {chip.kind === copy.readAs.kinds.card && card ? (
@@ -63,13 +67,16 @@ export function ReadAsBar({
                   ) : (
                     <span className="min-w-0 truncate text-[12.5px] text-[color:var(--fg-body)]">{chip.value}</span>
                   )}
+                  {chip.deeper && (
+                    <span className="shrink-0 font-mono text-[9px] tracking-[.06em] text-[color:var(--accent)]">{copy.readAs.deeperMark}</span>
+                  )}
                 </li>
               ))}
             </ul>
           )}
           {notUsed.length > 0 && (
             <div data-testid="not-used" className="flex flex-wrap items-baseline gap-[4px_10px]">
-              <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{copy.readAs.notUsed}</span>
+              <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{afterDeeper ? copy.readAs.stillNotUsed : copy.readAs.notUsed}</span>
               {notUsed.map((phrase) => (
                 <q
                   key={phrase}

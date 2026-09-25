@@ -44,6 +44,9 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-hmc-read-${Date.now()}`;
 const OTHER = `${USER}-other`;
+// Its own player, with its allowance untouched: a press refused for a spent allowance also reserves
+// nothing, and would pass the early Stop's checks for the wrong reason.
+const EARLY = `${USER}-early`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -87,6 +90,7 @@ async function refuseSharedDatabase() {
 
 async function main() {
   await refuseSharedDatabase();
+  const extraUsers: string[] = [];
   try {
     const { runDeeperRead } = await import("../src/lib/intake/deeper-read");
     const store = await import("../src/lib/intake/run-store");
@@ -112,6 +116,7 @@ async function main() {
     let asked = false;
     const again = await run(randomUUID(), async () => { asked = true; return reply(["Dinosaurs"]); }, `big dumb lizards ${ok}`);
     check("the same ask again gets the stored read back", [again.kind, asked], ["read", false]);
+    check("under the stored read's own id, which the results page can verify", again.kind === "read" ? again.readId : null, ok);
     check("and reserves nothing", await units(USER), unitsBefore);
 
     console.log("\n2. Nothing valid came back: refunded (F4)");
@@ -120,6 +125,12 @@ async function main() {
     const nothingRow = await readRow(nothing);
     check("the read failed as nothing_valid, its unit refunded", [nothingRow.status, nothingRow.error_class, nothingRow.unit], ["failed", "nothing_valid", "refunded"]);
     check("a refund still records what the call burned", (nothingRow.cost ?? 0) > 0, true);
+    // Its answer stands for the ask: the same words again never call the model a second time.
+    const callsBefore = Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${USER}`)).rows[0] as { n: number }).n);
+    let askedAgain = false;
+    const repeat = await run(randomUUID(), async () => { askedAgain = true; return reply(["Dinosaurs"]); }, `big dumb lizards ${nothing}`);
+    check("the same ask again gets that outcome back, under its own id, and never asks", [repeat.kind, repeat.kind === "nothing" ? repeat.readId : null, askedAgain], ["nothing", nothing, false]);
+    check("and reserves nothing at all", Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${USER}`)).rows[0] as { n: number }).n), callsBefore);
 
     console.log("\n3. A failed call: refunded");
     const failed = randomUUID();
@@ -137,7 +148,9 @@ async function main() {
     await inCall;
     const before = await units(USER);
     check("while it runs, a second press is refused as in flight", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "in_flight");
-    check("another reader's Stop cancels nothing", await store.cancelRead(stopped, OTHER), false);
+    // Another reader's Stop by this id is a stop for THEIR press, if they have one; this read stays.
+    await store.cancelRead(stopped, OTHER);
+    check("another reader's Stop cancels nothing", [(await readRow(stopped)).status, (await readRow(stopped)).unit], ["pending", "reserved"]);
     check("the reader's Stop cancels it", await store.cancelRead(stopped, USER), true);
     const mid = await readRow(stopped);
     check("the read is cancelled, its unit refunded, no bill yet", [mid.status, mid.unit, mid.cost], ["cancelled", "refunded", null]);
@@ -213,9 +226,84 @@ async function main() {
     } finally {
       holder.release();
     }
+
+    console.log("\n9. An early Stop is never charged (PR 6)");
+    // The panel chooses the id before its press, so its Stop can reach the database before the
+    // start has even taken the lock. It must still win: the press that follows reserves nothing.
+    const earlyId = randomUUID();
+    const unitsEarly = await units(EARLY);
+    check("a Stop for a read not yet started is taken", await store.cancelRead(earlyId, EARLY), true);
+    let earlyAsked = false;
+    const afterStop = await runDeeperRead(EARLY, { readId: earlyId, words: `big dumb lizards ${earlyId}`, controls }, deps(async () => { earlyAsked = true; return reply(["Dinosaurs"]); }));
+    check("the press that follows it stops before anything is reserved", afterStop.kind, "stopped");
+    check("and never asks", earlyAsked, false);
+    check("so no unit is reserved, let alone spent", await units(EARLY), unitsEarly);
+    const rowsFor = async (id: string) =>
+      Number(((await fixture.execute(sql`select count(*)::int as n from intake_reads where id = ${id}`)).rows[0] as { n: number }).n);
+    check("and no read is written", await rowsFor(earlyId), 0);
+    const stopsFor = async (id: string) =>
+      Number(((await fixture.execute(sql`select count(*)::int as n from intake_read_stops where read_id = ${id}`)).rows[0] as { n: number }).n);
+    check("a Stop for a read that already settled is refused, and leaves nothing behind", [await store.cancelRead(ok, USER), await stopsFor(ok)], [false, 0]);
+    // A stop is scoped to the player who left it: another player's press with that id is not
+    // stopped by it. (Whether that press then starts turns on its own allowance, not on this.)
+    const shared = randomUUID();
+    await store.cancelRead(shared, EARLY);
+    const theirs = await store.startRead(OTHER, store.wordsHash("someone else's stop", controls), INTAKE_MODEL, { readId: shared });
+    if (theirs.kind === "started") await store.cancelRead(theirs.readId, OTHER);
+    check("an early Stop names only its own player's press", theirs.kind !== "stopped", true);
+    // The id is the client's, so two players can name one: each player's stop must stand for their
+    // own press. Keyed by id alone, the second insert met the first and did nothing, the Stop still
+    // reported it took, and that player's start reserved a unit.
+    const both = randomUUID();
+    await store.cancelRead(both, OTHER);
+    const unitsBoth = await units(EARLY);
+    check("a Stop is taken even when another player's stop names the same id", await store.cancelRead(both, EARLY), true);
+    const mine = await store.startRead(EARLY, store.wordsHash(`both ${both}`, controls), INTAKE_MODEL, { readId: both });
+    check("and that player's press is still refused, reserving nothing", [mine.kind, await units(EARLY)], ["stopped", unitsBoth]);
+    // Another player's READ with the id says nothing about this press either: the Stop's own
+    // existence check is this player's, as every other step of it is.
+    const theirRead = randomUUID();
+    const started = await store.startRead(OTHER, store.wordsHash(`their read ${theirRead}`, controls), INTAKE_MODEL, { readId: theirRead });
+    if (started.kind === "started") await store.cancelRead(theirRead, OTHER);
+    check("a Stop is taken though another player's read has that id", await store.cancelRead(theirRead, EARLY), true);
+    const mineToo = await store.startRead(EARLY, store.wordsHash(`their read, mine ${theirRead}`, controls), INTAKE_MODEL, { readId: theirRead });
+    check("and this player's press with it is refused", mineToo.kind, "stopped");
+    // A stop its press claimed is consumed, so the cap counts only stops no press ever claimed:
+    // a player who Stops early more times than the cap in a day is still never charged.
+    check("the stop its press claimed is consumed", await stopsFor(earlyId), 0);
+    const CYCLER = `probe-cycle-${randomUUID()}`;
+    extraUsers.push(CYCLER);
+    let cyclesTaken = 0;
+    for (let i = 0; i <= store.EARLY_STOPS_MAX; i += 1) {
+      const id = randomUUID();
+      const took = await store.cancelRead(id, CYCLER);
+      const press = await store.startRead(CYCLER, store.wordsHash(`cycle ${id}`, controls), INTAKE_MODEL, { readId: id });
+      if (took && press.kind === "stopped") cyclesTaken += 1;
+    }
+    check("more early Stops than the cap, each claimed by its press, all take", cyclesTaken, store.EARLY_STOPS_MAX + 1);
+    // Bounded per player: the route takes any id a signed-in caller sends, so a caller minting ids
+    // stops at the cap rather than growing the table.
+    const CAPPED = `probe-cap-${randomUUID()}`;
+    extraUsers.push(CAPPED);
+    await fixture.execute(sql`insert into intake_read_stops (read_id, user_id)
+      select gen_random_uuid(), ${CAPPED} from generate_series(1, ${store.EARLY_STOPS_MAX})`);
+    const overCap = randomUUID();
+    check("a Stop past the per-player cap is not taken, and records nothing", [await store.cancelRead(overCap, CAPPED), await stopsFor(overCap)], [false, 0]);
+    // Purged at the Stop as well: a player who never starts another look leaves none behind.
+    const stale = randomUUID();
+    await fixture.execute(sql`insert into intake_read_stops (read_id, user_id, created_at) values (${stale}, ${EARLY}, now() - interval '25 hours')`);
+    await store.cancelRead(randomUUID(), EARLY);
+    check("a Stop purges that player's stops past keeping", await stopsFor(stale), 0);
   } finally {
-    await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER})`);
-    await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER})`);
+    await fixture.execute(sql`delete from intake_read_stops where user_id in (${USER}, ${OTHER}, ${EARLY})`);
+    // The per-case fixture players, registered before their first write so a throw cannot strand them.
+    for (const id of extraUsers) {
+      await fixture.execute(sql`delete from intake_read_stops where user_id = ${id}`);
+      await fixture.execute(sql`delete from intake_reads where user_id = ${id}`);
+      await fixture.execute(sql`delete from model_calls where user_id = ${id}`);
+    }
+    await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER}, ${EARLY})`);
+    await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER}, ${EARLY})`);
     await pool.end();
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

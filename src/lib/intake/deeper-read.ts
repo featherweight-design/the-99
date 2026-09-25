@@ -3,7 +3,7 @@ import { INTAKE_DEADLINE_MS, INTAKE_EFFORT, INTAKE_MAX_TOKENS, INTAKE_MODEL, INT
 import type { PhraseIndex } from "./match";
 import { buildReadPrompt, readResponseSchema, validateRead, type ReadResponse } from "./read";
 import { settleRead, startRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
-import { intakeLive, STUB_MODEL, stubMode, stubReply } from "./stub";
+import { intakeLive, STUB_MODEL, stubDelayMs, stubMode, stubReply } from "./stub";
 import { loadIntakeCatalog } from "./search";
 
 /**
@@ -15,9 +15,10 @@ import { loadIntakeCatalog } from "./search";
  */
 
 export type DeeperReadOutcome =
-  | ({ kind: "read" } & StoredRead)
+  /** `readId` names the row holding it: the press's own, or a stored read's when the ask repeats. */
+  | ({ kind: "read"; readId: string } & StoredRead)
   /** The read was valid in shape but nothing in it held up: refunded. */
-  | { kind: "nothing"; notUsed: string[]; notUnderstood: string[] }
+  | { kind: "nothing"; readId: string; notUsed: string[]; notUnderstood: string[] }
   /** The call failed: refunded. */
   | { kind: "failed"; errorClass: ReadErrorClass }
   /** Stopped, or reaped, before the answer came back: it wrote nothing. */
@@ -57,7 +58,11 @@ export function defaultDeps(): DeeperReadDeps {
         deadlineMs: INTAKE_DEADLINE_MS,
         retryFloorMs: INTAKE_RETRY_FLOOR_MS,
       })
-      : async (_req, words, index) => stubReply(words, index, stubMode()),
+      : async (_req, words, index) => {
+        const hold = stubDelayMs();
+        if (hold > 0) await new Promise((r) => setTimeout(r, hold));
+        return stubReply(words, index, stubMode());
+      },
     loadIndex,
     now: () => new Date(),
   };
@@ -73,7 +78,11 @@ export async function runDeeperRead(
   const { labels, index } = await deps.loadIndex();
   const started = await startRead(userId, hash, deps.modelName, { readId: input.readId, now: deps.now() });
   // An ask already read is offered once: its chips come back and no unit was reserved.
-  if (started.kind === "stored") return { kind: "read", ...started.read };
+  if (started.kind === "stored") {
+    return started.useful
+      ? { kind: "read", readId: started.readId, ...started.read }
+      : { kind: "nothing", readId: started.readId, notUsed: started.read.notUsed, notUnderstood: started.read.notUnderstood };
+  }
   if (started.kind !== "started") return { kind: started.kind };
 
   const outcome = await deps.model(buildReadPrompt(input.words, labels), input.words, index);
@@ -86,6 +95,6 @@ export async function runDeeperRead(
   const settled = await settleRead({ ...started, userId }, { kind: "read", result }, billed);
   if (!settled) return { kind: "stopped" };
   return result.useful
-    ? { kind: "read", chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
-    : { kind: "nothing", notUsed: result.notUsed, notUnderstood: result.notUnderstood };
+    ? { kind: "read", readId: started.readId, chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
+    : { kind: "nothing", readId: started.readId, notUsed: result.notUsed, notUnderstood: result.notUnderstood };
 }

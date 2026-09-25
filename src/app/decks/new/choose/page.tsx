@@ -19,10 +19,13 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
-import { answerChips } from "../../../../lib/intake/present";
+import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../lib/intake/present";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
+import { DeeperLook, DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
+import { loadOwnRead, wordsHash } from "../../../../lib/intake/run-store";
+import { readAllowance } from "../../../../lib/model/allowance";
 
 // A row's figures come from a real fill run in a Server Action posted from this page (PR 4's
 // deeper read runs from it too).
@@ -75,9 +78,22 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const themeLabels = Object.fromEntries(themes.map((t) => [t.slug, t.label]));
   // A decoration, read outside the results' own recovery: a failure here draws the page without the
   // card's chip rather than taking the whole route down before *Search failed* could offer a retry.
-  const card = p.card ? await loadCardChip(userId, p.card).catch(() => null) : null;
+  const now = new Date();
+  // Three decorations, none of which may take the page down: the card's chip, the credit standing
+  // the deeper look reads (only when there are words to look at), and the read `r` names.
+  const [card, allowance, loaded] = await Promise.all([
+    // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
+    p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
+    p.words.trim() ? readAllowance(userId, now, "intake").catch(() => null) : null,
+    p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
+  ]);
+  const settled = readForThisAsk(p, loaded, wordsHash);
   const labels = { theme: (slug: string) => themeLabels[slug] ?? slug, card: card?.name ?? null };
-  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], results: false })}`;
+  // A carried `a` the search could not apply (stale, or hand-edited) is no answer: the look sees
+  // the answers the search ran on, so a card its read finds is not set aside for it.
+  const lookParams = card === null && p.card !== null ? { ...p, card: null } : p;
+  // A change of answers is a new ask: it carries neither the read nor its marks.
+  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);
   const ranking = [...p.themes.map(labels.theme), ...(card ? [card.name] : [])];
   const by =
@@ -93,13 +109,28 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.results.subPhone}
         />
         <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[16px_18px_24px] md:p-[0_40px_48px]">
+          <DeeperLookScope>
           <ReadAsBar
-            chips={answerChips(p, labels)}
-            card={card}
+            chips={answerChips(p, labels, verifiedDeeperMarks(p, settled))}
+            afterDeeper={settled !== null}
+            offer={allowance && (
+              // Keyed on the read: the look's own results are a new panel, drawn from what the page found.
+              <DeeperLook key={p.readId ?? "first"} params={lookParams} settled={settled?.kind ?? null} standing={{
+                used: allowance.used,
+                limit: allowance.limit,
+                nextAt: allowance.nextAt?.toISOString() ?? null,
+                reopensAt: allowance.reopensAt?.toISOString() ?? null,
+                paused: allowance.paused?.until.toISOString() ?? null,
+                ownerShare: allowance.ownerShare === true,
+                now: now.toISOString(),
+              }} />
+            )}
+            card={card ?? null}
             notUsed={p.notUsed}
             changeHref={changeHref}
             startOverHref={CHOOSE_PATH}
           />
+          <DimWhileLooking>
           <Suspense key={queryString} fallback={<ResultsSkeleton by={by} />}>
             <Results
               userId={userId}
@@ -110,6 +141,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               changeHref={changeHref}
             />
           </Suspense>
+          </DimWhileLooking>
+          </DeeperLookScope>
         </div>
       </div>
     </CardDetailProvider>

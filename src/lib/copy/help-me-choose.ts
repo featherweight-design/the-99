@@ -55,6 +55,39 @@ export const helpMeChooseCopy = {
     noPrice: "buy · no price", // canvas
     noPriceTail: "no price", // canvas: the tail of `noPrice`, drawn in --fg-faint
     kinds: { colors: "colors", exactly: "exactly", theme: "theme", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    /** After a deeper look: what even it could not place. */
+    stillNotUsed: "Still not used",
+    /** The tag on a chip the deeper look added. */
+    deeperMark: "deeper",
+  },
+  /**
+   * The deeper look's panel (HANDOFF §3, STATES 3a–3g). Credit lines reuse `creditsCopy`; nothing
+   * here restates its standing format. Never AI, model or LLM: it is "a deeper look".
+   */
+  deeper: {
+    title: "Want a closer fit?",
+    lead: "A deeper look weighs everything you wrote, not just the names we matched, and searches again.",
+    cost: "1 credit",
+    costSpent: "0 left",
+    costPaused: "Paused",
+    action: "Look deeper",
+    actionPending: "Looking…",
+    pendingTitle: "Looking deeper…",
+    pendingLead: "These results stay until the new ones are ready.",
+    pendingLine: "Stopping gives the credit back.",
+    stop: "Stop",
+    doneTitle: "Deeper look",
+    doneTag: "done",
+    doneLead: "Answers marked deeper came from it, and these results use them.",
+    doneLine: (standing: string) => `1 credit used · ${standing}`,
+    failTag: "Didn’t finish",
+    failedLead: "The deeper look didn’t finish, so your credit came back. These are still your first results.",
+    retry: "Try again",
+    emptyLead: "It found nothing to add to what we’d already matched, so your credit came back. These results stand.",
+    aria: "1 credit. Look deeper.",
+    /** Announced when a Stop took. True either way a Stop lands: before the read existed nothing
+     *  was reserved, and after, the reservation is refunded (orchestrator, 2026-09-25). */
+    stopped: "Stopped. No credit was used.",
   },
   results: {
     back: "‹ Your answers", // canvas

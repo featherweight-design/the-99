@@ -2,14 +2,15 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { runDeeperRead, type DeeperReadOutcome } from "../../../../lib/intake/deeper-read";
+import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { MAX_BUDGET_DOLLARS } from "../../../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS } from "../../../../lib/intake/limits";
-import { cancelRead } from "../../../../lib/intake/run-store";
 import { isUuid } from "../../../../lib/uuid";
 
 /**
- * *Look deeper* and its Stop (plan, PR 4). Both take the id the panel chose for the press, so a
- * Stop cancels exactly the read it started and never another tab's.
+ * *Look deeper* (plan, PR 4). It takes the id the panel chose for the press, so the Stop (a route
+ * handler, `stop/route.ts`, since Server Actions are dispatched one at a time) cancels exactly the
+ * read it started and never another tab's.
  *
  * Everything that arrives here is checked before anything is reserved: an id that is not a uuid,
  * words that are empty or over the cap, and controls out of range are refused as `refused`, which
@@ -25,6 +26,8 @@ export async function lookDeeper(input: {
   bracket: number | null;
 }): Promise<LookDeeperResult> {
   const userId = await requireUserId();
+  // An action stays callable when its page is hidden: with the feature off, nothing is reserved.
+  if (!helpMeChooseEnabled()) throw new Error("not found");
   // The argument is whatever a caller sent: shape first, before any field is read.
   if (typeof input !== "object" || input === null) return { kind: "refused" };
   const words = typeof input.words === "string" ? input.words.trim() : "";
@@ -38,11 +41,4 @@ export async function lookDeeper(input: {
     || !(bracket === null || (Number.isInteger(bracket) && bracket >= 1 && bracket <= 5))
   ) return { kind: "refused" };
   return runDeeperRead(userId, { readId: input.readId, words, controls: { budgetDollars, bracket } });
-}
-
-/** False when there was nothing pending to stop: the read had already settled. */
-export async function stopDeeperRead(readId: string): Promise<boolean> {
-  const userId = await requireUserId();
-  if (typeof readId !== "string" || !isUuid(readId)) return false;
-  return cancelRead(readId, userId);
 }
