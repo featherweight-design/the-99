@@ -67,6 +67,9 @@ function report(label, ok, detail) {
   if (!ok) failures += 1;
 }
 
+// The longest commander-legal, non-basic single-faced name on the catalog when this was written.
+const LONG_CARD = "Okina, Temple to the Grandfathers";
+
 const ROUTES = [
   ["theme", "/decks/new/choose?w=dinosaurs+that+stomp%2C+lots+of+little+tokens+under+%24200&v=submit"],
   ["owned", "/decks/new/choose?c=g&v=results"],
@@ -174,6 +177,36 @@ async function run() {
         await page.locator(`${PAGE} textarea`).waitFor({ timeout: 60_000 });
         const blank = await page.locator(`${PAGE} textarea`).inputValue();
         report(`${at}: Start over returns the form blank`, blank === "", JSON.stringify(blank));
+      }
+      // 7. An answer chip is one line, whatever it names: a long card name truncates inside the chip
+      //    rather than wrapping out of its fixed height or past the bar's edge.
+      {
+        // On the phone this reads at 320, the narrowest phone in use: at 390 no card on the catalog is
+        // long enough to wrap a chip, and a check that cannot fail measures nothing.
+        const chipWidth = width === 390 ? 320 : width;
+        if (chipWidth !== width) await page.setViewportSize({ width: chipWidth, height: 844 });
+        const at = `chips @ ${chipWidth}`;
+        await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
+        await page.locator(`${PAGE} textarea`).fill(`build around ${LONG_CARD} with dinosaurs and landfall`);
+        await page.locator(`${PAGE} button:visible`, { hasText: "Find commanders" }).first().click();
+        // The chips, not the order line: a card and two themes may leave none fitting, which has none.
+        await page.locator(`${PAGE} [data-testid='answer-chip']`).first().waitFor({ timeout: 90_000 });
+        const chips = await page.evaluate((scope) => {
+          const root = document.querySelector(scope) ?? document.body;
+          const bar = root.querySelector("[data-testid='answer-chip']")?.closest("section") ?? root;
+          const edge = bar.getBoundingClientRect().right;
+          return [...root.querySelectorAll("[data-testid='answer-chip']")].map((c) => {
+            const b = c.getBoundingClientRect();
+            return { text: c.textContent, h: Math.round(b.height), wraps: c.scrollHeight > c.clientHeight + 1, past: b.right - edge };
+          });
+        }, PAGE);
+        const card = chips.find((c) => c.text.includes(LONG_CARD.slice(0, 12)));
+        const bad = chips.filter((c) => c.h > 33 || c.wraps || c.past > 1);
+        report(`${at}: every answer chip holds one line inside the bar, the long card's included`,
+          card !== undefined && bad.length === 0,
+          card ? (bad.length ? JSON.stringify(bad) : `${chips.length} chips, the card's ${card.h}px`) : "no card chip drawn");
+
+        if (chipWidth !== width) await page.setViewportSize({ width, height: 844 });
       }
       await context.close();
     }

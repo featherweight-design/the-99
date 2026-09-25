@@ -64,8 +64,15 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
   useLayoutEffect(() => {
     const el = dockRef.current;
     if (!el) return;
-    setDockHeight(el.getBoundingClientRect().height);
-    const observer = new ResizeObserver(() => setDockHeight(el.getBoundingClientRect().height));
+    const measure = () => setDockHeight(el.getBoundingClientRect().height);
+    measure();
+    // A browser with no ResizeObserver still gets a dock that clears the form: measured once, and
+    // again whenever the window resizes, which is when the dock's own wrapping changes.
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);

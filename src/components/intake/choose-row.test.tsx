@@ -29,6 +29,18 @@ function draw(r: ResultRow = row(), trial: Trial = pending, retry = vi.fn()) {
 }
 
 describe("a result row", () => {
+  it("paints a best fit from the card's image where the catalog has no crop, never a blank block", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ul>
+          <ChooseRow row={row({ imageUri: "https://img/card.jpg", artCropUri: null })} figures={[]} owned={false} params={params} cardName={null} trial={pending} retry={vi.fn()} best={1} />
+        </ul>
+      </CardDetailProvider>,
+    );
+    const art = container.querySelector<HTMLElement>("[aria-hidden][style]");
+    expect(art?.style.backgroundImage).toContain("https://img/card.jpg");
+  });
+
   it("marks a free commander, a held one with its deck, and an unowned one with its buy tag", async () => {
     draw(row({ mark: { kind: "free" } }));
     expect(screen.getByTestId("mark-free").textContent).toBe("owned · free");

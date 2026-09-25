@@ -54,13 +54,14 @@ export function ReadAsBar({
                 <li
                   key={`${chip.kind}-${i}`}
                   data-testid="answer-chip"
-                  className="inline-flex items-center gap-[6px] h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
+                  // One line, always: a long card name truncates inside the chip rather than wrapping out of it.
+                  className="inline-flex items-center gap-[6px] max-w-full min-w-0 whitespace-nowrap h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
                 >
-                  <span className="font-mono text-[9px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{chip.kind}</span>
+                  <span className="shrink-0 font-mono text-[9px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{chip.kind}</span>
                   {chip.kind === copy.readAs.kinds.card && card ? (
                     <CardValue card={card} />
                   ) : (
-                    <span className="text-[12.5px] text-[color:var(--fg-body)]">{chip.value}</span>
+                    <span className="min-w-0 truncate text-[12.5px] text-[color:var(--fg-body)]">{chip.value}</span>
                   )}
                 </li>
               ))}
@@ -107,7 +108,7 @@ function CardValue({ card }: { card: CardChip }) {
         oracleId={card.oracleId}
         name={card.name}
         testId="card-chip-name"
-        className="text-[12.5px] font-semibold text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer"
+        className="min-w-0 truncate text-[12.5px] font-semibold text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer"
       >
         {card.name}
       </CardDetailTrigger>
