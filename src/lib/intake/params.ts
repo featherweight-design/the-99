@@ -81,10 +81,12 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
     colors: WUBRG.filter((c) => raw.includes(c.toUpperCase())),
     match: sp.get("m") === "exact" ? "exactly" : "contains",
     themes: [...new Set((sp.get("t") ?? "").split(",").filter((s) => SLUG.test(s)))],
-    card: card !== null && isUuid(card) ? card : null,
+    // Lowercased: Postgres prints uuids lower, and every id this is compared with (the index, a
+    // candidate, a row) comes from there. An address typed or pasted in upper case is the same card.
+    card: card !== null && isUuid(card) ? card.toLowerCase() : null,
     budgetDollars: wholeNumber(sp.get("b"), 1, MAX_BUDGET_DOLLARS),
     bracket: wholeNumber(sp.get("k"), 1, 5) as Bracket | null,
-    readId: readId !== null && isUuid(readId) ? readId : null,
+    readId: readId !== null && isUuid(readId) ? readId.toLowerCase() : null,
     notUsed: notUsedList((sp.get("n") ?? "").split(NOT_USED_SEPARATOR)),
     results: sp.get("v") === "results",
   };

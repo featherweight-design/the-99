@@ -76,6 +76,12 @@ describe("submitTarget's card and Not used order", () => {
     expect(p.notUsed).toEqual(["Doubling Season"]);
   });
 
+  it("reads a carried card's id in any case as the same card", () => {
+    const p = landed(submitTarget(parseChooseParams(new URLSearchParams(`a=${SOL.toUpperCase()}&w=with+Doubling+Season`)), index));
+    expect(p.card).toBe(SOL);
+    expect(p.notUsed).toEqual(["Doubling Season"]);
+  });
+
   it("lists the player's own phrases before a figure the controls set aside", () => {
     const p = landed(target({ words: "big energy under $300", budgetDollars: 100 }));
     expect(p.notUsed.indexOf("$300")).toBeGreaterThan(p.notUsed.indexOf("big energy"));
