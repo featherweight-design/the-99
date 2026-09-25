@@ -26,12 +26,29 @@ export const swapToolsCopy = {
     over: (figure: string) => `over ${figure}`,
     /** The ⇄ on an over row (R2: marked rows only). */
     swapOverAria: (name: string, figure: string) => `Cheaper stand-ins for ${name}, over your ${figure} limit`,
+    // The receipt a take leaves in the cut row's slot (UndoRow's shell).
+    receipt: (cut: string, add: string) => `${cut} → ${add}`,
+    receiptFree: (cut: string, add: string) => `${cut} → ${add}, your free copy`,
+    receiptAria: (cut: string, add: string) => `Swapped ${cut} for ${add}`,
+    receiptOneCopy: (add: string) => `one copy → ${add}`,
+    /** H2: reverses both halves, in the sheet and on the receipt alike. */
+    undoSwap: "Undo swap",
+    undoSwapAria: (cut: string, add: string) => `Undo the swap: put ${cut} back and take ${add} out`,
+  },
+
+  // ── A stand-in's card, stacked over the sheet (CardModal footer slot) ──
+  modal: {
+    inPlaceOf: (cut: string, deck: string) => `in place of ${cut}, in ${deck}`,
+    /** Phone footer: desktop reads "Take". */
+    take: (add: string) => `Take ${add}`,
   },
 
   // ── The stand-ins sheet (ModalChrome body, 640) ──────────────────────
   sheet: {
     title: "Cheaper stand-ins",
     closeAria: "Close cheaper stand-ins",
+    /** The stacked card's way back. */
+    backLabel: "Cheaper stand-ins",
     replacing: (deck: string) => `replacing, in ${deck}`,
     // The job line under the original.
     jobColors: (colors: string) => `makes ${colors}`,
@@ -73,6 +90,28 @@ export const swapToolsCopy = {
       lifeFetch: (n: number) => `costs ${n} life`,
       basicOnly: "finds only a basic",
     },
+    take: "Take",
+    taking: "Taking…",
+    takeAria: (add: string, cut: string) => `Take ${add} in place of ${cut}`,
+    taken: "taken",
+    takenNote: (cut: string) =>
+      `${cut} has left the draft, so the other stand-ins are put away. Undo the swap to choose a different one.`,
+    // R2: a panel under the pressed row. Mirrors deckTuningCopy.card.applyRefused.
+    refused: {
+      tag: "not taken",
+      heading: "The deck changed before this swap could land",
+      /** F11: the cause is stated only when the swap body reports it (the cut is no longer in the draft). */
+      body: (deck: string, cut: string, add: string) =>
+        `${deck} was edited after this list was read, in another tab or on another device. Nothing moved: ${cut} is still in, and ${add} isn’t.`,
+      /** F11: every other refusal, which names no cause it cannot know. Owed to /copy-review. */
+      bodyPlain: (cut: string, add: string) => `Nothing moved: ${cut} is still in, and ${add} isn’t.`,
+      reread: "Read the list again",
+      close: "Close",
+    },
+    /** F4: rendered as MutationError under the row that hosts the Undo swap. */
+    undoRefused: "We couldn’t undo that swap. The deck is unchanged.",
+    /** A take that threw rather than refused (F11): MutationError under the row. Owed to /copy-review. */
+    takeFailed: "We couldn’t make that swap. The deck is unchanged.",
     foot: (when: string) => `Cheapest printing of each, from ManaPool · last checked ${when}`,
     loadingHeading: "Checking the binder",
     loadingSpells: (roles: string) => `finding cheaper ${roles}…`,
@@ -97,6 +136,8 @@ export const swapToolsCopy = {
   },
 
   announce: {
+    taken: (cut: string, add: string) => `Taken. ${add} is in the draft and ${cut} is out.`,
+    undone: (cut: string, add: string) => `Swap undone. ${cut} is back and ${add} is out.`,
     limitSaved: (figure: string) => `Marking cards over ${figure}.`,
   },
 } as const;

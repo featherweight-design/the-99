@@ -21,7 +21,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
-import { onPageRole, PAGE } from "./lib/surface.mjs";
+import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 
 neonConfig.webSocketConstructor = ws;
@@ -235,8 +235,10 @@ try {
           emptyRows: [...sheet.querySelectorAll("li")].filter((li) => !li.querySelector("p")).length,
           blankLines: [...sheet.querySelectorAll("li")].filter((li) => {
             if (li.querySelector("p")) return false;
-            const cell = li.querySelector(":scope > div");
-            const line = cell?.firstElementChild;
+            // The name line is the thumb's parent, and the left cell is the name line's parent, however deep
+            // the row wraps them (4b puts a grid between the <li> and the cell).
+            const line = li.querySelector('span[aria-hidden="true"]')?.parentElement;
+            const cell = line?.parentElement;
             return cell && line && cell.getBoundingClientRect().height > line.getBoundingClientRect().height + 1;
           }).length,
           bareThumbs: [...sheet.querySelectorAll("li")].filter((li) => {
@@ -278,6 +280,90 @@ try {
         await page.waitForTimeout(400);
       }
     }
+
+    // ── PR 4b: a stand-in's card stacked over the sheet, Take, the receipt, Undo swap, a refusal ──
+    const cut = fx.picks.spell;
+    const openSheet = async () => {
+      await swapButton(page, cut).click();
+      await page.waitForFunction(() => document.querySelector('[data-testid="stand-ins-sheet"] h4'), null, { timeout: 30_000 });
+      return page.getByRole("dialog", { name: "Cheaper stand-ins" });
+    };
+    // The label of the Shopping section an element sits in: the section wrapper's first label.
+    const sectionOf = (loc) => loc.evaluate((el) =>
+      el.closest("div.mb-\\[16px\\]")?.querySelector("h3, span")?.textContent?.trim() ?? null);
+    const cutSection = await sectionOf(swapButton(page, cut));
+    let sheet = await openSheet();
+
+    // A stand-in's name opens its card stacked, with the Take footer, and the sheet stays under it.
+    const firstName = await sheet.locator("li button").first().textContent();
+    await sheet.locator("li button").first().click();
+    const card = page.locator('[role="dialog"][aria-labelledby="card-modal-title"]');
+    await card.waitFor({ timeout: 15_000 });
+    const footer = await card.locator('[data-testid="stand-in-footer"]').filter({ visible: true }).count();
+    report(`${tag} stacked: the card draws the Take footer`, footer === 1, `${footer} visible footer(s) on ${firstName}`);
+    report(`${tag} stacked: the sheet stays under the card`, await sheet.isVisible(), "sheet mounted");
+    if (w.label === 1300) {
+      // The pager's own position, the span between Prev and Next (the footer carries mono text too).
+      const pos = (await card.getByRole("button", { name: "Next card" }).locator("xpath=preceding-sibling::span[1]").textContent())?.trim();
+      report(`${tag} stacked: Prev/Next page the sheet's list`, /^1 of \d+$/.test(pos ?? ""), `position ${pos}`);
+      await card.getByRole("button", { name: "Next card" }).click();
+      await page.waitForTimeout(800);
+      const next = await card.locator('[data-testid="stand-in-footer"]').filter({ visible: true }).count();
+      report(`${tag} stacked: the next stand-in keeps its footer`, next === 1, `${next} footer(s)`);
+    }
+    await page.keyboard.press("Escape");
+    await card.waitFor({ state: "detached", timeout: 5_000 });
+
+    // Take the first stand-in to buy.
+    const takes = sheet.getByRole("button", { name: /^Take .* in place of / });
+    const before = await takes.count();
+    const toBuy = sheet.locator("li").filter({ has: page.locator("text=/^buy/") }).first();
+    const addName = (await toBuy.locator("button").first().textContent())?.trim();
+    await toBuy.getByRole("button", { name: /^Take / }).click();
+    const landed = await sheet.locator('[data-testid="stand-in-taken"]').waitFor({ timeout: 20_000 }).then(() => null, async () =>
+      (await sheet.locator('[role="alert"], [data-testid="stand-in-refused"]').allTextContents()).join(" | ") || "nothing drawn");
+    if (landed !== null) throw new Error(`Take on ${addName} landed no taken row: ${landed}`);
+    report(`${tag} take: the taken row, and Take put away on the others`, (await takes.count()) === 0 && before > 1,
+      `${before} Take buttons before, ${await takes.count()} after`);
+    report(`${tag} take: the note under the head`, await sheet.getByText(/has left the draft/).isVisible(), "takenNote drawn");
+    const draft = await pool.query(`select c.name from deck_cards dc join cards c using (oracle_id) where dc.deck_id = $1 and c.name = any($2::text[])`, [deckId, [cut, addName]]);
+    const inDraft = draft.rows.map((r) => r.name);
+    report(`${tag} take: the draft holds the add and not the cut`, inDraft.includes(addName) && !inDraft.includes(cut),
+      `in the draft: ${inDraft.join(", ") || "neither"}`);
+    await sheet.getByRole("button", { name: "Close cheaper stand-ins" }).click();
+
+    // The receipt in the cut row's slot, then Undo swap from it.
+    const receipt = onPage(page, '[data-testid="swap-receipt"]:visible').first();
+    await receipt.waitFor({ timeout: 15_000 });
+    report(`${tag} receipt: drawn in the list`, ((await receipt.textContent()) ?? "").includes(`${cut} → ${addName}`), (await receipt.textContent())?.slice(0, 70));
+    // The receipt is the page's own note and draws at once; the row leaves when the revalidated page lands.
+    const left = await swapButton(page, cut).waitFor({ state: "detached", timeout: 20_000 }).then(() => true, () => false);
+    report(`${tag} receipt: the cut row has left the list`, left, left ? "no ⇄ for the cut" : "the cut's ⇄ is still drawn");
+    const receiptSection = await sectionOf(receipt);
+    report(`${tag} receipt: in the section the cut sat in`, cutSection !== null && receiptSection === cutSection,
+      `cut in ${cutSection}, receipt in ${receiptSection}`);
+    const rbox = await receipt.boundingBox();
+    if (w.label === 390) report(`${tag} receipt: 44px tall`, rbox && Math.round(rbox.height) >= 44, `${rbox?.height}px`);
+    await receipt.getByRole("button", { name: /^Undo the swap/ }).click();
+    const back = await swapButton(page, cut).waitFor({ timeout: 20_000 }).then(() => true, () => false);
+    const gone = await onPage(page, '[data-testid="swap-receipt"]').first().waitFor({ state: "detached", timeout: 10_000 }).then(() => true, () => false);
+    report(`${tag} undo: the cut is back and the receipt gone`, back && gone, `cut ${back ? "back" : "missing"}, receipt ${gone ? "gone" : "still drawn"}`);
+
+    // A refusal: the cut leaves the draft behind the sheet's back, and the take is refused with its cause.
+    sheet = await openSheet();
+    const { rows: [cutRow] } = await pool.query(
+      `delete from deck_cards where deck_id = $1 and oracle_id = (select oracle_id from cards where name = $2) returning *`, [deckId, cut]);
+    try {
+      await sheet.getByRole("button", { name: /^Take / }).first().click();
+      const alert = sheet.getByRole("alert");
+      await alert.waitFor({ timeout: 20_000 });
+      report(`${tag} refused: the panel names the cause`, /another tab/.test((await alert.textContent()) ?? ""), (await alert.textContent())?.slice(0, 60));
+      report(`${tag} refused: Take stays live`, (await sheet.getByRole("button", { name: /^Take / }).count()) > 1, "Take still drawn");
+    } finally {
+      await pool.query(`insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, $3, $4) on conflict do nothing`,
+        [cutRow.deck_id, cutRow.oracle_id, cutRow.quantity, cutRow.auto]);
+    }
+    await sheet.getByRole("button", { name: "Close cheaper stand-ins" }).click();
   }
 } catch (error) {
   failures += 1;

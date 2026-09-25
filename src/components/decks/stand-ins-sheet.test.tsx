@@ -17,17 +17,27 @@ const READ = {
   original: cardRow("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: asOf,
 } as unknown as StandInsRead;
 
-const { loadStandInsAction } = vi.hoisted(() => ({ loadStandInsAction: vi.fn() }));
-vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction }));
+const { loadStandInsAction, takeStandInAction, undoSwapAction } = vi.hoisted(() => ({
+  loadStandInsAction: vi.fn(), takeStandInAction: vi.fn(), undoSwapAction: vi.fn(),
+}));
+vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInAction, undoSwapAction }));
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
-const { SwapToolsProvider } = await import("../../lib/swaps/context");
+const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
 const { StandInsSheet } = await import("./stand-ins-sheet");
 
 const original = {
-  oracleId: "id-Anguished Unmaking", name: "Anguished Unmaking", role: "removal", owned: false, quantity: 1,
+  oracleId: "id-Anguished Unmaking", name: "Anguished Unmaking", role: "removal", owned: false, quantity: 1, cardTypeGroup: "Instants",
   price: { cents: 1500, foilCents: null, etchedCents: null, asOf },
 } as unknown as DeckDetailCard;
+
+/** The receipts the provider holds, which the Shopping list draws. */
+function Receipts() {
+  return <div data-testid="receipts">{useSwapTools()?.receipts.map((r) => `${r.cut}>${r.add}:${r.free}`).join(",")}</div>;
+}
+
+const T = swapToolsCopy.sheet;
+const takeButton = (add: string) => screen.getByRole("button", { name: T.takeAria(add, "Anguished Unmaking") });
 
 async function open() {
   await act(async () => {
@@ -35,6 +45,7 @@ async function open() {
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
         <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}>
           <StandInsSheet card={original} newestAsOf={asOf} onClose={() => {}} />
+          <Receipts />
         </SwapToolsProvider>
       </CardDetailProvider>,
     );
@@ -73,5 +84,64 @@ describe("StandInsSheet", () => {
     await act(async () => screen.getByRole("button", { name: swapToolsCopy.sheet.retry }).click());
     expect(loadStandInsAction).toHaveBeenCalledTimes(2);
     expect(screen.getByText("Chaos Warp")).toBeInTheDocument();
+  });
+
+  describe("Take", () => {
+    it("lands the taken row, puts Take away on the others, leaves a receipt, and undoes", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
+      undoSwapAction.mockResolvedValue({ ok: true });
+      await open();
+      await act(async () => takeButton("Chaos Warp").click());
+      expect(takeStandInAction).toHaveBeenCalledWith("d1", "id-Anguished Unmaking", "id-Chaos Warp");
+      expect(screen.getByTestId("stand-in-taken")).toHaveTextContent("Chaos Warp");
+      expect(screen.queryByRole("button", { name: T.takeAria("Swords to Plowshares", "Anguished Unmaking") })).toBeNull();
+      expect(screen.getByText(T.takenNote("Anguished Unmaking"))).toBeInTheDocument();
+      expect(screen.getByTestId("receipts")).toHaveTextContent("Anguished Unmaking>Chaos Warp:false");
+      await act(async () => screen.getByRole("button", { name: swapToolsCopy.row.undoSwapAria("Anguished Unmaking", "Chaos Warp") }).click());
+      expect(undoSwapAction).toHaveBeenCalledWith("s1");
+      expect(screen.queryByTestId("stand-in-taken")).toBeNull();
+      expect(screen.getByTestId("receipts")).toHaveTextContent(/^$/);
+      expect(takeButton("Swords to Plowshares")).toBeInTheDocument();
+    });
+
+    it("starts one swap for two presses before the first lands, and holds every Take while it runs", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      let land: (v: unknown) => void = () => {};
+      takeStandInAction.mockReset().mockReturnValue(new Promise((r) => { land = r; }));
+      await open();
+      // Both presses in one frame, before a render can disable anything: only the ref can refuse the second.
+      await act(async () => {
+        takeButton("Chaos Warp").click();
+        takeButton("Swords to Plowshares").click();
+      });
+      expect(takeStandInAction).toHaveBeenCalledTimes(1);
+      expect(takeButton("Swords to Plowshares")).toBeDisabled();
+      await act(async () => land({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 }));
+      expect(screen.getByTestId("receipts")).toHaveTextContent("Anguished Unmaking>Chaos Warp:false");
+    });
+
+    it("names the cause of a refusal only when the swap body reported it (F11)", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValueOnce({ ok: false, reason: "cutGone" }).mockResolvedValueOnce({ ok: false, reason: "addHeld" });
+      await open();
+      await act(async () => takeButton("Chaos Warp").click());
+      expect(screen.getByRole("alert")).toHaveTextContent(T.refused.body("HD Gishath", "Anguished Unmaking", "Chaos Warp"));
+      // The row stays live: Take is still there on the refused row.
+      await act(async () => takeButton("Chaos Warp").click());
+      expect(screen.getByRole("alert")).toHaveTextContent(T.refused.bodyPlain("Anguished Unmaking", "Chaos Warp"));
+      expect(screen.getByRole("alert")).not.toHaveTextContent("another tab");
+      await act(async () => screen.getByRole("button", { name: T.refused.close }).click());
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("says a thrown take failed, under its row, and changes nothing", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockRejectedValueOnce(new Error("boom"));
+      await open();
+      await act(async () => takeButton("Chaos Warp").click());
+      expect(screen.getByRole("alert")).toHaveTextContent(T.takeFailed);
+      expect(screen.queryByTestId("stand-in-taken")).toBeNull();
+    });
   });
 });

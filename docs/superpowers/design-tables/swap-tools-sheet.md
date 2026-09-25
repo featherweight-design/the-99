@@ -194,13 +194,13 @@ Swap Tools :217).
 
 ### 5.1 Row shell and grid
 
-**PR 4a draws no Take**, so it ships the grid without Take's track: `minmax(0,1fr) 96px` on desktop and a single `minmax(0,1fr)` column on the phone. PR 4b adds the Take column as specified below.
+**PR 4a drew no Take** and shipped the grid without its track. PR 4b adds the Take column as specified below.
 
 | Property | Desktop | Phone |
 |---|---|---|
 | Wrapper border-bottom | `1px solid var(--border)` | same |
 | Grid display | `grid` | `grid` |
-| grid-template-columns | `minmax(0,1fr) 96px` in 4a; `minmax(0,1fr) 96px 64px` once 4b adds Take | `minmax(0,1fr)` in 4a; `minmax(0,1fr) 72px` once 4b adds Take |
+| grid-template-columns | `minmax(0,1fr) 96px 64px` | `minmax(0,1fr) 72px` |
 | column-gap | `12px` | `10px` |
 | row-gap | not set | `6px` |
 | align-items | `center` | `center` |
@@ -290,9 +290,7 @@ Clauses are joined by ` · ` in the component; no clause is a score and no figur
 | border-radius / padding | `4px` / `1px 6px` |
 | color / background | `var(--success)` / `color-mix(in oklab, var(--success) 13%, transparent)` |
 
-### 5.5 Take cell: DEFERRED to PR 4b
-
-Not drawn in PR 4a, and `sheet.take` / `sheet.takeAria` are added with it. The rows below are the contract 4b builds to.
+### 5.5 Take cell (PR 4b; its outcomes are in `swap-tools-take.md`)
 
 | Property | Desktop | Phone |
 |---|---|---|
@@ -464,9 +462,9 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Sheet | 640, centred, 60px from top, all-side border, 14 radius, shadow | from 52px, top border only, `14 14 0 0` radius |
 | Header | padding `14px 18px`, gap 10 | 43px tall, padding `0 6px 0 16px`, gap 9 |
 | Body | padding `16 18 18`, gap 14 | padding `14 16 24`, gap 12 |
-| Row grid | `1fr 96px` in 4a (`1fr 96px 64px` once 4b adds Take), gap 12, padding `9px 0` | `1fr` in 4a (`1fr 72px` once 4b adds Take), gaps 10 / 6, padding `10px 0` |
+| Row grid | `1fr 96px 64px`, gap 12, padding `9px 0` | `1fr 72px`, gaps 10 / 6, padding `10px 0` |
 | Price | column 2, right-aligned | row 2 under the facts, indent 43 |
-| Take (deferred to 4b) | inline, `6px 13px`, 12.5, radius 7 | `72×44`, 13, radius 8, spans both rows |
+| Take | inline, `6px 13px`, 12.5, radius 7 | `72×44`, 13, radius 8, spans both rows |
 | Try again | `7px 16px` | 44 tall, `0 18px` |
 | ⇄ | 22×20 | 44×44, margin-right −9 |
 | Under-limit slot | empty 22px | none |

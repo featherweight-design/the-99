@@ -6,7 +6,7 @@
 // - Escape closes; focus returns to the previously-focused element on close
 
 import Link from "next/link";
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import type { BrowseCard, PreferredPrinting, BrowsePrinting } from "../../lib/collection/browse";
 import {
   cssUrl,
@@ -420,6 +420,7 @@ export function CardModal({
   onSelectCard,
   stacked = false,
   backLabel,
+  footer = null,
 }: {
   card: BrowseCard;
   /**
@@ -441,6 +442,12 @@ export function CardModal({
    * the sheet behind is already the way back.
    */
   backLabel?: string;
+  /**
+   * The sheet underneath's own footer for this card (swap tools: a stand-in's Take). It replaces the
+   * Mana Pool link, in the desktop nav row beside Prev/Next and pinned at the phone's bottom, so a
+   * card opened to be chosen is chosen from where the reader already is. Drawn per layout.
+   */
+  footer?: ((layout: "row" | "column") => ReactNode) | null;
   /** The deck this card was opened from, which scopes the proxy control. Null
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
@@ -1807,12 +1814,14 @@ export function CardModal({
                 pinned. The hairline is load-bearing: it separates the link from
                 the printings disclosure so it never reads as "buy this
                 printing". Above md: the link lives in the pinned nav row. */}
-            <div
-              className="md:hidden flex items-center min-h-[44px] mt-[14px]"
-              style={{ borderTop: "1px solid var(--border)" }}
-            >
-              <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
-            </div>
+            {footer ? null : (
+              <div
+                className="md:hidden flex items-center min-h-[44px] mt-[14px]"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+              </div>
+            )}
           </div>
 
 
@@ -1825,7 +1834,7 @@ export function CardModal({
                 from wherever focus starts. That start is now named — the dialog
                 focuses the ✕ that has layout, since the art became a button and would
                 otherwise have taken it — but the order after it is still this one. */}
-            <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+            {footer ? footer("row") : <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />}
             <span className="ml-auto flex items-center gap-[14px] flex-none">
               <button
                 type="button"
@@ -1850,6 +1859,7 @@ export function CardModal({
               </button>
             </span>
           </div>
+          {footer ? <div className="md:hidden flex-none">{footer("column")}</div> : null}
         </div>
         {/* The modal's one live region (handoff §Accessibility). Do not add a second.
             A direct child of the dialog rather than of the content column, because the

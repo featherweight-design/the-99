@@ -5,6 +5,9 @@
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
 import { useSwapTools } from "../../lib/swaps/context";
+import { StandInsSheet } from "./stand-ins-sheet";
+import { SwapReceiptRow } from "./swap-receipt";
+import { placeReceipts } from "../../lib/swaps/place-receipts";
 import { isOverLimit } from "../../lib/swaps/limit";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -42,7 +45,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -56,6 +59,18 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
   removal: "Removal",
   wipes: "Wipes",
 };
+
+/**
+ * The Shopping section a cut's row sat in, by the rules the list sections its rows with: its type group
+ * under `By type`; under `By role` the pinned spoken-for group, else its targeted role, else `Other`.
+ * A swap receipt draws there (swap tools, PR 4b).
+ */
+export function receiptHome(card: DeckDetailCard, grouping: "role" | "type"): { key: string; label: string } {
+  if (grouping === "type") return { key: card.cardTypeGroup, label: card.cardTypeGroup };
+  if (isSpokenFor(card)) return { key: "spoken-for", label: recommendationsCopy.shopping.spokenForGroupLabel };
+  const role = SHOPPING_ROLE_ORDER.find((r) => r === card.role);
+  return role ? { key: role, label: SHOPPING_ROLE_LABELS[role] } : { key: "other", label: "Other" };
+}
 
 type DecklistProps = {
   /** Passed straight through to `UnresolvedGroup`. Carried, not computed. */
@@ -364,6 +379,11 @@ export function Decklist({
   // The rows over the deck's Shopping limit (swap tools), for the limit line's `N over`. Rows, not
   // copies: the count names the rows the reader sees marked. Zero whenever the tools are off.
   const swapTools = useSwapTools();
+  // The stand-ins sheet, mounted by the list rather than by its row: a take takes the row away, and
+  // the sheet has to stay to say so. Both views mount it, since a take moves the reader nowhere.
+  const standInsSheet = swapTools?.standIns ? (
+    <StandInsSheet card={swapTools.standIns} newestAsOf={newestAsOf} onClose={swapTools.closeStandIns} />
+  ) : null;
   const shoppingOverCount = swapTools
     ? shoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length
     : 0;
@@ -583,8 +603,10 @@ export function Decklist({
     // that never ran.
     // `!spentCard` for the same reason `builder-shell.tsx` guards its own empty
     // state on it: swapping the list for an empty state would take the undo row
-    // with it, and the player has nowhere else to undo from.
-    if (n === 0 && !spentCard) {
+    // with it, and the player has nowhere else to undo from. A swap's open sheet and its receipts
+    // hold the empty state off for the same reason: a take can empty the list, and Undo swap lives
+    // in the receipt.
+    if (n === 0 && !spentCard && !swapTools?.standIns && !swapTools?.receipts.length) {
       return (
         <div className="flex flex-col">
           <GroupToggle
@@ -649,12 +671,29 @@ export function Decklist({
     // Prev/Next in the card detail modal walks the list the eye does, so the
     // ids come from the rendered groups rather than from `shoppingCards`, whose
     // deck order the role grouping below discards.
+    // Where each receipt draws (swap tools, PR 4b). Under its row while copies of the cut remain;
+    // else in the section the cut sat in, by the same rules that section the rows above; else, that
+    // section gone with its last row, in a section of the same name (one per section, however many).
+    const receipts = swapTools?.receipts ?? [];
+    const onList = new Set(shoppingSections.flatMap((s) => s.cards.map((c) => c.oracleId)));
+    const receiptsUnder = (oracleId: string) => receipts.filter((r) => r.cutOracleId === oracleId);
+    const detached = receipts.filter((r) => !onList.has(r.cutOracleId));
+    const receiptsInSection = (key: string) => detached.filter((r) => receiptHome(r.cutCard, grouping).key === key);
+    const orphanSections = [
+      ...new Map(
+        detached
+          .map((r) => receiptHome(r.cutCard, grouping))
+          .filter((home) => !shoppingSections.some((s) => s.key === home.key))
+          .map((home) => [home.key, home.label] as const),
+      ),
+    ].map(([key, label]) => ({ key, label, cards: [] as DeckDetailCard[], gapClause: undefined }));
     const shoppingOrderedIds = shoppingSections
       .flatMap((section) => section.cards.map((c) => c.oracleId))
       .filter((id) => id !== spentCard?.oracleId);
 
     return (
       <div className="flex flex-col">
+        {standInsSheet}
         <GroupToggle
           allCount={built}
           shoppingCount={shoppingCount}
@@ -720,7 +759,11 @@ export function Decklist({
               section and a type one is the label and whether a clause rides
               beside it; three near-identical blocks is how the two groupings
               came to disagree about what a Shopping row looks like. */}
-          {shoppingSections.map(({ key, label, cards: groupCards, gapClause }) => (
+          {[
+            ...shoppingSections,
+            // A receipt whose section has gone (the cut was its last row) heads a section of that name.
+            ...orphanSections,
+          ].map(({ key, label, cards: groupCards, gapClause }) => (
             <div key={key} className="mb-[16px] md:mb-[20px]">
               <DecklistGroupHeader
                 label={label}
@@ -731,18 +774,31 @@ export function Decklist({
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
-                {groupCards.map((card) => (
-                  <DecklistRow
-                    key={card.oracleId}
-                    deckId={deckId}
-                    card={card}
-                    siblings={shoppingOrderedIds}
-                    spent={card.oracleId === spentCard?.oracleId}
-                    shoppingFigure={figureFor(card.oracleId)}
-                    inShopping
-                    newestAsOf={newestAsOf}
-                  />
-                ))}
+                {placeReceipts(groupCards, receiptsInSection(key), sort.key, compareCards).map((item) => {
+                  if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} />;
+                  const card = item.card;
+                  const row = (
+                    <DecklistRow
+                      deckId={deckId}
+                      card={card}
+                      siblings={shoppingOrderedIds}
+                      spent={card.oracleId === spentCard?.oracleId}
+                      shoppingFigure={figureFor(card.oracleId)}
+                      inShopping
+                      newestAsOf={newestAsOf}
+                    />
+                  );
+                  const under = receiptsUnder(card.oracleId);
+                  // One copy fewer: the row stays, and its receipt sits under it in the same grid cell.
+                  return under.length ? (
+                    <div key={card.oracleId} className="flex flex-col gap-[4px]">
+                      {row}
+                      {under.map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
+                    </div>
+                  ) : (
+                    <Fragment key={card.oracleId}>{row}</Fragment>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -788,6 +844,7 @@ export function Decklist({
 
   return (
     <div className="flex flex-col">
+      {standInsSheet}
       {/* Toggle bar */}
       <GroupToggle
         allCount={built}
