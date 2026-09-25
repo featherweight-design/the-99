@@ -7,6 +7,23 @@
 // Needs a server with ABOUT_SHEET_ENABLED=true, pointed at `local-dev`. **Never
 // production**: it puts the signed-in account one version behind, repeatedly.
 //
+//   pnpm probe:about --flip          (PROBE_FLIP_PORT, default 3297)
+//
+// THE FLIP WALK. An entry tied to a feature switch is announced by turning the switch on
+// (Hugh, 2026-09-25), and a switch is read when the server starts, so the walk OWNS its server:
+// it starts `next dev` with every switch off, then restarts it with Change commander on, then
+// with Locked cards on as well, then with both off. Next 16 allows one `next dev` per project,
+// so stop any dev server running in this worktree first. What it proves, in order:
+//   F1  every switch off: a reader current by version sees nothing, and the browser is marked;
+//   F2  Change commander on: the cookie from before the flip does NOT hide the sheet, and the
+//       sheet names that one entry;
+//   F3  opening /about records the entry by id, draws its figure, and the sheet stays away;
+//   F4  Locked cards on LATER: the reader who met the first entry is shown only the second;
+//   F5  both figures draw at 390 and 1300 without overflowing the page;
+//   F6  both off again: neither entry is on the page.
+// The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
+// worktree's own `.env` at a migrated scratch branch.
+//
 // WHAT ONLY A BROWSER CAN ANSWER, and why each check exists:
 //   1   the card draws on a document load, beside the rail from `md` (audit E8) and
 //       above the tab bar on a phone, with the page reserving its height;
@@ -39,6 +56,9 @@
 //   - the sheet placed from 1000px rather than `md`              → check 1's placement (E8) at 800
 //   - the proxy not stripping `x-about-sheet`                    → check 8 at 390 and 1300
 //   - the search hiding the page's sections that hold no match   → check 6's ruling 4 at 390 and 1300
+//   --flip:
+//   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 (the old cookie hides the sheet)
+import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -50,7 +70,9 @@ import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 if (!EMAIL.includes("+clerk_test")) throw new Error("Use a +clerk_test account (see the local-auth note).");
-const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+const FLIP = process.argv.includes("--flip");
+const FLIP_PORT = Number(process.env.PROBE_FLIP_PORT ?? 3297);
+const BASE = FLIP ? `http://localhost:${FLIP_PORT}` : (process.env.PROBE_BASE ?? "http://localhost:3000");
 const sql = neon(DATABASE_URL);
 const { version: VERSION } = JSON.parse(
   readFileSync(new URL("../src/lib/copy/about.version.json", import.meta.url), "utf8"),
@@ -334,12 +356,219 @@ async function walk(browser, width, userIdRef) {
   await context.close();
 }
 
+
+// ── The flip walk (--flip) ──────────────────────────────────────────────────────────────────
+
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"];
+
+/** `next dev` in this worktree with exactly the named switches on; resolves once it serves. */
+async function startServer(on) {
+  const env = { ...process.env, ABOUT_SHEET_ENABLED: "true" };
+  for (const k of SWITCHES) env[k] = on.includes(k) ? "true" : "false";
+  const child = spawn("node_modules/.bin/next", ["dev", "-p", String(FLIP_PORT)], {
+    env,
+    detached: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let log = "";
+  child.stdout.on("data", (d) => (log += d));
+  child.stderr.on("data", (d) => (log += d));
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) throw new Error(`next dev exited ${child.exitCode}:\n${log.slice(-1500)}`);
+    const up = await fetch(`${BASE}/api/health`).then(() => true, () => false);
+    if (up) return child;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  await stopServer(child);
+  throw new Error(`next dev did not serve within 120s:\n${log.slice(-1500)}`);
+}
+
+/** Stops the whole process group, and waits for it, so the next start finds the port free. */
+async function stopServer(child) {
+  if (!child || child.exitCode !== null) return;
+  const exited = new Promise((r) => child.once("exit", r));
+  try {
+    process.kill(-child.pid, "SIGTERM");
+  } catch {
+    return;
+  }
+  await Promise.race([exited, new Promise((r) => setTimeout(r, 10_000))]);
+  if (child.exitCode === null) {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch {}
+  }
+}
+
+const sheetCookie = async (context) =>
+  (await context.cookies()).find((c) => c.name === "about_sheet")?.value ?? null;
+
+/** The titles the card lists, or null when no card is up. */
+async function sheetTitles(page, card) {
+  await card.waitFor({ timeout: 30_000 }).catch(() => {});
+  if (!(await card.isVisible())) return null;
+  return (await card.locator("li").allInnerTexts()).map((t) => t.trim());
+}
+
+/** Waits for the visit /about records, which lands after the page has streamed in. */
+async function visitAbout(page, userId, id) {
+  await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+  await page.locator(`li#${id}`).waitFor({ timeout: 30_000 }).catch(() => {});
+  for (let i = 0; i < 20; i++) {
+    if ((await readRow(userId))?.about_seen_ids?.includes(id)) return;
+    await page.waitForTimeout(250);
+  }
+}
+
+/** The figure's pieces, and whether it stays inside the page, at the current viewport. */
+async function figureFacts(page) {
+  return page.evaluate(() => {
+    const within = (id) => {
+      const li = document.getElementById(id);
+      if (!li) return null;
+      const box = li.getBoundingClientRect();
+      // The title line spills into the gutter on purpose (the jump mark's wash, R6 §P1), so it
+      // is left out; everything else, the figure included, stays inside the entry.
+      const inside = [...li.querySelectorAll("*")]
+        .filter((n) => !n.closest("[data-entry-title]"))
+        .every((n) => n.getBoundingClientRect().right <= box.right + 1);
+      return { li, inside };
+    };
+    const locked = within("locked-cards");
+    const change = within("change-commander");
+    return {
+      locked: locked && {
+        inside: locked.inside,
+        line: locked.li.querySelectorAll("[data-testid=lock-mode-line]").length,
+        done: [...locked.li.querySelectorAll("button")].filter((b) => b.textContent.trim() === "Done").length,
+        // Each row is drawn twice (at rest, then in the mode), and a row carries no test id of its
+        // own, so the name is counted in the TEXT a reader sees: innerText skips the width that
+        // is not drawn.
+        petals: locked.li.innerText.split("Lotus Petal").length - 1,
+        // In the mode every row's ✕ is the toggle: three, and none in the set at rest.
+        toggles: [...locked.li.querySelectorAll("[data-testid=row-lock-toggle]")].filter(
+          (n) => n.getBoundingClientRect().width > 0,
+        ).length,
+      },
+      change: change && {
+        inside: change.inside,
+        door: change.li.querySelectorAll("[data-testid=change-commander-door]").length,
+        rows: change.li.querySelectorAll("[data-testid=change-commander-row]").length,
+      },
+      pageOverflow: document.documentElement.scrollWidth - innerWidth,
+    };
+  });
+}
+
+async function flipWalk(browser, who) {
+  let server = await startServer([]);
+  try {
+    const context = await browser.newContext({ viewport: { width: 1300, height: 820 } });
+    const page = await context.newPage();
+    const userId = await signIn(page);
+    who.id ??= userId;
+    if (who.original === undefined) who.original = await hold(userId);
+    const card = page.getByRole("region", { name: SHEET });
+
+    // F1. Every switch off, and the reader current by version.
+    await setSeen(userId, VERSION);
+    await context.clearCookies({ name: "about_sheet" });
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    report("F1 switches off: a current reader sees no sheet", !(await card.isVisible()));
+    const before = await sheetCookie(context);
+    report("F1 the browser is marked", before === `${userId}.${VERSION}`, String(before));
+
+    // F2. Change commander on. The browser keeps the cookie it was given above.
+    await stopServer(server);
+    server = await startServer(["CHANGE_COMMANDER_ENABLED"]);
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const first = await sheetTitles(page, card);
+    report("F2 flipped on: the cookie from before the flip does not hide the sheet", first !== null);
+    report(
+      "F2 the sheet names Change commander alone",
+      JSON.stringify(first) === JSON.stringify(["Change commander"]),
+      JSON.stringify(first),
+    );
+
+    // F3. Opening /about records it by id, and it is not announced again.
+    await visitAbout(page, userId, "change-commander");
+    const ids = (await readRow(userId))?.about_seen_ids ?? [];
+    report(
+      "F3 the visit records change-commander by id, and nothing it did not draw",
+      ids.includes("change-commander") && !ids.includes("locked-cards"),
+      JSON.stringify(ids),
+    );
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    report("F3 after the visit the sheet stays away", !(await card.isVisible()));
+
+    // F4. Locked cards on LATER. A version number would call this reader current.
+    await stopServer(server);
+    server = await startServer(["CHANGE_COMMANDER_ENABLED", "NEVER_CUT_ENABLED"]);
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const second = await sheetTitles(page, card);
+    report(
+      "F4 a later flip names Locked cards alone",
+      JSON.stringify(second) === JSON.stringify(["Locked cards"]),
+      JSON.stringify(second),
+    );
+    await visitAbout(page, userId, "locked-cards");
+
+    // F5. Both figures, drawn by the page's own components, at both widths.
+    for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto(`${BASE}/about#locked-cards`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(600);
+      const f = await figureFacts(page);
+      const w = viewport.width;
+      report(
+        `F5 ${w}: Locked cards draws its rows twice, three toggles in the mode, the line and Done`,
+        f.locked?.petals === 2 && f.locked.toggles === 3 && f.locked.line === 1 && f.locked.done === 1,
+        JSON.stringify(f.locked),
+      );
+      report(
+        `F5 ${w}: Change commander draws the door and two candidates`,
+        f.change?.door === 1 && f.change.rows === 2,
+        JSON.stringify(f.change),
+      );
+      report(
+        `F5 ${w}: neither figure overflows its entry or the page`,
+        f.locked?.inside && f.change?.inside && f.pageOverflow <= 0,
+        `overflow ${f.pageOverflow}`,
+      );
+    }
+    await page.setViewportSize({ width: 1300, height: 820 });
+
+    // F6. Both off: neither entry is on the page.
+    await stopServer(server);
+    server = await startServer([]);
+    await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+    const gone = await page.evaluate(
+      () => !document.getElementById("locked-cards") && !document.getElementById("change-commander"),
+    );
+    report("F6 switches off again: neither entry is on the page", gone);
+    await context.close();
+  } finally {
+    await stopServer(server);
+  }
+}
+
 await clerkSetup();
 const browser = await chromium.launch();
 const who = { id: null, original: undefined };
 try {
   if (BEHIND < 1) throw new Error(`ABOUT_VERSION is ${VERSION}; there is no version to be behind.`);
-  for (const width of WIDTHS) {
+  if (FLIP) {
+    try {
+      await flipWalk(browser, who);
+    } catch (error) {
+      report("the flip walk stopped", false, String(error?.message ?? error).split("\n")[0]);
+    }
+  }
+  for (const width of FLIP ? [] : WIDTHS) {
     console.log(`\n${width.label}x${width.viewport.height}`);
     // A step that throws (a control a broken build never drew) is a failure at THIS width,
     // reported and counted, and the other widths still run. Found by the mount mutation,
