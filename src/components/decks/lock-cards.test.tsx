@@ -649,4 +649,18 @@ describe("a lock write that settles on another deck", () => {
     expect(result.current.value!.errors.size).toBe(0);
     expect(announce).not.toHaveBeenCalled();
   });
+
+  it("does not announce a lock that succeeded after the switch either", async () => {
+    const held = deferred<DeckMutationResult>();
+    setCardLocked.mockReturnValue(held.promise);
+    const announce = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ deckId }) => useCardLocks({ enabled: true, deckId, cards: list, serverCards: list, announce }),
+      { initialProps: { deckId: "deck-a" } },
+    );
+    act(() => result.current.value!.toggle(card));
+    rerender({ deckId: "deck-b" });
+    await act(async () => held.resolve({ ok: true }));
+    expect(announce).not.toHaveBeenCalled();
+  });
 });
