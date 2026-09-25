@@ -297,7 +297,8 @@ export function themeReason(
     const rank = THEME_ORDER.indexOf(theme);
     if (n > 0 && (!best || n > best.n || (n === best.n && rank < best.rank))) best = { theme, n, rank };
   }
-  const key = keyCreatureType(others.map((c) => ({ typeLine: c.type_line })), commanderTypes);
+  // Copies decide the key type (a deck of 30 Relentless Rats is a Rat deck); `n` below still counts cards.
+  const key = keyCreatureType(others.map((c) => ({ typeLine: c.type_line, quantity: Number(c.quantity) })), commanderTypes);
   if (key && card.subtypes.includes(key)) {
     const n = others.filter((c) => creatureSubtypes(c.type_line).includes(key)).length;
     // Membership is the tribal theme's other half, so it ranks where tribal does.

@@ -125,6 +125,12 @@ describe("themeReason", () => {
     expect(themeReason({ oracleId: "x", themes: ["mill"], subtypes: [] }, deck, [], elves)).toBeNull();
   });
 
+  it("picks the key type by copies, and counts cards for n", () => {
+    const rats = { ...row("r", "Creature — Rat", "{T}: Add {B}."), quantity: 6 };
+    const elfRows = Array.from({ length: 5 }, (_, i) => row(`e${i}`, "Creature — Elf", "{T}: Add {G}."));
+    expect(themeReason({ oracleId: "x", themes: [], subtypes: ["Rat"] }, [rats, ...elfRows], [], elves)).toEqual({ theme: { type: "Rat" }, n: 1 });
+  });
+
   // Hugh's Q5: tribal is membership too. An Elf joins an Elf deck's creatures.
   it("names the deck's key creature type for a creature of that type", () => {
     const deck = Array.from({ length: 6 }, (_, i) => row(`e${i}`, i % 2 ? "Creature — Elf Druid" : "Creature — Elf Warrior", "{T}: Add {G}."));
