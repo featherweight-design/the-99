@@ -51,22 +51,28 @@ and refunds instead of timing out at 110s.
   broke neither, so enforcing them costs nothing measured. The chip and opening rules stay
   prompt-only: enforcing them would drop whole suggestions over wording.
 - `PROMPT_VERSION` moves.
-- `tuning-actions.ts`: the run's call passes the effort and the floor. Three lines, moved here from
-  PR 2 while building: the prompt change ships the moment PR 1 merges, and without them the app
-  would run the new rules at default effort, a setup the dev check saw malform 1 of 4, until PR 2
-  landed. The swap lane agreed to the file on 2026-09-24.
-- Proof the prompt is the one Hugh rated: with round 4's 8 decks' overviews and the universal
-  staples, `buildPrompt` reproduces all 8 system and user messages round 4 sent, byte for byte.
+- `tuning-actions.ts` and `tuning-read.ts`: the run reads the deck's shown overview
+  (`readShownSynopsis`, which prefers the live list's own and otherwise the newest shown) and the
+  universal staples (`loadUniversalStaples`, named through the catalog) into the pack, and its
+  call passes the effort and the floor. Moved here from PR 2 while building, after the pre-open
+  pass pointed out that without them PR 1 would ship the new rules with no overview, no staples
+  and default effort, a state nobody measured. The swap lane agreed to `tuning-actions.ts` on
+  2026-09-24. With no overview at all, the strategy block and the Key-card rule are left out and
+  every other rule stays; only Key cards still in the deck are kept.
+- Proof the prompt is the one Hugh rated: given round 4's 8 decks' overviews and the universal
+  staples, `buildPrompt` reproduced all 8 system and user messages round 4 sent, byte for byte;
+  `scripts/fixtures/tuning-v2-round4.json` pins one in `prompt.test.ts`.
 - Mutations: the floor removed, the Key-card drop removed, the universal-staple drop removed, the
-  effort dropped.
+  effort dropped, and one word of the rules changed (the byte-identity test).
 
-**PR 2, the wiring** (`src/app/decks/tuning-actions.ts`, the swap lane agreed 2026-09-24):
-- the run reads the deck's shown overview (`readShownSynopsis`) and the universal staples into
-  the pack;
-- with no overview for the live list, the newest shown one is used, keeping only Key cards still
-  in the deck; with none at all, the strategy block is left out and every other rule stays;
-- `probe:tuning-run` proves a real run on local-dev: effort medium, no Key card cut, and the refund
-  on a forced failure.
+**PR 2, the probe** (`scripts/probe-tuning-run.ts`): a real run on local-dev, end to end, proving
+effort medium, the overview and staples in the prompt, no Key card cut, and the refund on a forced
+failure.
+
+**A follow-up in the eval harness's own fence:** `buildPrompt` now carries the v2 rules, so the
+`strategy`, `strategy-terse` and `strategy-terse-b` variants append them a second time and `base`
+no longer measures v1. They are marked historical there, as the synopsis's budget variants were
+when #934 shipped.
 
 It ships behind the Analysis tab's existing switch. There is no new About entry: this line batches
 its entries at launch.

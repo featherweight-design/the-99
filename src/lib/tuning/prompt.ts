@@ -29,9 +29,12 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
 
 /**
  * v2's rules (Hugh's ruling, 2026-09-24), the text round 4 of the eval ran and he rated 7 to 0
- * (`strategy-terse-b` in `scripts/eval/variants/tuning.mts`). Where the deck has an overview the
- * system and user messages are that run's, byte for byte, and `prompt.test.ts` pins it. With no
- * overview, the two lines that name one are left out rather than pointing at nothing.
+ * (`strategy-terse-b` in `scripts/eval/variants/tuning.mts`). Given the pack `buildEvidencePack`
+ * builds from a deck's overview, the system and user messages are that run's byte for byte: all
+ * eight of round 4's were checked, and `prompt.test.ts` pins one against
+ * `scripts/fixtures/tuning-v2-round4.json`. Where the run had nothing sensible to say the app says
+ * nothing: no overview drops the two lines that name one, and no Key card still in the deck drops
+ * the Key-card line.
  */
 function strategyRules(universal: string[], hasOverview: boolean): string[] {
   return [

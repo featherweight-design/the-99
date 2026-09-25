@@ -16,6 +16,7 @@ import {
   profileOfHead,
   readEvidenceStep,
   readOwnedOracleIds,
+  readTuningContext,
   readTuningState,
   tuningInputs,
   withBracketAfter,
@@ -117,11 +118,14 @@ export async function runTuning(
 
   try {
     const profile = await profileOfHead(head);
-    const owned = await readOwnedOracleIds(userId, [
-      ...profile.cards.map((c) => c.oracleId),
-      ...profile.skeleton.staples.map((s) => s.oracleId),
+    const [owned, { overview, universal }] = await Promise.all([
+      readOwnedOracleIds(userId, [
+        ...profile.cards.map((c) => c.oracleId),
+        ...profile.skeleton.staples.map((s) => s.oracleId),
+      ]),
+      readTuningContext(head),
     ]);
-    const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned });
+    const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned, overview, universal });
     const { system, user } = buildPrompt(pack);
     const outcome = await callModel({
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,

@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { deckTuningCopy } from "../copy/deck-tuning";
@@ -117,5 +120,16 @@ describe("v2's strategy and rationale rules", () => {
     expect(system).not.toContain("Key card");
     expect(system).not.toContain("just to fix a role count");
     expect(system).toContain("Make 4 or 5 suggestions when the deck supports that many.");
+  });
+});
+
+describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
+  // One of round 4's eight decks as the harness sent it: the pack with the overview and universal
+  // staples its `strategy-terse-b` variant added, and the two messages that went to the model. All
+  // eight were checked by hand when v2 was built; this one keeps the check running.
+  const fixture = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/fixtures/tuning-v2-round4.json"), "utf8")) as { pack: EvidencePack; system: string; user: string };
+
+  it("reproduces round 4's system and user messages byte for byte", () => {
+    expect(buildPrompt(fixture.pack)).toEqual({ system: fixture.system, user: fixture.user });
   });
 });

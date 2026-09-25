@@ -21,6 +21,8 @@ import type { Bracket, DeckProfile } from "../profile/types";
 import { bracketAfter } from "../tuning/bracket-shift";
 import { tuningFingerprint } from "../tuning/fingerprint";
 import { PROMPT_VERSION } from "../tuning/prompt-version";
+import { loadUniversalStaples } from "../staples/universal";
+import { readShownSynopsis } from "../synopsis/generate";
 import { reapCutoff } from "../tuning/reaper";
 import type { TuningItem, TuningRun, TuningState } from "../tuning/state";
 import type { ValidatedSuggestion } from "../tuning/validate";
@@ -91,6 +93,35 @@ export function profileOfHead(head: ProfileHead): Promise<DeckProfile> {
   return cacheForUser(head.userId, ["deck-profile", head.deckId, profileFingerprint(head)], () =>
     loadDeckProfileFromHead(head),
   );
+}
+
+/**
+ * What v2 tells the model about the deck it already knows (Hugh's ruling, 2026-09-24): the deck's
+ * own overview, its strategy steps and its Key cards, and the universal staples by name.
+ *
+ * The overview is `readShownSynopsis`'s, which prefers the one written for this very list and
+ * falls back to the newest shown; `buildEvidencePack` then keeps only the Key cards the deck still
+ * holds. A refused section is null in the stored content, and reads as nothing rather than as an
+ * empty strategy. The universal staples come from `staples/universal.ts`, the one definition,
+ * named through the catalog.
+ */
+export async function readTuningContext(head: ProfileHead): Promise<{
+  overview: { strategy: string[]; keyCards: string[] } | null;
+  universal: { oracleId: string; name: string }[];
+}> {
+  const [shown, universalIds] = await Promise.all([
+    readShownSynopsis(head.deckId, head.userId, listFingerprint(head)),
+    loadUniversalStaples(),
+  ]);
+  const content = shown?.content;
+  const strategy = content?.primer?.strategy ?? [];
+  const keyCards = (content?.keyCards ?? []).map((k) => k.card);
+  const overview = strategy.length > 0 || keyCards.length > 0 ? { strategy, keyCards } : null;
+  const universal = universalIds.size === 0 ? [] : await db
+    .select({ oracleId: cards.oracleId, name: cards.name })
+    .from(cards)
+    .where(inArray(cards.oracleId, [...universalIds]));
+  return { overview, universal };
 }
 
 /** Which of these cards the reader owns at all. One read, for the evidence pack. */
