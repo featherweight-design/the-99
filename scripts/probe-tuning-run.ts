@@ -484,7 +484,9 @@ async function run() {
     // An empty set would pass every staple check here while measuring nothing: a database whose
     // staple index was never built is a failure of this case, not a pass.
     if (universalIds.size === 0) fail("13 · universal staples", "format_staples names none on this database; build the staple index first");
-    check("13 · every universal staple is named through the catalog", context.universal.length, universalIds.size);
+    // By id, not count: a read returning as many unrelated catalog cards would match a count.
+    check("13 · every universal staple is named through the catalog",
+      context.universal.map((u2) => u2.oracleId).sort(), [...universalIds].sort());
 
     const profile = await loadDeckProfileFromHead(head);
     const pack = buildEvidencePack({ profile, play: buildPlayGroup([]), intent: null, owned: new Set(), ...context });
