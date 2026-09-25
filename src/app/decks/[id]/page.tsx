@@ -34,6 +34,9 @@ import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
+import { SwapToolsProvider } from "../../../lib/swaps/context";
+import { swapToolsEnabled } from "../../../lib/swaps/flag";
+import { readShoppingLimit } from "../../../lib/swaps/read";
 import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 
@@ -345,6 +348,10 @@ export default async function DeckBuilderPage({
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
   const storedBracket = await storedPermits;
+  // The swap tools read the flag once, here, and reach every surface through one provider: a row
+  // that finds no provider draws nothing of them.
+  const swapTools = swapToolsEnabled();
+  const shoppingLimit = swapTools ? await readShoppingLimit(id, userId) : null;
   // WHAT THIS DECK IS COMPARED TO, taken off the suggestions payload rather than resolved
   // again here. `loadDeckSuggestions` already ran in the first wave above and already built
   // this exact mix for its own shelf headers, so reading it back costs nothing and makes the
@@ -353,7 +360,7 @@ export default async function DeckBuilderPage({
   // Spellbook aggregation, tutor classification and the staples join to produce five integers
   // the page was already holding.
 
-  return (
+  const shell = (
     <BuilderShell
       mix={mix}
       deck={{ ...detail, cards }}
@@ -405,4 +412,7 @@ export default async function DeckBuilderPage({
       )}
     />
   );
+  return swapTools ? (
+    <SwapToolsProvider deckId={id} storedLimitCents={shoppingLimit}>{shell}</SwapToolsProvider>
+  ) : shell;
 }

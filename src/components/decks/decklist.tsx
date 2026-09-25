@@ -4,6 +4,8 @@
 // Owns filter/grouping render; filter and grouping come as props from BuilderShell.
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
+import { useSwapTools } from "../../lib/swaps/context";
+import { isOverLimit } from "../../lib/swaps/limit";
 import type { RecommendedMix } from "../../lib/decks/mix";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
@@ -359,6 +361,13 @@ export function Decklist({
   // rendered twice on the same screen.
   const priceSummary = summarisePrices(shoppingCards, newestAsOf);
 
+  // The rows over the deck's Shopping limit (swap tools), for the limit line's `N over`. Rows, not
+  // copies: the count names the rows the reader sees marked. Zero whenever the tools are off.
+  const swapTools = useSwapTools();
+  const shoppingOverCount = swapTools
+    ? shoppingCards.filter((c) => isOverLimit(c.price, newestAsOf, swapTools.limitCents)).length
+    : 0;
+
   // What the strip's buy link buys — the same rows, in the same order, as the
   // list on screen. Recomputed with the rest of this render, so a ✕ moves the
   // basket and the total in one step.
@@ -593,6 +602,7 @@ export function Decklist({
             keepAllPending={keepAllPending}
             autoControls={autoControls}
             shoppingCards={shoppingList}
+          shoppingOverCount={shoppingOverCount}
             sort={sort}
             onSortChange={setSort}
             onSortAnnounce={onAnnounce}
@@ -662,6 +672,7 @@ export function Decklist({
           priceSummary={priceSummary}
           provenance={provenance}
           shoppingCards={shoppingList}
+          shoppingOverCount={shoppingOverCount}
           sort={sort}
           onSortChange={setSort}
           onSortAnnounce={onAnnounce}
@@ -795,6 +806,7 @@ export function Decklist({
         priceSummary={priceSummary}
         provenance={provenance}
         shoppingCards={shoppingList}
+          shoppingOverCount={shoppingOverCount}
         sort={sort}
         onSortChange={setSort}
         onSortAnnounce={onAnnounce}

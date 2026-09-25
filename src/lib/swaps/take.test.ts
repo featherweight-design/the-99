@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_LIMIT_CENTS, validLimit } from "./take";
+import { MAX_LIMIT_CENTS } from "./limit";
+import { validLimit } from "./take";
 
 describe("validLimit", () => {
   it("takes the default and whole dollars from $1", () => {

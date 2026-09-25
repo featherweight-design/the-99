@@ -132,6 +132,9 @@ function Tail({
 // already sits in the row's own reading order and says all there is to say. A
 // contested row does pass one: the plate reads `buy` on a card the player
 // owns, and only the sentence says which copy is being bought.
+/** The over-limit ring, from the handoff: 60% of --warning, inset, 1px. */
+export const OVER_LIMIT_RING = "inset 0 0 0 1px color-mix(in oklab, var(--warning) 60%, transparent)";
+
 export function BuyTag({
   variant,
   label,
@@ -140,6 +143,7 @@ export function BuyTag({
   provenance = null,
   reserveSlot = false,
   density = "full",
+  overLimit = false,
   plate = true,
   corner = "right",
 }: {
@@ -160,6 +164,11 @@ export function BuyTag({
    * full, formatted by the one Tail that formats them everywhere.
    */
   density?: "full" | "collapsed";
+  /**
+   * Over the deck's Shopping limit (swap tools, ruling 4): the plate gains a --warning inset ring,
+   * and nothing else about it changes. No new token.
+   */
+  overLimit?: boolean;
   /**
    * Tile variant only. `false` drops the scrim, the inset ring and the absolute
    * positioning, leaving the glyph in the shared caption box.
@@ -232,7 +241,11 @@ export function BuyTag({
               variant === "tile" ? TILE_CORNER[corner] : ""
             }`
       }`}
-      style={{ color: "var(--warning)", ...(captionBox ? {} : PLATE[variant]) }}
+      style={{
+        color: "var(--warning)",
+        ...(captionBox ? {} : PLATE[variant]),
+        ...(overLimit ? { boxShadow: OVER_LIMIT_RING } : {}),
+      }}
     >
       {density === "collapsed" ? (
         <>

@@ -45,12 +45,17 @@ import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { useSwapTools } from "../../lib/swaps/context";
+import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
 // Exception: a row carrying a meta line under the name grows to 52px on the
 // phone. Desktop is 34px flat either way — there the meta line's contents sit
-// inline with the name instead.
+// inline with the name instead — with one exception of its own: between md and
+// lg a Shopping row over the deck's limit puts `over $X` on a line under the
+// name (swap tools F12, ruling b), and grows to hold it.
 const ROW_PADDING = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]";
 
 const ROW_SHELL = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[44px] md:min-h-[34px]`;
@@ -187,7 +192,14 @@ export function DecklistRow({
   // column of 52px ones. Ragged is the failure the group boundary exists to
   // avoid; a little more space under one name is not.
   const inLandsGroup = card.cardTypeGroup === "Lands";
-  const hasMetaLine = hasShoppingMeta || !inLandsGroup;
+  // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and the meta line an
+  // `over $X`. Shopping only, and only where the tools are on (`swapTools` is null otherwise).
+  const swapTools = useSwapTools();
+  const overLimit = swapTools !== null && inShopping && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
+  const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
+  // A land in Shopping over the limit carries the line even with no EDHREC figure to put on it:
+  // the marking is the one thing on it the reader needs.
+  const hasMetaLine = hasShoppingMeta || !inLandsGroup || overLimit;
   const rowShell = hasMetaLine ? ROW_SHELL_META : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
@@ -403,12 +415,18 @@ export function DecklistRow({
           // undone on the row: on desktop this block turns horizontal, where the
           // same declaration centres the name in a `flex-auto` box wider than its
           // text and every name in the list floats off the left rail.
-          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:justify-start md:items-center md:gap-[6px]">
+          // An OVER row wraps between md and lg, for one reason: `over $X` takes a line of its own
+          // there (F12, ruling b), because the two-column grid has no room left to give a name. No
+          // other row wraps: a wrap measures items at their full width, so a long name would push
+          // the figure down on every row.
+          <div className={`flex-auto min-w-0 flex flex-col justify-center md:flex-row ${overText ? "md:flex-wrap lg:flex-nowrap" : ""} md:justify-start md:items-center md:gap-x-[6px] md:gap-y-0`}>
             {/* Name and count share a line so the count stays inline after the
                 name at both widths — on phone the meta line below is its own
                 line, and a count that flowed down with it would read as part
                 of it. */}
-            <div className="min-w-0 flex items-center gap-[6px]">
+            {/* On a wrapping row the name line starts at no width and grows to its own, so the wrap
+                never breaks between the name and the figure: only the full-width `over` line drops. */}
+            <div className={`min-w-0 flex items-center gap-[6px] ${overText ? "md:basis-0 md:grow md:max-w-fit lg:basis-auto lg:grow-0 lg:max-w-none" : ""}`}>
               <CardDetailTrigger
                 oracleId={card.oracleId}
                 name={fullName}
@@ -423,8 +441,9 @@ export function DecklistRow({
               {quantityGlyph}
               {factMarks}
             </div>
-            {/* The phone meta line, and the only two things that ever ride it:
-                the cost, then the EDHREC figure. Nothing else joins it. */}
+            {/* The phone meta line, and the only things that ever ride it: the
+                cost, then the EDHREC figure, then, on a Shopping row over the
+                deck's limit, `over $X`. Nothing else joins it. */}
             <span className="md:hidden flex items-center gap-[5px] min-w-0">
               {cost ? <CostPips cost={cost} size={PIP_SIZE_PHONE} spoken /> : null}
               {cost && hasShoppingMeta ? (
@@ -442,6 +461,16 @@ export function DecklistRow({
                   {figureTextPhone}
                 </span>
               ) : null}
+              {overText ? (
+                <>
+                  {cost || hasShoppingMeta ? (
+                    <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
+                  ) : null}
+                  <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
+                    {overText}
+                  </span>
+                </>
+              ) : null}
             </span>
             {hasShoppingMeta ? (
               <span
@@ -453,6 +482,21 @@ export function DecklistRow({
                 }}
               >
                 {figureTextDesktop}
+              </span>
+            ) : null}
+            {overText ? (
+              // The block's 6px gap sits before this item; the design's figure-to-`·` gap is 5px, the
+              // one-pixel pull that makes the two read as one group. With no figure there is no `·`,
+              // and the name keeps the block's own gap.
+              <span className={`hidden lg:inline-flex flex-none items-center gap-[5px] ${hasShoppingMeta ? "lg:-ml-px" : ""} font-mono text-[10px] whitespace-nowrap`}>
+                {hasShoppingMeta ? <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span> : null}
+                <span style={{ color: "var(--warning)" }}>{overText}</span>
+              </span>
+            ) : null}
+            {overText ? (
+              // md to lg: its own line under the name, the phone's form, so it costs the name nothing.
+              <span className="hidden md:block lg:hidden basis-full font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
+                {overText}
               </span>
             ) : null}
           </div>
@@ -563,6 +607,7 @@ export function DecklistRow({
             price={card.price}
             newestAsOf={newestAsOf}
             reserveSlot={hasShoppingMeta}
+            overLimit={overLimit}
             // `inShopping`, not the figure: Shopping is the list being paid
             // from, and the figure is `undefined` there too whenever EDHREC is
             // unreachable. The All tab is being scanned, so the tag collapses
