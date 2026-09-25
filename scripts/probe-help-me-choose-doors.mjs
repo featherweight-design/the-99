@@ -177,9 +177,14 @@ async function run() {
       }
     }
     if (userId && aboutBefore !== undefined) {
-      // Every column back as it was, whatever the row holds: deleted, then the captured row restored.
-      await sql`delete from user_prefs where user_id = ${userId}`;
-      if (aboutBefore !== null) await sql`insert into user_prefs select * from jsonb_populate_record(null::user_prefs, ${JSON.stringify(aboutBefore)}::jsonb)`;
+      // Every column back as it was, whatever the row holds: deleted and the captured row re-inserted
+      // in ONE transaction, so a failed insert rolls the delete back rather than losing the row.
+      await sql.transaction([
+        sql`delete from user_prefs where user_id = ${userId}`,
+        ...(aboutBefore !== null
+          ? [sql`insert into user_prefs select * from jsonb_populate_record(null::user_prefs, ${JSON.stringify(aboutBefore)}::jsonb)`]
+          : []),
+      ]);
     }
     if (decks.length) console.log(`deleted ${decks.length} deck(s) this run made`);
   }
