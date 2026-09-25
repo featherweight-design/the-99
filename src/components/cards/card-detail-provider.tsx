@@ -388,6 +388,10 @@ export function CardDetailProvider({
       oracleId: string,
       list?: string[],
       at?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null,
+      // Where the card was reached from, when that moves the door: a combo partner is reached from
+      // the combo block and never draws the Shopping door, while paging keeps it. Applied when the
+      // card ARRIVES, so a read that fails leaves the card on screen, door and all, as it was.
+      arrival?: { door: boolean },
     ) => {
       const request = ++latest.current;
       // EVERY read decides the pending printing, including the reads that have none: paging,
@@ -422,6 +426,7 @@ export function CardDetailProvider({
       setFailed(false);
       if (hit) {
         setPendingOracleId(null);
+        if (arrival) setDoor(arrival.door);
         show(hit);
       } else if (!standing) {
         setPendingOracleId(oracleId);
@@ -453,6 +458,7 @@ export function CardDetailProvider({
         }
         if (next) {
           cache.current.set(oracleId, next);
+          if (arrival) setDoor(arrival.door);
           show(next);
         } else {
           // A card the server could not find is the one result not worth keeping: it is
@@ -676,17 +682,17 @@ export function CardDetailProvider({
             ? (layout) => sheetFooter(card.oracleId, layout)
             : null}
           backLabel={backLabel}
-          // Only a card the door has something for: a combo partner reached from a Shopping card keeps the
-          // flag through `load` but is no Shopping row, and a door with nothing in it would still take
-          // its room from the art.
+          // Only a card the door has something for: a door with nothing in it would still take its room
+          // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
           // Opened from a Shopping row, the phone's card starts at 52 so a sheet opened over it steps
           // down from there (audit F16); every other opener keeps the full-height card.
           phoneTop={liveDoor && sheetsBelow === 0 ? 52 : undefined}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
-          // gesture returns to the card the reader started from.
-          onSelectCard={(id) => void load(id)}
+          // gesture returns to the card the reader started from. It arrives without the
+          // Shopping door: the partner was reached from the combo block, not a Shopping row.
+          onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
             ? () => void load(siblings[index - 1])
             : null}
@@ -730,8 +736,9 @@ export function CardDetailProvider({
           backLabel={backLabel}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
-          // gesture returns to the card the reader started from.
-          onSelectCard={(id) => void load(id)}
+          // gesture returns to the card the reader started from. It arrives without the
+          // Shopping door: the partner was reached from the combo block, not a Shopping row.
+          onSelectCard={(id) => void load(id, undefined, undefined, { door: false })}
           onPrev={paging && index > 0
             ? () => void load(siblings[index - 1])
             : null}

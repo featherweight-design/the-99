@@ -97,6 +97,30 @@ describe("the card modal's door (swap tools PR 4c)", () => {
     expect(screen.queryByRole("button", { name: /See cheaper stand-ins/ })).toBeNull();
   });
 
+  // A combo partner arrives from the combo block, not from a Shopping row, so it never draws the
+  // door, even when it is ALSO on the Shopping list. Paging keeps the door; this does not.
+  it("draws no door on a combo partner reached from a Shopping card, even one Shopping holds", async () => {
+    const withPartner = { ...cards["o-plateau"], comboPartners: [{ oracleId: "o-tower", name: "Command Tower", state: "notOwned" as const, popularity: null }] };
+    render(
+      <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+        <CardDetailProvider fetchCard={async (id) => (id === "o-plateau" ? withPartner : cards[id] ?? null)}>
+          <StandInDoorRegistration shoppingCards={[PLATEAU, TOWER]} newestAsOf={asOf} />
+          <CardDetailTrigger oracleId="o-plateau" name="Plateau" door>shop plateau</CardDetailTrigger>
+        </CardDetailProvider>
+      </SwapToolsProvider>,
+    );
+    await press("shop plateau");
+    expect(doors()).toHaveLength(2);
+    await act(async () => {
+      screen.getByRole("button", { name: /Two-card combos/ }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Command Tower" }).click();
+    });
+    expect(screen.getByRole("dialog", { name: /Command Tower/ })).toBeInTheDocument();
+    expect(doors()).toHaveLength(0);
+  });
+
   it("draws no door on a card the Shopping list does not hold, flag or no flag", async () => {
     cards["o-other"] = browse("o-other", "Other Card");
     render(
