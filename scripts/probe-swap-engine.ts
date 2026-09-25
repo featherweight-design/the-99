@@ -39,7 +39,7 @@ const check = (label: string, ok: boolean, detail: string) => {
 };
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await fixture.execute(text)).rows as T[];
 
-const all = (r: StandInsRead): StandIn[] => [...r.free, ...r.cheapest, ...r.byCommander, ...r.unlisted];
+const all = (r: StandInsRead): StandIn[] => [...r.free, ...r.cheapest, ...r.staples, ...r.byCommander, ...r.unlisted];
 const names = (list: StandIn[]) => list.map((s) => s.card.name);
 const ascending = (xs: number[]) => xs.every((x, i) => i === 0 || xs[i - 1] <= x);
 
@@ -158,6 +158,11 @@ async function main() {
   check("spell: the staple flag is the shared definition's",
     spellList.every((s) => s.isUniversal === staples.has(s.card.oracleId)),
     `${spellList.filter((s) => s.isUniversal).map((s) => s.card.name).join(", ") || "no staple among them"}`);
+  // H4: a paid staple leaves the commander's ranking for its own group, by price.
+  check("spell: staples to buy are all staples, cheapest first, and neither ranking holds one",
+    spells!.staples.every((s) => s.isUniversal) && ascending(spells!.staples.map((s) => s.cents!))
+      && [...spells!.byCommander, ...spells!.unlisted].every((s) => !s.isUniversal),
+    `${spells!.staples.map((s) => `${s.card.name} ${s.cents}`).join(", ") || "no paid staple"}`);
   guards("spell", spells!);
 
   // 4. A utility land: every stand-in names what Cavern does that it does not (H3).

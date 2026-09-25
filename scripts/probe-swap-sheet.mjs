@@ -277,12 +277,10 @@ try {
         report(`${tag} utility: rows left with nothing say nothing`, read.emptyRows > 0 && read.blankLines === 0,
           `${read.emptyRows} rows with no line under the name, ${read.blankLines} holding an empty one`);
       }
-      // H4, on every spell sheet: a staple's row never quotes a figure as this commander's.
-      const stapleRows = read.lines.filter((l) => l.includes(STAPLE_FACT));
+      // H4: a paid staples group sits after the free copies and before the commander's ranking. An
+      // INVARIANT, asserted on every spell sheet that draws the group; which rows are staples the DOM
+      // cannot say, so the staple clause itself is read on a named row below.
       if (kind === "spell" || kind === "staple") {
-        report(`${tag} ${kind}: no staple row quotes a figure`, stapleRows.every((l) => !l.includes("%")),
-          `${stapleRows.length} staple row(s)${stapleRows.find((l) => l.includes("%")) ? `, one reads ${stapleRows.find((l) => l.includes("%"))}` : ""}`);
-        // A paid staples group sits after the free copies and before the commander's ranking.
         const at = read.headings.indexOf(STAPLE_GROUP);
         const byCmdr = read.headings.findIndex((h) => h.startsWith("to buy · by "));
         report(`${tag} ${kind}: the staples group sits between free and the commander's`,

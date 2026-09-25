@@ -130,7 +130,8 @@ export type StandInGroups = {
   /**
    * H4: universal staples to buy, cheapest first, in their own group between free and the
    * commander's ranking (addendum §1). A staple's inclusion figure describes every commander, so
-   * ranking it by this one's would put Sol Ring above the cards this commander actually picks.
+   * the paid ranking leaves it out. A FREE staple stays in `free`, by the same figure as every free
+   * row: the addendum moves only the one to buy.
    */
   staples: StandIn[];
   /** Spells the commander's index lists, by its inclusion figure. */
