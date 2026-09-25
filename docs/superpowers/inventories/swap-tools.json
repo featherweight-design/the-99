@@ -143,6 +143,67 @@
           "settle": 1500
         }
       ]
+    },
+    {
+      "id": "door",
+      "label": "/decks/[id] Shopping: Plateau's card, the door under the price tag (desktop) and as a strip under the art header (phone), over the limit",
+      "view": "src/components/decks/stand-in-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for Plateau",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='stand-in-door']:visible",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "door-sheet",
+      "label": "/decks/[id] Shopping: the stand-ins sheet opened over Plateau's card, the card held under it, the way back naming it",
+      "view": "src/components/decks/stand-ins-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for Plateau",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='stand-in-door']:visible",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "See cheaper stand-ins",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
     }
   ]
 }
