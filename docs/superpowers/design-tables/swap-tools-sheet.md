@@ -479,8 +479,8 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Land, unnamed drawback | classifier returns "unnamed" for a stand-in | row facts `drawback.unnamed`, italic | `unnamed: true` |
 | Land, utility original (H3) | the original's text does more than make its colors | as Lands; each stand-in's facts add what it gives up | the original's named non-mana ability (new key) |
 | Fetch | original is a fetch land; stand-ins found by land types | head `jobFinds` + drawback, `leadFetch`, `groupFree` + `groupCheapest`, rows with `basicOnly` + drawback | types, `basicOnly`, entered-tapped / life drawbacks |
-| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, `leadSpells`, `groupFree`, `groupByCommander`, `groupUnlisted`, rows with role · MV · figure | roles, mv, commander short name, per-row inclusion pct or null |
-| Partner deck | spells kind, deck led by a pair | as Spells, `commander` = `A + B`, figure from pair support | pair name, pair inclusion per row |
+| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, `leadSpells`, `groupFree`, `groupByCommander`, `groupUnlisted`, rows with role · MV and no figure; listed rows run by synergy, never drawn (v2 PR B) | roles, mv, commander short name |
+| Partner deck | spells kind, deck led by a pair | as Spells, `commander` = `A + B`, ordered by the pair's synergy from pair support | pair name |
 | Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | lead without its second clause (new key), `groupUnlisted` only | pair name |
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |
 | No role (land) | land with no color and no fetch | sentence `noRoleLand(name)` | name |
