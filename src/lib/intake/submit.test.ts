@@ -58,16 +58,22 @@ describe("submitTarget's card and Not used order", () => {
   const OTHER = "0000aaaa-0000-4000-8000-0000000000bb";
 
   it("keeps a card the form carried, and lists a different one the words name as not used", () => {
-    const kept = landed(target({ card: OTHER, words: "with Doubling Season" }));
-    expect(kept.card).toBe(OTHER);
+    const kept = landed(target({ card: SOL, words: "with Doubling Season" }));
+    expect(kept.card).toBe(SOL);
     expect(kept.notUsed).toContain("Doubling Season");
-    expect(landed(target({ card: OTHER })).card).toBe(OTHER);
+    expect(landed(target({ card: SOL })).card).toBe(SOL);
   });
 
   it("never lists the carried card as not used, wherever the words name it", () => {
     const p = landed(target({ card: DS, words: "Sol Ring and Doubling Season" }));
     expect(p.card).toBe(DS);
     expect(p.notUsed).toEqual(["Sol Ring"]);
+  });
+
+  it("lets the words supply the card when the carried one is no card the intake could offer", () => {
+    const p = landed(target({ card: OTHER, words: "Sol Ring and Doubling Season" }));
+    expect(p.card).toBe(SOL);
+    expect(p.notUsed).toEqual(["Doubling Season"]);
   });
 
   it("lists the player's own phrases before a figure the controls set aside", () => {

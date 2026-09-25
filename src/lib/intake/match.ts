@@ -47,6 +47,8 @@ export type PhraseIndex = {
   targets: Map<string, Target[]>;
   /** The longest key in words, so the scan never tries a span no key can have. */
   maxWords: number;
+  /** Every card the index was built from: the cards the intake can offer as an answer. */
+  cardIds: ReadonlySet<string>;
 };
 
 /**
@@ -123,7 +125,7 @@ export function buildPhraseIndex(
 
   let maxWords = 0;
   for (const key of targets.keys()) maxWords = Math.max(maxWords, key.split(" ").length);
-  return { targets, maxWords };
+  return { targets, maxWords, cardIds: new Set(cards.map((c) => c.oracleId)) };
 }
 
 // `$200`, `$1,500`, `$49.99`, `200$`, `200 dollars`, `150 bucks`, `300 usd`.

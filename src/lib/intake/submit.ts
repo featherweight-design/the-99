@@ -19,13 +19,17 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
   // Bounded here as the parser bounds `w`, so no answer comes from words the results would cut.
   const words = p.words.slice(0, READ_WORDS_MAX_CHARS).trim();
   const match: Pick<MatchResult, "chips" | "phrases"> = words && index ? matchWords(words, index) : { chips: [], phrases: [] };
-  // A carried card is the card: the words' card chips are then all set aside, except the carried
-  // card itself, which is simply the answer already given. Without one, `resolveWords` keeps the first.
+  // A carried card is the card, when it is still one the intake could offer (the index is built
+  // from exactly those, the search's own card rule). One that is not, from an old or hand-edited
+  // address, is no answer: the words may then supply the card, as if none were carried.
+  const carried = p.card !== null && (index === null || index.cardIds.has(p.card)) ? p.card : null;
+  // With a carried card, the words' card chips are all set aside, except the carried card itself,
+  // which is simply the answer already given. Without one, `resolveWords` keeps the first.
   const cardChips = match.chips.filter((c): c is Extract<Chip, { kind: "card" }> => c.kind === "card");
-  const displaced = p.card === null
+  const displaced = carried === null
     ? []
-    : [...new Set(cardChips.filter((c) => c.oracleId !== p.card).map((c) => c.name))];
-  const resolved = resolveWords(p.card === null ? match.chips : match.chips.filter((c) => c.kind !== "card"), {
+    : [...new Set(cardChips.filter((c) => c.oracleId !== carried).map((c) => c.name))];
+  const resolved = resolveWords(carried === null ? match.chips : match.chips.filter((c) => c.kind !== "card"), {
     themes: p.themes,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
@@ -34,7 +38,7 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     ...p,
     words,
     themes: resolved.themes,
-    card: p.card ?? resolved.card,
+    card: carried ?? resolved.card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,
     notUsed: [...match.phrases, ...displaced, ...resolved.notUsed],
