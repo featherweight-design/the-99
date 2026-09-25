@@ -5,11 +5,8 @@
 // requests?" This measures THE PREVIEW half, decomposed into our own delay, the
 // image request (DNS, TLS, TTFB, bytes) and decode.
 //
-// THE CARD-DETAILS HALF IS NOT HERE. Its art is requested by `card-modal.tsx`,
-// which another lane owns tonight, so the candidate that would change it is a
-// write-up rather than a build — and measuring a surface nobody is changing
-// would be a number with nothing to compare against. When that lane takes it,
-// press-to-painted belongs in this file beside the preview.
+// THE CARD-DETAILS HALF is `--modal`: press to art requested, against the details
+// action the modal waits on. The swap-tools lane took it (it owns `card-modal.tsx`).
 //
 // PRODUCTION BUILD ONLY, same as probe:nav-cost — `next dev` compiles on demand
 // and would price our own work wrong. Point it at `local-dev`.
@@ -53,6 +50,22 @@ const WIDTH = Number(args.get("width") ?? 1300);
  * image of a fresh context.
  */
 const FIRST_IMAGE = args.get("first-image") === "true";
+/**
+ * `--modal`: THE CARD-DETAILS HALF. Press a decklist row's name and time the modal's art against the
+ * details action that has to answer before the modal knows which printing to draw.
+ *
+ * The press is by KEYBOARD, focus then Enter, at both widths. A mouse click moves the pointer onto
+ * the row first, which starts the hover preview's own image request, and the modal then reads a
+ * cache the preview filled: that measures the preview, not the press. A phone reader has no hover
+ * at all, so the keyboard press is also the phone's path.
+ *
+ * What it reports per press, in this script's clock, from the Enter:
+ *   `actionEndMs` when the details action's response finished (the POST carrying `next-action`),
+ *   `artRequestedMs` when the modal's art was first asked for, and `artFinishedMs` when its bytes
+ *   were in. THE CLAIM a press-time preload makes is `artRequestedMs < actionEndMs`: serially, the
+ *   art cannot be asked for until the action has answered.
+ */
+const MODAL = args.get("modal") === "true";
 const HEIGHT = WIDTH < 768 ? 844 : 900;
 
 /**
@@ -173,9 +186,19 @@ async function main() {
      * mount timestamp is the claim itself.
      */
     let imageRequestedAt = new Map();
+    /** Image requests finishing, by URL, for the modal mode's `artFinishedMs`. */
+    let imageFinishedAt = new Map();
+    const imageUrlById = new Map();
+    /** Server-action POSTs, by requestId: `{ start, end }` in this script's clock. */
+    let actions = new Map();
     cdp.on("Network.requestWillBeSent", (e) => {
       const u = e.request?.url ?? "";
+      const headers = e.request?.headers ?? {};
+      if (e.request?.method === "POST" && Object.keys(headers).some((h) => h.toLowerCase() === "next-action")) {
+        actions.set(e.requestId, { start: Date.now(), end: null });
+      }
       if (!u.includes(IMAGE_HOST)) return;
+      imageUrlById.set(e.requestId, u);
       if (!imageRequestedAt.has(u)) imageRequestedAt.set(u, Date.now());
     });
     cdp.on("Network.responseReceived", (e) => {
@@ -193,6 +216,10 @@ async function main() {
       for (const rec of imageResponses.values()) {
         if (rec.requestId === e.requestId) rec.encodedDataLength = e.encodedDataLength;
       }
+      const a = actions.get(e.requestId);
+      if (a && a.end === null) a.end = Date.now();
+      const u = imageUrlById.get(e.requestId);
+      if (u && !imageFinishedAt.has(u)) imageFinishedAt.set(u, Date.now());
     });
 
     await setupClerkTestingToken({ page });
@@ -229,6 +256,123 @@ async function main() {
     for (let i = 0; i < 2; i += 1) {
       await page.goto(`${BASE}${deck}`, { waitUntil: "load" });
       await page.waitForTimeout(1500);
+    }
+
+    if (MODAL) {
+      await onPage(page, "[data-decklist-row]").first().waitFor({ state: "attached", timeout: 30_000 });
+      const runs = [];
+      const presses = Number(args.get("presses") ?? 5);
+      for (const mode of ["cold", "warm"]) {
+        for (let i = 0; i < presses; i += 1) {
+          // Cold: a card the page has never opened, with the browser cache empty, so neither the
+          // provider's card cache nor the image cache can answer. Each press takes a different row.
+          if (mode === "cold") await cdp.send("Network.clearBrowserCache");
+          await page.goto(`${BASE}${deck}`, { waitUntil: "load" });
+          await onPage(page, "[data-decklist-row]").first().waitFor({ state: "attached", timeout: 30_000 });
+          await page.waitForTimeout(800);
+          imageRequestedAt = new Map();
+          imageFinishedAt = new Map();
+          actions = new Map();
+          const rowIndex = mode === "cold" ? 3 + i : 3;
+          const trigger = onPage(page, "[data-decklist-row]").nth(rowIndex).locator("button").first();
+          await trigger.scrollIntoViewIfNeeded();
+          await trigger.focus();
+          // Warm: the same card opened once before, in this page, so the second press is what a
+          // reader re-opening a card pays.
+          if (mode === "warm") {
+            await page.keyboard.press("Enter");
+            await page.locator('[role="dialog"]').first().waitFor({ state: "visible", timeout: 15_000 });
+            await page.keyboard.press("Escape");
+            await page.waitForTimeout(400);
+            imageRequestedAt = new Map();
+            imageFinishedAt = new Map();
+            actions = new Map();
+            await trigger.focus();
+          }
+          const t0 = Date.now();
+          await page.keyboard.press("Enter");
+          // The modal's art: the first element inside the dialog painting an image-host background.
+          const art = await page.waitForFunction((host) => {
+            for (const d of document.querySelectorAll('[role="dialog"]')) {
+              for (const el of d.querySelectorAll("*")) {
+                const bg = getComputedStyle(el).backgroundImage;
+                if (bg.includes(host)) return /url\(["']?(.*?)["']?\)/.exec(bg)[1];
+              }
+            }
+            return null;
+          }, IMAGE_HOST, { timeout: 20_000 }).then((h) => h.jsonValue());
+          await page.waitForTimeout(1500);
+          const act = [...actions.values()].find((a) => a.start >= t0) ?? null;
+          const rel = (abs) => (abs == null ? null : abs - t0);
+          const run = {
+            mode,
+            row: rowIndex,
+            art,
+            actionEndMs: rel(act?.end),
+            artRequestedMs: rel(imageRequestedAt.get(art)),
+            artFinishedMs: rel(imageFinishedAt.get(art)),
+            // No request at all means a cache answered, which is a fact about the cache, not the press.
+            artFromCache: !imageRequestedAt.has(art),
+          };
+          run.artBeforeActionEnd = run.artRequestedMs != null && run.actionEndMs != null ? run.artRequestedMs < run.actionEndMs : null;
+          runs.push(run);
+          console.log(
+            `${mode.padEnd(5)} row ${rowIndex}: action ${run.actionEndMs ?? "none"}ms, art asked ${run.artRequestedMs ?? "cache"}ms, ` +
+              `art in ${run.artFinishedMs ?? "?"}ms${run.artBeforeActionEnd ? " (asked BEFORE the action answered)" : ""}`,
+          );
+          await page.keyboard.press("Escape");
+          // Whether the row already carries the URL the modal draws: the hover preview paints the row's
+          // own `imageUri`, so after the measurement (never before it) the row is hovered and the two
+          // are compared. A press-time preload is only worth building if they match. Desktop only.
+          if (WIDTH >= 768) {
+            await page.waitForTimeout(300);
+            await onPage(page, "[data-decklist-row]").nth(rowIndex).hover();
+            const box = page.locator('[data-testid="hover-preview"]');
+            const preview = await box.waitFor({ state: "attached", timeout: 3000 })
+              .then(() => box.evaluate((el) => /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(el).backgroundImage)?.[1] ?? null))
+              .catch(() => null);
+            run.rowPreviewUrl = preview;
+            run.rowUrlMatchesModal = preview === art;
+            await page.mouse.move(0, 0);
+          }
+        }
+      }
+      const cold = runs.filter((r) => r.mode === "cold" && r.artFinishedMs != null);
+      // A true median: an even count averages the middle two, since a press whose action end went
+      // uncaptured leaves that column one short.
+      const median = (xs) => {
+        const s = [...xs].sort((a, b) => a - b);
+        if (!s.length) return null;
+        const m = Math.floor(s.length / 2);
+        return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+      };
+      const summary = {
+        coldPresses: cold.length,
+        medianActionEndMs: median(cold.map((r) => r.actionEndMs).filter((x) => x != null)),
+        medianArtRequestedMs: median(cold.map((r) => r.artRequestedMs)),
+        medianArtFinishedMs: median(cold.map((r) => r.artFinishedMs)),
+        artAskedBeforeActionEnd: cold.filter((r) => r.artBeforeActionEnd).length,
+        rowUrlMatchesModal: runs.filter((r) => r.rowUrlMatchesModal !== undefined).map((r) => r.rowUrlMatchesModal),
+      };
+      console.log(`cold median: action ${summary.medianActionEndMs}ms, art asked ${summary.medianArtRequestedMs}ms, art in ${summary.medianArtFinishedMs}ms; asked before the action answered on ${summary.artAskedBeforeActionEnd} of ${cold.length}`);
+      // The preload's safety condition: the row's URL IS the modal's. A mismatch, or a desktop press
+      // whose preview could not be read, fails the run rather than publishing a timing that rests on it.
+      if (WIDTH >= 768) {
+        const bad = runs.filter((r) => r.rowUrlMatchesModal !== true);
+        if (bad.length > 0) {
+          console.error(`FAIL  the row's URL is not the modal's on ${bad.length} of ${runs.length} presses: ${bad.map((r) => `row ${r.row} (${r.rowPreviewUrl ?? "no preview"})`).join(", ")}`);
+          process.exitCode = 1;
+        }
+      }
+            // A run with no cold press that fetched its art has measured nothing.
+      if (cold.length === 0) {
+        console.error("FAIL  no cold press requested its art; the run measured nothing");
+        process.exitCode = 1;
+      }
+      report.rows.push({ surface: "card modal art, pressed from a decklist row", mode: "modal", runs, summary });
+      const outModal = args.get("out");
+      if (outModal) writeFileSync(outModal, JSON.stringify(report, null, 2));
+      return;
     }
 
     if (FIRST_IMAGE) {

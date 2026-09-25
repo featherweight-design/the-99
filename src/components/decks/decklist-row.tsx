@@ -382,7 +382,8 @@ export function DecklistRow({
       && (event.currentTarget.contains(selection.anchorNode)
         || event.currentTarget.contains(selection.focusNode));
     if (selectedHere) return;
-    open(card.oracleId, siblings, undefined, { door: opensDoor });
+    // The row body opens the same modal as the name, so it hands over the art the same way.
+    open(card.oracleId, siblings, undefined, { door: opensDoor, art: card.imageUri });
   }
 
   return (
@@ -454,6 +455,7 @@ export function DecklistRow({
                 name={fullName}
                 siblings={siblings}
                 door={opensDoor}
+                imageUri={card.imageUri}
                 className={nameTextClass}
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
@@ -530,6 +532,7 @@ export function DecklistRow({
               name={fullName}
               siblings={siblings}
               door={opensDoor}
+              imageUri={card.imageUri}
               className={nameTextClass}
               describedBy={describedBy}
               style={{ color: "var(--fg)" }}

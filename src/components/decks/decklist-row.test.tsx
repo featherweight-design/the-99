@@ -1083,3 +1083,36 @@ describe("DecklistRow over the Shopping limit (swap tools)", () => {
     expect(screen.getByTestId("open-stand-ins")).toHaveTextContent("sol-ring");
   });
 });
+
+// Every way a decklist row opens the card asks for its art on the press: the name on a row with a
+// meta line, the name on a Lands-group row without one, and the row body. The row's `imageUri` is
+// the modal's URL (`probe:image-timing --modal`), so the bytes are ready when the modal draws.
+describe("DecklistRow art preload", () => {
+  const ART = "https://cards.scryfall.io/normal/front/a/b/art.jpg";
+  let asked: string[] = [];
+  const Real = window.Image;
+  beforeEach(() => {
+    asked = [];
+    window.Image = class { set src(v: string) { asked.push(v); } } as unknown as typeof Image;
+  });
+  afterEach(() => { window.Image = Real; });
+
+  it.each([
+    ["a row with a meta line", { ...card, imageUri: ART }],
+    ["a Lands-group row without one", { ...card, name: "Forest", oracleId: "forest", cardTypeGroup: "Lands", imageUri: ART }],
+  ])("asks for the art when the name on %s is pressed", async (_label, row) => {
+    renderRow(<DecklistRow deckId="d1" card={row as DeckDetailCard} newestAsOf={null} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: cardDetailCopy.triggerAria(row.name) }));
+    });
+    expect(asked).toEqual([ART]);
+  });
+
+  it("asks for the art when the row body is pressed", async () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, imageUri: ART }} newestAsOf={null} />);
+    await act(async () => {
+      fireEvent.click(document.querySelector("[data-decklist-row]")!);
+    });
+    expect(asked).toEqual([ART]);
+  });
+});
