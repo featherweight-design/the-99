@@ -78,9 +78,6 @@ export const changeCommanderCopy = {
       `${a} and ${b} take the command zone. ${c} and ${d} leave the deck, and the ${body} stay exactly as they are.`,
     trade: (nu: string, old: string, body: number) =>
       `The two trade places. ${nu} leaves the ${body} for the command zone, and ${old} takes its slot. The deck stays at ${body}.`,
-    // The pair forms of three sentences a pair reaches (audit F9: two names never share a singular verb).
-    tradePair: (nu: string, old: string, body: number) =>
-      `The pairs trade places. ${nu} leave the ${body} for the command zone, and ${old} take their slots. The deck stays at ${body}.`,
     buy: (short: string) => `You don't own ${short} yet. It joins this draft's buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
     landsTrade: "Lands in your pending changes, not yet a version. Discard puts both back where they were.",
@@ -89,6 +86,8 @@ export const changeCommanderCopy = {
     ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
     pending: "Changing…",
     failed: (oldShort: string) => `We couldn't change the commander. ${oldShort} still leads this deck.`,
+    // The pair forms a pair reaches (audit F9: two names never share a singular verb). A pair never
+    // trades (`offerable` holds a half in the 98 back), so `trade` has no pair form.
     failedPair: (oldShort: string) => `We couldn't change the commanders. ${oldShort} still lead this deck.`,
     failedRetry: "Try again",
     announced: (nu: string) => `${nu} leads this deck now. The change is pending.`,

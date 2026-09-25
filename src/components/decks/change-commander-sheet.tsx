@@ -558,7 +558,7 @@ function Confirm({
   const summed = summedPrice(toBuy, data.newestAsOf);
 
   const sentence = trade
-    ? (pair ? copy.confirm.tradePair : copy.confirm.trade)(nuShort, oldShort, body)
+    ? copy.confirm.trade(nuShort, oldShort, body)
     : pair
       ? copy.confirm.sentencePair(shortName(nus[0].name), shortName(nus[1].name), shortName(olds[0].name), shortName(olds[1].name), body)
       : copy.confirm.sentence(nuShort, oldShort, body);
