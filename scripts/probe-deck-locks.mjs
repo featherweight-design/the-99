@@ -333,8 +333,11 @@ async function run() {
         // PR 6's modal half: a card locked in this deck, opened from its Shopping row, draws no
         // stand-ins door (offering stand-ins is offering to cut it), while an unlocked one does, so
         // the check cannot pass on a page that never draws the door. Needs SWAP_TOOLS_ENABLED=true.
-        const doorsOn = async (name) => {
-          await visible(onPage(page, `button[aria-label^="View details for ${name}"]`)).click();
+        // Opened by the row trigger's WHOLE accessible name, never a name parsed out of it: a card name
+        // may itself hold a comma, and the label runs on past it with the copy count and marks.
+        const doorsOn = async (label) => {
+          const exact = new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+          await visible(onPageRole(page, "button", exact)).click();
           await page.getByRole("dialog").first().waitFor({ state: "visible" });
           await page.waitForTimeout(400);
           const n = await page.getByRole("button", { name: /See cheaper stand-ins/ }).filter({ visible: true }).count();
@@ -344,17 +347,25 @@ async function run() {
         };
         const lockedNames = new Set([fx.plain.name, fx.tile.name, fx.crowded.name, fx.autoLocked.name]);
         // Both chosen off the Shopping rows actually drawn, so each is a card this list holds.
-        const [lockedName, unlockedName] = await page.evaluate((locked) => {
-          const names = [...document.querySelectorAll("main button")]
+        const [lockedLabel, unlockedLabel] = await page.evaluate((locked) => {
+          const labels = [...document.querySelectorAll("main button")]
             .filter((b) => b.getBoundingClientRect().width > 0)
             .map((b) => b.getAttribute("aria-label") ?? "")
-            .filter((l) => l.startsWith("View details for "))
-            .map((l) => l.slice("View details for ".length).split(",")[0]);
-          return [names.find((n) => locked.includes(n)) ?? null, names.find((n) => !locked.includes(n)) ?? null];
+            .filter((l) => l.startsWith("View details for "));
+          // A label names a card when it is that name exactly or runs on past it with a comma.
+          const isLocked = (l) => locked.some((n) => l === `View details for ${n}` || l.startsWith(`View details for ${n},`));
+          return [labels.find(isLocked) ?? null, labels.find((l) => !isLocked(l)) ?? null];
         }, [...lockedNames]);
-        const lockedDoors = lockedName ? await doorsOn(lockedName) : -1;
-        const unlockedDoors = unlockedName ? await doorsOn(unlockedName) : 0;
-        report(`${tag} · a locked card opened from Shopping draws no stand-ins door`, lockedDoors === 0 && unlockedDoors > 0,
+        // Both rows are required: without an unlocked row beside it, the locked row's missing door
+        // would pass on a page that never draws a door at all. Absent, this fails and says why.
+        if (!lockedLabel || !unlockedLabel) {
+          report(`${tag} · a locked card opened from Shopping draws no stand-ins door`, false,
+            `the Shopping list holds ${lockedLabel ? "no unlocked row" : "no locked row"}: the fixture did not build the state this check needs`);
+        }
+        const lockedDoors = lockedLabel ? await doorsOn(lockedLabel) : -1;
+        const unlockedDoors = unlockedLabel ? await doorsOn(unlockedLabel) : 0;
+        const lockedName = lockedLabel, unlockedName = unlockedLabel;
+        if (lockedLabel && unlockedLabel) report(`${tag} · a locked card opened from Shopping draws no stand-ins door`, lockedDoors === 0 && unlockedDoors > 0,
           `locked ${lockedName ?? "(none on the Shopping list)"}: ${lockedDoors}; unlocked ${unlockedName}: ${unlockedDoors}`);
       } else {
         report(`${tag} · Lock cards is absent under Shopping`, false, "no Shopping pill to press: the fixture buys nothing");
