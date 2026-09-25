@@ -27,7 +27,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const ORIGIN = new URL(BASE).origin;
+
 const IMAGE_HOST = "cards.scryfall.io";
 
 const args = new Map(
