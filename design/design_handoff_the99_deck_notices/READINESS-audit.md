@@ -210,7 +210,16 @@ notice sits after its bracket on the deck page and its tile", which stays true o
 | F23 | Low | addendum READINESS eng 5; parent H5 | **Measure the glyph's contrast in the theme tests.** The `!` is a 12px graphic on its own tint, and Design measures it at 3.5:1 against a 3:1 bar. It carries no word, since the key and the spoken name do. The parent's H5 (4.5:1 for the *Not legal* text) applies to the header chip, which keeps its text. **Correction:** add both inks on their tints to `status-style.test.ts` at 3:1, in every theme | eng |
 | F24 | Low | `tile-marker · copy strings.ts` | **Six new strings go to `/copy-review`:** three tooltip sentences, the key's two words, and its region label | `/copy-review` |
 
-### For Hugh
+### Hugh's rulings (2026-09-25)
+
+Hugh approved this addendum's audit.
+
+- **H7: two colors, as drawn.** Red for not legal, blue-grey (the card-facts color, `--fact`) for a data change,
+  and one mark only.
+- **H8: the mark stays red until the deck is legal again**, with no read look on the tile. The header keeps
+  read versus unread.
+
+### For Hugh (as asked)
 
 - **H7 (Design's call, against the ruling's wording).** You ruled a small RED `!`. Design draws red only when a
   card is not legal, and a blue-grey `!` (the card-facts color) when the data behind the deck moved, such as the
