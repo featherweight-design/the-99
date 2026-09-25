@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MIN_CANDIDATE_DECKS, fitBody, fitCount, sampleLargeEnough } from "./fit";
+import { fitBody, fitCount } from "./fit";
 
 describe("fitBody", () => {
   it("drops basics and universal staples, and counts a card once", () => {
@@ -24,16 +24,5 @@ describe("fitCount", () => {
 
   it("is zero of zero for an empty body", () => {
     expect(fitCount(new Set(["a"]), [])).toEqual({ n: 0, of: 0 });
-  });
-});
-
-describe("sampleLargeEnough", () => {
-  it("hides a candidate below the floor and one with no count", () => {
-    expect(sampleLargeEnough(null)).toBe(false);
-    expect(sampleLargeEnough(MIN_CANDIDATE_DECKS - 1)).toBe(false);
-  });
-
-  it("ranks a candidate at the floor", () => {
-    expect(sampleLargeEnough(MIN_CANDIDATE_DECKS)).toBe(true);
   });
 });

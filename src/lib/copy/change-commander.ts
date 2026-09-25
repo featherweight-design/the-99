@@ -50,7 +50,8 @@ export const changeCommanderCopy = {
       body: "Only commanders in exactly this deck's colors are offered, so the 99 never change. A wider or narrower identity would mean cutting cards, which is a new deck.",
     },
     nonePair: {
-      head: "No other pair shares these four colors.", // "{n} colors" from the identity's size
+      // The handoff's file wrote "four" with a note to take the count from the identity's size.
+      head: (count: string) => `No other pair shares these ${count} colors.`,
       body: "Only pairs whose two identities add up to exactly this deck's are offered, so the 98 never change. When the index sees a new legal pairing in these colors, it shows up here.",
     },
   },

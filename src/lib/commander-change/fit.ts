@@ -14,13 +14,11 @@
  * (`docs/superpowers/plans/2026-09-25-change-commander.md`, "The floor's curve") holds the whole
  * table; at 20 no candidate under 20 decks reaches a deck's top 10, one deck moves a card's
  * inclusion by at most 5 points, and 89% of candidates are kept.
+ *
+ * Applied in SQL by `candidates.ts`, where a null count fails the comparison too, and proved there
+ * by `probe-change-commander-write.ts` against a real sub-floor commander.
  */
 export const MIN_CANDIDATE_DECKS = 20;
-
-/** Whether a candidate's sample is large enough to rank. A null count is no sample. */
-export function sampleLargeEnough(deckCount: number | null): boolean {
-  return deckCount !== null && deckCount >= MIN_CANDIDATE_DECKS;
-}
 
 /** The deck's cards the figure is counted over: distinct, not basic, not a universal staple. */
 export function fitBody(

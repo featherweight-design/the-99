@@ -17,3 +17,9 @@ describe("changeCommanderCopy", () => {
     expect("noData" in copy.sheet).toBe(false);
   });
 });
+
+describe("changeCommanderCopy.sheet.nonePair", () => {
+  it("counts the identity's colors rather than always saying four", () => {
+    expect(copy.sheet.nonePair.head("two")).toBe("No other pair shares these two colors.");
+  });
+});

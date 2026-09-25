@@ -28,10 +28,11 @@ describe("groupCandidates", () => {
       cand([half("Zed", { owned: true })], 30),
       cand([half("Amy", { owned: true })], 30),
       cand([half("Bob", { owned: true })], 41),
-      cand([half("Cheap")], 10),
-      cand([half("Pricey", { price: { priceCents: 99999 } as never })], 20),
+      // The pricier one has the LOWER figure, so an order by price would reverse these two.
+      cand([half("Cheap")], 20),
+      cand([half("Pricey", { price: { cents: 99999, foilCents: null, etchedCents: null, asOf: new Date() } })], 10),
     ]);
     expect(yours.map((c) => c.halves[0].name)).toEqual(["Bob", "Amy", "Zed"]);
-    expect(toBuy.map((c) => c.halves[0].name)).toEqual(["Pricey", "Cheap"]);
+    expect(toBuy.map((c) => c.halves[0].name)).toEqual(["Cheap", "Pricey"]);
   });
 });
