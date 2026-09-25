@@ -35,6 +35,7 @@ import { holdProfile } from "./lib/profile-hold.mjs";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 // The real rule, not a restatement: run under tsx so a pure module of the app can be imported.
 import { offendingIds, rulesViolations } from "../src/lib/notices/rules-violations.ts";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -118,6 +119,7 @@ async function signIn(page) {
     insert into user_prefs (user_id, about_version_seen) values (${userId}, ${version})
     on conflict (user_id) do update
       set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
+  await clearAboutSheet(page, userId);
   return userId;
 }
 

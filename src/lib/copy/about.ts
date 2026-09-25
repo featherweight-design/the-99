@@ -54,6 +54,9 @@ export const aboutCopy = {
   pageTitle: 'What The 99 does',
   pageIntro:
     'Everything here is scored against the cards you actually own. Four chapters, in the order you would use them — each entry shows the thing it is describing and links to where it lives.',
+  // Appended to the intro only while ABOUT_SHEET_ENABLED is on: with it off a
+  // new version still redirects here, and there is no note to speak of.
+  pageIntroSheet: 'When something new lands, a short note tells you once, and this page opens on it.',
 
   contentsLabel: 'Contents',
   newBadge: 'NEW',
@@ -755,7 +758,7 @@ export const aboutEntries: readonly AboutEntry[] = [
 
 // ---- Account menu ---------------------------------------------------------
 // One row, first, above Manage account. No badge, at any width, ever — the
-// redirect is the notification.
+// sheet is the notification (the redirect, while ABOUT_SHEET_ENABLED is off).
 export const aboutMenuCopy = {
   label: 'About The 99',
 } as const;

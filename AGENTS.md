@@ -835,9 +835,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   exactly as drawn; what it catches is a mark landing on a darker ground, where kaldheim
   `--elevated` reads 3.6857.
 
-  **It clears the About gate before asking for any route**, by seeding `user_prefs`. Since #658
-  `proxy.ts` redirects a reader below `ABOUT_VERSION` to `/about?next=…`, and the About page's
-  own specimen deck links then read as the account's decks — the first run of this file reported
+  **It clears the About gate before asking for any route**, by seeding `user_prefs` and calling
+  `clearAboutSheet`. Since #658 `proxy.ts` redirects a reader below `ABOUT_VERSION` to
+  `/about?next=…` (or, with `ABOUT_SHEET_ENABLED` on, draws the one-time sheet over the page), and
+  the About page's own specimen deck links then read as the account's decks — the first run of this file reported
   "no Analysis tab" about `/decks/about-resume-edited`, a routing problem wearing a flag
   problem's clothes. **And it reaches the surface by a PRESS**: `BuilderTabs` is client state and
   produces no address, which is how the card mark shipped broken into a view a URL sweep
@@ -1432,6 +1433,26 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   and passed, because the mutation was written as a `style` prop on an element that already had
   one — the later prop wins in JSX, so the build under test was the working one. It makes no
   writes; point it at `local-dev`.
+
+- `pnpm probe:about` walks the About rethink at 390, 800 and 1300 with `ABOUT_SHEET_ENABLED` on:
+  the one-time sheet draws on a document load, sits beside the rail from `md` and above the tab
+  bar below it, survives `router.refresh()`, and closes on Later (writing nothing) and on Show me;
+  opening `/about` records the visit; the what's-new index jumps, washes and focuses the entry
+  20px down, and Back returns; the contents search filters the list and leaves the page's
+  sections alone; a legacy `about_v` cookie does not hide the sheet, and a forged
+  `x-about-sheet` header summons nothing. Five mutations fail it; the counts are in its header.
+
+  It WRITES `user_prefs.about_version_seen` for the account it signs in as, HELD ON DISK before
+  the first write and restored in a `finally` — the `profile-hold.mjs` rule. Point it at
+  `local-dev`, **never production**.
+
+  **Every probe that clears the About gate calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`)
+  as well as writing `about_version_seen` (audit E5). On every sign-in path today the write is
+  enough by itself — the first load is signed out and `Clerk.setActive` refreshes by RSC, and the
+  proxy decides on neither — so the helper is a GUARD: a probe that loads a document signed in
+  before its write would otherwise measure a page with a card over it, and say nothing. It sets
+  the sheet's cookie and presses Later if a card is up, and never touches the database. `about-clear.test.mts` sweeps every
+  probe that writes the column and fails one that does not call it.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the

@@ -20,6 +20,7 @@ import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { onPage, onPageRole } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { requireEnv } from "./lib/env.mjs";
 
 neonConfig.webSocketConstructor = ws;
@@ -97,6 +98,7 @@ async function signIn(page) {
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
     [userId, version],
   );
+  await clearAboutSheet(page, userId);
   return userId;
 }
 

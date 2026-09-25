@@ -47,6 +47,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, PAGE } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -147,6 +148,8 @@ async function signIn(page) {
     [EMAIL, PASSWORD ?? ""],
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  // Writes a browser cookie only, never the database (see the header).
+  await clearAboutSheet(page, await page.evaluate(() => window.Clerk.user.id));
 }
 
 /** Every drawn fact mark on the page, with its box and its resolved glow. */
