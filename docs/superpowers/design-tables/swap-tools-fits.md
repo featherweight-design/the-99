@@ -292,8 +292,8 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Need chip value | `need` | `(role, count, target)` |
 | All hold it | `allHold` | `(card)` |
 | Colors rule out | `noneByColorsOne`, `noneByColors` | `(card, color)`, `(card, colors)` |
-| Staple chip value, staple note label and both note sentences | **no key in the copy file** (addendum strings, F21) | note names the card |
-| Failed state | **no key** | n/a |
+| Staple chip value, staple note label and both note sentences | `cmdrStaple`, `stapleLabel`, `stapleNote`, `stapleNoteNoRole` (addendum strings, F21) | notes name the card |
+| Failed state | `failed.heading`, `failed.body`; tag and Try again from `sheet.failed.tag`, `sheet.retry` | none |
 
 Retired or unused in the picker: `heading`, `order`, `excludedOne`, `excludedMany`, `outsideColors`, `notLegal`,
 `noDecks`, `hardStop` (H1 ruled no hard stop), `add` / `addAria` (replaced by `addUsesFree*`) (F13).

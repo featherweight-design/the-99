@@ -136,6 +136,34 @@ describe("FitsPicker", () => {
     expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(2, 0));
   });
 
+  it("stamps nothing when the deck already held it, and moves the deck to its holders", async () => {
+    const heldBy = { id: "d-g", name: "Gishath", quantity: 1 };
+    actions.loadFitsAction.mockResolvedValueOnce(read())
+      .mockResolvedValueOnce(read({ fits: [read().fits[1]], holds: [...read().holds, heldBy] }));
+    actions.addFromFits.mockResolvedValue({ ok: true, held: true });
+    draw();
+    await settle();
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: /using your free copy/ })[0]); });
+    await settle();
+    const rows = screen.getAllByTestId("fits-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("Kinnan");
+    expect(screen.queryByText(copy.added)).toBeNull();
+    expect(screen.getByRole("link", { name: copy.deckLinkAria("Gishath") })).toBeInTheDocument();
+  });
+
+  it("draws no copies line before the read when the payload's availability is unknown", async () => {
+    actions.loadFitsAction.mockReturnValueOnce(new Promise(() => {}));
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <FitsPicker card={{ ...card, availability: null } as BrowseCard} onClose={() => {}} />
+      </CardDetailProvider>,
+    );
+    await settle();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.queryByTestId("fits-copies")).toBeNull();
+  });
+
   it("keeps the button and says the deck is unchanged when an add is refused", async () => {
     actions.loadFitsAction.mockResolvedValue(read());
     actions.addFromFits.mockResolvedValue({ ok: false, message: "full" });

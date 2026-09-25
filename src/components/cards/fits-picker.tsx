@@ -60,6 +60,8 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   const inFlight = useRef(false);
   // The rows as the picker opened: an add re-reads the counts, never the order.
   const [rows, setRows] = useState<FitDeck[] | null>(null);
+  // Decks an add found already holding the card: they leave the list for `already holds it`.
+  const [heldAlready, setHeldAlready] = useState<string[]>([]);
 
   const fetchRead = useCallback(() => {
     loadFitsAction(card.oracleId)
@@ -82,7 +84,9 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   const free = read ? read.free ?? 0 : card.availability?.free ?? 0;
   const freeNow = Math.max(0, free);
   // The payload's count is the card as it opened, so once an add has spent a copy only a read knows.
-  const countsKnown = read !== null || added.length === 0;
+  // Before a read, the payload's count stands only when its availability read worked: a null there is
+  // an unknown count, never `none free`.
+  const countsKnown = read !== null || (added.length === 0 && card.availability != null);
 
   const add = async (deck: FitDeck) => {
     if (inFlight.current) return;
@@ -97,6 +101,12 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
         return;
       }
       const after = await loadFitsAction(card.oracleId).catch(() => null);
+      if (result.held) {
+        // Nothing was written and no copy used, so no stamp: the re-read lists the deck under holds.
+        setHeldAlready((h) => [...h, deck.id]);
+        setLoad(after ? { state: "ready", read: after } : { state: "failed" });
+        return;
+      }
       // A re-read that failed says nothing about the copies left, so the note makes no claim that
       // the last one went: it names only what the add itself used.
       const note = freeBefore === 0
@@ -115,7 +125,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   };
 
   const noteFor = (id: string) => added.find((a) => a.deckId === id)?.note ?? null;
-  const shown = rows ?? [];
+  const shown = (rows ?? []).filter((r) => !heldAlready.includes(r.id));
   const holds = read?.holds.filter((h) => !added.some((a) => a.deckId === h.id)) ?? [];
   const role = read?.card.role ?? "other";
 

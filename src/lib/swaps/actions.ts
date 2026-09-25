@@ -82,10 +82,15 @@ export async function loadFitsAction(oracleId: string): Promise<FitsRead | null>
  * page), which does not need redrawing, and revalidating inside the action would ship that route's
  * whole page back as the reply. The deck it added to is refreshed for its next visit either way.
  */
-export async function addFromFits(deckId: string, oracleId: string): Promise<DeckMutationResult> {
+export async function addFromFits(
+  deckId: string,
+  oracleId: string,
+): Promise<DeckMutationResult & { held?: boolean }> {
   if (!swapToolsEnabled() || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: DECK_ADD_FALLBACK_MESSAGE };
   const userId = await requireUserId();
   const outcome = await addCardToDeckFor(userId, deckId, oracleId, { relock: false });
   after(() => revalidateAdd(deckId, userId, outcome));
-  return outcome.result;
+  // `held`: the deck already had it (another tab got there first), so nothing was written and no copy
+  // was used. The picker must not stamp it as an add.
+  return outcome.wrote === "held" ? { ...outcome.result, held: true } : outcome.result;
 }
