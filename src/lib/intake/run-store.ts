@@ -145,7 +145,8 @@ export async function readStatus(
   return db.transaction(async (tx) => {
     const stored = await storedRead(tx, userId, hash);
     if (stored) return { kind: "stored" as const, read: stored.read, readId: stored.id, useful: stored.useful };
-    // One the reaper would fail is abandoned, not running: past the cutoff nothing will settle it.
+    // A pending read the reaper would fail is abandoned, not running: past the cutoff nothing will
+    // settle it.
     const [pending] = await tx.select({ id: intakeReads.id }).from(intakeReads)
       .where(and(eq(intakeReads.userId, userId), eq(intakeReads.status, "pending"), gte(intakeReads.createdAt, reapCutoff(now))))
       .limit(1);

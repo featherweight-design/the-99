@@ -104,12 +104,24 @@ describe("the deeper look", () => {
       });
     }
 
-    it("returns the offer when that look ended without answering this ask, since nothing was spent", async () => {
+    it("returns the offer when that look ended without answering this ask, and reads the standing again", async () => {
       const status = vi.fn().mockResolvedValue({ kind: "idle" });
       draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop: vi.fn(), status });
       await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
       await poll();
       expect(screen.getByTestId("deeper-look").dataset.phase).toBe("offer");
+      expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it("holds the limit when an ask hangs past it, and delivers nothing late", async () => {
+      let answer!: (v: unknown) => void;
+      const status = vi.fn(() => new Promise((r) => { answer = r; }));
+      draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop: vi.fn(), status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await act(async () => { await vi.advanceTimersByTimeAsync(122_000); });
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("failed");
+      await act(async () => answer({ kind: "read", readId: "0000aaaa-0000-4000-8000-0000000000cc", chips: [], notUsed: [], notUnderstood: [] }));
+      expect(push).not.toHaveBeenCalled();
     });
 
     it("lets Stop end the wait, asking nothing more", async () => {

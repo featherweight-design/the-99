@@ -187,14 +187,24 @@ export function DeeperLook({
       while (Date.now() < until) {
         await new Promise((r) => setTimeout(r, INTAKE_POLL_MS));
         if (token.current !== mine) return;
-        const s = await deps
-          .status({ words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket })
-          // A failed ask says nothing about the other look: ask again next time.
-          .catch(() => ({ kind: "running" as const }));
+        // Each ask races what is left of the wait: one that hangs, or answers after it, reads as
+        // the wait running out, so no read is delivered past the limit.
+        const s = await Promise.race([
+          deps
+            .status({ words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket })
+            // A failed ask says nothing about the other look: ask again next time.
+            .catch(() => ({ kind: "running" as const })),
+          new Promise<{ kind: "expired" }>((r) => setTimeout(() => r({ kind: "expired" }), Math.max(0, until - Date.now()))),
+        ]);
         if (token.current !== mine) return;
         if (s.kind === "read" || s.kind === "nothing") return deliver(s);
-        if (s.kind === "idle") return enter("offer");
-        if (s.kind === "refused") break;
+        if (s.kind === "idle") {
+          // The other look is over and may have spent a credit: read the standing again.
+          enter("offer");
+          router.refresh();
+          return;
+        }
+        if (s.kind === "refused" || s.kind === "expired") break;
       }
       enter("failed");
       setAnnounced(copy.deeper.failTag);
