@@ -10,7 +10,7 @@ const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
 import { buildCommanderIndex,
-  pairNameFilter,
+  pairNameFilter, pairRunProblem, type BuildIndexResult,
 } from "./seed-index";
 
 const commander = (name: string, oracleId: string) => ({
@@ -365,6 +365,37 @@ describe("buildCommanderIndex — the pair pass", () => {
     },
   };
 
+  // The pair twin of the commander resume set: without it a resumed run refetches every legal
+  // pair — about 1,700 requests — on every retry.
+  it("skips a pair a resumed run already recomputed, and fetches one it did not", async () => {
+    const other = { ...pair, a: `${pair.a}-other`, nameA: "Other" };
+    const fetched: string[] = [];
+    const r = await buildCommanderIndex({
+      ...noCommanders,
+      loadPairs: async () => [pair, other],
+      loadAlreadyComputedPairs: async () => new Set([`${pair.a}|${pair.b}`]),
+      fetchPair: async (nameA) => { fetched.push(nameA); return okResult; },
+      writePair: async () => {},
+    });
+    expect(r.pairsSkipped).toBe(1);
+    expect(fetched).toEqual(["Other"]);
+    expect(r.pairs).toBe(1);
+  });
+
+  // A short enumeration is reported, and the built pairs it still returns are still fetched:
+  // the refusal costs the widening, never the pairs the index already carried.
+  it("reports a refused legal sweep and still indexes the built pairs", async () => {
+    const r = await buildCommanderIndex({
+      ...noCommanders,
+      loadPairs: async () => ({ pairs: [pair], legal: 12, refusal: "only 12 legal partner pairs" }),
+      fetchPair: async () => okResult,
+      writePair: async () => {},
+    });
+    expect(r.pairRefusal).toBe("only 12 legal partner pairs");
+    expect(r.legalPairs).toBe(12);
+    expect(r.pairs).toBe(1);
+  });
+
   it("fetches and writes a pair present in decks", async () => {
     const written: unknown[] = [];
     const r = await buildCommanderIndex({
@@ -551,4 +582,39 @@ it("hands the role pass exactly the commanders it wrote, and no others", async (
   });
   expect(handed).not.toBeNull();
   expect([...handed!.commanders]).toEqual(["g"]);
+});
+
+describe("pairRunProblem", () => {
+  const run = (over: Partial<BuildIndexResult>): BuildIndexResult => ({
+    commanders: 0, roleTargets: 0, pairRoleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
+    unresolved: 0, skipped: 0, failed: 0, pairs: 0, pairCardRows: 0, pairsFailed: 0,
+    pairsDegraded: 0, pairsUnresolved: 0, pairsSkipped: 0, legalPairs: 1717, pairRefusal: null,
+    ...over,
+  });
+
+  it("fails a run whose legal sweep was refused", () => {
+    expect(pairRunProblem(run({ pairs: 40, pairRefusal: "only 12 legal partner pairs" })))
+      .toBe("only 12 legal partner pairs");
+  });
+
+  it("fails at more than 5% of attempted pairs degraded or failed, and not at 5% or under", () => {
+    // 6 of 100 is over; 5 of 100 is exactly the bar and passes; 4 is under.
+    expect(pairRunProblem(run({ pairs: 94, pairsDegraded: 4, pairsFailed: 2 }))).toMatch(/6 of 100/);
+    expect(pairRunProblem(run({ pairs: 95, pairsDegraded: 5 }))).toBeNull();
+    expect(pairRunProblem(run({ pairs: 96, pairsDegraded: 4 }))).toBeNull();
+  });
+
+  // Skipped pairs were never attempted: a resumed run that fetched 3 and skipped 1,700 must
+  // not trip the floor on its first failure through a denominator of 1,703.
+  it("counts only attempted pairs, never skipped ones", () => {
+    expect(pairRunProblem(run({ pairs: 2, pairsFailed: 1, pairsSkipped: 1700 }))).toMatch(/1 of 3/);
+  });
+
+  it("fails a run in which every attempted pair degraded or failed", () => {
+    expect(pairRunProblem(run({ pairsDegraded: 3 }))).toMatch(/all 3 pair/);
+  });
+
+  it("passes a run with nothing to attempt", () => {
+    expect(pairRunProblem(run({ pairsSkipped: 1717 }))).toBeNull();
+  });
 });

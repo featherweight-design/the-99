@@ -160,6 +160,10 @@ const buildWithRealClear = (oracleId: string, name: string) =>
     // each call, and on a partially seeded scratch branch it aborts with `role targets
     // REFUSED` for a reason that has nothing to do with what is under test.
     deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),
+    // The pair pass, injected empty and for the same reason. Its default now sweeps every
+    // legal partner pair — about 1,700 — so leaving it in place would send each of them to
+    // live EDHREC with no delay and write every page into `commander_pair_support`.
+    loadPairs: async () => [],
     loadCommanders: async () => [
       { oracleId, name, colorIdentity: [], typeLine: "Legendary Creature", oracleText: "" },
     ],

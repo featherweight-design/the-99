@@ -1644,6 +1644,35 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   leave the table holding this script's output rather than what it found. Point it at
   `local-dev` or a scratch Neon branch, **never production**.
 
+- `pnpm probe:pair-index` proves the Commander index's partner-pair sweep against a real
+  Postgres, by driving the real `loadPairs` and the real `buildCommanderIndex`. **It sends no
+  EDHREC traffic and makes no writes**: the pair fetch, the pair write, the role pass and the
+  score clear are all injected, and the commander walk is handed no commanders. The only reads
+  are the catalog and `decks`.
+
+  The index used to fetch only pairs someone had built — one pair row on staging against 3,380
+  single commanders — so Change commander's "Change pair" offered nothing. It now sweeps every
+  legal pair: `canPair` over `partnerAbility`, among cards that pass `isCommanderCandidate`,
+  which is 1,717 pairs as of 2026-09-25 (1,653 of them generic `Partner` × `Partner`), plus
+  every pair a deck holds. Backgrounds and Doctor's companions are out, because `canPair` does
+  not form them.
+
+  The unit suites prove the rules over hand-built cards and the pass over an injected list.
+  What only a database answers is the join between them: whether the loader's SQL prefilter
+  hands `legalPairs` every partner card, whether that clears `LEGAL_PAIR_FLOOR` (1,500) on the
+  real catalog, and whether the pass over ~1,700 real pairs skips a resumed pair and trips
+  the 5% attempted-pair floor where the unit cases say. Every kind is found by reading each
+  pair's own text rather than by name, so a rotated card does not rot the check.
+
+  **One half measures nothing on local-dev, and the probe says so.** A refused sweep must
+  still return the pairs decks hold; local-dev holds none, so "kept exactly the built pairs"
+  is true of an empty list either way. The probe prints `n/a` there and counts nothing, and
+  that half is pinned by `choosePairs` in `pair-enumerate.test.ts`, which fails when a refusal
+  drops the built pairs.
+
+  Mutations: narrowing the prefilter to `Partner with` fails the floor and the kinds check; removing
+  the enumeration floor fails the refusal check. Point it at `local-dev` or a scratch branch.
+
 - `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — fourteen
   checks in seven sections, one per rule the fill gained when it stopped building to four
   asserted constants.

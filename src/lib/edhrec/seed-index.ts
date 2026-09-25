@@ -5,6 +5,7 @@ import {
   commanderPairSupport, commanderPairSupportCards, decks,
 } from "../../db/schema";
 import { SCORE_INDEX_LOCK } from "../recs/store";
+import { choosePairs, LEGAL_PAIR_FLOOR, legalPairs, pairKey, type IndexPair } from "./pair-enumerate";
 import { deriveRoleTargets, roleTargetsPublishable, ROLE_TARGET_FLOOR } from "./role-targets";
 import { isCommanderCandidate } from "../recs/score";
 import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
@@ -41,7 +42,10 @@ export type BuildIndexOptions = {
    * one of those tests hit a real Postgres. `loadPairs` defaulting to a real query is what
    * broke them the first time.
    */
-  loadPairs?: () => Promise<{ a: string; b: string; nameA: string; nameB: string }[]>;
+  loadPairs?: () => Promise<IndexPair[] | LoadedPairs>;
+  /** Canonical `a|b` keys of pairs already recomputed since a resume point — the pair twin of
+      `loadAlreadyComputed`. Without it a resumed run refetches every legal pair. */
+  loadAlreadyComputedPairs?: () => Promise<Set<string>>;
   fetchPair?: (nameA: string, nameB: string) => Promise<EdhrecFetchResult>;
   writePair?: (header: PairHeaderRow, cards: PairCardRow[]) => Promise<void>;
   delayMs?: number;
@@ -65,8 +69,15 @@ export type BuildIndexResult = {
   cardRows: number;
   degraded: number; absent: number; unresolved: number;
   skipped: number; failed: number;
-  /** Partner pairs present in `decks` whose own EDHREC page was fetched and stored. */
+  /** Partner pairs whose own EDHREC page was fetched and stored: every legal pair, plus every
+      pair a deck holds. */
   pairs: number; pairCardRows: number; pairsFailed: number; pairsDegraded: number;
+  /** Pairs a resumed run found already recomputed and did not fetch again. */
+  pairsSkipped: number;
+  /** Legal pairs the catalog formed this run, or null when the loader did not enumerate. */
+  legalPairs: number | null;
+  /** Why the legal sweep was refused, or null. The built pairs are still fetched. */
+  pairRefusal: string | null;
   /** Unresolvable names on PAIR pages, kept apart from the commander total for the same
    *  reason the degraded counts are kept apart. */
   pairsUnresolved: number;
@@ -95,7 +106,7 @@ export function pairNameFilter(oracleIds: string[]) {
  * Normalised through `canonicalPair` at the point of use rather than in SQL, so there is one
  * definition of the order and it lives beside the CHECK constraint that enforces it.
  */
-async function loadPairs(): Promise<{ a: string; b: string; nameA: string; nameB: string }[]> {
+async function loadBuiltPairs(): Promise<IndexPair[]> {
   const rows = await db
     .selectDistinct({
       a: decks.commanderOracleId,
@@ -134,6 +145,41 @@ async function loadPairs(): Promise<{ a: string; b: string; nameA: string; nameB
     out.push({ a: pair.commanderOracleId, b: pair.partnerOracleId, nameA, nameB });
   }
   return out;
+}
+
+/**
+ * What the pair pass sweeps: every legal pair the catalog forms (`legalPairs`), and every pair
+ * a deck holds. The legal sweep is refused below `LEGAL_PAIR_FLOOR`, and a refusal still
+ * returns the built pairs — the ones indexed before this sweep existed — so a short
+ * enumeration costs the widening and never the pairs the index already carried.
+ */
+export type LoadedPairs = { pairs: IndexPair[]; legal: number; refusal: string | null };
+
+export async function loadPairs(floor: number = LEGAL_PAIR_FLOOR): Promise<LoadedPairs> {
+  const built = await loadBuiltPairs();
+  // Narrowed in SQL to cards whose text carries a partner ability at the START of a line, the
+  // same anchoring `partnerAbility` uses; `legalPairs` then decides. A loose prefilter costs a
+  // row of JavaScript, and the rule itself has one home.
+  const sources = await db
+    .select({
+      oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+      oracleText: cards.oracleText, layout: cards.layout, manaCost: cards.manaCost,
+    })
+    .from(cards)
+    .where(sql`${cards.commanderLegal} and (${cards.oracleText} ~* '(^|\n)partner' or ${cards.oracleText} ~* '(^|\n)friends forever')`);
+  return choosePairs(legalPairs(sources), built, floor);
+}
+
+/**
+ * Canonical `a|b` keys of pairs recomputed at or after `since` — the resume set for pairs, on
+ * the same terms as `alreadyComputedSince`.
+ */
+export async function alreadyComputedPairsSince(since: Date): Promise<Set<string>> {
+  const rows = await db
+    .select({ a: commanderPairSupport.commanderOracleId, b: commanderPairSupport.partnerOracleId })
+    .from(commanderPairSupport)
+    .where(sql`${commanderPairSupport.computedAt} >= ${since}`);
+  return new Set(rows.map((x) => pairKey(x)));
 }
 
 /**
@@ -301,7 +347,7 @@ export async function buildCommanderIndex(
   const fetchOne = opts.fetch ?? fetchEdhrecUncached;
   const write = opts.write ?? writeToDb;
   const clearScores = opts.clearScores ?? clearPersistedScores;
-  const loadPairsFn = opts.loadPairs ?? loadPairs;
+  const loadPairsFn = opts.loadPairs ?? (() => loadPairs());
   const fetchPairFn = opts.fetchPair ?? fetchPairPage;
   const writePairFn = opts.writePair ?? writePair;
   const sleep = opts.sleep ?? defaultSleep;
@@ -326,6 +372,7 @@ export async function buildCommanderIndex(
     commanders: 0, roleTargets: 0, pairRoleTargets: 0, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
+    pairsSkipped: 0, legalPairs: null, pairRefusal: null,
   };
 
   for (const commander of commanders) {
@@ -450,13 +497,16 @@ export async function buildCommanderIndex(
 
   // ---- THE PAIR PASS -----------------------------------------------------------------
   //
-  // Only pairs someone has actually BUILT. There are roughly 2,847 possible combinations —
-  // 58 open-`Partner` commanders alone make 1,653 — and sweeping them would roughly double a
-  // job kept at `max-parallel: 1` under one concurrency group precisely so EDHREC never sees
-  // a second request stream from us. Most of those pages describe pairs nobody has played.
-  // A pair nobody has built is served by the demand cache instead.
+  // Every LEGAL pair, plus every pair a deck holds (`loadPairs`). This used to be the built
+  // pairs alone, for the cost: the legal set is 1,717 pairs, 1,653 of them generic `Partner` ×
+  // `Partner`. But Change commander ranks only pairs with a stored row, and staging held one,
+  // so "Change pair" offered nothing. Hugh approved the sweep on 2026-09-25 at the measured
+  // price: about +1,750 requests (+57%), about 16 more minutes, about 463k support rows
+  // (`docs/superpowers/plans/2026-09-25-pair-index.md`). EDHREC served 124 of 124 sampled pairs.
   //
-  // Inside the same serial walk, with the same delay, for the same reason.
+  // Inside the same serial walk, with the same delay, under the same `max-parallel: 1` group,
+  // so EDHREC still never sees a second request stream from us. A resumed run skips a pair
+  // already recomputed, or every retry would pay the whole sweep again.
   // EVERYTHING FROM HERE IS BEHIND AN ERROR CLEANUP. The commander upserts above have already
   // committed, so a throw anywhere after them — `loadPairsFn`, a pair write, the role publish
   // itself — leaves rewritten support lists beside the PREVIOUS role averages, which is the
@@ -481,11 +531,24 @@ export async function buildCommanderIndex(
   }
 
   async function finishIndexRun(): Promise<BuildIndexResult> {
-  const pairs = await loadPairsFn();
+  const loaded = await loadPairsFn();
+  const pairs = Array.isArray(loaded) ? loaded : loaded.pairs;
+  if (!Array.isArray(loaded)) {
+    r.legalPairs = loaded.legal;
+    r.pairRefusal = loaded.refusal;
+    if (loaded.refusal) console.error(`commander-index: ${loaded.refusal}`);
+  }
+  const alreadyPairs = opts.loadAlreadyComputedPairs
+    ? await opts.loadAlreadyComputedPairs()
+    : new Set<string>();
   if (pairs.length > 0) {
-    console.log(`commander-index: ${pairs.length} partner pair(s) present in decks`);
+    console.log(
+      `commander-index: ${pairs.length} partner pair(s) to index` +
+      (r.legalPairs === null ? "" : ` (${r.legalPairs} legal)`),
+    );
   }
   for (const pair of pairs) {
+    if (alreadyPairs.has(pairKey(pair))) { r.pairsSkipped++; continue; }
     await sleep(delayMs);
     try {
       const result = await fetchPairFn(pair.nameA, pair.nameB);
@@ -791,6 +854,33 @@ export async function deriveAndWriteRoleTargets(
     pairsWritten: pairTargets.size,
     zeroWipes: entries.filter(([, t]) => t.wipes === 0).length,
   };
+}
+
+/**
+ * Why a finished run's pair pass should fail the job, or null when it should not.
+ *
+ * Its own counters and its own floors, so a commander run is never failed by a pair and the
+ * reverse. Three ways, each a broken sweep wearing a green tick:
+ * - the legal sweep was refused (the enumeration came back under `LEGAL_PAIR_FLOOR`);
+ * - every attempted pair degraded or failed, so no pair page was stored;
+ * - more than 5% of ATTEMPTED pairs degraded or failed. Skipped pairs are not attempted, so a
+ *   resumed run cannot trip it on a handful. Compared as an integer ratio for the reason the
+ *   commander guard gives: a rounded allowance rounds up, nearly doubling the bar at 21.
+ */
+export function pairRunProblem(r: BuildIndexResult): string | null {
+  if (r.pairRefusal) return r.pairRefusal;
+  const attempted = r.pairs + r.pairsDegraded + r.pairsFailed;
+  if (attempted === 0) return null;
+  const bad = r.pairsDegraded + r.pairsFailed;
+  if (r.pairs === 0) {
+    return `all ${attempted} pair(s) degraded or failed — no pair page was stored. ` +
+      `The commander index above is unaffected and stands.`;
+  }
+  if (bad * 20 > attempted) {
+    return `${bad} of ${attempted} attempted pairs degraded or failed (threshold: 5% of ` +
+      `attempted). The pair index is materially incomplete.`;
+  }
+  return null;
 }
 
 /**
