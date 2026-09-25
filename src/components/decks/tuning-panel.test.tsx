@@ -57,9 +57,9 @@ function deps(states: TuningState[], over: Partial<TuningDeps> = {}): TuningDeps
   };
 }
 
-async function draw(d: TuningDeps, f: TuningFacts = facts) {
+async function draw(d: TuningDeps, f: TuningFacts = facts, deeperLooks?: boolean) {
   await act(async () => {
-    render(<TuningPanel deckId="d1" permits={[3]} facts={f} onLogGame={vi.fn()} deps={d} />);
+    render(<TuningPanel deckId="d1" permits={[3]} facts={f} onLogGame={vi.fn()} deps={d} deeperLooks={deeperLooks} />);
   });
 }
 
@@ -199,6 +199,19 @@ describe("TuningPanel", () => {
     expect(screen.getByText(creditsCopy.ownerShare(new Date()))).toBeInTheDocument();
     await press(copy.again);
     expect(d.run).not.toHaveBeenCalled();
+  });
+
+  it("says what shares the credits exactly as before the deeper looks, unless Help me choose is on", async () => {
+    const out = { used: 5, limit: 5, reopensAt: null, nextAt: null };
+    await draw(deps([{ ...results, stale: true, allowance: out }]));
+    expect(screen.getByText("0 of 5 left. Your overview and suggestions share these credits.")).toBeInTheDocument();
+    cleanup();
+    await draw(deps([{ ...results, stale: true, allowance: out }]), facts, true);
+    expect(screen.getByText("0 of 5 left. Suggestions, overviews and deeper looks share these credits.")).toBeInTheDocument();
+    cleanup();
+    const until = new Date("2026-10-01T00:00:00Z");
+    await draw(deps([{ ...results, stale: true, allowance: { ...out, paused: { until } } }]));
+    expect(screen.getByText("Paused until October 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.")).toBeInTheDocument();
   });
 
   it("names the pause over the owner's share, and the share over spent credits", async () => {

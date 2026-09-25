@@ -46,6 +46,7 @@ export function SynopsisOverview({
   onRetry,
   onSeeWhich,
   reanalyze,
+  deeperLooks = false,
 }: {
   state: SynopsisState;
   busy: boolean;
@@ -60,6 +61,9 @@ export function SynopsisOverview({
   onRetry: (synopsisId: string) => void;
   /** Opens the Notices sheet, from the check's `See which →`. */
   onSeeWhich: () => void;
+  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
+      they read exactly as before the looks existed. */
+  deeperLooks?: boolean;
   /** The banner's Re-analyze, for the modal over a reading that is itself stale (6d), held
    *  exactly as the tab's banner holds it: a short deck or a read in flight cannot press it. */
   reanalyze: { onPress: () => void; disabled: boolean; note: string | null };
@@ -89,10 +93,10 @@ export function SynopsisOverview({
   // Spent, the credit comes back at `reopensAt`, which can be later than the earliest expiry
   // when more units count than the limit (a reservation beside spent units): as the tuning panel.
   const spentNote = allowance.paused
-    ? creditsCopy.paused(allowance.paused.until)
+    ? creditsCopy.paused(allowance.paused.until, deeperLooks)
     : allowance.ownerShare
       ? creditsCopy.ownerShare(new Date())
-      : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt);
+      : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt, deeperLooks);
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
   const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = spent ? spentNote : spendNote;

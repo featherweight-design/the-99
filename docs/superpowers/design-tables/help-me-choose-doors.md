@@ -190,10 +190,10 @@ Phone gets no identity row (HANDOFF §6).
 |---|---|---|
 | glyph | "‹" alone (canvas: 18px, line-height 1, `--fg-faint`) — unchanged | — |
 | href | the results screen | — |
-| accessible name | not drawn. Today's "Back to commander picker" becomes wrong; see open questions | — |
+| accessible name | `handOff.backAria` ("Back to results"), replacing today's "Back to commander picker" | — |
 
-Disagreement: the copy file has `handOff.backPhone` "‹ Results", but the canvas draws the bare chevron. Canvas and
-code agree on the bare chevron; treat `backPhone` as the chevron's accessible name, or drop it (open question).
+Resolved: the copy file's `handOff.backPhone` "‹ Results" was never drawn (the canvas and the code both draw the bare
+chevron), so it is dropped, and the chevron is spoken as `handOff.backAria`.
 
 ### Subs
 
@@ -399,7 +399,7 @@ All three go through `/copy-review`.
 - Picker desktop sub → `addPanelCopy.createPicker.sub` (F9), drawn: "Pick a commander from your collection, or let us
   help." (not in the copy strings file; placeholder)
 - Desktop back link → `handOff.back`: "‹ Help me choose · results"
-- Phone back → `handOff.backPhone`: "‹ Results" (not drawn; chevron only)
+- Phone back → the bare chevron, spoken as `handOff.backAria`: "Back to results"
 - Desktop sub → `handOff.sub`: "Name your deck. It will be built from your answers."
 - Phone sub → `handOff.subPhone`: "From your answers"
 - Block heading → `handOff.block`: "Built from your answers"
@@ -414,15 +414,18 @@ All three go through `/copy-review`.
 - Bracket value name (`2 · Core`) → no key in this file (the bracket's existing name)
 - `handOff.seededBriefAnswers` → 6c, out of scope here
 
-## Open questions
+## Open questions (resolved)
 
-1. BUDGET row with no build-around card: no consequence string exists and none is drawn.
-2. THEME row: the consequence reuses a results figure (`figTheme`) that needs the chosen commander's percentage at
-   hand-off; no `handOff` key. Several themes: one row per theme, or one row joined? Undrawn.
-3. BUILT AROUND: the canvas appends "64% of its decks run it." with no key.
-4. Three consequence strings differ between canvas and copy file (above); `/copy-review` decides.
-5. The phone chevron's accessible name, and whether `handOff.backPhone` is drawn text or that name.
-6. "Change": its target (form with state kept is assumed), and its tap target is 11px mono with no 44px box on a phone.
-7. A submit with no row-worthy answer: hide the block, or draw it empty.
-8. Whether the desktop picker sub changes when the flag is off (it says "or let us help").
-9. Whether the card value opens `CardModal` here, as its dotted accent underline does on the results chips.
+Each was settled by engineering or by the copy ruling (orchestrator, 2026-09-25); the verify pass
+(`gap-report-help-me-choose-6b.md`) checked the build against these resolutions.
+
+1. BUDGET row with no build-around card, or with one already owned: `handOff.budgetAlone`.
+2. THEME row: one row per theme, its consequence `handOff.themeFig(pct, label)`, and no line when the commander has
+   no figure for that theme.
+3. BUILT AROUND: `handOff.cardFig(pct)` is appended to `handOff.placed` when there is a figure.
+4. The consequence strings ship in the copy file's wording, approved as written.
+5. The phone chevron stays bare and is spoken as `handOff.backAria`; `backPhone` is dropped.
+6. "Change" goes to the intake form with the answers kept (and no deeper read or marks), and has a 44px tap area.
+7. No row-worthy answer: the block is hidden.
+8. With the flag off, the picker's desktop sub is `createPicker.subAlone`, the pre-F9 wording.
+9. The card value is the results bar's `CardValue`, which opens the card modal.

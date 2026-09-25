@@ -190,6 +190,9 @@ interface BuilderShellProps {
   /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
    *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
   neverCut?: boolean;
+  /** `HELP_ME_CHOOSE_ENABLED` (`src/lib/intake/flag.ts`): whether the credit lines name Help me
+   *  choose's deeper looks among what shares the credits. Off, they read as before the looks. */
+  deeperLooks?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -230,6 +233,7 @@ export function BuilderShell({
   noticesEnabled = false,
   storedPermits = null,
   neverCut = false,
+  deeperLooks = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -385,8 +389,8 @@ export function BuilderShell({
     `${listKey}|${reading?.analyzedAt ?? ""}|${readingFresh}`,
   );
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
-  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze") : null;
-  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze") : null;
+  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze", deeperLooks) : null;
+  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze", deeperLooks) : null;
   // A PRESS WRITES ONLY WHAT ITS NOTE SAID IT WOULD. Recorded when the press is made, so a note
   // that was not drawn (the state not yet read, the list already written, no credit left) is a
   // press that spends nothing, whatever the state says by the time the reading lands.
@@ -1337,6 +1341,7 @@ export function BuilderShell({
                         onWrite={synopsis.write}
                         onRetry={synopsis.retry}
                         onSeeWhich={openNoticesSheet}
+                        deeperLooks={deeperLooks}
                         reanalyze={{
                           onPress: requestAnalysis,
                           disabled: profile.state.kind === "loading" || built !== bodySize,
@@ -1349,6 +1354,7 @@ export function BuilderShell({
                     <TuningPanel
                       deckId={deck.id}
                       permits={permits}
+                      deeperLooks={deeperLooks}
                       facts={{
                         gameCount: gameSummary.count,
                         noteCount: games.filter((g) => g.note !== null).length,

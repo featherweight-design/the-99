@@ -2,7 +2,7 @@
 // is a prop, so each is asserted without a request, and the ones that draw no write control are
 // asserted to draw none rather than assumed to.
 
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within, cleanup } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { checkedSynopsis, synopsisRow, synopsisState } from "./__fixtures__/synopsis";
@@ -19,7 +19,7 @@ const onRetry = vi.fn();
 const onReanalyze = vi.fn();
 const onSeeWhich = vi.fn();
 const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
-const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean; reanalyzeBlocked: boolean }> = {}) =>
+const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean; reanalyzeBlocked: boolean; deeperLooks: boolean }> = {}) =>
   render(
     <CardDetailProvider fetchCard={async () => null}>
       <SynopsisOverview
@@ -28,6 +28,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         deckName="Hoof"
         art={new Map()}
         readingFresh={over.readingFresh ?? true}
+        deeperLooks={over.deeperLooks}
         settled={over.settled ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
@@ -88,6 +89,15 @@ describe("SynopsisOverview", () => {
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() } }));
     expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
     expect(screen.getByText(/0 of 3 left · next one at/)).toBeTruthy();
+  });
+
+  it("says what shares the credits exactly as before the deeper looks, unless Help me choose is on", () => {
+    const out = { used: 3, limit: 3, reopensAt: null, nextAt: null };
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: out }));
+    expect(screen.getByText("0 of 3 left. Your overview and suggestions share these credits.")).toBeTruthy();
+    cleanup();
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: out }), { deeperLooks: true });
+    expect(screen.getByText("0 of 3 left. Suggestions, overviews and deeper looks share these credits.")).toBeTruthy();
   });
 
   it("names when a credit truly comes back once every one is out, not the earliest expiry", () => {
