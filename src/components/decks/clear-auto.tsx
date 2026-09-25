@@ -10,6 +10,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { useLockCards } from "./lock-cards";
 
 // ── ClearAutoButton ────────────────────────────────────────────────────────────
 
@@ -117,6 +118,9 @@ export function ClearAutoButton({
     }
   }, [confirming]);
 
+  // Read before the early return below: a hook runs on every render or not at all.
+  const lockWriting = (useLockCards()?.pending.size ?? 0) > 0;
+
   if (count === 0 && keptCount === 0) return null;
 
   // Either write in flight disables both. They read the same count and act on
@@ -124,7 +128,11 @@ export function ClearAutoButton({
   // cards the first has already spoken for.
   // The Lock cards mode disables them too, in place (addendum F3): the row's ✕ is a lock while it
   // is on, and a bulk removal beside a list of locks would be a second answer to one question.
-  const busy = pending || keepAllPending || lockMode;
+  // And so does any lock write still in flight (`lockWriting`): a sweep that reached the deck row
+  // first would take a card the client already draws as locked, and its receipt would count it as
+  // one that stayed. The sweep waits until every lock has settled, so the client keeps what the
+  // server holds.
+  const busy = pending || keepAllPending || lockMode || lockWriting;
   // What a sweep can actually take (L3): a locked auto card can be kept but never cleared.
   const clearable = Math.max(0, count - lockedCount);
 

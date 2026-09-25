@@ -17,7 +17,7 @@
  * Absent (null) with `NEVER_CUT_ENABLED` off, and every surface reading null draws nothing of the
  * lock: that is how the switch reaches a row without a prop threaded through every list between.
  */
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { setCardLocked } from "../../app/decks/actions";
 import { printedFaceName } from "../../lib/collection/browse";
@@ -78,6 +78,12 @@ export function useCardLocks({
   // A ref for the serialisation, read and written synchronously in the press, and state for the
   // render: two presses inside one frame both read the ref, never a stale render's copy of it.
   const inFlight = useRef(new Set<string>());
+  // The deck on screen NOW, for a write that settles after a client navigation: its error and its
+  // announcement belong to the deck it was pressed on, and are dropped rather than said on another.
+  const onScreen = useRef(deckId);
+  useEffect(() => {
+    onScreen.current = deckId;
+  }, [deckId]);
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
 
   if (held.deckId !== deckId) {
@@ -138,9 +144,10 @@ export function useCardLocks({
           // The server refuses when the card left the deck between render and press, or the switch
           // is off. The lock reverts rather than showing a state the deck does not hold.
           setOverride(forDeck, id, !next);
-          setErrors((e) => new Map(e).set(id, result.message));
+          if (onScreen.current === forDeck) setErrors((e) => new Map(e).set(id, result.message));
           return;
         }
+        if (onScreen.current !== forDeck) return;
         // Announced on the transition, never from the state (ProxyControl's rule).
         announce(next ? lockedCardsCopy.mode.announceLocked(name) : lockedCardsCopy.mode.announceUnlocked(name));
       })();

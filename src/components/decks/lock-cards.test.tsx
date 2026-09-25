@@ -2,7 +2,7 @@
 // sweep that leaves a locked auto card where it is. The leaves are rendered alone where a rule is
 // theirs; the mode, the optimism and the sweep go through BuilderShell, because the seam under test
 // is the shell's own state feeding the toolbar, the key line and every row at once.
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, renderHook, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -45,7 +45,7 @@ const { GroupToggle } = await import("./group-toggle");
 const { ClearAutoButton, SweepReceipt } = await import("./clear-auto");
 const { buildMarkKeyEntries } = await import("./decklist");
 const { DecklistRow } = await import("./decklist-row");
-const { LockCardsProvider } = await import("./lock-cards");
+const { LockCardsProvider, useCardLocks } = await import("./lock-cards");
 const { BuilderShell } = await import("./builder-shell");
 
 afterEach(() => {
@@ -228,6 +228,19 @@ describe("ClearAutoButton with locked auto cards", () => {
 
   it("is busy while the Lock cards mode is on", () => {
     render(<ClearAutoButton {...base} count={3} lockMode />);
+    for (const b of screen.getAllByRole("button")) expect(b).toBeDisabled();
+  });
+
+  // A sweep that reached the deck row before a lock write would take a card the client already
+  // draws as locked, and its receipt would count it as one that stayed. So Clear waits for every
+  // lock write to settle, even after Done.
+  it("is busy while a lock write is still in flight", () => {
+    const writing = { mode: false, toggle: () => {}, pending: new Set(["o1"]), errors: new Map<string, string>() };
+    render(
+      <LockCardsProvider value={writing}>
+        <ClearAutoButton {...base} count={3} lockedCount={1} />
+      </LockCardsProvider>,
+    );
     for (const b of screen.getAllByRole("button")) expect(b).toBeDisabled();
   });
 });
@@ -613,5 +626,27 @@ describe("Clear all auto leaves a locked auto card, through BuilderShell (L3)", 
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
     expect(screen.queryByText("Arcane Signet")).toBeNull();
     await act(async () => sweep.resolve([{ oracleId: "arcane-signet", quantity: 1 }]));
+  });
+});
+
+// A lock write that settles after a client navigation to another deck belongs to the deck it was
+// pressed on: its refusal is not drawn and its announcement is not said on the new one.
+describe("a lock write that settles on another deck", () => {
+  const card = mk("o1", "Sol Ring");
+  // One array for the whole run: a new one per render is a new server list every render.
+  const list = [card];
+  it("draws no error and says nothing there", async () => {
+    const held = deferred<DeckMutationResult>();
+    setCardLocked.mockReturnValue(held.promise);
+    const announce = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ deckId }) => useCardLocks({ enabled: true, deckId, cards: list, serverCards: list, announce }),
+      { initialProps: { deckId: "deck-a" } },
+    );
+    act(() => result.current.value!.toggle(card));
+    rerender({ deckId: "deck-b" });
+    await act(async () => held.resolve({ ok: false, message: "refused" }));
+    expect(result.current.value!.errors.size).toBe(0);
+    expect(announce).not.toHaveBeenCalled();
   });
 });
