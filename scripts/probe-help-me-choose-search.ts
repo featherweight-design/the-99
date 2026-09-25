@@ -128,7 +128,7 @@ async function main() {
     `${mono.rows.length} exact, widen ${JSON.stringify(mono.tooNarrow?.widen)}`);
 
   console.log("\n6. The page the screen draws");
-  const { loadResultsPage, RESULT_PAGE } = await import("../src/lib/intake/rows");
+  const { loadCardChip, loadResultsPage, RESULT_PAGE } = await import("../src/lib/intake/rows");
   const { loadIntakeCatalog } = await import("../src/lib/intake/search");
   const first = await loadResultsPage(USER, none);
   const second = await loadResultsPage(USER, none, RESULT_PAGE);
@@ -155,6 +155,11 @@ async function main() {
   const basic = await searchCommanders(USER, { ...none, card: forest.oracle_id });
   check("a basic land is no build-around card, whatever the URL says", basic.order === "owned" && basic.card === null,
     `order ${basic.order}, card ${JSON.stringify(basic.card)}`);
+  // The chip reads the search's own card rule: a card the search drops draws no chip either, or
+  // *We read this as* would name an answer the results never used.
+  const [basicChip, solChip] = [await loadCardChip(USER, forest.oracle_id), await loadCardChip(USER, solRing.oracle_id)];
+  check("the answer chip drops the card the search drops, and names one it keeps",
+    basicChip === null && solChip?.name === "Sol Ring", `basic ${JSON.stringify(basicChip)}, Sol Ring ${solChip?.name ?? "null"}`);
   check("and the owned order it falls back to still carries its support counts",
     JSON.stringify(basic.rows.slice(0, 5).map((r) => [r.candidate.oracleId, r.candidate.ownedSupport]))
       === JSON.stringify(all.rows.slice(0, 5).map((r) => [r.candidate.oracleId, r.candidate.ownedSupport])),

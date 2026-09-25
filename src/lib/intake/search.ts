@@ -109,8 +109,7 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
           and sc.color_identity <@ c.color_identity and csc.oracle_id <> cs.commander_oracle_id)::int` : sql`0`} as support_total
     from commander_support cs
     join cards c on c.oracle_id = cs.commander_oracle_id
-    where c.commander_legal and cs.synergy_state = 'ok'
-      and ${notBuiltBy(userId, sql`cs.commander_oracle_id`)}
+    where ${isCandidate(userId)}
   `)).rows as {
     id: string; name: string; color_identity: string[]; deck_count: number | null; game_changer: boolean;
     tags: EdhrecTag[]; owned: boolean; card_inclusion: number | null; owned_support: number; support_total: number;
@@ -156,17 +155,25 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
 }
 
 /**
+ * Which commanders the search lists: indexed, legal, and not one the player has already built. A
+ * condition on `commander_support cs` joined to `cards c`, shared so that anything taking a
+ * commander id from the client (the trial fill) admits exactly the ids the search could return.
+ */
+export const isCandidate = (userId: string) =>
+  sql`c.commander_legal and cs.synergy_state = 'ok' and ${notBuiltBy(userId, sql`cs.commander_oracle_id`)}`;
+
+/**
  * The build-around card, when it is one the intake could have offered: the free match's own
  * eligibility (`loadPhraseIndex`), commander-legal and never a basic land. A card a hand-edited
  * URL names outside that is no answer, and reads as null like a card that does not exist.
  */
-async function loadCardRow(userId: string, oracleId: string): Promise<{ owned: boolean; gameChanger: boolean } | null> {
+export async function loadCardRow(userId: string, oracleId: string): Promise<{ name: string; owned: boolean; gameChanger: boolean } | null> {
   const [row] = (await db.execute(sql`
-    select c.game_changer, c.type_line,
+    select c.name, c.game_changer, c.type_line,
       exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
     from cards c where c.oracle_id = ${oracleId}::uuid and c.commander_legal
-  `)).rows as { game_changer: boolean; type_line: string; owned: boolean }[];
-  return row && !isBasicLand(row.type_line) ? { owned: row.owned, gameChanger: row.game_changer } : null;
+  `)).rows as { name: string; game_changer: boolean; type_line: string; owned: boolean }[];
+  return row && !isBasicLand(row.type_line) ? { name: row.name, owned: row.owned, gameChanger: row.game_changer } : null;
 }
 
 /**

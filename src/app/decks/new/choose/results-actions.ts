@@ -7,6 +7,7 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
+import { isCandidate } from "../../../../lib/intake/search";
 import { trialFill, type TrialFigures } from "../../../../lib/intake/trial";
 import { isUuid } from "../../../../lib/uuid";
 
@@ -63,8 +64,12 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
   }
   const ids = [...new Set(commanderOracleIds)];
   const p = parseChooseParams(new URLSearchParams(checkQuery(queryString)));
+  // Only a commander the search could list is filled: an id naming any other card, or a commander
+  // this player has already built, comes back null without a fill being run for it.
   const found = ids.length === 0 ? [] : (await db.execute(sql`
-    select c.oracle_id, c.name, c.color_identity from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])
+    select c.oracle_id, c.name, c.color_identity
+    from commander_support cs join cards c on c.oracle_id = cs.commander_oracle_id
+    where cs.commander_oracle_id = any(${sql.param(ids)}::uuid[]) and ${isCandidate(userId)}
   `)).rows as { oracle_id: string; name: string; color_identity: string[] | null }[];
   const byId = new Map(found.map((c) => [c.oracle_id, c]));
   const answers = {
