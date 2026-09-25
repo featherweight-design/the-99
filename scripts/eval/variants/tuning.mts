@@ -28,6 +28,24 @@ export type TuningVariant = {
 /** How many staples the trimmed context keeps. The prompt calls the list "context, not a menu". */
 export const TRIM_STAPLES = 15;
 
+/**
+ * EVERY VARIANT HERE STARTS FROM THE APP'S OWN PROMPT (`tuning-app.mts` builds the pack with
+ * `buildEvidencePack` and the messages with `buildPrompt`, then applies the variant), and since
+ * tuning v2 (#948) that prompt is not the v1 prompt rounds 1 to 4 were measured on. What v2 adds
+ * depends on the pack. Six lines are ALWAYS there: the 4-to-5 count, sizing to the gap and
+ * grounding in how the deck plays, and the three rationale rules. Two more depend on the pack,
+ * each on its own: the strategy block and the Key-card rule appear when it carries an overview,
+ * and the universal-staple rule when it carries staples. The harness passes neither.
+ *
+ * So `base` is v2's always-on lines over v1. `trim` changes only the pack (fewer staples) and
+ * appends nothing, but its base moved with it. The `cite-*` variants add their rules to that base.
+ * And the three strategy variants bring their own overview, Key-card and staple lines, each
+ * repeating part of what v2 already emits: all three repeat the count, gap and grounding lines;
+ * `strategy-terse` adds a chip rule worded differently from v2's and repeats its opening rule; and
+ * `strategy-terse-b` repeats v2's three rationale rules word for word. None reproduces a round's
+ * messages any more. Round 4's are pinned by `scripts/fixtures/tuning-v2-round4.json`; any earlier
+ * round means running the harness at the commit before #948.
+ */
 export const TUNING_VARIANTS: Record<string, TuningVariant> = {
   base: { id: "base", reason: "The shipped prompt, unchanged." },
   trim: {
