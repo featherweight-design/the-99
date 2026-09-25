@@ -86,7 +86,9 @@ function Entry({
   const rule = !sheetMode
     ? "pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]"
     : marked
-      ? "scroll-mt-[20px] border-t-2 border-solid border-[color:var(--accent)] pt-[12px] min-[1000px]:pt-[14px]"
+      ? // The 2px rule takes a pixel more than the 1px it replaces, so the padding
+        // gives it back and a new entry's title sits level with the others.
+        "scroll-mt-[20px] border-t-2 border-solid border-[color:var(--accent)] pt-[12px] min-[1000px]:pt-[13px]"
       : "scroll-mt-[20px] pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]";
   return (
     // No per-entry rule below the wide stop — a rule per entry turns a chapter
@@ -98,7 +100,9 @@ function Entry({
       // entry below the fold offered nothing to wait for. Every feature ships an
       // entry, so every inventory hit that wall.
       //
-      // NO SCROLL MARGIN. The first version carried `scroll-mt-[80px]` on the
+      // NO SCROLL MARGIN with the sheet switch off. Under it (R6 §P1) the
+      // margin is 20px, the drawn landing, set in `rule` above; the 80px below
+      // is what that is not. The first version carried `scroll-mt-[80px]` on the
       // theory that the shell's header overlays the page. It does not:
       // `MobileHeader` is in flow (`shell/nav.tsx:303-308`), the desktop rail is
       // sticky on the LEFT, and the tab bar is fixed to the BOTTOM. Nothing sits

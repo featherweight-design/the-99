@@ -177,6 +177,36 @@ describe("the jump mark (§P)", () => {
     }
   });
 
+  it("lands again when the same row is pressed twice", () => {
+    const entry = aboutEntries[3];
+    render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
+    act(() => {
+      window.location.hash = entry.id;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    document.querySelector("[data-jumped]")!.removeAttribute("data-jumped");
+    const link = document.createElement("a");
+    link.setAttribute("href", `#${entry.id}`);
+    document.body.append(link);
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        link.click();
+        vi.runAllTimers();
+      });
+    } finally {
+      vi.useRealTimers();
+      link.remove();
+    }
+    expect(titleLine(entry.id).hasAttribute("data-jumped")).toBe(true);
+  });
+
+  it("survives a hash that is not a valid escape", () => {
+    window.history.replaceState(null, "", "/about#%E0");
+    expect(() => render(<AboutPage seen={ABOUT_VERSION} sheetMode />)).not.toThrow();
+    expect(document.querySelector("[data-jumped]")).toBeNull();
+  });
+
   it("draws no mark with the switch off", () => {
     const entry = aboutEntries[3];
     render(<AboutPage seen={ABOUT_VERSION} />);

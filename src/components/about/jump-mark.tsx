@@ -34,7 +34,14 @@ export function JumpMark() {
 
     const land = () => {
       clear();
-      const id = decodeURIComponent(window.location.hash.slice(1));
+      // A hand-typed hash can carry a broken escape (`#%E0`); that is no entry,
+      // not a reason to take the page down.
+      let id = "";
+      try {
+        id = decodeURIComponent(window.location.hash.slice(1));
+      } catch {
+        return;
+      }
       const entry = id ? document.getElementById(id) : null;
       const line = entry?.querySelector<HTMLElement>("[data-entry-title]");
       if (!entry || !line) return;
@@ -53,10 +60,19 @@ export function JumpMark() {
       observer.observe(entry);
     };
 
+    // A link to the hash already in the address fires no `hashchange`, but the
+    // browser still scrolls to it. Pressing the same row twice must land twice.
+    const again = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.("a[href^='#']");
+      if (a && a.getAttribute("href") === window.location.hash) window.setTimeout(land, 0);
+    };
+
     land();
     window.addEventListener("hashchange", land);
+    document.addEventListener("click", again);
     return () => {
       window.removeEventListener("hashchange", land);
+      document.removeEventListener("click", again);
       clear();
     };
   }, []);
