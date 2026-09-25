@@ -120,10 +120,22 @@ describe("the stand-ins sheet's model", () => {
     expect(highlands).toMatchObject({ body: [copy.mana.line("red", copy.mana.tapped)], muted: [copy.mana.once("white")] });
   });
 
+  it("says a job every stand-in lacks once, in the lead, and not on each row", () => {
+    const m = sheetModel(read({
+      groups: [same([
+        standIn("A", { synergy: 0.2, missing: ["castFree", "counters"] }),
+        standIn("B", { missing: ["castFree"] }),
+      ])],
+    }));
+    expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", copy.job.castFree));
+    expect(m.groups[0].rows.map((r) => r.muted)).toEqual([[copy.givesUp(copy.job.counters)], []]);
+  });
+
   // Addendum R1: a spell row's jobs beyond the original's (`also`), and the original's it lacks, two at most.
   it("names a spell's extra jobs and what it gives up, a word once, two of each at most", () => {
     const m = sheetModel(read({
-      groups: [same([standIn("Mulldrifter-ish", { extra: ["draw", "draw", "evasion", "blink"], missing: ["counters"] })])],
+      // A second row that keeps the job, so the first row's give-up is its own rather than every row's.
+      groups: [same([standIn("Mulldrifter-ish", { extra: ["draw", "draw", "evasion", "blink"], missing: ["counters"] }), standIn("Keeps it")])],
     }));
     expect(m.groups[0].rows[0]).toMatchObject({
       body: [copy.mv(2), copy.also(`${copy.job.draw} and ${copy.job.evasion}`)],

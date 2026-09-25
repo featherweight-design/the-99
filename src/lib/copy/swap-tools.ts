@@ -86,6 +86,8 @@ export const swapToolsCopy = {
       `In each group, cards that do more of ${card}’s work come first, then the ones ${commander} decks favor most over other decks of their colors.`,
     /** F14: the index lists nothing for this commander or pair, so the order names no commander. */
     leadSpellsOrderUnlisted: (card: string) => `In each group, cards that do more of ${card}’s work come first, then the cheapest.`,
+    /** D2: a job every stand-in lacks is said once here, not on every row (as `leadLandsGivesUp` does). */
+    leadSpellsGivesUp: (card: string, jobs: string) => `None of them has ${card}’s ${jobs}.`,
     /** Drawn when a staple is in the list: it sorts last in its group (addendum §1b). */
     leadSpellsStaples: "Staples every commander plays come last.",
     /** F5: a sold-out original lists free copies only. Owed to /copy-review. */

@@ -158,13 +158,17 @@ export function sheetModel(read: StandInsRead): SheetModel {
       ? listWords(everyRow[0].givesUp.map(abilityText), "and")
       : null;
 
+  // The spells' counterpart: a job of the original's that EVERY stand-in lacks is said once, in the lead.
+  const lackedByAll = job.kind === "spell" && everyRow.length > 0
+    ? everyRow[0].missing.filter((j) => everyRow.every((s) => s.missing.includes(j)))
+    : [];
   const line = (s: StandIn, same: boolean): { body: string[]; muted: string[] } => {
     if (job.kind === "spell") {
       // The lead states the jobs once, so the row names only what differs (addendum §1b, R1): an
       // other-types row its type, then MV, the jobs it does beyond the original's, and what it gives up.
       // Hugh's Q2: no % on a stand-in row. A staple still says it is one (addendum §1).
       const extra = jobWords(s.extra);
-      const missing = jobWords(s.missing);
+      const missing = jobWords(s.missing.filter((j) => !lackedByAll.includes(j)));
       return {
         body: [
           ...(same ? [] : [mainType(s.card.typeLine)]),
@@ -231,6 +235,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
         // F14: nothing listed for this commander or pair, so the order clause names no commander.
         everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(original.name, commander) : copy.leadSpellsOrderUnlisted(original.name),
         ...(everyRow.some((s) => s.isUniversal) ? [copy.leadSpellsStaples] : []),
+        ...(lackedByAll.length ? [copy.leadSpellsGivesUp(original.name, listWords(jobWords(lackedByAll), "and"))] : []),
       ].join(" ");
 
   return { job: jobLine, lead, groups, sentence: null, foot: true };
