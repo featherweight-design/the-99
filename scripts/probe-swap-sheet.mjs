@@ -293,6 +293,31 @@ try {
           sol?.slice(0, 90) ?? "no Sol Ring row");
       }
       report(`${tag} ${kind}: nothing wider than the sheet`, read.overflow <= 0, `${read.overflow}px`);
+      // v2, item 5: a stand-in row previews its card, desktop only by design, and the box draws ABOVE the
+      // sheet it was asked for from. A PAINTED image, read after the 240ms delay, because the markup is
+      // the same whether or not the catalog had a picture for the card.
+      if (w.label === 1300) {
+        const rowEl = dialog.locator('[data-testid="stand-in-row"]').first();
+        // A sheet with no row drawn (or none visible) records the check as failed rather than throwing,
+        // so the run still reaches its cleanup and its report.
+        const rb = await rowEl.boundingBox().catch(() => null);
+        if (rb) {
+          await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
+          await page.mouse.move(rb.x + rb.width / 2 + 4, rb.y + rb.height / 2);
+        }
+        const box = page.locator('[data-testid="hover-preview"]');
+        const seen = rb ? await box.waitFor({ state: "visible", timeout: 3000 }).then(() => true).catch(() => false) : false;
+        const shown = seen ? await box.evaluate((el) => {
+          const sheet = document.querySelector('[data-testid="stand-ins-sheet"]')?.closest(".fixed");
+          return {
+            painted: getComputedStyle(el).backgroundImage.includes("url("),
+            above: Number(getComputedStyle(el).zIndex) > Number(sheet ? getComputedStyle(sheet).zIndex : 0),
+          };
+        }) : null;
+        report(`${tag} ${kind}: a stand-in row previews its card, above the sheet`, Boolean(shown?.painted && shown?.above),
+          shown ? `painted ${shown.painted}, above ${shown.above}` : rb ? "no preview" : "no stand-in row to hover");
+        await page.mouse.move(8, 8);
+      }
       if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/swap-sheet-${kind}-${w.label}.png` });
       // The sheet mounts inside the row's click target, and React bubbles a portal's events through it:
       // closing it from the backdrop must not open the row's card as well. The panel stops its own clicks,
