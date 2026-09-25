@@ -96,7 +96,8 @@ describe("ChangeCommanderSheet", () => {
   it("describes a trade when the candidate is in the 99", async () => {
     readChangeCandidates.mockResolvedValue(data({ yours: [cand(half("Prosper", { inDeck: true, availability: null }), 41)] }));
     mount();
-    expect(await screen.findByText("in this deck · trades places")).toBeTruthy();
+    const mark = await screen.findByText("trades places", { exact: false });
+    expect(mark.textContent).toBe("in this deck·trades places");
     fireEvent.click(screen.getByRole("button", { name: "Choose Prosper" }));
     expect(screen.getByText(/The two trade places\. Prosper leaves the 99 for the command zone/)).toBeTruthy();
   });
@@ -116,5 +117,28 @@ describe("ChangeCommanderSheet", () => {
     mount(false, false);
     fireEvent.click(await screen.findByRole("button", { name: "Choose Prosper" }));
     expect(screen.getByText(/This deck has no version yet/)).toBeTruthy();
+  });
+});
+
+describe("summedPrice", () => {
+  const at = new Date("2026-09-22T00:00:00Z");
+  const priced = (cents: number | null, asOf = at): CandidateHalf => half(`H${cents}`, {
+    owned: false, availability: null, price: { cents, foilCents: null, etchedCents: null, asOf },
+  });
+
+  it("sums a pair's two live prices into one figure", async () => {
+    const { summedPrice } = await import("./change-commander-sheet");
+    expect(summedPrice([priced(150), priced(275)], at)).toEqual({ cents: 425, foilCents: null, etchedCents: null, asOf: at });
+  });
+
+  it("does not sum over a half with no normal price, or one that is sold out", async () => {
+    const { summedPrice } = await import("./change-commander-sheet");
+    expect(summedPrice([priced(150), priced(null)], at)).toBeNull();
+    expect(summedPrice([priced(150), priced(275, new Date("2026-09-01T00:00:00Z"))], at)).toBeNull();
+  });
+
+  it("leaves a single half to its own tag", async () => {
+    const { summedPrice } = await import("./change-commander-sheet");
+    expect(summedPrice([priced(150)], at)).toBeNull();
   });
 });

@@ -41,17 +41,26 @@ function Sheet({ width }: { width: Width }) {
   );
 }
 
-export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; width: Width }) {
+export function ChangeCommanderDoor({
+  oracleId, width, hasCrop,
+}: {
+  oracleId: string;
+  width: Width;
+  /** With no crop there is no printing to open, so the card-details half is absent (§G) and the
+   *  ⇄ half is drawn alone. */
+  hasCrop: boolean;
+}) {
   const door = useChangeCommander();
   const { open, pendingOracleId } = useCardDetail();
   if (!door) {
-    return (
+    // Today's control, exactly, and exactly when today drew it.
+    return hasCrop ? (
       <FullCardTrigger
         oracleId={oracleId}
         placement={width === "desktop" ? "deck-desktop" : "deck-mobile"}
         bandTapTarget={false}
       />
-    );
+    ) : null;
   }
   const pending = pendingOracleId === oracleId;
   const label = door.pair ? copy.door.pair : copy.door.single;
@@ -71,6 +80,7 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
         style={{ left: 16, bottom: 14 - 9, height: 44 }}
       >
         <span className={PLATE} style={{ left: 0, right: 0, top: 9, bottom: 9 }} />
+        {hasCrop ? (<>
         <button
           type="button"
           aria-label="View card details"
@@ -85,6 +95,7 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
           </span>
         </button>
         <span aria-hidden="true" className="relative" style={{ width: 1, height: 26, background: "var(--border-strong)" }} />
+        </>) : null}
         <button
           type="button"
           onClick={() => door.openSheet("desktop")}
@@ -102,6 +113,24 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
   // Phone: a 26px-wide vertical pair, swap over details, 53 tall, its bottom raised to 23 so the
   // lower half's 44px target clears the band's edge. Each half's target overhangs the plate by the
   // same 17.5px outward, so the two meet at the divider and neither covers the other.
+  if (!hasCrop) {
+    // No crop: the ⇄ half alone, as the icon-only trigger sits (26px plate, 44px target).
+    return (
+      <div data-testid="change-commander-door" className="absolute z-[2]" style={{ right: 16 - 9, bottom: 14 - 9, width: 44, height: 44 }}>
+        <span className={PLATE} style={{ left: 9, right: 9, top: 9, bottom: 9 }} />
+        <button
+          type="button"
+          aria-label={copy.door.aria}
+          onClick={() => door.openSheet("mobile")}
+          className="absolute inset-0 flex items-center justify-center bg-transparent p-0 text-[color:var(--fg)]"
+          style={{ cursor: "pointer" }}
+        >
+          <SwapGlyph />
+        </button>
+        <Sheet width="mobile" />
+      </div>
+    );
+  }
   const half = 53 / 2;
   // How far each 44px target reaches past its half of the plate; padding by it centres the
   // glyph on that half rather than on the target.
@@ -120,7 +149,8 @@ export function ChangeCommanderDoor({ oracleId, width }: { oracleId: string; wid
       />
       <button
         type="button"
-        aria-label={label}
+        // Icon only, so the handoff's one accessible name: `door.aria`.
+        aria-label={copy.door.aria}
         onClick={() => door.openSheet("mobile")}
         className="absolute flex items-center justify-center bg-transparent p-0 text-[color:var(--fg)]"
         style={{ left: 0, width: 44, top: half - 44, height: 44, paddingTop: overhang, cursor: "pointer" }}

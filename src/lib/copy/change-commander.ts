@@ -13,8 +13,9 @@
  *
  * The file's `plural` helper is not carried either: no string here uses it.
  *
- * One string is added: `sheet.close`, the close control's name, which every `ModalChrome` sheet
- * carries and the handoff's file does not.
+ * Three strings are added: `sheet.close`, the close control's name, which every `ModalChrome` sheet
+ * carries and the handoff's file does not; and `sheet.groupNote` / `groupNotePairBuy`, the group
+ * headings' right notes, which the canvas draws and the copy file omits.
  */
 export const changeCommanderCopy = {
   door: { single: "Change commander", pair: "Change pair", aria: "Change commander", menu: "Edit deck" },
@@ -31,6 +32,9 @@ export const changeCommanderCopy = {
       `${n} of your cards are counted. Basic lands and the staples every deck runs, like Sol Ring, are left out.`,
     groupYours: (n: number) => `Yours · ${n}`,
     groupBuy: (n: number) => `To buy · ${n}`,
+    // From the canvas's group headings (not in the handoff's copy file): each group's right note.
+    groupNote: "by figure",
+    groupNotePairBuy: "a half to buy",
     ownsNone: "You own none of them yet.",
     more: (step: number) => `Show ${step} more`,
     moreLeft: (n: number) => `${n} left`,

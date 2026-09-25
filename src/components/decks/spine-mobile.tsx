@@ -262,10 +262,9 @@ export function SpineMobile({
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
-        {/* §G — with no crop there is no printing to open. */}
-        {commander.artCropUri ? (
-          <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" />
-        ) : null}
+        {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
+            alone, or nothing with the switch off. */}
+        <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
 
         <div
           // The block the ramp is keyed to, hooked so a probe measures it rather

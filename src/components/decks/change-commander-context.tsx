@@ -22,6 +22,9 @@ type Door = {
   openFrom: DoorWidth | null;
   openSheet: (from: DoorWidth) => void;
   closeSheet: () => void;
+  /** Read out once a change lands. Held here, because the sheet that makes the change is gone by
+   *  the time a screen reader would read a live region inside it. */
+  announce: (text: string) => void;
 };
 
 const Context = createContext<Door | null>(null);
@@ -40,10 +43,17 @@ export function ChangeCommanderProvider({
   children: ReactNode;
 }) {
   const [openFrom, setOpenFrom] = useState<DoorWidth | null>(null);
+  const [announced, setAnnounced] = useState("");
   const value = useMemo(() => ({
     deckId, deckName, pair, hasVersion, openFrom,
     openSheet: (from: DoorWidth) => setOpenFrom(from),
     closeSheet: () => setOpenFrom(null),
+    announce: setAnnounced,
   }), [deckId, deckName, pair, hasVersion, openFrom]);
-  return <Context.Provider value={value}>{children}</Context.Provider>;
+  return (
+    <Context.Provider value={value}>
+      {children}
+      <span className="sr-only" aria-live="polite">{announced}</span>
+    </Context.Provider>
+  );
 }

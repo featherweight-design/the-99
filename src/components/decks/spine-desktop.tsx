@@ -225,11 +225,10 @@ export function SpineDesktop({
           colorIdentity={commander.colorIdentity}
         />
       </div>
-      {/* §G — with no crop there is no printing to open, so the pill is absent.
-          It is absolutely positioned, so its absence shifts nothing. */}
-      {commander.artCropUri ? (
-        <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" />
-      ) : null}
+      {/* §G — with no crop there is no printing to open, so the pill is absent (the door then
+          draws its ⇄ half alone, or nothing with the switch off). It is absolutely
+          positioned, so its absence shifts nothing. */}
+      <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
 
       <div
         // The inset switches on the same breakpoint the portrait does: 592 clears

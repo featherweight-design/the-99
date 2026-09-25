@@ -20,6 +20,8 @@ import { guildLabel } from "../../lib/copy/color-labels";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { changeCommander, readChangeCandidates } from "../../lib/commander-change/actions";
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
+import type { PriceFact } from "../../lib/decks/price";
+import { useChangeCommander } from "./change-commander-context";
 
 /** Show more's step, and To buy's first screen (handoff §2.5). */
 const STEP = 8;
@@ -101,7 +103,7 @@ export function ChangeCommanderSheet({
       <div ref={bodyRef} className="flex flex-col gap-[16px] px-[18px] pt-[16px] pb-[22px]">
         {phase.kind === "loading" ? <Loading pair={pair} /> : null}
         {phase.kind === "failed" ? (
-          <Failed onRetry={() => { setPhase({ kind: "loading" }); setAttempt((n) => n + 1); }} />
+          <Failed pair={pair} onRetry={() => { setPhase({ kind: "loading" }); setAttempt((n) => n + 1); }} />
         ) : null}
         {phase.kind === "ready" && chosen ? (
           <Confirm
@@ -127,11 +129,11 @@ export function ChangeCommanderSheet({
 function Lede({ pair, counted }: { pair: boolean; counted?: number }) {
   return (
     <div className="flex flex-col gap-[6px]">
-      <p className="text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+      <p className="text-[13.5px] leading-[1.55] text-pretty" style={{ color: "var(--fg-body)" }}>
         {pair ? copy.sheet.lede.pair : copy.sheet.lede.single}
       </p>
       {counted !== undefined ? (
-        <p className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+        <p className="font-mono text-[10.5px] leading-[1.55] text-pretty" style={{ color: "var(--fg-faint)" }}>
           {copy.sheet.counted(counted)}
         </p>
       ) : null}
@@ -141,30 +143,50 @@ function Lede({ pair, counted }: { pair: boolean; counted?: number }) {
 
 function Loading({ pair }: { pair: boolean }) {
   return (
-    <div role="status" className="flex flex-col gap-[16px]">
+    <div role="status" className="flex flex-col">
       <Lede pair={pair} />
-      <span className="sr-only">{copy.sheet.loading}</span>
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} aria-hidden="true" className="flex gap-[12px] py-[11px]" style={{ borderBottom: "1px solid var(--border)" }}>
-          <span className="rounded-[6px]" style={{ width: 56, height: 41, background: "var(--elevated)" }} />
-          <span className="flex flex-1 flex-col gap-[8px] pt-[4px]">
-            <span className="rounded-[4px]" style={{ width: "55%", height: 12, background: "var(--elevated)" }} />
-            <span className="rounded-[4px]" style={{ width: "35%", height: 10, background: "var(--elevated)" }} />
+      <p
+        className="mt-[16px] pb-[8px] font-mono text-[10.5px]"
+        style={{ color: "var(--fg-faint)", borderBottom: "1px solid var(--elevated)" }}
+      >
+        {copy.sheet.loading}
+      </p>
+      {[1, 0.8, 0.6, 0.4].map((opacity) => (
+        <div
+          key={opacity}
+          aria-hidden="true"
+          className="flex items-start gap-[12px] py-[12px]"
+          style={{ borderBottom: "1px solid var(--border)", opacity }}
+        >
+          <span className="flex-none rounded-[6px]" style={{ width: 56, height: 41, background: "var(--elevated)" }} />
+          <span className="flex flex-1 flex-col gap-[9px] pt-[3px]">
+            <span className="rounded-[3px]" style={{ width: "52%", height: 11, background: "var(--elevated)" }} />
+            <span className="rounded-[3px]" style={{ width: "34%", height: 9, background: "var(--elevated)" }} />
           </span>
+          <span className="flex-none rounded-[8px]" style={{ width: 76, height: 36, border: "1px solid var(--border)" }} />
         </div>
       ))}
     </div>
   );
 }
 
-function Failed({ onRetry }: { onRetry: () => void }) {
+function Failed({ pair, onRetry }: { pair: boolean; onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-[10px] py-[24px] text-center">
-      <span style={{ color: "var(--fg)", opacity: 0.3 }}><SwapGlyph size={56} /></span>
-      <h3 className="font-display text-[21px]" style={{ color: "var(--fg)" }}>{copy.sheet.failed.heading}</h3>
-      <p className="text-[13.5px]" style={{ color: "var(--fg-body)" }}>{copy.sheet.failed.body}</p>
-      <PrimaryButton className="min-h-[44px] px-[18px] text-[13px]" onClick={onRetry}>{copy.sheet.failed.cta}</PrimaryButton>
-    </div>
+    <>
+      <Lede pair={pair} />
+      <div role="alert" className="flex flex-col items-center px-[8px] pt-[30px] pb-[10px] text-center">
+        <span style={{ color: "var(--fg-muted)", opacity: 0.3 }}><SwapGlyph size={56} strokeWidth={1.4} /></span>
+        <h3 className="mt-[22px] font-display text-[21px] leading-[1.25] font-bold text-balance" style={{ color: "var(--fg)" }}>
+          {copy.sheet.failed.heading}
+        </h3>
+        <p className="mt-[11px] max-w-[460px] text-[13.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>
+          {copy.sheet.failed.body}
+        </p>
+        <PrimaryButton className="mt-[20px] min-h-[44px] rounded-[8px] px-[22px] text-[14.5px]" onClick={onRetry}>
+          {copy.sheet.failed.cta}
+        </PrimaryButton>
+      </div>
+    </>
   );
 }
 
@@ -193,13 +215,13 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   if (data.yours.length === 0 && data.toBuy.length === 0) {
     const identity = data.identity.length === 0 ? "colorless" : guildLabel(data.identity);
     return (
-      <div className="flex flex-col gap-[8px]">
-        <h3 className="text-[15px] font-semibold" style={{ color: "var(--fg)" }}>
+      <div className="flex flex-col gap-[10px] pt-[18px] pb-[6px]">
+        <h3 className="font-display text-[18px] leading-[1.3] font-bold" style={{ color: "var(--fg)" }}>
           {pair
             ? copy.sheet.nonePair.head(["no", "one", "two", "three", "four", "five"][data.identity.length])
             : copy.sheet.none.head(identity)}
         </h3>
-        <p className="text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+        <p className="text-[13.5px] leading-[1.6]" style={{ color: "var(--fg-muted)" }}>
           {pair ? copy.sheet.nonePair.body : copy.sheet.none.body}
         </p>
       </div>
@@ -226,7 +248,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
       <Lede pair={pair} counted={data.counted} />
       {data.yours.length > 0 ? (
         <section>
-          <GroupHeading label={copy.sheet.groupYours(data.yours.length)} />
+          <GroupHeading label={copy.sheet.groupYours(data.yours.length)} note={copy.sheet.groupNote} />
           {data.yours.map((c, i) => row(c, i))}
         </section>
       ) : (
@@ -234,16 +256,19 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
       )}
       {data.toBuy.length > 0 ? (
         <section ref={buyGroup}>
-          <GroupHeading label={copy.sheet.groupBuy(data.toBuy.length)} />
+          <GroupHeading
+            label={copy.sheet.groupBuy(data.toBuy.length)}
+            note={pair ? copy.sheet.groupNotePairBuy : copy.sheet.groupNote}
+          />
           {toBuy.map((c, i) => row(c, i))}
           {left > 0 ? (
-            <div className="flex min-h-[44px] items-center gap-[10px]">
+            <div className="flex min-h-[44px] items-center gap-[8px]">
               <button
                 type="button"
-                className="min-h-[44px] font-mono text-[11px] text-[color:var(--accent)] underline decoration-dotted"
+                className="min-h-[44px] font-mono text-[11px] text-[color:var(--accent)]"
                 onClick={() => { focusFrom.current = shown; setShown((n) => n + STEP); }}
               >
-                {copy.sheet.more(Math.min(STEP, left))}
+                <span style={{ borderBottom: "1px dotted var(--accent)" }}>{copy.sheet.more(Math.min(STEP, left))}</span>
               </button>
               <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{copy.sheet.moreLeft(left)}</span>
             </div>
@@ -254,27 +279,38 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   );
 }
 
-function GroupHeading({ label }: { label: string }) {
+function GroupHeading({ label, note }: { label: string; note: string }) {
   return (
-    <h3
-      className="pb-[6px] font-mono text-[10.5px] tracking-[0.16em] uppercase"
-      style={{ color: "var(--fg-faint)", borderBottom: "1px solid var(--elevated)" }}
+    <div
+      className="flex items-baseline justify-between gap-[10px] pb-[8px]"
+      style={{ borderBottom: "1px solid var(--elevated)" }}
     >
-      {label}
-    </h3>
+      <h3 className="font-mono text-[10.5px] tracking-[0.16em] uppercase" style={{ color: "var(--fg-faint)" }}>
+        {label}
+      </h3>
+      <span className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>{note}</span>
+    </div>
   );
 }
 
 function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | null }) {
   if (half.inDeck) {
-    return <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>{copy.sheet.inDeck}</span>;
+    // `in this deck · trades places`, its separator in `--border-strong` as the handoff draws it.
+    const [where, what] = copy.sheet.inDeck.split(" · ");
+    return (
+      <span className="flex-none font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>
+        {where}
+        <span className="px-[4px]" style={{ color: "var(--border-strong)" }}>·</span>
+        {what}
+      </span>
+    );
   }
   if (!half.owned) return <BuyTag variant="row" price={half.price} newestAsOf={newestAsOf} />;
   // Owned, but the claim read failed: the group still says it is yours, and no mark is drawn.
   if (!half.availability) return null;
   if (half.availability.free > 0) {
     return (
-      <span className="inline-flex items-center gap-[5px] font-mono text-[10.5px]" style={{ color: "var(--fg-body)" }}>
+      <span className="inline-flex flex-none items-center gap-[6px] font-mono text-[10.5px]" style={{ color: "var(--fg-body)" }}>
         <span aria-hidden="true" className="rounded-full" style={{ width: 6, height: 6, background: "var(--success)" }} />
         {copy.sheet.free}
       </span>
@@ -287,14 +323,20 @@ function Thumb({ halves }: { halves: CandidateHalf[] }) {
   return (
     <span
       aria-hidden="true"
-      className="flex flex-none overflow-hidden rounded-[6px] border border-[color:var(--border-strong)]"
-      style={{ width: 56, height: 41, gap: halves.length > 1 ? 1 : 0, background: "var(--bg)" }}
+      className="mt-[1px] flex flex-none overflow-hidden rounded-[6px] border border-[color:var(--border-strong)]"
+      style={{ width: 56, height: 41 }}
     >
-      {halves.map((h) => (
+      {halves.map((h, i) => (
         <span
           key={h.oracleId}
-          className="block h-full flex-1 bg-cover bg-center"
-          style={{ backgroundColor: "var(--elevated)", backgroundImage: h.artCropUri ? cssUrl(h.artCropUri) : undefined }}
+          className="block h-full bg-cover bg-center"
+          style={{
+            // A pair splits the thumb 28/28, the seam a 1px `--bg` rule on the second half.
+            width: halves.length > 1 ? 28 : "100%",
+            borderLeft: i > 0 ? "1px solid var(--bg)" : undefined,
+            backgroundColor: "var(--elevated)",
+            backgroundImage: h.artCropUri ? cssUrl(h.artCropUri) : undefined,
+          }}
         />
       ))}
     </span>
@@ -304,14 +346,16 @@ function Thumb({ halves }: { halves: CandidateHalf[] }) {
 function ManaValue({ halves, current }: { halves: CandidateHalf[]; current: { cmc: number; name: string } }) {
   const mv = halves.reduce((n, h) => n + h.cmc, 0);
   return (
-    <span className="flex flex-wrap items-center gap-x-[6px] gap-y-[2px]">
+    <span className="flex min-h-[16px] flex-wrap items-center gap-x-[8px] gap-y-[3px]">
       {halves.map((h, i) => (
-        <span key={h.oracleId} className="inline-flex items-center gap-[6px]">
-          {i > 0 ? <span style={{ color: "var(--fg-faint)" }}>+</span> : null}
-          <CostPips cost={h.manaCost} size={13} />
+        <span key={h.oracleId} className="inline-flex items-center">
+          {i > 0 ? (
+            <span className="px-[3px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>+</span>
+          ) : null}
+          <CostPips cost={h.manaCost} size={13} className="flex-none items-center" />
         </span>
       ))}
-      <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
+      <span className="font-mono text-[11px] leading-[1.4]" style={{ color: "var(--fg-muted)" }}>
         {copy.sheet.manaValueRel(mv, current.cmc, current.name)}
       </span>
     </span>
@@ -335,47 +379,47 @@ function Row({
   const name = joinShort(candidate.halves.map((h) => h.name));
   const panelId = `change-commander-fit-${index}-${lead.oracleId}`;
   return (
-    <div data-testid="change-commander-row" className="py-[11px]" style={{ borderBottom: "1px solid var(--border)" }}>
-      <div className="flex gap-[12px]">
+    <div data-testid="change-commander-row" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="flex items-start gap-[12px] py-[11px]">
         <Thumb halves={candidate.halves} />
-        <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
+        <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
           {candidate.halves.map((h, i) => (
-            <div key={h.oracleId} className="flex flex-wrap items-baseline gap-x-[9px] gap-y-[2px]">
-              <span className="inline-flex items-baseline gap-[6px]">
-                {i > 0 ? <span style={{ color: "var(--fg-faint)" }}>+</span> : null}
-                <CardDetailTrigger
-                  oracleId={h.oracleId}
-                  name={h.name}
-                  siblings={siblings}
-                  className="text-left text-[14px] font-semibold"
-                  style={{ color: "var(--fg)", borderBottom: "1px solid var(--border-strong)" }}
-                >
-                  {h.name}
-                </CardDetailTrigger>
-              </span>
+            <div key={h.oracleId} className="flex min-w-0 flex-wrap items-baseline gap-x-[9px] gap-y-[3px]">
+              {i > 0 ? (
+                <span aria-hidden="true" className="mr-[-4px] text-[13px]" style={{ color: "var(--fg-faint)" }}>+</span>
+              ) : null}
+              <CardDetailTrigger
+                oracleId={h.oracleId}
+                name={h.name}
+                siblings={siblings}
+                className="min-w-0 text-left text-[14px] leading-[1.3] font-semibold"
+                style={{ color: "var(--fg)", borderBottom: "1px solid var(--border-strong)" }}
+              >
+                {h.name}
+              </CardDetailTrigger>
               <Mark half={h} newestAsOf={newestAsOf} />
             </div>
           ))}
           <ManaValue halves={candidate.halves} current={current} />
-          <div className="mt-[2px] flex flex-wrap items-center justify-between gap-[8px]">
+          <div className="mt-[2px] flex flex-wrap items-center justify-between gap-x-[12px] gap-y-[6px]">
             <button
               type="button"
               aria-expanded={open}
               aria-controls={panelId}
               aria-label={copy.sheet.figureAria(candidate.fit.n, candidate.fit.of, name)}
               onClick={onToggle}
-              className="relative flex h-[36px] items-center gap-[5px] font-mono text-[12px] text-[color:var(--fg-body)] after:absolute after:-inset-y-[4px] after:inset-x-0"
+              className="relative inline-flex h-[36px] cursor-pointer items-center gap-[7px] font-mono text-[12px] text-[color:var(--fg-body)] after:absolute after:-inset-y-[4px] after:inset-x-0"
             >
-              <span className="underline decoration-dotted" style={{ textDecorationColor: "var(--fg-faint)" }}>
+              <span style={{ borderBottom: "1px dotted var(--fg-faint)" }}>
                 {copy.sheet.figure(candidate.fit.n, candidate.fit.of, pair)}
               </span>
-              <span aria-hidden="true" className="text-[10px]">{open ? "▴" : "▾"}</span>
+              <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{open ? "▴" : "▾"}</span>
             </button>
             <GhostButton
               data-choose=""
               aria-label={copy.sheet.chooseAria(name)}
               onClick={onChoose}
-              className="relative h-[36px] px-[14px] text-[12.5px] font-semibold after:absolute after:-inset-y-[4px] after:inset-x-0"
+              className="relative ml-auto h-[36px] px-[14px] text-[12.5px] font-semibold after:absolute after:-inset-y-[4px] after:inset-x-0"
             >
               {copy.sheet.choose}
             </GhostButton>
@@ -385,20 +429,20 @@ function Row({
       {open ? (
         <div
           id={panelId}
-          className="mt-[8px] ml-[68px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[11px] pb-[13px]"
+          className="mb-[12px] ml-[68px] flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[11px] pb-[13px]"
           style={{ background: "var(--surface-sunken)" }}
         >
-          <p className="mb-[8px] font-mono text-[10px] uppercase" style={{ color: "var(--fg-faint)" }}>
+          <p className="font-mono text-[10px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
             {copy.sheet.expandCaption(candidate.fit.n, name)}
           </p>
-          <div className="grid grid-cols-2 gap-x-[12px] gap-y-[4px] md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-[14px] md:grid-cols-3">
             {candidate.matched.map((m) => (
               <CardDetailTrigger
                 key={m.oracleId}
                 oracleId={m.oracleId}
                 name={m.name}
                 siblings={candidate.matched.map((x) => x.oracleId)}
-                className="text-left text-[12.5px]"
+                className="min-w-0 truncate py-[3px] text-left text-[12.5px] leading-[1.35]"
                 style={{ color: "var(--fg-body)" }}
               >
                 {m.name}
@@ -412,16 +456,17 @@ function Row({
 }
 
 function Plate({
-  cards, label, tone, compare,
+  cards, label, tone, compare, pair,
 }: {
   cards: { oracleId: string; name: string; imageUri: string | null; manaCost: string | null }[];
   label: string;
   tone: "out" | "in";
   compare?: string;
+  pair: boolean;
 }) {
   const one = cards.length === 1;
   return (
-    <div className="flex flex-col items-center gap-[8px]">
+    <div className="flex min-w-0 flex-col items-center gap-[8px]">
       <span
         className="font-mono text-[10px] tracking-[0.12em] uppercase"
         style={{ color: tone === "out" ? "var(--warning)" : "var(--success)" }}
@@ -445,16 +490,47 @@ function Plate({
                 backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
               }}
             />
-            <span className="text-center text-[11.5px] leading-[1.3]" style={{ color: "var(--fg-body)" }}>{c.name}</span>
+            <span className="text-center text-[11.5px] leading-[1.3]" style={{ color: "var(--fg-body)" }}>
+              {pair ? shortName(c.name) : c.name}
+            </span>
           </CardDetailTrigger>
         ))}
       </div>
-      <span className="flex flex-wrap items-center justify-center gap-[6px]">
-        {cards.map((c) => <CostPips key={c.oracleId} cost={c.manaCost} size={13} />)}
-      </span>
-      {compare ? <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{compare}</span> : null}
+      <div className="flex flex-col items-center gap-[4px]">
+        <span className="flex flex-wrap items-center justify-center">
+          {cards.map((c, i) => (
+            <span key={c.oracleId} className="inline-flex items-center">
+              {i > 0 ? (
+                <span className="px-[3px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>+</span>
+              ) : null}
+              <CostPips cost={c.manaCost} size={13} className="flex-none items-center" />
+            </span>
+          ))}
+        </span>
+        {compare ? (
+          <span className="text-center font-mono text-[11px] leading-[1.4]" style={{ color: "var(--fg-muted)" }}>{compare}</span>
+        ) : null}
+      </div>
     </div>
   );
+}
+
+/**
+ * The buy line's one price: the halves to buy summed (handoff §3). Summed only when every half
+ * carries a live price for its normal printing; a sold-out, foil-only or unpriced half has no
+ * figure to add, and a sum over it would quote a price the feed never gave. Null then, and the
+ * line draws a tag per half instead.
+ */
+export function summedPrice(halves: CandidateHalf[], newestAsOf: Date | null): PriceFact | null {
+  if (halves.length < 2 || newestAsOf === null) return null;
+  const live = halves.every((h) => h.price !== null && h.price.cents !== null && h.price.asOf.getTime() === newestAsOf.getTime());
+  if (!live) return null;
+  return {
+    cents: halves.reduce((n, h) => n + (h.price!.cents ?? 0), 0),
+    foilCents: null,
+    etchedCents: null,
+    asOf: newestAsOf,
+  };
 }
 
 function Confirm({
@@ -469,9 +545,9 @@ function Confirm({
   onDone: () => void;
 }) {
   const router = useRouter();
+  const door = useChangeCommander();
   const [writing, setWriting] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [announced, setAnnounced] = useState("");
   const trade = isTrade(candidate);
   const body = pair ? 98 : 99;
   const olds = data.current;
@@ -479,6 +555,7 @@ function Confirm({
   const oldShort = joinShort(olds.map((c) => c.name));
   const nuShort = joinShort(nus.map((c) => c.name));
   const toBuy = nus.filter((h) => !h.inDeck && !h.owned);
+  const summed = summedPrice(toBuy, data.newestAsOf);
 
   const sentence = trade
     ? copy.confirm.trade(nuShort, oldShort, body)
@@ -502,7 +579,8 @@ function Confirm({
         setFailed(true);
         return;
       }
-      setAnnounced(copy.confirm.announced(nuShort));
+      // Announced from the provider: this sheet is gone by the time a reader would hear it.
+      door?.announce(copy.confirm.announced(nuShort));
       router.refresh();
       onDone();
     } catch {
@@ -513,21 +591,23 @@ function Confirm({
   };
 
   return (
-    <div className="flex flex-col gap-[16px]">
+    <div className="flex min-h-full flex-col gap-[16px]">
       <button
         type="button"
         onClick={onBack}
-        className="min-h-[44px] self-start font-mono text-[11px] text-[color:var(--fg-faint)]"
+        // 44px rather than the canvas's 32: the touch floor every control in the app keeps.
+        className="inline-flex min-h-[44px] items-center gap-[7px] self-start font-mono text-[11px] text-[color:var(--fg-faint)]"
       >
         {copy.confirm.back}
       </button>
-      <div className="flex items-start justify-center gap-[14px]">
+      <div className="flex items-start justify-center gap-[14px] pt-[4px] pb-[2px]">
         <Plate
           cards={olds.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, manaCost: c.manaCost }))}
           label={trade ? copy.confirm.tradeOut : pair ? copy.confirm.outPair : copy.confirm.out}
           tone="out"
+          pair={pair}
         />
-        <span aria-hidden="true" className="self-center font-mono text-[18px]" style={{ color: "var(--fg-faint)" }}>
+        <span aria-hidden="true" className="mt-[-30px] flex-none self-center font-mono text-[18px]" style={{ color: "var(--fg-faint)" }}>
           {trade ? "⇄" : "→"}
         </span>
         <Plate
@@ -535,38 +615,50 @@ function Confirm({
           label={trade ? copy.confirm.tradeIn : pair ? copy.confirm.inPair : copy.confirm.in}
           tone="in"
           compare={copy.sheet.manaValueRel(mv, oldMv, oldShort)}
+          pair={pair}
         />
       </div>
-      <p className="border-t border-[color:var(--border)] pt-[14px] text-[14px] leading-[1.6]" style={{ color: "var(--fg)" }}>
-        {sentence}
-      </p>
-      {toBuy.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
-          <span>{copy.confirm.buy(joinShort(toBuy.map((h) => h.name)))}</span>
-          {toBuy.map((h) => <BuyTag key={h.oracleId} variant="row" price={h.price} newestAsOf={data.newestAsOf} />)}
-        </div>
-      ) : null}
-      <p className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{lands}</p>
-      <div className="flex flex-col gap-[8px] md:flex-row">
-        <PrimaryButton className="min-h-[44px] px-[18px] text-[13px]" onClick={make} aria-busy={writing}>
-          <span style={{ opacity: writing ? 0.6 : 1 }}>
-            {writing
-              ? copy.confirm.pending
-              : failed
-                ? copy.confirm.failedRetry
-                : pair
-                  ? copy.confirm.ctaPair(shortName(nus[0].name), shortName(nus[1].name))
-                  : copy.confirm.cta(nuShort)}
-          </span>
+      <div className="flex flex-col gap-[9px] pt-[12px]" style={{ borderTop: "1px solid var(--border)" }}>
+        <p className="text-[14px] leading-[1.6] text-pretty" style={{ color: "var(--fg)" }}>{sentence}</p>
+        {toBuy.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-[8px] text-[13px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+            <span>{copy.confirm.buy(joinShort(toBuy.map((h) => h.name)))}</span>
+            {summed ? (
+              <BuyTag variant="row" price={summed} newestAsOf={data.newestAsOf} />
+            ) : (
+              toBuy.map((h) => <BuyTag key={h.oracleId} variant="row" price={h.price} newestAsOf={data.newestAsOf} />)
+            )}
+          </div>
+        ) : null}
+        <p className="font-mono text-[10.5px] leading-[1.6] text-pretty" style={{ color: "var(--fg-faint)" }}>{lands}</p>
+      </div>
+      <div className="mt-auto flex flex-col gap-[8px] md:mt-0 md:flex-row md:items-center md:gap-[10px] md:pt-[4px]">
+        <PrimaryButton
+          // The whole button dims while it writes, and is never disabled (STATES 17).
+          className={"min-h-[44px] rounded-[8px] px-[20px] text-[14px]" + (writing ? " opacity-60" : "")}
+          onClick={make}
+          aria-busy={writing}
+        >
+          {writing
+            ? copy.confirm.pending
+            : failed
+              ? copy.confirm.failedRetry
+              : pair
+                ? copy.confirm.ctaPair(shortName(nus[0].name), shortName(nus[1].name))
+                : copy.confirm.cta(nuShort)}
         </PrimaryButton>
-        <GhostButton className="min-h-[44px] px-[18px] text-[13px]" onClick={onBack}>{copy.confirm.backList}</GhostButton>
+        <GhostButton
+          className="min-h-[44px] rounded-[8px] px-[18px] text-[13.5px] font-medium text-[color:var(--fg-muted)]"
+          onClick={onBack}
+        >
+          {copy.confirm.backList}
+        </GhostButton>
       </div>
       {failed ? (
-        <p role="alert" className="font-mono text-[11px]" style={{ color: "var(--danger)" }}>
+        <p role="alert" className="font-mono text-[11px] leading-[1.55]" style={{ color: "var(--danger)" }}>
           {copy.confirm.failed(oldShort)}
         </p>
       ) : null}
-      <span className="sr-only" aria-live="polite">{announced}</span>
     </div>
   );
 }
