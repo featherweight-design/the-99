@@ -49,7 +49,7 @@ export function counts(row: LedgerRow, now: Date): boolean {
   return false;
 }
 
-export type ModelFeature = "tuning" | "synopsis";
+export type ModelFeature = "tuning" | "synopsis" | "intake";
 
 export type Allowance = {
   used: number;
