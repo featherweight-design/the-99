@@ -1,6 +1,7 @@
 import { colorNames } from "../copy/color-labels";
 import { BRACKET_NAMES } from "../copy/deck-analysis";
 import { helpMeChooseCopy as copy } from "../copy/help-me-choose";
+import type { Chip } from "./match";
 import type { ChooseParams } from "./params";
 import type { AnswerKey, SearchResult } from "./rank";
 import type { ResultRow } from "./rows";
@@ -123,11 +124,27 @@ export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
 }
 
 /**
- * The deeper marks the page may draw: `d` is cosmetic, and honored only when `r` named the reader's
- * own delivered read (`loadOwnRead`). Any other address, forged or stale, marks nothing.
+ * The deeper marks the page may draw. `d` is honored only when `r` named the reader's own delivered
+ * read (`loadOwnRead`), and then only mark by mark: each must name an answer that read actually
+ * gave AND that the answers still hold. So an address with `d` appended, or `r` reused under other
+ * answers, marks nothing the read did not add.
  */
-export function verifiedDeeperMarks(p: ChooseParams, settled: { kind: "read" | "nothing" } | null): string[] {
-  return settled?.kind === "read" ? p.deeper : [];
+export function verifiedDeeperMarks(
+  p: ChooseParams,
+  settled: { kind: "read" | "nothing"; read: { chips: readonly Chip[] } } | null,
+): string[] {
+  if (settled?.kind !== "read") return [];
+  const chips = settled.read.chips;
+  return p.deeper.filter((m) => {
+    if (m.startsWith("t:")) {
+      const slug = m.slice(2);
+      return p.themes.includes(slug) && chips.some((c) => c.kind === "theme" && c.slug === slug);
+    }
+    if (m === "a") return p.card !== null && chips.some((c) => c.kind === "card" && c.oracleId === p.card);
+    if (m === "b") return p.budgetDollars !== null && chips.some((c) => c.kind === "budget" && c.dollars === p.budgetDollars);
+    if (m === "k") return p.bracket !== null && chips.some((c) => c.kind === "bracket" && c.bracket === p.bracket);
+    return false;
+  });
 }
 
 export type AnswerChip = { kind: string; value: string; /** Added by the deeper look (`d`). */ deeper: boolean };

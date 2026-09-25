@@ -89,10 +89,27 @@ describe("answerChips", () => {
 });
 
 describe("verifiedDeeperMarks", () => {
+  const CARD = "0000aaaa-0000-4000-8000-000000000001";
+  const read = { chips: [
+    { kind: "theme", slug: "dinos", label: "Dinosaurs" },
+    { kind: "card", oracleId: CARD, name: "Regisaur Alpha" },
+    { kind: "budget", dollars: 150 },
+    { kind: "bracket", bracket: 3 },
+  ] as const };
+
   it("honors d only when r named the reader's own delivered read", () => {
-    const q = p({ deeper: ["t:dinos", "a"] });
-    expect(verifiedDeeperMarks(q, { kind: "read" })).toEqual(["t:dinos", "a"]);
+    const q = p({ themes: ["dinos"], card: CARD, deeper: ["t:dinos", "a"] });
+    expect(verifiedDeeperMarks(q, { kind: "read", read })).toEqual(["t:dinos", "a"]);
     expect(verifiedDeeperMarks(q, null)).toEqual([]);
-    expect(verifiedDeeperMarks(q, { kind: "nothing" })).toEqual([]);
+    expect(verifiedDeeperMarks(q, { kind: "nothing", read })).toEqual([]);
+  });
+
+  it("marks only what that read gave and the answers still hold, so an appended d marks nothing", () => {
+    const all = p({ themes: ["dinos", "tokens"], card: CARD, budgetDollars: 150, bracket: 3, deeper: ["t:dinos", "t:tokens", "a", "b", "k"] });
+    // Tokens was never in the read: a forged mark.
+    expect(verifiedDeeperMarks(all, { kind: "read", read })).toEqual(["t:dinos", "a", "b", "k"]);
+    // The same r reused under other answers: the read gave $150 and bracket 3, not these.
+    const moved = p({ budgetDollars: 90, bracket: 2, deeper: ["b", "k", "t:dinos"] });
+    expect(verifiedDeeperMarks(moved, { kind: "read", read })).toEqual([]);
   });
 });

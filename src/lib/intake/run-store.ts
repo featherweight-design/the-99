@@ -79,6 +79,12 @@ async function lockAsks(tx: Tx, userId: string): Promise<void> {
 /** How long an early Stop is kept for its press to find: far past any start's wait for the lock. */
 const STOP_KEPT_MS = 24 * 60 * 60 * 1000;
 
+/** This player's early stops past keeping: no start still waiting could be looking for them. */
+async function purgeStops(tx: Tx, userId: string, now: Date): Promise<void> {
+  await tx.delete(intakeReadStops)
+    .where(and(eq(intakeReadStops.userId, userId), lt(intakeReadStops.createdAt, new Date(now.getTime() - STOP_KEPT_MS))));
+}
+
 class StoppedEarly extends Error {}
 
 class StoredFound extends Error {
@@ -157,8 +163,7 @@ export async function startRead(
       // A Stop that beat this start to the database (`cancelRead` left its id): nothing is
       // reserved, so nothing is spent. Older stops go in passing; a press's id is used once.
       if (opts.readId) {
-        await tx.delete(intakeReadStops)
-          .where(and(eq(intakeReadStops.userId, userId), lt(intakeReadStops.createdAt, new Date(now.getTime() - STOP_KEPT_MS))));
+        await purgeStops(tx, userId, now);
         const [early] = await tx.select({ id: intakeReadStops.readId }).from(intakeReadStops)
           .where(and(eq(intakeReadStops.readId, opts.readId), eq(intakeReadStops.userId, userId)));
         if (early) throw new StoppedEarly();
@@ -255,6 +260,10 @@ export async function cancelRead(readId: string, userId: string): Promise<boolea
     // for that start to find, so it refuses before reserving and the player is never charged.
     const [exists] = await tx.select({ id: intakeReads.id }).from(intakeReads).where(eq(intakeReads.id, readId));
     if (exists) return false;
+    // Purged here as well as at a start: a player who presses Stop early and never starts another
+    // look would otherwise leave every such stop behind for good.
+    await purgeStops(tx, userId, new Date());
+    // Keyed by player and id, so a conflict is this player's own earlier stop, which still stands.
     await tx.insert(intakeReadStops).values({ readId, userId }).onConflictDoNothing();
     return true;
   });

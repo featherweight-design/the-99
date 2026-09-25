@@ -1,5 +1,5 @@
 {
-  "id": "4922de3c-db3a-4983-8bd6-95ff76d105b5",
+  "id": "e676e20d-4436-46de-af1c-e01c71d79221",
   "prevId": "a1c4ba49-c361-4fa8-9768-643c3a36c31c",
   "version": "7",
   "dialect": "postgresql",
@@ -3988,7 +3988,7 @@
         "read_id": {
           "name": "read_id",
           "type": "uuid",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "user_id": {
@@ -4029,7 +4029,15 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "intake_read_stops_user_id_read_id_pk": {
+          "name": "intake_read_stops_user_id_read_id_pk",
+          "columns": [
+            "user_id",
+            "read_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
