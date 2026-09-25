@@ -13,7 +13,7 @@ export type SheetState =
   | { kind: "firstRun" }
   | { kind: "behind"; entries: { id: string; title: string }[] };
 
-export function readSheetState(h: Headers): SheetState {
+export function readSheetState(h: Pick<Headers, "get">): SheetState {
   const raw = h.get(SHEET_HEADER);
   // The proxy writes a bare non-negative integer. Anything else is not its
   // decision, and draws nothing rather than a sheet built from a guess.
