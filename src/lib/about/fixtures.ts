@@ -37,6 +37,10 @@ import { identityGradient } from "../collection/gradients";
 // Study` are cards a Commander player reads without stopping.
 
 import type { Availability } from "../decks/availability";
+import type { FitDeck } from "../swaps/fits";
+import type { SheetGroup } from "../swaps/sheet-model";
+import { drawbackText } from "../swaps/sheet-model";
+import { swapToolsCopy } from "../copy/swap-tools";
 import { emptyParams, type ChooseParams } from "../intake/params";
 import type { ResultRow } from "../intake/rows";
 import type { TrialFigures } from "../intake/trial";
@@ -1803,4 +1807,69 @@ export const CHOOSE = {
       trial: { body: 99, owned: 52, buyCents: 6_400, unpricedCard: null } satisfies TrialFigures,
     },
   ],
+};
+
+/**
+ * `fits-your-decks` — Find a deck for it, opened on Ashnod's Altar: one deck it completes a combo in,
+ * one whose sacrifice theme it joins, and one that already holds it.
+ *
+ * Not Design's card. The canvas draws Basalt Monolith joining an "artifacts" theme, and the shipped
+ * themes (`src/lib/recs/themes.ts`) have none; Basalt Monolith joins no shipped theme at all, so its
+ * theme row could not be drawn truthfully. Ashnod's Altar is a sacrifice outlet, which is a theme,
+ * and it has a well-known combo partner, so both reasons are real. The rows keep the shipped order
+ * (`shapeFits`): the combo first, then the theme.
+ */
+export const FITS = {
+  card: { name: "Ashnod's Altar", imageUri: null, colorIdentity: [] as string[] },
+  owned: 1,
+  free: 1,
+  rows: [
+    {
+      id: "about-fits-chainer",
+      name: "HD - Chainer",
+      commanders: ["Chainer, Nightmare Adept"],
+      need: { role: "ramp", have: 9, target: 10 },
+      reason: { kind: "combo", with: { oracleId: "about-nim-deathmantle", name: "Nim Deathmantle" } },
+    },
+    {
+      id: "about-fits-korvold",
+      name: "HD - Korvold",
+      commanders: ["Korvold, Fae-Cursed King"],
+      need: { role: "ramp", have: 7, target: 10 },
+      reason: { kind: "theme", theme: "sacOutlet", n: 11 },
+    },
+  ] satisfies FitDeck[],
+  holds: [{ id: "about-fits-tymna", name: "HD - Tymna + Thrasios", quantity: 1 }],
+};
+
+/**
+ * `stand-ins` — Shopping's limit line over one row it marks, then the first group of that row's
+ * stand-ins. Design's fixture: Plateau at $293.84 in HD - Gishath, six cards to buy with one over
+ * the limit, and the same-type lands group, eight long, showing three before `Show all`.
+ *
+ * The group's strings are the sheet's own builders (`swapToolsCopy.sheet`, `drawbackText`), so the
+ * heading, the order note and each mana line are what the sheet would print for these lands.
+ * Sacred Foundry's price is the condition itself, so it carries no separate cost (the copy's rule).
+ */
+const sheet = swapToolsCopy.sheet;
+const WR = "white and red";
+export const STAND_INS = {
+  deckName: "HD - Gishath",
+  shoppingCount: 6,
+  overCount: 1,
+  group: {
+    heading: sheet.groupSameType("lands"),
+    order: sheet.orderBestMana,
+    noun: "lands",
+    // Ladder order (`landRung`): untapped on a condition or for life, then tapped. Within a rung the
+    // sheet orders by synergy, then price; these follow the ladder and claim no synergy figure.
+    rows: [
+      { name: "Sacred Foundry", free: true, cents: null, body: [sheet.mana.line(WR, sheet.mana.untappedIf("you pay 2 life"))], muted: [] },
+      { name: "Battlefield Forge", free: true, cents: null, body: [sheet.mana.line(WR, sheet.mana.untapped)], muted: [drawbackText({ kind: "damage", amount: 1, colors: [] }, ["W", "R"])] },
+      { name: "Sunbaked Canyon", free: false, cents: 112, body: [sheet.mana.line(WR, sheet.mana.untapped)], muted: [drawbackText({ kind: "life", amount: 1, colors: [] }, ["W", "R"])] },
+      { name: "Clifftop Retreat", free: false, cents: 150, body: [sheet.mana.line(WR, sheet.mana.untappedWith("a Mountain or a Plains"))], muted: [] },
+      { name: "Needle Spires", free: false, cents: 25, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
+      { name: "Wind-Scarred Crag", free: false, cents: 15, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
+    ].map((r, i) => ({ oracleId: `about-stand-in-${i}`, imageUri: null, soft: 0, foilOnly: false, ...r })),
+  } satisfies SheetGroup,
 };

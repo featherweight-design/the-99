@@ -4,7 +4,7 @@ import { sheetCookieValue, sheetDecision } from "./gate";
 import { readSheetState } from "./sheet-state";
 import { isSeen, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -34,6 +34,8 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
       ["help-me-choose", "HELP_ME_CHOOSE_ENABLED"],
       ["locked-cards", "NEVER_CUT_ENABLED"],
+      ["fits-your-decks", "SWAP_TOOLS_ENABLED"],
+      ["stand-ins", "SWAP_TOOLS_ENABLED"],
       ["change-commander", "CHANGE_COMMANDER_ENABLED"],
     ]);
     expect(Math.max(...unswitched.map((e) => e.since))).toBe(ABOUT_VERSION);
@@ -74,10 +76,12 @@ describe("an entry tied to a switch", () => {
     // The shipped launch entries carry `since` equal to ABOUT_VERSION, which every returning
     // reader has reached. Were the version floor applied to them, a flip would announce nothing.
     const launch = aboutEntries.filter((e) => e.switch);
-    expect(launch.map((e) => e.since)).toEqual([ABOUT_VERSION, ABOUT_VERSION, ABOUT_VERSION]);
+    expect(launch.map((e) => e.since)).toEqual(launch.map(() => ABOUT_VERSION));
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "help-me-choose",
       "locked-cards",
+      "fits-your-decks",
+      "stand-ins",
       "change-commander",
     ]);
   });

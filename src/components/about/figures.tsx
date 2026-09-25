@@ -45,6 +45,8 @@ import {
   LockedCardsFigureBody,
   ChangeCommanderFigureBody,
   HelpMeChooseFigureBody,
+  FitsYourDecksFigureBody,
+  StandInsFigureBody,
   CardDetailFigureBody,
   CommanderLaneFigureBody,
   DiscoverFigureBody,
@@ -890,6 +892,22 @@ function HelpMeChooseFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function FitsYourDecksFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="fits-your-decks" width={width}>
+      <FitsYourDecksFigureBody />
+    </Specimen>
+  );
+}
+
+function StandInsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="stand-ins" width={width}>
+      <StandInsFigureBody />
+    </Specimen>
+  );
+}
+
 
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
@@ -928,6 +946,8 @@ export const FIGURES: Partial<
   "locked-cards": LockedCardsFigure,
   "change-commander": ChangeCommanderFigure,
   "help-me-choose": HelpMeChooseFigure,
+  "fits-your-decks": FitsYourDecksFigure,
+  "stand-ins": StandInsFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,
