@@ -6,7 +6,7 @@
  * surface reading `null` draws nothing of the swap tools. That is how the flag reaches a row
  * without threading a prop through every component between the page and it.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 import type { DeckDetailCard } from "../decks/grouping";
 import { effectiveLimit } from "./limit";
@@ -70,28 +70,29 @@ export function SwapToolsProvider({
   storedLimitCents: number | null;
   children: ReactNode;
 }) {
-  const [receipts, setReceipts] = useState<SwapReceipt[]>([]);
-  const [standIns, setStandIns] = useState<DeckDetailCard | null>(null);
   // The builder survives a client navigation from one deck to another, and so does this provider.
-  // A receipt and an open sheet belong to the deck they were made on, so both are dropped when the
-  // deck changes: adjusted during render, so deck B never paints once with deck A's.
-  const [forDeck, setForDeck] = useState(deckId);
-  if (forDeck !== deckId) {
-    setForDeck(deckId);
-    setReceipts([]);
+  // A receipt belongs to the deck its take was made on, so the list is held WITH its deck: a new deck
+  // starts an empty list during render (deck B never paints once with deck A's), and a take that lands
+  // afterwards is checked inside the state update, against the deck the list is for at that moment.
+  // A ref updated after render would leave a window where a late take still passes.
+  const [held, setHeld] = useState<{ deckId: string; receipts: SwapReceipt[] }>({ deckId, receipts: [] });
+  const [standIns, setStandIns] = useState<DeckDetailCard | null>(null);
+  if (held.deckId !== deckId) {
+    setHeld({ deckId, receipts: [] });
     setStandIns(null);
   }
+  const receipts = held.receipts;
   const closeStandIns = useCallback(() => setStandIns(null), []);
   const [announcement, setAnnouncement] = useState("");
-  const deckRef = useRef(deckId);
-  useEffect(() => {
-    deckRef.current = deckId;
-  }, [deckId]);
-  const addReceipt = useCallback((r: SwapReceipt) => {
-    if (r.deckId !== deckRef.current) return;
-    setReceipts((all) => [...all.filter((x) => x.swapId !== r.swapId), r]);
-  }, []);
-  const dropReceipt = useCallback((swapId: string) => setReceipts((all) => all.filter((x) => x.swapId !== swapId)), []);
+  const addReceipt = useCallback(
+    (r: SwapReceipt) =>
+      setHeld((h) => (r.deckId !== h.deckId ? h : { ...h, receipts: [...h.receipts.filter((x) => x.swapId !== r.swapId), r] })),
+    [],
+  );
+  const dropReceipt = useCallback(
+    (swapId: string) => setHeld((h) => ({ ...h, receipts: h.receipts.filter((x) => x.swapId !== swapId) })),
+    [],
+  );
   const value = useMemo(
     () => ({
       deckId, deckName, storedLimitCents, limitCents: effectiveLimit(storedLimitCents),
