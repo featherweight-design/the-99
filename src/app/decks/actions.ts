@@ -357,6 +357,9 @@ export async function createDeck(
           // `validateCardForDeck` admits one. This action is directly callable, so the rule holds
           // here too: a basic named as the answer is dropped, neither placed nor stored.
           .then((rows) => rows.filter((c) => !(c.oracleId === asked?.cardOracleId && isBasicLand(c.typeLine))))
+          // Back in the order asked for, since the query keeps none: the build-around card leads
+          // `requested`, so it is placed first and is never the row `capToBody` cuts.
+          .then((rows) => rows.sort((a, b) => requested.indexOf(a.oracleId) - requested.indexOf(b.oracleId)))
       : [];
     // `built: 0` asks about legality alone, exactly as restoreAutoCards does —
     // the cap is enforced by the loop inside the transaction below.

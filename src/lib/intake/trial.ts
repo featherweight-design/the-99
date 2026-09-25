@@ -3,7 +3,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { capToBody } from "../decks/fill";
 import { isBasicLand } from "../decks/grouping";
-import { loadPrices } from "../discovery/price";
+import { loadPrices, slotFor } from "../discovery/price";
 import { db } from "../../db";
 import { sql } from "drizzle-orm";
 import type { DeckAnswers } from "./fill-facts";
@@ -18,19 +18,20 @@ import type { DeckAnswers } from "./fill-facts";
  *
  * THE FIGURES ARE THE SHOPPING LIST'S. A basic is never a buy. An unowned card is, and so is an owned
  * one whose every copy a committed deck claims, priced at the cheapest printing stocked now. The
- * build-around card is placed as the create places it, first. When it has never been stocked it
- * cannot be priced: `unpricedCard` says so, and the row's buy figure leaves it out, never counting it
- * at $0 (F8).
+ * build-around card is placed as the create places it, first. When it must be bought and has no
+ * live price, the row's buy figure leaves it out, never counting it at $0 (F8), and `unpricedCard`
+ * says WHY in the price reader's own terms (`slotFor`): `notStocked` when it was priced once and
+ * has sold out, `absent` when there is no price on record at all. The two read differently.
  */
 export type TrialFigures = {
   /** Cards in the body, commander excluded: 99, or 98 beside a partner. */
   body: number;
   /** Of those, the copies the player can sleeve from what they own. */
   owned: number;
-  /** What the rest costs, in cents; the never-stocked build-around card is not in it. */
+  /** What the rest costs, in cents; a build-around card with no live price is not in it. */
   buyCents: number;
-  /** The build-around card must be bought and has never been stocked. */
-  unpricedCard: boolean;
+  /** Set only when the build-around card must be bought and has no live price. */
+  unpricedCard: "notStocked" | "absent" | null;
 };
 
 export async function trialFill(
@@ -57,7 +58,7 @@ export async function trialFill(
 
   let owned = 0;
   let buyCents = 0;
-  let unpricedCard = false;
+  let unpricedCard: TrialFigures["unpricedCard"] = null;
   for (const r of rows) {
     const f = facts.get(r.oracleId);
     const a = availability.get(r.oracleId);
@@ -68,7 +69,10 @@ export async function trialFill(
     }
     const price = prices.get(r.oracleId)?.liveCents ?? null;
     if (price === null) {
-      if (r.oracleId === card) unpricedCard = true;
+      if (r.oracleId === card) {
+        const slot = slotFor(prices.get(r.oracleId)).kind;
+        unpricedCard = slot === "notStocked" ? "notStocked" : "absent";
+      }
       continue;
     }
     buyCents += price * r.quantity;

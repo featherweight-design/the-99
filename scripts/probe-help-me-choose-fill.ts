@@ -87,7 +87,10 @@ async function main() {
       join cards ca on ca.oracle_id = vc.oracle_id
       where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
         and vc.oracle_id = any(${sql.param(placed)}::uuid[])
-      group by v.variant_id, v.produces having count(*) = 2`);
+      group by v.variant_id, v.produces having count(*) = 2
+        -- The profile's command-zone rule (src/lib/profile/load.ts): a must_be_commander piece
+        -- assembles only from the command zone, so holding it in the 99 counts nothing.
+        and bool_and(not vc.must_be_commander or vc.oracle_id = ${cmd.oracle_id}::uuid)`);
     return { flagged, combos: pairs.filter((x) => isInfiniteOrGameEnding(x.produces)) };
   };
   const [plainFacts, gatedFacts] = await Promise.all([facts(plain), facts(bracketed)]);
@@ -108,7 +111,7 @@ async function main() {
   const { trialFill } = await import("../src/lib/intake/trial");
   const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null });
   check("the trial fill fills the body, owns what it can and prices the rest within the budget",
-    trial.body === budgeted.filled && trial.owned < trial.body && trial.buyCents <= BUDGET_CENTS && !trial.unpricedCard,
+    trial.body === budgeted.filled && trial.owned < trial.body && trial.buyCents <= BUDGET_CENTS && trial.unpricedCard === null,
     `own ${trial.owned} of ${trial.body}, about $${(trial.buyCents / 100).toFixed(2)} to buy`);
   check("its buy figure is the probe's own count of the same fill", trial.buyCents === spend(budgeted),
     `trial ${trial.buyCents}, independent ${spend(budgeted)}`);

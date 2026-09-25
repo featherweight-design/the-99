@@ -2350,6 +2350,24 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     expect(stub.state.updateCalls.some((c) => (c.values as { intent?: string }).intent?.includes("from the cards you own"))).toBe(false);
   });
 
+  it("places the build-around card first, whatever order the catalog read returns", async () => {
+    const picked = { ...rampCard(1), oracleId: "0000aaaa-0000-4000-8000-000000000001" };
+    const around = { ...rampCard(2), oracleId: "0000bbbb-0000-4000-8000-000000000002" };
+    // The picked card comes back first from an unordered read; the build-around must still lead.
+    stub.state.cards.push(commanderCard(), picked, around);
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i + 10)));
+
+    try {
+      await createDeck(COMMANDER_ORACLE, "My Deck", [picked.oracleId], null, { ...answers, cardOracleId: around.oracleId });
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+
+    const placed = stub.state.insertCalls.filter((c) => c.table === "deck_cards")
+      .flatMap((c) => (Array.isArray(c.values) ? c.values : [c.values]) as { oracleId: string }[]);
+    expect(placed[0].oracleId).toBe(around.oracleId);
+  });
+
   it("drops a basic land named as the build-around card: neither stored nor placed", async () => {
     // A uuid-shaped id, so the selection's shape filter cannot be what drops it.
     const basic = { ...forestCard(1), oracleId: "0000f0e5-0000-4000-8000-000000000001" };
