@@ -102,7 +102,8 @@ All findings are engineering's. There are no Design findings.
 ## 4 · For Hugh
 
 - **H1 (Design's call on §4.7).** A pair where one half is owned and the other must be bought sorts with the
-  pairs to buy, even above an owned pair with a higher figure. A half another deck holds still counts as owned.
+  pairs to buy, below every pair you own, even when its figure is higher than theirs. A half another deck holds
+  still counts as owned.
   OK?
 - **H2 (the brief's known bias, §6).** A commander with many indexed decks has a longer support list, so it can
   reach a higher figure than a rarely built one. The brief accepts that as the cost of a plain count and leaves
