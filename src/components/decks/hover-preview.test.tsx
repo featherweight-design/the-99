@@ -419,6 +419,27 @@ describe("HoverPreviewProvider", () => {
       }
     });
 
+    // THE SEQUENCE THE 50ms EXISTS FOR, and the one nothing measured until the
+    // pre-open review pointed it out: a real browser fires `mouseleave` before
+    // the next row's `mouseenter`, so a pointer that enters and leaves inside the
+    // settle must cancel the preload through `close()` rather than through the
+    // next `open()`. With the clear removed from `close()`, every other case here
+    // still passed.
+    it("asks for nothing when the pointer leaves inside the settle", () => {
+      const spy = trackImages();
+      try {
+        render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+        fireEvent.mouseEnter(screen.getByTestId("a"));
+        act(() => void vi.advanceTimersByTime(30));
+        fireEvent.mouseLeave(screen.getByTestId("a"));
+        act(() => void vi.advanceTimersByTime(400));
+        expect(spy.made).toEqual([]);
+        expect(screen.queryByTestId("hover-preview")).toBeNull();
+      } finally {
+        spy.restore();
+      }
+    });
+
     it("asks once for a row the pointer returns to", () => {
       const spy = trackImages();
       try {

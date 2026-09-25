@@ -13,15 +13,15 @@
 //
 //   The hover preview is DESKTOP ONLY by design — `hover-preview.tsx` returns
 //   early unless `(hover: hover)` matches, because a touch device fires
-//   mouseenter on tap. So at 390 there is no preview to time, and the phone
-//   column covers card-details art alone. A run that reported a preview figure
-//   at 390 would be measuring a surface no phone reader can reach.
+//   mouseenter on tap. So a 390 run has nothing to time and says so; it does not
+//   fall back to another surface. A run that reported a preview figure at 390
+//   would be measuring something no phone reader can reach.
 //
-//   "Painted" for the preview is OBSERVED, by screenshotting the box until its
-//   pixels stop being uniform. The browser exposes no paint event for a CSS
-//   background image, so the alternative was to compute it from the phases and
-//   call the sum an observation. Screenshot cadence bounds this to about +/-40ms,
-//   which is stated with every figure rather than hidden in a mean.
+//   "Painted" for the preview is OBSERVED, by screenshotting the box and finding
+//   the frame where its pixels stop being uniform. The browser exposes no paint
+//   event for a CSS background image. Each screenshot costs 70-100ms, so every
+//   painted figure carries `paintObservationGapMs` — the gap between the last
+//   blank frame and the first painted one — rather than a flattering mean.
 import { writeFileSync } from "node:fs";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
@@ -235,11 +235,14 @@ async function main() {
         const boxMountedAtAbs = Date.now();
         const boxAt = boxMountedAtAbs - t0;
 
-        // Filmstrip the box until its pixels carry a card rather than a flat
-        // colour. A blank frame is measured first, from the box itself, so the
-        // threshold is not a guess about this theme's background.
+        // Filmstrip the box, then find where its pixels start carrying a card
+        // rather than a flat colour.
+        //
         // Sample a fixed window rather than stopping at a threshold: the stop
-        // condition needs the maximum, which is only known once sampling ends.
+        // condition needs the run's spread, which is only known once sampling
+        // ends. A blank frame is NOT measured as a reference — see
+        // `firstPaintedSample` for why two earlier versions of that could not
+        // report a failed observation.
         const samples = [];
         const firstBytes = (await box.screenshot()).length;
         samples.push({ t: Date.now() - t0, bytes: firstBytes });
