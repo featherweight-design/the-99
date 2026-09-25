@@ -144,6 +144,28 @@ synopsis's.
 - The floors, measured.
 - A probe against local-dev, and mutations.
 
+**PR 2 as built (2026-09-25).**
+- **The floors are measured on staging, and both reuse existing rules** rather than adding new
+  numbers. Staging has 3,380 commanders; none has a null `deck_count`, and 108 have no tags.
+  - The theme sample floor is `THIN_DECK_COUNT` (27, still staging's p10).
+  - A tag counts on a commander only at `themeFloorFor`'s 0.5%.
+  - The picker's vocabulary is tags that at least `TOO_NARROW_BELOW` (4) commanders back, with
+    formats excluded. Fewer, and choosing the tag can only produce the too-narrow state. That keeps
+    286 of staging's 401 tags; 22 back one commander, 16 two and 49 three or four.
+- **The free match's rules** are engineering's:
+  - the longest phrase wins, and a theme beats a card on the same phrase;
+  - a theme answers to its singular forms;
+  - a one-word card name needs a capital, so a player typing "a fog of a deck" doesn't get `Fog`;
+  - basic lands are never build-around cards;
+  - stop words are dropped, and every other unmatched word is leftover.
+- **A price never stocked passes the budget**, since it can't be tested; the row says the price
+  is unknown (PR 5 draws that).
+- **`inclusion` is a percentage.** `commander_support_cards` stores EDHREC's 0–100. The loader
+  divides it to a share so it can meet a theme's share in the weaker-figure order. The probe
+  caught it reading 100.
+- **`violationsFor` in `bracket/rules.ts`** (orchestrator's go) is now the one statement of the
+  limits. `slotDeck`, `bracketDelta` and the intake filter all call it.
+
 **PR 3: the fill constraints and the stored answers.**
 - `PlanFillArgs` / `buildFillPlan`:
   - **Budget** is a running cap at the cheapest printing stocked now. A never-stocked card is left
