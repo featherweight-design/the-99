@@ -10,7 +10,7 @@ import { isLandFace } from "../cards/facet";
 import { shortName } from "../cards/short-name";
 import { formatCents } from "../decks/price";
 import type { StandInsRead } from "./gather";
-import { drawbacks, nonManaAbilities, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
+import { drawbacks, landColors as repeatableColors, nonManaAbilities, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
 import { mainType, type MainType, type SpellRole, type StandIn } from "./stand-ins";
 
 const copy = swapToolsCopy.sheet;
@@ -197,7 +197,14 @@ export function sheetModel(read: StandInsRead): SheetModel {
         again.length ? again : job.colors,
       ));
     return {
-      body: [copy.mana.line(again.length ? colorsText(again) : copy.mana.colorless, entering(s.drawbacks))],
+      // Every job color made only once: the line names what the land makes again and again instead
+      // (Ravaged Highlands for a white job still taps for red), and colorless only when that is nothing.
+      body: [copy.mana.line(
+        again.length ? colorsText(again)
+          : (() => { const own = repeatableColors(s.card); const order: Color[] = ["W", "U", "B", "R", "G"];
+            return own.size ? colorsText(order.filter((c) => own.has(c))) : copy.mana.colorless; })(),
+        entering(s.drawbacks),
+      )],
       muted: [...costs, ...s.once.map((c) => copy.mana.once(COLOR_WORD[c])), ...giving],
     };
   };
@@ -235,7 +242,8 @@ export function sheetModel(read: StandInsRead): SheetModel {
         // F14: nothing listed for this commander or pair, so the order clause names no commander.
         everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(original.name, commander) : copy.leadSpellsOrderUnlisted(original.name),
         ...(everyRow.some((s) => s.isUniversal) ? [copy.leadSpellsStaples] : []),
-        ...(lackedByAll.length ? [copy.leadSpellsGivesUp(original.name, listWords(jobWords(lackedByAll), "and"))] : []),
+        // Every one of them, uncapped: they are dropped from every row, so a job left out here is said nowhere.
+        ...(lackedByAll.length ? [copy.leadSpellsGivesUp(original.name, listWords([...new Set(lackedByAll.map((j) => copy.job[j]))], "and"))] : []),
       ].join(" ");
 
   return { job: jobLine, lead, groups, sentence: null, foot: true };

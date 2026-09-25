@@ -120,6 +120,23 @@ describe("the stand-ins sheet's model", () => {
     expect(highlands).toMatchObject({ body: [copy.mana.line("red", copy.mana.tapped)], muted: [copy.mana.once("white")] });
   });
 
+  it("names every job all the stand-ins lack in the lead, uncapped", () => {
+    const m = sheetModel(read({
+      groups: [same([standIn("A", { synergy: 0.2, missing: ["castFree", "counters", "haste"] }), standIn("B", { missing: ["castFree", "counters", "haste"] })])],
+    }));
+    expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", `${copy.job.castFree}, ${copy.job.counters} and ${copy.job.haste}`));
+  });
+
+  it("names what a land makes again and again when every job color is made only once", () => {
+    const highlands = { ...card("Ravaged Highlands", "Land", "This land enters tapped.\n{T}: Add {R}.\n{T}, Sacrifice this land: Add one mana of any color.") };
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W"] },
+      original: card("Plains-ish", "Land"),
+      groups: lands([standIn("Ravaged Highlands", { card: highlands, once: ["W"], drawbacks: [{ kind: "entersTapped" }] })]),
+    }));
+    expect(m.groups[0].rows[0].body).toEqual([copy.mana.line("red", copy.mana.tapped)]);
+  });
+
   it("says a job every stand-in lacks once, in the lead, and not on each row", () => {
     const m = sheetModel(read({
       groups: [same([
