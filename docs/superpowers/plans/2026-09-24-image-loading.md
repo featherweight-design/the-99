@@ -44,13 +44,21 @@ First hover of a session, cache cleared, desktop 1300×900:
 
 | Segment | Measured | Where it comes from |
 | --- | --- | --- |
-| Pointer enters → preview box mounts | **307 ms** | 240 ms `OPEN_DELAY` + ~67 ms dispatch and React render |
-| Image request, wall clock | **214 ms** | 93 KB (`normal`, 95,631 B), TTFB ~142 ms, HTTP/2 |
+| Pointer enters → preview box mounts | **307–321 ms** | 240 ms `OPEN_DELAY` + ~70–80 ms dispatch and React render |
+| Image request, wall clock | **~214 ms** | 93 KB (`normal`, 95,631 B), TTFB ~142 ms, HTTP/2 |
 | Decode | **0.1–35 ms** | `img.decode()` on the same bytes |
-| **Pointer enters → painted** | **~477 ms** | observed by screenshotting the box until its pixels stop being uniform |
+| **Pointer enters → painted** | **441 ms** (median of 441 / 445 / 434) | the frame where the box stops being a flat colour |
 
-The paint figure is observed rather than computed, but its resolution is coarse: screenshots cost
-~70–100 ms each, so read it as "between 410 ms and 477 ms". The component figures are exact.
+The component figures are exact. The painted figure is an observation with a stated resolution:
+screenshots cost ~70–100 ms each, so each run carries the gap between its last blank frame and its
+first painted one.
+
+An earlier draft of this document put this figure at "~477 ms, between 410 and 477". That came from a
+paint detector which thresholded against its own maximum sample and therefore **could not report a
+failed observation at all** — the pre-open review caught it, and the numbers here are from the
+replacement, which refuses to locate a transition it has not demonstrated. The figures are not a
+sum, either: the browser starts a background image as it parses the style, a few tens of ms before
+the element becomes observable, so part of the fetch already overlapped the mount before any change.
 
 **The ordering is the finding.** `hover-preview.tsx` sets `background: … url(…)` inside the state
 update that `setTimeout(show, 240)` schedules. **The image request cannot begin until the 240 ms
