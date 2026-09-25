@@ -616,6 +616,7 @@ export function StandInsSheet({
           <StandInGroup
             key={group.heading}
             group={group}
+            keep={keep}
             expanded={expanded.has(group.heading)}
             fetching={fetchingAll}
             onToggle={() => toggleGroup(group)}

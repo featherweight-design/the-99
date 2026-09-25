@@ -106,6 +106,20 @@ describe("StandInsSheet", () => {
     expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
   });
 
+  // A taken row is drawn wherever it ranks: collapsing the group keeps it, with its Undo swap.
+  it("keeps a taken row ranked past five when the group collapses", async () => {
+    const seven = Array.from({ length: 7 }, (_, i) => standIn(`Removal ${i + 1}`, false));
+    loadStandInsAction.mockReset().mockResolvedValue({ ...READ, groups: [{ same: true, type: "instant", rows: seven, total: 7 }] });
+    takeStandInAction.mockResolvedValue({ ok: true, swapId: "s7", addWasFree: false, cutLeft: 0 });
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    fireEvent.click(within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showAll(7, "instants") }));
+    await act(async () => takeButton("Removal 7").click());
+    fireEvent.click(within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showFewer }));
+    expect(within(sheet).getByTestId("stand-in-taken")).toHaveTextContent("Removal 7");
+    expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
+  });
+
   // Close-out ruling 8: the stacked card pages only the rows the sheet is showing.
   it("pages the stacked card over the five shown rows, and over all seven once expanded", async () => {
     const seven = Array.from({ length: 7 }, (_, i) => standIn(`Removal ${i + 1}`, false));

@@ -17,6 +17,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useSwapTools } from "../../lib/swaps/context";
 import { priceOf, priceState } from "../../lib/decks/price";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
+import { landOnReceipt } from "./swap-receipt";
 
 const copy = swapToolsCopy.modal;
 
@@ -60,17 +61,13 @@ export function StandInDoor({
   useEffect(() => {
     takenId.current = taken?.swapId ?? null;
   });
+  // The same hold the sheet's close uses (`landOnReceipt`): a card closed before the take's revalidated
+  // page lands would otherwise focus a receipt the page then draws again, dropping focus to the body.
+  // Only when the card itself closed: paging or a combo partner replaces the door under a modal that
+  // stays open, and the helper leaves focus in that modal.
   useEffect(
     () => () => {
-      const id = takenId.current;
-      if (!id) return;
-      requestAnimationFrame(() => {
-        // Only when the card itself closed: paging or a combo partner replaces the door under a modal
-        // that is still open, and focus stays in that modal.
-        if (document.querySelector('[role="dialog"][aria-labelledby^="card-modal-title"]')) return;
-        if (document.activeElement && document.activeElement !== document.body) return;
-        document.querySelector<HTMLButtonElement>(`[data-swap-id="${CSS.escape(id)}"] button`)?.focus();
-      });
+      if (takenId.current) landOnReceipt(takenId.current);
     },
     [],
   );

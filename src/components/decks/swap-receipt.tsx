@@ -32,6 +32,7 @@ export function landOnReceipt(swapId: string): () => void {
   let frame = 0;
   let landed = false;
   let stopped = false;
+  let frames = 0;
   const until = performance.now() + 3000;
   // The reader's own input ends the hold at once: nothing here may fight a scroll or a keypress.
   const inputs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
@@ -44,8 +45,14 @@ export function landOnReceipt(swapId: string): () => void {
   const land = () => {
     if (stopped) return;
     if (performance.now() > until) return stop();
-    // A card still open (paging, a combo partner, the card the sheet was stacked over) keeps focus.
-    if (document.querySelector('[role="dialog"][aria-labelledby^="card-modal-title"]')) return stop();
+    frames += 1;
+    // A card still open (paging, a combo partner, the card the sheet was stacked over) keeps focus. One
+    // that is closing is still in the document for a frame or two, so it is waited out that long.
+    if (document.querySelector('[role="dialog"][aria-labelledby^="card-modal-title"]')) {
+      if (frames > 10) return stop();
+      frame = requestAnimationFrame(land);
+      return;
+    }
     const receipt = [...document.querySelectorAll<HTMLElement>(`[data-swap-id="${CSS.escape(swapId)}"]`)]
       .find((el) => el.getClientRects().length > 0);
     const button = receipt?.querySelector<HTMLButtonElement>("button");
