@@ -10,6 +10,7 @@ import { isLandFace } from "../cards/facet";
 import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
+import { cardThemes, type Theme } from "../recs/themes";
 import {
   colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
@@ -124,6 +125,8 @@ export type StandIn = {
   synergy: number | null;
   isUniversal: boolean;
   shared: SpellRole[];
+  /** The themes it shares with the original (`cardThemes`): a spell's second match, beside its roles (Q6). */
+  sharedThemes: Theme[];
   /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
   rung: 1 | 2 | 3 | 4 | null;
   drawbacks: Drawback[];
@@ -205,6 +208,12 @@ const byPrice = (a: StandIn, b: StandIn) => (a.cents ?? Infinity) - (b.cents ?? 
  */
 const bySynergy = (a: StandIn, b: StandIn) =>
   (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || byPrice(a, b);
+/**
+ * Spells by how much of the original's work they share (Q6): its roles and its themes together, so a
+ * creature that ramps and counts +1/+1 counters outranks a sorcery that only ramps. Then synergy.
+ */
+const bySharing = (a: StandIn, b: StandIn) =>
+  (b.shared.length + b.sharedThemes.length) - (a.shared.length + a.sharedThemes.length) || bySynergy(a, b);
 /** Lands on the ladder (item 2): the rung first, then synergy, then price, never the alphabet. */
 const byLadder = (a: StandIn, b: StandIn) => (a.rung ?? 1) - (b.rung ?? 1) || bySynergy(a, b);
 
@@ -215,12 +224,20 @@ const byLadder = (a: StandIn, b: StandIn) => (a.rung ?? 1) - (b.rung ?? 1) || by
  * - A buy must be STOCKED NOW and cost less than the original (F6). A price that is absent is never
  *   free, and a sold-out original has no price to beat, so it gets free copies only (F5).
  * - Lands and fetches order by the ladder (`landRung`), then the commander's synergy, then price (v2
- *   item 2); spells by the commander's synergy, with the cards its index does not list after them, by
+ *   item 2); spells by how many of the original's roles and themes they share, then the commander's
+ *   synergy (Q6, v2 item 8), with the cards its index does not list after them, by sharing then
  *   price (ruling 6, F14; v2 item 8). A universal staple to buy is neither: it
  *   takes its own group, by price, ahead of the commander's ranking (H4).
  */
-export function rankStandIns(original: CardRow, candidates: readonly Candidate[], priced: Priced): StandInGroups {
+export function rankStandIns(
+  original: CardRow,
+  candidates: readonly Candidate[],
+  priced: Priced,
+  /** The catalog's creature subtypes, for the tribal theme (`cardThemes`). */
+  isCreatureType: (word: string) => boolean,
+): StandInGroups {
   const job = jobOf(original);
+  const originalThemes = job.kind === "spell" ? cardThemes(original, isCreatureType) : [];
   const originalPrice = stocked(original.oracleId, priced);
   const groups: StandInGroups = {
     job, originalCents: originalPrice?.cents ?? null, free: [], cheapest: [], staples: [], byCommander: [], unlisted: [],
@@ -243,6 +260,7 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
       synergy: c.synergy,
       isUniversal: c.isUniversal,
       shared: match.shared,
+      sharedThemes: originalThemes.length > 0 ? cardThemes(c, isCreatureType).filter((t) => originalThemes.includes(t)) : [],
       drawbacks: isLand ? drawbacks(c) : [],
       // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.
       rung: isLand ? landRung(drawbacks(c), sourceFor(c, job), landCatch(c)) : null,
@@ -257,11 +275,11 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
     }
   }
 
-  groups.free.sort(job.kind === "spell" ? bySynergy : byLadder);
+  groups.free.sort(job.kind === "spell" ? bySharing : byLadder);
   groups.cheapest.sort(byLadder);
   groups.staples.sort(byPrice);
-  groups.byCommander.sort(bySynergy);
-  groups.unlisted.sort(byPrice);
+  groups.byCommander.sort(bySharing);
+  groups.unlisted.sort((a, b) => (b.shared.length + b.sharedThemes.length) - (a.shared.length + a.sharedThemes.length) || byPrice(a, b));
   for (const k of ["free", "cheapest", "staples", "byCommander", "unlisted"] as const) {
     groups[k] = groups[k].slice(0, STAND_IN_GROUP_CAP);
   }
