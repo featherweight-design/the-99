@@ -186,6 +186,20 @@ async function walk(page, width, fixture) {
   const panel = page.locator(`#${await figure.getAttribute("aria-controls")}`);
   report(`figure names ${tag}`, (await panel.locator("button").count()) > 0, `${await panel.locator("button").count()} name(s)`);
 
+  // A name opens the card, which stacks ABOVE the sheet: what paints at the card's centre is the
+  // card, not the sheet. Same z-index, so only document order decides it.
+  await panel.locator("button").first().click();
+  const card = page.locator('[role="dialog"][aria-labelledby="card-modal-title"]');
+  await card.waitFor({ state: "visible", timeout: 30_000 });
+  const onTop = await card.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 120));
+    return hit !== null && el.contains(hit);
+  });
+  report(`card stacks above the sheet ${tag}`, onTop, "elementFromPoint lands in the card");
+  await page.keyboard.press("Escape");
+  await card.waitFor({ state: "hidden" });
+
   // Choose replaces the list with the confirm; Back puts the same list back.
   await rows.first().locator("[data-choose]").click();
   const back = dialog.getByRole("button", { name: "Back to the list" });

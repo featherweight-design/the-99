@@ -149,6 +149,20 @@ describe("ChangeCommanderSheet for a pair", () => {
     ));
   });
 
+  it("gives every candidate's figure its own panel, across both groups", async () => {
+    readChangeCandidates.mockResolvedValue(data({
+      current: pairData().current,
+      yours: [pairOf(half("Kraum"), half("Tana"), 30)],
+      toBuy: [pairOf(half("Kraum"), half("Ishai", { owned: false, availability: null }), 20)],
+    }));
+    mount(true);
+    await screen.findByRole("button", { name: "Choose Kraum and Tana" });
+    const controls = screen.getAllByRole("button", { expanded: false })
+      .map((b) => b.getAttribute("aria-controls")).filter((c): c is string => c !== null);
+    expect(controls.length).toBe(2);
+    expect(new Set(controls).size).toBe(2);
+  });
+
   it("names the way back from a stacked card Change commander, not the pair's title", async () => {
     readChangeCandidates.mockResolvedValue(pairData());
     render(

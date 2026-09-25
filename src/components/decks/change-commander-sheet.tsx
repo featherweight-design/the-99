@@ -241,7 +241,6 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
       open={openKey === c.key}
       onToggle={() => setOpenKey((k) => (k === c.key ? null : c.key))}
       onChoose={() => onChoose(c)}
-      index={i}
     />
   );
 
@@ -365,7 +364,7 @@ function ManaValue({ halves, current }: { halves: CandidateHalf[]; current: { cm
 }
 
 function Row({
-  candidate, pair, current, newestAsOf, siblings, open, onToggle, onChoose, index,
+  candidate, pair, current, newestAsOf, siblings, open, onToggle, onChoose,
 }: {
   candidate: Candidate;
   pair: boolean;
@@ -375,11 +374,11 @@ function Row({
   open: boolean;
   onToggle: () => void;
   onChoose: () => void;
-  index: number;
 }) {
-  const lead = candidate.halves[0];
   const name = joinShort(candidate.halves.map((h) => h.name));
-  const panelId = `change-commander-fit-${index}-${lead.oracleId}`;
+  // The candidate's own key, unique across both groups: two pairs can share a first half, one
+  // owned and one to buy, and an index restarts in each group.
+  const panelId = `change-commander-fit-${candidate.key}`;
   return (
     <div data-testid="change-commander-row" style={{ borderBottom: "1px solid var(--border)" }}>
       <div className="flex items-start gap-[12px] py-[11px]">
