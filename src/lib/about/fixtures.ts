@@ -37,6 +37,9 @@ import { identityGradient } from "../collection/gradients";
 // Study` are cards a Commander player reads without stopping.
 
 import type { Availability } from "../decks/availability";
+import { emptyParams, type ChooseParams } from "../intake/params";
+import type { ResultRow } from "../intake/rows";
+import type { TrialFigures } from "../intake/trial";
 import type { Candidate } from "../commander-change/candidates";
 import type { PriceFact, PriceState } from "../decks/price";
 import { fitSegments } from "../recs/format";
@@ -1747,4 +1750,58 @@ export const CHANGE_COMMANDER: {
     matched: [],
     deckCount: 2381,
   },
+};
+
+/**
+ * `help-me-choose` — Design's fixture: a Dinosaurs theme and Regisaur Alpha as the card to build
+ * around, under a $150 budget at bracket 2. Two results, each ordered by its weaker figure, which
+ * is the one lit SETS RANK: Pantlaza's card figure (41%) ranks it above Gishath's (34%), although
+ * Gishath fits the theme better and is the one the player owns. That is key lines 1 and 2 at once.
+ *
+ * Shares are fractions, as `rankCommanders` returns them; `figures()` turns them into the drawn
+ * percentages, so the lit figure follows the shipped rule rather than being written down here.
+ * Pantlaza's buy price is not in Design's fixture; $3.49 is a stand-in, a figure plausible for it.
+ */
+export const CHOOSE = {
+  params: {
+    ...emptyParams(),
+    themes: ["dinosaurs"],
+    card: "about-regisaur",
+    budgetDollars: 150,
+    bracket: 2,
+    results: true,
+  } satisfies ChooseParams,
+  labels: { theme: () => "Dinosaurs", card: "Regisaur Alpha" },
+  rows: [
+    {
+      row: {
+        oracleId: "about-pantlaza",
+        name: "Pantlaza, Sun-Favored",
+        colorIdentity: ["R", "G", "W"],
+        imageUri: null,
+        artCropUri: null,
+        mark: { kind: "buy", price: { kind: "priced", cents: 349 } },
+        themeFits: [{ slug: "dinosaurs", share: 0.74 }],
+        cardFit: 0.41,
+        ownedSupport: 0,
+        supportTotal: 0,
+      } satisfies ResultRow,
+      trial: { body: 99, owned: 38, buyCents: 11_200, unpricedCard: null } satisfies TrialFigures,
+    },
+    {
+      row: {
+        oracleId: "about-gishath",
+        name: "Gishath, Sun's Avatar",
+        colorIdentity: ["R", "G", "W"],
+        imageUri: null,
+        artCropUri: null,
+        mark: { kind: "free" },
+        themeFits: [{ slug: "dinosaurs", share: 0.81 }],
+        cardFit: 0.34,
+        ownedSupport: 0,
+        supportTotal: 0,
+      } satisfies ResultRow,
+      trial: { body: 99, owned: 52, buyCents: 6_400, unpricedCard: null } satisfies TrialFigures,
+    },
+  ],
 };

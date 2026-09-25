@@ -313,6 +313,33 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'help-me-choose',
+    chapter: '02',
+    title: 'Help me choose',
+    route: '/decks/new/choose',
+    width: 'plate',
+    switch: 'HELP_ME_CHOOSE_ENABLED',
+    caption:
+      // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
+      // shipped in #1011, and Create is what fills the deck, not the pick.
+      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words. The results are commanders ordered by how well each fits what you asked, not by what you own. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them.',
+    keys: [
+      // Audit H4: SETS RANK is drawn only when a row has more than one figure.
+      "Each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
+      // Audit H5. The owned-order exception is said once, in the caption, so this line drops the
+      // "never orders it" that the exception made false.
+      "Every row shows what you own beside the fit: the commander's own mark, how much of its 99 you own, and roughly what the rest would cost.",
+      // Audit H2 (the panel shipped in #1000), and a fact 1f corrected: the cost is shown on the
+      // results, in the Look deeper panel, never on the form.
+      'Your sentence is matched for free. Look deeper, on the results, weighs all of it for one credit, and the cost is shown before you press.',
+      // Audit H6: the page offers answers to loosen, each with a count.
+      'When too few commanders fit, the page offers answers to loosen, each with how many commanders it would bring back, or you can change the answers yourself.',
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    since: 9,
+  },
+  {
     id: 'role-coverage',
     chapter: '02',
     title: 'Why this commander, and what the deck would be made of',

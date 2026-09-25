@@ -70,7 +70,7 @@ back, in the shape `probe:review` uses for its collection edits.
 
 ## Everything is built
 
-**41 entries, 41 figures.** The ledger in `about.test.ts` is empty and fails on any entry arriving
+**42 entries, 42 figures.** The ledger in `about.test.ts` is empty and fails on any entry arriving
 without one — and those three totals are pinned to the source by that same file, because this
 paragraph has now gone stale twice: once by being written without counting, and once by a figure
 landing on `main` between the correction and the merge.
@@ -81,7 +81,7 @@ described as its four hardest plates. The number was not checked before it was w
 artifact here would have contradicted it — the inventory photographed the figures that existed, so
 the sheet confirmed the scope back to its author.
 
-**Forty-one are `Specimen`-rooted and zero are `Legend`-rooted.** This record said "four mount
+**Forty-two are `Specimen`-rooted and zero are `Legend`-rooted.** This record said "four mount
 and the rest are legends" — wrong when written, and wrong in the paragraph correcting a previous
 wrong count, which was the second time a figure here was written down without being counted. It is
 now every figure: chapter 04 converted the last four, and `Legend`, `Line` and `LegendBox` went
