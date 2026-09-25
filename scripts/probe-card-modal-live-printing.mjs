@@ -99,10 +99,14 @@ async function findFixture(userId) {
   const [row] = await sql`
     with newest as (select max(as_of) m from printing_prices),
     firsts as (
+      -- The printing the old build opened on: \`comparePrintings\` order, where a collector number with
+      -- no digits sorts LAST, strings compare by code unit (collate "C"), and no art filter, because
+      -- a printing without its own picture still resolves the oracle's and was drawn first all the same.
       select distinct on (p.oracle_id) p.oracle_id, p.scryfall_id
-      from printings p where p.image_uri is not null
-      order by p.oracle_id, upper(p.set_code),
-        coalesce(nullif(regexp_replace(p.collector_number, '\\D', '', 'g'), '')::bigint, 0), p.collector_number
+      from printings p
+      order by p.oracle_id, upper(p.set_code) collate "C",
+        coalesce(nullif(regexp_replace(p.collector_number, '\\D', '', 'g'), '')::numeric, 9007199254740991),
+        p.collector_number collate "C"
     ),
     live as (
       select p.oracle_id, min(pp.price_cents) as cheapest

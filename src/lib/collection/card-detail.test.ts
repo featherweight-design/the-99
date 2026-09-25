@@ -171,17 +171,31 @@ describe("catalogCard", () => {
       expect(c.printings.map((p) => p.collectorNumber)).toEqual(["77", "135", "326"]);
     });
 
-    it("counts neither a stale row nor a foil-only one as live, and skips a live printing with no art", () => {
+    // Each case below leaves ONE disqualified printing cheaper than the live winner, so counting
+    // it would move that printing to the front.
+    it("does not count a stale row as live", () => {
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({
+        "s-cheap": fact(5, { asOf: new Date("2026-09-01T00:00:00Z") }),
+        "s-dear": fact(203),
+      }));
+      expect(c.printings[0].collectorNumber).toBe("326");
+    });
+
+    it("does not count a foil-only row as live", () => {
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({
+        "s-cheap": fact(null, { foilCents: 4 }),
+        "s-dear": fact(203),
+      }));
+      expect(c.printings[0].collectorNumber).toBe("326");
+    });
+
+    it("skips a live printing drawn only in the oracle's fallback art", () => {
       const r = rows();
       r[1] = { ...r[1], imageUri: null };
-      const c = catalogCard({ ...card({ scryfallId: "s-fdc" }), imageUri: null }, r, prices({
-        "s-fdc": fact(5, { asOf: new Date("2026-09-01T00:00:00Z") }),
-        "s-cheap": fact(10),
-        "s-dear": fact(null, { foilCents: 4 }),
-        "s-other": fact(900),
-      }));
-      // s-cheap is live but has no art, s-dear is foil only, s-fdc is stale: nothing qualifies.
-      expect(c.printings.map((p) => p.collectorNumber)).toEqual(["135", "77", "326"]);
+      // The card itself has art, so the printing still resolves a picture: just not its own.
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), r, prices({ "s-cheap": fact(10), "s-dear": fact(203) }));
+      expect(c.printings.find((p) => p.collectorNumber === "77")?.imageUri).not.toBeNull();
+      expect(c.printings[0].collectorNumber).toBe("326");
     });
 
     it("keeps today's order when no printing is live", () => {

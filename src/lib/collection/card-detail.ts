@@ -64,6 +64,9 @@ export function catalogCard(
   const entries = printingRows
     .map((p) => ({
       scryfallId: p.scryfallId,
+      // The printing's OWN picture. `printing.imageUri` below falls back to the oracle's, and a
+      // printing drawn in another printing's art would put this one's price under that picture.
+      ownArt: p.imageUri !== null,
       printing: {
         setCode: p.setCode.toUpperCase(),
         // This row IS the printing, so its id is never inferred here.
@@ -148,13 +151,13 @@ export function catalogCard(
     return prices?.newestAsOf != null && fact !== undefined && fact.cents !== null
       && fact.asOf.getTime() === prices.newestAsOf.getTime() ? fact.cents : null;
   };
-  const withArt = entries.filter((e) => e.printing.imageUri !== null);
+  const withArt = entries.filter((e) => e.ownArt);
   const cheapestLive = withArt
     .map((e) => ({ e, cents: live(e.scryfallId) }))
     .filter((x): x is { e: (typeof entries)[number]; cents: number } => x.cents !== null)
     .sort((a, b) => a.cents - b.cents)[0]?.e;
   const opensOn =
-    (oracleDefault && oracleDefault.printing.imageUri !== null && live(oracleDefault.scryfallId) !== null
+    (oracleDefault && oracleDefault.ownArt && live(oracleDefault.scryfallId) !== null
       ? oracleDefault
       : undefined)
     ?? cheapestLive;
