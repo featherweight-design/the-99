@@ -41,8 +41,8 @@ T1, T2, T3, T5, T6. Orchestrator approvals 2026-09-25: T6's two announcements.
 
 | Property | Mobile | Desktop | Verified |
 |---|---|---|---|
-| at-rest mark | 14px locked mark after the name | the 22px slot left of ✕: locked mark, presses to unlock | unit, screenshot |
-| hover shortcut | none | open lock on row hover, `tabIndex -1`, `aria-hidden`, title `row.titleOff` / `row.titleOn` | unit |
+| at-rest mark | 14px locked mark, left of ✕, not a control | same (Hugh, 2026-09-25: the 22px slot is retired) | unit, probe |
+| unlocked row, outside the mode | nothing: no mark, no control, no reserved width | same (Hugh, 2026-09-25, overruling R2 decision 2: the hover shortcut is retired, and Lock cards mode is the only way to set a lock) | unit, probe |
 | mode toggle | replaces ✕: 36px box in a 44px hit | replaces ✕: 26×22 | probe (aria-pressed), screenshot |
 | toggle name | `aria-label` `mode.toggleAria(card)`, `aria-pressed` | same | probe, unit |
 | description | `mark.a11y` after the availability word | same | unit (mutation) |

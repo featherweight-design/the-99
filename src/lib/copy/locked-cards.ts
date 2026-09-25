@@ -33,11 +33,6 @@ export const lockedCardsCopy = {
      */
     refused: "That didn\u2019t save. Try again.",
   },
-  /** The desktop row's hover shortcut: a pointer title only (`tabIndex -1`, `aria-hidden`). */
-  row: {
-    titleOff: "Lock",
-    titleOn: "Locked · press to unlock",
-  },
   /** The review screen's Pull it guard (L2), in the commander and pending guards' shape. */
   pull: {
     /** The tag beside the holding deck's name, which the row already prints. */

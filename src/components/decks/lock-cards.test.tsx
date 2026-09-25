@@ -317,33 +317,33 @@ describe("DecklistRow's lock", () => {
     expect(screen.queryByText(lockedCardsCopy.mark.a11y)).toBeNull();
   });
 
-  it("offers the hover lock on an unlocked row: pointer only, open, titled Lock", () => {
+  // Hugh, staging walk 2026-09-25: no hover shortcut and no reserved slot. Lock cards mode is the
+  // one way to set a lock, and an unlocked row reserves nothing at either width.
+  it("gives an unlocked row nothing of the lock outside the mode: no control, no slot", () => {
     const lock = lockValue();
-    renderRow(<DecklistRow deckId="d1" card={sol} newestAsOf={null} />, lock);
-    const shortcut = screen.getByTestId("row-lock-shortcut");
-    expect(shortcut.tabIndex).toBe(-1);
-    expect(shortcut.getAttribute("aria-hidden")).toBe("true");
-    expect(shortcut.getAttribute("title")).toBe(lockedCardsCopy.row.titleOff);
-    expect(within(shortcut).getByTestId("lock-mark").dataset.lockState).toBe("open");
-    // The open lock shows on the row's hover only.
-    expect(within(shortcut).getByTestId("lock-mark").parentElement!.className).toContain("invisible");
+    const { container } = renderRow(<DecklistRow deckId="d1" card={sol} newestAsOf={null} />, lock);
+    expect(screen.queryByTestId("row-lock-shortcut")).toBeNull();
     expect(screen.queryByTestId("row-lock-mark")).toBeNull();
-    fireEvent.click(shortcut);
-    expect(lock.toggle).toHaveBeenCalledWith(sol);
+    expect(screen.queryByTestId("lock-mark")).toBeNull();
+    // Nothing 22px wide stands in for it either (the retired slot's width).
+    expect(container.querySelector('[class*="w-[22px]"]')).toBeNull();
+    expect(lock.toggle).not.toHaveBeenCalled();
   });
 
-  it("draws the locked mark at rest, pressing to unlock, and the phone's 14px mark", () => {
+  it("draws a locked row's 14px mark left of the ✕ at both widths, as a mark and not a control", () => {
     const lock = lockValue();
     const card = { ...sol, locked: true };
     renderRow(<DecklistRow deckId="d1" card={card} newestAsOf={null} />, lock);
-    const shortcut = screen.getByTestId("row-lock-shortcut");
-    expect(shortcut.getAttribute("title")).toBe(lockedCardsCopy.row.titleOn);
-    expect(within(shortcut).getByTestId("lock-mark").dataset.lockState).toBe("closed");
-    expect(screen.getByTestId("row-lock-mark").className).toContain("w-[14px]");
-    fireEvent.click(shortcut);
-    expect(lock.toggle).toHaveBeenCalledWith(card);
-    // The ✕ stays at rest.
-    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+    const mark = screen.getByTestId("row-lock-mark");
+    expect(mark.className).toContain("w-[14px]");
+    // Both widths: no `md:hidden` or `hidden md:` on it.
+    expect(mark.className).not.toMatch(/(^|\s)(md:hidden|hidden)(\s|$)/);
+    expect(mark.closest("button")).toBeNull();
+    expect(within(mark).getByTestId("lock-mark").dataset.lockState).toBe("closed");
+    expect(within(mark).getByTestId("lock-mark").style.color).toBe("var(--fg-body)");
+    // The mark sits just left of the ✕, which stays at rest.
+    const remove = screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") });
+    expect(mark.nextElementSibling).toBe(remove);
   });
 
   it("says the lock on the trigger's description, right after the availability word", () => {
@@ -357,7 +357,8 @@ describe("DecklistRow's lock", () => {
     const lock = lockValue({ mode: true });
     renderRow(<DecklistRow deckId="d1" card={{ ...sol, locked: true }} newestAsOf={null} />, lock);
     expect(screen.queryByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeNull();
-    expect(screen.queryByTestId("row-lock-shortcut")).toBeNull();
+    // The at-rest mark gives way to the toggle, which carries the state itself.
+    expect(screen.queryByTestId("row-lock-mark")).toBeNull();
     const toggle = screen.getByRole("button", { name: lockedCardsCopy.mode.toggleAria("Sol Ring") });
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
     expect(within(toggle).getByTestId("lock-mark").style.color).toBe("var(--accent)");

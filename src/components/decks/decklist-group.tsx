@@ -108,7 +108,9 @@ export function DecklistGroup({
         /* Card rows grid: mobile flex column gap-3px | desktop 2-col grid gap-4px-20px */
         <div
           className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
-          style={{ gridTemplateColumns: "1fr 1fr" }}
+          // `minmax(0, 1fr)`, never a bare `1fr`: a bare track never shrinks below its widest row's
+          // min-content, so one row with a long run of fixed pieces pushed the page sideways.
+          style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
         >
           {cards.map((card) => (
             <DecklistRow

@@ -6,7 +6,8 @@
  * tall and a 1.6×3.5 left leg runs from y 3.5 into the body, so only the right leg stops short.
  *
  * TWO TONES, and the tone is the surface's rather than the card's. At rest a closed lock is
- * `--fg-body` and an open one (the desktop hover shortcut) `--fg-faint`. In the Lock cards mode a
+ * `--fg-body` and an open one `--fg-faint` (drawn by nothing since the desktop hover shortcut was
+ * retired, 2026-09-25). In the Lock cards mode a
  * closed lock is `--accent` and an open one `--fg-muted`: accent is spent only inside the mode, the
  * same ink as its `Done`. `ink` overrides both, for the one place the glyph is an icon rather than a
  * state (the toolbar button's, `--fg-muted` at rest and `--accent` as `Done`).

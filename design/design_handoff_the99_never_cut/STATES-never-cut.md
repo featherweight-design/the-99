@@ -5,11 +5,16 @@ meet the body; **open** = the arch is raised and only the left leg runs into the
 
 ## Decklist row (`decklist-row.tsx`)
 
+**Hugh, 2026-09-25 (staging walk), overruling R2 decision 2.** The desktop hover shortcut and the 22px slot it
+reserved on every row are retired: Lock cards mode is the only way to set or clear a lock, and an unlocked row
+reserves nothing at either width. A locked row keeps its mark, now the 390 treatment at both widths. The rows
+below are amended to match; R2 decision 2 in `README.md` is superseded by this note.
+
 | State | 1300 | 390 | Spoken |
 |---|---|---|---|
-| Unlocked, at rest | Shipped row + an empty 22px slot left of ✕ | Shipped row, unchanged | Shipped |
-| Unlocked, hovered | Open lock `--fg-faint` in the slot, 7% `--fg` tint, title *Lock* | n/a | Nothing (pointer only) |
-| Locked, at rest | Closed lock `--fg-body` in the slot; press unlocks; title *Locked · press to unlock* | Closed lock mark, 14px wide, left of the 44px ✕; not a control | `mark.a11y` on `describedBy` |
+| Unlocked, at rest | Shipped row, unchanged | Shipped row, unchanged | Shipped |
+| Unlocked, hovered | Shipped row, unchanged | n/a | Shipped |
+| Locked, at rest | Closed lock mark `--fg-body`, 14px wide, left of the ✕; not a control | same | `mark.a11y` on `describedBy` |
 | Lock cards · unlocked | ✕ replaced by a 26×22 toggle: open lock `--fg-muted`, `1px --border-strong` | ✕ replaced by a 36px box in a 44px hit area, same skin | `aria-pressed="false"`, `toggleAria` |
 | Lock cards · locked | Closed lock `--accent`, `1px --accent`, 14% accent fill | same | `aria-pressed="true"` |
 | Pending / refused | Optimistic; refused reverts + `MutationError` under the row | same | `refused` |

@@ -143,6 +143,19 @@ async function buildDeck(userId, name, made) {
     order by dc.oracle_id limit 1`;
   if (!short) throw new Error("The template holds no further singleton for the unlocked Shopping row.");
   await sql`update deck_cards set quantity = 2 where deck_id = ${id} and oracle_id = ${short.oracle_id}`;
+  // The wide row (Hugh, staging walk 2026-09-25): a two-faced card's `A // B` name gives its row a
+  // min-content near 600px, and a bare `1fr` grid track sized to it pushed Shopping past the frame
+  // at 1300. The longest such name the account does not own lands on Shopping, LOCKED, since the
+  // lock was the reported trigger. Without it the sideways checks pass on the broken build.
+  const [wide] = await sql`
+    select c.oracle_id, c.name from cards c
+    where c.name like '% // %' and c.commander_legal and c.type_line not like 'Basic Land%'
+      and not exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id)
+      and not exists (select 1 from deck_cards dc where dc.deck_id = ${id} and dc.oracle_id = c.oracle_id)
+    order by length(c.name) desc, c.oracle_id limit 1`;
+  if (!wide) throw new Error("The catalog holds no unowned two-faced card for the wide Shopping row.");
+  await sql`insert into deck_cards (deck_id, oracle_id, quantity, auto) values (${id}, ${wide.oracle_id}, 1, false)`;
+  await sql`insert into deck_locks (deck_id, oracle_id) values (${id}, ${wide.oracle_id})`;
   await sql`update deck_cards set auto = true where deck_id = ${id} and oracle_id = any(${autos}::uuid[])`;
   await sql`delete from deck_cards where deck_id = ${id} and oracle_id = ${picks[12].oracle_id}`;
   return {
@@ -159,6 +172,19 @@ const lockOf = async (deckId, oracleId) =>
   (await sql`select removed_at from deck_locks where deck_id = ${deckId} and oracle_id = ${oracleId}`)[0] ?? null;
 const holds = async (deckId, oracleId) =>
   (await sql`select 1 from deck_cards where deck_id = ${deckId} and oracle_id = ${oracleId}`).length > 0;
+/** The page's own overflow: `[ok, detail]`, naming the widest row when it spills. */
+async function sideways(page) {
+  const m = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const over = [...document.querySelectorAll("main li, main [role=listitem]")]
+      .map((el) => ({ el, right: el.getBoundingClientRect().right }))
+      .filter((r) => r.right > doc.clientWidth + 0.5)
+      .sort((a, b) => b.right - a.right)[0];
+    return { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth, widest: over ? `${over.el.innerText.split("\n")[0].slice(0, 40)} ends ${Math.round(over.right)}` : null };
+  });
+  return [m.scrollWidth <= m.clientWidth, JSON.stringify(m)];
+}
+
 async function until(check, ms = 15_000) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -225,17 +251,34 @@ async function run() {
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/deck-locks-mode-${label}.png` });
       await done.click();
       report(`${tag} · Done leaves the mode`, await lockButton.isVisible().catch(() => false), "");
-      // The locked row keeps its mark at rest: the desktop slot beside ✕, the phone's mark after
-      // the name. Read inside the row that holds the card's own remove button.
-      const mark = await page.evaluate(([name, phone]) => {
+      // The locked row keeps its mark at rest, at both widths: a 14px mark just left of the card's
+      // own ✕, not a control (Hugh, 2026-09-25: the desktop hover shortcut and its slot are gone).
+      const mark = await page.evaluate((name) => {
         const remove = [...document.querySelectorAll("main button")].find((b) => b.getAttribute("aria-label") === `Remove ${name}` && b.getBoundingClientRect().width > 0);
-        let row = remove?.parentElement ?? null;
-        const sel = phone ? '[data-testid="row-lock-mark"]' : '[data-testid="row-lock-shortcut"]';
-        while (row && !row.querySelector(sel)) row = row.parentElement;
-        const el = row?.querySelector(sel);
-        return el ? { drawn: el.getBoundingClientRect().width > 0, title: el.getAttribute("title") } : null;
-      }, [fx.plain.name, label === 390]);
-      report(`${tag} · the locked row keeps its mark at rest`, !!mark?.drawn, JSON.stringify(mark));
+        const el = remove?.previousElementSibling;
+        if (!el || el.getAttribute("data-testid") !== "row-lock-mark") return { drawn: false, before: el?.outerHTML.slice(0, 80) ?? null };
+        return { drawn: el.getBoundingClientRect().width > 0, width: Math.round(el.getBoundingClientRect().width), control: !!el.closest("button") };
+      }, fx.plain.name);
+      report(`${tag} · the locked row keeps its mark at rest, left of its ✕`, !!mark?.drawn && mark.width === 14 && !mark.control, JSON.stringify(mark));
+
+      // An UNLOCKED row carries nothing of the lock: no mark, no shortcut, and no empty slot before
+      // its ✕, so it is the width it was before locks existed. Read on every drawn unlocked row.
+      const unlocked = await page.evaluate(() => {
+        const removes = [...document.querySelectorAll("main button")].filter((b) => /^Remove /.test(b.getAttribute("aria-label") || "") && b.getBoundingClientRect().width > 0);
+        const rows = removes.filter((b) => b.previousElementSibling?.getAttribute("data-testid") !== "row-lock-mark");
+        // Outside Shopping nothing else sits before the ✕ as an empty box (the ⇄'s kept slot is a
+        // Shopping-only thing), so an empty box there is a reserved lock slot come back.
+        const leaks = rows.filter((b) => {
+          const prev = b.previousElementSibling;
+          const empty = prev && !prev.textContent.trim() && prev.getBoundingClientRect().width > 0;
+          return b.parentElement.querySelector('[data-testid^="row-lock"]') || empty;
+        });
+        return { rows: rows.length, leaks: leaks.length };
+      });
+      report(`${tag} · an unlocked row reserves nothing for the lock`, unlocked.rows > 0 && unlocked.leaks === 0, JSON.stringify(unlocked));
+      // Hugh, staging walk 2026-09-25: a lock on a row pushed rows past the frame and the page scrolled
+      // sideways. The document itself is the measure, since any row overflowing moves it.
+      report(`${tag} · the decklist does not scroll sideways`, ...(await sideways(page)));
 
       // Clear all auto: counts the copies it can take, sweeps all but the locked one.
       const clear = visible(onPageRole(page, "button", /^Clear all \d+ untouched auto cards/));
@@ -329,6 +372,7 @@ async function run() {
         await page.waitForTimeout(400);
         const present = await onPageRole(page, "button", /^Lock cards$/).filter({ visible: true }).count();
         report(`${tag} · Lock cards is absent under Shopping`, present === 0, `${present} drawn`);
+        report(`${tag} · Shopping does not scroll sideways`, ...(await sideways(page)));
 
         // PR 6's modal half: a card locked in this deck, opened from its Shopping row, draws no
         // stand-ins door (offering stand-ins is offering to cut it), while an unlocked one does, so

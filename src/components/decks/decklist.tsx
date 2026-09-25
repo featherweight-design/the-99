@@ -837,7 +837,9 @@ export function Decklist({
               />
               <div
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
-                style={{ gridTemplateColumns: "1fr 1fr" }}
+                // `minmax(0, 1fr)`, never a bare `1fr`: a bare track never shrinks below its widest row's
+          // min-content, so one row with a long run of fixed pieces pushed the page sideways.
+          style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
               >
                 {placeReceipts(groupCards, receiptsInSection(key), sort.key, compareCards).map((item) => {
                   if ("receipt" in item) return <SwapReceiptRow key={item.receipt.swapId} receipt={item.receipt} />;
