@@ -362,7 +362,9 @@ export function ContentsListR6({ chapters }: { chapters: readonly ContentsChapte
                       <button
                         type="button"
                         aria-expanded={open}
-                        aria-controls={panel}
+                        // Only while the panel exists: a closed chapter's list is
+                        // unmounted, and a reference to nothing dangles.
+                        aria-controls={open ? panel : undefined}
                         aria-label={copy.toggle(chapter.title)}
                         onClick={() => toggle(chapter.id)}
                         className="flex min-h-[44px] min-w-[44px] flex-none items-center justify-end gap-[8px]"

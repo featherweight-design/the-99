@@ -240,6 +240,15 @@ describe("the phone list (§Q4–Q7)", () => {
     expect(within(phone()).getAllByRole("button", { expanded: true })).toHaveLength(2);
   });
 
+  it("points a disclosure at its list only while the list is drawn", () => {
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    const [a] = within(phone()).getAllByRole("button", { expanded: false });
+    expect(a.getAttribute("aria-controls")).toBeNull();
+    fireEvent.click(a);
+    const id = a.getAttribute("aria-controls");
+    expect(id && document.getElementById(id)).toBeTruthy();
+  });
+
   it("marks a new entry's row", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
     type(phone(), aboutEntries.find((e) => e.since === ABOUT_VERSION)!.title);
