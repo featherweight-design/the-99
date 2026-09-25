@@ -69,6 +69,17 @@ describe("an entry tied to a switch", () => {
     expect(visibleEntries({ NEVER_CUT_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
   });
 
+  it("reads unseen for a returning reader at the current version, in the shipped catalog", () => {
+    // The shipped launch entries carry `since` equal to ABOUT_VERSION, which every returning
+    // reader has reached. Were the version floor applied to them, a flip would announce nothing.
+    const launch = aboutEntries.filter((e) => e.switch);
+    expect(launch.map((e) => e.since)).toEqual([ABOUT_VERSION, ABOUT_VERSION]);
+    expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
+      "locked-cards",
+      "change-commander",
+    ]);
+  });
+
   it("is seen by its id, never by the version", () => {
     expect(isSeen(a, seen(99))).toBe(false);
     expect(isSeen(a, seen(0, ["a"]))).toBe(true);

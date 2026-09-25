@@ -1465,12 +1465,12 @@ function LockedRows() {
 export function LockedCardsFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <div className="flex flex-col gap-[18px]">
+      <div className="flex flex-col gap-[14px]">
         <LockCardsProvider value={LOCKS_AT_REST}>
           <LockedRows />
         </LockCardsProvider>
-        <div className="flex flex-col gap-[10px]">
-          <div className="flex flex-wrap items-center justify-between gap-[10px]">
+        <div className="flex flex-col">
+          <div className="flex flex-wrap items-center justify-between gap-[8px] border-b border-solid border-[color:var(--border)] pb-[8px]">
             <LockModeLine count={LOCKED_COUNT} />
             <LockModeButton lockMode onToggle={() => {}} />
           </div>
@@ -1513,9 +1513,9 @@ export function ChangeCommanderFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <ChangeCommanderProvider deckId="about-figure" deckName={deckName} pair={false} hasVersion>
-        <div className="flex flex-col gap-[16px]">
+        <div className="flex flex-col gap-[14px]">
           <div
-            className="relative h-[120px] overflow-hidden rounded-[10px]"
+            className="relative h-[150px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] md:h-[120px]"
             style={{ background: identityGradient(NAYA) }}
           >
             <ChangeCommanderDoor oracleId="about-gishath" width={desktop ? "desktop" : "mobile"} hasCrop />

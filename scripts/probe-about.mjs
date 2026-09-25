@@ -14,7 +14,9 @@
 // it starts `next dev` with every switch off, then restarts it with Change commander on, then
 // with Locked cards on as well, then with both off. Next 16 allows one `next dev` per project,
 // so stop any dev server running in this worktree first. What it proves, in order:
-//   F1  every switch off: a reader current by version sees nothing, and the browser is marked;
+//   F1  every switch off: a reader at the current version sees nothing, and the browser is marked
+//       (every returning reader sits there, and each launch entry's \`since\` equals it, so a
+//       version floor applied to a switched entry would announce nothing: that is what F2 catches);
 //   F2  Change commander on: the cookie from before the flip does NOT hide the sheet, and the
 //       sheet names that one entry;
 //   F3  opening /about records the entry by id, draws its figure, and the sheet stays away;
@@ -476,7 +478,7 @@ async function flipWalk(browser, who) {
     await context.clearCookies({ name: "about_sheet" });
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
-    report("F1 switches off: a current reader sees no sheet", !(await card.isVisible()));
+    report(`F1 switches off: a reader at version ${VERSION} sees no sheet`, !(await card.isVisible()));
     const before = await sheetCookie(context);
     report("F1 the browser is marked", before === `${userId}.${VERSION}`, String(before));
 
@@ -485,7 +487,7 @@ async function flipWalk(browser, who) {
     server = await startServer(["CHANGE_COMMANDER_ENABLED"]);
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     const first = await sheetTitles(page, card);
-    report("F2 flipped on: the cookie from before the flip does not hide the sheet", first !== null);
+    report(`F2 flipped on: a reader at version ${VERSION} is announced it, through the cookie from before`, first !== null);
     report(
       "F2 the sheet names Change commander alone",
       JSON.stringify(first) === JSON.stringify(["Change commander"]),
