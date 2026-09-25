@@ -12,6 +12,13 @@
 // a `commander_pair_support_cards` row and local-dev has none, so it writes ONE sentinel pair (an
 // `absent` header and one card) under a key checked absent first, and deletes both in the same
 // `finally`. Point it at `local-dev` or a scratch branch, never production.
+//
+// Four mutations fail it: the pair read keyed on the deck's columns instead of the canonical key
+// (inclusion null), the partner's identity dropped from the union (the pair deck no longer fits),
+// `leads` hard-coded false (the commander's own decks fit it), and the role count ignoring the role
+// (have 3). The pair deck is led by a blue legend with the card's commander as PARTNER, and its id
+// sorts after it, which is what makes the first two measurable at all: with the card's colors on the
+// deck's first column and the ids in canonical order, both mutations passed.
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
@@ -86,7 +93,9 @@ async function main() {
     select oracle_id from cards where commander_legal and type_line ~* 'legendary creature'
       and color_identity = array['U']::text[] order by name limit 1`);
 
-  const fits = await makeDeck(USER, "B fits", x.commander, null, peers.map((p) => p.oracle_id));
+  // Wastes, a land, beside them: a count that ignored the role would read 3.
+  const [wastes] = await rows<{ oracle_id: string }>(sql`select oracle_id from cards where name = 'Wastes'`);
+  const fits = await makeDeck(USER, "B fits", x.commander, null, [...peers.map((p) => p.oracle_id), wastes.oracle_id]);
   const holds = await makeDeck(USER, "A holds", x.commander, null, [x.oracle_id]);
   const blue = await makeDeck(USER, "C blue", blueCmd.oracle_id, null, []);
   await makeDeck(OTHER, "someone else's", x.commander, null, []);
@@ -116,10 +125,14 @@ async function main() {
   check("leads: so none of them fits it", led?.fits.length, 0);
 
   // 5. A pair reads the pair's list, under its canonical key, over the union of both identities.
-  const [partner] = await rows<{ oracle_id: string }>(sql`
+  // The deck is led by a BLUE legend whose id sorts AFTER the card's commander, with that commander
+  // as its partner. So the card's color reaches the deck only through the partner's identity, and
+  // the deck's columns are the reverse of the canonical key: both halves of the read are tested.
+  const [blueLead] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where commander_legal and type_line ~* 'legendary creature'
-      and color_identity = array['U']::text[] and oracle_id <> ${blueCmd.oracle_id}::uuid order by name limit 1`);
-  const [a, b] = [x.commander, partner.oracle_id].sort();
+      and color_identity = array['U']::text[] and oracle_id > ${x.commander}::uuid order by oracle_id limit 1`);
+  if (!blueLead) throw new Error("no blue legend sorts after the fixture's commander");
+  const [a, b] = [x.commander, blueLead.oracle_id].sort();
   const [taken] = await rows(sql`
     select 1 from commander_pair_support where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid`);
   if (taken) throw new Error("the sentinel's pair key already carries a row; refusing to write over it");
@@ -132,8 +145,7 @@ async function main() {
   await fixture.execute(sql`
     insert into commander_pair_support_cards (commander_oracle_id, partner_oracle_id, oracle_id, inclusion, position)
     values (${a}::uuid, ${b}::uuid, ${x.oracle_id}::uuid, 42.5, 1)`);
-  // The partner column is the LATER id in the deck, so the read has to reorder it.
-  const pair = await makeDeck(USER, "D pair", b, a, []);
+  const pair = await makeDeck(USER, "D pair", blueLead.oracle_id, x.commander, []);
   const paired = await loadFits(USER, x.oracle_id);
   check("pair: fits, over the union of both identities", paired?.fits.some((d) => d.id === pair), true);
   check("pair: its inclusion is the pair's figure", paired?.fits.find((d) => d.id === pair)?.inclusion, 42.5);
