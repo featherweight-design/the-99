@@ -15,6 +15,11 @@
 //     the tile keeps its lock on the meta line at rest (F8), and the tile's Undo returns it locked.
 //   - Under the Shopping filter Lock cards is absent, and a locked card opened from its Shopping row
 //     draws no stand-ins door while an unlocked one does (PR 6's modal half; SWAP_TOOLS_ENABLED=true).
+//   - Outside the mode (Hugh, 2026-09-25): a locked row draws a 14px mark left of its ✕ at both
+//     widths, not a control, and an unlocked row reserves nothing for the lock.
+//   - Neither the decklist nor Shopping scrolls sideways at 390 or 1300, measured with one row's
+//     name stretched to 124 characters (see `sideways`). Two mutations fail it: the grid back on
+//     bare `1fr` tracks (1300 reads 1481 and 1744), and the 22px slot restored (96 rows leak).
 //   - T1: at 1300 the toolbar, with two-digit auto and kept counts and a draft note at v10, is one
 //     line. 1280 is printed, not asserted (the addendum records it as about 5px over).
 //
@@ -143,19 +148,6 @@ async function buildDeck(userId, name, made) {
     order by dc.oracle_id limit 1`;
   if (!short) throw new Error("The template holds no further singleton for the unlocked Shopping row.");
   await sql`update deck_cards set quantity = 2 where deck_id = ${id} and oracle_id = ${short.oracle_id}`;
-  // The wide row (Hugh, staging walk 2026-09-25): a two-faced card's `A // B` name gives its row a
-  // min-content near 600px, and a bare `1fr` grid track sized to it pushed Shopping past the frame
-  // at 1300. The longest such name the account does not own lands on Shopping, LOCKED, since the
-  // lock was the reported trigger. Without it the sideways checks pass on the broken build.
-  const [wide] = await sql`
-    select c.oracle_id, c.name from cards c
-    where c.name like '% // %' and c.commander_legal and c.type_line not like 'Basic Land%'
-      and not exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id)
-      and not exists (select 1 from deck_cards dc where dc.deck_id = ${id} and dc.oracle_id = c.oracle_id)
-    order by length(c.name) desc, c.oracle_id limit 1`;
-  if (!wide) throw new Error("The catalog holds no unowned two-faced card for the wide Shopping row.");
-  await sql`insert into deck_cards (deck_id, oracle_id, quantity, auto) values (${id}, ${wide.oracle_id}, 1, false)`;
-  await sql`insert into deck_locks (deck_id, oracle_id) values (${id}, ${wide.oracle_id})`;
   await sql`update deck_cards set auto = true where deck_id = ${id} and oracle_id = any(${autos}::uuid[])`;
   await sql`delete from deck_cards where deck_id = ${id} and oracle_id = ${picks[12].oracle_id}`;
   return {
@@ -172,17 +164,27 @@ const lockOf = async (deckId, oracleId) =>
   (await sql`select removed_at from deck_locks where deck_id = ${deckId} and oracle_id = ${oracleId}`)[0] ?? null;
 const holds = async (deckId, oracleId) =>
   (await sql`select 1 from deck_cards where deck_id = ${deckId} and oracle_id = ${oracleId}`).length > 0;
-/** The page's own overflow: `[ok, detail]`, naming the widest row when it spills. */
+/**
+ * The page's own overflow, `[ok, detail]`, measured under a STRETCHED row (Hugh, staging walk
+ * 2026-09-25). A row's min-content includes its whole `nowrap` name, because `min-w-0` does not shrink
+ * a flex item's min-content contribution, and a bare `1fr` grid track grew to his longest two-faced
+ * name and pushed Shopping to 1428px at 1300. Whether a fixture has such a name is a fact about its
+ * data, so the probe makes one: it lengthens the first drawn name to a two-faced name of 124
+ * characters (long enough to spill the decklist's rows too, not only Shopping's), measures, and puts the name back. On a grid of `minmax(0, 1fr)` tracks the name
+ * truncates and the page holds; on a bare `1fr` it reads over.
+ */
 async function sideways(page) {
-  const m = await page.evaluate(() => {
+  const m = await page.evaluate(async () => {
     const doc = document.documentElement;
-    const over = [...document.querySelectorAll("main li, main [role=listitem]")]
-      .map((el) => ({ el, right: el.getBoundingClientRect().right }))
-      .filter((r) => r.right > doc.clientWidth + 0.5)
-      .sort((a, b) => b.right - a.right)[0];
-    return { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth, widest: over ? `${over.el.innerText.split("\n")[0].slice(0, 40)} ends ${Math.round(over.right)}` : null };
+    const name = [...document.querySelectorAll("main button")].find((b) => /^View details for /.test(b.getAttribute("aria-label") || "") && b.getBoundingClientRect().width > 0 && b.textContent.trim());
+    const was = name?.textContent ?? null;
+    if (name) name.textContent = "Growing Rites of Itlimoc of the Longest Name Ever Printed // Itlimoc, Cradle of the Sun at Its Very Widest, and Then Some More";
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const out = { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth, stretched: name !== null };
+    if (name) name.textContent = was;
+    return out;
   });
-  return [m.scrollWidth <= m.clientWidth, JSON.stringify(m)];
+  return [m.stretched && m.scrollWidth <= m.clientWidth, JSON.stringify(m)];
 }
 
 async function until(check, ms = 15_000) {
