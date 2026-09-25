@@ -19,6 +19,8 @@ import { safeNext } from "../../lib/about/gate";
 import { FIGURES } from "./figures";
 import { KeyNumeral } from "./numeral";
 import { ContentsList, ContentsRail } from "./contents-rail";
+import { JumpMark } from "./jump-mark";
+import { RecordVisit } from "./record-visit";
 import {
   ABOUT_VERSION,
   aboutCopy,
@@ -51,9 +53,43 @@ function NewMark() {
   );
 }
 
-function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
+/**
+ * R6 §P0: the pill LEADS the title, and only visually. The sr-only half still
+ * follows the title in the DOM, so a screen reader hears the name first and
+ * "New in this version" after it, as it did before the move.
+ */
+function NewPill() {
+  return (
+    <span
+      aria-hidden
+      className="mr-[8px] inline-flex items-center rounded-[4px] px-[7px] py-[2px] align-middle font-mono text-[10px] font-semibold tracking-[0.08em]"
+      style={{ background: "var(--accent)", color: "var(--bg)" }}
+    >
+      {aboutCopy.newBadge}
+    </span>
+  );
+}
+
+function Entry({
+  entry,
+  marked,
+  sheetMode,
+}: {
+  entry: AboutEntry;
+  marked: boolean;
+  sheetMode: boolean;
+}) {
   const Figure = FIGURES[entry.id];
   const inset = entry.width === "inset" && Figure;
+  // R6 §P0: a new entry's top rule is 2px of accent at both widths, and on a
+  // phone it is the only entry that carries a rule at all.
+  const rule = !sheetMode
+    ? "pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]"
+    : marked
+      ? // The 2px rule takes a pixel more than the 1px it replaces, so the padding
+        // gives it back and a new entry's title sits level with the others.
+        "scroll-mt-[20px] border-t-2 border-solid border-[color:var(--accent)] pt-[12px] min-[1000px]:pt-[13px]"
+      : "scroll-mt-[20px] pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]";
   return (
     // No per-entry rule below the wide stop — a rule per entry turns a chapter
     // into a table. The chapter's own hairline stays at both widths.
@@ -64,23 +100,41 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
       // entry below the fold offered nothing to wait for. Every feature ships an
       // entry, so every inventory hit that wall.
       //
-      // NO SCROLL MARGIN. The first version carried `scroll-mt-[80px]` on the
+      // NO SCROLL MARGIN with the sheet switch off. Under it (R6 §P1) the
+      // margin is 20px, the drawn landing, set in `rule` above; the 80px below
+      // is what that is not. The first version carried `scroll-mt-[80px]` on the
       // theory that the shell's header overlays the page. It does not:
       // `MobileHeader` is in flow (`shell/nav.tsx:303-308`), the desktop rail is
       // sticky on the LEFT, and the tab bar is fixed to the BOTTOM. Nothing sits
       // over the top of an entry at either width, so the margin bought nothing
       // and left an 80px gap above every anchor navigation.
       id={entry.id}
-      className="pt-[14px] min-[1000px]:border-t min-[1000px]:border-solid min-[1000px]:border-[color:var(--border)]"
+      className={rule}
     >
       {/* Title and route on ONE line, which is where the handoff puts them: the
           route is part of the entry's name — "Browse what you own /collection"
           — rather than a footnote under its keys. It wraps below the title on a
           phone instead of squeezing both. */}
-      <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]">
-        <h3 className="font-display text-[15px] font-semibold text-[color:var(--fg)] min-[1000px]:text-[15.5px]">
+      {/* R6 §P1: the jump mark washes THIS line, spilling into the gutter. The
+          negative margin and matching padding are always on, so the wash does
+          not move the text when it lands. */}
+      <div
+        data-entry-title={sheetMode ? "" : undefined}
+        className={
+          "flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]" +
+          (sheetMode
+            ? " -mx-[8px] rounded-[6px] px-[8px] data-[jumped]:bg-[color:var(--elevated)] min-[1000px]:-mx-[10px] min-[1000px]:px-[10px]"
+            : "")
+        }
+      >
+        <h3
+          tabIndex={sheetMode ? -1 : undefined}
+          className="font-display text-[15px] font-semibold text-[color:var(--fg)] focus:outline-none min-[1000px]:text-[15.5px]"
+        >
+          {sheetMode && marked && <NewPill />}
           {entry.title}
-          {marked && <NewMark />}
+          {sheetMode && marked && <span className="sr-only"> {aboutCopy.newBadgeSr}</span>}
+          {!sheetMode && marked && <NewMark />}
         </h3>
         <Link
           href={entry.route}
@@ -134,7 +188,56 @@ function Entry({ entry, marked }: { entry: AboutEntry; marked: boolean }) {
   );
 }
 
-export function AboutPage({ seen, next }: { seen: number; next?: string }) {
+/**
+ * R6 §O: what is new since the reader was last here, as one list of links at
+ * the top of the page. Titles and routes only (S1); every entry stays in its
+ * chapter (H3), and a row is a hash link to it.
+ */
+function WhatsNewIndex({ entries }: { entries: AboutEntry[] }) {
+  return (
+    <nav
+      aria-labelledby="whats-new-heading"
+      className="mt-[22px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] pt-[12px] pb-[2px] min-[1000px]:px-[16px] min-[1000px]:pt-[14px] min-[1000px]:pb-[4px]"
+    >
+      <h2
+        id="whats-new-heading"
+        className="font-mono text-[11px] font-medium tracking-[0.08em] text-[color:var(--accent)]"
+      >
+        {aboutCopy.newSinceEyebrow(entries.length)}
+      </h2>
+      <ul className="mt-[8px] list-none p-0">
+        {entries.map((e) => (
+          <li key={e.id} className="border-t border-solid border-[color:var(--border)]">
+            {/* The whole row is one link, so the route is text rather than a
+                second link nested inside it. */}
+            <a
+              href={`#${e.id}`}
+              className="flex min-h-[48px] flex-col justify-center gap-[2px] py-[6px] hover:underline min-[1000px]:min-h-[40px] min-[1000px]:flex-row min-[1000px]:items-baseline min-[1000px]:justify-start min-[1000px]:gap-[12px]"
+            >
+              <span className="text-[14.5px] font-medium text-[color:var(--fg)]">{e.title}</span>
+              <span className="font-mono text-[11.5px] text-[color:var(--accent)]">{e.route}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+export function AboutPage({
+  seen,
+  next,
+  sheetMode = false,
+}: {
+  seen: number;
+  next?: string;
+  /**
+   * `ABOUT_SHEET_ENABLED` (About R6): no redirect reaches this page, so it
+   * opens on the what's-new index, records the visit itself, and has no
+   * dismiss. Off, the page renders exactly as it did.
+   */
+  sheetMode?: boolean;
+}) {
   const behind = seen < ABOUT_VERSION;
   const newCount = aboutEntries.filter((e) => isNew(e, seen)).length;
   // Validated here as well as in the action: the page PRINTS the destination,
@@ -155,7 +258,8 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
    * who is current has nothing to acknowledge.
    */
   const redirected = typeof next === "string" && next.length > 0;
-  const offerDismiss = behind && redirected;
+  const offerDismiss = !sheetMode && behind && redirected;
+  const newEntries = aboutEntries.filter((e) => isNew(e, seen));
   // Counted here, where `seen` is known — the rail is a client component and
   // has no business reading the reader's acknowledged version.
   const railChapters = CHAPTERS.map((n) => {
@@ -195,7 +299,7 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
       {/* The eyebrow exists ONLY when the reader is behind: it is the reason
           they are looking at this page instead of the one they asked for, so
           it is a count and not an apology. */}
-      {behind && newCount > 0 && (
+      {!sheetMode && behind && newCount > 0 && (
         <p className="mb-[6px] font-mono text-[11px]">
           {aboutCopy.newSinceEyebrow(newCount)}
         </p>
@@ -207,6 +311,10 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
       <p className="mt-[10px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
         {aboutCopy.pageIntro}
       </p>
+
+      {sheetMode && newEntries.length > 0 && <WhatsNewIndex entries={newEntries} />}
+      {sheetMode && <RecordVisit behind={behind} />}
+      {sheetMode && <JumpMark />}
 
       <ContentsList chapters={railChapters} />
 
@@ -230,7 +338,12 @@ export function AboutPage({ seen, next }: { seen: number; next?: string }) {
             {aboutEntries
               .filter((e) => e.chapter === n)
               .map((entry) => (
-                <Entry key={entry.id} entry={entry} marked={isNew(entry, seen)} />
+                <Entry
+                  key={entry.id}
+                  entry={entry}
+                  marked={isNew(entry, seen)}
+                  sheetMode={sheetMode}
+                />
               ))}
           </ul>
         </section>
