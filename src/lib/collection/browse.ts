@@ -217,6 +217,13 @@ export type BrowseCard = {
    *  deck prints this". The control refuses to guess on null. */
   proxiedBy?: ProxyingDeck[] | null;
   /**
+   * The gate on the modal's `Find a deck for it →` door (swap tools, audit F3): the card can be
+   * played in Commander, and the reader has at least one deck with a commander to play it in. Only
+   * `loadCardDetail` sets them; absent reads as closed, so a specimen or a failed read draws no door.
+   */
+  commanderLegal?: boolean;
+  hasDecks?: boolean;
+  /**
    * What the feed last carried for each of this card's printings, indexed both
    * ways `BrowsePrinting` can name one. Optional for the same reason
    * `availability` is: only `loadCardDetail` sets it, because only the modal

@@ -63,6 +63,18 @@ describe("recommendedMix", () => {
     expect(m.cells.land.target).toBe(34);
     expect(m.cells.ramp.target).toBe(10);
     expect(m.measured).toBe(false);
+    // Each half is reported on its own, for a reader that names one role's need.
+    expect(m.rolesUsable).toBe(false);
+    expect(m.landMeasured).toBe(true);
+  });
+
+  it("reports both halves measured when the skeleton carries both", () => {
+    const m = recommendedMix(skel(), false);
+    expect(m.rolesUsable).toBe(true);
+    expect(m.landMeasured).toBe(true);
+    const bare = recommendedMix(null, false);
+    expect(bare.rolesUsable).toBe(false);
+    expect(bare.landMeasured).toBe(false);
   });
 
   it("keeps land advisory and the four roles not", () => {

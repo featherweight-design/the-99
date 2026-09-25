@@ -74,6 +74,13 @@ export type RecommendedMix = {
    *  honesty `FillPlan.measured` and `RoleFit.measured` carry, for the same reason: a reader
    *  shown a figure cannot tell one taken over eight hundred decks from a constant. */
   measured: boolean;
+  /** The four functional roles came from decklists. A reader naming one role's need (Fits your
+   *  decks, audit F9) asks this half alone, since `measured` also demands the land count. Always set
+   *  by `recommendedMix`; optional only so a hand-drawn specimen need not state it, and absent reads
+   *  as not measured. */
+  rolesUsable?: boolean;
+  /** The land count came from decklists. Absent reads as not measured, as above. */
+  landMeasured?: boolean;
 };
 
 const LABELS: Record<MixRole, string> = {
@@ -134,6 +141,8 @@ export function recommendedMix(
     // BOTH halves, or the line overclaims. A deck whose land count is measured and whose roles
     // are not is not being compared to EDHREC averages on four of its five cells.
     measured: rolesUsable && landMeasured,
+    rolesUsable,
+    landMeasured,
   };
 }
 
