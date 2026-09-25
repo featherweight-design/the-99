@@ -2,7 +2,7 @@ import { callModel, type ModelOutcome } from "../model/client";
 import { INTAKE_DEADLINE_MS, INTAKE_EFFORT, INTAKE_MAX_TOKENS, INTAKE_MODEL, INTAKE_RETRY_FLOOR_MS } from "./limits";
 import type { PhraseIndex } from "./match";
 import { buildReadPrompt, readResponseSchema, validateRead, type ReadResponse } from "./read";
-import { settleRead, startRead, storedRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
+import { settleRead, startRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
 import { intakeLive, STUB_MODEL, stubMode, stubReply } from "./stub";
 import { loadPhraseIndex, loadThemeVocabulary } from "./search";
 
@@ -17,7 +17,7 @@ import { loadPhraseIndex, loadThemeVocabulary } from "./search";
 export type DeeperReadOutcome =
   | ({ kind: "read" } & StoredRead)
   /** The read was valid in shape but nothing in it held up: refunded. */
-  | { kind: "nothing"; notUnderstood: string[] }
+  | { kind: "nothing"; notUsed: string[]; notUnderstood: string[] }
   /** The call failed: refunded. */
   | { kind: "failed"; errorClass: ReadErrorClass }
   /** Stopped, or reaped, before the answer came back: it wrote nothing. */
@@ -68,24 +68,23 @@ export async function runDeeperRead(
   deps: DeeperReadDeps = defaultDeps(),
 ): Promise<DeeperReadOutcome> {
   // The index is read before the unit is reserved: a failed read of it costs the player nothing.
-  // An ask already read is offered once: its chips come back and no unit is reserved.
   const hash = wordsHash(input.words, input.controls);
-  const stored = await storedRead(userId, hash);
-  if (stored) return { kind: "read", ...stored };
   const { labels, index } = await deps.loadIndex();
   const started = await startRead(userId, hash, deps.modelName, { readId: input.readId, now: deps.now() });
+  // An ask already read is offered once: its chips come back and no unit was reserved.
+  if (started.kind === "stored") return { kind: "read", ...started.read };
   if (started.kind !== "started") return { kind: started.kind };
 
   const outcome = await deps.model(buildReadPrompt(input.words, labels), input.words, index);
   const billed = outcome.usage ? { model: deps.modelName, usage: outcome.usage } : undefined;
   if (!outcome.ok) {
-    const settled = await settleRead(started, { kind: "failed", errorClass: outcome.errorClass }, billed);
+    const settled = await settleRead({ ...started, userId }, { kind: "failed", errorClass: outcome.errorClass }, billed);
     return settled ? { kind: "failed", errorClass: outcome.errorClass } : { kind: "stopped" };
   }
   const result = validateRead({ reply: outcome.value, words: input.words, index, controls: input.controls });
-  const settled = await settleRead(started, { kind: "read", result }, billed);
+  const settled = await settleRead({ ...started, userId }, { kind: "read", result }, billed);
   if (!settled) return { kind: "stopped" };
   return result.useful
     ? { kind: "read", chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
-    : { kind: "nothing", notUnderstood: result.notUnderstood };
+    : { kind: "nothing", notUsed: result.notUsed, notUnderstood: result.notUnderstood };
 }

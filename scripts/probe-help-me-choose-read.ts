@@ -159,6 +159,28 @@ async function main() {
     check("with the allowance spent, the press is refused", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "allowance");
     const after = await readRow(stranded2);
     check("the stranded read was reaped all the same", [after.status, after.error_class, after.unit], ["failed", "interrupted", "refunded"]);
+
+    console.log("\n7. One ask, one read, even in a race");
+    // Another request holds the player's ask lock and settles a read of the same ask. A press that
+    // starts meanwhile must wait for it and come back with that read, never reserve a second unit.
+    const raceHash = store.wordsHash("the race", controls);
+    const holder = await pool.connect();
+    try {
+      await holder.query("begin");
+      await holder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [`intake-read:${OTHER}`]);
+      const { rows: [call] } = await holder.query(
+        "insert into model_calls (user_id, feature, status, model) values ($1, 'intake', 'spent', $2) returning id", [OTHER, INTAKE_MODEL]);
+      await holder.query(
+        "insert into intake_reads (user_id, words_hash, model, model_call_id, status, chips) values ($1, $2, $3, $4, 'ok', $5)",
+        [OTHER, raceHash, INTAKE_MODEL, call.id, JSON.stringify({ chips: [], notUsed: [], notUnderstood: [] })]);
+      const racing = store.startRead(OTHER, raceHash, INTAKE_MODEL, { readId: randomUUID() });
+      await new Promise((r) => setTimeout(r, 1_500));
+      await holder.query("commit");
+      check("a press racing a settle of the same ask gets that read back", (await racing).kind, "stored");
+      check("and holds no second unit", await units(OTHER), 1);
+    } finally {
+      holder.release();
+    }
   } finally {
     await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER})`);
     await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER})`);

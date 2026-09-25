@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { intakeReads } from "../../db/schema";
@@ -58,9 +58,23 @@ export function wordsHash(words: string, controls: ReadControls): string {
     .digest("hex");
 }
 
+/**
+ * ONE ASK, ONE READ, atomically. A press's check for a stored read and its insert, and every
+ * settle, take this per-player lock first, so a settle cannot commit between another press's check
+ * and its insert: either the read is still pending (the one-pending index refuses the press) or it
+ * has settled and the check sees it.
+ */
+async function lockAsks(tx: Tx, userId: string): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`intake-read:${userId}`}, 0))`);
+}
+
+class StoredFound extends Error {
+  constructor(readonly read: StoredRead) { super("stored"); }
+}
+
 /** The player's settled read of this ask, when there is one. */
-export async function storedRead(userId: string, hash: string): Promise<StoredRead | null> {
-  const [row] = await db.select({ chips: intakeReads.chips }).from(intakeReads)
+async function storedRead(tx: Tx, userId: string, hash: string): Promise<StoredRead | null> {
+  const [row] = await tx.select({ chips: intakeReads.chips }).from(intakeReads)
     .where(and(eq(intakeReads.userId, userId), eq(intakeReads.wordsHash, hash), eq(intakeReads.status, "ok")))
     .orderBy(desc(intakeReads.createdAt)).limit(1);
   return (row?.chips as StoredRead | undefined) ?? null;
@@ -101,13 +115,17 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.
   await db.transaction((tx) => reapReads(tx, userId, now));
   try {
     const handle = await db.transaction(async (tx): Promise<ReadHandle> => {
+      // An ask already read is offered once: its chips come back and no unit is reserved.
+      await lockAsks(tx, userId);
+      const stored = await storedRead(tx, userId, hash);
+      if (stored) throw new StoredFound(stored);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
@@ -118,6 +136,7 @@ export async function startRead(
     });
     return { kind: "started", ...handle };
   } catch (err) {
+    if (err instanceof StoredFound) return { kind: "stored", read: err.read };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.
     // The id is the panel's, so a press that reuses one names a read that already exists.
@@ -133,7 +152,7 @@ export async function startRead(
  * nothing but its bill.
  */
 export async function settleRead(
-  { readId, callId }: ReadHandle,
+  { readId, callId, userId }: ReadHandle & { userId: string },
   outcome: { kind: "read"; result: ReadResult } | { kind: "failed"; errorClass: ModelErrorClass },
   billed?: Billed,
 ): Promise<boolean> {
@@ -144,6 +163,7 @@ export async function settleRead(
       ? { status: "ok", chips: stored(outcome.result) }
       : { status: "failed", errorClass: "nothing_valid" as const, chips: stored(outcome.result) };
   return db.transaction(async (tx) => {
+    await lockAsks(tx, userId);
     const rows = await tx.update(intakeReads)
       .set(set)
       .where(and(eq(intakeReads.id, readId), eq(intakeReads.status, "pending")))

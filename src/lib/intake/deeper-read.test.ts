@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const store = vi.hoisted(() => ({
   startRead: vi.fn(),
   settleRead: vi.fn(),
-  storedRead: vi.fn(),
   wordsHash: () => "hash",
 }));
 vi.mock("./run-store", () => store);
@@ -32,7 +31,6 @@ const handle = { kind: "started", readId: "r", callId: "c" };
 beforeEach(() => {
   store.startRead.mockReset().mockResolvedValue(handle);
   store.settleRead.mockReset().mockResolvedValue(true);
-  store.storedRead.mockReset().mockResolvedValue(null);
 });
 
 describe("runDeeperRead", () => {
@@ -45,8 +43,13 @@ describe("runDeeperRead", () => {
 
   it("validates BEFORE it settles, so a reply with nothing valid settles as not useful (F4)", async () => {
     const out = await runDeeperRead("u", input, deps(reply({ themes: ["Pirates"], notUnderstood: ["lizards"] })));
-    expect(out).toEqual({ kind: "nothing", notUnderstood: ["lizards"] });
+    expect(out).toEqual({ kind: "nothing", notUsed: [], notUnderstood: ["lizards"] });
     expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
+  });
+
+  it("keeps a figure the controls overrode on a read with nothing else in it", async () => {
+    const out = await runDeeperRead("u", { ...input, controls: { budgetDollars: 100, bracket: null } }, deps(reply({ budgetDollars: 300 })));
+    expect(out).toEqual({ kind: "nothing", notUsed: ["$300"], notUnderstood: [] });
   });
 
   it("settles a failed call as failed", async () => {
@@ -62,11 +65,11 @@ describe("runDeeperRead", () => {
 
   it("offers an ask once: a repeat gets the stored read back and reserves nothing", async () => {
     const chips = [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }];
-    store.storedRead.mockResolvedValue({ chips, notUsed: [], notUnderstood: [] });
+    store.startRead.mockResolvedValue({ kind: "stored", read: { chips, notUsed: [], notUnderstood: [] } });
     const d = deps(reply({}));
     expect(await runDeeperRead("u", input, d)).toEqual({ kind: "read", chips, notUsed: [], notUnderstood: [] });
-    expect(store.startRead).not.toHaveBeenCalled();
     expect(d.model).not.toHaveBeenCalled();
+    expect(store.settleRead).not.toHaveBeenCalled();
   });
 
   it("calls no model when the start was refused", async () => {
