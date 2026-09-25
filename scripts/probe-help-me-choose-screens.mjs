@@ -269,6 +269,47 @@ async function run() {
           five !== undefined && opts.every((o) => o.countWhole && o.labelInside),
           five ? JSON.stringify(opts) : `no five-color option among ${JSON.stringify(opts.map((o) => o.label))}`);
       }
+      // 10. The searching screen (close-out gap 4). The route's loading screen draws only on a
+      //     client navigation INTO the route from another one, which is the hand-off's way back:
+      //     a document load flushes the page's own bar and skeleton at once, and the form's press
+      //     stays inside the route. So it is read on *Back to results*: the route's own 5c (the
+      //     results header and Finding commanders… over still rows) paints before the page, and
+      //     never the shell's deckNew screen or an order sub named from a slug. Read by a
+      //     MutationObserver, since the screen lasts only as long as the page's reads.
+      {
+        const at = `searching @ ${width}`;
+        const watch = await context.newPage();
+        await watch.addInitScript(() => {
+          const seen = { loading: null, bar: null, deckNew: false, sub: false };
+          window.__seen = seen;
+          new MutationObserver(() => {
+            const main = document.querySelector("main");
+            if (!main) return;
+            const loading = main.querySelector("[data-testid='choose-loading']");
+            if (seen.loading === null && loading) seen.loading = performance.now();
+            if (seen.bar === null && main.querySelector("#read-as-label")) seen.bar = performance.now();
+            if (loading?.textContent.includes("Ordered by")) seen.sub = true;
+            if (main.textContent.includes("Clearing a space")) seen.deckNew = true;
+          }).observe(document, { childList: true, subtree: true, characterData: true });
+        });
+        // The hand-off is opened by ADDRESS, in a page that has never held the results: the
+        // client router keeps a page it has shown, and pressing back into one it holds draws no
+        // loading screen at all, which would measure the cache rather than the screen.
+        const scout = await context.newPage();
+        await scout.goto(`${BASE}/decks/new/choose?c=g&t=dinosaurs&v=results`, { waitUntil: "domcontentloaded" });
+        const handOff = await scout.locator(`${PAGE} [data-testid='row-hand-off']`).first().getAttribute("href");
+        await scout.close();
+        await watch.goto(`${BASE}${handOff}`, { waitUntil: "domcontentloaded" });
+        await watch.locator(`${PAGE} [data-testid='hand-off-answers']`).waitFor({ timeout: 60_000 });
+        await watch.evaluate(() => Object.assign(window.__seen, { loading: null, bar: null, deckNew: false, sub: false }));
+        await watch.locator(`${PAGE} a:visible`, { hasText: "Back to results" }).first().click();
+        await watch.locator(`${PAGE} #read-as-label`).waitFor({ timeout: 90_000 });
+        const seen = await watch.evaluate(() => window.__seen);
+        report(`${at}: Back to results paints the route's 5c before the page, with no deckNew copy and no order sub`,
+          seen.loading !== null && seen.bar !== null && seen.loading <= seen.bar && !seen.deckNew && !seen.sub,
+          JSON.stringify(seen));
+        await watch.close();
+      }
       await context.close();
     }
   } finally {

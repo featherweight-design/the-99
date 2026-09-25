@@ -1,7 +1,2 @@
-import { LoadingScreen } from "../../../../components/shell/loading-screen";
-import { shellCopy } from "../../../../lib/copy/shell";
-
-// Still: Help me choose draws no motion anywhere (STATES invariant), its loading screen included.
-export default function Loading() {
-  return <LoadingScreen copy={shellCopy.loading.deckNew} still />;
-}
+// The route's own loading screen: see `ChooseLoading` for what it draws and why the bar is absent.
+export { ChooseLoading as default } from "../../../../components/intake/choose-loading";
