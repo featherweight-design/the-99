@@ -40,19 +40,42 @@ export async function loadThemeVocabulary(): Promise<VocabularyTheme[]> {
  * vocabulary also reads, moves monthly and is caught by the window.
  */
 const CATALOG_MEMO_MS = 10 * 60 * 1000;
-let memo: { generation: string; at: number; value: Promise<{ themes: VocabularyTheme[]; index: PhraseIndex }> } | null = null;
+type CatalogMemo = {
+  generation: string;
+  at: number;
+  themes: Promise<VocabularyTheme[]>;
+  /** Built on first ask, from the same themes: a page that needs only the labels never pays for it. */
+  index: Promise<PhraseIndex> | null;
+};
+let memo: CatalogMemo | null = null;
 
-export async function loadIntakeCatalog(now: number = Date.now()): Promise<{ themes: VocabularyTheme[]; index: PhraseIndex }> {
+async function catalogMemo(now: number): Promise<CatalogMemo> {
   const generation = await catalogGeneration();
-  if (memo && memo.generation === generation && now - memo.at < CATALOG_MEMO_MS) return memo.value;
-  const value = loadThemeVocabulary().then(async (themes) => ({ themes, index: await loadPhraseIndex(themes) }));
+  if (memo && memo.generation === generation && now - memo.at < CATALOG_MEMO_MS) return memo;
+  const entry: CatalogMemo = { generation, at: now, themes: loadThemeVocabulary(), index: null };
   // A read that started earlier never replaces one that started later: around a catalog refresh
   // an old-generation read can finish last, and must not roll the memo back to it.
-  if (memo && memo.at > now) return value;
-  memo = { generation, at: now, value };
+  if (memo && memo.at > now) return entry;
+  memo = entry;
   // A failed read is not kept: the next request tries again.
-  value.catch(() => { if (memo?.value === value) memo = null; });
-  return value;
+  entry.themes.catch(() => { if (memo === entry) memo = null; });
+  return entry;
+}
+
+/** The theme vocabulary alone, from the same memo: what a page drawing labels needs. */
+export async function loadIntakeThemes(now: number = Date.now()): Promise<VocabularyTheme[]> {
+  return (await catalogMemo(now)).themes;
+}
+
+export async function loadIntakeCatalog(now: number = Date.now()): Promise<{ themes: VocabularyTheme[]; index: PhraseIndex }> {
+  const entry = await catalogMemo(now);
+  const themes = await entry.themes;
+  if (!entry.index) {
+    const index = loadPhraseIndex(themes);
+    entry.index = index;
+    index.catch(() => { if (entry.index === index) entry.index = null; });
+  }
+  return { themes, index: await entry.index };
 }
 
 /**

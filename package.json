@@ -39,6 +39,7 @@
     "probe:help-me-choose-search": "tsx scripts/probe-help-me-choose-search.ts",
     "probe:help-me-choose-fill": "tsx scripts/probe-help-me-choose-fill.ts",
     "probe:help-me-choose-plumbing": "tsx scripts/probe-help-me-choose-plumbing.ts",
+    "probe:help-me-choose-screens": "node scripts/probe-help-me-choose-screens.mjs",
     "probe:help-me-choose-read": "tsx scripts/probe-help-me-choose-read.ts",
     "probe:profile-store": "tsx scripts/probe-profile-store.ts",
     "probe:notices": "tsx scripts/probe-notices.ts",

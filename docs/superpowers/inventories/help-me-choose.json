@@ -1,0 +1,78 @@
+{
+  "feature": "Help me choose (sub-project 8), PR 5b: the intake form and the results",
+  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true. Every row is reached by URL: the form is /decks/new/choose, and a submit goes to v=submit, which resolves the words and redirects to the results.",
+  "rows": [
+    {
+      "id": "form-blank",
+      "label": "/decks/new/choose: the form, blank (2a)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose",
+          "wait": "textarea",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "form-filled",
+      "label": "/decks/new/choose: the form, pre-filled from answers (Change answers)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?w=big+dumb+lizards+that+stomp&c=r,g&t=dinosaurs&b=150&k=3",
+          "wait": "textarea",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "results-theme",
+      "label": "results: a theme and words, submitted (4a, best fits)",
+      "view": "src/components/intake/choose-results.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?w=dinosaurs+that+stomp%2C+lots+of+little+tokens+under+%24200&v=submit",
+          "wait": "[data-testid='order-line']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "results-owned",
+      "label": "results: no theme or card, the owned order",
+      "view": "src/components/intake/choose-results.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=g&v=results",
+          "wait": "[data-testid='order-line']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "results-narrow",
+      "label": "results: too narrow, a few fit",
+      "view": "src/components/intake/narrow-note.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=g&m=exact&t=dinosaurs&k=2&v=results",
+          "wait": "[data-testid='narrow-few'], [data-testid='narrow-none'], [data-testid='order-line']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "results-none",
+      "label": "results: nothing fits",
+      "view": "src/components/intake/narrow-note.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=w,u,b,r,g&m=exact&t=dinosaurs&b=1&k=1&v=results",
+          "wait": "[data-testid='narrow-none']",
+          "settle": 6000
+        }
+      ]
+    }
+  ]
+}

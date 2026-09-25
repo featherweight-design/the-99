@@ -18,7 +18,12 @@ export const colorsPhrase = (colors: readonly string[]) => colorNames(colors.map
 
 /** The order line: which answer ranks the rows, and the sentence under it. */
 export function orderLine(order: SearchResult["order"], p: ChooseParams, labels: Labels): { title: string; sub: string } {
-  if (order === "owned") return { title: copy.results.byOwned, sub: copy.results.subOwned };
+  if (order === "owned") {
+    const sub = p.colors.length > 0
+      ? copy.results.subOwnedColors(copy.intake.colorsJoin(colorNames(p.colors.map((c) => c.toUpperCase()))))
+      : copy.results.subOwned;
+    return { title: copy.results.byOwned, sub };
+  }
   const names = [...p.themes.map(labels.theme), ...(p.card && labels.card ? [labels.card] : [])];
   // A card the catalog could not name (a stale link): the order is still fit, with nothing to cite.
   if (names.length === 0) return { title: copy.results.all, sub: "" };
@@ -123,7 +128,7 @@ export type AnswerChip = { kind: string; value: string };
 export function answerChips(p: ChooseParams, labels: Labels): AnswerChip[] {
   const k = copy.readAs.kinds;
   return [
-    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? `${k.colors} · ${k.exactly}` : k.colors, value: colorsPhrase(p.colors) }] : []),
+    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors) }] : []),
     ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s) })),
     ...(p.card && labels.card ? [{ kind: k.card, value: labels.card }] : []),
     ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}` }] : []),
