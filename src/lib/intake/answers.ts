@@ -25,7 +25,7 @@ export type ValidAnswers = {
 };
 
 /** Whole dollars, as the column's check requires, and no more than any real budget. */
-const MAX_BUDGET_DOLLARS = 100_000;
+export const MAX_BUDGET_DOLLARS = 100_000;
 const MAX_THEMES = 8;
 const MAX_THEME_LABEL = 60;
 

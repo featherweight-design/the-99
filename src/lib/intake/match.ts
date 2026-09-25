@@ -32,6 +32,12 @@ export type MatchResult = {
   chips: Chip[];
   /** The words that matched nothing and are not stop words, in the order typed. */
   leftover: string[];
+  /**
+   * The same leftovers as the player wrote them, for *Not used*: each run of unmatched words
+   * between a match, a figure or a clause break, copied verbatim from the text, with stop words
+   * trimmed from its two ends. A run of stop words alone is no phrase.
+   */
+  phrases: string[];
 };
 
 type Target = { kind: "theme"; slug: string; label: string } | { kind: "card"; oracleId: string; name: string };
@@ -169,7 +175,68 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
 
   for (const f of found.sort((a, b) => a.at - b.at)) push(f.chip);
   const leftover = words.filter((w, k) => !consumed[k] && !STOP_WORDS.has(w.word)).map((w) => w.word);
-  return { chips, leftover };
+  return { chips, leftover, phrases: leftoverPhrases(text, rest, words, consumed) };
+}
+
+/** A clause mark ends a phrase, after a token or inside one: *lizards, and tokens* is two. */
+const CLAUSE_BREAK = /[,.;:!?()]/;
+const CLAUSE_BREAK_ALL = /[,.;:!?()]/g;
+
+/** A clause's own text with the stop words at its two ends removed, spelling kept: "" when only
+ *  stop words are left. Done per clause, after the split, since a clause mark can sit mid-token. */
+function trimStopWords(part: string): string {
+  const tokens = [...part.matchAll(/[^\s]+/g)];
+  const isStop = (raw: string) => phraseWords(raw).every((w) => STOP_WORDS.has(w));
+  let a = 0;
+  let b = tokens.length - 1;
+  while (a <= b && isStop(tokens[a][0])) a++;
+  while (b >= a && isStop(tokens[b][0])) b--;
+  if (a > b) return "";
+  return part.slice(tokens[a].index, tokens[b].index + tokens[b][0].length).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+}
+
+function leftoverPhrases(
+  text: string,
+  rest: string,
+  words: readonly { word: string; raw: string; at: number }[],
+  consumed: readonly boolean[],
+): string[] {
+  // A token holding a matched word is not the player's leftover, even in part: *Dinosaurs-stomp*
+  // used *Dinosaurs*, so the token is left out rather than quoted with the chip inside it.
+  const touched = new Set(words.filter((_, k) => consumed[k]).map((w) => w.at));
+  const runs: number[][] = [];
+  let run: number[] = [];
+  const close = () => { if (run.length > 0) runs.push(run); run = []; };
+  for (let k = 0; k < words.length; k++) {
+    if (consumed[k] || touched.has(words[k].at)) { close(); continue; }
+    const prev = run.at(-1);
+    if (prev !== undefined) {
+      const w = words[prev];
+      const gapStart = w.at + w.raw.length;
+      // A figure blanked out of the scan sits in the gap, or the previous token ended a clause.
+      const figureBetween = words[k].at > gapStart && text.slice(gapStart, words[k].at) !== rest.slice(gapStart, words[k].at);
+      if (figureBetween || (w.at !== words[k].at && CLAUSE_BREAK.test(w.raw))) close();
+    }
+    run.push(k);
+  }
+  close();
+
+  const out: string[] = [];
+  for (const r of runs) {
+    let a = 0;
+    let b = r.length - 1;
+    while (a <= b && STOP_WORDS.has(words[r[a]].word)) a++;
+    while (b >= a && STOP_WORDS.has(words[r[b]].word)) b--;
+    if (a > b) continue;
+    const first = words[r[a]];
+    const last = words[r[b]];
+    const span = text.slice(first.at, last.at + last.raw.length);
+    for (const part of span.split(CLAUSE_BREAK_ALL)) {
+      const phrase = trimStopWords(part);
+      if (phrase.length > 0 && !out.includes(phrase)) out.push(phrase);
+    }
+  }
+  return out;
 }
 
 function sameTarget(a: Target, b: Target): boolean {

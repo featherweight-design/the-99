@@ -217,6 +217,31 @@ synopsis's.
   - left untouched by a late answer, which writes nothing.
 - Mutations.
 
+**PR 5 is split in two (orchestrator-approved, 2026-09-25).** Measured against the handoff it ran
+well past 800 lines, so the boundary sits between the data the screens read and the screens:
+- **PR 5a, the data (no UI):** the URL's answers, the words' resolution, the page slices, the
+  decorations of the rows on screen, the too-narrow facts, and the catalog memo.
+- **PR 5b, the screens:** everything listed under PR 5 below, the flag, and migration 0064.
+
+**PR 5a as built.**
+- **The URL carries RESOLVED answers** (`src/lib/intake/params.ts`): `t` theme slugs, `a` card,
+  `b`, `k`, `c`/`m` in the lanes' own encoding, `w` the words (for display only), `r` (PR 6) and
+  `v=results`. The form resolves the words once, on submit (`resolveWords`). The results never
+  match again, so any single answer, a typed card included, is dropped by removing its param.
+- **The first card, budget and bracket in the words count**, and the rest go under *Not used*, as
+  does a figure a set control overrides.
+- **`MatchResult.phrases`**: each run of unmatched words, verbatim, split at a match, a figure or
+  a clause break, with stop words trimmed from its ends. This is the *Not used* line's source.
+- **A page is 12 rows** (`loadResultsPage`). Only those rows are decorated: the owned printing's
+  art, the commander's own mark (free, held in a named deck, or its buy price state), and the
+  support total the owned order's figure needs. The search runs again for each slice.
+- **Too narrow gains two facts**: `widen`, the count if exact colors became any of them, and
+  `cardOverBracket`, set when the build-around card is a Game Changer at bracket 1 or 2. Capping
+  the options to three and hiding empty ones is presentation, so it is left to 5b.
+- **The vocabulary and phrase index are memoized in memory**, per server instance and catalog
+  generation, for at most ten minutes. The index is about 30,000 card names, past the data cache's
+  2 MB entry limit.
+
 **PR 5: the intake and results screens.**
 - The flag reader, `.env.example` and `docs/deployment.md`, moved from PR 1.
 - `/decks/new/choose`:
