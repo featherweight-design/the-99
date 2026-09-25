@@ -27,8 +27,8 @@ const read = (over: Partial<FitsRead> = {}): FitsRead => ({
   owned: 2,
   free: 1,
   fits: [
-    { id: "d-g", name: "Gishath", commanders: ["Gishath, Sun's Avatar"], inclusion: 58.2, need: { role: "ramp", have: 7, target: 10 } },
-    { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], inclusion: null, need: null },
+    { id: "d-g", name: "Gishath", commanders: ["Gishath, Sun's Avatar"], inclusion: 58.2, listed: true, need: { role: "ramp", have: 7, target: 10 } },
+    { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], inclusion: null, listed: false, need: null },
   ],
   holds: [{ id: "d-a", name: "Atraxa", quantity: 1 }],
   excluded: [],
@@ -66,6 +66,17 @@ describe("FitsPicker", () => {
     expect(rows[1]).not.toHaveTextContent(copy.needLabel);
     expect(screen.getAllByTestId("fits-holds-row")[0]).toHaveTextContent(copy.holds(1));
     expect(screen.getAllByRole("button", { name: /using your free copy/ })).toHaveLength(2);
+  });
+
+  // The index can list a card with a synergy and no inclusion; that deck lists it, so "not listed" would be false.
+  it("names a deck that lists the card with no figure as listed, not unlisted", async () => {
+    actions.loadFitsAction.mockResolvedValue(read({
+      fits: [{ id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], inclusion: null, listed: true, need: null }],
+    }));
+    draw();
+    const row = await screen.findByTestId("fits-row");
+    expect(row).toHaveTextContent(copy.cmdrListedNoFigure("Kinnan"));
+    expect(row).not.toHaveTextContent(copy.cmdrUnlisted("Kinnan"));
   });
 
   it("names a universal staple, never a percentage, with the note once (addendum)", async () => {

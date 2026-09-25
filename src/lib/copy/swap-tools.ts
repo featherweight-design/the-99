@@ -187,6 +187,8 @@ export const swapToolsCopy = {
     cmdrLabel: "commander",
     cmdrFigure: (pct: string, commander: string) => `${pct}% of ${commander} decks`,
     cmdrUnlisted: (commander: string) => `not listed for ${commander}`,
+    /** Listed with no inclusion figure: the index carries the card for this commander, so "not listed" is false. */
+    cmdrListedNoFigure: (commander: string) => `listed for ${commander}`,
     /** The addendum's staple form: a universal staple quotes no one commander's figure. */
     cmdrStaple: "staple · any commander",
     needLabel: "this deck",

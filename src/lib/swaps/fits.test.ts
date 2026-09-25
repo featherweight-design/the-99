@@ -7,7 +7,7 @@ import { shapeFits, type DeckRow, type FitsRead } from "./fits";
 const birds: FitsRead["card"] = { oracleId: "o-birds", name: "Birds of Paradise", colorIdentity: ["G"], commanderLegal: true, role: "ramp" };
 const deck = (over: Partial<DeckRow> & { id: string; name: string }): DeckRow => ({
   commander_oracle_id: `c-${over.id}`, partner_oracle_id: null, commander_names: [`Cmdr ${over.id}`],
-  identity: ["G", "R"], holds: 0, leads: false, inclusion: null, synergy: null, ...over,
+  identity: ["G", "R"], holds: 0, leads: false, inclusion: null, synergy: null, listed: false, ...over,
 });
 const measured = { ...recommendedMix(null, false), rolesUsable: true, landMeasured: true };
 const flat = recommendedMix(null, false);

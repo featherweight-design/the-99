@@ -25,8 +25,11 @@ export type FitDeck = {
   name: string;
   /** The commander, or both names for a pair, as the inclusion chip names them. */
   commanders: string[];
-  /** The card's share of the commander's (or pair's) indexed decks, 0–100, or null: not listed. */
+  /** The card's share of the commander's (or pair's) indexed decks, 0–100, or null when there is no figure. */
   inclusion: number | null;
+  /** The index holds a support row for the card, whatever figures it carries: a row can carry a synergy
+   *  and no inclusion, and that card is listed, not unlisted. */
+  listed: boolean;
   /** This deck's count in the card's role against its target, or null when the card has no role or
    *  the target for it was not measured (F9). */
   need: { role: FitRole; have: number; target: number } | null;
@@ -59,6 +62,7 @@ export type DeckRow = {
   inclusion: number | string | null;
   /** The deck's commander (or pair) synergy for the card: the order of the picker, never drawn (Q2). */
   synergy: number | string | null;
+  listed: boolean;
 };
 
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -98,6 +102,7 @@ export function shapeFits(
       name: r.name,
       commanders: r.commander_names,
       inclusion: r.inclusion === null ? null : Number(r.inclusion),
+      listed: r.listed,
       need: role !== "other" && mix && measured
         ? { role, have: roleCounts.get(r.id) ?? 0, target: mix.cells[role].target }
         : null,
@@ -156,7 +161,16 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
             where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
               and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
               and s.oracle_id = ${oracleId}::uuid)
-        end as synergy
+        end as synergy,
+        case when d.partner_oracle_id is null then
+          exists(select 1 from commander_support_cards s
+            where s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = ${oracleId}::uuid)
+        else
+          exists(select 1 from commander_pair_support_cards s
+            where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
+              and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
+              and s.oracle_id = ${oracleId}::uuid)
+        end as listed
       from decks d
       join cards cc on cc.oracle_id = d.commander_oracle_id
       left join cards pc on pc.oracle_id = d.partner_oracle_id
