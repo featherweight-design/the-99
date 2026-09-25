@@ -63,3 +63,18 @@ T1, T2, T3, T5, T6. Orchestrator approvals 2026-09-25: T6's two announcements.
 | units | lockedAutoCount and the receipt count copies; `mode.count` counts cards | same | unit |
 
 Gaps: none.
+
+## Card view tiles (PR 4b)
+
+| Property | Mobile | Desktop | Verified |
+|---|---|---|---|
+| at-rest mark | closed LockMark on the meta line, after the dot, slot and count | same | probe (drawn, inside the line), unit |
+| F8 truncation | the lock never drops; the fact marks give way first, whole glyphs (a zero-width lead lets even the first mark wrap away rather than be sliced) | same | unit, structure (3 mutations); probe invariant on the most crowded line it builds (a locked Game Changer at two copies: lock inside, no mark sliced). At 390 that line still fits one whole mark, so the slice band itself is not reached at a supported width |
+| mode toggle | the ✕ column: 44px column, 36px box | 32px column, 26×24 box | unit, screenshot |
+| toggle name | `aria-pressed`, `mode.toggleAria(card)` | same | probe, unit (mutation) |
+| meta-line lock in the mode | hidden | same | unit (mutation) |
+| description | `mark.a11y`, outside the drawn mark | same | unit (mutation) |
+| refusal | reverts, `mode.refused` under the tile | same | unit (mutation) |
+| mode across List ↔ Card | kept | same | probe, unit (mutation) |
+| key in the card view | `locked` entry when the view holds a locked card | same | unit (mutation) |
+| tile Undo | `{ relock: true }` (L1) | same | probe (mutation fails) |

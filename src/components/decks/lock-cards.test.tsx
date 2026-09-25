@@ -1,4 +1,4 @@
-// Locked (never cut), PR 4a: the mark, the rows' lock, the toolbar's Lock cards mode, and the
+// Locked (never cut), PRs 4a and 4b: the mark, the rows' and the tiles' lock, the toolbar's Lock cards mode, and the
 // sweep that leaves a locked auto card where it is. The leaves are rendered alone where a rule is
 // theirs; the mode, the optimism and the sweep go through BuilderShell, because the seam under test
 // is the shell's own state feeding the toolbar, the key line and every row at once.
@@ -11,6 +11,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { recommendedMix } from "../../lib/decks/mix";
@@ -41,10 +42,12 @@ vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction: vi.fn(async () =
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { LockMark } = await import("./lock-mark");
-const { GroupToggle } = await import("./group-toggle");
+const { GroupToggle, DECK_VIEW_KEY } = await import("./group-toggle");
 const { ClearAutoButton, SweepReceipt } = await import("./clear-auto");
 const { buildMarkKeyEntries } = await import("./decklist");
 const { DecklistRow } = await import("./decklist-row");
+const { DeckCardTile } = await import("./deck-card-tile");
+const { PendingChangeProvider } = await import("./pending-change");
 const { LockCardsProvider, useCardLocks } = await import("./lock-cards");
 const { BuilderShell } = await import("./builder-shell");
 
@@ -277,8 +280,11 @@ describe("the key's locked entry", () => {
     expect(entry.word).toBe(lockedCardsCopy.mark.key);
   });
 
-  it("stays out of the card view, whose tiles draw no lock yet", () => {
-    expect(ids([mk("a", "A", { locked: true })], true)).not.toContain("locked");
+  // Since 4b the tiles draw the lock on their meta line, so the card view's key glosses it too,
+  // on the same condition.
+  it("glosses the lock in the card view too, when the view holds a locked card", () => {
+    expect(ids([mk("a", "A", { locked: true })], true)).toContain("locked");
+    expect(ids([mk("a", "A")], true)).not.toContain("locked");
   });
 });
 
@@ -397,6 +403,146 @@ describe("DecklistRow's lock", () => {
       // The desktop slot the ⇄ would have filled, empty, so every ✕ stays in one column.
       expect(container.querySelector("span.hidden.md\\:block.w-\\[22px\\]")).not.toBeNull();
     });
+  });
+});
+
+
+// ── The tile (PR 4b) ───────────────────────────────────────────────────────────
+
+const tileTrigger = () => screen.getByRole("button", { name: /Sol Ring/, description: /./ });
+
+describe("DeckCardTile's lock", () => {
+  const sol = mk("sol-ring", "Sol Ring", { imageUri: "https://cards.example/sol-ring.jpg" });
+
+  it("draws nothing of the lock with the switch off", () => {
+    renderRow(<DeckCardTile deckId="d1" card={{ ...sol, locked: true }} />, null);
+    expect(screen.queryByTestId("tile-lock-mark")).toBeNull();
+    expect(screen.queryByTestId("lock-mark")).toBeNull();
+    expect(screen.queryByTestId("tile-lock-toggle")).toBeNull();
+    expect(screen.queryByText(lockedCardsCopy.mark.a11y)).toBeNull();
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+  });
+
+  it("draws nothing of the lock on an unlocked tile at rest: no hover shortcut, the ✕ column whole", () => {
+    renderRow(<DeckCardTile deckId="d1" card={sol} />, lockValue());
+    expect(screen.queryByTestId("lock-mark")).toBeNull();
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+  });
+
+  it("draws the closed lock at rest on the meta line, after the dot and slot and before the facts", () => {
+    const availability: Availability = { owned: 1, hard: 0, soft: 0, free: -1, claims: [] };
+    renderRow(
+      <DeckCardTile deckId="d1" card={{ ...sol, locked: true, availability, facts: ["gameChanger"] }} />,
+      lockValue(),
+    );
+    const mark = screen.getByTestId("tile-lock-mark");
+    expect(within(mark).getByTestId("lock-mark").dataset.lockState).toBe("closed");
+    expect(within(mark).getByTestId("lock-mark").style.color).toBe("var(--fg-body)");
+    expect(within(mark).getByTestId("lock-mark").getAttribute("title")).toBe(lockedCardsCopy.mark.title);
+    const line = mark.parentElement!;
+    const children = [...line.children];
+    const facts = screen.getByTestId("tile-fact-marks");
+    // The dot and the availability chip come first, and the facts after the lock.
+    const chip = children.findIndex((el) => /short/.test(el.textContent ?? ""));
+    expect(chip).toBeGreaterThan(0);
+    expect(children.indexOf(mark)).toBeGreaterThan(chip);
+    expect(children.indexOf(facts)).toBeGreaterThan(children.indexOf(mark));
+    // The ✕ stays at rest.
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+  });
+
+  // F8: the fullest meta line (dot, a claimed chip, a count and three fact marks) keeps the lock.
+  // jsdom lays nothing out, so this asserts the TRUNCATION ORDER the layout follows: the lock is
+  // rigid, and the facts are the one group on the line that shrinks, dropping whole marks into a
+  // clipped second line. The probe measures it at 390.
+  it("keeps the lock on the fullest meta line, where only the facts give way (F8)", () => {
+    const availability: Availability = { owned: 1, hard: 0, soft: 0, free: -1, claims: [] };
+    renderRow(
+      <DeckCardTile
+        deckId="d1"
+        card={{
+          ...sol,
+          locked: true,
+          quantity: 2,
+          availability,
+          facts: ["gameChanger", "extraTurns", "tutor"],
+        }}
+      />,
+      lockValue(),
+    );
+    const mark = screen.getByTestId("tile-lock-mark");
+    expect(mark.className.split(" ")).toContain("flex-none");
+    const facts = screen.getByTestId("tile-fact-marks");
+    // A zero-width lead, then the three marks, each whole and rigid.
+    const [lead, ...marks] = [...facts.children];
+    expect(lead.getAttribute("data-testid")).toBe("tile-fact-lead");
+    expect(lead.className.split(" ")).toEqual(expect.arrayContaining(["w-0", "flex-none"]));
+    expect(marks).toHaveLength(3);
+    for (const m of marks) expect(m.className.split(" ")).toContain("flex-none");
+    for (const c of ["min-w-0", "flex-wrap", "overflow-hidden", "h-[16px]"]) expect(facts.className.split(" ")).toContain(c);
+    // Every other in-flow item on the line is rigid, so the facts absorb the whole deficit.
+    const line = mark.parentElement!;
+    const rigid = [...line.children].filter(
+      (el) => el !== facts && !el.classList.contains("sr-only"),
+    );
+    // The dot, the over chip, the count and the lock.
+    expect(rigid).toHaveLength(4);
+    // The item ITSELF, never a descendant: an inner span that is flex-none says nothing about
+    // whether the box the line lays out can shrink.
+    for (const el of rigid) expect(el.classList.contains("flex-none"), el.outerHTML.slice(0, 80)).toBe(true);
+  });
+
+  it("says the lock on the trigger's description, before the draft's", () => {
+    renderRow(
+      <PendingChangeProvider value={{ moves: new Map([[sol.oracleId, { from: 0, to: 1 }]]) }}>
+        <DeckCardTile deckId="d1" card={{ ...sol, locked: true }} />
+      </PendingChangeProvider>,
+      lockValue(),
+    );
+    const ids = tileTrigger().getAttribute("aria-describedby")!.split(" ");
+    expect(ids).toHaveLength(2);
+    expect(document.getElementById(ids[0])!.textContent).toBe(lockedCardsCopy.mark.a11y);
+    expect(document.getElementById(ids[1])!.textContent).not.toBe(lockedCardsCopy.mark.a11y);
+  });
+
+  it("turns the ✕ column into a pressed lock toggle in the mode, and hides the meta-line lock", () => {
+    const lock = lockValue({ mode: true });
+    renderRow(<DeckCardTile deckId="d1" card={{ ...sol, locked: true }} />, lock);
+    expect(screen.queryByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeNull();
+    expect(screen.queryByTestId("tile-lock-mark")).toBeNull();
+    const toggle = screen.getByRole("button", { name: lockedCardsCopy.mode.toggleAria("Sol Ring") });
+    expect(toggle.dataset.testid).toBe("tile-lock-toggle");
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    // The column keeps the ✕'s widths and is drawn at rest, not on hover.
+    expect(toggle.className).toContain("w-[44px]");
+    expect(toggle.className).toContain("md:w-[32px]");
+    expect(toggle.className).not.toContain("opacity-0");
+    const box = toggle.firstElementChild!;
+    for (const c of ["w-[36px]", "h-[36px]", "md:w-[26px]", "md:h-[24px]", "border-accent"]) {
+      expect(box.className).toContain(c);
+    }
+    expect(within(toggle).getByTestId("lock-mark").style.color).toBe("var(--accent)");
+    // Still described as locked while the drawn mark gives way to the toggle.
+    const ids = tileTrigger().getAttribute("aria-describedby")!.split(" ");
+    expect(document.getElementById(ids[0])!.textContent).toBe(lockedCardsCopy.mark.a11y);
+    fireEvent.click(toggle);
+    expect(lock.toggle).toHaveBeenCalledOnce();
+  });
+
+  it("draws an unlocked tile's toggle open and unpressed, on a --border-strong box", () => {
+    renderRow(<DeckCardTile deckId="d1" card={sol} />, lockValue({ mode: true }));
+    const toggle = screen.getByTestId("tile-lock-toggle");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    expect(toggle.firstElementChild!.className).toContain("border-border-strong");
+    expect(within(toggle).getByTestId("lock-mark").dataset.lockState).toBe("open");
+  });
+
+  it("says a refused lock under the tile", () => {
+    renderRow(
+      <DeckCardTile deckId="d1" card={sol} />,
+      lockValue({ errors: new Map([["sol-ring", lockedCardsCopy.mode.refused]]) }),
+    );
+    expect(screen.getByText(lockedCardsCopy.mode.refused)).toBeInTheDocument();
   });
 });
 
@@ -571,19 +717,60 @@ describe("the Lock cards mode, through BuilderShell", () => {
     expect(doneButton()).toBeNull();
   });
 
-  // Until Locked 4b gives the card view's tiles a lock, the mode is the list's: in the card view a
-  // Done button would disable the bulk pair while every tile's ✕ still removed its card. So the
-  // switch to Card ends it, as Shopping does, and the button is absent there.
-  it("ends the mode on a switch to Card, and offers no Lock cards there", async () => {
-    renderShell([sol, signet]);
-    await act(async () => lockButton()!.click());
-    await act(async () => screen.getByRole("button", { name: viewToggleCopy.deck.card }).click());
-    expect(liveRegion().textContent).toBe(lockedCardsCopy.mode.announceLeave);
-    expect(doneButton()).toBeNull();
-    expect(lockButton()).toBeNull();
-    await act(async () => screen.getByRole("button", { name: viewToggleCopy.deck.list }).click());
-    expect(lockButton()).not.toBeNull();
-    expect(doneButton()).toBeNull();
+  // Since 4b the mode is KEPT across List and Card (the addendum's rule): the tiles' ✕ columns are
+  // toggles there as the rows' ✕ are here, and a tile's toggle locks exactly as a row's does.
+  describe("across List and Card", () => {
+    afterEach(() => window.localStorage.removeItem(DECK_VIEW_KEY));
+
+    it("keeps the mode on a switch to Card, where every tile's ✕ column is a toggle", async () => {
+      const write = deferred<DeckMutationResult>();
+      setCardLocked.mockReturnValue(write.promise);
+      renderShell([sol, signet]);
+      await act(async () => lockButton()!.click());
+      await act(async () => screen.getByRole("button", { name: viewToggleCopy.deck.card }).click());
+      expect(liveRegion().textContent).toBe(lockedCardsCopy.mode.announceEnter);
+      expect(doneButton()).not.toBeNull();
+      expect(screen.getByTestId("lock-mode-line")).toBeInTheDocument();
+      expect(screen.getAllByTestId("tile-lock-toggle")).toHaveLength(2);
+      expect(screen.queryByTestId("row-lock-toggle")).toBeNull();
+      await act(async () => toggleFor("Sol Ring").click());
+      expect(setCardLocked).toHaveBeenCalledWith("deck-lock", "sol-ring", true);
+      expect(toggleFor("Sol Ring").getAttribute("aria-pressed")).toBe("true");
+      expect(screen.getByTestId("lock-mode-line").textContent).toContain(lockedCardsCopy.mode.count(1));
+      await act(async () => write.resolve({ ok: true }));
+      expect(liveRegion().textContent).toBe(lockedCardsCopy.mode.announceLocked("Sol Ring"));
+      // Back to List, still in the mode, and the row reads the tile's lock.
+      await act(async () => screen.getByRole("button", { name: viewToggleCopy.deck.list }).click());
+      expect(doneButton()).not.toBeNull();
+      expect(toggleFor("Sol Ring").dataset.testid).toBe("row-lock-toggle");
+      expect(toggleFor("Sol Ring").getAttribute("aria-pressed")).toBe("true");
+    });
+
+    it("reverts a refused tile toggle and says why under the tile", async () => {
+      const write = deferred<DeckMutationResult>();
+      setCardLocked.mockReturnValue(write.promise);
+      renderShell([sol, signet]);
+      await act(async () => screen.getByRole("button", { name: viewToggleCopy.deck.card }).click());
+      await act(async () => lockButton()!.click());
+      await act(async () => toggleFor("Sol Ring").click());
+      expect(toggleFor("Sol Ring").getAttribute("aria-pressed")).toBe("true");
+      await act(async () => write.resolve({ ok: false, message: lockedCardsCopy.mode.refused }));
+      expect(toggleFor("Sol Ring").dataset.testid).toBe("tile-lock-toggle");
+      expect(toggleFor("Sol Ring").getAttribute("aria-pressed")).toBe("false");
+      expect(screen.getByText(lockedCardsCopy.mode.refused)).toBeInTheDocument();
+    });
+
+    it("offers Lock cards in the card view, and the key there glosses a locked tile", async () => {
+      renderShell([{ ...sol, locked: true }, signet]);
+      await act(async () => screen.getByRole("button", { name: viewToggleCopy.deck.card }).click());
+      expect(lockButton()).not.toBeNull();
+      const key = screen.getByRole("group", { name: proxyCopy.key.regionAriaCards });
+      expect(within(key).getByText(lockedCardsCopy.mark.key)).toBeInTheDocument();
+      expect(screen.getAllByTestId("tile-lock-mark")).toHaveLength(1);
+      await act(async () => lockButton()!.click());
+      expect(screen.queryByTestId("tile-lock-mark")).toBeNull();
+      expect(toggleFor("Sol Ring").getAttribute("aria-pressed")).toBe("true");
+    });
   });
 });
 
