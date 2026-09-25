@@ -48,6 +48,9 @@ import { deckRowTag } from "../../lib/decks/row-tag";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { useLockCards } from "./lock-cards";
+import { LockMark } from "./lock-mark";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
@@ -288,9 +291,21 @@ export function DecklistRow({
   const proxied = tag === "proxy";
   const availabilityWord = card.owned && !proxied ? "Owned" : "Not owned";
   const availabilityDescriptionId = useId();
+  // Locked (PR 4a). `null` with the switch off, and then nothing below draws a lock: the row is the
+  // row it was. `locked` is the drawn answer, a press on this visit included (`useCardLocks`).
+  const lockCards = useLockCards();
+  const locked = lockCards !== null && card.locked === true;
+  // The mode never runs under Shopping (switching to it ends the mode), so a Shopping row keeps
+  // its ✕ whatever the flag says.
+  const lockMode = lockCards?.mode === true && !inShopping;
+  const lockError = lockCards?.errors.get(card.oracleId) ?? null;
+  const lockDescriptionId = useId();
   const describedBy =
     [
       availabilityDescriptionId,
+      // Right after the availability word (handoff copy, `mark.a11y`): which card, whether it is
+      // owned, that it is locked, then what the deck has done with it.
+      locked ? lockDescriptionId : null,
       marked ? markDescriptionId : null,
       isPendingChange ? pendingDescriptionId : null,
     ]
@@ -400,6 +415,11 @@ export function DecklistRow({
         <span id={availabilityDescriptionId} className="sr-only">
           {availabilityWord}
         </span>
+        {locked && (
+          <span id={lockDescriptionId} className="sr-only">
+            {lockedCardsCopy.mark.a11y}
+          </span>
+        )}
 
         {/* Card name — the click target for the detail modal (#127).
             Any row with a meta line — a Shopping row, or since #350 any row
@@ -657,8 +677,10 @@ export function DecklistRow({
         {/* The ⇄ (swap tools, R2): on an over-limit Shopping row only, opening its cheaper
             stand-ins. A row under the limit keeps an empty 22px slot on desktop so every ✕ stays
             in one column; the phone gives those 44px back to the name. */}
+        {/* A LOCKED row's ⇄ is absent with its slot kept (STATES, Shopping): the stand-ins sheet
+            exists to cut this card, and the player said it is never cut. */}
         {swapTools && inShopping ? (
-          overLimit ? (
+          overLimit && !locked ? (
             <button
               type="button"
               aria-label={swapToolsCopy.row.swapOverAria(displayName, formatLimit(swapTools.limitCents))}
@@ -672,8 +694,68 @@ export function DecklistRow({
           )
         ) : null}
 
-        {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the
-            phone target is the padding around it. */}
+        {/* THE LOCK SLOT (Locked, PR 4a), just left of the ✕, and only with the switch on.
+            Desktop reserves 22px on every row so a hover never shifts the pips. Its button is a
+            POINTER SHORTCUT (`tabIndex -1`, `aria-hidden`): an open lock on hover presses to lock,
+            the closed lock at rest presses to unlock. The keyboard and screen-reader path is the
+            mode's toggle below, which is also the phone's only way to set a lock. The phone draws
+            the closed lock as a 14px mark, not a control: a standing control would cost 44px of
+            name on every row. */}
+        {lockCards && !lockMode && (
+          <>
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              title={locked ? lockedCardsCopy.row.titleOn : lockedCardsCopy.row.titleOff}
+              onClick={() => lockCards.toggle(card)}
+              data-testid="row-lock-shortcut"
+              className="hidden md:flex flex-none items-center justify-center w-[22px] h-[22px] rounded-[6px] bg-transparent border-0 p-0 cursor-pointer
+                md:group-hover:bg-[color:color-mix(in_oklab,var(--fg)_7%,transparent)]"
+            >
+              {locked ? (
+                <LockMark />
+              ) : (
+                <span className="invisible md:group-hover:visible flex">
+                  <LockMark open />
+                </span>
+              )}
+            </button>
+            {locked && (
+              <span className="md:hidden flex flex-none w-[14px] items-center justify-center" data-testid="row-lock-mark">
+                <LockMark title={lockedCardsCopy.mark.title} />
+              </span>
+            )}
+          </>
+        )}
+
+        {/* In the mode the ✕ is a lock toggle: `aria-pressed` carries the state, and the name
+            names the card. 26×22 on desktop; a 36px box in a 44px hit on the phone. Unlocked, an
+            open lock on a `--border-strong` box; locked, the closed lock in `--accent` on an accent
+            box with a 14% fill, the ink of the toolbar's `Done`. The ✕ returns on `Done`. */}
+        {lockCards && lockMode ? (
+          <button
+            type="button"
+            aria-pressed={locked}
+            aria-label={lockedCardsCopy.mode.toggleAria(displayName)}
+            aria-busy={lockCards.pending.has(card.oracleId)}
+            onClick={() => lockCards.toggle(card)}
+            data-testid="row-lock-toggle"
+            className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[26px] md:h-[22px] bg-transparent border-0 p-0 cursor-pointer"
+          >
+            <span
+              className={`flex items-center justify-center w-[36px] h-[36px] md:w-[26px] md:h-[22px] rounded-[6px] border ${
+                locked
+                  ? "border-accent bg-[color:color-mix(in_oklab,var(--accent)_14%,transparent)]"
+                  : "border-border-strong"
+              }`}
+            >
+              <LockMark open={!locked} tone="mode" />
+            </span>
+          </button>
+        ) : (
+        /* Remove ✕ — at both widths now. The glyph stays 13px at both: the
+            phone target is the padding around it. */
         <button
           type="button"
           onClick={handleRemove}
@@ -690,8 +772,11 @@ export function DecklistRow({
         >
           {addPanelCopy.row.remove}
         </button>
+        )}
       </div>
       {error && !shellReportsFailure && <MutationError message={error} />}
+      {/* A refused lock reverts and says why here, under its row (STATES, pending / refused). */}
+      {lockError && <MutationError message={lockError} />}
     </div>
   );
 }
@@ -719,7 +804,9 @@ function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
     // Announced from the click for the same reason the removal is: see
     // `handleRemove` above.
     announceUndo(card);
-    run(() => addCardToDeck(deckId, card.oracleId));
+    // `relock` (Locked L1, D2): a card that left LOCKED comes back locked. It revives a dormant lock
+    // if the removal left one and does nothing otherwise, so it is passed on every undo.
+    run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
   }
 
   return (

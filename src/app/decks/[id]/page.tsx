@@ -34,6 +34,7 @@ import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
+import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { readShoppingLimit } from "../../../lib/swaps/read";
@@ -401,6 +402,8 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       noticesEnabled={noticesEnabled()}
+      // Locked (PR 4a): off, no lock control, mark or key entry draws, and the page is main's.
+      neverCut={neverCutEnabled()}
       storedPermits={storedBracket}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
       // deployment that does not draw it lands on the decklist rather than on an unselected

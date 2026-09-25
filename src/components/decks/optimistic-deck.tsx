@@ -55,7 +55,7 @@ type KeepOptimisticCard = (oracleId: string) => void;
  * basics on screen until revalidation — so the sweep is its own edit, matching
  * the server's delete-where-auto in a single dispatch.
  */
-type SweepOptimisticAuto = () => void;
+type SweepOptimisticAuto = (keep?: ReadonlySet<string>) => void;
 
 /**
  * "Keep all auto". Its own edit rather than a loop of `keep` for the sweep's
@@ -69,7 +69,7 @@ type DeckEdit =
   | { kind: "remove"; oracleId: string }
   | { kind: "keep"; oracleId: string }
   | { kind: "keepAll" }
-  | { kind: "sweep" };
+  | { kind: "sweep"; keep: ReadonlySet<string> };
 
 /**
  * A failed removal has nowhere to draw itself: the prediction has already taken
@@ -110,7 +110,11 @@ export function useOptimisticDeckCards(
   const [cards, applyEdit] = useOptimistic(
     serverCards,
     (current, edit: DeckEdit) => {
-      if (edit.kind === "sweep") return current.filter((c) => !c.auto);
+      // `keep` is the deck's LOCKED cards (Locked, L3): the server's sweep never cuts one, so the
+      // prediction must not either, or a locked card vanishes until the revalidation puts it back.
+      // Passed in rather than read off `c.locked`, because a lock pressed on this visit lives in
+      // the shell's override (`useCardLocks`), above this list.
+      if (edit.kind === "sweep") return current.filter((c) => !c.auto || edit.keep.has(c.oracleId));
       if (edit.kind === "keepAll")
         return current.map((c) => (c.auto ? { ...c, auto: false } : c));
       if (edit.kind === "keep") {
@@ -160,7 +164,7 @@ export function useOptimisticDeckCards(
   const keepOptimisticCard: KeepOptimisticCard = (oracleId) =>
     applyEdit({ kind: "keep", oracleId });
   const keepAllOptimisticAuto: KeepAllOptimisticAuto = () => applyEdit({ kind: "keepAll" });
-  const sweepOptimisticAuto: SweepOptimisticAuto = () => applyEdit({ kind: "sweep" });
+  const sweepOptimisticAuto: SweepOptimisticAuto = (keep = NO_IDS) => applyEdit({ kind: "sweep", keep });
 
   return {
     cards,
@@ -229,3 +233,5 @@ export function useReportRemoveFailure(): ReportRemoveFailure | null {
 }
 
 function noop() {}
+
+const NO_IDS: ReadonlySet<string> = new Set();

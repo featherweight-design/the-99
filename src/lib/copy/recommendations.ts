@@ -116,6 +116,10 @@ export const recommendationsCopy = {
     clearAll: (n: string) => `Clear all auto · ${n}`,
     clearAllMobile: (n: string) => `Clear auto · ${n}`,
     clearAllAria: (n: string) => `Clear all ${n} untouched auto cards`,
+    // Locked (L3): `clearAll(n)` counts only the copies a sweep can take, auto less locked auto,
+    // and this is the name when some stay. Both figures count COPIES (audit T3).
+    clearAllAriaLocked: (n: string, locked: string) =>
+      `Clear all ${n} untouched auto cards. ${plural(locked, 'locked one stays', 'locked ones stay')}.`,
     // The bulk keep, left of the sweep so the cluster reads from the safe
     // answer to the destructive one. Same words as the re-import diff's own
     // `keepAll` and a deliberately separate key: there it rescues removals,
@@ -161,6 +165,9 @@ export const recommendationsCopy = {
     // One receipt for the whole sweep — not one per row. Lifetime is decklist
     // state, per PR #204.
     swept: (n: string) => `${plural(n, 'auto card', 'auto cards')} removed`,
+    // The receipt's second clause when locked auto cards stayed (L3), in copies (T3). No clause
+    // at zero.
+    sweptLeftLocked: (n: string) => plural(n, 'locked card stayed', 'locked cards stayed'),
     sweptUndo: 'Undo',
     sweptUndoAria: (n: string) => `Put all ${n} auto cards back`,
     // The single live-region message. One, never one per row. `built` arrives
@@ -169,6 +176,9 @@ export const recommendationsCopy = {
     // reader cannot make sense of.
     sweptAnnounce: (removed: string, built: string) =>
       `${removed} auto cards removed. ${built}.`,
+    // The same message when locked auto cards stayed (L3).
+    sweptAnnounceLocked: (removed: string, locked: string, built: string) =>
+      `${removed} auto cards removed. ${plural(locked, 'locked card stayed', 'locked cards stayed')}. ${built}.`,
     // Undo's counterpart. Accepting Undo unmounts the receipt, so without this
     // a screen reader hears the removal announced and the reversal not at all.
     sweptRestoredAnnounce: (restored: string, built: string) =>

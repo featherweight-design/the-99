@@ -86,6 +86,7 @@
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "probe:delete-confirm": "node scripts/probe-delete-confirm.mjs",
+    "probe:deck-locks": "node scripts/probe-deck-locks.mjs",
     "probe:deck-sort": "node scripts/probe-deck-sort.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",

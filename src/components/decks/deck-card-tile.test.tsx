@@ -181,7 +181,7 @@ describe("DeckCardTile — the spent slot", () => {
       screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }).click();
     });
 
-    expect(addCardToDeck).toHaveBeenCalledWith("d1", "sol-ring");
+    expect(addCardToDeck).toHaveBeenCalledWith("d1", "sol-ring", { relock: true });
   });
 });
 

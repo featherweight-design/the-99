@@ -462,8 +462,7 @@ export const deckProxies = pgTable("deck_proxies", {
  *
  * `removed_at` is the one thing a proxy does not have. A removal leaves the row DORMANT rather
  * than deleting it (`pruneOrphanLocks`), because the lock ends only if the removal STAYS (L1):
- * Undo, Put back and a discard bring the card back locked (the discard and Put back today; the deck
- * page's two Undos are wired in Locked 4a), and the review screen's Put back runs
+ * Undo, Put back and a discard bring the card back locked, and the review screen's Put back runs
  * sessions after the removal, with nothing but this row to remember the lock by. A commit deletes
  * the dormant rows (the removal stayed). Every OTHER way a card comes back arrives unlocked, and
  * that is an `after insert` trigger on `deck_cards` (migration `never_cut`), which deletes a
