@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { GroupToggle } from "./group-toggle";
+import { GroupToggle, LockModeButton } from "./group-toggle";
 import { priceCopy } from "../../lib/copy/price";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { summarisePrices } from "../../lib/decks/price";
@@ -195,5 +196,22 @@ describe("GroupToggle's auto cluster at zero", () => {
       />,
     );
     expect(screen.getByRole("button", { name: /Keep all 3/ })).toBeInTheDocument();
+  });
+});
+
+// `Lock cards` / `Done` is exported for the About page's Locked cards figure. The export is only
+// honest while the toolbar draws exactly what a standalone mount draws, in both states.
+describe("LockModeButton", () => {
+  it.each([false, true])("is the button the toolbar draws (mode %s)", (lockMode) => {
+    const { container, unmount } = render(
+      <GroupToggle {...props} filter="all" lockMode={lockMode} onLockModeChange={() => {}} />,
+    );
+    const label = lockMode ? lockedCardsCopy.mode.done : lockedCardsCopy.mode.button;
+    const inToolbar = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === label);
+    expect(inToolbar).toBeTruthy();
+    const html = inToolbar!.outerHTML;
+    unmount();
+    const alone = render(<LockModeButton lockMode={lockMode} onToggle={() => {}} />);
+    expect(alone.container.innerHTML).toBe(html);
   });
 });

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AboutPage } from "./about-page";
 import { ABOUT_VERSION, aboutCopy, aboutEntries } from "../../lib/copy/about";
 import { FIGURES } from "./figures";
@@ -51,6 +51,17 @@ import { DECK_VERSIONS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
 } from "../../lib/about/fixtures";
+
+// Every feature switch ON for this file, so every entry is drawn, figures included. The page with
+// the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
+// `about-page-switch.test.tsx`'s.
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"] as const;
+beforeAll(() => {
+  for (const k of SWITCHES) process.env[k] = "true";
+});
+afterAll(() => {
+  for (const k of SWITCHES) delete process.env[k];
+});
 
 // The action is a server function; the page only needs it to exist as a form
 // target, and importing it for real drags a database client into jsdom.

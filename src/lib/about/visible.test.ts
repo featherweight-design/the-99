@@ -14,7 +14,10 @@ const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "CHANGE_
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
 
-describe("with no entry tied to a switch, nothing changes (the invariance Hugh's ruling requires)", () => {
+describe("with every switch off, nothing changes (the invariance Hugh's ruling requires)", () => {
+  // The entries a switch cannot hide. With every switch off they are the whole page, and the page
+  // must behave exactly as the single-version model did over them.
+  const unswitched = aboutEntries.filter((e) => !e.switch);
   // TODAY's rules, stated as the spec this model must reproduce: the proxy shows the sheet
   // below the version, the sheet lists `since > seen`, and the cookie is `<user>.<version>`.
   const legacy = (s: number) =>
@@ -24,22 +27,25 @@ describe("with no entry tied to a switch, nothing changes (the invariance Hugh's
         ? { kind: "none" as const }
         : {
             kind: "behind" as const,
-            entries: aboutEntries.filter((e) => e.since > s).map((e) => ({ id: e.id, title: e.title })),
+            entries: unswitched.filter((e) => e.since > s).map((e) => ({ id: e.id, title: e.title })),
           };
 
-  it("holds for the shipped catalog, which ties no entry to a switch yet", () => {
-    expect(aboutEntries.filter((e) => e.switch)).toEqual([]);
-    expect(Math.max(...aboutEntries.map((e) => e.since))).toBe(ABOUT_VERSION);
+  it("ties exactly the launch entries to their switches, and the version to the rest", () => {
+    expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
+      ["locked-cards", "NEVER_CUT_ENABLED"],
+      ["change-commander", "CHANGE_COMMANDER_ENABLED"],
+    ]);
+    expect(Math.max(...unswitched.map((e) => e.since))).toBe(ABOUT_VERSION);
   });
 
-  it("draws every entry, whatever the switches say", () => {
-    expect(visibleEntries(OFF)).toEqual(aboutEntries);
+  it("draws every unswitched entry with the switches off, and every entry with them on", () => {
+    expect(visibleEntries(OFF)).toEqual(unswitched);
     expect(visibleEntries(ON)).toEqual(aboutEntries);
   });
 
   it("makes the same proxy decision, sheet and cookie as before at every seen", () => {
     for (let s = 0; s <= ABOUT_VERSION + 2; s++) {
-      const d = sheetDecision({ userId: "u", seen: seen(s), visible: visibleEntries(ON) });
+      const d = sheetDecision({ userId: "u", seen: seen(s), visible: visibleEntries(OFF) });
       expect(d.cookie).toBe(`u.${ABOUT_VERSION}`);
       const state = d.show ? readSheetState(new Headers({ "x-about-sheet": d.header })) : { kind: "none" };
       expect(state, `seen ${s}`).toEqual(legacy(s));
@@ -48,8 +54,8 @@ describe("with no entry tied to a switch, nothing changes (the invariance Hugh's
 
   it("marks the same entries new as the version rule did", () => {
     for (let s = 1; s <= ABOUT_VERSION; s++) {
-      const now = unseenEntries(aboutEntries, seen(s)).map((e) => e.id);
-      const before = aboutEntries.filter((e) => e.since > s).map((e) => e.id);
+      const now = unseenEntries(visibleEntries(OFF), seen(s)).map((e) => e.id);
+      const before = unswitched.filter((e) => e.since > s).map((e) => e.id);
       expect(now, `seen ${s}`).toEqual(before);
     }
   });
@@ -61,6 +67,17 @@ describe("an entry tied to a switch", () => {
     expect(visibleEntries({ NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain, a]);
     // The feature's own flag rule: anything but the exact string 'true' is off.
     expect(visibleEntries({ NEVER_CUT_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
+  });
+
+  it("reads unseen for a returning reader at the current version, in the shipped catalog", () => {
+    // The shipped launch entries carry `since` equal to ABOUT_VERSION, which every returning
+    // reader has reached. Were the version floor applied to them, a flip would announce nothing.
+    const launch = aboutEntries.filter((e) => e.switch);
+    expect(launch.map((e) => e.since)).toEqual([ABOUT_VERSION, ABOUT_VERSION]);
+    expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
+      "locked-cards",
+      "change-commander",
+    ]);
   });
 
   it("is seen by its id, never by the version", () => {

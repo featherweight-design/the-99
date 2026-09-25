@@ -417,6 +417,29 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'locked-cards',
+    chapter: '03',
+    title: 'Locked cards',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    switch: 'NEVER_CUT_ENABLED',
+    caption:
+      "Lock a card and no tool will offer to cut it. Suggested changes won't propose it, it gets no cheaper stand-ins, and clearing the fill's auto cards leaves it in place. The ✕ still removes it: a lock binds the app's suggestions, not you. Lock cards, in the deck's toolbar, turns every row's ✕ into a lock until you press Done.",
+    keys: [
+      // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
+      // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
+      "A locked card shows a closed lock beside its ✕ in the list, and on its tile's caption.",
+      'Lock cards turns each ✕ into a lock until you press Done. It is how you lock a card from a phone or a keyboard.',
+      'Clear all auto skips locked cards and says how many stayed. Pull it never takes a copy from a deck where the card is locked, and says locked instead.',
+      // Audit L1: a discard brings a removed locked card back locked; a commit is what ends it.
+      'Remove a locked card and bring it back with Undo, Put back or a discard, and it is still locked. Once a version is committed without it, the lock is gone.',
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    since: 9,
+  },
+  {
     id: 'roles',
     chapter: '03',
     title: 'Why a card is filed under Ramp',
@@ -592,6 +615,31 @@ export const aboutEntries: readonly AboutEntry[] = [
       'a name is required and everything else has a default: the deck is created empty, and the 99 is filled in afterwards.',
     ],
     since: 7,
+  },
+  {
+    id: 'change-commander',
+    chapter: '03',
+    title: 'Change commander',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    switch: 'CHANGE_COMMANDER_ENABLED',
+    caption:
+      // Audit C1 (candidates also need enough decks to measure) and C4 (a deck with no version has
+      // nothing to discard back to).
+      "Like the 99 but not the leader? Change commander, on the commander's art, lists the commanders in exactly this deck's colors that have enough decks to measure, or pairs for a pair deck, with the ones you own first. Each carries one figure: how many of this deck's cards its own decks run. Choosing one is a draft change like any other. It waits in pending changes, and on a committed deck, Discard puts the old commander back.",
+    keys: [
+      "Only commanders in exactly this deck's colors are offered, and only pairs for a pair deck, so not one card of the 99 changes.",
+      "The figure counts this deck's cards that the candidate's decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.",
+      // Audit C2: an owned candidate is free or held, and a buy tag may carry no price.
+      'Candidates you own come first, marked free or held, and the rest carry a buy tag. Mana value is shown beside each but never sets the order.',
+      // Audit C3, rewritten once the half-trade shipped (#1008). It names the pair case that works
+      // and claims no more: two rarer partner cases are held (Hugh).
+      'When a candidate is already in the 99, it moves to the command zone and the commander it replaces takes its slot, so the deck stays whole. A pair can bring in one half this way, and you choose which of the old pair stays.',
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    since: 9,
   },
   {
     id: 'undo-removal',

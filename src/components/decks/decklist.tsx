@@ -64,6 +64,19 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
 };
 
 /**
+ * The Lock cards mode's line, drawn where the mark key sits while the mode runs. Exported for the
+ * About page's Locked cards figure, which draws it above the rows in the mode.
+ */
+export function LockModeLine({ count }: { count: number }) {
+  return (
+    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
+      {lockedCardsCopy.mode.line}{" "}
+      <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(count)}</span>
+    </p>
+  );
+}
+
+/**
  * The Shopping section a cut's row sat in, by the rules the list sections its rows with: its type group
  * under `By type`; under `By role` the pinned spoken-for group, else its targeted role, else `Other`.
  * A swap receipt draws there (swap tools, PR 4b).
@@ -351,10 +364,7 @@ export function Decklist({
   // every row's ✕ and every tile's ✕ column is the toggle while it runs. Only Shopping ends it,
   // in the shell.
   const keyLine = lockMode ? (
-    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
-      {lockedCardsCopy.mode.line}{" "}
-      <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(lockedCardCount)}</span>
-    </p>
+    <LockModeLine count={lockedCardCount} />
   ) : (
     <MarkKey marks={markKey} regionAria={markKeyRegion} />
   );

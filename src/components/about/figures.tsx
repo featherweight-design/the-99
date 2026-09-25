@@ -42,6 +42,8 @@ import {
   ShoppingFigureBody,
   DeckImportFigureBody,
   UndoRemovalFigureBody,
+  LockedCardsFigureBody,
+  ChangeCommanderFigureBody,
   CardDetailFigureBody,
   CommanderLaneFigureBody,
   DiscoverFigureBody,
@@ -863,6 +865,22 @@ function NewDeckFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function LockedCardsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="locked-cards" width={width}>
+      <LockedCardsFigureBody />
+    </Specimen>
+  );
+}
+
+function ChangeCommanderFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="change-commander" width={width}>
+      <ChangeCommanderFigureBody />
+    </Specimen>
+  );
+}
+
 
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
@@ -898,6 +916,8 @@ export const FIGURES: Partial<
   "review-and-commit": ReviewAndCommitFigure,
   "new-deck": NewDeckFigure,
   "undo-removal": UndoRemovalFigure,
+  "locked-cards": LockedCardsFigure,
+  "change-commander": ChangeCommanderFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,

@@ -37,6 +37,7 @@ import { identityGradient } from "../collection/gradients";
 // Study` are cards a Commander player reads without stopping.
 
 import type { Availability } from "../decks/availability";
+import type { Candidate } from "../commander-change/candidates";
 import type { PriceFact, PriceState } from "../decks/price";
 import { fitSegments } from "../recs/format";
 import type { StatusPill } from "../decks/status";
@@ -1657,3 +1658,93 @@ export const CREATE_COMMANDERS: OwnedLegalCommander[] = [
     poolCount: 1402,
   },
 ];
+
+/**
+ * `locked-cards` — Design's fixture: Lotus Petal and Ornithopter locked, Brainstorm not. Drawn
+ * twice, at rest and in the Lock cards mode, so a locked row is seen both ways.
+ *
+ * Every row is owned and free, and none is in the lands group: a row carrying any other mark
+ * would ask to be read beside a lock it has nothing to do with, and a lands row takes the shorter
+ * shell (see `DECKLIST_MARK_ROWS`).
+ */
+export const LOCKED_ROWS: DeckDetailCard[] = (
+  [
+    ["about-lock-petal", "Lotus Petal", "Artifact", "Artifacts", "ramp", 0, "{0}", true],
+    ["about-lock-ornithopter", "Ornithopter", "Artifact Creature — Thopter", "Creatures", "other", 0, "{0}", true],
+    ["about-lock-brainstorm", "Brainstorm", "Instant", "Instants", "draw", 1, "{U}", false],
+  ] as const
+).map(([oracleId, name, typeLine, cardTypeGroup, role, cmc, manaCost, locked]) => ({
+  oracleId,
+  name,
+  typeLine,
+  cardTypeGroup,
+  role,
+  cmc,
+  owned: true,
+  quantity: 1,
+  auto: false,
+  manaCost,
+  printedName: null,
+  printedSetCode: null,
+  printedCollectorNumber: null,
+  availability: AVAILABILITY[0].a,
+  locked,
+}));
+
+/**
+ * `change-commander` — Design's fixture: the deck HD - Gishath (Naya, 64 of its cards counted,
+ * mana value 8), one candidate the player owns with a free copy and one to buy.
+ *
+ * The two figures are deliberately in the opposite order to the groups: Mayael fits more of the
+ * deck and still draws second, because owned candidates come first whatever their figure. That
+ * is key line 3, and a fixture where the owned one also fitted better could not show it.
+ */
+export const CHANGE_COMMANDER: {
+  deckName: string;
+  current: { cmc: number; name: string };
+  yours: Candidate;
+  toBuy: Candidate;
+} = {
+  deckName: "HD - Gishath",
+  current: { cmc: 8, name: "Gishath" },
+  yours: {
+    key: "about-marisi",
+    halves: [
+      {
+        oracleId: "about-marisi",
+        name: "Marisi, Breaker of the Coil",
+        manaCost: "{2}{R}{G}{W}",
+        cmc: 5,
+        artCropUri: null,
+        imageUri: null,
+        inDeck: false,
+        owned: true,
+        availability: { owned: 1, hard: 0, soft: 0, free: 1, claims: [] },
+        price: null,
+      },
+    ],
+    fit: { n: 23, of: 64 },
+    matched: [],
+    deckCount: 1204,
+  },
+  toBuy: {
+    key: "about-mayael",
+    halves: [
+      {
+        oracleId: "about-mayael",
+        name: "Mayael the Anima",
+        manaCost: "{R}{G}{W}",
+        cmc: 3,
+        artCropUri: null,
+        imageUri: null,
+        inDeck: false,
+        owned: false,
+        availability: null,
+        price: { cents: 240, foilCents: null, etchedCents: null, asOf: PRICES[0].fact.asOf },
+      },
+    ],
+    fit: { n: 38, of: 64 },
+    matched: [],
+    deckCount: 2381,
+  },
+};

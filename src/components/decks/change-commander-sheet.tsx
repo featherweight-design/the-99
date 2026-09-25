@@ -240,7 +240,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   }
 
   const row = (c: Candidate, i: number) => (
-    <Row
+    <CandidateRow
       key={c.key}
       candidate={c}
       pair={pair}
@@ -258,7 +258,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
       <Lede pair={pair} counted={data.counted} />
       {data.yours.length > 0 ? (
         <section>
-          <GroupHeading label={copy.sheet.groupYours(data.yours.length)} note={copy.sheet.groupNote} />
+          <CandidateGroupHeading label={copy.sheet.groupYours(data.yours.length)} note={copy.sheet.groupNote} />
           {data.yours.map((c, i) => row(c, i))}
         </section>
       ) : (
@@ -266,7 +266,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
       )}
       {data.toBuy.length > 0 ? (
         <section ref={buyGroup}>
-          <GroupHeading
+          <CandidateGroupHeading
             label={copy.sheet.groupBuy(data.toBuy.length)}
             note={pair ? copy.sheet.groupNotePairBuy : copy.sheet.groupNote}
           />
@@ -289,7 +289,8 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   );
 }
 
-function GroupHeading({ label, note }: { label: string; note: string }) {
+// Exported for the About page's Change commander figure (E2), which mounts it without the sheet's read.
+export function CandidateGroupHeading({ label, note }: { label: string; note: string }) {
   return (
     <div
       className="flex items-baseline justify-between gap-[10px] pb-[8px]"
@@ -372,7 +373,8 @@ function ManaValue({ halves, current }: { halves: CandidateHalf[]; current: { cm
   );
 }
 
-function Row({
+// Exported for the About page's Change commander figure (E2). A pure export: the sheet draws it unchanged.
+export function CandidateRow({
   candidate, pair, current, newestAsOf, siblings, open, onToggle, onChoose,
 }: {
   candidate: Candidate;

@@ -49,6 +49,8 @@ import {
   PRINTING_ROWS,
   REPLACE_ROWS,
   REPLACE_SUMMARY,
+  LOCKED_ROWS,
+  CHANGE_COMMANDER,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -105,6 +107,14 @@ import {
 import { KeyNumeral } from "./numeral";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
+import { identityGradient } from "../../lib/collection/gradients";
+import { LockCardsProvider, type LockCards } from "../decks/lock-cards";
+import { LockModeLine } from "../decks/decklist";
+import { LockModeButton } from "../decks/group-toggle";
+import { ChangeCommanderProvider } from "../decks/change-commander-context";
+import { ChangeCommanderDoor } from "../decks/change-commander-door";
+import { CandidateGroupHeading, CandidateRow } from "../decks/change-commander-sheet";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -1420,5 +1430,112 @@ export function NewDeckFigureBody() {
         initialSelectedId={CREATE_COMMANDERS[1].oracleId}
       />
     </div>
+  );
+}
+
+/**
+ * `locked-cards` — the same three rows twice: at rest, where a locked row shows its lock beside
+ * the ✕, and in the Lock cards mode, where every row's ✕ slot is the toggle. The mode's line and
+ * `Done` sit above the second set, as they sit above the list on the deck page.
+ *
+ * Both are the deck page's own components (exported for this figure, unchanged), and the lock
+ * state is a fixture value for `LockCardsProvider`. `toggle` is a no-op: `Specimen` is `inert`,
+ * so nothing here can be pressed.
+ */
+const LOCKS_AT_REST: LockCards = { mode: false, toggle: () => {}, pending: new Set(), errors: new Map() };
+const LOCKS_IN_MODE: LockCards = { ...LOCKS_AT_REST, mode: true };
+const LOCKED_COUNT = LOCKED_ROWS.filter((c) => c.locked).length;
+
+function LockedRows() {
+  return (
+    <div className="flex flex-col">
+      {LOCKED_ROWS.map((card) => (
+        <DecklistRow
+          key={card.oracleId}
+          deckId="about-figure"
+          card={card}
+          siblings={[]}
+          newestAsOf={PRICES[0].fact.asOf}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function LockedCardsFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col gap-[14px]">
+        <LockCardsProvider value={LOCKS_AT_REST}>
+          <LockedRows />
+        </LockCardsProvider>
+        <div className="flex flex-col">
+          <div className="flex flex-wrap items-center justify-between gap-[8px] border-b border-solid border-[color:var(--border)] pb-[8px]">
+            <LockModeLine count={LOCKED_COUNT} />
+            <LockModeButton lockMode onToggle={() => {}} />
+          </div>
+          <LockCardsProvider value={LOCKS_IN_MODE}>
+            <LockedRows />
+          </LockCardsProvider>
+        </div>
+      </div>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `change-commander` — the door on the commander's art band, then one candidate under each of
+ * the sheet's two groups.
+ *
+ * The band carries the route's own art placeholder rather than an image: a reference page does not
+ * fetch commander art. The door is drawn with its card-details half (`hasCrop`), as it sits on a
+ * deck whose commander has art, which is nearly every deck. The rows and headings are the sheet's
+ * own (E2); the sheet itself is not mounted, because it reads its candidates when it opens.
+ */
+const NAYA = ["R", "G", "W"];
+
+export function ChangeCommanderFigureBody() {
+  const desktop = useIsDesktop();
+  const { deckName, current, yours, toBuy } = CHANGE_COMMANDER;
+  const siblings = [yours, toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
+  const row = (c: typeof yours) => (
+    <CandidateRow
+      candidate={c}
+      pair={false}
+      current={current}
+      newestAsOf={PRICES[0].fact.asOf}
+      siblings={siblings}
+      open={false}
+      onToggle={() => {}}
+      onChoose={() => {}}
+    />
+  );
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <ChangeCommanderProvider deckId="about-figure" deckName={deckName} pair={false} hasVersion>
+        <div className="flex flex-col gap-[14px]">
+          <div
+            className="relative h-[150px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] md:h-[120px]"
+            style={{ background: identityGradient(NAYA) }}
+          >
+            <ChangeCommanderDoor oracleId="about-gishath" width={desktop ? "desktop" : "mobile"} hasCrop />
+          </div>
+          <section>
+            <CandidateGroupHeading
+              label={changeCommanderCopy.sheet.groupYours(1)}
+              note={changeCommanderCopy.sheet.groupNote}
+            />
+            {row(yours)}
+          </section>
+          <section>
+            <CandidateGroupHeading
+              label={changeCommanderCopy.sheet.groupBuy(1)}
+              note={changeCommanderCopy.sheet.groupNote}
+            />
+            {row(toBuy)}
+          </section>
+        </div>
+      </ChangeCommanderProvider>
+    </CardDetailProvider>
   );
 }

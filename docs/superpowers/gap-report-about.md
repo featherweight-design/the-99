@@ -51,7 +51,9 @@ with `padding:30px 30px 34px`, so it sits 30px clear of the edge and never stick
 app has no top chrome at that width, so `top:0` puts the Contents label against the viewport edge
 the moment the page scrolls. The drawn clearance transfers; the property that produced it does not.
 
-**The code has 39 entries and the canvas drew 33.** The six extras are `decklist-order`, added
+**The code has 41 entries and the canvas drew 33.** Two are the launch entries `locked-cards` and
+`change-commander`, drawn by the launch-entries addendum and shown only while their features'
+switches are on. The six other extras are `decklist-order`, added
 after #642 shipped the decklist's sort control; `commander-availability`, added by #683;
 `review-and-commit` and `new-deck`, drawn on the §G template as R5; `informed-build`, which closes
 sub-project 2 of the deck-analysis line; and `combo-awareness`, which closes sub-project 3. All six

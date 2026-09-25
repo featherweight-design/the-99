@@ -35,7 +35,7 @@ vi.mock("../../app/decks/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 // ── Dynamic imports (after mocks are set up) ─────────────────────────────────
-const { Decklist, receiptHome } = await import("./decklist");
+const { Decklist, LockModeLine, receiptHome } = await import("./decklist");
 const { DecklistRow } = await import("./decklist-row");
 
 const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
@@ -96,6 +96,7 @@ function renderDecklist(
     pendingChanges?: ReadonlyMap<string, { from: number; to: number }>;
     /** Swap receipts seeded into a `SwapToolsProvider` around the list. */
     receipts?: SwapReceipt[];
+    lockMode?: boolean;
   } = {},
 ) {
   const deckEdits = {
@@ -150,6 +151,7 @@ function renderDecklist(
           shoppingFigures={opts.shoppingFigures === undefined ? {} : opts.shoppingFigures}
           newestAsOf={opts.newestAsOf ?? null}
           onAnnounce={opts.onAnnounce}
+          lockMode={opts.lockMode}
         />
       ))}</AddOptimisticCardProvider>
     </CardDetailProvider>,
@@ -1278,5 +1280,17 @@ describe("a swap receipt keeps the Shopping list up when the take emptied it", (
     expect(screen.getAllByText("Lands", { exact: true })).toHaveLength(1);
     const section = screen.getByText("Lands", { exact: true }).closest(".mb-\\[16px\\]") as HTMLElement;
     expect(within(section).getAllByTestId("swap-receipt")).toHaveLength(2);
+  });
+});
+
+// The mode's line is exported for the About page's Locked cards figure. The export is only honest
+// while the list draws exactly what a standalone mount draws, so the two are compared.
+describe("LockModeLine", () => {
+  it("is the line the list draws while the mode runs", () => {
+    renderDecklist([{ ...rampOwned, locked: true }, drawOwned], { filter: "all", lockMode: true });
+    const inList = screen.getByTestId("lock-mode-line").outerHTML;
+    cleanup();
+    render(<LockModeLine count={1} />);
+    expect(screen.getByTestId("lock-mode-line").outerHTML).toBe(inList);
   });
 });
