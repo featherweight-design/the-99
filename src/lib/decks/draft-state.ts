@@ -272,7 +272,10 @@ async function readDraft(
   // The moved commanders' names, for the banner's and the review page's commander line. Their
   // own read, merged into `names` only: a commander is not a card row, so it must not reach the
   // cost track, the basics set or the row facts.
-  const commanderRows = commander ? await loadCommanderRows(userId, commander.from, commander.to) : null;
+  // The version's body goes with them: a half that arrives out of the 99 keeps that card's copy.
+  const commanderRows = commander
+    ? await loadCommanderRows(userId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
+    : null;
   const commanderNames = new Map((commanderRows?.rows ?? []).map((r) => [r.oracleId, r.name]));
   // A commander-only draft has changes and no card row: its state is the empty
   // one plus the move and its names, so nothing below reads a card it does not have.

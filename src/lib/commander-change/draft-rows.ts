@@ -28,7 +28,7 @@ const members = (p: CommanderPair) =>
   [p.commanderOracleId, p.partnerOracleId].filter((id): id is string => id !== null);
 
 export async function loadCommanderRows(
-  userId: string, from: CommanderPair, to: CommanderPair,
+  userId: string, from: CommanderPair, to: CommanderPair, versionBody: ReadonlySet<string>,
 ): Promise<CommanderRows> {
   const fromIds = members(from);
   const toIds = members(to);
@@ -39,13 +39,20 @@ export async function loadCommanderRows(
     db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, toIds))),
   ]);
-  const ownedIds = new Set(owned.map((o) => o.oracleId));
+  // A half traded out of the 99 keeps its own copy, as the sheet's candidates treat it (`inDeck`):
+  // the trade buys nothing, whether or not the collection holds it.
+  const ownedIds = heldIds(owned.map((o) => o.oracleId), toIds, versionBody);
   const toBuy = buyIds(fromIds, toIds, ownedIds);
   const prices = toBuy.length > 0 ? await loadPrices(toBuy).catch(() => null) : null;
   return {
     rows: commanderRows(fromIds, toIds, ownedIds, facts, prices?.prices ?? null),
     newestAsOf: prices?.newestAsOf ?? null,
   };
+}
+
+/** What counts as held for a buy: the collection's copies, plus a new half the version's 99 holds. */
+export function heldIds(owned: readonly string[], toIds: readonly string[], versionBody: ReadonlySet<string>): Set<string> {
+  return new Set([...owned, ...toIds.filter((id) => versionBody.has(id))]);
 }
 
 /** The halves to buy: ARRIVING and unowned. A half a pair keeps already leads the deck. */

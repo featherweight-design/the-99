@@ -307,7 +307,12 @@ async function main() {
     for (const width of WIDTHS) {
       await page.setViewportSize(width.viewport);
       await page.goto(`${BASE}/decks/${traded.deckId}/changes`, { waitUntil: "domcontentloaded" });
-      await onPage(page, '[data-testid="review-commander"]').waitFor({ state: "visible", timeout: 30_000 });
+      const tradeSection = onPage(page, '[data-testid="review-commander"]');
+      await tradeSection.waitFor({ state: "visible", timeout: 30_000 });
+      // The traded card keeps the copy it had in the 99, and the fixture's collection does not hold
+      // it: a buy tag here would be a purchase the trade never asks for.
+      const tradeText = (await tradeSection.textContent()) ?? "";
+      report(`trade buys nothing @${width.label}`, !/buy/i.test(tradeText), tradeText.slice(0, 120));
       const columns = onPage(page, "#review");
       // The phone draws one column at a time behind a segmented pair; read what the document holds.
       const hints = await columns.evaluate((el) => ["in", "out"].map((side) => {

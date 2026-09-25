@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
-const { buyIds, commanderRows } = await import("./draft-rows");
+const { buyIds, commanderRows, heldIds } = await import("./draft-rows");
 
 const facts = ["tymna", "thrasios", "kraum"].map((id) => ({ oracleId: id, name: id, artCropUri: null }));
 
@@ -17,5 +17,11 @@ describe("the commander rows' buy rule", () => {
   it("marks an arriving unowned half, and not an owned one", () => {
     expect(buyIds(["tymna"], ["kraum"], new Set(["kraum"]))).toEqual([]);
     expect(buyIds(["tymna"], ["kraum"], new Set())).toEqual(["kraum"]);
+  });
+
+  it("buys nothing for a trade: a new half out of the version's 99 keeps its own copy", () => {
+    const held = heldIds([], ["kraum"], new Set(["kraum", "sol-ring"]));
+    expect(buyIds(["tymna"], ["kraum"], held)).toEqual([]);
+    expect(buyIds(["tymna"], ["kraum"], heldIds([], ["kraum"], new Set(["sol-ring"])))).toEqual(["kraum"]);
   });
 });
