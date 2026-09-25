@@ -108,7 +108,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
             chips={answerChips(p, labels, settled?.kind === "read" ? p.deeper : [])}
             afterDeeper={settled !== null}
             offer={allowance && (
-              <DeeperLook params={p} settled={settled?.kind ?? null} standing={{
+              // Keyed on the read: the look's own results are a new panel, drawn from what the page found.
+              <DeeperLook key={p.readId ?? "first"} params={p} settled={settled?.kind ?? null} standing={{
                 used: allowance.used,
                 limit: allowance.limit,
                 nextAt: allowance.nextAt?.toISOString() ?? null,

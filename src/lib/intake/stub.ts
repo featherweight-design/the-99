@@ -11,17 +11,25 @@ import type { ReadResponse } from "./read";
  * The reply is the free match's own reading of the words, returned as the model would return it
  * (labels and names, never slugs or ids), so it survives the validator on any words the free match
  * can read. `INTAKE_STUB` switches it to each other outcome the panel has to draw: `nothing` (a
- * reply with no valid chip, refunded), `malformed`, `busy` and `timeout`.
+ * reply with no valid chip, refunded), `malformed`, `busy` and `timeout`, and `wider`, the free
+ * match's reading plus the Tokens theme, so a dev server can draw an answer the look ADDED.
+ * `INTAKE_STUB_DELAY_MS` holds every reply that long, so a Stop can be pressed while it runs.
  */
 
 /** The synopsis stub's name: one string the ledger prices at nothing (`UNBILLED_MODELS`). */
 export { STUB_MODEL } from "../synopsis/stub";
 
-export type StubMode = "mapped" | "nothing" | "malformed" | "busy" | "timeout";
+export type StubMode = "mapped" | "wider" | "nothing" | "malformed" | "busy" | "timeout";
 
 export function stubMode(env: Record<string, string | undefined> = process.env): StubMode {
   const mode = env.INTAKE_STUB;
-  return mode === "nothing" || mode === "malformed" || mode === "busy" || mode === "timeout" ? mode : "mapped";
+  return mode === "wider" || mode === "nothing" || mode === "malformed" || mode === "busy" || mode === "timeout" ? mode : "mapped";
+}
+
+/** How long the stub holds a reply (`INTAKE_STUB_DELAY_MS`), capped well under the read's deadline. */
+export function stubDelayMs(env: Record<string, string | undefined> = process.env): number {
+  const n = Number(env.INTAKE_STUB_DELAY_MS ?? 0);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 30_000) : 0;
 }
 
 /** Whether this process calls the real model: production builds, or an explicit opt-in. */
@@ -46,6 +54,7 @@ export function stubReply(words: string, index: PhraseIndex, mode: StubMode): Mo
     if (c.kind === "budget") value.budgetDollars = c.dollars;
     if (c.kind === "bracket") value.bracket = c.bracket;
   }
+  if (mode === "wider" && !value.themes.includes("Tokens")) value.themes.push("Tokens");
   // The player's own phrases, verbatim, as the model is asked to copy them.
   value.notUnderstood.push(...phrases.slice(0, 10).map((p) => p.slice(0, 120)));
   return { ok: true, value, usage: USAGE };

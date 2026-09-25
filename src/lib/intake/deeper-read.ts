@@ -3,7 +3,7 @@ import { INTAKE_DEADLINE_MS, INTAKE_EFFORT, INTAKE_MAX_TOKENS, INTAKE_MODEL, INT
 import type { PhraseIndex } from "./match";
 import { buildReadPrompt, readResponseSchema, validateRead, type ReadResponse } from "./read";
 import { settleRead, startRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
-import { intakeLive, STUB_MODEL, stubMode, stubReply } from "./stub";
+import { intakeLive, STUB_MODEL, stubDelayMs, stubMode, stubReply } from "./stub";
 import { loadIntakeCatalog } from "./search";
 
 /**
@@ -57,7 +57,11 @@ export function defaultDeps(): DeeperReadDeps {
         deadlineMs: INTAKE_DEADLINE_MS,
         retryFloorMs: INTAKE_RETRY_FLOOR_MS,
       })
-      : async (_req, words, index) => stubReply(words, index, stubMode()),
+      : async (_req, words, index) => {
+        const hold = stubDelayMs();
+        if (hold > 0) await new Promise((r) => setTimeout(r, hold));
+        return stubReply(words, index, stubMode());
+      },
     loadIndex,
     now: () => new Date(),
   };

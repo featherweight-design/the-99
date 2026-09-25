@@ -14,7 +14,7 @@
 // answered `stopped: false`, and the panel then waits for that press and shows what it paid for.
 
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { lookDeeper } from "../../app/decks/new/choose/actions";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -94,9 +94,15 @@ export function DeeperLook({
   const own = useRef<string | null>(null);
   const closed = closedBy(standing);
 
+  // The results dim while, and only while, this panel is looking; a panel that leaves (the page
+  // moved to the read's own results) takes the dimming with it.
+  useEffect(() => {
+    setLooking(phase === "looking");
+    return () => setLooking(false);
+  }, [phase, setLooking]);
+
   function enter(next: Phase) {
     setPhase(next);
-    setLooking(next === "looking");
   }
 
   async function press() {
