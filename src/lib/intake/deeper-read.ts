@@ -22,7 +22,9 @@ export type DeeperReadOutcome =
   | { kind: "failed"; errorClass: ReadErrorClass }
   /** Stopped, or reaped, before the answer came back: it wrote nothing. */
   | { kind: "stopped" }
-  | { kind: "allowance" | "paused" | "ownerShare" | "in_flight" };
+  | { kind: "allowance" | "paused" | "ownerShare" | "in_flight" }
+  /** The press reused the id of a read that already exists. */
+  | { kind: "reused" };
 
 export type DeeperReadDeps = {
   /** Stored on the read, so the ledger prices it and a probe can prove the stub ran. */

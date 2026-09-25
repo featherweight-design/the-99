@@ -218,9 +218,13 @@ synopsis's.
 - Mutations.
 
 **PR 4 as built (2026-09-25).**
-- **Migration 0063** (0062 belongs to Locked PR 3). It adds `'intake'` to `model_calls_feature_check`
-  and drops `decks.answer_intent_pending`. That column never got a reader: PR 3's retry writes no
-  intent. Every reference to it went first, the plumbing probe's included.
+- **Migration 0063** (0062 is Locked PR 3's, on main as #967). It adds `'intake'` to
+  `model_calls_feature_check`. `decks.answer_intent_pending` never got a reader, since PR 3's retry
+  writes no intent, so it leaves the schema and every reference to it went, the plumbing probe's
+  included. **The column is NOT dropped in this deploy.** Migrations run before a build is
+  promoted, and the build still serving names the column in every deck read, so a drop here fails
+  those reads with 42703 until the cutover. 0063 carries no drop, and PR 5 drops it with a custom
+  migration (`DROP COLUMN IF EXISTS`), one deploy later.
 - **The input ceiling is measured at 6,000.** count_tokens on the real prompt and schema gave
   3,434 tokens with the picker's 307 labels and the worst 800 characters of words, and 3,946 with
   all 401 tags. The plan's estimate of about 1,800 left out the output schema and dense words.
@@ -266,6 +270,8 @@ well past 800 lines, so the boundary sits between the data the screens read and 
   2 MB entry limit.
 
 **PR 5: the intake and results screens.**
+- The contract half of PR 4's column removal: a custom migration dropping
+  `decks.answer_intent_pending` (`IF EXISTS`), now that no serving build selects it.
 - The flag reader, `.env.example` and `docs/deployment.md`, moved from PR 1.
 - `/decks/new/choose`:
   - the form (2a, 2b);

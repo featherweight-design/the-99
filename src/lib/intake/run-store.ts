@@ -85,7 +85,7 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<ReadHandle> => {
@@ -101,8 +101,9 @@ export async function startRead(
     return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
-    // Only the partial index means "a read is already in flight". Nothing else may read as that.
-    if (isUniqueViolation(err)) return { kind: "in_flight" };
+    // Two unique indexes can refuse this insert, and only one of them means a read is in flight.
+    // The id is the panel's, so a press that reuses one names a read that already exists.
+    if (isUniqueViolation(err)) return { kind: constraintOf(err) === "intake_reads_pkey" ? "reused" : "in_flight" };
     throw err;
   }
 }
@@ -136,6 +137,17 @@ export async function settleRead(
     await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", billed);
     return true;
   });
+}
+
+/** The constraint a Postgres error names, wherever the driver put it (the walk `sqlstate` takes). */
+function constraintOf(error: unknown): string | null {
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && typeof current === "object" && current !== null; depth += 1) {
+    const name = (current as { constraint?: unknown }).constraint;
+    if (typeof name === "string") return name;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return null;
 }
 
 function stored({ chips, notUsed, notUnderstood }: ReadResult): StoredRead {

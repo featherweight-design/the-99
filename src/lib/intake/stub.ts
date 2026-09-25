@@ -43,6 +43,8 @@ export function stubReply(words: string, index: PhraseIndex, mode: StubMode): Mo
   for (const c of chips) {
     if (c.kind === "theme" && value.themes.length < 6) value.themes.push(c.label);
     if (c.kind === "card" && value.cards.length < 3) value.cards.push(c.name);
+    if (c.kind === "budget") value.budgetDollars = c.dollars;
+    if (c.kind === "bracket") value.bracket = c.bracket;
   }
   if (leftover.length > 0) value.notUnderstood.push(leftover.join(" ").slice(0, 120));
   return { ok: true, value, usage: USAGE };

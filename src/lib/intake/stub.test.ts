@@ -28,6 +28,12 @@ describe("the deeper read's stub", () => {
     expect(read.useful).toBe(true);
   });
 
+  it("carries the budget and bracket the words name", () => {
+    const out = stubReply("dinosaurs under $100, bracket 3", index, "mapped");
+    if (!out.ok) throw new Error("expected a reply");
+    expect(out.value).toMatchObject({ budgetDollars: 100, bracket: 3 });
+  });
+
   it("switches to each outcome the panel draws", () => {
     const nothing = stubReply("dinosaurs", index, stubMode({ INTAKE_STUB: "nothing" }));
     if (!nothing.ok) throw new Error("expected a reply");

@@ -113,8 +113,8 @@ async function main() {
     const inCall = new Promise<void>((r) => { entered = r; });
     const pending = run(stopped, async () => { entered(); await held; return reply(["Dinosaurs"]); });
     await inCall;
-    check("while it runs, a second press is refused as in flight", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "in_flight");
     const before = await units(USER);
+    check("while it runs, a second press is refused as in flight", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "in_flight");
     check("another reader's Stop cancels nothing", await store.cancelRead(stopped, OTHER), false);
     check("the reader's Stop cancels it", await store.cancelRead(stopped, USER), true);
     const mid = await readRow(stopped);
@@ -130,6 +130,8 @@ async function main() {
     const stranded = randomUUID();
     const past = new Date(Date.now() - INTAKE_REAPER_CUTOFF_MS - 60_000);
     const start = await store.startRead(USER, "stranded", INTAKE_MODEL, { readId: stranded, now: past });
+    check("a press reusing a settled read's id is refused as a reuse, not as in flight",
+      (await store.startRead(USER, "again", INTAKE_MODEL, { readId: ok })).kind, "reused");
     check("a read started past the cutoff is pending", [start.kind, (await readRow(stranded)).status], ["started", "pending"]);
     const next = randomUUID();
     check("the next press is not refused by it", (await run(next, async () => reply(["Dinosaurs"]))).kind, "read");

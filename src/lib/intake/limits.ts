@@ -11,11 +11,11 @@ export const INTAKE_EFFORT = "low" as const;
 export const INTAKE_MAX_TOKENS = 3_000;
 
 /**
- * The most the player's words may run to. The prompt's input ceiling assumes up to about 200
- * tokens of them (plan, "Measured input"), and a character is never less than a quarter of a
- * token in English prose, so 800 keeps a press under the ceiling it was priced at. The Server
- * Action refuses a longer one rather than trimming it: a read of half the words is not the read
- * the player asked for.
+ * The most the player's words may run to. The input ceiling in `FEATURE_CALLS` was MEASURED at this
+ * length: 800 characters of the densest words (names and digits) with the whole vocabulary came to
+ * 3,946 tokens against a ceiling of 6,000, so a press at the cap stays inside what its reservation
+ * priced. Raising the cap means measuring again. The Server Action refuses a longer press rather
+ * than trimming it: a read of half the words is not the read the player asked for.
  */
 export const READ_WORDS_MAX_CHARS = 800;
 
