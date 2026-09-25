@@ -38,7 +38,7 @@ describe("changeCount with a commander", () => {
   it("adds the move to the card rows", () => {
     const s = state({
       addChanges: [add("x")],
-      adds: [{ ...add("x"), bucket: "free", shortfall: 0 } as DraftState["adds"][number]],
+      adds: [{ ...add("x"), bucket: "free", shortfall: 0, needed: 1, heldBy: [] }],
       removes: [cut("y")],
       commander: { from: single("korvold"), to: single("prosper") },
     });

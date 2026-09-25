@@ -66,8 +66,10 @@ the curve so a changed index cannot silently move it.
    learns of it by comparing them with the newest version. **No migration.** 0062/0063 are not needed.
 2. **What "pending" means grows by one clause everywhere it is decided:** the commander columns differ from the
    newest version's. The sites are `draft-state.ts` (`readSnapshot`, and the early return in `readDraft`
-   at :250), the `pending_decks` CTE (`availability-query.ts:134-150`), `pendingChangesSql` (`read.ts:778`), the
-   pull guard (`actions.ts:2065`) and the commit route's diff (`actions.ts:1640`). One helper,
+   at :250), the `pending_decks` CTE (`availability-query.ts:134-150`), `pendingChangesSql` (`read.ts:778`) and
+   the pull guard (`actions.ts:2065`). The commit route needs no change for the model: `commitVersionIn` already
+   copies the live columns and resets the tenure. What the commit's RECEIPT says about a new commander (a copy
+   to buy, a copy back in the pool) is drawn with the review page in PR 4. One helper,
    `commanderMoved(version, deck)`, in `src/lib/commander-change/pending.ts`, used by the TypeScript sites. The
    two SQL sites use one SQL fragment exported from the same file, so the rule is written once in each language.
 3. **`DraftState` gains `commander: { from: CommanderPair; to: CommanderPair } | null`.** `changeCount` counts
@@ -108,7 +110,12 @@ the curve so a changed index cannot silently move it.
    `probe:change-commander-draft`, runs against local-dev: it swaps a fixture deck's live columns, then reads
    `loadDraftState`, the pending edge and the deck list's pending mark, commits, and discards, asserting that
    Discard restores the columns. **Shared files:** `draft-shape.ts`, `draft-state.ts`, `availability-query.ts`,
-   `read.ts`, `versions.ts`, `actions.ts`, `admits-review.ts`.
+   `read.ts`, `versions.ts`, `actions.ts`. `admits-review.ts` needs no change: the route passes it
+   `changeCount`, which now counts the move, and a test there pins that. **The switch gates the model too**
+   (d9, 2026-09-25): off, every pending SQL site is byte-identical to today's, pinned by
+   `src/lib/commander-change/queries.test.ts`. The probe runs as
+   `pnpm tsx scripts/probe-change-commander-draft.ts`, with no `package.json` entry, because that file is outside
+   the fence.
 2. **Candidates, the fit figure and the write.** Decisions 6, 8, 9 and 10. `fit.ts`, `candidates.ts`, the
    `changeCommander` action, and the copy module `src/lib/copy/change-commander.ts`, transcribed from Design's
    copy file for `/copy-review`. A probe, `probe:change-commander-write`, runs against local-dev: a swap, a trade,
