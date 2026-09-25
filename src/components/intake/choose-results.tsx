@@ -26,6 +26,7 @@ export function ChooseResults({
   params,
   themeLabels,
   cardName,
+  cardUnpriced = false,
   queryString,
   changeHref,
 }: {
@@ -34,6 +35,8 @@ export function ChooseResults({
   /** Theme slug to its vocabulary label. */
   themeLabels: Record<string, string>;
   cardName: string | null;
+  /** The build-around card buys with no live price, by its chip: the 4e line before a row's figures land. */
+  cardUnpriced?: boolean;
   /** The page's own query string, which the row and paging actions re-parse. */
   queryString: string;
   changeHref: string;
@@ -99,6 +102,7 @@ export function ChooseResults({
       owned={owned}
       params={params}
       cardName={cardName}
+      cardUnpriced={cardUnpriced}
       best={rank}
       trial={trials[r.oracleId] ?? { state: "pending" }}
       retry={() => retry(r.oracleId)}
@@ -154,7 +158,7 @@ export function ChooseResults({
             onClick={showMore}
             disabled={pending}
             aria-busy={pending || undefined}
-            className="h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] text-[color:var(--fg-body)] whitespace-nowrap cursor-pointer disabled:cursor-default"
+            className="flex-[1_1_100%] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] text-[color:var(--fg-body)] whitespace-nowrap cursor-pointer disabled:cursor-default"
           >
             {copy.results.more}
           </button>
@@ -183,7 +187,7 @@ export function ResultsSkeleton({ by }: { by: string }) {
             key={w}
             className="flex items-center gap-[14px] p-[10px_12px] md:p-[12px_15px] rounded-[11px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)]"
           >
-            <span className="block shrink-0 w-[44px] h-[62px] rounded-[6px] bg-[color:var(--elevated)]" />
+            <span className="block shrink-0 w-[40px] h-[56px] rounded-[5px] bg-[color:var(--elevated)]" />
             <span className="flex flex-col gap-[9px] flex-1 min-w-0">
               <span className="block h-[11px] rounded-[5px] bg-[color:var(--elevated)]" style={{ width: w }} />
               <span className="block h-[8px] rounded-[4px] bg-[color:var(--surface-raised)]" style={{ width: i % 2 === 0 ? "40%" : "52%" }} />

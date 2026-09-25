@@ -18,6 +18,13 @@ describe("CommanderThumb", () => {
     for (const el of [row, summary]) expect(el.className).toContain("rounded-[6px]");
   });
 
+  // Help me choose's result rows: a third box, a step smaller, for one row among many.
+  it("draws the result box at 40 by 56 with a 5px radius", () => {
+    const el = thumb(<CommanderThumb imageUri="/a.jpg" colorIdentity={["G"]} size="result" />);
+    expect([el.style.width, el.style.height]).toEqual(["40px", "56px"]);
+    expect(el.className).toContain("rounded-[5px]");
+  });
+
   // One alpha replacing three. `.4` is `IdentityPips`' own and already reused by
   // the bar's track, so this converges on a number the app draws rather than on
   // a fourth one.

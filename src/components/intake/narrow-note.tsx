@@ -102,11 +102,11 @@ function Options({ options, column = false }: { options: readonly NarrowOption[]
             ].join(" ")}
           >
             <span className="flex flex-col gap-[2px] flex-1 min-w-0">
-              <span className="text-[13.5px] font-semibold text-[color:var(--fg)] whitespace-nowrap">{o.label}</span>
+              <span className="text-[13.5px] font-semibold text-[color:var(--fg)] whitespace-nowrap overflow-hidden text-ellipsis">{o.label}</span>
               {o.reason && <span className="text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">{o.reason}</span>}
             </span>
             {/* The first option, the one that brings back most, is lit; the rest step back. */}
-            <span className={`font-mono text-[11px] whitespace-nowrap ${i === 0 ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>{o.count}</span>
+            <span className={`flex-none font-mono text-[11px] whitespace-nowrap ${i === 0 ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>{o.count}</span>
             <span aria-hidden className={`flex-none text-[13px] ${i === 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>→</span>
           </Link>
         </li>

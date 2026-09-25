@@ -53,7 +53,8 @@ export function ReadAsBar({
             notUsed.length === 0 && <p className="m-0 flex items-center h-[26px] text-[13px] text-[color:var(--fg-muted)]">{copy.readAs.none}</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-wrap gap-[6px]">
-              {chips.map((chip, i) => (
+              {/* The deeper look's chips follow every free-match chip, each group in the form's order. */}
+              {[...chips.filter((c) => !c.deeper), ...chips.filter((c) => c.deeper)].map((chip, i) => (
                 <li
                   key={`${chip.kind}-${i}`}
                   data-testid="answer-chip"
@@ -78,12 +79,14 @@ export function ReadAsBar({
             <div data-testid="not-used" className="flex flex-wrap items-baseline gap-[4px_10px]">
               <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{afterDeeper ? copy.readAs.stillNotUsed : copy.readAs.notUsed}</span>
               {notUsed.map((phrase) => (
-                <q
+                // The quotes are the text's own, not a `q` element's: those are the browser's to draw.
+                <span
                   key={phrase}
-                  className="text-[13px] text-[color:var(--fg-muted)] underline decoration-dotted decoration-[color:var(--border-dashed)] underline-offset-[3px]"
+                  data-testid="not-used-phrase"
+                  className="text-[13px] text-[color:var(--fg-muted)] border-0 border-b border-dotted border-[color:var(--border-dashed)]"
                 >
-                  {phrase}
-                </q>
+                  {`“${phrase}”`}
+                </span>
               ))}
             </div>
           )}

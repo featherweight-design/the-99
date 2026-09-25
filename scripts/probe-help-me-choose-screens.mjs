@@ -208,6 +208,67 @@ async function run() {
 
         if (chipWidth !== width) await page.setViewportSize({ width, height: 844 });
       }
+      // 8. The row's box (close-out gap 9): a 40x56 thumb at radius 5, identity pips 4px apart,
+      //    and Show more across the whole row on a phone. Resolved styles, which a class cannot prove.
+      {
+        const at = `row box @ ${width}`;
+        // The owned order: a full first page of twelve, so Show more is drawn.
+        await page.goto(`${BASE}${ROUTES[1][1]}`, { waitUntil: "domcontentloaded" });
+        await page.locator(`${PAGE} [data-testid='result-row']`).first().waitFor({ state: "attached", timeout: 90_000 });
+        const box = await page.evaluate((scope) => {
+          const root = document.querySelector(scope);
+          const row = root.querySelector("[data-testid='result-row']");
+          const thumb = row.querySelector("[data-commander-thumb]").getBoundingClientRect();
+          const radius = getComputedStyle(row.querySelector("[data-commander-thumb]")).borderTopLeftRadius;
+          // The drawn pips, whichever width's copy is showing, with at least two colors to space.
+          const pips = [...root.querySelectorAll("[data-testid='result-row'] span[aria-hidden='true'].flex")]
+            .filter((el) => el.offsetParent !== null && el.children.length > 1)
+            .map((el) => getComputedStyle(el).columnGap);
+          const more = [...root.querySelectorAll("button")].find((b) => /^Show \d+ more$/.test(b.textContent.trim()));
+          const moreBox = more?.getBoundingClientRect();
+          const moreRow = more?.parentElement.getBoundingClientRect();
+          return {
+            thumb: `${Math.round(thumb.width)}x${Math.round(thumb.height)}`,
+            radius,
+            pips: [...new Set(pips)],
+            more: more ? { w: Math.round(moreBox.width), row: Math.round(moreRow.width) } : null,
+          };
+        }, PAGE);
+        report(`${at}: the thumb is 40x56 at radius 5`, box.thumb === "40x56" && box.radius === "5px", JSON.stringify(box));
+        report(`${at}: identity pips sit 4px apart`, box.pips.length === 1 && box.pips[0] === "4px", JSON.stringify(box.pips));
+        report(`${at}: ${width === 390 ? "Show more takes the whole row" : "Show more keeps its own width"}`,
+          box.more !== null && (width === 390 ? Math.abs(box.more.w - box.more.row) <= 1 : box.more.w < box.more.row / 2),
+          JSON.stringify(box.more));
+      }
+      // 9. Nothing fits, and the way out is dropping five colors (close-out gap 1): the option's
+      //    label gives way, never its count, and nothing leaves the option's box.
+      // Read at 390 and again at 320, the narrowest phone in use, where the label is longest against its row.
+      for (const dropWidth of width === 390 ? [390, 320] : []) {
+        await page.setViewportSize({ width: dropWidth, height: 844 });
+        const at = `five-color drop @ ${dropWidth}`;
+        await page.goto(`${BASE}/decks/new/choose?c=w,u,b,r,g&m=exact&t=dinosaurs&k=1&v=results`, { waitUntil: "domcontentloaded" });
+        await page.locator(`${PAGE} [data-testid='narrow-none'], ${PAGE} [data-testid='narrow-few']`).first().waitFor({ timeout: 90_000 });
+        const opts = await page.evaluate((scope) => [...document.querySelectorAll(`${scope} [data-testid='narrow-option']`)].map((o) => {
+          const [label, count] = [o.querySelector("span > span"), o.querySelector("span.font-mono")];
+          const b = o.getBoundingClientRect();
+          const c = count.getBoundingClientRect();
+          // A label that does not fit must be cut by an ellipsis inside its own box; one that runs on
+          // past it paints under the count, and its box alone would still read as inside.
+          const over = label.scrollWidth > label.clientWidth + 0.5;
+          return {
+            label: label.textContent,
+            count: count.textContent,
+            over,
+            countWhole: count.scrollWidth <= count.clientWidth + 0.5 && c.right <= b.right + 0.5,
+            labelInside: label.getBoundingClientRect().right <= c.left + 0.5
+              && (!over || (getComputedStyle(label).textOverflow === "ellipsis" && getComputedStyle(label).overflowX === "hidden")),
+          };
+        }), PAGE);
+        const five = opts.find((o) => /White.*Green|Green.*White/.test(o.label));
+        report(`${at}: the label gives way and the count stays whole`,
+          five !== undefined && opts.every((o) => o.countWhole && o.labelInside),
+          five ? JSON.stringify(opts) : `no five-color option among ${JSON.stringify(opts.map((o) => o.label))}`);
+      }
       await context.close();
     }
   } finally {

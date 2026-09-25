@@ -134,6 +134,25 @@ async function run() {
       await button.click();
       await page.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "looking", PAGE);
       const dimmed = await page.locator(`${PAGE} [data-testid='results-dim']`).getAttribute("data-looking");
+      // The looking press (3b): named like every other state, weight 600, and on a phone it takes
+      // the row beside Stop. Resolved styles and boxes, which a class list cannot prove.
+      const pending = await page.evaluate((scope) => {
+        const panelEl = document.querySelector(`${scope} [data-testid='deeper-look']`);
+        const [pressEl, stopEl] = [...panelEl.querySelectorAll("button")];
+        const row = pressEl.parentElement.getBoundingClientRect();
+        const a = pressEl.getBoundingClientRect();
+        const b = stopEl.getBoundingClientRect();
+        return {
+          label: pressEl.getAttribute("aria-label"),
+          weight: getComputedStyle(pressEl).fontWeight,
+          fill: Math.round(row.width - (a.width + b.width + 8)),
+          row: Math.round(row.width),
+        };
+      }, PAGE);
+      report(at("the looking press is named and set at 600"), pending.label === "1 credit. Looking…" && pending.weight === "600", JSON.stringify(pending));
+      if (width === 390) {
+        report(at("on a phone the looking press takes the row beside Stop"), Math.abs(pending.fill) <= 1, JSON.stringify(pending));
+      }
       // The rows dim and the labels do not: read as resolved opacity, which a class cannot prove.
       const dimRead = await page.evaluate((scope) => {
         const root = document.querySelector(scope);
@@ -170,6 +189,17 @@ async function run() {
         `d=${url.searchParams.get("d")} phase ${await phase(page)}`);
       report(at("the added chip is drawn dashed, and tagged"), chipStyle?.style === "dashed" && /Tokens.*deeper/.test(chipStyle.text ?? ""),
         JSON.stringify(chipStyle));
+      // The added chip follows every free-match chip (the deeper table's chip row).
+      const lastIsDeeper = await page.evaluate((scope) => {
+        const chips = [...document.querySelectorAll(`${scope} [data-testid='answer-chip']`)];
+        return chips.length > 1 && chips.findIndex((c) => c.dataset.deeper) === chips.length - 1;
+      }, PAGE);
+      report(at("the added chip comes after the free-match chips"), lastIsDeeper, String(lastIsDeeper));
+      // Still not used: each phrase in its own quotes, on a dotted border rather than an underline.
+      const phrases = await page.locator(`${PAGE} [data-testid='not-used-phrase']`).evaluateAll((els) =>
+        els.map((el) => ({ text: el.textContent, border: getComputedStyle(el).borderBottomStyle })));
+      report(at("still-not-used phrases are quoted, on a dotted border"),
+        phrases.length > 0 && phrases.every((x) => /^“.*”$/.test(x.text) && x.border === "dotted"), JSON.stringify(phrases));
       report(at("offered once: no second press"), (await page.locator(`${PAGE} button`, { hasText: "Look deeper" }).count()) === 0, "none drawn");
       const afterDone = await units(t0, userId);
       report(at("and spends exactly one credit"), (afterDone.spent ?? 0) === (afterStop.spent ?? 0) + 1,

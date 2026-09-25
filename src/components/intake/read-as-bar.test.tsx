@@ -45,6 +45,18 @@ describe("We read this as", () => {
     expect(within(screen.getByRole("region")).getAllByRole("button")).toHaveLength(1);
   });
 
+  it("draws the deeper look's chips after every free-match chip", () => {
+    const p = { ...emptyParams(), themes: ["tokens", "dinosaurs"], budgetDollars: 150 };
+    render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ReadAsBar chips={answerChips(p, labels, ["t:tokens"])} card={null} notUsed={[]} changeHref="/x" startOverHref="/y" />
+      </CardDetailProvider>,
+    );
+    const chips = screen.getAllByTestId("answer-chip");
+    expect(chips.map((c) => c.textContent)).toEqual(["themeDinosaurs", "budget$150", "themetokensdeeper"]);
+    expect(chips[2].dataset.deeper).toBe("true");
+  });
+
   it("opens the card from the card chip's name, and prices an unowned card on its buy tag", () => {
     bar();
     expect(screen.getByTestId("card-chip-name").textContent).toBe("Regisaur Alpha");
@@ -66,8 +78,10 @@ describe("We read this as", () => {
   it("quotes Not used as phrases, apart from the chips, and only when there are any", () => {
     bar({ notUsed: ["that stomp", "$200"] });
     const line = screen.getByTestId("not-used");
-    expect(line.textContent).toBe("Not usedthat stomp$200");
-    expect(line.querySelectorAll("q")).toHaveLength(2);
+    // The quotes are the text's own: a `q` element's are the browser's to draw, or not.
+    expect(line.textContent).toBe("Not used“that stomp”“$200”");
+    expect(line.querySelectorAll("q")).toHaveLength(0);
+    expect(screen.getAllByTestId("not-used-phrase")[0].className).toContain("border-dotted");
     bar({});
     expect(screen.getAllByTestId("not-used")).toHaveLength(1);
   });
