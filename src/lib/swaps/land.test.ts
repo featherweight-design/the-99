@@ -294,6 +294,10 @@ describe("colorSource and landCatch", () => {
     expect(colorSource(verge, "W")).toBe("free");
     expect(colorSource(verge, "R")).toBe("conditional");
   });
+  it("reads a grant that holds only on a counter as conditional", () => {
+    const caverns = L("Gemstone Caverns", "Legendary Land", "If this card is in your opening hand and you're not the starting player, you may begin the game with it on the battlefield with a luck counter on it.\n{T}: Add {C}. If this land has a luck counter on it, instead add one mana of any color.");
+    expect(colorSource(caverns, "R")).toBe("conditional");
+  });
   it("gives no color to a grant that depends on other cards or on a draft", () => {
     expect(landColors(havens).size).toBe(0);
     expect(landColors(paliano).size).toBe(0);
@@ -305,6 +309,7 @@ describe("colorSource and landCatch", () => {
     ["Forsaken City", "This land doesn't untap during your untap step.\nAt the beginning of your upkeep, you may exile a card from your hand. If you do, untap this land.\n{T}: Add one mana of any color.", "utility"],
     ["Glimmervoid", "At the beginning of the end step, if you control no artifacts, sacrifice this land.\n{T}: Add one mana of any color.", "condition"],
     ["Rith's Grove", "When this land enters, sacrifice it unless you return a non-Lair land you control to its owner's hand.\n{T}: Add {R}, {G}, or {W}.", "condition"],
+    ["Lotus Vale", "If this land would enter, sacrifice two untapped lands instead. If you do, put this land onto the battlefield. If you don't, put it into its owner's graveyard.\n{T}: Add three mana of any one color.", "condition"],
     ["Forbidden Orchard", "{T}: Add one mana of any color.\nWhenever you tap this land for mana, target opponent creates a 1/1 colorless Spirit creature token.", "condition"],
   ])("%s has a %s catch", (name, text, want) => expect(landCatch(L(name, "Land", text))).toBe(want));
   it("reads no catch in a fetch's own cost, or in a plain dual", () => {

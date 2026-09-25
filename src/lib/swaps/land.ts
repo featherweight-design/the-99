@@ -118,7 +118,9 @@ export function colorSource(card: LandText, color: Color): "free" | "conditional
     const makes = (ANY_COLOR.test(effect) && !CONDITIONAL_GRANT.test(effect))
       || [...effect.matchAll(/\badd\b([^.]*)/g)].some((m) => m[1].includes(`{${color.toLowerCase()}}`));
     if (!makes) continue;
-    if (/activate only\b/.test(effect)) conditional = true;
+    // `Activate only if…` (a verge), or a grant that replaces the plain one only `if` something holds
+    // (Gemstone Caverns' luck counter): the color is there on a condition.
+    if (/activate only\b|\bif\b[^.]*\binstead add\b|\binstead add\b/.test(effect)) conditional = true;
     else return "free";
   }
   return conditional ? "conditional" : "utility";
@@ -134,7 +136,8 @@ export function colorSource(card: LandText, color: Color): "free" | "conditional
 export function landCatch(card: LandText): "condition" | "utility" | null {
   const text = stripReminders(frontText(card)).toLowerCase();
   if (/opponent gains control of this land|return this land to its owner's hand|doesn't untap during your untap step/.test(text)) return "utility";
-  if (/sacrifice (this land|it) unless|if you control no [^.]*, sacrifice this land|opponent creates/.test(text)) return "condition";
+  // Lotus Vale's `sacrifice two untapped lands` is paid to put it into play, which is a catch too.
+  if (/sacrifice (this land|it) unless|if you control no [^.]*, sacrifice this land|opponent creates|sacrifice (two|an?) untapped lands?/.test(text)) return "condition";
   return null;
 }
 
