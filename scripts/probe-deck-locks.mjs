@@ -127,6 +127,7 @@ async function buildDeck(userId, name, made) {
     where dc.deck_id = ${id} and dc.quantity = 1 and c.game_changer
       and dc.oracle_id not in (${plain.oracle_id}, ${tile.oracle_id})
       and dc.oracle_id <> all(${autos}::uuid[])
+      and dc.oracle_id <> ${picks[12].oracle_id} -- the card cut from the draft below
     order by dc.oracle_id limit 1`;
   if (!crowded) throw new Error("The template holds no Game Changer singleton for the crowded tile.");
   await sql`update deck_cards set quantity = 2 where deck_id = ${id} and oracle_id = ${crowded.oracle_id}`;
