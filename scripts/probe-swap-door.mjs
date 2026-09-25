@@ -246,6 +246,7 @@ try {
     // Marked so its return can be told from a remount: the same node keeps its scroll.
     await card.evaluate((el) => { el.dataset.probeHeld = "1"; });
     const cardTop = await topOf(card);
+    if (phone) report(`${tag} depths: a Shopping card starts at 52`, cardTop === 52, `${cardTop}`);
 
     // Card → sheet: the sheet opens OVER the card, and the card stays under it.
     await link.click();
@@ -275,6 +276,16 @@ try {
     const topY = await topOf(cardDialogs(page).nth(1));
     if (phone) report(`${tag} depths: the stand-in at 140`, topY === 140, `${topY}`);
     else report(`${tag} the stand-in sits 80px below its original`, topY - cardTop === 80, `${cardTop} → ${topY}`);
+    const scrim = await cardDialogs(page).nth(1).evaluate((el) => {
+      const wrap = el.parentElement;
+      const ref = document.createElement("span");
+      ref.style.color = "color-mix(in oklab, var(--bg) 60%, transparent)";
+      document.body.appendChild(ref);
+      const want = getComputedStyle(ref).color;
+      ref.remove();
+      return { got: getComputedStyle(wrap).backgroundColor, want };
+    });
+    report(`${tag} the stand-in layer draws its own 60% scrim`, scrim.got === scrim.want, `${scrim.got} against ${scrim.want}`);
     const footer = await cardDialogs(page).nth(1).locator('[data-testid="stand-in-footer"]').filter({ visible: true }).count();
     report(`${tag} the stand-in carries the Take footer`, footer === 1, `${footer}`);
 
@@ -322,6 +333,12 @@ try {
     const receipt = onPage(page, '[data-testid="swap-receipt"]:visible').first();
     await receipt.waitFor({ timeout: 15_000 });
     report(`${tag} Escape again: the receipt`, ((await receipt.textContent()) ?? "").includes(addName ?? "?"), (await receipt.textContent())?.slice(0, 60));
+    await page.waitForTimeout(200);
+    const onUndo = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el?.tagName === "BUTTON" && el.closest('[data-testid="swap-receipt"]') !== null;
+    });
+    report(`${tag} Escape again: focus on the receipt's Undo swap`, onUndo, onUndo ? "Undo swap" : `focus on <${await page.evaluate(() => document.activeElement?.tagName)}>`);
     await receipt.getByRole("button", { name: /^Undo the swap/ }).click();
     const undone = await onPage(page, '[data-testid="swap-receipt"]').first().waitFor({ state: "detached", timeout: 15_000 }).then(() => true, () => false);
     const { rows: restored } = await pool.query(

@@ -51,8 +51,27 @@ export function StandInDoor({
     return () => cancelAnimationFrame(frame);
   }, [open]);
 
+  const taken = tools?.receipts.findLast((r) => r.cutOracleId === card.oracleId);
+  // Closing a card that has been swapped out lands on its receipt, where Undo swap lives (addendum
+  // §3). The row that opened the card is gone with its last copy, so the dialog's own focus return
+  // drops to the page. Read at unmount through a ref, since paging changes the card under this door.
+  const takenId = useRef<string | null>(null);
+  useEffect(() => {
+    takenId.current = taken?.swapId ?? null;
+  });
+  useEffect(
+    () => () => {
+      const id = takenId.current;
+      if (!id) return;
+      requestAnimationFrame(() => {
+        if (document.activeElement && document.activeElement !== document.body) return;
+        document.querySelector<HTMLButtonElement>(`[data-swap-id="${CSS.escape(id)}"] button`)?.focus();
+      });
+    },
+    [],
+  );
+
   if (!tools) return null;
-  const taken = tools.receipts.findLast((r) => r.cutOracleId === card.oracleId);
   const figure = formatLimit(tools.limitCents);
   const over = isOverLimit(card.price, newestAsOf, tools.limitCents);
   const line = taken ? copy.swapped(taken.add) : over ? copy.overLimit(figure) : copy.underLimit(figure);
