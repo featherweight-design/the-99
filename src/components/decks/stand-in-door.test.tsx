@@ -96,6 +96,23 @@ describe("the card modal's door (swap tools PR 4c)", () => {
     expect(doors()[0]).toHaveTextContent(copy.swapped("Rugged Prairie"));
     expect(screen.queryByRole("button", { name: /See cheaper stand-ins/ })).toBeNull();
   });
+
+  it("draws no door on a card the Shopping list does not hold, flag or no flag", async () => {
+    cards["o-other"] = browse("o-other", "Other Card");
+    render(
+      <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <StandInDoorRegistration shoppingCards={[PLATEAU]} newestAsOf={asOf} />
+          <CardDetailTrigger oracleId="o-other" name="Other Card" door>shop other</CardDetailTrigger>
+        </CardDetailProvider>
+      </SwapToolsProvider>,
+    );
+    await press("shop other");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(doors()).toHaveLength(0);
+    // No empty wrapper either: the door's room is not taken from the art.
+    expect(document.querySelector(".md\\:hidden.flex-none:empty")).toBeNull();
+  });
 });
 
 describe("a sheet over the card", () => {

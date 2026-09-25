@@ -620,6 +620,7 @@ export function CardDetailProvider({
   const openAtPrinting = card && openAt?.oracleId === card.oracleId ? openAt.printing : null;
   const paging = index >= 0 && siblings.length > 1;
   const heldIndex = held ? held.siblings.indexOf(held.card.oracleId) : -1;
+  const liveDoor = Boolean(card && door && doorRender && doorRender(card.oracleId, "art") !== null);
 
   return (
     <CardDetailContext.Provider value={value}>
@@ -675,10 +676,13 @@ export function CardDetailProvider({
             ? (layout) => sheetFooter(card.oracleId, layout)
             : null}
           backLabel={backLabel}
-          door={door && doorRender ? (layout) => doorRender(card.oracleId, layout) : null}
+          // Only a card the door has something for: a combo partner reached from a Shopping card keeps the
+          // flag through `load` but is no Shopping row, and a door with nothing in it would still take
+          // its room from the art.
+          door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
           // Opened from a Shopping row, the phone's card starts at 52 so a sheet opened over it steps
           // down from there (audit F16); every other opener keeps the full-height card.
-          phoneTop={door && doorRender && sheetsBelow === 0 ? 52 : undefined}
+          phoneTop={liveDoor && sheetsBelow === 0 ? 52 : undefined}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from.

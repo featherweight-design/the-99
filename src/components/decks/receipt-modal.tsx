@@ -184,7 +184,9 @@ export function ModalChrome({
           // stacked card sheet leaves visible. Desktop: centered.
           "flex flex-col w-full rounded-t-[14px] border-t "
           + (onCard ? "h-[calc(100%-96px)] " : "h-[calc(100%-52px)] ")
-          + "md:h-auto md:max-h-[85vh] md:rounded-[14px] md:border overflow-hidden "
+          + "md:h-auto md:rounded-[14px] md:border overflow-hidden "
+          // Over a card its top is pushed down, so its height is capped to end 20px above the fold.
+          + (onCard ? "md:max-h-[calc((100vh+min(620px,85vh))/2-60px)] " : "md:max-h-[85vh] ")
           + WIDTH_CLASS[width]
           // Behind a card its edge steps down with its ground, as the addendum's §5a draws it.
           + (behind ? "border-[color:var(--border)]" : "border-[color:var(--border-strong)]")
@@ -221,8 +223,7 @@ export function ModalChrome({
               type="button"
               onClick={onClose}
               aria-label={overCard.backAria}
-              className="hidden md:inline-flex ml-auto flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]"
-              style={{ background: "var(--elevated)" }}
+              className="hidden md:inline-flex ml-auto flex-none items-center gap-[6px] h-[32px] px-[12px] rounded-full text-[12.5px] font-semibold leading-none whitespace-nowrap cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] [border:1px_solid_var(--border-strong)]"
             >
               <span aria-hidden="true">←</span>
               {overCard.name}

@@ -45,6 +45,8 @@ const KINDS = {
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
   { label: 390, viewport: { width: 390, height: 844 } },
+  // A short desktop window: the layers stepped down must still end above the fold.
+  { label: "1280x720", viewport: { width: 1280, height: 720 } },
 ];
 
 let failures = 0;
@@ -263,6 +265,11 @@ try {
       : sheet.getByRole("button", { name: `Back to ${cut}` }).filter({ hasText: cut });
     report(`${tag} sheet over card: its way back names the card`, await back.isVisible(), phone ? "× Back to …" : "← pill");
     await shot("sheet-over-card");
+    if (!phone) {
+      const box = await sheet.boundingBox();
+      report(`${tag} the sheet over the card ends above the fold`, box && box.y + box.height <= w.viewport.height,
+        `bottom ${Math.round((box?.y ?? 0) + (box?.height ?? 0))} of ${w.viewport.height}`);
+    }
     if (phone) {
       const heldTop = await topOf(page.locator('[data-probe-held="1"]'));
       const sheetTop = await topOf(sheet);
@@ -275,7 +282,14 @@ try {
     await page.waitForFunction(() => document.querySelectorAll('[role="dialog"][aria-labelledby="card-modal-title"]').length === 2, null, { timeout: 15_000 });
     const topY = await topOf(cardDialogs(page).nth(1));
     if (phone) report(`${tag} depths: the stand-in at 140`, topY === 140, `${topY}`);
-    else report(`${tag} the stand-in sits 80px below its original`, topY - cardTop === 80, `${cardTop} → ${topY}`);
+    else {
+      const box = await cardDialogs(page).nth(1).boundingBox();
+      const room = Math.min(80, Math.floor((w.viewport.height - (box?.height ?? 0)) / 2 - 8));
+      report(`${tag} the stand-in sits 80px below its original, or as far as the window allows`,
+        Math.abs(topY - cardTop - room) <= 1, `${cardTop} → ${topY}, room ${room}`);
+      report(`${tag} the stand-in ends above the fold`, box && box.y + box.height <= w.viewport.height,
+        `bottom ${Math.round((box?.y ?? 0) + (box?.height ?? 0))} of ${w.viewport.height}`);
+    }
     const scrim = await cardDialogs(page).nth(1).evaluate((el) => {
       const wrap = el.parentElement;
       const ref = document.createElement("span");

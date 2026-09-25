@@ -1444,7 +1444,8 @@ export function CardModal({
         // full-screen thing over a dialog over a backdrop, and clicks outside the
         // dialog would dismiss the zoom instead of reaching the backdrop.
         className={(phoneTop ? PHONE_TOP[phoneTop] + " " : stacked ? STACKED_SHEET + " " : "")
-          + (dropped ? "md:translate-y-[80px] " : "")
+          // 80px down, or as far as the room under a centred card allows on a short window.
+          + (dropped ? "md:translate-y-[min(80px,calc((100vh-min(620px,85vh))/2-8px))] " : "")
           + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",
