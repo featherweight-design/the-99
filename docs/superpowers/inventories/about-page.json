@@ -1,6 +1,6 @@
 {
   "feature": "About The 99 \u2014 the reference page, its gate and its figures",
-  "note": "Every figure gets its own row, addressed by NAME. Thirty-four entries now carry thirty-four figures, and the sheet's job is the one a test cannot do: show that each frame holds something, at both widths, in one glance. Two rows either side photograph the page head and the destination state. The account-menu row is deliberately absent \u2014 every verb here reaches page content through `onPage`, which scopes to `<main>`, and the shell's account trigger sits outside it by construction; `account-menu.test.tsx` covers it instead.",
+  "note": "Every figure gets its own row, addressed by NAME. Every entry carries a figure, and the sheet's job is the one a test cannot do: show that each frame holds something, at both widths, in one glance. Two rows either side photograph the page head and the destination state. The account-menu row is deliberately absent \u2014 every verb here reaches page content through `onPage`, which scopes to `<main>`, and the shell's account trigger sits outside it by construction; `account-menu.test.tsx` covers it instead. The two launch-entry rows need a server with their switches on; with them off those entries are not on the page and the rows fail, which is the absence this sheet exists to show.",
   "rows": [
     {
       "id": "about-first-run",
@@ -453,6 +453,32 @@
           "wait": "[data-specimen='themes']",
           "settle": 1200,
           "scrollTo": "[data-specimen='themes']"
+        }
+      ]
+    },
+    {
+      "id": "fig-locked-cards",
+      "label": "/about \u2014 the Locked cards figure (needs NEVER_CUT_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='locked-cards']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='locked-cards']"
+        }
+      ]
+    },
+    {
+      "id": "fig-change-commander",
+      "label": "/about \u2014 the Change commander figure (needs CHANGE_COMMANDER_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='change-commander']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='change-commander']"
         }
       ]
     },
