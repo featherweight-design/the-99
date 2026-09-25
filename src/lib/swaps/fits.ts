@@ -6,9 +6,11 @@
 // A deck that holds it says how many copies, and a deck whose colors rule the card out is named
 // with the colors that do it. The picker (PR 5b) draws them; `shapeFits` says in what order.
 //
-// Read on demand, when the picker opens, never shipped with a card: it is one deck query, the
-// card, the role counts of the decks that fit, their mixes (once per distinct commander pair), and
-// the card's availability.
+// Read on demand, when the picker opens, never shipped with a card: the card and every deck; then, in
+// one batch, the fitting decks' lists (the role and theme counts), the Spellbook pieces that pair with
+// the card, the catalog's creature types (memoized), their mixes (once per distinct commander pair),
+// the card's availability and the universal staples; then the full-rule combo read, only for a deck
+// holding one of those pieces.
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";

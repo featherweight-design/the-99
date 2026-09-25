@@ -261,7 +261,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
             {shown.map((deck) => {
               const note = noteFor(deck.id);
               return (
-                <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[7px] py-[10px] border-b border-[color:var(--border)]">
+                <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[5px] py-[10px] border-b border-[color:var(--border)]">
                   <div className="flex items-center gap-[10px] min-w-0">
                     <Link href={`/decks/${deck.id}`} aria-label={copy.deckLinkAria(deck.name)} className={`${deckLink} text-[13.5px] text-[color:var(--fg-body)]`}>
                       {deck.name}

@@ -186,7 +186,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 
 | Element | Property | Mobile | Desktop |
 |---|---|---|---|
-| Row | Layout | `display:flex; flex-direction:column; gap:7px` | same |
+| Row | Layout | `display:flex; flex-direction:column; gap:5px` (v2 D3, the addendum's rebuilt row; was 7px beside the chips) | same |
 | | Padding | `10px 0` | same |
 | | Border | `border-bottom: 1px solid var(--border)` | same |
 | Line 1 | Layout | `display:flex; align-items:center; gap:10px; min-width:0` | same |
@@ -208,7 +208,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Added stamp (replaces the button) | Layout | `flex:none; display:inline-flex; align-items:center; gap:6px; min-height:44px` | same, `min-height:0` |
 | | Typography | mono 9.5px, `letter-spacing:0.1em`, uppercase, `var(--success)`; text `in the draft` | same |
 | | Check box | `15×15`, radius 4, font 9px, `border:1px solid var(--success)`, `✓`, `aria-hidden` | same |
-| Reason line (v2 D3, addendum §1c) | Layout | one `p`, mono 10.5px, `line-height:1.45`, `text-wrap:pretty`, `var(--fg-muted)`; replaces the two chips, so the row keeps its height | same |
+| Reason line (v2 D3, addendum §1c) | Layout | one `p`, mono 10.5px, `line-height:1.45`, `text-wrap:pretty`, `var(--fg-muted)`; replaces the two chips | same |
 | | Content | `{reason}`, then ` · ` in `var(--border-strong)`, `this deck ` in `var(--fg-locked)` and `fits.need(role, count, target)` | same |
 | Reason: combo | Typography | `var(--fg)`: `fits.reasonCombo` then the other piece's name, dotted `var(--accent)`, a `CardDetailTrigger` that opens that card | same |
 | | Condition | Spellbook's two-card variant, every other piece already in the deck's draft or its commanders (Hugh's Q8), read by `loadCompletionPartners` | same |
@@ -242,7 +242,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Door hidden | Not Commander-legal, or no decks, or a stand-in stacked card (Take footer) | Nothing (no replacement state) | same flags |
 | Loading | Picker opened; payload not yet back | Head, card plate with copies line, loading block (§2.6) | `card`, `copies` (owned, free), reduced-motion via `LoadingScreen` |
 | Failed | Picker payload request errors | Head, card plate, failed block (§2.7) with Try again | `card`, `onRetry`; new copy (no key yet) |
-| Several decks fit | ≥1 deck can take the card (identity fits, not already holding) | `could take it` group with rows (§2.10), then `already holds it` if any | `rows[] {deckId, deckName, commanderChip, need?}`, `holds[] {deckName, count}`, `copies` |
+| Several decks fit | ≥1 deck can take the card (identity fits, not already holding) | `could take it` group with rows (§2.10), then `already holds it` if any | `rows[] {deckId, deckName, reason?, need?}`, `holds[] {deckName, count}`, `copies` |
 | All hold it | Every deck that can play the card already holds it | Sentence `fits.allHold`, then `already holds it` group listing them; copies line (F15) | `card`, `holds[]`, `copies` |
 | Colors rule them out | No deck's commander identity covers the card | Sentence `noneByColorsOne` (one color) or `noneByColors` (several); no groups; copies line (F15) | `card`, card color words, `copies` |
 | Copies line, any copy free | `free > 0` | `×{owned} · {free} free` in `var(--fg-body)` | `owned`, `free` |
@@ -253,7 +253,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Brew add | Adding to a brew (soft claim) | Does not spend a free copy and never flips rows to Add to buy | deck `isCommitted` / brew flag |
 | Added | An Add on a row succeeded | That row: stamp `in the draft` in place of the button, note line + `Open the deck →`. Other rows re-evaluate Add vs Add to buy; the copies line updates. No undo in the picker | added deckId, note variant (`addedUsedLast` / `addedFree` / `addedToBuy`), deck href |
 | Refused add (`addRefused`) | The add action refuses | `MutationError` under that row with `fits.addRefused`; row keeps its button (undrawn; F4) | row id, error |
-| Reason line (v2 D3) | Card is not a universal staple | `Completes a combo with {card}`, else `Joins {n} other {theme} cards`, else the need alone; ` · this deck {need}` after it | inclusion pct, the `listed` flag, commander (or pair) name |
+| Reason line (v2 D3) | Card is not a universal staple | `Completes a combo with {card}`, else `Joins {n} other {theme} cards`, else the need alone; ` · this deck {need}` after it | `reason` (`combo` with the other piece, or `theme` with `n`), `need` |
 | Staple reason | Card is a universal staple (`loadUniversalStaples` membership, F18) | italic `var(--fg-body)`: `staple · any commander`, no %, then the need | `isUniversal` |
 | Staple note, with role | Universal staple that has a counted role (Sol Ring) | Dashed note under the plate, label `staple` + sentence; rows keep the need on the reason line | `isUniversal`, role present |
 | Staple note, no role | Universal staple with no counted role (Reliquary Tower) | Dashed note (no-role variant); rows carry the staple reason only, no need | `isUniversal`, role absent |
@@ -286,7 +286,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Need value | `need` | `(role, count, target)` |
 | All hold it | `allHold` | `(card)` |
 | Colors rule out | `noneByColorsOne`, `noneByColors` | `(card, color)`, `(card, colors)` |
-| Staple chip value, staple note label and both note sentences | `cmdrStaple`, `stapleLabel`, `stapleNote`, `stapleNoteNoRole` (addendum strings, F21) | notes name the card |
+| Staple reason value, staple note label and both note sentences | `cmdrStaple`, `stapleLabel`, `stapleNote`, `stapleNoteNoRole` (addendum strings, F21) | notes name the card |
 | Failed state | `failed.heading`, `failed.body`; tag and Try again from `sheet.failed.tag`, `sheet.retry` | none |
 
 Retired or unused in the picker: `heading`, `order`, `excludedOne`, `excludedMany`, `outsideColors`, `notLegal`,
@@ -304,6 +304,6 @@ Retired or unused in the picker: `heading`, `order`, `excludedOne`, `excludedMan
 6. **Added note variants.** The canvas uses only `addedUsedLast`; the file also keeps `addedFree` and `addedToBuy`. Which note goes with which case is not drawn.
 7. **Staple, no role, free copies.** `staplenorole` offers Add (free) on all three rows with `×1 · 1 free`. That fits the rule while one copy is free, but it's unclear whether the rows flip after the first add.
 8. **Staple strings have no keys.** The chip value, the note label and the two note sentences exist only in the addendum canvas, so keys still have to be created.
-9. **Base vs addendum.** The only differences are additions (the staple states, the note, the italic `--fg-body` chip ink). No base value is contradicted. The base canvas's ordinary chip ink (`--fg-muted`) still holds for non-staples.
+9. **Base vs addendum.** The only differences are additions (the staple states, the note, the italic `--fg-body` ink). No base value is contradicted. v2 D3 retires the base canvas's two chips for the reason line (§2.10).
 10. **Escape and focus.** The addendum's per-layer Escape list covers card → sheet → card. For the picker, only the phone back label (`Back to {card}`) is stated. Where focus lands when the picker closes (presumably the door) is not stated.
 11. **Hover and focus states** are drawn for nothing in scope.
