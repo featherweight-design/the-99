@@ -1,0 +1,4706 @@
+{
+  "id": "d169e687-99c7-435d-ab3d-65c7bb6b2c51",
+  "prevId": "8aa23115-6580-41a2-98fb-d22bddbd08cc",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.card_art_preferences": {
+      "name": "card_art_preferences",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "set_code": {
+          "name": "set_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collector_number": {
+          "name": "collector_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "card_art_preferences_oracle_id_cards_oracle_id_fk": {
+          "name": "card_art_preferences_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "card_art_preferences",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "card_art_preferences_user_id_oracle_id_pk": {
+          "name": "card_art_preferences_user_id_oracle_id_pk",
+          "columns": [
+            "user_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.card_assignments": {
+      "name": "card_assignments",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "copies": {
+          "name": "copies",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "card_assignments_deck_idx": {
+          "name": "card_assignments_deck_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "card_assignments_oracle_id_cards_oracle_id_fk": {
+          "name": "card_assignments_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "card_assignments",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "card_assignments_deck_id_decks_id_fk": {
+          "name": "card_assignments_deck_id_decks_id_fk",
+          "tableFrom": "card_assignments",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "card_assignments_user_id_oracle_id_deck_id_pk": {
+          "name": "card_assignments_user_id_oracle_id_deck_id_pk",
+          "columns": [
+            "user_id",
+            "oracle_id",
+            "deck_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "card_assignments_copies_positive": {
+          "name": "card_assignments_copies_positive",
+          "value": "\"card_assignments\".\"copies\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.card_bracket_flags": {
+      "name": "card_bracket_flags",
+      "schema": "",
+      "columns": {
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mass_land_denial": {
+          "name": "mass_land_denial",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "mass_land_denial_sources": {
+          "name": "mass_land_denial_sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "extra_turn": {
+          "name": "extra_turn",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "extra_turn_sources": {
+          "name": "extra_turn_sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "tutor": {
+          "name": "tutor",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "tutor_sources": {
+          "name": "tutor_sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "card_bracket_flags_oracle_id_cards_oracle_id_fk": {
+          "name": "card_bracket_flags_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "card_bracket_flags",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "card_bracket_flags_mld_sources_check": {
+          "name": "card_bracket_flags_mld_sources_check",
+          "value": "\"card_bracket_flags\".\"mass_land_denial\" = (cardinality(\"card_bracket_flags\".\"mass_land_denial_sources\") > 0)"
+        },
+        "card_bracket_flags_et_sources_check": {
+          "name": "card_bracket_flags_et_sources_check",
+          "value": "\"card_bracket_flags\".\"extra_turn\" = (cardinality(\"card_bracket_flags\".\"extra_turn_sources\") > 0)"
+        },
+        "card_bracket_flags_source_values_check": {
+          "name": "card_bracket_flags_source_values_check",
+          "value": "\"card_bracket_flags\".\"mass_land_denial_sources\" <@ array['spellbook_sweep', 'oracle_rule']::text[]\n        and \"card_bracket_flags\".\"extra_turn_sources\" <@ array['spellbook_sweep', 'oracle_rule']::text[]"
+        },
+        "card_bracket_flags_tutor_sources_check": {
+          "name": "card_bracket_flags_tutor_sources_check",
+          "value": "\"card_bracket_flags\".\"tutor\" = (cardinality(\"card_bracket_flags\".\"tutor_sources\") > 0)\n        and \"card_bracket_flags\".\"tutor_sources\" <@ array['oracle_rule']::text[]"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cards": {
+      "name": "cards",
+      "schema": "",
+      "columns": {
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scryfall_id": {
+          "name": "scryfall_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mana_cost": {
+          "name": "mana_cost",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cmc": {
+          "name": "cmc",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "color_identity": {
+          "name": "color_identity",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type_line": {
+          "name": "type_line",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_text": {
+          "name": "oracle_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "keywords": {
+          "name": "keywords",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commander_legal": {
+          "name": "commander_legal",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image_uri": {
+          "name": "image_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "art_crop_uri": {
+          "name": "art_crop_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rarity": {
+          "name": "rarity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "layout": {
+          "name": "layout",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'normal'"
+        },
+        "back_image_uri": {
+          "name": "back_image_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "game_changer": {
+          "name": "game_changer",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "cards_name_idx": {
+          "name": "cards_name_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.catalog_refreshes": {
+      "name": "catalog_refreshes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "refreshed_at": {
+          "name": "refreshed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "catalog_refreshes_single_row_check": {
+          "name": "catalog_refreshes_single_row_check",
+          "value": "\"catalog_refreshes\".\"id\" = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.collection_items": {
+      "name": "collection_items",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "set_code": {
+          "name": "set_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scryfall_id": {
+          "name": "scryfall_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "collector_number": {
+          "name": "collector_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "finish": {
+          "name": "finish",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'nonfoil'"
+        },
+        "condition": {
+          "name": "condition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "collection_items_oracle_id_cards_oracle_id_fk": {
+          "name": "collection_items_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "collection_items",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "collection_items_user_id_oracle_id_set_code_collector_number_finish_pk": {
+          "name": "collection_items_user_id_oracle_id_set_code_collector_number_finish_pk",
+          "columns": [
+            "user_id",
+            "oracle_id",
+            "set_code",
+            "collector_number",
+            "finish"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "collection_items_finish_check": {
+          "name": "collection_items_finish_check",
+          "value": "\"collection_items\".\"finish\" in ('nonfoil', 'foil', 'etched')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.commander_pair_support": {
+      "name": "commander_pair_support",
+      "schema": "",
+      "columns": {
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_oracle_id": {
+          "name": "partner_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "synergy_state": {
+          "name": "synergy_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "edhrec_total": {
+          "name": "edhrec_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deck_count": {
+          "name": "deck_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bracket_counts": {
+          "name": "bracket_counts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_land": {
+          "name": "avg_land",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_basic": {
+          "name": "avg_basic",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_nonbasic": {
+          "name": "avg_nonbasic",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_creature": {
+          "name": "avg_creature",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_instant": {
+          "name": "avg_instant",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_sorcery": {
+          "name": "avg_sorcery",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_artifact": {
+          "name": "avg_artifact",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_enchantment": {
+          "name": "avg_enchantment",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_planeswalker": {
+          "name": "avg_planeswalker",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_battle": {
+          "name": "avg_battle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_ramp": {
+          "name": "avg_ramp",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_draw": {
+          "name": "avg_draw",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_removal": {
+          "name": "avg_removal",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_wipes": {
+          "name": "avg_wipes",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_curve": {
+          "name": "avg_curve",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "commander_pair_support_commander_oracle_id_cards_oracle_id_fk": {
+          "name": "commander_pair_support_commander_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "commander_pair_support",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "commander_pair_support_partner_oracle_id_cards_oracle_id_fk": {
+          "name": "commander_pair_support_partner_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "commander_pair_support",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "partner_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "commander_pair_support_commander_oracle_id_partner_oracle_id_pk": {
+          "name": "commander_pair_support_commander_oracle_id_partner_oracle_id_pk",
+          "columns": [
+            "commander_oracle_id",
+            "partner_oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "commander_pair_support_order_check": {
+          "name": "commander_pair_support_order_check",
+          "value": "\"commander_pair_support\".\"commander_oracle_id\" < \"commander_pair_support\".\"partner_oracle_id\""
+        },
+        "commander_pair_support_total_null_check": {
+          "name": "commander_pair_support_total_null_check",
+          "value": "(\"commander_pair_support\".\"synergy_state\" = 'ok') = (\"commander_pair_support\".\"edhrec_total\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.commander_pair_support_cards": {
+      "name": "commander_pair_support_cards",
+      "schema": "",
+      "columns": {
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_oracle_id": {
+          "name": "partner_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inclusion": {
+          "name": "inclusion",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "synergy": {
+          "name": "synergy",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "commander_pair_support_cards_oracle_idx": {
+          "name": "commander_pair_support_cards_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "commander_pair_support_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "commander_pair_support_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "commander_pair_support_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "commander_pair_support_cards_pair_fk": {
+          "name": "commander_pair_support_cards_pair_fk",
+          "tableFrom": "commander_pair_support_cards",
+          "tableTo": "commander_pair_support",
+          "columnsFrom": [
+            "commander_oracle_id",
+            "partner_oracle_id"
+          ],
+          "columnsTo": [
+            "commander_oracle_id",
+            "partner_oracle_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "commander_pair_support_cards_pk": {
+          "name": "commander_pair_support_cards_pk",
+          "columns": [
+            "commander_oracle_id",
+            "partner_oracle_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.commander_scores": {
+      "name": "commander_scores",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rank_score": {
+          "name": "rank_score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": -1
+        },
+        "writer_version": {
+          "name": "writer_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "fit_pool": {
+          "name": "fit_pool",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fit_roles": {
+          "name": "fit_roles",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fit_synergy": {
+          "name": "fit_synergy",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "synergy_state": {
+          "name": "synergy_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "edhrec_owned_count": {
+          "name": "edhrec_owned_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edhrec_total": {
+          "name": "edhrec_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "receipts": {
+          "name": "receipts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color_pool_size": {
+          "name": "color_pool_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_counts": {
+          "name": "role_counts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "commander_scores_rank_idx": {
+          "name": "commander_scores_rank_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "rank_score",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "commander_scores_oracle_id_cards_oracle_id_fk": {
+          "name": "commander_scores_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "commander_scores",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "commander_scores_user_id_oracle_id_pk": {
+          "name": "commander_scores_user_id_oracle_id_pk",
+          "columns": [
+            "user_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "commander_scores_synergy_state_check": {
+          "name": "commander_scores_synergy_state_check",
+          "value": "\"commander_scores\".\"synergy_state\" in ('ok', 'absent', 'degraded')"
+        },
+        "commander_scores_synergy_null_check": {
+          "name": "commander_scores_synergy_null_check",
+          "value": "(\"commander_scores\".\"synergy_state\" = 'ok') = (\"commander_scores\".\"fit_synergy\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.commander_support": {
+      "name": "commander_support",
+      "schema": "",
+      "columns": {
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "synergy_state": {
+          "name": "synergy_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "edhrec_total": {
+          "name": "edhrec_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bracket_counts": {
+          "name": "bracket_counts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "budget_counts": {
+          "name": "budget_counts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "similar_oracle_ids": {
+          "name": "similar_oracle_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deck_count": {
+          "name": "deck_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "salt_score": {
+          "name": "salt_score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "engine": {
+          "name": "engine",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prose": {
+          "name": "prose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prose_input_hash": {
+          "name": "prose_input_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prose_prompt_version": {
+          "name": "prose_prompt_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_land": {
+          "name": "avg_land",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_basic": {
+          "name": "avg_basic",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_nonbasic": {
+          "name": "avg_nonbasic",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_creature": {
+          "name": "avg_creature",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_instant": {
+          "name": "avg_instant",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_sorcery": {
+          "name": "avg_sorcery",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_artifact": {
+          "name": "avg_artifact",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_enchantment": {
+          "name": "avg_enchantment",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_planeswalker": {
+          "name": "avg_planeswalker",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_battle": {
+          "name": "avg_battle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_curve": {
+          "name": "avg_curve",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_ramp": {
+          "name": "avg_ramp",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_draw": {
+          "name": "avg_draw",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_removal": {
+          "name": "avg_removal",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_wipes": {
+          "name": "avg_wipes",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "commander_support_commander_oracle_id_cards_oracle_id_fk": {
+          "name": "commander_support_commander_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "commander_support",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "commander_support_synergy_state_check": {
+          "name": "commander_support_synergy_state_check",
+          "value": "\"commander_support\".\"synergy_state\" in ('ok', 'absent', 'degraded')"
+        },
+        "commander_support_total_null_check": {
+          "name": "commander_support_total_null_check",
+          "value": "(\"commander_support\".\"synergy_state\" = 'ok') = (\"commander_support\".\"edhrec_total\" is not null)"
+        },
+        "commander_support_engine_check": {
+          "name": "commander_support_engine_check",
+          "value": "\"commander_support\".\"engine\" is null or \"commander_support\".\"engine\" in ('etb', 'triggered', 'activated', 'tap', 'static')"
+        },
+        "commander_support_prose_check": {
+          "name": "commander_support_prose_check",
+          "value": "(\"commander_support\".\"prose\" is null) = (\"commander_support\".\"prose_input_hash\" is null) and (\"commander_support\".\"prose\" is null) = (\"commander_support\".\"prose_prompt_version\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.commander_support_cards": {
+      "name": "commander_support_cards",
+      "schema": "",
+      "columns": {
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inclusion": {
+          "name": "inclusion",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "synergy": {
+          "name": "synergy",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "commander_support_cards_oracle_idx": {
+          "name": "commander_support_cards_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "commander_support_cards_commander_oracle_id_commander_support_commander_oracle_id_fk": {
+          "name": "commander_support_cards_commander_oracle_id_commander_support_commander_oracle_id_fk",
+          "tableFrom": "commander_support_cards",
+          "tableTo": "commander_support",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "commander_oracle_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "commander_support_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "commander_support_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "commander_support_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "commander_support_cards_commander_oracle_id_oracle_id_pk": {
+          "name": "commander_support_cards_commander_oracle_id_oracle_id_pk",
+          "columns": [
+            "commander_oracle_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.csv_uploads": {
+      "name": "csv_uploads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "row_count": {
+          "name": "row_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unmatched_count": {
+          "name": "unmatched_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preview_payload": {
+          "name": "preview_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary_payload": {
+          "name": "summary_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_cards": {
+      "name": "deck_cards",
+      "schema": "",
+      "columns": {
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "auto": {
+          "name": "auto",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "deck_cards_deck_id_decks_id_fk": {
+          "name": "deck_cards_deck_id_decks_id_fk",
+          "tableFrom": "deck_cards",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "deck_cards_deck_id_oracle_id_pk": {
+          "name": "deck_cards_deck_id_oracle_id_pk",
+          "columns": [
+            "deck_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_data_changes": {
+      "name": "deck_data_changes",
+      "schema": "",
+      "columns": {
+        "seq": {
+          "name": "seq",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "direction": {
+          "name": "direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_ids": {
+          "name": "oracle_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deck_data_changes_oracle_ids_idx": {
+          "name": "deck_data_changes_oracle_ids_idx",
+          "columns": [
+            {
+              "expression": "oracle_ids",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "deck_data_changes_rules_version_idx": {
+          "name": "deck_data_changes_rules_version_idx",
+          "columns": [
+            {
+              "expression": "(\"detail\"->>'rulesVersion')",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"deck_data_changes\".\"kind\" = 'rules'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_data_changes_kind_check": {
+          "name": "deck_data_changes_kind_check",
+          "value": "\"deck_data_changes\".\"kind\" in ('gameChanger', 'massLandDenial', 'extraTurns', 'combo', 'rules', 'notLegal')"
+        },
+        "deck_data_changes_direction_check": {
+          "name": "deck_data_changes_direction_check",
+          "value": "\"deck_data_changes\".\"direction\" in ('added', 'removed', 'moved')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_folders": {
+      "name": "deck_folders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "deck_folders_user_name_key": {
+          "name": "deck_folders_user_name_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_game_axes": {
+      "name": "deck_game_axes",
+      "schema": "",
+      "columns": {
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "axis": {
+          "name": "axis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "polarity": {
+          "name": "polarity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "deck_game_axes_game_id_deck_games_id_fk": {
+          "name": "deck_game_axes_game_id_deck_games_id_fk",
+          "tableFrom": "deck_game_axes",
+          "tableTo": "deck_games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "deck_game_axes_game_id_axis_pk": {
+          "name": "deck_game_axes_game_id_axis_pk",
+          "columns": [
+            "game_id",
+            "axis"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_game_axes_polarity_check": {
+          "name": "deck_game_axes_polarity_check",
+          "value": "\"deck_game_axes\".\"polarity\" in ('worked', 'hurt')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_games": {
+      "name": "deck_games",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pod_size": {
+          "name": "pod_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "played_at": {
+          "name": "played_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "deck_games_deck_played_idx": {
+          "name": "deck_games_deck_played_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "played_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_games_deck_id_decks_id_fk": {
+          "name": "deck_games_deck_id_decks_id_fk",
+          "tableFrom": "deck_games",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_games_version_id_deck_versions_id_fk": {
+          "name": "deck_games_version_id_deck_versions_id_fk",
+          "tableFrom": "deck_games",
+          "tableTo": "deck_versions",
+          "columnsFrom": [
+            "version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_games_result_check": {
+          "name": "deck_games_result_check",
+          "value": "\"deck_games\".\"result\" in ('win', 'loss', 'draw')"
+        },
+        "deck_games_note_length_check": {
+          "name": "deck_games_note_length_check",
+          "value": "\"deck_games\".\"note\" is null or char_length(\"deck_games\".\"note\") <= 140"
+        },
+        "deck_games_pod_size_check": {
+          "name": "deck_games_pod_size_check",
+          "value": "\"deck_games\".\"pod_size\" between 2 and 8"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_profiles": {
+      "name": "deck_profiles",
+      "schema": "",
+      "columns": {
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fingerprint": {
+          "name": "fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog": {
+          "name": "catalog",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile": {
+          "name": "profile",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "permits": {
+          "name": "permits",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "profile_version": {
+          "name": "profile_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "dirty": {
+          "name": "dirty",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seen_seq": {
+          "name": "seen_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "notices_read_seq": {
+          "name": "notices_read_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rules_version": {
+          "name": "rules_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "analyzed_oracle_ids": {
+          "name": "analyzed_oracle_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::uuid[]"
+        }
+      },
+      "indexes": {
+        "deck_profiles_user_idx": {
+          "name": "deck_profiles_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_profiles_deck_id_decks_id_fk": {
+          "name": "deck_profiles_deck_id_decks_id_fk",
+          "tableFrom": "deck_profiles",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_profiles_version_id_deck_versions_id_fk": {
+          "name": "deck_profiles_version_id_deck_versions_id_fk",
+          "tableFrom": "deck_profiles",
+          "tableTo": "deck_versions",
+          "columnsFrom": [
+            "version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_profiles_permits_check": {
+          "name": "deck_profiles_permits_check",
+          "value": "cardinality(\"deck_profiles\".\"permits\") between 1 and 2 and \"deck_profiles\".\"permits\" <@ array[1,2,3,4,5]"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_proxies": {
+      "name": "deck_proxies",
+      "schema": "",
+      "columns": {
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deck_proxies_oracle_idx": {
+          "name": "deck_proxies_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_proxies_deck_id_decks_id_fk": {
+          "name": "deck_proxies_deck_id_decks_id_fk",
+          "tableFrom": "deck_proxies",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_proxies_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_proxies_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_proxies",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "deck_proxies_deck_id_oracle_id_pk": {
+          "name": "deck_proxies_deck_id_oracle_id_pk",
+          "columns": [
+            "deck_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_suggestion_items": {
+      "name": "deck_suggestion_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "add_oracle_id": {
+          "name": "add_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cut_oracle_id": {
+          "name": "cut_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rationale_short": {
+          "name": "rationale_short",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "verdict_at": {
+          "name": "verdict_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bracket_after": {
+          "name": "bracket_after",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undo_snapshot": {
+          "name": "undo_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "deck_suggestion_items_run_position_idx": {
+          "name": "deck_suggestion_items_run_position_idx",
+          "columns": [
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_suggestion_items_run_id_deck_suggestion_runs_id_fk": {
+          "name": "deck_suggestion_items_run_id_deck_suggestion_runs_id_fk",
+          "tableFrom": "deck_suggestion_items",
+          "tableTo": "deck_suggestion_runs",
+          "columnsFrom": [
+            "run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_suggestion_items_add_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_suggestion_items_add_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_suggestion_items",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "add_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deck_suggestion_items_cut_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_suggestion_items_cut_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_suggestion_items",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "cut_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_suggestion_items_verdict_check": {
+          "name": "deck_suggestion_items_verdict_check",
+          "value": "\"deck_suggestion_items\".\"verdict\" in ('pending', 'accepted', 'dismissed')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_suggestion_runs": {
+      "name": "deck_suggestion_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "input_fingerprint": {
+          "name": "input_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_version": {
+          "name": "profile_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_call_id": {
+          "name": "model_call_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error_class": {
+          "name": "error_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dropped_count": {
+          "name": "dropped_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "read_version": {
+          "name": "read_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "deck_suggestion_runs_one_pending_idx": {
+          "name": "deck_suggestion_runs_one_pending_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"deck_suggestion_runs\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deck_suggestion_runs_deck_created_idx": {
+          "name": "deck_suggestion_runs_deck_created_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deck_suggestion_runs_user_created_idx": {
+          "name": "deck_suggestion_runs_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_suggestion_runs_deck_id_decks_id_fk": {
+          "name": "deck_suggestion_runs_deck_id_decks_id_fk",
+          "tableFrom": "deck_suggestion_runs",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_suggestion_runs_model_call_id_model_calls_id_fk": {
+          "name": "deck_suggestion_runs_model_call_id_model_calls_id_fk",
+          "tableFrom": "deck_suggestion_runs",
+          "tableTo": "model_calls",
+          "columnsFrom": [
+            "model_call_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_suggestion_runs_status_check": {
+          "name": "deck_suggestion_runs_status_check",
+          "value": "\"deck_suggestion_runs\".\"status\" in ('pending', 'ok', 'failed', 'cancelled')"
+        },
+        "deck_suggestion_runs_error_class_check": {
+          "name": "deck_suggestion_runs_error_class_check",
+          "value": "\"deck_suggestion_runs\".\"error_class\" is null or \"deck_suggestion_runs\".\"error_class\" in ('upstream_busy', 'timeout', 'malformed', 'ungrounded', 'interrupted')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_swaps": {
+      "name": "deck_swaps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cut_oracle_id": {
+          "name": "cut_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "add_oracle_id": {
+          "name": "add_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "add_was_free": {
+          "name": "add_was_free",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "undone_at": {
+          "name": "undone_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "deck_swaps_deck_idx": {
+          "name": "deck_swaps_deck_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_swaps_deck_id_decks_id_fk": {
+          "name": "deck_swaps_deck_id_decks_id_fk",
+          "tableFrom": "deck_swaps",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_swaps_cut_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_swaps_cut_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_swaps",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "cut_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deck_swaps_add_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_swaps_add_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_swaps",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "add_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_synopses": {
+      "name": "deck_synopses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "fingerprint": {
+          "name": "fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_version": {
+          "name": "contract_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_call_id": {
+          "name": "model_call_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retry_of": {
+          "name": "retry_of",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seen_seq": {
+          "name": "seen_seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "deck_synopses_one_pending_idx": {
+          "name": "deck_synopses_one_pending_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"deck_synopses\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deck_synopses_deck_created_idx": {
+          "name": "deck_synopses_deck_created_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_synopses_deck_id_decks_id_fk": {
+          "name": "deck_synopses_deck_id_decks_id_fk",
+          "tableFrom": "deck_synopses",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_synopses_model_call_id_model_calls_id_fk": {
+          "name": "deck_synopses_model_call_id_model_calls_id_fk",
+          "tableFrom": "deck_synopses",
+          "tableTo": "model_calls",
+          "columnsFrom": [
+            "model_call_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deck_synopses_retry_of_deck_synopses_id_fk": {
+          "name": "deck_synopses_retry_of_deck_synopses_id_fk",
+          "tableFrom": "deck_synopses",
+          "tableTo": "deck_synopses",
+          "columnsFrom": [
+            "retry_of"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "deck_synopses_status_check": {
+          "name": "deck_synopses_status_check",
+          "value": "\"deck_synopses\".\"status\" in ('pending', 'done')"
+        },
+        "deck_synopses_outcome_check": {
+          "name": "deck_synopses_outcome_check",
+          "value": "(\"deck_synopses\".\"status\" = 'pending') = (\"deck_synopses\".\"outcome\" is null)\n        and (\"deck_synopses\".\"outcome\" is null or \"deck_synopses\".\"outcome\" in ('survived', 'refused', 'malformed', 'upstream_busy', 'timeout', 'interrupted'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.deck_unresolved_rows": {
+      "name": "deck_unresolved_rows",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "raw_name": {
+          "name": "raw_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "source_line": {
+          "name": "source_line",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deck_unresolved_rows_deck_idx": {
+          "name": "deck_unresolved_rows_deck_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_unresolved_rows_deck_id_decks_id_fk": {
+          "name": "deck_unresolved_rows_deck_id_decks_id_fk",
+          "tableFrom": "deck_unresolved_rows",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_version_cards": {
+      "name": "deck_version_cards",
+      "schema": "",
+      "columns": {
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "since": {
+          "name": "since",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deck_version_cards_oracle_idx": {
+          "name": "deck_version_cards_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_version_cards_version_id_deck_versions_id_fk": {
+          "name": "deck_version_cards_version_id_deck_versions_id_fk",
+          "tableFrom": "deck_version_cards",
+          "tableTo": "deck_versions",
+          "columnsFrom": [
+            "version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_version_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_version_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_version_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "deck_version_cards_version_id_oracle_id_pk": {
+          "name": "deck_version_cards_version_id_oracle_id_pk",
+          "columns": [
+            "version_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_version_synopses": {
+      "name": "deck_version_synopses",
+      "schema": "",
+      "columns": {
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "synopsis_id": {
+          "name": "synopsis_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "deck_version_synopses_version_id_deck_versions_id_fk": {
+          "name": "deck_version_synopses_version_id_deck_versions_id_fk",
+          "tableFrom": "deck_version_synopses",
+          "tableTo": "deck_versions",
+          "columnsFrom": [
+            "version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_version_synopses_synopsis_id_deck_synopses_id_fk": {
+          "name": "deck_version_synopses_synopsis_id_deck_synopses_id_fk",
+          "tableFrom": "deck_version_synopses",
+          "tableTo": "deck_synopses",
+          "columnsFrom": [
+            "synopsis_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.deck_versions": {
+      "name": "deck_versions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "committed_at": {
+          "name": "committed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_oracle_id": {
+          "name": "partner_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "commander_since": {
+          "name": "commander_since",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "partner_since": {
+          "name": "partner_since",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "declared_bracket": {
+          "name": "declared_bracket",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permits": {
+          "name": "permits",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "deck_versions_deck_number_idx": {
+          "name": "deck_versions_deck_number_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deck_versions_deck_committed_idx": {
+          "name": "deck_versions_deck_committed_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "committed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deck_versions_deck_id_decks_id_fk": {
+          "name": "deck_versions_deck_id_decks_id_fk",
+          "tableFrom": "deck_versions",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deck_versions_commander_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_versions_commander_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_versions",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deck_versions_partner_oracle_id_cards_oracle_id_fk": {
+          "name": "deck_versions_partner_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "deck_versions",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "partner_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "deck_versions_deck_number_key": {
+          "name": "deck_versions_deck_number_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "deck_id",
+            "number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "deck_versions_declared_bracket_range": {
+          "name": "deck_versions_declared_bracket_range",
+          "value": "\"deck_versions\".\"declared_bracket\" is null or \"deck_versions\".\"declared_bracket\" between 1 and 5"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.decks": {
+      "name": "decks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_oracle_id": {
+          "name": "partner_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "folder_id": {
+          "name": "folder_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "declared_bracket": {
+          "name": "declared_bracket",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notices_legal_seen": {
+          "name": "notices_legal_seen",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intent": {
+          "name": "intent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intent_seeded": {
+          "name": "intent_seeded",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "shopping_limit_cents": {
+          "name": "shopping_limit_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer_budget_cents": {
+          "name": "answer_budget_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer_bracket": {
+          "name": "answer_bracket",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer_card_oracle_id": {
+          "name": "answer_card_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer_intent_pending": {
+          "name": "answer_intent_pending",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_edited_at": {
+          "name": "last_edited_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "filled": {
+          "name": "filled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "decks_user_folder_idx": {
+          "name": "decks_user_folder_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "folder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "decks_folder_idx": {
+          "name": "decks_folder_idx",
+          "columns": [
+            {
+              "expression": "folder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "decks_user_commander_idx": {
+          "name": "decks_user_commander_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "commander_oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "decks_user_partner_idx": {
+          "name": "decks_user_partner_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "partner_oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "decks_commander_oracle_id_cards_oracle_id_fk": {
+          "name": "decks_commander_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "decks",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "decks_partner_oracle_id_cards_oracle_id_fk": {
+          "name": "decks_partner_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "decks",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "partner_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "decks_folder_id_deck_folders_id_fk": {
+          "name": "decks_folder_id_deck_folders_id_fk",
+          "tableFrom": "decks",
+          "tableTo": "deck_folders",
+          "columnsFrom": [
+            "folder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "decks_answer_card_oracle_id_cards_oracle_id_fk": {
+          "name": "decks_answer_card_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "decks",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "answer_card_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "decks_declared_bracket_range": {
+          "name": "decks_declared_bracket_range",
+          "value": "\"decks\".\"declared_bracket\" is null or \"decks\".\"declared_bracket\" between 1 and 5"
+        },
+        "decks_intent_length_check": {
+          "name": "decks_intent_length_check",
+          "value": "\"decks\".\"intent\" is null or char_length(\"decks\".\"intent\") <= 120"
+        },
+        "decks_answer_budget_check": {
+          "name": "decks_answer_budget_check",
+          "value": "\"decks\".\"answer_budget_cents\" is null or (\"decks\".\"answer_budget_cents\" >= 100 and \"decks\".\"answer_budget_cents\" % 100 = 0)"
+        },
+        "decks_answer_bracket_range": {
+          "name": "decks_answer_bracket_range",
+          "value": "\"decks\".\"answer_bracket\" is null or \"decks\".\"answer_bracket\" between 1 and 5"
+        },
+        "decks_shopping_limit_check": {
+          "name": "decks_shopping_limit_check",
+          "value": "\"decks\".\"shopping_limit_cents\" is null or (\"decks\".\"shopping_limit_cents\" >= 100 and \"decks\".\"shopping_limit_cents\" % 100 = 0)"
+        },
+        "decks_partner_distinct": {
+          "name": "decks_partner_distinct",
+          "value": "\"decks\".\"partner_oracle_id\" is null or \"decks\".\"partner_oracle_id\" <> \"decks\".\"commander_oracle_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.edhrec_cache": {
+      "name": "edhrec_cache",
+      "schema": "",
+      "columns": {
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "edhrec_cache_commander_oracle_id_cards_oracle_id_fk": {
+          "name": "edhrec_cache_commander_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "edhrec_cache",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.edhrec_pair_cache": {
+      "name": "edhrec_pair_cache",
+      "schema": "",
+      "columns": {
+        "commander_oracle_id": {
+          "name": "commander_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_oracle_id": {
+          "name": "partner_oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "edhrec_pair_cache_commander_oracle_id_cards_oracle_id_fk": {
+          "name": "edhrec_pair_cache_commander_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "edhrec_pair_cache",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "commander_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "edhrec_pair_cache_partner_oracle_id_cards_oracle_id_fk": {
+          "name": "edhrec_pair_cache_partner_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "edhrec_pair_cache",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "partner_oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "edhrec_pair_cache_commander_oracle_id_partner_oracle_id_pk": {
+          "name": "edhrec_pair_cache_commander_oracle_id_partner_oracle_id_pk",
+          "columns": [
+            "commander_oracle_id",
+            "partner_oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "edhrec_pair_cache_order_check": {
+          "name": "edhrec_pair_cache_order_check",
+          "value": "\"edhrec_pair_cache\".\"commander_oracle_id\" < \"edhrec_pair_cache\".\"partner_oracle_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.fill_pass_cards": {
+      "name": "fill_pass_cards",
+      "schema": "",
+      "columns": {
+        "pass_id": {
+          "name": "pass_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fill_pass_cards_pass_id_fill_passes_id_fk": {
+          "name": "fill_pass_cards_pass_id_fill_passes_id_fk",
+          "tableFrom": "fill_pass_cards",
+          "tableTo": "fill_passes",
+          "columnsFrom": [
+            "pass_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fill_pass_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "fill_pass_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "fill_pass_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "fill_pass_cards_pass_id_oracle_id_pk": {
+          "name": "fill_pass_cards_pass_id_oracle_id_pk",
+          "columns": [
+            "pass_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fill_passes": {
+      "name": "fill_passes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deck_id": {
+          "name": "deck_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordinal": {
+          "name": "ordinal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "open_slots": {
+          "name": "open_slots",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "fill_passes_deck_idx": {
+          "name": "fill_passes_deck_idx",
+          "columns": [
+            {
+              "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fill_passes_deck_id_decks_id_fk": {
+          "name": "fill_passes_deck_id_decks_id_fk",
+          "tableFrom": "fill_passes",
+          "tableTo": "decks",
+          "columnsFrom": [
+            "deck_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "fill_passes_deck_kind_ordinal_key": {
+          "name": "fill_passes_deck_kind_ordinal_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "deck_id",
+            "kind",
+            "ordinal"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "fill_passes_kind_check": {
+          "name": "fill_passes_kind_check",
+          "value": "\"fill_passes\".\"kind\" in ('seed', 'top_off')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.format_staples": {
+      "name": "format_staples",
+      "schema": "",
+      "columns": {
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "condition": {
+          "name": "condition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commanders": {
+          "name": "commanders",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commander_total": {
+          "name": "commander_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_inclusion": {
+          "name": "avg_inclusion",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weighted_rank": {
+          "name": "weighted_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "format_staples_condition_idx": {
+          "name": "format_staples_condition_idx",
+          "columns": [
+            {
+              "expression": "condition",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "format_staples_oracle_id_cards_oracle_id_fk": {
+          "name": "format_staples_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "format_staples",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "format_staples_oracle_id_condition_pk": {
+          "name": "format_staples_oracle_id_condition_pk",
+          "columns": [
+            "oracle_id",
+            "condition"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.identity_composition": {
+      "name": "identity_composition",
+      "schema": "",
+      "columns": {
+        "condition": {
+          "name": "condition",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "avg_land": {
+          "name": "avg_land",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_basic": {
+          "name": "avg_basic",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_nonbasic": {
+          "name": "avg_nonbasic",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_creature": {
+          "name": "avg_creature",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_instant": {
+          "name": "avg_instant",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_sorcery": {
+          "name": "avg_sorcery",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_artifact": {
+          "name": "avg_artifact",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_enchantment": {
+          "name": "avg_enchantment",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_planeswalker": {
+          "name": "avg_planeswalker",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_battle": {
+          "name": "avg_battle",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avg_curve": {
+          "name": "avg_curve",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_ramp": {
+          "name": "avg_ramp",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "avg_draw": {
+          "name": "avg_draw",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "avg_removal": {
+          "name": "avg_removal",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "avg_wipes": {
+          "name": "avg_wipes",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "commanders": {
+          "name": "commanders",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "with_composition": {
+          "name": "with_composition",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "with_roles": {
+          "name": "with_roles",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "thin": {
+          "name": "thin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "identity_composition_witness_check": {
+          "name": "identity_composition_witness_check",
+          "value": "\"identity_composition\".\"with_composition\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.intake_reads": {
+      "name": "intake_reads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "words_hash": {
+          "name": "words_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_call_id": {
+          "name": "model_call_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "error_class": {
+          "name": "error_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chips": {
+          "name": "chips",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "intake_reads_one_pending_idx": {
+          "name": "intake_reads_one_pending_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"intake_reads\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "intake_reads_user_created_idx": {
+          "name": "intake_reads_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "intake_reads_model_call_id_model_calls_id_fk": {
+          "name": "intake_reads_model_call_id_model_calls_id_fk",
+          "tableFrom": "intake_reads",
+          "tableTo": "model_calls",
+          "columnsFrom": [
+            "model_call_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "intake_reads_status_check": {
+          "name": "intake_reads_status_check",
+          "value": "\"intake_reads\".\"status\" in ('pending', 'ok', 'failed', 'cancelled')"
+        },
+        "intake_reads_error_class_check": {
+          "name": "intake_reads_error_class_check",
+          "value": "\"intake_reads\".\"error_class\" is null or \"intake_reads\".\"error_class\" in ('upstream_busy', 'timeout', 'malformed', 'nothing_valid', 'interrupted')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.model_calls": {
+      "name": "model_calls",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feature": {
+          "name": "feature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'reserved'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cache_read_tokens": {
+          "name": "cache_read_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cache_write_tokens": {
+          "name": "cache_write_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_micro_usd": {
+          "name": "cost_micro_usd",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "model_calls_user_created_idx": {
+          "name": "model_calls_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "model_calls_feature_check": {
+          "name": "model_calls_feature_check",
+          "value": "\"model_calls\".\"feature\" in ('tuning', 'synopsis')"
+        },
+        "model_calls_status_check": {
+          "name": "model_calls_status_check",
+          "value": "\"model_calls\".\"status\" in ('reserved', 'spent', 'refunded')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.printing_prices": {
+      "name": "printing_prices",
+      "schema": "",
+      "columns": {
+        "scryfall_id": {
+          "name": "scryfall_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "price_cents": {
+          "name": "price_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_cents_nm": {
+          "name": "price_cents_nm",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_cents_foil": {
+          "name": "price_cents_foil",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_cents_etched": {
+          "name": "price_cents_etched",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "available_quantity": {
+          "name": "available_quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "buy_url": {
+          "name": "buy_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "as_of": {
+          "name": "as_of",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "printing_prices_scryfall_id_printings_scryfall_id_fk": {
+          "name": "printing_prices_scryfall_id_printings_scryfall_id_fk",
+          "tableFrom": "printing_prices",
+          "tableTo": "printings",
+          "columnsFrom": [
+            "scryfall_id"
+          ],
+          "columnsTo": [
+            "scryfall_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.printings": {
+      "name": "printings",
+      "schema": "",
+      "columns": {
+        "scryfall_id": {
+          "name": "scryfall_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "set_code": {
+          "name": "set_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collector_number": {
+          "name": "collector_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image_uri": {
+          "name": "image_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_uri_small": {
+          "name": "image_uri_small",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "art_crop_uri": {
+          "name": "art_crop_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "back_image_uri": {
+          "name": "back_image_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finishes": {
+          "name": "finishes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_variant": {
+          "name": "is_variant",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_representative": {
+          "name": "is_representative",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "flavor_name": {
+          "name": "flavor_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "booster": {
+          "name": "booster",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rarity": {
+          "name": "rarity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "printings_oracle_set_idx": {
+          "name": "printings_oracle_set_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "set_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "printings_set_code_idx": {
+          "name": "printings_set_code_idx",
+          "columns": [
+            {
+              "expression": "set_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "printings_oracle_idx": {
+          "name": "printings_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "printings_flavor_name_idx": {
+          "name": "printings_flavor_name_idx",
+          "columns": [
+            {
+              "expression": "flavor_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"printings\".\"flavor_name\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "printings_oracle_id_cards_oracle_id_fk": {
+          "name": "printings_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "printings",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sets": {
+      "name": "sets",
+      "schema": "",
+      "columns": {
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "set_type": {
+          "name": "set_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "released_at": {
+          "name": "released_at",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_count": {
+          "name": "card_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "base_set_size": {
+          "name": "base_set_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "digital": {
+          "name": "digital",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "icon_svg_uri": {
+          "name": "icon_svg_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.skipped_printings": {
+      "name": "skipped_printings",
+      "schema": "",
+      "columns": {
+        "scryfall_id": {
+          "name": "scryfall_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "layout": {
+          "name": "layout",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.spellbook_variant_cards": {
+      "name": "spellbook_variant_cards",
+      "schema": "",
+      "columns": {
+        "variant_id": {
+          "name": "variant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oracle_id": {
+          "name": "oracle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "must_be_commander": {
+          "name": "must_be_commander",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "spellbook_variant_cards_oracle_idx": {
+          "name": "spellbook_variant_cards_oracle_idx",
+          "columns": [
+            {
+              "expression": "oracle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spellbook_variant_cards_variant_id_spellbook_variants_variant_id_fk": {
+          "name": "spellbook_variant_cards_variant_id_spellbook_variants_variant_id_fk",
+          "tableFrom": "spellbook_variant_cards",
+          "tableTo": "spellbook_variants",
+          "columnsFrom": [
+            "variant_id"
+          ],
+          "columnsTo": [
+            "variant_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "spellbook_variant_cards_oracle_id_cards_oracle_id_fk": {
+          "name": "spellbook_variant_cards_oracle_id_cards_oracle_id_fk",
+          "tableFrom": "spellbook_variant_cards",
+          "tableTo": "cards",
+          "columnsFrom": [
+            "oracle_id"
+          ],
+          "columnsTo": [
+            "oracle_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "spellbook_variant_cards_variant_id_oracle_id_pk": {
+          "name": "spellbook_variant_cards_variant_id_oracle_id_pk",
+          "columns": [
+            "variant_id",
+            "oracle_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.spellbook_variants": {
+      "name": "spellbook_variants",
+      "schema": "",
+      "columns": {
+        "variant_id": {
+          "name": "variant_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bracket_tag": {
+          "name": "bracket_tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "card_count": {
+          "name": "card_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identity": {
+          "name": "identity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "popularity": {
+          "name": "popularity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "produces": {
+          "name": "produces",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requires_template_ids": {
+          "name": "requires_template_ids",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mana_needed": {
+          "name": "mana_needed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mana_value_needed": {
+          "name": "mana_value_needed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "steps": {
+          "name": "steps",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notable_prerequisites": {
+          "name": "notable_prerequisites",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "spellbook_variants_bracket_tag_check": {
+          "name": "spellbook_variants_bracket_tag_check",
+          "value": "\"spellbook_variants\".\"bracket_tag\" in ('R', 'S', 'P', 'O', 'C', 'E', 'B')"
+        },
+        "spellbook_variants_card_count_check": {
+          "name": "spellbook_variants_card_count_check",
+          "value": "\"spellbook_variants\".\"card_count\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.user_prefs": {
+      "name": "user_prefs",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "about_version_seen": {
+          "name": "about_version_seen",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

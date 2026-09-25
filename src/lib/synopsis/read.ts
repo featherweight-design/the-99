@@ -135,7 +135,7 @@ export async function readSynopsisState(
     db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
       .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
-    readAllowance(userId, now),
+    readAllowance(userId, now, "synopsis"),
   ]);
 
   const status = synopsisStatus({
