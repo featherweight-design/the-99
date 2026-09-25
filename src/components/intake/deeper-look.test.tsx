@@ -18,10 +18,10 @@ const standing = (over = {}) => ({
   used: 1, limit: 3, nextAt: null, reopensAt: null, paused: null, ownerShare: false, now: "2026-09-25T12:00:00Z", ...over,
 });
 
-function draw(deps: { look: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }, over = {}, settled: "read" | "nothing" | null = null) {
+function draw(deps: { look: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }, over: object | null = {}, settled: "read" | "nothing" | null = null) {
   return render(
     <DeeperLookScope>
-      <DeeperLook params={params} standing={standing(over)} settled={settled} deps={deps as never} />
+      <DeeperLook params={params} standing={over === null ? null : standing(over)} settled={settled} deps={deps as never} />
       <DimWhileLooking><p>results</p></DimWhileLooking>
     </DeeperLookScope>,
   );
@@ -33,6 +33,16 @@ beforeEach(() => {
 });
 
 describe("the deeper look", () => {
+  it("draws a settled look with no count and no press when the standing could not be read", () => {
+    for (const settled of ["read", "nothing"] as const) {
+      const { unmount } = draw({ look: vi.fn(), stop: vi.fn() }, null, settled);
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe(settled === "read" ? "done" : "nothing");
+      expect(screen.queryByTestId("deeper-line")).toBeNull();
+      expect(screen.queryByRole("button")).toBeNull();
+      unmount();
+    }
+  });
+
   it("offers one credit, named first in the button, with the standing under it", () => {
     draw({ look: vi.fn(), stop: vi.fn() });
     expect(screen.getByRole("button", { name: "1 credit. Look deeper." })).toBeTruthy();

@@ -8,9 +8,11 @@ import { commanderGradient } from "../../lib/collection/gradients";
  * five geometries and three ring alphas, which is the drift this round exists to
  * end.
  *
- * Two sizes, and what decides is what the thumb is FOR rather than which screen
- * it lands on: a `row` thumb identifies one row among several you are choosing
- * between; a `summary` thumb stands for a choice already made.
+ * What decides the size is what the thumb is FOR rather than which screen it
+ * lands on: a `row` thumb identifies one row among several you are choosing
+ * between; a `summary` thumb stands for a choice already made. `result` is the
+ * row's job in Help me choose's longer list, which its handoff draws a step
+ * smaller.
  *
  * **The image is the card face, not `art_crop`.** The ban on the printed frame
  * exists because Magic's own name and type line land in the same band as our
@@ -18,7 +20,7 @@ import { commanderGradient } from "../../lib/collection/gradients";
  * two big card faces are exempt for the same reason from the other direction:
  * the player is meant to read the printing.
  */
-export type ThumbSize = "row" | "summary";
+export type ThumbSize = "row" | "summary" | "result";
 
 /** `[]` is COLORLESS — a real identity, and what `commanderGradient` answers with
     the colorless gradient both card faces draw. `null` is "we do not know", which
@@ -30,10 +32,12 @@ export type ThumbSize = "row" | "summary";
     identity to `commanderGradient` invents a colour for it. */
 export type ThumbIdentity = string[] | null;
 
-const BOX: Record<ThumbSize, { width: number; height: number }> = {
-  // 63/88 to within a pixel at both sizes: 44/62 is 0.710 and 64/89 is 0.719.
-  row: { width: 44, height: 62 },
-  summary: { width: 64, height: 89 },
+const BOX: Record<ThumbSize, { width: number; height: number; radius: string }> = {
+  // 63/88 to within a pixel at every size: 44/62 is 0.710, 64/89 is 0.719 and 40/56 is 0.714.
+  row: { width: 44, height: 62, radius: "rounded-[6px]" },
+  summary: { width: 64, height: 89, radius: "rounded-[6px]" },
+  // Help me choose's result rows (its handoff's §5): one row among many, a step smaller.
+  result: { width: 40, height: 56, radius: "rounded-[5px]" },
 };
 
 /** The ring every commander's card art carries, at whatever size — the two thumb
@@ -74,7 +78,7 @@ export function CommanderThumb({
       // and a probe matching on aspect alone reported those as commander thumbs
       // and failed them against a treatment they have nothing to do with.
       data-commander-thumb={size}
-      className={`block shrink-0 rounded-[6px] ${className}`}
+      className={`block shrink-0 ${box.radius} ${className}`}
       style={{
         width: box.width,
         height: box.height,

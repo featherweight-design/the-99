@@ -19,13 +19,15 @@ import { WUBRG_COLOR } from "../../lib/collection/browse";
 export function IdentityPips({
   colorIdentity,
   size = 8,
+  gap = 3,
 }: {
   colorIdentity: string[];
   size?: number;
+  gap?: number;
 }) {
   if (colorIdentity.length === 0) return null;
   return (
-    <span aria-hidden="true" className="flex shrink-0 items-center gap-[3px]">
+    <span aria-hidden="true" className="flex shrink-0 items-center" style={{ gap }}>
       {colorIdentity.map((color) => (
         <span
           key={color}

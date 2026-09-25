@@ -133,7 +133,15 @@ async function run() {
         : !inRow && lineBox.top >= rowBox.bottom - 0.5 && Math.round(lineBox.height) >= 44;
       report(at(width === 1300 ? "the link ends the result line" : "the link has its own 44px line under the count"), placedOk,
         `in row ${inRow}, link ${Math.round(lineBox.left)}–${Math.round(lineBox.right)} × ${Math.round(lineBox.height)}, row ${Math.round(rowBox.left)}–${Math.round(rowBox.right)}`);
-      await line.getByRole("link").click();
+      // The whole line is the press, the lead included (doors table: "Make the 44px line the
+      // target"): what lies under a point on the lead's own words must be the link.
+      const leadHit = await line.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + 6, r.top + r.height / 2);
+        return { x: r.left + 6, y: r.top + r.height / 2, link: !!hit?.closest("a") && el.contains(hit) };
+      });
+      report(at("the lead is part of the press"), leadHit.link, JSON.stringify(leadHit));
+      await page.mouse.click(leadHit.x, leadHit.y);
       await page.waitForURL((u) => u.pathname === "/decks/new/choose", { timeout: 30_000 });
       const carried = Object.fromEntries(new URL(page.url()).searchParams);
       report(at("pressing it carries the colors and Exactly, and nothing else"), JSON.stringify(carried) === JSON.stringify({ c: "r,g", m: "exact" }), JSON.stringify(carried));

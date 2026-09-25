@@ -113,9 +113,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           <ReadAsBar
             chips={answerChips(p, labels, verifiedDeeperMarks(p, settled))}
             afterDeeper={settled !== null}
-            offer={allowance && (
+            offer={(allowance || settled) && (
               // Keyed on the read: the look's own results are a new panel, drawn from what the page found.
-              <DeeperLook key={p.readId ?? "first"} params={lookParams} settled={settled?.kind ?? null} standing={{
+              // A failed standing read closes only the press: a look already settled at `r` still draws.
+              <DeeperLook key={p.readId ?? "first"} params={lookParams} settled={settled?.kind ?? null} standing={allowance && {
                 used: allowance.used,
                 limit: allowance.limit,
                 nextAt: allowance.nextAt?.toISOString() ?? null,
@@ -137,6 +138,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               params={p}
               themeLabels={themeLabels}
               cardName={card?.name ?? null}
+              // The chip's own reading, for rows whose figures are still counting (4e on every row).
+              cardUnpriced={!!card && !card.owned && card.price.kind !== "priced"}
               queryString={queryString}
               changeHref={changeHref}
             />
@@ -155,6 +158,7 @@ async function Results({
   params,
   themeLabels,
   cardName,
+  cardUnpriced,
   queryString,
   changeHref,
 }: {
@@ -162,6 +166,7 @@ async function Results({
   params: ChooseParams;
   themeLabels: Record<string, string>;
   cardName: string | null;
+  cardUnpriced: boolean;
   queryString: string;
   changeHref: string;
 }) {
@@ -180,6 +185,7 @@ async function Results({
       params={params}
       themeLabels={themeLabels}
       cardName={cardName}
+      cardUnpriced={cardUnpriced}
       queryString={queryString}
       changeHref={changeHref}
     />

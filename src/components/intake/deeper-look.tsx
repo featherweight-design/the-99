@@ -84,7 +84,11 @@ export function DeeperLook({
   deps = { look: lookDeeper, stop: postStop },
 }: {
   params: ChooseParams;
-  standing: Standing;
+  /**
+   * The credit standing, or `null` when its read failed. A failed read closes the press and
+   * nothing else: a look that already settled at `r` still draws, with no count under it.
+   */
+  standing: Standing | null;
   /** What the page found at `r`: the read this panel's press already produced, if any. */
   settled: "read" | "nothing" | null;
   deps?: { look: typeof lookDeeper; stop: (readId: string) => Promise<boolean> };
@@ -96,7 +100,7 @@ export function DeeperLook({
   const [announced, setAnnounced] = useState("");
   const token = useRef(0);
   const own = useRef<string | null>(null);
-  const closed = closedBy(standing);
+  const closed = standing ? closedBy(standing) : null;
 
   // The results dim while, and only while, this panel is looking; a panel that leaves (the page
   // moved to the read's own results) takes the dimming with it.
@@ -181,12 +185,14 @@ export function DeeperLook({
   const tag = phase === "done" ? copy.deeper.doneTag : phase === "failed" ? copy.deeper.failTag : null;
   const line =
     looking ? copy.deeper.pendingLine
+    : !standing ? null
     : phase === "done" ? copy.deeper.doneLine(bare(standing))
     // Nothing to add: no press follows, so the bare count, not "Uses a credit".
     : phase === "nothing" ? bare(standing)
     : standingLine(standing);
   // Offered once per set of words: after a look delivered or found nothing, there is no press.
-  const offered = phase === "offer" || phase === "failed";
+  // With no standing there is no press either: what it would cost is unknown.
+  const offered = standing !== null && (phase === "offer" || phase === "failed");
   const pill = closed === "spent" ? copy.deeper.costSpent : closed ? copy.deeper.costPaused : copy.deeper.cost;
 
   const label = phase === "failed" ? copy.deeper.retry : copy.deeper.action;
@@ -220,9 +226,15 @@ export function DeeperLook({
       </div>
       <div className="flex flex-col gap-[6px] md:items-end shrink-0">
         {looking ? (
-          <div className="flex items-center gap-[8px]">
-            {/* The press, hairlined while it runs: the stub stays, first, as it was pressed. */}
-            <button type="button" disabled className={`${buttonBase} bg-transparent border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)] font-normal cursor-default`}>
+          <div className="flex w-full items-center gap-[8px] md:w-auto">
+            {/* The press, hairlined while it runs: the stub stays, first, as it was pressed. On a
+                phone it takes the rest of the row beside Stop. Named like every other state. */}
+            <button
+              type="button"
+              disabled
+              aria-label={`${copy.deeper.cost}. ${copy.deeper.actionPending}`}
+              className={`${buttonBase} flex-auto md:flex-none bg-transparent border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)] cursor-default`}
+            >
               <span className={`${pillBase} font-medium bg-[color:var(--surface)] text-[color:var(--fg-muted)]`}>{copy.deeper.cost}</span>
               {copy.deeper.actionPending}
             </button>
@@ -260,9 +272,11 @@ export function DeeperLook({
             {label}
           </button>
         ) : null}
-        <p data-testid="deeper-line" className="m-0 font-mono text-[10px] md:text-[10.5px] leading-[1.5] [text-wrap:pretty] text-center md:text-right text-[color:var(--fg-faint)] md:max-w-[360px]">
-          {line}
-        </p>
+        {line && (
+          <p data-testid="deeper-line" className="m-0 font-mono text-[10px] md:text-[10.5px] leading-[1.5] [text-wrap:pretty] text-center md:text-right text-[color:var(--fg-faint)] md:max-w-[360px]">
+            {line}
+          </p>
+        )}
       </div>
       <p role="status" aria-live="polite" className="sr-only">{announced}</p>
     </div>

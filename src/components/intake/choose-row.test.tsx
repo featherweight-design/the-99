@@ -18,11 +18,11 @@ const row = (over: Partial<ResultRow> = {}): ResultRow => ({
 const params: ChooseParams = { ...emptyParams(), results: true, themes: ["dinosaurs", "landfall"], card: CARD, budgetDollars: 150, bracket: 3 };
 
 const pending: Trial = { state: "pending" };
-function draw(r: ResultRow = row(), trial: Trial = pending, retry = vi.fn()) {
+function draw(r: ResultRow = row(), trial: Trial = pending, retry = vi.fn(), cardUnpriced = false) {
   return render(
     <CardDetailProvider fetchCard={vi.fn()}>
       <ul>
-        <ChooseRow row={r} figures={[]} owned={false} params={params} cardName="Regisaur Alpha" trial={trial} retry={retry} />
+        <ChooseRow row={r} figures={[]} owned={false} params={params} cardName="Regisaur Alpha" cardUnpriced={cardUnpriced} trial={trial} retry={retry} />
       </ul>
     </CardDetailProvider>,
   );
@@ -81,6 +81,17 @@ describe("a result row", () => {
   it("says when the build-around card has no price and the figure leaves it out", () => {
     draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: "absent" } });
     expect(screen.getByTestId("row-unpriced").textContent).toContain("Regisaur Alpha");
+  });
+
+  it("says it on a row still counting and on one that failed, from the card's chip (4e: every row)", () => {
+    for (const trial of [pending, { state: "failed" } as const]) {
+      const { unmount } = draw(row(), trial, vi.fn(), true);
+      expect(screen.getByTestId("row-unpriced").textContent).toContain("Regisaur Alpha");
+      unmount();
+    }
+    // A ready row's own count decides over the chip.
+    draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 5_000, unpricedCard: null } }, vi.fn(), true);
+    expect(screen.queryByTestId("row-unpriced")).toBeNull();
   });
 
   it("offers Retry when the count fails, and asks the list to count again", () => {

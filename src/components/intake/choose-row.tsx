@@ -53,6 +53,7 @@ export function ChooseRow({
   owned,
   params,
   cardName,
+  cardUnpriced = false,
   best,
   trial,
   retry,
@@ -63,6 +64,8 @@ export function ChooseRow({
   owned: boolean;
   params: ChooseParams;
   cardName: string | null;
+  /** The card's chip reads it unpriced: said on a row still counting or failed, as on a ready one. */
+  cardUnpriced?: boolean;
   /** A best-fit card, with its rank. */
   best?: number;
   /** This row's ownership figures, counted by the list a slice at a time. */
@@ -77,6 +80,7 @@ export function ChooseRow({
       retry={retry}
       budgetDollars={params.budgetDollars}
       cardName={cardName}
+      cardUnpriced={cardUnpriced}
       best={best !== undefined}
     />
   );
@@ -90,8 +94,8 @@ export function ChooseRow({
       >
         {row.name}
       </CardDetailTrigger>
-      <span className="md:hidden"><IdentityPips colorIdentity={row.colorIdentity} size={9} /></span>
-      <span className="hidden md:inline-flex"><IdentityPips colorIdentity={row.colorIdentity} size={11} /></span>
+      <span className="md:hidden"><IdentityPips colorIdentity={row.colorIdentity} size={9} gap={4} /></span>
+      <span className="hidden md:inline-flex"><IdentityPips colorIdentity={row.colorIdentity} size={11} gap={4} /></span>
     </div>
   );
   const press = (children: ReactNode, className: string) => (
@@ -139,12 +143,12 @@ export function ChooseRow({
       data-testid="result-row"
       className={[
         "relative grid items-center rounded-[10px] md:rounded-[11px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)]",
-        "grid-cols-[44px_minmax(0,1fr)_14px] gap-x-[11px] gap-y-[5px] p-[10px_12px] min-h-[44px]",
-        "md:grid-cols-[44px_minmax(0,1fr)_340px_14px] md:gap-x-[16px] md:gap-y-[7px] md:p-[12px_15px]",
+        "grid-cols-[40px_minmax(0,1fr)_14px] gap-x-[11px] gap-y-[5px] p-[10px_12px] min-h-[44px]",
+        "md:grid-cols-[40px_minmax(0,1fr)_340px_14px] md:gap-x-[16px] md:gap-y-[7px] md:p-[12px_15px]",
       ].join(" ")}
     >
       <div className="col-start-1 row-start-1 row-span-3 md:row-span-2 self-center">
-        <CommanderThumb imageUri={row.imageUri} colorIdentity={row.colorIdentity} />
+        <CommanderThumb imageUri={row.imageUri} colorIdentity={row.colorIdentity} size="result" />
       </div>
       <div className="col-start-2 row-start-1 min-w-0">{name("text-[14px] md:text-[16px]")}</div>
       <div className="col-start-2 row-start-2 md:col-start-3 md:row-start-1 md:row-span-2 self-center min-w-0">
@@ -234,6 +238,7 @@ function OwnershipLine({
   retry,
   budgetDollars,
   cardName,
+  cardUnpriced,
   best,
 }: {
   mark: CommanderMark;
@@ -241,9 +246,13 @@ function OwnershipLine({
   retry: () => void;
   budgetDollars: number | null;
   cardName: string | null;
+  cardUnpriced: boolean;
   best: boolean;
 }) {
   const ready = trial.state === "ready" ? trial.figures : null;
+  // A ready row's own count decides; until then the card's chip does, so the line is there from
+  // the first paint and the row does not grow when its figures land.
+  const unpriced = ready ? ready.unpricedCard !== null : cardUnpriced;
   const capCents = budgetDollars === null ? null : budgetDollars * 100;
   return (
     <div className="flex flex-col gap-[3px]">
@@ -291,7 +300,7 @@ function OwnershipLine({
           )}
         </div>
       </div>
-      {ready?.unpricedCard && cardName && (
+      {unpriced && cardName && (
         <p data-testid="row-unpriced" className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
           {copy.results.unpriced(cardName)}
         </p>

@@ -63,6 +63,18 @@
       ]
     },
     {
+      "id": "results-few",
+      "label": "results: a few fit",
+      "view": "src/components/intake/narrow-note.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?c=r,g&m=exact&t=dinosaurs,tokens&k=2&v=results",
+          "wait": "[data-testid='narrow-few']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
       "id": "results-none",
       "label": "results: nothing fits",
       "view": "src/components/intake/narrow-note.tsx",
