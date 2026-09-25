@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0D0B09; }
+  a { color: #CF8745; text-decoration: none; } a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="min-width:1800px;padding:48px 56px 80px;background:#0D0B09;color:#EDE6D8;font-family:'IBM Plex Sans',sans-serif;display:flex;flex-direction:column;gap:52px;">
+
+  <section style="max-width:1400px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">CHANGE COMMANDER · ADDENDUM</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#8B8270;">the half-trade · held back in the build until this is drawn</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:31px;margin:0 0 14px;line-height:1.26;text-wrap:pretty;">When one half of an incoming pair is already in the 98, one old commander takes its slot and the other leaves the deck.</h1>
+    <p style="font-size:15px;line-height:1.72;color:#C0B8A6;margin:0 0 18px;max-width:1240px;text-wrap:pretty;">In the example, Thrasios and Tymna lead. Ishai and Reyhan are offered, and Reyhan is one of the 98. The shipped confirm would say <i>The two trade places</i>, which is false: three cards move, not two. Today <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">offerable()</span> hides the candidate, and the write refuses it. This addendum gives it a confirm, a sentence and an outcome. Nothing else in R3 changes.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;">
+      <div style="border:1px solid #3A3229;border-radius:10px;background:#1A1611;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the new call · which old half stays</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The build has no answer to this, only an order.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">write.ts</span> hands the freed slot to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">departing[0]</span>, the commander column. That's an accident of storage, and either old commander might be the one worth keeping. So the confirm asks, with a two-way choice that defaults to that same half. One tap still confirms. Hugh can rule for a fixed rule instead (<a href="#n2">note 2</a>).</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-radius:10px;background:#1A1611;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the labels move to the cards</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">One side label can't say two things.</b> The out side reads <i>Leave the command zone</i>, which is true of both old halves. Under each card, a mono line says where that card goes: <i>into the 98</i> or <i>leaves the deck</i>, and on the in side <i>from the 98</i> or <i>free</i>. The arrow stays → because the leaders change. ⇄ is kept for a whole trade.</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-radius:10px;background:#1A1611;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">the outcome is two shipped shapes, joined</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The banner is the trade's</b> (+1 / −1, with its command-zone hints), naming Thrasios in and Reyhan out. <b style="color:#EDE6D8;font-weight:600;">The review note is the pair's</b>, with one clause for each fate. Tymna, like any released commander, is named only where a commit will release her: the review note and the pool count.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s1">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">§1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The confirm</h2>
+    </div>
+    <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#A59C89;margin:0 0 18px;text-wrap:pretty;">The choice is live in both frames: press <i>Tymna</i> and the card lines and the sentence follow. It sits between the plates and the sentence, so the reader sees what moves before being asked, and reads the result right under the choice. It is a radiogroup labelled by its question. At 390 it takes the full width with 44px options.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="1a" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">1a</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">confirm · 1300 · ModalChrome 700</span></span>
+        <dc-import name="Change Commander Sheet" variant="confirmHalfTrade" theme="{{ theme }}" hint-size="1300px,820px"></dc-import>
+      </div>
+      <div id="1b" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">1b</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">confirm · 390</span></span>
+        <dc-import name="Change Commander Sheet" variant="confirmHalfTrade" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,844px"></dc-import>
+      </div>
+      <div id="1c" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">1c</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">failed · 390 · the pair's shipped line</span></span>
+        <dc-import name="Change Commander Sheet" variant="halfTradeFailed" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,844px"></dc-import>
+      </div>
+    </div>
+  </section>
+
+  <section id="s2">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">§2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">In the list, before the confirm</h2>
+    </div>
+    <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#A59C89;margin:0 0 18px;text-wrap:pretty;">Once it is offered, the pair sorts like any pair: in <i>Yours</i>, because its half from the 98 is owned and Ishai is free. Reyhan carries the shipped <i>in this deck · trades places</i> mark. That is true of that half, and it is how the reader learns, before pressing Choose, that this candidate moves a card out of the 98. No new string is needed.</p>
+    <div id="2a" style="display:flex;flex-direction:column;gap:10px;">
+      <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">2a</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">list · 1300 · the pair now offered</span></span>
+      <dc-import name="Change Commander Sheet" variant="pairHalf" theme="{{ theme }}" hint-size="1300px,820px"></dc-import>
+    </div>
+  </section>
+
+  <section id="s3">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">§3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The outcome: the deck page</h2>
+    </div>
+    <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#A59C89;margin:0 0 18px;text-wrap:pretty;">The band shows Ishai + Reyhan. The banner carries the pair's ⇄ line and the trade's two card lines: <i>+ Thrasios · from the command zone</i> and <i>− Reyhan · to the command zone</i>, so it reads +1 / −1 and the 98 stays at 98. Tymna gets no card line, because she was never one of the 98. Discard puts all three back.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="3a" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">3a</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">deck page · 1300 · after</span></span>
+        <dc-import name="Deck Page 1300" state="afterHalfTrade" controls="joined" theme="{{ theme }}" hint-size="1300px,640px"></dc-import>
+      </div>
+      <div id="3b" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">3b</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">deck page · 390 · after</span></span>
+        <dc-import name="Deck Page 390" state="afterHalfTrade" controls="joined" theme="{{ theme }}" hint-size="390px,900px"></dc-import>
+      </div>
+    </div>
+  </section>
+
+  <section id="s4">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">§4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The outcome: the review page</h2>
+    </div>
+    <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#A59C89;margin:0 0 18px;text-wrap:pretty;">The Commanders section keeps its <i>was</i> and <i>now</i> rows. Its note joins the two shipped clauses with a middot: <i>Thrasios and Reyhan trade places · Tymna goes back in the pool when you commit</i>. It breaks at the middot at 390, never inside a clause. The columns show the trade's two card lines, and the footer counts 1 back in the pool.</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="4a" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">4a</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">review · 1300</span></span>
+        <dc-import name="Review Page" state="halfTrade" theme="{{ theme }}" hint-size="1300px,640px"></dc-import>
+      </div>
+      <div id="4b" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="display:flex;gap:10px;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:1px 6px;">4b</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">review · 390</span></span>
+        <dc-import name="Review Page" state="halfTrade" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,760px"></dc-import>
+      </div>
+    </div>
+  </section>
+
+  <section id="notes" style="max-width:1400px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">§5</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">For engineering and for Hugh</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;">
+      <div id="n1" style="border:1px solid #3A3229;border-radius:10px;background:#1A1611;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">1 · the write</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.66;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">offerable()</span> stops holding the case back, in the loader and in the write. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">changeCommander</span> takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">staysOracleId</span>, which must be one of the departing halves. The write gives the slot to that half, not to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">departing[0]</span>, and refuses a value that isn't departing. The CommanderSection's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">trade</span> test picks the new note whenever the pair has one leaving and one arriving from the body.</div>
+      </div>
+      <div id="n2" style="border:1px solid #3A3229;border-radius:10px;background:#1A1611;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">2 · for Hugh</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.66;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Ask, or rule?</b> Recommended: ask, as drawn. The alternative is a fixed rule, where the commander column always stays. With that rule the choice row goes, and nothing else in the drawing changes. Staging indexes one usable pair, so this case is rare. Rare is also why a reader is unlikely to know which of their two commanders the app would keep.</div>
+      </div>
+      <div id="n3" style="border:1px solid #3A3229;border-radius:10px;background:#1A1611;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">3 · not drawn, still held back</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.66;text-wrap:pretty;">In the sibling case the new pair keeps one old half. For example, Thrasios + Ravos replace Thrasios + Tymna, with Ravos in the 98. That is a plain single trade (Tymna ⇄ Ravos) under a kept half, but <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">confirm.trade</span>'s pair name would still read wrong. It stays held back until it gets its own frame. Say if you want it drawn.</div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

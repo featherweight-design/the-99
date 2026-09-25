@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="{{ frame }}">
+  <header style="{{ headBox }}">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">← {{ deckName }}</span>
+    <h1 style="{{ h1Style }}">{{ heading }}</h1>
+    <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+      <p style="margin:0 0 18px;max-width:680px;font-size:14px;line-height:1.6;color:var(--fg-body);">The deck page already shows this list: this is what it costs to lock in as v4.</p>
+    </sc-if>
+  </header>
+
+  <div style="{{ bodyBox }}">
+    <section data-commander-change="true" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--elevated);">
+        <h2 style="margin:0;flex:none;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ cmdHeading }}</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);text-align:right;">{{ cmdNote }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <sc-for list="{{ cmdRows }}" as="r" hint-placeholder-count="2">
+          <div style="display:flex;align-items:center;gap:11px;min-height:48px;padding:4px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);">
+            <span style="flex:none;width:30px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;color:var(--fg-faint);">{{ r.label }}</span>
+            <span aria-hidden="true" style="position:relative;flex:none;width:48px;height:35px;border-radius:5px;overflow:hidden;border:1px solid var(--border-strong);background:var(--elevated);">
+              <sc-for list="{{ r.thumbs }}" as="t" hint-placeholder-count="1"><span style="{{ t }}"></span></sc-for>
+            </span>
+            <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+            <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">$2.40</span></span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <div style="border:1px dashed var(--border-strong);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">How the deck's shape moves</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);text-align:right;">{{ stripNote }}</span>
+    </div>
+
+    <sc-if value="{{ hasColumns }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:8px;">
+          <span style="display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--success);">1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">in</span></span>
+          <span style="display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--warning);">1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">out</span></span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:6px;">
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:38px;border-radius:999px;background:var(--elevated);font-weight:600;font-size:12.5px;color:var(--fg);">Coming in · 1</span>
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:38px;border-radius:999px;border:1px solid var(--border-strong);font-weight:500;font-size:12.5px;color:var(--fg-faint);">Going out · 1</span>
+        </div>
+      </sc-if>
+      <div style="{{ colsBox }}">
+        <sc-for list="{{ columns }}" as="c" hint-placeholder-count="2">
+          <section style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--elevated);">
+                <h2 style="{{ c.hStyle }}">{{ c.heading }}</h2>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);text-align:right;">{{ c.note }}</span>
+              </div>
+            </sc-if>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">Creatures · 1</span>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:7px;background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--accent);">
+              <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.card }}</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.hint }}</span>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="{{ footBox }}">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ footer }}</span>
+    <span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;">Commit as v4</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:640},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;single&quot;,&quot;trade&quot;,&quot;pair&quot;,&quot;halfTrade&quot;],&quot;default&quot;:&quot;single&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const s = this.props.state || "single";
+    const art = (n) => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=art_crop`;
+    const thumbs = (names) => names.map((n, i) => ({
+      position: "absolute", top: 0, bottom: 0, left: names.length === 2 ? i * 24 : 0, width: names.length === 2 ? 24 : 48,
+      backgroundImage: `url("${art(n)}")`, backgroundSize: "cover", backgroundPosition: "center", borderLeft: i === 1 ? "1px solid var(--bg)" : "none",
+    }));
+    const D = {
+      single: { was: ["Gishath, Sun's Avatar"], now: ["Mayael the Anima"], buy: true, n: 1,
+        note: "Gishath goes back in the pool when you commit", strip: "unchanged: the 99 did not move",
+        foot: "99 cards · 1 to buy · 1 back in the pool" },
+      trade: { was: ["Gishath, Sun's Avatar"], now: ["Pantlaza, Sun-Favored"], buy: false, n: 3, cols: true,
+        note: "the two trade places", strip: "Gishath in, Pantlaza out: as shipped",
+        foot: "99 cards · 0 to buy · 0 back in the pool" },
+      pair: { was: ["Thrasios, Triton Hero", "Tymna the Weaver"], now: ["Ishai, Ojutai Dragonspeaker", "Reyhan, Last of the Abzan"], buy: false, n: 1,
+        note: "Thrasios and Tymna go back in the pool when you commit", strip: "unchanged: the 98 did not move",
+        foot: "98 cards · 0 to buy · 2 back in the pool" },
+      halfTrade: { was: ["Thrasios, Triton Hero", "Tymna the Weaver"], now: ["Ishai, Ojutai Dragonspeaker", "Reyhan, Last of the Abzan"], buy: false, n: 3, cols: true,
+        note: "Thrasios and Reyhan trade places · Tymna goes back in the pool when you commit", strip: "Thrasios in, Reyhan out: as shipped",
+        foot: "98 cards · 0 to buy · 1 back in the pool", colIn: "Thrasios, Triton Hero", colOut: "Reyhan, Last of the Abzan" },
+    };
+    const d = D[s] || D.single;
+    const pair = s === "pair" || s === "halfTrade";
+    const join = (a) => a.join(" + ");
+    return {
+      theme: this.props.theme || "amonkhet",
+      screenLabel: `Review · ${s} · ${phone ? 390 : 1300}`,
+      phone, desk: !phone,
+      frame: { width: phone ? 390 : 1300, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      headBox: phone
+        ? { padding: "38px 14px 12px", borderBottom: "1px solid var(--border)" }
+        : { padding: "24px 26px 0", maxWidth: 1180 },
+      h1Style: { margin: "10px 0 8px", fontFamily: "var(--display)", fontWeight: 700, fontSize: phone ? 18 : 24, color: "var(--fg)" },
+      bodyBox: phone
+        ? { padding: "14px 14px 22px", display: "flex", flexDirection: "column", gap: 16 }
+        : { padding: "0 26px 28px", maxWidth: 1180, display: "flex", flexDirection: "column", gap: 20 },
+      deckName: pair ? "HD - Thrasios & Tymna" : "HD - Gishath",
+      heading: `${d.n} ${d.n === 1 ? "change" : "changes"} since v3`,
+      cmdHeading: pair ? "Commanders" : "Commander",
+      cmdNote: d.note,
+      cmdRows: [
+        { label: "was", thumbs: thumbs(d.was), name: join(d.was), nameStyle: { flex: 1, minWidth: 0, fontSize: 13.5, lineHeight: 1.35, color: "var(--fg-muted)" }, buy: false },
+        { label: "now", thumbs: thumbs(d.now), name: join(d.now), nameStyle: { flex: 1, minWidth: 0, fontSize: 13.5, lineHeight: 1.35, color: "var(--fg)" }, buy: d.buy },
+      ],
+      stripNote: d.strip,
+      hasColumns: !!d.cols,
+      colsBox: { display: "flex", flexDirection: phone ? "column" : "row", gap: 22 },
+      columns: (phone ? [0] : [0, 1]).map((i) => i === 0
+        ? { heading: "Coming in · 1", hStyle: { margin: 0, flex: "none", fontFamily: "'IBM Plex Mono',monospace", fontWeight: 400, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--success)" }, note: "1 free · 0 sleeved · 0 to buy", card: d.colIn || "Gishath, Sun's Avatar", hint: "from the command zone" }
+        : { heading: "Going out · 1", hStyle: { margin: 0, flex: "none", fontFamily: "'IBM Plex Mono',monospace", fontWeight: 400, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--warning)" }, note: "it moves to the command zone", card: d.colOut || "Pantlaza, Sun-Favored", hint: "to the command zone" }),
+      footer: d.foot,
+      footBox: phone
+        ? { display: "flex", flexDirection: "column", alignItems: "stretch", gap: 10, padding: "12px 14px 16px", borderTop: "1px solid var(--border)", background: "var(--surface-rail)" }
+        : { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 26px", borderTop: "1px solid var(--border)", background: "var(--surface-rail)" },
+    };
+  }
+}
+</script>
+</body>
+</html>
