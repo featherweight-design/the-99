@@ -24,7 +24,22 @@ import { fileURLToPath } from "node:url";
  * is where the licence text lives — the API serves the font bytes but never the
  * licence, and an OFL face is only redistributable WITH it.
  */
-const FAMILIES = [
+type Family = {
+  /** The name Google's API answers to. */
+  css: string;
+  /** The filename stem, and the prefix `layout.tsx` imports by. */
+  slug: string;
+  /** Where the licence lives in google/fonts — `ofl/…` or `apache/…`. */
+  dir: string;
+  /** Exactly the weights `layout.tsx` declares. */
+  weights: number[];
+  /** True when Google serves ONE variable file for the whole span. */
+  range: boolean;
+  /** True when the family also needs its real italic face. */
+  italic?: boolean;
+};
+
+const FAMILIES: readonly Family[] = [
   // `range: true` means Google serves ONE variable file covering the whole span,
   // which is what `next/font/google` was fetching before this change. Declaring
   // four static weights instead looks identical on screen and costs three extra
@@ -43,9 +58,14 @@ const FAMILIES = [
   { css: "Syncopate", slug: "syncopate", dir: "apache/syncopate", weights: [400, 700], range: false },
   { css: "Cormorant Garamond", slug: "cormorant-garamond", dir: "ofl/cormorantgaramond", weights: [600, 700], range: true },
   { css: "Metamorphous", slug: "metamorphous", dir: "ofl/metamorphous", weights: [400], range: false },
-  { css: "IBM Plex Sans", slug: "ibm-plex-sans", dir: "ofl/ibmplexsans", weights: [400, 600], range: true },
+  // ITALIC AS WELL AS UPRIGHT. `layout.tsx` on main declared
+  // `style: ["normal", "italic"]` for this family alone, and dropping it renders
+  // every italic in body text as a browser-synthesized oblique of the upright
+  // face rather than the real italic. It is the one family with a style axis, so
+  // it is also the one an inventory built by scanning weights would miss.
+  { css: "IBM Plex Sans", slug: "ibm-plex-sans", dir: "ofl/ibmplexsans", weights: [400, 600], range: true, italic: true },
   { css: "IBM Plex Mono", slug: "ibm-plex-mono", dir: "ofl/ibmplexmono", weights: [400, 500, 600], range: false },
-] as const;
+];
 
 const OUT = fileURLToPath(new URL("../src/app/fonts/", import.meta.url));
 
@@ -81,12 +101,24 @@ async function main() {
   for (const family of FAMILIES) {
     // A variable family is ONE request for the whole span; a static one is a
     // file per weight. `spec` is the only difference.
+    const span = `${family.weights[0]}..${family.weights[family.weights.length - 1]}`;
     const specs = family.range
-      ? [{ spec: `${family.weights[0]}..${family.weights[family.weights.length - 1]}`, name: `${family.slug}-variable.woff2` }]
+      ? [{ spec: span, name: `${family.slug}-variable.woff2` }]
       : family.weights.map((w) => ({ spec: String(w), name: `${family.slug}-${w}.woff2` }));
+    if (family.italic) {
+      // `ital,wght@1,…` is the italic axis. Requested as its own file so the
+      // upright stays one request for pages that draw no italic.
+      specs.push(
+        family.range
+          ? { spec: `ital,wght@1,${span}`, name: `${family.slug}-italic-variable.woff2` }
+          : { spec: `ital,wght@1,${family.weights[0]}`, name: `${family.slug}-italic.woff2` },
+      );
+    }
 
     for (const { spec, name } of specs) {
-      const api = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family.css)}:wght@${spec}&display=swap`;
+      // An italic spec already carries its own axis prefix.
+      const axis = spec.startsWith("ital,") ? spec : `wght@${spec}`;
+      const api = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family.css)}:${axis}&display=swap`;
       const cssRes = await fetch(api, { headers: { "User-Agent": WOFF2_UA } });
       if (!cssRes.ok) throw new Error(`${family.css} ${spec}: css ${cssRes.status}`);
       const url = latinWoff2Url(await cssRes.text(), spec);

@@ -30,7 +30,6 @@
 // Run it against the BEFORE build and the AFTER build and compare the JSON.
 import { writeFileSync } from "node:fs";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage } from "./lib/surface.mjs";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const args = new Map(
@@ -177,7 +176,7 @@ async function main() {
           metrics,
         });
         console.log(
-          `${String(width).padStart(4)} ${route.padEnd(9)} fonts:${String(fontRequests.length).padStart(2)} ` +
+          `${String(width).padStart(4)} ${route.padEnd(9)} fonts:${String(fontRequestsOnLoad.length).padStart(2)} ` +
             `heading:${(families.heading ?? "?").split(",")[0]} body:${(families.body ?? "?").split(",")[0]}`,
         );
         await fresh.close();

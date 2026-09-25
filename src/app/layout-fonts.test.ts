@@ -56,7 +56,9 @@ describe("self-hosted fonts", () => {
     const families = new Set(
       fontFiles
         .filter((f) => f.endsWith(".woff2"))
-        .map((f) => f.replace(/-(variable|\d+)\.woff2$/, "")),
+        // `-italic` comes off too, or the italic face reads as a ninth family
+        // with no licence of its own.
+        .map((f) => f.replace(/-(italic-)?(variable|\d+)\.woff2$/, "")),
     );
     expect(families.size).toBe(8);
     for (const family of families) {
@@ -64,8 +66,30 @@ describe("self-hosted fonts", () => {
     }
   });
 
-  it("keeps preload off for the six display faces", () => {
-    expect([...layout.matchAll(/^\s+preload: false,$/gm)]).toHaveLength(6);
+  // PER FAMILY, not a count. Six `preload: false` lines anywhere satisfies a
+  // count even if one has moved off Cinzel and onto Plex Sans — which would
+  // preload a display face on every page, the exact regression this guards.
+  it("keeps preload off for each of the six display faces, and on for the two body faces", () => {
+    const blockFor = (variable: string) => {
+      const from = layout.indexOf(`variable: "${variable}"`);
+      const start = layout.lastIndexOf("localFont({", from);
+      return layout.slice(start, layout.indexOf("});", from));
+    };
+    for (const variable of [
+      "--font-cinzel",
+      "--font-chakra-petch",
+      "--font-trirong",
+      "--font-syncopate",
+      "--font-cormorant-garamond",
+      "--font-metamorphous",
+    ]) {
+      expect(blockFor(variable), `${variable} must not preload`).toContain("preload: false");
+    }
+    for (const variable of ["--font-plex-sans", "--font-plex-mono"]) {
+      expect(blockFor(variable), `${variable} is a body face and preloads`).not.toContain(
+        "preload: false",
+      );
+    }
   });
 
   it("keeps every CSS variable name the styles read", () => {
@@ -85,14 +109,42 @@ describe("self-hosted fonts", () => {
 
   // The variable families are one file for a weight RANGE; declaring their
   // weights separately renders the same and costs extra requests per page.
-  it("declares the three variable families as a range", () => {
+  // IN THE SAME DECLARATION. Asserting the file and the range as two separate
+  // whole-file substrings passes with Cinzel's `600 900` swapped onto Cormorant
+  // Garamond and back — both strings are still somewhere in the file.
+  it("declares the three variable families as a range, each on its own file", () => {
     for (const [file, range] of [
       ["cinzel-variable.woff2", "600 900"],
       ["cormorant-garamond-variable.woff2", "600 700"],
       ["ibm-plex-sans-variable.woff2", "400 600"],
     ]) {
-      expect(layout).toContain(file);
-      expect(layout).toContain(`weight: "${range}"`);
+      const declaration = new RegExp(
+        `path:\\s*"\\./fonts/${file.replace(/[.]/g, "\\.")}"\\s*,\\s*weight:\\s*"${range}"`,
+      );
+      expect(layout, `${file} is not declared with weight "${range}"`).toMatch(declaration);
+    }
+  });
+
+  // The style axis, which an inventory built by scanning weights misses: this
+  // family alone declared `style: ["normal", "italic"]` before self-hosting, and
+  // without the italic FILE every italic renders as a synthesized oblique.
+  it("declares a real italic face for IBM Plex Sans", () => {
+    expect(layout).toMatch(
+      /path:\s*"\.\/fonts\/ibm-plex-sans-italic-variable\.woff2"\s*,\s*weight:\s*"400 600"\s*,\s*style:\s*"italic"/,
+    );
+    expect(fontFiles).toContain("ibm-plex-sans-italic-variable.woff2");
+  });
+
+  // `next/font/google` derived the metric-matched fallback from the family's
+  // category; `next/font/local` defaults to Arial for every face, so a serif
+  // display face would swap in from sans metrics.
+  it("gives the serif display faces a serif fallback", () => {
+    for (const variable of ["--font-cinzel", "--font-trirong", "--font-cormorant-garamond"]) {
+      const block = layout.slice(layout.indexOf(`variable: "${variable}"`));
+      const declaration = block.slice(0, block.indexOf("});"));
+      expect(declaration, `${variable} has no serif fallback`).toContain(
+        'adjustFontFallback: "Times New Roman"',
+      );
     }
   });
 });

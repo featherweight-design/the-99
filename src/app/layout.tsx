@@ -36,6 +36,10 @@ const cinzel = localFont({
   variable: "--font-cinzel",
   display: "swap",
   preload: false,
+  // SERIF. `next/font/google` derived the metric-matched fallback from the
+  // family's category; `next/font/local` defaults to Arial for every face, so a
+  // serif display face would swap in from sans-serif metrics and shift the line.
+  adjustFontFallback: "Times New Roman",
 });
 
 const chakraPetch = localFont({
@@ -57,6 +61,10 @@ const trirong = localFont({
   variable: "--font-trirong",
   display: "swap",
   preload: false,
+  // SERIF. `next/font/google` derived the metric-matched fallback from the
+  // family's category; `next/font/local` defaults to Arial for every face, so a
+  // serif display face would swap in from sans-serif metrics and shift the line.
+  adjustFontFallback: "Times New Roman",
 });
 
 const syncopate = localFont({
@@ -78,6 +86,10 @@ const cormorantGaramond = localFont({
   variable: "--font-cormorant-garamond",
   display: "swap",
   preload: false,
+  // SERIF. `next/font/google` derived the metric-matched fallback from the
+  // family's category; `next/font/local` defaults to Arial for every face, so a
+  // serif display face would swap in from sans-serif metrics and shift the line.
+  adjustFontFallback: "Times New Roman",
 });
 
 // Metamorphous ships exactly one static weight, 400. See the First Frost rule in
@@ -89,8 +101,14 @@ const metamorphous = localFont({
   preload: false,
 });
 
+// THE ONLY FAMILY WITH A STYLE AXIS. `style: ["normal", "italic"]` was declared
+// here before self-hosting, and dropping it renders every italic in body text as
+// a browser-synthesized oblique of the upright rather than the real italic face.
 const plexSans = localFont({
-  src: [{ path: "./fonts/ibm-plex-sans-variable.woff2", weight: "400 600", style: "normal" }],
+  src: [
+    { path: "./fonts/ibm-plex-sans-variable.woff2", weight: "400 600", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-italic-variable.woff2", weight: "400 600", style: "italic" },
+  ],
   variable: "--font-plex-sans",
   display: "swap",
 });
