@@ -12,7 +12,7 @@
 // THE FLIP WALK. An entry tied to a feature switch is announced by turning the switch on
 // (Hugh, 2026-09-25), and a switch is read when the server starts, so the walk OWNS its server:
 // it starts `next dev` with every switch off, then restarts it with Change commander on, then
-// with Locked cards on as well, then with both off. Next 16 allows one `next dev` per project,
+// with Locked cards on as well, then with Help me choose on too, then with all three off. Next 16 allows one `next dev` per project,
 // so stop any dev server running in this worktree first. What it proves, in order:
 //   F1  every switch off: a reader at the current version sees nothing, and the browser is marked
 //       (every returning reader sits there, and each launch entry's \`since\` equals it, so a
@@ -21,8 +21,11 @@
 //       sheet names that one entry;
 //   F3  opening /about records the entry by id, draws its figure, and the sheet stays away;
 //   F4  Locked cards on LATER: the reader who met the first entry is shown only the second;
-//   F5  both figures draw at 390 and 1300 without overflowing the page;
-//   F6  both off again: neither entry is on the page.
+//   F4b Help me choose on third: named alone, though it sits first on the page;
+//   F5  the three figures draw at 390 and 1300 without overflowing the page;
+//   F6  all off again: none of the three entries is on the page.
+// It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
+// marks every entry seen and fails F2–F4 on a working build. Re-run before believing that red.
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
 // worktree's own `.env` at a migrated scratch branch.
 //
@@ -61,6 +64,7 @@
 //   --flip:
 //   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 and F4: the cookie from before each flip hides the sheet
 //   - the version floor applied to a switched entry too          → F2, F3 and F4: a reader at 9 is never announced either
+//   - `figures()` lighting no SETS RANK                           → F5's Help me choose check at 390 and 1300
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -362,7 +366,7 @@ async function walk(browser, width, userIdRef) {
 
 // ── The flip walk (--flip) ──────────────────────────────────────────────────────────────────
 
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"];
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED"];
 
 /** `next dev` in this worktree with exactly the named switches on; resolves once it serves. */
 async function startServer(on) {
@@ -440,6 +444,7 @@ async function figureFacts(page) {
     };
     const locked = within("locked-cards");
     const change = within("change-commander");
+    const choose = within("help-me-choose");
     return {
       locked: locked && {
         inside: locked.inside,
@@ -459,6 +464,19 @@ async function figureFacts(page) {
         door: change.li.querySelectorAll("[data-testid=change-commander-door]").length,
         rows: change.li.querySelectorAll("[data-testid=change-commander-row]").length,
       },
+      choose: choose && (() => {
+        // The FIGURE's text, never the entry's: key line 1 names SETS RANK in words too.
+        const fig = choose.li.querySelector("[data-specimen='help-me-choose']")?.innerText ?? "";
+        return {
+          inside: choose.inside,
+          // Read in the TEXT a reader sees, for the reason `petals` is: the rows carry no test id.
+          order: ["Pantlaza", "Gishath"].map((name) => fig.indexOf(name)),
+          // One lit figure per row: each row has two figures, so SETS RANK draws on both.
+          setsRank: fig.split("SETS RANK").length - 1,
+          // The lit figures themselves, as `figures()` rounds them: 41% and 34%.
+          pcts: ["74%", "41%", "81%", "34%"].map((p) => fig.includes(p)),
+        };
+      })(),
       pageOverflow: document.documentElement.scrollWidth - innerWidth,
     };
   });
@@ -519,7 +537,20 @@ async function flipWalk(browser, who) {
     );
     await visitAbout(page, userId, "locked-cards");
 
-    // F5. Both figures, drawn by the page's own components, at both widths.
+    // F4b. Help me choose on THIRD. It sits first on the page, in chapter 02, and must still be
+    // named alone: the two it follows were met by id.
+    await stopServer(server);
+    server = await startServer(SWITCHES);
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const third = await sheetTitles(page, card);
+    report(
+      "F4b a third flip names Help me choose alone",
+      JSON.stringify(third) === JSON.stringify(["Help me choose"]),
+      JSON.stringify(third),
+    );
+    await visitAbout(page, userId, "help-me-choose");
+
+    // F5. The three figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE}/about#locked-cards`, { waitUntil: "networkidle" });
@@ -537,22 +568,31 @@ async function flipWalk(browser, who) {
         JSON.stringify(f.change),
       );
       report(
-        `F5 ${w}: neither figure overflows its entry or the page`,
-        f.locked?.inside && f.change?.inside && f.pageOverflow <= 0,
+        `F5 ${w}: Help me choose draws Pantlaza above Gishath, each with its figure lit SETS RANK`,
+        f.choose !== null &&
+          f.choose.order[0] >= 0 &&
+          f.choose.order[0] < f.choose.order[1] &&
+          f.choose.setsRank === 2 &&
+          f.choose.pcts.every(Boolean),
+        JSON.stringify(f.choose),
+      );
+      report(
+        `F5 ${w}: no figure overflows its entry or the page`,
+        f.locked?.inside && f.change?.inside && f.choose?.inside && f.pageOverflow <= 0,
         `overflow ${f.pageOverflow}`,
       );
     }
     await page.setViewportSize({ width: 1300, height: 820 });
 
-    // F6. Both off: neither entry is on the page.
+    // F6. All off: none of the three entries is on the page.
     await stopServer(server);
     server = await startServer([]);
     await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const gone = await page.evaluate(
-      () => !document.getElementById("locked-cards") && !document.getElementById("change-commander"),
+      () => ["locked-cards", "change-commander", "help-me-choose"].every((id) => !document.getElementById(id)),
     );
-    report("F6 switches off again: neither entry is on the page", gone);
+    report("F6 switches off again: none of the three entries is on the page", gone);
     await context.close();
   } finally {
     await stopServer(server);

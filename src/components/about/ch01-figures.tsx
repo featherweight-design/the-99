@@ -51,6 +51,7 @@ import {
   REPLACE_SUMMARY,
   LOCKED_ROWS,
   CHANGE_COMMANDER,
+  CHOOSE,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -107,6 +108,8 @@ import {
 import { KeyNumeral } from "./numeral";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
+import { ChooseRow } from "../intake/choose-row";
+import { figures as chooseFigures } from "../../lib/intake/present";
 import { identityGradient } from "../../lib/collection/gradients";
 import { LockCardsProvider, type LockCards } from "../decks/lock-cards";
 import { LockModeLine } from "../decks/decklist";
@@ -1536,6 +1539,35 @@ export function ChangeCommanderFigureBody() {
           </section>
         </div>
       </ChangeCommanderProvider>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `help-me-choose` — two results, drawn by the results screen's own `ChooseRow`, each with its
+ * ownership line settled (`trial` ready), in the order the screen would give them.
+ *
+ * The figures come from `figures()`, the function the screen calls, so which one is lit SETS RANK
+ * is the shipped rule's answer rather than a fixture's claim. `retry` is a no-op and the row's
+ * link cannot be followed: `Specimen` is `inert`.
+ */
+export function HelpMeChooseFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+        {CHOOSE.rows.map(({ row, trial }) => (
+          <ChooseRow
+            key={row.oracleId}
+            row={row}
+            figures={chooseFigures(row, "fit", CHOOSE.labels)}
+            owned={false}
+            params={CHOOSE.params}
+            cardName={CHOOSE.labels.card}
+            trial={{ state: "ready", figures: trial }}
+            retry={() => {}}
+          />
+        ))}
+      </ul>
     </CardDetailProvider>
   );
 }

@@ -44,6 +44,7 @@ import {
   UndoRemovalFigureBody,
   LockedCardsFigureBody,
   ChangeCommanderFigureBody,
+  HelpMeChooseFigureBody,
   CardDetailFigureBody,
   CommanderLaneFigureBody,
   DiscoverFigureBody,
@@ -881,6 +882,14 @@ function ChangeCommanderFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+function HelpMeChooseFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="help-me-choose" width={width}>
+      <HelpMeChooseFigureBody />
+    </Specimen>
+  );
+}
+
 
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
@@ -918,6 +927,7 @@ export const FIGURES: Partial<
   "undo-removal": UndoRemovalFigure,
   "locked-cards": LockedCardsFigure,
   "change-commander": ChangeCommanderFigure,
+  "help-me-choose": HelpMeChooseFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,

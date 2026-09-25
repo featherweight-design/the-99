@@ -483,6 +483,19 @@
       ]
     },
     {
+      "id": "fig-help-me-choose",
+      "label": "/about \u2014 the Help me choose figure (needs HELP_ME_CHOOSE_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='help-me-choose']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='help-me-choose']"
+        }
+      ]
+    },
+    {
       "id": "about-with-destination",
       "label": "/about \u2014 arriving with a destination, as the gate appends it",
       "view": "src/components/about/about-page.tsx",

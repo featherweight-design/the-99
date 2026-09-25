@@ -182,3 +182,98 @@ unpressed toggles (`probe:about --flip` counts three toggles in the mode set), t
 with `2 locked`, the desktop pill door and the phone's vertical pair (by `useIsDesktop`), and one
 candidate in each group with its free mark and its buy tag. Expanded figure, the sheet and the
 fallback are not drawn, as the table says.
+
+---
+
+# PR D: Help me choose (A1)
+
+## Entry: help-me-choose
+
+**Sources:** README.md, READINESS-audit.md (A1: H1–H6, G1, and the /copy-review table), `about · launch entries.ts`, and the canvas `.dc.html` (lines 116–340 and 379–392, plus `chooseRows` at about line 505). Where the audit and the drawn copy conflict, the audit wins.
+
+| # | Property | Mobile (390) | Desktop (760) | Source |
+|---|---|---|---|---|
+| **1. Entry slots** | | | | |
+| 1.1 | id | `help-me-choose` | same | .ts |
+| 1.2 | chapter | `'02'` (02 · Finding a commander) | same | .ts, canvas `chapterShort` |
+| 1.3 | title | `Help me choose` | same | .ts |
+| 1.4 | route | `/decks/new/choose` | same | .ts |
+| 1.5 | opens | none. The .ts has no `opens`, the canvas has `opens: ""`, and the Route slot shows no `· …` suffix | same | .ts, canvas |
+| 1.6 | width | `'plate'`. The canvas slot reads "plate: several parts need naming" | same | .ts, canvas `slotsOf` |
+| 1.7 | since | `10` as drawn. **Superseded by G1:** there is no batched bump, and seen is recorded per reader as entry ids | same | .ts, audit G1 |
+| 1.8 | switch | `HELP_ME_CHOOSE_ENABLED`. The entry renders only while it is on | same | audit G1 |
+| 1.9 | insert position | Chapter 02, immediately after `discover` ("Commanders worth acquiring, and what each order means"). It is first of the five in page order | same | .ts `// after`, README table, canvas `after`, audit Structure |
+| 1.10 | build gate | **Hold (H1, H2):** do not build until HMC PR 6 (the pick fills the deck) and #1000 (PR 6a, the deeper-read UI) merge. Re-check both then | same | audit H1, H2 |
+| 1.11 | strings from | `copy/help-me-choose.ts (results.*)`. No new copy module | same | canvas `strings`, README |
+| **2. Key lines (structure only)** | | | | |
+| 2.1 | count | 4 of 4 (the `about.test.ts` limit) | same | .ts, canvas slot label |
+| 2.2 | caption | H1 (hold: the hand-off is not on main) and H3, replaced by the /copy-review TIGHTEN that absorbs H3 | same | audit |
+| 2.3 | key 1 | H4. SETS RANK only when there is more than one figure (TIGHTEN) | same | audit H4, copy-review |
+| 2.4 | key 2 | H5, replaced by the /copy-review TIGHTEN (ownership orders the list only when there is no theme or card) | same | audit H5, copy-review |
+| 2.5 | key 3 | No correction (KEEP). Accurate once #1000 ships (H2) | same | audit H2, copy-review |
+| 2.6 | key 4 | H6 (answers to loosen, each with a count) | same | audit H6, copy-review |
+| 2.7 | key line render | Numbered `ol`, gap 5px. Badge 14×14, radius 50%, 1px `--accent` border, Plex Mono 8.5px. Text Plex Mono 10.5px, line-height 1.5, `--fg-faint`. margin-top 8px | same | canvas l.331–335 |
+| **3. Specimen composition** | | | | |
+| 3.1 | component | `ChooseRow` (`choose-row.tsx`) ×2. Mounts as shipped and takes row, figures and trial as props | same | README, canvas `specimen`/`need`, audit |
+| 3.2 | provider | `CardDetailProvider fetchCard={async () => null}`, as `ch01-figures.tsx` does | same | canvas §6 |
+| 3.3 | extraction needed | None ("mounts as shipped") | same | canvas `needHead` |
+| 3.4 | order | Row 1 Pantlaza, row 2 Gishath | same | canvas `chooseRows` |
+| 3.5 | ordering basis | Ordered by a theme and a card | same | canvas `specimen` |
+| 3.6 | trial state | `ready` on each row | same | canvas `specimen` |
+| 3.7 | figure wrapper | `<figure>` margin 10px 0 0, radius 8px, 1px `--border`, background `--surface-sunken`, padding 14px 16px, overflow hidden | same | canvas l.166 |
+| 3.8 | row stack | flex column, gap 8px, between the two rows | same | canvas l.305 |
+| 3.9 | position in entry | head (title, route) → caption (margin 6px 0 0) → figure → key lines | same | canvas l.160–335 |
+| 3.10 | entry frame (canvas only) | width 390, padding 18px 16px 22px | width 760, padding 22px 24px 26px | canvas `view()` |
+| 3.11 | phone reduction | Each row stacks: name and pips, then the figures, then the ownership line. The 44px thumb and the whole-row press stay. The ownership line wraps between its segments, never inside one | desktop layout is ChooseRow's own; the canvas draws the same markup at both widths | canvas `phone` |
+| **4. Fixture data** | | | | |
+| 4.1 | params | themes `[Dinosaurs]`, card `Regisaur Alpha`, budget `150`, bracket `2` | same | canvas `fixture` |
+| 4.2 | row 1 name | `Pantlaza, Sun-Favored`. Identity pips r, g, w. Art from Scryfall art_crop | same | canvas `chooseRows` |
+| 4.3 | row 1 mark | buy · `$1.10` | same | canvas |
+| 4.4 | row 1 figures | `74%` "of its decks are Dinosaurs" (rank: false). `41%` "of its decks run Regisaur Alpha" (rank: true, **SETS RANK**) | same | canvas |
+| 4.5 | row 1 trial | owned 38 ("you own 38 of its 99"). Buy "about $112 to buy, inside $150" | same | canvas |
+| 4.6 | row 2 name | `Gishath, Sun's Avatar`. Identity pips r, g, w | same | canvas |
+| 4.7 | row 2 mark | `owned · free` (buy: false, price "") | same | canvas |
+| 4.8 | row 2 figures | `81%` "of its decks are Dinosaurs" (rank: false). `34%` "of its decks run Regisaur Alpha" (rank: true, **SETS RANK**) | same | canvas |
+| 4.9 | row 2 trial | owned 52 ("you own 52 of its 99"). Buy "about $64 to buy, inside $150" | same | canvas |
+| 4.10 | rank consistency | Each row's weakest figure sets its rank. Pantlaza's 41% beats Gishath's 34%, so Pantlaza leads | same | canvas |
+| **5. State coverage** | | | | |
+| 5.1 | two figures, SETS RANK on the weaker | drawn (both rows) | drawn | canvas |
+| 5.2 | buy mark with price | drawn (Pantlaza) | drawn | canvas |
+| 5.3 | owned · free mark | drawn (Gishath) | drawn | canvas |
+| 5.4 | trial ready, under budget | drawn (both rows) | drawn | canvas |
+| 5.5 | single figure (no SETS RANK) | not drawn. Described by key 1 per H4 | not drawn | audit H4 |
+| 5.6 | no theme or card (ordered by ownership) | not drawn. Described by the caption/key 2 per H3/H5 | not drawn | audit H3, H5 |
+| 5.7 | too few fit, answers to loosen | not drawn. Key 4 per H6 | not drawn | audit H6 |
+| 5.8 | deeper read (one credit) | not drawn. Key 3, gated on #1000 | not drawn | audit H2 |
+| 5.9 | held mark, trial loading or failed, over budget, buy with no price | not specified | not specified | — |
+| 5.10 | About sheet (N2) | **Superseded by G1.** Each entry is announced by its own switch's flip, so the sheet names Help me choose alone when its switch turns on (`probe:about --flip` F4b), never as one of a batch of three | — | README, audit G1 |
+| 5.11 | About index (O1) | Listed by title only, in page order | same | README, audit Structure |
+
+## Verification (Agent 2 and Agent 3), 2026-09-25
+
+Checked row by row against `HelpMeChooseFigureBody` (`src/components/about/ch01-figures.tsx`),
+`CHOOSE` (`src/lib/about/fixtures.ts`) and the `help-me-choose` entry in `src/lib/copy/about.ts`,
+and in a browser by `pnpm probe:about --flip` (F4b, F5) and the contact sheet at 390 and 1300.
+
+### Gaps found, both fixed
+
+1. The two rows sat with no gap between them. Now `gap 8px` on the list.
+2. Pantlaza's buy price was a $3.49 stand-in. Now `$1.10`, the canvas's figure.
+
+Agent 3 (confirm): both read correctly after the fix. 0 gaps remain.
+
+### Deviations, by ruling rather than by gap
+
+- **`since` is 9, and the build gate is lifted.** G1 as for the other two entries. H1 and H2 were
+  confirmed met on main at 41de0326 by the Help me choose lane: the hand-off shipped in #1011 and
+  the Look deeper panel in #1000.
+- **Key 3 is corrected, not kept.** The drawn line says the FORM names the credit before it is
+  spent; the form never mentions a credit (HMC handoff §8.1). The cost is on the results screen, in
+  the Look deeper panel. Wording is `/copy-review`'s.
+- **Key 2 drops "never orders it" rather than adding H5's exception.** The caption already states
+  the exception (H3), and saying it twice is copy-review's rule 7.
+- **The rows' art is the component's empty thumb**, not a Scryfall crop: a reference page fetches
+  no art.
+- **The figures are computed by the shipped `figures()`**, not written down, so SETS RANK is lit by
+  the rule the results screen uses.
+
