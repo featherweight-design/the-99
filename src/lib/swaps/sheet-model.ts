@@ -130,7 +130,10 @@ export function sheetModel(read: StandInsRead): SheetModel {
   const facts = (s: StandIn): string[] => {
     if (job.kind === "spell") {
       const out = [rolesText(s.shared), copy.mv(s.card.cmc)];
-      if (s.inclusion !== null) out.push(copy.figure(String(Math.round(s.inclusion)), commander));
+      // Addendum §1: a staple's figure is about every commander, so the row says so rather than
+      // quoting it as this one's. A free staple keeps the clause in `yours, free` too.
+      if (s.isUniversal) out.push(copy.stapleFact);
+      else if (s.inclusion !== null) out.push(copy.figure(String(Math.round(s.inclusion)), commander));
       return out;
     }
     const costs = firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors));
@@ -147,6 +150,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
   };
   push(copy.groupFree, read.free);
   if (job.kind === "spell") {
+    push(copy.groupStaples, read.staples);
     push(copy.groupByCommander(commander), read.byCommander);
     push(copy.groupUnlisted(commander), read.unlisted);
   } else {
@@ -168,7 +172,10 @@ export function sheetModel(read: StandInsRead): SheetModel {
     : job.kind === "fetch"
       ? shared !== null ? copy.leadFetchGivesUp(typesText(job.types, true), shared) : copy.leadFetch(typesText(job.types, true))
     // F14: nothing listed for this commander or pair, so the order clause has nothing to name.
-    : read.byCommander.length === 0 ? copy.leadSpellsUnlisted(rolesText(job.roles), job.mv)
+    // H4: a staples group gets its own place in the order clause.
+    : read.byCommander.length === 0
+      ? read.staples.length ? copy.leadSpellsStaplesUnlisted(rolesText(job.roles), job.mv) : copy.leadSpellsUnlisted(rolesText(job.roles), job.mv)
+    : read.staples.length ? copy.leadSpellsStaples(rolesText(job.roles), job.mv, commander)
     : copy.leadSpells(rolesText(job.roles), job.mv, commander);
 
   return { job: jobLine, lead, groups, sentence: null, foot: true };

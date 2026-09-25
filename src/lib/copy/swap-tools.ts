@@ -78,6 +78,12 @@ export const swapToolsCopy = {
       `Every land here finds ${types}. Free copies come first, then the cheapest, and each says what it gives up.`,
     leadSpells: (roles: string, mv: number, commander: string) =>
       `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the rest by how often ${commander} decks run them.`,
+    /** H4, addendum canvas: a paid staples group sits between the free copies and the commander's ranking. */
+    leadSpellsStaples: (roles: string, mv: number, commander: string) =>
+      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the rest by how often ${commander} decks run them.`,
+    /** H4 with F14: staples to buy, and nothing the index lists. Composed from the two leads above; owed to /copy-review. */
+    leadSpellsStaplesUnlisted: (roles: string, mv: number) =>
+      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the cheapest.`,
     /** F14: the index lists nothing for this commander or pair, so the order clause has nothing to name. Owed to /copy-review. */
     leadSpellsUnlisted: (roles: string, mv: number) =>
       `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the cheapest.`,
@@ -85,11 +91,15 @@ export const swapToolsCopy = {
     leadSoldOut: "This card is sold out everywhere we check, so only the copies you already own are listed here.",
     groupFree: "yours, free",
     groupCheapest: "to buy · cheapest first",
+    /** H4, addendum §1: paid universal staples, between `yours, free` and the commander's ranking. */
+    groupStaples: "to buy · staples, cheapest first",
     groupByCommander: (commander: string) => `to buy · by ${commander} decks`,
     groupUnlisted: (commander: string) => `not listed for ${commander} · cheapest first`,
     free: "free",
     mv: (n: number) => `MV ${n}`,
     figure: (pct: string, commander: string) => `in ${pct}% of ${commander} decks`,
+    /** Addendum §1: a staple's fact line ends here instead of on `figure`. */
+    stapleFact: "staple, any commander",
     /** H3: what a stand-in for a utility land gives up, the ability named or quoted. Owed to /copy-review. */
     givesUp: (ability: string) => `gives up ${ability}`,
     drawback: {
