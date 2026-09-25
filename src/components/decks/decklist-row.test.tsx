@@ -38,6 +38,10 @@ vi.mock("../../app/decks/actions", () => ({
   renameDeck: vi.fn(),
 }));
 
+// The ⇄ opens the stand-ins sheet, which reads its list through this action.
+const { loadStandInsAction } = vi.hoisted(() => ({ loadStandInsAction: vi.fn(async () => null) }));
+vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, setShoppingLimitAction: vi.fn() }));
+
 // The shell mounts Consider, whose degraded banner refreshes the route.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
@@ -1034,7 +1038,7 @@ describe("DecklistRow over the Shopping limit (swap tools)", () => {
   const asOf = new Date("2026-09-20T00:00:00Z");
   const priced = (cents: number) => ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf } });
   const inTools = (ui: React.ReactNode, stored: number | null = null) =>
-    renderRow(<SwapToolsProvider deckId="d1" storedLimitCents={stored}>{ui}</SwapToolsProvider>);
+    renderRow(<SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={stored}>{ui}</SwapToolsProvider>);
   const ring = () => Array.from(document.querySelectorAll<HTMLElement>("span")).filter((s) => s.style.boxShadow === OVER_LIMIT_RING);
 
   it("rings the tag and says over $10 for a card above the default", () => {
@@ -1059,5 +1063,21 @@ describe("DecklistRow over the Shopping limit (swap tools)", () => {
     inTools(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />);
     expect(ring()).toHaveLength(0);
     expect(screen.queryByText(swapToolsCopy.row.over("$10"))).toBeNull();
+  });
+
+  it("draws the ⇄ on an over row only, and opens the stand-ins sheet for that card", async () => {
+    const swap = () => screen.queryByRole("button", { name: swapToolsCopy.row.swapOverAria("Sol Ring", "$10") });
+    inTools(<DecklistRow deckId="d1" card={priced(900)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    expect(swap()).toBeNull();
+    cleanup();
+    inTools(<DecklistRow deckId="d1" card={priced(1500)} newestAsOf={asOf} />);
+    expect(swap()).toBeNull();
+    cleanup();
+    inTools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
+    await act(async () => swap()!.click());
+    expect(screen.getByRole("dialog", { name: swapToolsCopy.sheet.title })).toBeInTheDocument();
+    expect(loadStandInsAction).toHaveBeenCalledWith("d1", "sol-ring");
+    // The action answered null: the sheet says so and offers another try.
+    expect(screen.getByRole("alert")).toHaveTextContent(swapToolsCopy.sheet.failed.heading);
   });
 });

@@ -413,6 +413,6 @@ export default async function DeckBuilderPage({
     />
   );
   return swapTools ? (
-    <SwapToolsProvider deckId={id} storedLimitCents={shoppingLimit}>{shell}</SwapToolsProvider>
+    <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{shell}</SwapToolsProvider>
   ) : shell;
 }

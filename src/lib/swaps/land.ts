@@ -226,7 +226,12 @@ export function nameAbility(sentence: string, cardName: string): GivenUp {
  * name stays as printed.
  */
 export function quote(sentence: string, cardName: string): string {
-  const named = sentence.replaceAll(cardName.toLowerCase(), cardName).replace(/\.$/, "");
+  const named = sentence
+    .replaceAll(cardName.toLowerCase(), cardName)
+    // The readers lowercase the whole text, symbols and the variable X with it: `{T}`, `{X}{X}`.
+    .replace(/\{[^}]+\}/g, (symbol) => symbol.toUpperCase())
+    .replace(/\bx\b/g, "X")
+    .replace(/\.$/, "");
   const text = named.charAt(0).toUpperCase() + named.slice(1);
   if (text.length <= QUOTE_BUDGET) return text;
   const cut = text.slice(0, QUOTE_BUDGET - 1);

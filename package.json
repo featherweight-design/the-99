@@ -47,6 +47,7 @@
     "probe:swap-engine": "tsx scripts/probe-swap-engine.ts",
     "probe:swap-take": "tsx scripts/probe-swap-take.ts",
     "probe:swap-shopping": "node scripts/probe-swap-shopping.mjs",
+    "probe:swap-sheet": "node scripts/probe-swap-sheet.mjs",
     "probe:swap-coverage": "tsx scripts/probe-swap-coverage.ts",
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",

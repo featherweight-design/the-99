@@ -160,18 +160,23 @@ describe("nameAbility: one case per pattern", () => {
 
   it("quotes an ability no pattern covers, from the card's own text", () => {
     expect(nameAbility("{t}: target player shuffles their library.", "Odd Land")).toEqual({
-      kind: "quoted", text: "{t}: target player shuffles their library",
+      kind: "quoted", text: "{T}: target player shuffles their library",
     });
   });
 });
 
 describe("quote", () => {
   it("keeps a short ability whole, restoring its capital", () => {
-    expect(quote("{t}: tap target artifact.", "X")).toBe("{t}: tap target artifact");
+    expect(quote("{t}: tap target artifact.", "Card")).toBe("{T}: tap target artifact");
+  });
+
+  it("gives back the case the readers took: the card's name, its symbols and the variable X", () => {
+    expect(quote("{x}{x}, {t}: put x charge counters on blast zone.", "Blast Zone"))
+      .toBe("{X}{X}, {T}: put X charge counters on Blast Zone");
   });
 
   it("cuts a long ability at a word boundary under the budget, with an ellipsis", () => {
-    const q = quote("{2}, {t}: each player sacrifices a creature, then each player returns a land card to their hand.", "X");
+    const q = quote("{2}, {t}: each player sacrifices a creature, then each player returns a land card to their hand.", "Card");
     expect(q.endsWith("…")).toBe(true);
     expect(q.length).toBeLessThanOrEqual(QUOTE_BUDGET);
     expect(q).not.toMatch(/\s…$/);
@@ -202,7 +207,7 @@ describe("givesUp (H3)", () => {
     const twin = L("Storage Twin", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
     expect(givesUp(ring, twin)).toEqual([]);
     expect(givesUp(ring, L("Wastes", "Basic Land", "({T}: Add {C}.)"))).toEqual([
-      { kind: "quoted", text: "{1}, {t}: put a storage counter on this land" },
+      { kind: "quoted", text: "{1}, {T}: put a storage counter on this land" },
     ]);
   });
 });

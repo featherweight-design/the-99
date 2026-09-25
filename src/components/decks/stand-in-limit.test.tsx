@@ -11,7 +11,7 @@ import { StandInLimit } from "./stand-in-limit";
 const DECK = "00000000-0000-4000-8000-000000000001";
 const draw = (stored: number | null, over = 4, count = 9) =>
   render(
-    <SwapToolsProvider deckId={DECK} storedLimitCents={stored}>
+    <SwapToolsProvider deckId={DECK} deckName="Test deck" storedLimitCents={stored}>
       <StandInLimit shoppingCount={count} overCount={over} />
     </SwapToolsProvider>,
   );
