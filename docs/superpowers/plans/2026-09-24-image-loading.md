@@ -129,11 +129,36 @@ delay for the **box**. The browser's cache means the box then paints from a requ
 flight for up to 240 ms, rather than starting one.
 
 Draws nothing different: same delay, same box, same image, same size, same position. The only change
-is when the bytes start moving. Expected: painted at ~310–340 ms instead of ~477 ms, since the
-214 ms fetch fits almost entirely inside the 240 ms wait.
+is when the bytes start moving.
 
-Proof: `probe:image-timing` before and after, at 1300, plus a mutation — revert the preload and
-confirm the figure returns to ~477 ms.
+**Measured, three runs each way, cold cache, 1300×900** (the ~477 ms in the section above came from
+an earlier, broken paint detector and is superseded by these):
+
+| | before | after |
+| --- | --- | --- |
+| Pointer enter → painted | 441 / 445 / 434 ms — median **441** | 369 / 377 / 385 ms — median **377** |
+| Fetch starts, relative to box mount | 45 / 48 / 46 ms before | 240 / 256 / 261 ms before |
+| Waiting after the box appears | ~126 ms | ~47 ms |
+
+**64 ms faster, −15%**, with no overlap between the two distributions, so the effect is larger than
+run-to-run noise. The fetch leaves about 210 ms earlier. What matters more than the total is the last
+row: the image has stopped being the thing the reader waits for once the box is up, and the ~47 ms
+that remains is mostly the probe's own screenshot latency.
+
+**Why not more.** The fetch is ~220 ms and the overlap window is 190 ms (240 ms delay minus the 50 ms
+settle), so roughly 30 ms of fetch is still exposed. Preloading at 0 ms would close that, and would
+also make a pointer brushing 99 rows request 99 images of 93 KB. The 50 ms settle buys the bound and
+costs ~30 ms of the win; that trade is deliberate.
+
+**The 240 ms delay is now the whole cost**, and it is a design decision (`OPEN_DELAY`, "what makes an
+instant appearance calm rather than twitchy"). Shortening it would make the preview appear sooner and
+is **not** this lane's call — it changes the feel of the surface, which Hugh's ruling excludes. Noted
+for him rather than built.
+
+Proof: `probe:image-timing` before and after at 1300, the figures above; the 390 run records the
+documented desktop-only skip, because `(hover: hover)` gates the surface and no phone reader reaches
+it. Two mutations, both confirmed failing: disabling the preload fails 3 unit cases, and removing the
+50 ms settle fails the brushed-row case.
 
 ### PR 2 — preconnect to the image host
 

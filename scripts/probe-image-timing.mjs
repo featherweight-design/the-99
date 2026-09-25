@@ -93,9 +93,18 @@ export function scryfallSize(url) {
  * @param {{t: number, bytes: number}[]} samples
  * @param {number} blankBytes size of a known-blank frame
  */
-export function firstPaintedSample(samples, blankBytes) {
-  const threshold = blankBytes * 1.6;
-  const hit = samples.find((s) => s.bytes > threshold);
+export function firstPaintedSample(samples) {
+  if (samples.length === 0) return null;
+  // RELATIVE TO THE RUN'S OWN MAXIMUM, not to a "blank" reference frame.
+  //
+  // The first version screenshotted the box once it was attached and called that
+  // blank. That held only while the image arrived AFTER the box — which is
+  // exactly what this lane changes. With the fetch moved into the wait the box
+  // paints on its first frame, so the reference frame was itself a painted card,
+  // nothing ever exceeded 1.6x it, and the probe reported no paint at all on the
+  // build where painting got faster.
+  const max = Math.max(...samples.map((s) => s.bytes));
+  const hit = samples.find((s) => s.bytes >= max * 0.6);
   return hit ? hit.t : null;
 }
 
@@ -118,6 +127,20 @@ async function main() {
     await cdp.send("Network.enable");
     /** Every image response CDP saw, by URL — the only place the phases exist. */
     const imageResponses = new Map();
+    /**
+     * When each image was ASKED FOR, in this script's own clock.
+     *
+     * The point of the preload is that the request leaves before the box mounts,
+     * and a paint figure alone cannot show that: a faster paint could equally be
+     * a warmer cache or a quieter network. A request timestamp earlier than the
+     * mount timestamp is the claim itself.
+     */
+    let imageRequestedAt = new Map();
+    cdp.on("Network.requestWillBeSent", (e) => {
+      const u = e.request?.url ?? "";
+      if (!u.includes(IMAGE_HOST)) return;
+      if (!imageRequestedAt.has(u)) imageRequestedAt.set(u, Date.now());
+    });
     cdp.on("Network.responseReceived", (e) => {
       if (!e.response?.url?.includes(IMAGE_HOST)) return;
       imageResponses.set(e.response.url, {
@@ -175,7 +198,11 @@ async function main() {
       // `data-decklist-row` is on the row shell deliberately, "so a probe can
       // address a decklist row without matching a composed class list"
       // (decklist-row.tsx) — and it is the element carrying the preview handlers.
-      const rows = onPage(page, "[data-decklist-row]").filter({ visible: true });
+      const rows = onPage(page, "[data-decklist-row]");
+      // WAIT for a row, never a fixed sleep. A 1500ms pause was enough until the
+      // bundle grew, and then the probe reported "no rows" on a page that renders
+      // them perfectly — a timing flake dressed as a missing surface.
+      await rows.first().waitFor({ state: "attached", timeout: 30_000 });
       const count = await rows.count();
       if (count === 0) {
         throw new Error(
@@ -186,6 +213,10 @@ async function main() {
 
       for (const mode of ["cold", "warm"]) {
         if (mode === "cold") await cdp.send("Network.clearBrowserCache");
+        // PER MODE. Shared across modes, the warm row inherited the cold row's
+        // request timestamp and reported the fetch starting eight seconds before
+        // the box — a cached image makes no request at all, and null says so.
+        imageRequestedAt = new Map();
         await page.goto(`${BASE}${deck}`, { waitUntil: "load" });
         await page.waitForTimeout(1200);
         await page.evaluate(() => {
@@ -194,26 +225,29 @@ async function main() {
         });
 
         const row = rows.nth(Math.min(2, count - 1));
+        await row.waitFor({ state: "attached", timeout: 30_000 });
         await row.scrollIntoViewIfNeeded();
         const t0 = Date.now();
         await row.hover();
 
         const box = page.locator('[data-testid="hover-preview"]');
         await box.waitFor({ state: "attached", timeout: 5000 });
-        const boxAt = Date.now() - t0;
+        const boxMountedAtAbs = Date.now();
+        const boxAt = boxMountedAtAbs - t0;
 
         // Filmstrip the box until its pixels carry a card rather than a flat
         // colour. A blank frame is measured first, from the box itself, so the
         // threshold is not a guess about this theme's background.
-        const blank = (await box.screenshot()).length;
+        // Sample a fixed window rather than stopping at a threshold: the stop
+        // condition needs the maximum, which is only known once sampling ends.
         const samples = [];
-        for (let i = 0; i < 60; i += 1) {
+        const firstBytes = (await box.screenshot()).length;
+        samples.push({ t: Date.now() - t0, bytes: firstBytes });
+        for (let i = 0; i < 8; i += 1) {
           const shot = await box.screenshot();
           samples.push({ t: Date.now() - t0, bytes: shot.length });
-          if (shot.length > blank * 1.6) break;
-          await page.waitForTimeout(20);
         }
-        const paintedAt = firstPaintedSample(samples, blank);
+        const paintedAt = firstPaintedSample(samples);
 
         const url = await box.evaluate((el) => {
           const bg = getComputedStyle(el).backgroundImage;
@@ -244,12 +278,23 @@ async function main() {
             }, url)
           : null;
 
+        // THE CLAIM, as a signed number: positive means the bytes were asked for
+        // this many ms BEFORE the box mounted, which is only possible if the
+        // request no longer waits on the open delay.
+        const requestedAbs = url ? imageRequestedAt.get(url) : null;
+        const fetchStartedBeforeBoxMs = requestedAbs ? boxMountedAtAbs - requestedAbs : null;
+
         report.rows.push({
           surface: "decklist hover preview",
           mode,
           openDelayMs: boxAt,
+          fetchStartedBeforeBoxMs,
           observedPaintedMs: paintedAt,
-          paintObservationToleranceMs: 40,
+          // The real resolution, not a hopeful one: each screenshot costs
+          // 70-100ms, so the painted figure is bounded by the gap between the
+          // last blank frame and the first painted one, reported per row.
+          paintObservationGapMs:
+            samples.length > 1 ? samples[samples.length - 1].t - samples[samples.length - 2].t : null,
           imageUrl: url,
           scryfallSize: scryfallSize(url ?? ""),
           phases: timing && !timing.missing ? phasesOf(timing) : null,
@@ -257,14 +302,15 @@ async function main() {
           timingLookup: timing?.missing ? timing : undefined,
           decodeMs,
           filmstrip: samples,
-          blankBytes: blank,
+          firstFrameBytes: firstBytes,
           note:
             mode === "cold"
               ? "browser cache cleared; the first hover of a session"
               : "image already in cache; what a second hover of the same card costs",
         });
         console.log(
-          `${mode.padEnd(5)} preview: box at ${boxAt}ms, painted at ${paintedAt ?? "?"}ms (+/-40), ` +
+          `${mode.padEnd(5)} preview: box at ${boxAt}ms, painted at ${paintedAt ?? "?"}ms, ` +
+            `fetch started ${fetchStartedBeforeBoxMs ?? "?"}ms before the box, ` +
             `fetch ${pageDuration ? pageDuration.durationMs : "?"}ms, ` +
             `${timing && !timing.missing ? Math.round(phasesOf(timing).encodedBytes / 1024) : "?"}KB, ` +
             `decode ${decodeMs ?? "?"}ms` +
