@@ -194,7 +194,9 @@ export function UnresolvedGroup({
           while a row is open rather than boxing it into half the width. */}
           <div
             className={`flex flex-col gap-[3px] md:gap-y-[4px] md:gap-x-[20px] ${expanded ? "" : "md:grid"}`}
-            style={{ gridTemplateColumns: "1fr 1fr" }}
+            // `minmax(0, 1fr)`, as the deck's own groups: an unresolved line is raw pasted text, and a
+            // bare `1fr` track grows to its whole unbroken width and pushes the page sideways.
+            style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}
           >
             {ordered.map((row) => (
               <UnresolvedRow

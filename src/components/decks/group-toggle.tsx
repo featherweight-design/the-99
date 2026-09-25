@@ -153,8 +153,8 @@ export function GroupToggle({
   // a mode that changes every row's ✕ has no business beside an unanswered question about them.
   const [keepAsking, setKeepAsking] = useState(false);
   // Absent under Shopping rather than disabled, for the view well's reason: a shopping list is a
-  // list of things to buy, and there is nothing on it to lock from here. At-rest marks and the
-  // desktop hover shortcut still work on its rows.
+  // list of things to buy, and there is nothing on it to lock from here. A locked row keeps its
+  // mark there; setting or clearing a lock happens only in the mode, in the All view.
   const lockAvailable = onLockModeChange !== undefined && filter === "all";
   // Cluster 2 and the hairline share this gate (addendum F3, delta 1). Lock cards alone is reason
   // enough for both; with the switch off it reduces to the gate they had before.

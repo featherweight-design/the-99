@@ -312,7 +312,7 @@ describe("DecklistRow's lock", () => {
 
   it("draws nothing of the lock with the switch off", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...sol, locked: true }} newestAsOf={null} />, null);
-    expect(screen.queryByTestId("row-lock-shortcut")).toBeNull();
+    expect(screen.queryByTestId("row-lock-mark")).toBeNull();
     expect(screen.queryByTestId("lock-mark")).toBeNull();
     expect(screen.queryByText(lockedCardsCopy.mark.a11y)).toBeNull();
   });
@@ -322,7 +322,6 @@ describe("DecklistRow's lock", () => {
   it("gives an unlocked row nothing of the lock outside the mode: no control, no slot", () => {
     const lock = lockValue();
     const { container } = renderRow(<DecklistRow deckId="d1" card={sol} newestAsOf={null} />, lock);
-    expect(screen.queryByTestId("row-lock-shortcut")).toBeNull();
     expect(screen.queryByTestId("row-lock-mark")).toBeNull();
     expect(screen.queryByTestId("lock-mark")).toBeNull();
     // Nothing 22px wide stands in for it either (the retired slot's width).
@@ -606,7 +605,7 @@ describe("the Lock cards mode, through BuilderShell", () => {
   it("draws none of it with the switch off", () => {
     renderShell([sol, signet], false);
     expect(lockButton()).toBeNull();
-    expect(screen.queryByTestId("row-lock-shortcut")).toBeNull();
+    expect(screen.queryByTestId("row-lock-mark")).toBeNull();
   });
 
   it("enters and leaves the mode, saying so in the live region", async () => {
