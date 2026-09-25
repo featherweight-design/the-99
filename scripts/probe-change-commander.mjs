@@ -158,7 +158,9 @@ async function walk(page, width, fixture) {
   // an inline span with the pips touching, and every markup assertion would still pass.
   const run = await rows.first().evaluate((el) => {
     // The mana-value comparison's sibling wraps the first half's run.
-    const compare = [...el.querySelectorAll("span")].find((x) => /^\((same as|\d+ (less|more) than) /.test(x.textContent ?? ""));
+    // The LEAF span only: a cost of colored pips carries no text, so the line's own wrapper also
+    // starts with "(same as" and would otherwise be taken for the comparison.
+    const compare = [...el.querySelectorAll("span")].find((x) => x.children.length === 0 && /^\((same as|\d+ (less|more) than) /.test(x.textContent ?? ""));
     const box = compare?.previousElementSibling?.lastElementChild;
     return box ? { display: getComputedStyle(box).display, gap: getComputedStyle(box).columnGap } : null;
   });

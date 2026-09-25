@@ -539,8 +539,8 @@ Scope excludes HANDOFF §4 (after the swap: header band, pending banner, review 
 
 ## Gap report (pre-PR gate, 2026-09-25)
 
-Verified row by row against this table: about 218 of 314 property rows matched. The rest fell into
-74 visual gaps and 1 state gap (27: with no commander crop the door was not drawn at all, so such a
+Verified row by row against this table: about 218 of 314 property rows matched, and about 96 did
+not. The 96 were grouped into 74 visual gaps (several rows per element), plus 1 state gap (27: with no commander crop the door was not drawn at all, so such a
 deck could not change its commander). The confirm pass left 1 gap (33: a `className` replaced
 `CostPips`' own display and gap). It is fixed, and `probe-change-commander.mjs` now asserts the run's
 computed `display: flex` / `gap: 3px`; reverting the fix fails it at both widths.
