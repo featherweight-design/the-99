@@ -14,6 +14,10 @@ import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb, CARD_ART_RING } from "../ui/commander-thumb";
+import { HandOffAnswersBlock } from "../intake/hand-off-answers";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import type { CreateAnswers } from "../../lib/intake/answers";
+import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -29,7 +33,24 @@ interface CreatePreFilledProps {
       so the picker door, which has no commander in the URL and therefore no
       selection to carry, needs no change. */
   selectedOracleIds?: string[];
+  /**
+   * Set when a Help me choose result brought the player here (HANDOFF §6): every way back leads to
+   * those results, the subs say the deck is built from the answers, the answers block is drawn
+   * when there is a row to draw, and the create carries the answers to the fill. Absent, this is
+   * today's page, byte for byte.
+   */
+  handOff?: {
+    answers: HandOffAnswers;
+    /** What `createDeck` is handed: the answers as the block shows them. */
+    create: CreateAnswers;
+    resultsHref: string;
+    changeHref: string;
+    /** False when nothing but colors or words was asked: the block has no row to draw. */
+    drawBlock: boolean;
+  };
 }
+
+const handOffCopy = helpMeChooseCopy.handOff;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -42,7 +63,9 @@ export function CreatePreFilled({
   colorIdentity,
   imageUri,
   selectedOracleIds,
+  handOff,
 }: CreatePreFilledProps) {
+  const backHref = handOff?.resultsHref ?? "/decks/new";
   const [deckName, setDeckName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -60,7 +83,7 @@ export function CreatePreFilled({
     setError(null);
     startTransition(async () => {
       try {
-        await createDeck(oracleId, trimmed, selectedOracleIds);
+        await createDeck(oracleId, trimmed, selectedOracleIds, null, handOff?.create ?? null);
       } catch (err) {
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
@@ -80,9 +103,9 @@ export function CreatePreFilled({
       >
         {/* Mobile back chevron */}
         <Link
-          href="/decks/new"
+          href={backHref}
           className="md:hidden text-[color:var(--fg-faint)]"
-          aria-label="Back to commander picker"
+          aria-label={handOff ? handOffCopy.backAria : "Back to commander picker"}
           style={{ fontSize: 18, lineHeight: 1 }}
         >
           ‹
@@ -91,7 +114,7 @@ export function CreatePreFilled({
         <div>
           {/* Desktop back link */}
           <Link
-            href="/decks/new"
+            href={backHref}
             className="hidden md:block text-[color:var(--fg-faint)]"
             style={{
               fontFamily: "var(--font-mono)",
@@ -99,7 +122,7 @@ export function CreatePreFilled({
               marginBottom: 6,
             }}
           >
-            ‹ Commanders · {name}
+            {handOff ? handOffCopy.back : <>‹ Commanders · {name}</>}
           </Link>
 
           {/* §Page title "New deck": Cinzel 700 20/28px var(--fg); desktop margin 2px 0 4px */}
@@ -112,10 +135,10 @@ export function CreatePreFilled({
 
           {/* §Subtitle: mobile mono 10px var(--fg-faint) mt 1; desktop IBM Plex Sans 14px var(--fg-muted) mb 26 */}
           <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "var(--fg-faint)", marginBottom: 0 }}>
-            Commander selected
+            {handOff ? handOffCopy.subPhone : "Commander selected"}
           </p>
           <p className="font-sans hidden md:block text-[14px]" style={{ color: "var(--fg-muted)", marginBottom: 26 }}>
-            Name your deck.
+            {handOff ? handOffCopy.sub : "Name your deck."}
           </p>
         </div>
       </div>
@@ -249,6 +272,8 @@ export function CreatePreFilled({
             </div>
           </div>
 
+          {handOff?.drawBlock && <HandOffAnswersBlock answers={handOff.answers} changeHref={handOff.changeHref} />}
+
           {/* Deck name form */}
           <form onSubmit={handleSubmit}>
             {/* §Deck name field label: IBM Plex Mono 10px 0.14em uppercase var(--fg-faint) mb 8/9px */}
@@ -301,10 +326,10 @@ export function CreatePreFilled({
                   item 2: the softer mobile treatment was drift, not intent. One
                   secondary treatment at both breakpoints. */}
               <GhostButton
-                href="/decks/new"
+                href={backHref}
                 className="block text-center text-[13px] md:text-[14px] p-[11px_0] md:p-[13px_20px]"
               >
-                Change commander
+                {handOff ? handOffCopy.backToResults : "Change commander"}
               </GhostButton>
             </div>
 

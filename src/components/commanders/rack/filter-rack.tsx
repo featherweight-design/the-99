@@ -24,6 +24,7 @@ import {
   type Lane,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
+import { DiscoverChooseLink } from "../../intake/help-me-choose-door";
 import { filterCopy } from "../../../lib/copy/lanes";
 import { useMinWidth } from "../../ui/use-min-width";
 import { AvailabilityControl } from "./availability-control";
@@ -46,6 +47,7 @@ export function FilterRack({
   sleevedByFree,
   orderPending = false,
   forceWide,
+  chooseLink = false,
 }: {
   params: LaneParams;
   lane: Lane;
@@ -67,6 +69,9 @@ export function FilterRack({
    * container, not the window, decides what fits — `/about`'s specimens.
    */
   forceWide?: boolean;
+  /** Discover only: Help me choose's link on the result line (HANDOFF §1). The route passes the
+      feature's flag, so with it off the rack draws exactly what it drew before. */
+  chooseLink?: boolean;
 }) {
   // The chassis's breakpoint, and the only one there is. A 1024 hook used to sit
   // beside it, which would have left these two lanes compact from 1000 to 1023
@@ -98,6 +103,11 @@ export function FilterRack({
   // its visible sentence. That is the right region for it: the aside explains
   // the count, and this is the region that owns the count.
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Discover's door into Help me choose, carrying the colors lit here and nothing else.
+  const choose = chooseLink && lane === "discover"
+    ? <DiscoverChooseLink colors={params.colors} exactly={params.match === "exactly"} wide={wide} />
+    : null;
 
   // Same reason as `decks-view.tsx`: unmounting the sheet at the breakpoint
   // does not close it, so crossing back would remount an open modal. Adjusted
@@ -180,6 +190,9 @@ export function FilterRack({
         onChange({ ...defaultParams(lane), order: params.order })
       }
       resultLine={resultLine}
+      // At the result line's right end on the wide rack; under the count, on a line of its own, on
+      // the compact one (`after`). Keyed to the rack's own breakpoint, the only one there is.
+      resultTrailing={wide && choose ? choose : undefined}
       // Compact's persistent row is `search · sort · Filters` (STATES §156), so
       // the trigger joins the trailing cluster rather than sitting in the
       // controls ahead of it. Wide keeps sort alone past the hairline, where
@@ -240,17 +253,20 @@ export function FilterRack({
            also carries no state across a closing: the announcement inside it
            belongs to one opening, and unmounting is what makes that true without
            a stamp tracking it. */
-        !wide && sheetOpen && (
-        <FilterSheet
-          open
-          onOpenChange={setSheetOpen}
-          params={params}
-          lane={lane}
-          onChange={onChange}
-          shown={shown}
-          resultLine={resultLine}
-        />
-      )
+        <>
+          {!wide && choose}
+          {!wide && sheetOpen && (
+            <FilterSheet
+              open
+              onOpenChange={setSheetOpen}
+              params={params}
+              lane={lane}
+              onChange={onChange}
+              shown={shown}
+              resultLine={resultLine}
+            />
+          )}
+        </>
       }
     />
   );

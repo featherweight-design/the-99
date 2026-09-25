@@ -376,7 +376,9 @@ export const addPanelCopy = {
     // beside it already says where you are.
     titlePhone: "Pick a commander",
     titleDesktop: "New deck",
-    sub: "Choose a commander from your collection.",
+    /** The desktop sub beside Help me choose's door (READINESS-audit F9); `subAlone` where no door is drawn. */
+    sub: "Pick a commander from your collection, or let us help.",
+    subAlone: "Choose a commander from your collection.",
     searchPlaceholder: "Search commanders…",
     namePlaceholder: "Deck name…",
     selectedLabel: "Selected",

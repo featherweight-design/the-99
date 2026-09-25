@@ -1,4 +1,5 @@
 import { requireUserId } from "../../lib/auth";
+import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
@@ -78,7 +79,7 @@ export default async function DiscoverPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={encoded} />
+      <DiscoveryView encoded={encoded} chooseLink={helpMeChooseEnabled()} />
     </section>
   );
 }

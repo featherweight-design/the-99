@@ -6,7 +6,7 @@ describe("the spend cap's copy", () => {
   it("names the month a pause lifts in, read in UTC", () => {
     // 00:00 UTC on October 1 is still September 30 in every US clock: the name must be October.
     expect(creditsCopy.paused(new Date("2026-10-01T00:00:00Z"))).toBe(
-      "Paused until October 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.",
+      "Paused until October 1. The app has reached its monthly limit for deeper looks, suggestions and overviews. Nothing you did caused this.",
     );
   });
 

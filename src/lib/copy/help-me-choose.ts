@@ -18,6 +18,13 @@ import { BRACKET_NAMES } from "./deck-analysis";
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
 export const helpMeChooseCopy = {
+  /** The two doors (HANDOFF §1): the create picker's box, and the link on Discover's result line. */
+  door: {
+    head: "Not sure what to build?",
+    body: "Say what you want, and we’ll rank commanders by how well they fit it, owned or not.",
+    cta: "Help me choose →",
+    discoverLead: "Not sure what you want?",
+  },
   intake: {
     title: "Help me choose",
     back: "‹ New deck", // canvas
@@ -149,6 +156,28 @@ export const helpMeChooseCopy = {
     gameChanger: (card: string, bracket: number) => `${card} is a Game Changer, and bracket ${bracket} allows none.`,
     yourself: "Or change your answers yourself.",
     yourselfLink: "change your answers", // canvas
+  },
+  /** The create page, reached from a result (HANDOFF §6): `CreatePreFilled` with the answers. */
+  handOff: {
+    back: "‹ Help me choose · results",
+    /** The phone's bare chevron, spoken. */
+    backAria: "Back to results",
+    sub: "Name your deck. It will be built from your answers.",
+    subPhone: "From your answers",
+    block: "Built from your answers",
+    change: "Change",
+    changeAria: "Change your answers",
+    keys: { theme: "Theme", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
+    themeFig: (pct: number, t: string) => `${pct}% of its decks are ${t}.`, // canvas
+    placed: "Placed in the deck because you asked for it.",
+    cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas
+    budgetFirst: (card: string, price: string) => `${card} takes ${price} of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.`,
+    budgetUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it. The fill caps the rest as usual.`,
+    /** No card to pay for first, or one already owned: the budget caps the fill alone. Eng: undrawn. */
+    budgetAlone: "The fill buys in its own order while the price fits, and finishes with basics.",
+    bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
+    bracket: (n: number) => `The fill keeps every card it chooses inside bracket ${n}’s limits.`,
+    backToResults: "Back to results",
   },
   searchFailed: {
     head: "We couldn’t find commanders just now",
