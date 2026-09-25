@@ -31,13 +31,21 @@ export async function loadFillGate(args: {
   commanderIds: readonly string[];
   answers: DeckAnswers;
   candidates: readonly FillCandidate[];
+  /**
+   * Every card placed before the fill: the build-around card and any selection the player carried
+   * across. They are in the deck whatever the fill does, so the budget charges each one it has to
+   * buy and the bracket counts each one, exactly as it counts a card the fill places.
+   */
+  placedIds?: readonly string[];
   excludeDeckId?: string;
 }): Promise<FillGate | undefined> {
   const { answers } = args;
   if (answers.budgetCents === null && (answers.bracket === null || answers.bracket >= 4)) return undefined;
 
   const card = answers.cardOracleId;
-  const fixedIds = [...args.commanderIds, ...(card ? [card] : [])];
+  const placed = [...new Set([...(card ? [card] : []), ...(args.placedIds ?? [])])]
+    .filter((id) => !args.commanderIds.includes(id));
+  const fixedIds = [...args.commanderIds, ...placed];
   const ids = [...new Set([...fixedIds, ...args.candidates.map((c) => c.oracleId)])];
 
   const gates: (FillGate | null)[] = [];
@@ -58,14 +66,19 @@ export async function loadFillGate(args: {
       return a !== undefined && a.free <= 0;
     };
     const priceOf = (id: string) => prices.get(id)?.liveCents ?? null;
-    // The build-around card is placed before the fill, so it is charged first. It is not in the
-    // pool (it was placed), so its ownership is read off availability: an absent row there is a
-    // card the player does not own. One never stocked cannot be charged and is placed anyway
-    // (§3.0): the cap then covers the rest, as usual.
-    const cardBuys = card !== null && !((availability.get(card)?.free ?? 0) > 0);
-    const cardCost = cardBuys ? priceOf(card!) ?? 0 : 0;
+    // The placed cards go in before the fill, so they are charged first. They are not in the pool
+    // (they were placed), so ownership is read off availability: an absent row there is a card the
+    // player does not own. A basic is never a buy. One never stocked cannot be charged and is placed
+    // anyway (§3.0): the cap then covers the rest, as usual.
+    const placedBasics = placed.length === 0 ? new Set<string>() : new Set(
+      ((await db.execute(sql`select c.oracle_id, c.type_line from cards c where c.oracle_id = any(${sql.param(placed)}::uuid[])`))
+        .rows as { oracle_id: string; type_line: string }[]).filter((r) => isBasicLand(r.type_line)).map((r) => r.oracle_id),
+    );
+    const placedCost = placed
+      .filter((id) => !placedBasics.has(id) && !((availability.get(id)?.free ?? 0) > 0))
+      .reduce((sum, id) => sum + (priceOf(id) ?? 0), 0);
     gates.push(budgetGate({
-      remainingCents: answers.budgetCents - cardCost,
+      remainingCents: answers.budgetCents - placedCost,
       buys: (c) => buys(c.oracleId),
       priceOf,
     }));

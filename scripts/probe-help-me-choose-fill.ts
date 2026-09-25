@@ -72,6 +72,16 @@ async function main() {
     `${budgeted.bought} cards for $${(spend(budgeted) / 100).toFixed(2)} against $${BUDGET_CENTS / 100}`);
   const neverStocked = budgeted.rows.filter((r) => !owned.has(r.oracleId) && prices.get(r.oracleId)?.liveCents == null);
   check("the budgeted fill buys nothing it cannot price", neverStocked.length === 0, `${neverStocked.length} unpriced buys`);
+  // A selection the player carried across is placed before the fill, so the budget pays for it
+  // first. The dearest unowned card under the cap is picked, so leaving it uncharged would show.
+  const selection = plain.rows
+    .filter((r) => !owned.has(r.oracleId) && (prices.get(r.oracleId)?.liveCents ?? 0) <= BUDGET_CENTS)
+    .sort((a, b) => (prices.get(b.oracleId)?.liveCents ?? 0) - (prices.get(a.oracleId)?.liveCents ?? 0))[0];
+  const selCents = prices.get(selection.oracleId)?.liveCents ?? 0;
+  const withSelection = await buildFillPlan(USER, commanders, new Set([selection.oracleId]),
+    { answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
+  check("a placed selection is charged: it and the fill's buys fit the cap together", selCents + spend(withSelection) <= BUDGET_CENTS,
+    `selection $${(selCents / 100).toFixed(2)} + fill $${(spend(withSelection) / 100).toFixed(2)} against $${BUDGET_CENTS / 100}`);
 
   console.log("\n2. The bracket at 2, read independently");
   const facts = async (p: typeof plain) => {

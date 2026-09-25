@@ -251,7 +251,7 @@ export async function buildFillPlan(
   const gate = answers
     ? await loadFillGate({
       userId, commanderIds: commanders.map((c) => c.oracleId), answers, candidates,
-      excludeDeckId: fillOptions.excludeDeckId,
+      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
     })
     : undefined;
   return planFill(candidates, { hasPartner, skeleton, synergyRank, ...fillOptions, gate });
