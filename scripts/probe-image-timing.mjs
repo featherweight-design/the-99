@@ -42,6 +42,17 @@ const args = new Map(
   }),
 );
 const WIDTH = Number(args.get("width") ?? 1300);
+/**
+ * `--first-image`: measure the FIRST card image of a cold page load instead of a
+ * hover, and report its connection phases.
+ *
+ * This is the preconnect's proof and nothing else's. A hover cannot show it: by
+ * the time a reader hovers, the page has already opened the connection for the
+ * commander art, so a hover measurement reports a reused socket either way and
+ * would price a preconnect at zero. The question is only answerable on the first
+ * image of a fresh context.
+ */
+const FIRST_IMAGE = args.get("first-image") === "true";
 const HEIGHT = WIDTH < 768 ? 844 : 900;
 
 /**
@@ -218,6 +229,153 @@ async function main() {
     for (let i = 0; i < 2; i += 1) {
       await page.goto(`${BASE}${deck}`, { waitUntil: "load" });
       await page.waitForTimeout(1500);
+    }
+
+    if (FIRST_IMAGE) {
+      // THE PRECONNECT'S PROOF, and it took three corrections before it could
+      // tell a warmed socket from a warm one. What each guards against:
+      //
+      //   SOCKET-COLD, not merely cache-cold. An earlier version signed in on `/`
+      //   inside the same context and then navigated to the deck page. `/` draws
+      //   commander art, so a `cards.scryfall.io` socket could already be open
+      //   before the page under test loaded, and every variant would report a
+      //   reused connection. Sign-in happens once, its cookies are carried by
+      //   `storageState`, and each run gets a context that has never spoken to
+      //   the image host.
+      //
+      //   THE REQUEST THAT OPENED THE SOCKET, not the first response. The page
+      //   fires several image requests at once over HTTP/2; a sibling that joins
+      //   an already-opening connection reports dnsStart and sslStart as -1, so
+      //   keying on the first RESPONSE prints "dns reused | tls reused" — exactly
+      //   what a working preconnect produces — on a build that has none. Requests
+      //   are ordered by `requestWillBeSent` and correlated by `requestId`.
+      //
+      //   REAL BYTES. `encodedDataLength` is only final at `loadingFinished`;
+      //   passing 0 made every row claim a 0-byte fetch and made a disk-cache hit
+      //   indistinguishable from a fresh one.
+      const authed = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT } });
+      const authPage = await authed.newPage();
+      await setupClerkTestingToken({ page: authPage });
+      await authPage.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+      await authPage.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 30_000 });
+      const authFailure = await authPage.evaluate(
+        async ([email, password]) => {
+          try {
+            const signIn = window.Clerk.client.signIn;
+            let attempt = email.includes("+clerk_test")
+              ? await signIn.create({ identifier: email })
+              : await signIn.create({ identifier: email, password });
+            if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
+              const f = attempt.supportedFirstFactors?.find((x) => x.strategy === "email_code");
+              await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: f?.emailAddressId });
+              attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
+            }
+            if (attempt.status !== "complete") return `sign-in status: ${attempt.status}`;
+            await window.Clerk.setActive({ session: attempt.createdSessionId });
+            return null;
+          } catch (e) {
+            return e?.errors?.[0]?.longMessage ?? String(e);
+          }
+        },
+        [EMAIL, PASSWORD],
+      );
+      if (authFailure) throw new Error(`Clerk sign-in failed: ${authFailure}`);
+      const state = await authed.storageState();
+      await authed.close();
+
+      const runs = [];
+      for (let run = 1; run <= 3; run += 1) {
+        const cold = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT }, storageState: state });
+        const cp = await cold.newPage();
+        const ccdp = await cold.newCDPSession(cp);
+        await ccdp.send("Network.enable");
+        /** Image requests in the order the browser issued them. */
+        const order = [];
+        const byId = new Map();
+        ccdp.on("Network.requestWillBeSent", (e) => {
+          if (!e.request?.url?.includes(IMAGE_HOST)) return;
+          order.push(e.requestId);
+          byId.set(e.requestId, { url: e.request.url.slice(-42) });
+        });
+        ccdp.on("Network.responseReceived", (e) => {
+          const rec = byId.get(e.requestId);
+          if (!rec) return;
+          rec.timing = e.response.timing;
+          rec.status = e.response.status;
+          // BOTH flags, matching the hover handler at line 186. A service
+          // worker can satisfy an image with a 200 and real bytes and NO
+          // handshake, which passes the byte and status assertions below while
+          // measuring no connection at all. There is no service worker in this
+          // app today — which is exactly why the inconsistency would have sat
+          // here unnoticed until one arrived. The PWA work already scoped for
+          // this repo would add one.
+          rec.fromCache = Boolean(e.response.fromDiskCache || e.response.fromServiceWorker);
+        });
+        ccdp.on("Network.loadingFinished", (e) => {
+          const rec = byId.get(e.requestId);
+          if (rec) rec.encodedDataLength = e.encodedDataLength;
+        });
+
+        // STRAIGHT to the page under test. No `/` visit, so nothing has opened a
+        // connection to the image host before the navigation being measured.
+        await cp.goto(`${BASE}${deck}`, { waitUntil: "load" });
+        await cp.waitForTimeout(4000);
+
+        if (order.length === 0) {
+          throw new Error(`run ${run} recorded no card image on a page that draws art — nothing measured`);
+        }
+        const firstId = order[0];
+        const rec = byId.get(firstId);
+        if (!rec?.timing) {
+          throw new Error(`run ${run} saw the first image request but no response timing for it`);
+        }
+        const phases = phasesOf({
+          timing: rec.timing,
+          encodedDataLength: rec.encodedDataLength ?? 0,
+          fromCache: rec.fromCache ?? false,
+          status: rec.status,
+        });
+        // A SOCKET-COLD SAMPLE HAS TO BE A REAL FETCH, and these three clauses
+        // say so rather than recording it and hoping. Each degenerate case — a
+        // cache hit, an error response, a zero-byte body — produces
+        // `dns reused | tls reused`, the exact output a working preconnect gives.
+        // Accepting one would let this mode agree with the change on a build that
+        // has none, which is the failure it was rebuilt to avoid.
+        if (phases.fromCache) {
+          throw new Error(
+            `run ${run} was served the first image from cache, so it measures no handshake — the context was not cold`,
+          );
+        }
+        if (phases.status !== 200) {
+          throw new Error(`run ${run} first image returned HTTP ${phases.status}, not a fetch worth timing`);
+        }
+        // A FLOOR, not merely non-zero. Round 1 of review caught that a 0-byte
+        // body was accepted; round 3 caught that the fix was the instance rather
+        // than the class — the host filter admits any 200 from
+        // cards.scryfall.io, so a truncated body, an error page served as 200, or
+        // a stray non-card asset would still pass. A `normal` card JPEG measures
+        // 90-96KB, so anything under 40KB is not the thing this claims to time.
+        if (phases.encodedBytes < 40_000) {
+          throw new Error(
+            `run ${run} recorded ${phases.encodedBytes} bytes for the first image — a card image at ` +
+              `\`normal\` size is ~90KB, so this is a truncated body or not a card image at all`,
+          );
+        }
+        runs.push({ url: rec.url, imageRequestsOnPage: order.length, ...phases });
+        console.log(
+          `run ${run}: dns ${phases.dnsMs ?? "reused"} | tls ${phases.tlsMs ?? "reused"} | ` +
+            `connect ${phases.connectMs ?? "reused"} | ttfb ${phases.ttfbMs}ms | ` +
+            `${Math.round((phases.encodedBytes || 0) / 1024)}KB | ${order.length} image request(s) on the page`,
+        );
+        await cold.close();
+      }
+      report.rows.push({ surface: "first card image of a socket-cold page load", mode: "first-image", runs });
+      const outFirst = args.get("out");
+      if (outFirst) {
+        writeFileSync(outFirst, JSON.stringify(report, null, 2));
+        console.log(`wrote ${outFirst}`);
+      }
+      return;
     }
 
     if (WIDTH >= 768) {
