@@ -62,6 +62,8 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  *
  * Refused when the deck no longer holds the cut, when the add is a non-basic it already holds,
  * or when the add no longer fits the deck's commanders — the deck may have moved since the run.
+ * And refused when the player has LOCKED the cut (Locked, F4; `planSwap`'s `cutLocked`): the one
+ * refusal where the cut is still in the deck.
  */
 export async function applyItem(itemId: string, userId: string): Promise<string | null> {
   return db.transaction(async (tx) => {

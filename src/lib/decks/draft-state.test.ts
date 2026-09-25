@@ -205,6 +205,11 @@ describe("releasableClaims", () => {
     expect(releasableClaims(availability([claim({ mature: false })]))).toEqual([]);
   });
 
+  // L2: Pull it never takes from a deck where the card is locked.
+  it("excludes a holder that has locked the card", () => {
+    expect(releasableClaims(availability([claim({ locked: true })]))).toEqual([]);
+  });
+
   it("reads a card nobody claims as nothing to release", () => {
     expect(releasableClaims(undefined)).toEqual([]);
   });
@@ -270,6 +275,17 @@ describe("pullCandidate", () => {
       claim({ id: "d-commander", commander: true }),
     ]));
     expect(chosen?.id).toBe("d-commander");
+  });
+
+  // Until the locked guard tag exists (Locked PR 5), a locked holder draws NO control: the control
+  // offers a pull for anything neither commander nor pending, and the server refuses a locked pull.
+  it("hands no locked claim to the control, even beside a pending one", () => {
+    expect(pullCandidate(availability([claim({ locked: true })]))).toBeNull();
+    expect(pullCandidate(availability([claim({ locked: true, pending: true })]))).toBeNull();
+    expect(pullCandidate(availability([
+      claim({ id: "d-locked", locked: true }),
+      claim({ id: "d-pending", pending: true }),
+    ]))?.id).toBe("d-pending");
   });
 
   it("draws nothing for a card with no sleeved holder", () => {

@@ -44,6 +44,9 @@ export type TuningItem = {
   /** The deck already holds the add (an applied swap, or a basic). Its claim is then read with this
    *  deck's own ask subtracted, so `free === 0` means "holds what it needs", not contention. */
   addInDeck: boolean;
+  /** The player has locked the cut since the run (Locked, F4): the third reason a row no longer
+   *  applies, and the one it names first, since the cut is still in the deck. */
+  cutLocked: boolean;
 };
 
 export type TuningRun = {

@@ -19,7 +19,8 @@ import { cards, deckCards, deckProxies, decks, type ApplySnapshot } from "../../
 import { validateCardForDeck } from "../decks/add-validation";
 import { isBasicLand } from "../decks/grouping";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
-import { pruneOrphanLocks } from "../decks/locks";
+import { isLiveLocked, pruneOrphanLocks } from "../decks/locks";
+import { neverCutEnabled } from "../decks/never-cut-flag";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -35,7 +36,13 @@ export type SwapRefusal =
   /** The deck already holds the card being added, and it is not a basic. */
   | "addHeld"
   /** The add no longer fits the deck's commanders: not legal, or outside their identity. */
-  | "addIllegal";
+  | "addIllegal"
+  /**
+   * The player has locked the card being cut (Locked, F4): never cut. A FILTER here, under the deck
+   * row lock both callers take, so tuning's Apply and the swap tools' Take refuse alike whatever a
+   * model or a stale list asked for. Only while `NEVER_CUT_ENABLED` is on (D3).
+   */
+  | "cutLocked";
 
 export type SwapPlan = { ok: true; snapshot: ApplySnapshot } | { ok: false; reason: SwapRefusal };
 
@@ -62,6 +69,7 @@ export async function planSwap(tx: Tx, deckId: string, cutOracleId: string, addO
   const cut = await readRow(tx, deckId, cutOracleId);
   const add = await readRow(tx, deckId, addOracleId);
   if (!deck || !cut) return { ok: false, reason: "cutGone" };
+  if (neverCutEnabled() && (await isLiveLocked(tx, deckId, cutOracleId))) return { ok: false, reason: "cutLocked" };
 
   const facts = await tx.select({
     oracleId: cards.oracleId, typeLine: cards.typeLine,
@@ -140,6 +148,9 @@ export async function restoreSwap(
     ? cut === null
     : cut?.quantity === cutLeft && cut.auto === snap.cut.auto);
   if (!addAsApplied || !cutAsApplied) return false;
+  // A lock put on the add since is an edit like a `keep` pressed since: the undo would take that
+  // card back out (or a copy of it), so it refuses and writes nothing (Locked, the plan's PR 2).
+  if (neverCutEnabled() && (await isLiveLocked(tx, deckId, addOracleId))) return false;
 
   if (snap.add.quantity === 0) {
     await tx.delete(deckCards).where(rowOf(deckId, addOracleId));

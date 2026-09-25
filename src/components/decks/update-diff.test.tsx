@@ -36,6 +36,7 @@ function preview(over: Partial<DeckUpdatePreview> = {}): DeckUpdatePreview {
     notes: [],
     existingUnresolvedCount: 2,
     out: [row("out-1"), row("out-2")],
+    lockedOut: [],
     in: [row("in-1", { sourceLine: 4 })],
     unchanged: [row("same-1")],
     recounted: [],
@@ -75,6 +76,21 @@ describe("UpdateDiff", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.keepAria("Card out-1") }));
     fireEvent.click(screen.getByRole("button", { name: copy.applyAria("1", "1", "Kykar, Wind's Fury") }));
     expect(onApply).toHaveBeenCalledWith(["out-1"]);
+  });
+
+  // Locked (never cut), Hugh 2026-09-25: a locked card starts KEPT, and the player can still untick it.
+  it("starts a locked card kept", () => {
+    const { onApply } = renderDiff({ lockedOut: ["out-2"] });
+    expect(screen.getByRole("button", { name: copy.keepAria("Card out-2") }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: copy.applyAria("1", "1", "Kykar, Wind's Fury") }));
+    expect(onApply).toHaveBeenCalledWith(["out-2"]);
+  });
+
+  it("lets the player untick a locked card, which then leaves", () => {
+    const { onApply } = renderDiff({ lockedOut: ["out-2"] });
+    fireEvent.click(screen.getByRole("button", { name: copy.keepAria("Card out-2") }));
+    fireEvent.click(screen.getByRole("button", { name: copy.applyAria("1", "2", "Kykar, Wind's Fury") }));
+    expect(onApply).toHaveBeenCalledWith([]);
   });
 
   it("takes a keep back on a second click", () => {

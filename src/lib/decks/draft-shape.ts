@@ -158,7 +158,7 @@ export function hasChanges(state: DraftState): boolean {
  */
 export function releasableClaims(a: Availability | undefined): DeckClaim[] {
   if (!a) return [];
-  return a.claims.filter((c) => c.mature && c.senior && !c.pending && !c.commander);
+  return a.claims.filter((c) => c.mature && c.senior && !c.pending && !c.commander && !c.locked);
 }
 
 /**
@@ -174,7 +174,11 @@ export function pullCandidate(a: Availability | undefined): DeckClaim | null {
   const releasable = releasableClaims(a)[0];
   if (releasable) return releasable;
   const sleeved = (a?.claims ?? []).filter((c) => c.mature);
-  return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.pending) ?? null;
+  // A LOCKED claim is never handed back here (L2): `PullControl` draws an offer for any claim that
+  // is neither a commander nor pending, and the server refuses a locked pull, so returning it would
+  // draw a control that can only fail. It stays null (no control at all) until Locked PR 5 draws
+  // the locked guard tag beside `pending`'s and adds the fallback with it.
+  return sleeved.find((c) => c.commander && !c.locked) ?? sleeved.find((c) => c.pending && !c.locked) ?? null;
 }
 
 /**

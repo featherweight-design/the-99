@@ -140,7 +140,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
     });
   }
 
-  function apply(keep: string[]) {
+  function apply(keep: string[], lockedSeen: string[]) {
     setRefused(false);
     startApplying(async () => {
       try {
@@ -149,6 +149,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
           text: await listText(),
           source: mode,
           keep,
+          lockedSeen,
         });
         // Provenance for one navigation, not deck state — the same reason the
         // import's `?imported=1` lives in the URL rather than in a column.
@@ -229,7 +230,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
       <UpdateDiff
         preview={step.preview}
         applying={applying}
-        onApply={apply}
+        onApply={(keep) => apply(keep, step.preview.lockedOut ?? [])}
         onCancel={() => router.push(`/decks/${deckId}`)}
         onImportAsNew={() => router.push("/decks/import")}
       />

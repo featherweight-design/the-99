@@ -18,9 +18,18 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { commitVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
-import { liveLockedIds, lockedOracleIds, pruneOrphanLocks, reviveDormantLocks } from "../src/lib/decks/locks";
+import {
+  isLiveLocked, liveLockedIds, lockedOracleIds, notLiveLocked, pruneOrphanLocks, reviveDormantLocks,
+} from "../src/lib/decks/locks";
+import { applySwap, planSwap, restoreSwap } from "../src/lib/swaps/draft-swap";
+import { loadAvailability } from "../src/lib/decks/availability-query";
+import { deckCards } from "../src/db/schema";
+import { and, eq } from "drizzle-orm";
 
 neonConfig.webSocketConstructor = ws;
+// Every filter reads the switch (D3). Sections 9 and on turn it off for one step each to show the
+// filters stand down with it.
+process.env.NEVER_CUT_ENABLED = "true";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -39,13 +48,22 @@ async function main() {
     select oracle_id from cards
     where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
     order by oracle_id limit 1`);
+  // W is also a swap's ADD (sections 9 and 10), so it has to fit any commander: colorless and legal,
+  // or `planSwap` refuses it as addIllegal and the section measures the wrong refusal.
+  const { rows: [spare] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
+      and commander_legal and cardinality(color_identity) = 0
+    order by oracle_id limit 1`);
   const { rows: body } = await fixture.execute<{ oracle_id: string }>(sql`
     select oracle_id from cards
     where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary'
-    order by oracle_id limit 4`);
-  if (legends.length < 1 || body.length < 4) throw new Error("catalog is empty — seed it first");
+      and oracle_id <> ${spare?.oracle_id ?? null}
+    order by oracle_id limit 3`);
+  if (legends.length < 1 || body.length < 3 || !spare) throw new Error("catalog is empty — seed it first");
   const commander = legends[0].oracle_id;
-  const [X, Y, Z, W] = body.map((r) => r.oracle_id);
+  const [X, Y, Z] = body.map((r) => r.oracle_id);
+  const W = spare.oracle_id;
 
   // The lock, as `setCardLocked` writes it: an upsert that wakes a dormant row.
   const lock = (deckId: string, oid: string) => fixture.execute(sql`
@@ -162,8 +180,75 @@ async function main() {
       check("8 · another account reads no locks on this deck", [...(await lockedOracleIds(d.id, `${USER}-other`))], []);
       check("8 · the owner reads its lock", [...(await lockedOracleIds(d.id, USER))], [X]);
     }
+
+    // PR 2, THE FILTERS. Each one a filter inside the writer's own transaction (D4).
+    // `planSwap` and `restoreSwap` take the src/db transaction type; the probe's is the same driver.
+    type SwapTx = Parameters<typeof planSwap>[0];
+
+    // 9. F4: tuning's Apply and the swap tools' Take both plan through `planSwap`, which refuses a
+    //    locked cut. With the switch off the same swap plans.
+    {
+      const d = await freshDeck("swap-cut");
+      await lock(d.id, X);
+      const locked = await fixture.transaction((tx) => planSwap(tx as unknown as SwapTx, d.id, X, W));
+      check("9 · a swap cutting a locked card is refused", locked.ok ? "ok" : locked.reason, "cutLocked");
+      process.env.NEVER_CUT_ENABLED = "false";
+      const off = await fixture.transaction((tx) => planSwap(tx as unknown as SwapTx, d.id, X, W));
+      process.env.NEVER_CUT_ENABLED = "true";
+      check("9 · with the switch off, the same swap plans (D3)", off.ok, true);
+    }
+
+    // 10. Undoing a swap whose ADD the player has locked since refuses, and writes nothing.
+    {
+      const d = await freshDeck("swap-undo");
+      const snap = await fixture.transaction(async (tx) => {
+        const plan = await planSwap(tx as unknown as SwapTx, d.id, Y, W);
+        if (!plan.ok) throw new Error(`fixture swap refused: ${plan.reason}`);
+        await applySwap(tx as unknown as SwapTx, d.id, Y, W, plan.snapshot);
+        return plan.snapshot;
+      });
+      await lock(d.id, W);
+      const undone = await fixture.transaction((tx) => restoreSwap(tx as unknown as SwapTx, d.id, Y, W, snap));
+      check("10 · an undo that would take out a card locked since is refused", undone, false);
+      check("10 · and the locked add is still in the deck", await rowOf(d.id, W), "live");
+    }
+
+    // 11. L3: the sweeps delete auto cards with `notLiveLocked()` in their own statement. A locked
+    //     auto card stays, an unlocked one goes, and a DORMANT row protects nothing.
+    {
+      const d = await freshDeck("sweep");
+      await fixture.execute(sql`update deck_cards set auto = true where deck_id = ${d.id}`);
+      await lock(d.id, X);
+      const swept = await fixture.delete(deckCards)
+        .where(and(eq(deckCards.deckId, d.id), eq(deckCards.auto, true), notLiveLocked()))
+        .returning({ oracleId: deckCards.oracleId });
+      check("11 · the sweep leaves the locked auto card", swept.map((r) => r.oracleId).includes(X), false);
+      check("11 · and takes the unlocked ones", swept.map((r) => r.oracleId).sort(), [Y, Z].sort());
+    }
+
+    // 12. L2: Pull it's read marks a claim from a deck holding the card locked, and the check the
+    //     action asks (`isLiveLocked`) answers it against a real Postgres. The action itself needs a
+    //     signed-in request this script does not have, so WHERE it asks (under the source deck's
+    //     row lock, before any write) is pinned by `locks.test.ts`, which fails with it removed.
+    {
+      // The claim read reports claims on cards the account OWNS, so the fixture owns two copies.
+      await fixture.execute(sql`
+        insert into collection_items (user_id, oracle_id, quantity, set_code)
+        values (${USER}, ${X}, 2, 'probe')`);
+      const d = await freshDeck("pull");
+      await lock(d.id, X);
+      const claims = (await loadAvailability(USER, { oracleIds: [X] })).get(X)?.claims ?? [];
+      const mine = claims.find((c) => c.id === d.id);
+      check("12 · the claim read marks the locked holder", mine?.locked, true);
+      check("12 · the server's own check refuses it", await isLiveLocked(fixture, d.id, X), true);
+      const other = await freshDeck("pull-other");
+      const otherClaim = ((await loadAvailability(USER, { oracleIds: [X] })).get(X)?.claims ?? [])
+        .find((c) => c.id === other.id);
+      check("12 · a deck that did not lock it is not marked", otherClaim?.locked, false);
+    }
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
     await pool.end();
   }
 

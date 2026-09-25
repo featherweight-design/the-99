@@ -58,7 +58,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { pruneOrphanLocks } from "../../lib/decks/locks";
+import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
   PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
@@ -886,8 +886,14 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
     // it sweeps, and still relies on Postgres re-evaluating its WHERE after a
     // concurrent keep, so a card kept mid-sweep is still passed by.
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    // A LOCKED auto card stays (Locked, L3): the sweep never cuts it. Inside the delete, under the
+    // deck row lock above, and only while `NEVER_CUT_ENABLED` is on (D3).
     const rows = await tx.delete(deckCards)
-      .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
+      .where(and(
+        eq(deckCards.deckId, deckId),
+        eq(deckCards.auto, true),
+        neverCutEnabled() ? notLiveLocked() : undefined,
+      ))
       .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
     if (rows.length > 0) {
       await pruneOrphanProxies(tx, deckId);
@@ -1263,6 +1269,8 @@ export async function undoFillPass(
             eq(deckCards.oracleId, row.oracleId),
             eq(deckCards.auto, true),
             gt(deckCards.quantity, held),
+            // A locked stack keeps every copy: a decrement removes copies with no delete (L3).
+            neverCutEnabled() ? notLiveLocked() : undefined,
           ))
           .returning({ oracleId: deckCards.oracleId });
         if (decremented.length > 0) removedCards += held;
@@ -1284,6 +1292,7 @@ export async function undoFillPass(
         eq(deckCards.auto, true),
         lte(deckCards.quantity, held),
         inArray(deckCards.oracleId, oracleIds),
+        neverCutEnabled() ? notLiveLocked() : undefined,
       )).returning({ quantity: deckCards.quantity });
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
       if (deleted.length > 0) {
@@ -1944,6 +1953,13 @@ export async function pullCardFromDeck(
     // problem with their own draft.
     if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
       return { ok: false, message: "That card is that deck's commander." };
+    }
+
+    // L2: a card the source deck has LOCKED is never pulled out of it. Under that deck's row lock,
+    // taken above, so a lock landing first is honoured and none can land between this and the
+    // delete. Only while `NEVER_CUT_ENABLED` is on (D3).
+    if (neverCutEnabled() && (await isLiveLocked(tx, sourceDeckId, oracleId))) {
+      return { ok: false, message: PULL_REFUSED_LOCKED };
     }
 
     // Ownership proves the player may act on both decks; it does not prove this

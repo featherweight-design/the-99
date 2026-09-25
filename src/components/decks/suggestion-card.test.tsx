@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { TuningItem } from "../../lib/tuning/state";
@@ -39,6 +40,7 @@ const item: TuningItem = {
   applies: true,
   cutInDeck: true,
   addInDeck: false,
+  cutLocked: false,
 };
 
 const ok = async () => ({ ok: true as const });
@@ -159,6 +161,13 @@ describe("SuggestionCard", () => {
   it("says which half broke when a swap no longer applies, and offers no apply", () => {
     draw({ ...item, applies: false, cutInDeck: false });
     expect(screen.getByText(copy.cutGone("Divination"))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: copy.apply })).not.toBeInTheDocument();
+  });
+
+  // Locked, F4: a locked cut is still IN the deck, so the row names the lock, not the add.
+  it("names a locked cut as the reason, ahead of the add being in", () => {
+    draw({ ...item, applies: false, cutInDeck: true, cutLocked: true });
+    expect(screen.getByText(lockedCardsCopy.tuning.cutLocked("Divination"))).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: copy.apply })).not.toBeInTheDocument();
   });
 });
