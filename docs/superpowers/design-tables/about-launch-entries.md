@@ -246,7 +246,7 @@ fallback are not drawn, as the table says.
 | 5.7 | too few fit, answers to loosen | not drawn. Key 4 per H6 | not drawn | audit H6 |
 | 5.8 | deeper read (one credit) | not drawn. Key 3, gated on #1000 | not drawn | audit H2 |
 | 5.9 | held mark, trial loading or failed, over budget, buy with no price | not specified | not specified | — |
-| 5.10 | About sheet (N2) | Listed first of three titles, then `and 2 more` (README's batched model) | — | README, canvas §0 |
+| 5.10 | About sheet (N2) | **Superseded by G1.** Each entry is announced by its own switch's flip, so the sheet names Help me choose alone when its switch turns on (`probe:about --flip` F4b), never as one of a batch of three | — | README, audit G1 |
 | 5.11 | About index (O1) | Listed by title only, in page order | same | README, audit Structure |
 
 ## Verification (Agent 2 and Agent 3), 2026-09-25

@@ -473,6 +473,8 @@ async function figureFacts(page) {
           order: ["Pantlaza", "Gishath"].map((name) => fig.indexOf(name)),
           // One lit figure per row: each row has two figures, so SETS RANK draws on both.
           setsRank: fig.split("SETS RANK").length - 1,
+          // The lit figures themselves, as `figures()` rounds them: 41% and 34%.
+          pcts: ["74%", "41%", "81%", "34%"].map((p) => fig.includes(p)),
         };
       })(),
       pageOverflow: document.documentElement.scrollWidth - innerWidth,
@@ -567,7 +569,11 @@ async function flipWalk(browser, who) {
       );
       report(
         `F5 ${w}: Help me choose draws Pantlaza above Gishath, each with its figure lit SETS RANK`,
-        f.choose !== null && f.choose.order[0] >= 0 && f.choose.order[0] < f.choose.order[1] && f.choose.setsRank === 2,
+        f.choose !== null &&
+          f.choose.order[0] >= 0 &&
+          f.choose.order[0] < f.choose.order[1] &&
+          f.choose.setsRank === 2 &&
+          f.choose.pcts.every(Boolean),
         JSON.stringify(f.choose),
       );
       report(
