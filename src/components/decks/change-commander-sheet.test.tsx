@@ -44,14 +44,30 @@ describe("ChangeCommanderSheet", () => {
     expect(shortName("Korvold, Fae-Cursed King")).toBe("Korvold");
   });
 
-  it("draws Yours whole and the first 8 to buy, then Show more", async () => {
-    readChangeCandidates.mockResolvedValue(data());
+  it("draws each group's first 5, then Show all and Show fewer on the swap sheet's toggle", async () => {
+    const yours = Array.from({ length: 7 }, (_, i) => cand(half(`Own ${i}`), 40 - i));
+    readChangeCandidates.mockResolvedValue(data({ yours }));
     mount();
-    await screen.findByText("Yours · 1");
-    expect(screen.getByText("To buy · 10")).toBeTruthy();
-    expect(screen.getAllByTestId("change-commander-row").length).toBe(1 + 8);
-    fireEvent.click(screen.getByRole("button", { name: "Show 2 more" }));
-    expect(screen.getAllByTestId("change-commander-row").length).toBe(11);
+    await screen.findByText("Yours · 7");
+    expect(screen.getAllByTestId("change-commander-row").length).toBe(5 + 5);
+    const own = screen.getByRole("button", { name: "Show all 7" });
+    const buy = screen.getByRole("button", { name: "Show all 10" });
+    expect(own.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(own);
+    expect(screen.getAllByTestId("change-commander-row").length).toBe(7 + 5);
+    expect(own.getAttribute("aria-expanded")).toBe("true");
+    expect(own.textContent).toContain("Show fewer");
+    fireEvent.click(buy);
+    expect(screen.getAllByTestId("change-commander-row").length).toBe(7 + 10);
+    fireEvent.click(own);
+    expect(screen.getAllByTestId("change-commander-row").length).toBe(5 + 10);
+  });
+
+  it("draws no toggle under a group of 5 or fewer", async () => {
+    readChangeCandidates.mockResolvedValue(data({ toBuy: data().toBuy.slice(0, 5) }));
+    mount();
+    await screen.findByText("To buy · 5");
+    expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();
   });
 
   it("names the figure and opens the cards it counts", async () => {

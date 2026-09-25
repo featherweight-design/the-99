@@ -37,8 +37,8 @@ export const changeCommanderCopy = {
     groupNote: "by figure",
     groupNotePairBuy: "a half to buy",
     ownsNone: "You own none of them yet.",
-    more: (step: number) => `Show ${step} more`,
-    moreLeft: (n: number) => `${n} left`,
+    showAll: (n: number) => `Show all ${n}`,
+    showFewer: "Show fewer",
     // The one figure. "its" for a single, "their" for a pair.
     figure: (n: number, of: number, pair: boolean) => `${n} of ${of} are in ${pair ? "their" : "its"} decks`,
     figureAria: (n: number, of: number, name: string) => `${n} of ${of} cards in this deck are in ${name}'s decks. Show them.`,

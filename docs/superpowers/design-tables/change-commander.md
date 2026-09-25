@@ -171,38 +171,43 @@ Scope excludes HANDOFF §4 (after the swap: header band, pending banner, review 
 | Section | layout | flex column | flex column | canvas |
 | | order | Yours, then To buy | same | HANDOFF §2.1 |
 | | rendering | a group with no rows is not drawn | same | HANDOFF §2.1 |
-| Heading row | layout | flex, align baseline, space-between, gap 10px | same | canvas |
-| | padding-bottom | 8px | 8px | canvas |
-| | border-bottom | 1px solid `--elevated` | same | HANDOFF §2.1; canvas |
+| Heading row | component | `SheetGroupHeading as="h3"` (`src/components/ui/sheet-group.tsx`), the swap sheet's `StandInGroup` heading | same | Hugh's ruling, 2026-09-25 |
+| | layout | flex, align baseline, space-between, gap 10px | same | canvas |
+| | padding-bottom | 6px | 6px | Hugh's ruling, 2026-09-25; was 8px (canvas) |
+| | border-bottom | 1px solid `--border` | same | Hugh's ruling, 2026-09-25; was `--elevated` (HANDOFF §2.1) |
 | Heading (h3) | copy key | `sheet.groupYours(n)` / `sheet.groupBuy(n)`; n = whole group count | same | copy; HANDOFF §2.5 |
-| | typography | mono 400, 10.5px, letter-spacing 0.16em, uppercase | same | HANDOFF §2.1; canvas |
+| | typography | mono 400, 9.5px, letter-spacing 0.12em, uppercase | same | Hugh's ruling, 2026-09-25; was 10.5px / 0.16em (HANDOFF §2.1) |
 | | color | `--fg-faint` | `--fg-faint` | same |
 | Right note | content | canvas: `by figure`; pair To buy: `a half to buy` (no key in the copy file) | same | canvas |
-| | typography | mono 10px, text-align right | same | canvas |
+| | typography | mono 10px, white-space nowrap | same | canvas; Hugh's ruling, 2026-09-25 |
 | | color | `--fg-locked` | `--fg-locked` | HANDOFF §2.1 |
 
-### 3.4 Show more (To buy only)
+### 3.4 Show all / Show fewer (both groups)
+
+Hugh's ruling, 2026-09-25: each group draws its first 5 and takes the swap sheet's toggle. This replaces the
+handoff's §2.5 `Show more` (+8, To buy only, focus to the first new row).
 
 | Element | Property | Mobile | Desktop | Source |
 |---|---|---|---|---|
-| Control | layout | inline-flex, align-self flex-start, align center, gap 8px | same | canvas |
-| | min-height | 44px | 44px | HANDOFF §2.1; canvas |
-| | typography | mono 11px | mono 11px | same |
-| | color | `--accent` | `--accent` | same |
-| Label | copy key | `sheet.more(8)` | same | copy; HANDOFF §2.5 |
-| | underline | border-bottom 1px dotted `--accent` | same | canvas |
-| Note | copy key | `sheet.moreLeft(n)` | same | copy |
-| | color | `--fg-faint` | `--fg-faint` | canvas |
-| Behavior | press | appends 8 rows; focus moves to the first new row | same | HANDOFF §2.5; READINESS eng 9 |
-| | rendering | under To buy only; hidden when none left | same | STATES 12 |
+| Control | component | `SheetGroupToggle` (`src/components/ui/sheet-group.tsx`), the swap sheet's `StandInGroup` toggle | same | Hugh's ruling, 2026-09-25 |
+| | layout | flex, align center, gap 8px, full width, border-bottom 1px `--border` | same | swap sheet |
+| | min-height | 44px | 34px | swap sheet |
+| | padding-left | 68px (the rows' name column: 56px thumb + 12px gap) | same | Hugh's ruling, 2026-09-25 |
+| | typography | 12.5px, weight 500 | same | swap sheet |
+| | color | `--accent`; hover `--accent-hover` | same | swap sheet |
+| Label | copy key | `sheet.showAll(n)`, n = whole group count; expanded: `sheet.showFewer` | same | Hugh's ruling, 2026-09-25 |
+| Caret | glyph | `▾` folded, `▴` expanded, 10px, `--fg-faint`, aria-hidden | same | swap sheet |
+| Behavior | press | expands the group in place; pressed again, folds it back to 5 | same | Hugh's ruling, 2026-09-25 |
+| | aria | `aria-expanded` | same | swap sheet |
+| | rendering | under each group longer than 5; none under a group of 5 or fewer | same | Hugh's ruling, 2026-09-25 |
 
 ### 3.5 Order and length (§2.4, §2.5)
 
 | Rule | Value | Source |
 |---|---|---|
 | Sort | group(owned) → figure desc → name asc | HANDOFF §2.4 |
-| Yours | every half owned (free, held, or in this deck); drawn whole | HANDOFF §2.4, §2.5 |
-| To buy | any half to buy (a half-owned pair sorts here whatever its figure); first 8 | HANDOFF §2.4; H1 |
+| Yours | every half owned (free, held, or in this deck); first 5 | HANDOFF §2.4; Hugh's ruling, 2026-09-25 (was drawn whole) |
+| To buy | any half to buy (a half-owned pair sorts here whatever its figure); first 5 | HANDOFF §2.4; H1; Hugh's ruling, 2026-09-25 (was 8) |
 | Price | never orders | HANDOFF §2.4 |
 | Mana value | never orders, filters or groups | HANDOFF R3 |
 | Minimum sample | candidates (or pairs) under `MIN_CANDIDATE_DECKS` (N = 20) indexed decks hidden before ranking | READINESS-audit H2 revisited, F10 |
@@ -264,6 +269,7 @@ Scope excludes HANDOFF §4 (after the swap: header band, pending banner, review 
 | Free dot | dimensions | 6×6, radius 50% | same | same |
 | | background | `--success` | `--success` | same |
 | Held | component | `AvailabilityMarker` row density, verbatim | same | HANDOFF §2.2 |
+| | typography | mono 10.5px, flex none, set on the mount: row density sets no type and rides its host, which here is the row's sans | same | canvas; Hugh's staging walk, 2026-09-25 |
 | | canvas values | mono 10.5px, `--avail-hard-fg`, gap 6, 6×6 diamond (rotate 45°) `--avail-hard`, white-space pre | same | canvas |
 | To buy | component | `BuyTag variant="row"` with price | same | HANDOFF §2.2 |
 | | canvas values | mono 9.5px, radius 4px, padding 1px 5px, `--warning` on color-mix(`--warning` 13%); `·` `--border-strong` padding 0 3px; price `--fg-body` | same | canvas |
@@ -523,7 +529,7 @@ Scope excludes HANDOFF §4 (after the swap: header band, pending banner, review 
 | 9 | List | failed | candidate read fails | 3d, R3-D |
 | 10 | List | no deck data | candidate with no indexed decks — **not drawn**: hidden under `MIN_CANDIDATE_DECKS` (H2 revisited, F10) | 2a (Kaheera, superseded) |
 | 11 | List | candidate in the 99 | candidate is a `deck_cards` row of this deck | 2a (Pantlaza); `sheet.inDeck` |
-| 12 | List | Show more pressed | To buy has more than drawn | +8, focus first new row; hidden when none left |
+| 12 | List | Show all pressed | a group has more than 5 | the whole group; `Show fewer` folds it back to 5 (Hugh's ruling, 2026-09-25) |
 | 25 | List | a name opened | any candidate / expanded / plate name pressed | R3-C, stacked CardModal |
 | 26 | Row / confirm | mana value | always | R3-A, R3-B |
 | 24 | List | claim read failed | availability read errors | marks absent; groups from collection ownership |
@@ -551,7 +557,7 @@ computed `display: flex` / `gap: 3px`; reverting the fix fails it at both widths
 |---|---|---|---|
 | 8–12 | sheet max-height 708, header padding and gap, title 16/1.2, aside 11.5 | `ModalChrome` as shipped | Shared by every sheet in the app; a change there is not this feature's to make |
 | 13 | aside (the deck's name) on the phone | desktop only | The phone's 43px header cut the title to "Change c…"; approved by the-99-d9 on the verdict-lean precedent |
-| 18 | `sheet.more(8)` | `sheet.more(min(8, left))` | "Show 8 more" over "3 left" says two things at once |
+| 18 | `sheet.more(8)` | retired | Hugh's ruling, 2026-09-25: the swap sheet's `Show all {n}` / `Show fewer` replaces it (§3.4) |
 | 59 | back link min-height 32 | 44 | The touch floor every control in the app keeps |
 | 67 | a pair's price summed | summed only when both halves carry a live normal price; otherwise a tag per half | A sum over a sold-out, foil-only or unpriced half quotes a price the feed never gave |
 | 5 | desktop ⇄ half named `door.aria` | named by its visible label | Label-in-name: the visible words are "Change pair" on a pair deck |
