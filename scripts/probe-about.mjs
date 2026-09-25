@@ -215,13 +215,19 @@ async function walk(browser, width, userIdRef) {
   await behind(context, userId);
   await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
   if (await card.isVisible()) await card.getByRole("button", { name: "Later" }).click();
-  // By keyboard: in dev, Next's own indicator sits over the rail's avatar and takes the
-  // pointer. Focus and Enter is the same press a keyboard reader makes.
+  // A dispatched click, not a pointer click or Enter: in dev, Next's own indicator sits over
+  // the rail's avatar and takes the pointer, and Enter on the desktop popover's trigger also
+  // activates its first item, which IS About The 99. That is a real visit, so it wrote, and
+  // the first version of this check failed a correct build for it.
   const account = page.getByRole("button", { name: /^Account: / }).filter({ visible: true }).first();
-  await account.focus();
-  await page.keyboard.press("Enter");
+  await account.dispatchEvent("click");
   await page.waitForTimeout(2000);
-  report(L("an open account menu writes nothing (E2)"), (await readSeen(userId)) === BEHIND, `seen ${await readSeen(userId)}`);
+  const stayed = new URL(page.url()).pathname === "/decks";
+  report(
+    L("an open account menu writes nothing (E2)"),
+    stayed && (await readSeen(userId)) === BEHIND,
+    `on ${new URL(page.url()).pathname}, seen ${await readSeen(userId)}`,
+  );
   await page.keyboard.press("Escape");
 
   // 5. An index row jumps.
@@ -311,7 +317,14 @@ try {
   if (BEHIND < 1) throw new Error(`ABOUT_VERSION is ${VERSION}; there is no version to be behind.`);
   for (const width of WIDTHS) {
     console.log(`\n${width.label}x${width.viewport.height}`);
-    await walk(browser, width, who);
+    // A step that throws (a control a broken build never drew) is a failure at THIS width,
+    // reported and counted, and the other widths still run. Found by the mount mutation,
+    // which left no card for Later to press and ended the run at 390.
+    try {
+      await walk(browser, width, who);
+    } catch (error) {
+      report(`${width.label}: the walk stopped`, false, String(error?.message ?? error).split("\n")[0]);
+    }
   }
 } finally {
   if (who.id && who.original !== undefined) {
