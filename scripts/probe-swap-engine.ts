@@ -123,9 +123,13 @@ async function main() {
     return c.has("R") && c.has("W");
   }), `${landList.length}: ${names(landList).slice(0, 6).join(", ")}…`);
   check("land: the owned Command Tower leads, free", names(lands.free).includes("Command Tower"), names(lands.free).join(", "));
-  check("land: a buy is cheaper than the original and cheapest first",
-    lands.originalCents === null || (lands.cheapest.every((s) => (s.cents ?? Infinity) < lands.originalCents!) && ascending(lands.cheapest.map((s) => s.cents!))),
-    `original ${lands.originalCents}, ${lands.cheapest.map((s) => s.cents).join(" ")}`);
+  // v2: the ladder, then the commander's synergy, then price. Each adjacent pair must be in that order.
+  const ladder = (a: StandIn, b: StandIn) =>
+    (a.rung ?? 1) - (b.rung ?? 1) || (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || (a.cents ?? Infinity) - (b.cents ?? Infinity);
+  check("land: a buy is cheaper than the original, by rung, then synergy, then price",
+    lands.originalCents === null || (lands.cheapest.every((s) => (s.cents ?? Infinity) < lands.originalCents!)
+      && lands.cheapest.every((s, i) => i === 0 || ladder(lands.cheapest[i - 1], s) <= 0)),
+    `original ${lands.originalCents}, ${lands.cheapest.map((s) => `${s.card.name} r${s.rung} ${s.synergy} ${s.cents}`).slice(0, 6).join(", ")}`);
   guards("land", lands);
 
   // 2. A fetch: every stand-in finds both Mountain and Forest.
@@ -148,9 +152,9 @@ async function main() {
     select oracle_id, color_identity from cards where oracle_id = any(${sql.param(spellList.map((s) => s.card.oracleId))}::uuid[])`);
   check("spell: every identity inside the commander's", identities.every((r) => r.color_identity.every((c) => identity.has(c))),
     `${identities.length} read back`);
-  check("spell: listed cards by the commander's figure",
-    ascending(spells!.byCommander.map((s) => -(s.inclusion ?? 0))) && spells!.byCommander.every((s) => s.inclusion !== null),
-    spells!.byCommander.map((s) => `${s.card.name} ${s.inclusion}`).slice(0, 6).join(", "));
+  check("spell: listed cards by the commander's synergy",
+    ascending(spells!.byCommander.map((s) => -(s.synergy ?? -Infinity))),
+    spells!.byCommander.map((s) => `${s.card.name} ${s.synergy}`).slice(0, 6).join(", "));
   check("spell: unlisted cards carry no figure, cheapest first",
     spells!.unlisted.every((s) => s.inclusion === null) && ascending(spells!.unlisted.map((s) => s.cents!)),
     spells!.unlisted.map((s) => `${s.card.name} ${s.cents}`).slice(0, 6).join(", "));
