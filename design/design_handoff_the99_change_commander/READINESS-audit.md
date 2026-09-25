@@ -161,6 +161,15 @@ deck. The build holds it back today, in the loader and in the write (`offerable`
 `src/lib/commander-change/pending.ts:71`, called at `candidates.ts:225` and `write.ts:90`), because
 `confirm.trade` ("The two trade places") would be false for it.
 
+## Hugh's rulings (2026-09-25)
+
+Hugh approved this audit on 2026-09-25, through the-99-d9.
+
+- **A-H1: ask, as drawn.** The confirm asks "Which one stays in the 98?", defaulting to the first commander.
+  The sentence rewrites when the choice flips.
+- **Copy (`/copy-review`): one tightening.** `landsHalfTrade` becomes "Lands in your pending changes, not yet a
+  version. Discard undoes the whole swap." Every other half-trade string ships as drawn.
+
 ## Verdict: Green
 
 Build it, with the engineering corrections below. Every state the case reaches is drawn or is a shipped string in
