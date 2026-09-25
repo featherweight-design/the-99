@@ -377,6 +377,7 @@ Clauses are joined by ` · ` in the component; no clause is a score and no figur
 | Try again | key | `sheet.retry` |
 | Try again | skin | Apply's skin (the Take button of §5.5) with `width: auto`, `margin-top: 18px` |
 | Try again | padding | desktop `7px 16px`; phone `0 18px` (height `44px`, radius `8px`) |
+| Try again | line-height | `1` (the addendum's revised sheet makes every control a real `<button>` with `lineHeight: 1`; desktop 28.5px tall) |
 | Lead, groups, foot | condition | absent |
 
 ## 9 · Foot
