@@ -212,7 +212,7 @@ export function FilterChipPill({ chip }: { chip: FilterChip }) {
       {chip.spoken ? (
         // The same split `buy-tag.tsx` uses: the count is for the eye,
         // the names are for the ear. Without this a screen reader
-        // reading the row hears "2 colours" and has to enter the
+        // reading the row hears "2 colors" and has to enter the
         // dismiss button to learn which two — which the row this
         // replaces never made them do.
         <>

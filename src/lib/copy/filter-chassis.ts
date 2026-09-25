@@ -2,7 +2,7 @@
 //
 // Strings the commander lanes already own are re-exported from `lanes.ts` rather
 // than restated: the chassis mounts one control on four routes, so a second
-// definition of "Colour identity" would be a second thing to keep in step.
+// definition of "Color identity" would be a second thing to keep in step.
 // Where a string is new it is new because `/decks` and `/collection` had no
 // equivalent — neither route captioned its colour control at all.
 

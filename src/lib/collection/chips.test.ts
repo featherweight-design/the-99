@@ -65,7 +65,7 @@ describe("collectionChips", () => {
   });
 
   it("names a single colour, because its label is a count and not a name", () => {
-    // "1 colour" with an aria-hidden swatch leaves a screen reader unable to
+    // "1 color" with an aria-hidden swatch leaves a screen reader unable to
     // say which hue — unlike a set, which renders as its own name.
     const chip = collectionChips({ ...EMPTY, colors: ["G"] }, options)[0];
     expect(chip.label).toBe("1 color");
@@ -73,7 +73,7 @@ describe("collectionChips", () => {
   });
 
   it("names the colours for a reader who cannot see the swatches", () => {
-    // The dots are aria-hidden, so "2 colours" is all a screen reader would get
+    // The dots are aria-hidden, so "2 colors" is all a screen reader would get
     // — the row this replaces named each one.
     const chip = collectionChips({ ...EMPTY, colors: ["W", "B"] }, options)[0];
     expect(chip.spoken).toBe("White, Black");

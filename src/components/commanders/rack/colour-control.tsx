@@ -79,7 +79,7 @@ export function ColourControl({
   return (
     <div
       // No `role="group"` here any more. `ColourPips` brings its own, named
-      // `Colour identity` by this caller, and the match modifier beside it is
+      // `Color identity` by this caller, and the match modifier beside it is
       // its own `radiogroup`. An umbrella group around both would put a second
       // name on one control and have it read out twice. This div is what it
       // looks like: a box.

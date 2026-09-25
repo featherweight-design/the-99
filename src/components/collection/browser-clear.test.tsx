@@ -73,7 +73,7 @@ describe("CollectionBrowser — clearing filters", () => {
     render(view([card(), card({ oracleId: "o2", name: "Counterspell", colorIdentity: ["U"] })]));
     fireEvent.click(screen.getByRole("button", { name: /Remove filter: White, Blue/i }));
     // The chip's accessible name lists both, which is why it is matched on:
-    // the visible label collapses them to "2 colours".
+    // the visible label collapses them to "2 colors".
     expect(document.body.textContent).toContain("Color filter cleared");
     expect(document.body.textContent).not.toContain("White removed");
   });

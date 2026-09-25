@@ -23,7 +23,7 @@ describe("chipsFor", () => {
   });
 
   // One chip per control, not per value: the label collapses two pips to
-  // "2 colours" and the swatches inside that one chip say which two.
+  // "2 colors" and the swatches inside that one chip say which two.
   it("collapses several hues into one chip carrying a swatch each", () => {
     const chips = chipsFor({ ...defaultParams("owned"), colors: ["b", "g"] }, "owned");
     const colour = chips.filter((c) => c.key === "colors");
@@ -32,7 +32,7 @@ describe("chipsFor", () => {
   });
 
   it("names the hues a collapsed colour chip stands for", () => {
-    // The swatches are aria-hidden, so past one pip "2 colours" is all a
+    // The swatches are aria-hidden, so past one pip "2 colors" is all a
     // screen reader gets without this.
     const chips = chipsFor({ ...defaultParams("owned"), colors: ["b", "g"] }, "owned");
     expect(chips.find((c) => c.key === "colors")?.spoken).toBe("Black, Green");
