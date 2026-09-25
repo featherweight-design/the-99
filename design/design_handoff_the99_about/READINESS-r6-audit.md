@@ -12,8 +12,9 @@ Code references were read on `origin/main` at the branch point of `design/about-
 ## Verdict: 🟡 Yellow, pending Hugh's two answers
 
 Every ruling holds. None of the six rulings is broken, and every §5 call is made. Nothing needs a
-design round trip. Two things wait on Hugh (§4, Q1–Q2). Three eng findings (E1–E3) are wording the plan
-must pin down, not design changes. R6's own open item (rail length) is a measurement engineering owes.
+design round trip. Two things wait on Hugh (§4, Q1–Q2). The eng findings (E1–E9) are wording the plan must
+pin down, not design changes. Two of them (E8, E9) settle gaps in R6 itself, and each has only
+one defensible answer. R6's own open item (rail length) is a measurement engineering owes.
 It goes Green once Hugh answers Q1 and Q2.
 
 ## §1 The six rulings
@@ -55,9 +56,10 @@ It goes Green once Hugh answers Q1 and Q2.
 - **§5.6, the eyebrow and the "N new" markers:** the eyebrow retires into the index heading, reusing
   `newSinceEyebrow` (`about.ts:61`). The chapter rows' "N new" is kept. ✅
 - **§6 lock, nothing on the menu, rail, tab bar or Home (H1):** N4 places the card on the page beside
-  the avatar, "not on the rail, the avatar or the menu". Its diamond reuses the one the menu's About
-  row already draws (A1, `STATES-about.md:65`; `account-menu.tsx:31`), so no new mark lands on the
-  menu. ✅
+  the avatar, "not on the rail, the avatar or the menu". Its 9px diamond in a 28px tinted tile is a
+  **new mark** in the family of the menu's 6×6 item diamond (A1, `STATES-about.md:65`;
+  `account-menu.tsx:31`), which leads both About The 99 and Manage account. The new mark sits on the
+  card, not on the menu, so H1 holds. ✅
 - **§6 lock, no redirect:** ✅, as for ruling 1.
 
 **One addition beyond the brief.** §P0 moves the NEW pill before the title and gives a new entry a 2px
@@ -75,7 +77,8 @@ more `--accent`, and the first round asked for the NEW plate's accent to be rati
 
 ## §5 Engineering findings (for the plan, not Design)
 
-- **E1, the legacy cookie.** N8 and READINESS's "State" say "the cookie means 'sheet shown for N'". The
+- **E1, the legacy cookie.** N8 says "the cookie means 'sheet shown for N'" (READINESS-r6's "State"
+  names no cookie). The
   brief's §7 requires a **new cookie name, or an explicit version marker**, never the old `about_v`.
   Browsers redirected but never acknowledged hold `about_v = <userId>.9` (`gate.ts:13`), and reading
   that as "shown" would suppress the sheet for readers who are still behind. **The plan names the new
@@ -91,11 +94,29 @@ more `--accent`, and the first round asked for the NEW plate's accent to be rati
   less than about 60% of it is visible, R9.1's fallback applies: the rail opens only the current
   chapter. That collapses the list, not the page, and is still inside ruling 4. It is the plan's first
   measurement.
-- **E5, the probes.** Brief §7's 11 probes that write `about_version_seen` forward must also clear the
-  sheet, and the new cookie, before measuring. A card drawn over a measured page corrupts the reading.
+- **E5, the probes.** **12** `scripts/probe-*.mjs` write `about_version_seen` forward: card-mark,
+  bracket-chip, brackets-sheet, card-captions, declaration-ask, swap-shopping, synopsis-ui,
+  upgrade-path, verdict-block, verdict-findings, verdict-lean and version-comparison. The brief's
+  report said 11. Every one must also clear the sheet, and the new cookie, before measuring. A card drawn over a measured page corrupts the reading.
 - **E6, copy.** R6 adds strings to `src/lib/copy/about.ts` (§R8) and retires four. They go through
-  `/copy-review`, and the `about.test.ts` content hash is re-pinned deliberately. The `aboutMenuCopy`
-  comment, "the redirect is the notification", becomes "the sheet is the notification" (§R7).
+  `/copy-review`, and the `about.test.ts` content hash is re-pinned deliberately. The claim "the
+  redirect is the notification" is made in three places, and all three become "the sheet is the
+  notification":
+  - the `aboutMenuCopy` comment (`about.ts:743-744`, as §R7 notes);
+  - `account-menu.tsx:24-26`;
+  - `STATES-about.md:67` (A3).
+- **E8, the sheet between 768px and 999px.** R6 keys "wide" to the About page's 1000px breakpoint
+  (STATES-r6 line 9), so from 768px to 999px it would apply N5's phone card. That card sits 12px from
+  the left edge, over the 62px nav rail (`nav.tsx:148`, `md:flex`), and 84px above a tab bar that isn't
+  drawn (`--tabbar-h` is an unconditional 74px, `globals.css:495`). The sheet sits over any route, so
+  **it follows the shell's breakpoint, not the About page's.** At `md` (768px) and up it uses N4's
+  placement (rail + 20px, bottom 20px). Below that it uses N5. This is the only placement that respects
+  the chrome that is actually drawn, so it needs no design round.
+- **E9, a superseded invariant R7 doesn't list.** `STATES-about.md:13` says "Nothing on the page changes
+  after load. No live region, no motion, no reduced-motion state". R6's search (live filtering and a
+  polite count), the jump wash (P1, P4) and the sheet's animation (N11) all break it. Ruling 4 (a
+  search that filters as the reader types) makes that unavoidable, so the invariant is **superseded by
+  R6**, and the plan treats it as retired. This is recorded here because §R7 omits it.
 - **E7, the animation.** N11 names `anim-sheet-in`, which exists (`src/app/globals.css:699`) with its
   reduced-motion guard (`:747`). ✅ No new token.
 
