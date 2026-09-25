@@ -33,9 +33,9 @@ export const TRIM_STAPLES = 15;
  * `buildEvidencePack` and the messages with `buildPrompt`, then applies the variant), and since
  * tuning v2 (#948) that prompt is not the v1 prompt rounds 1 to 4 were measured on. What v2 adds
  * depends on the pack. Six lines are ALWAYS there: the 4-to-5 count, sizing to the gap and
- * grounding in how the deck plays, and the three rationale rules. The strategy block, the Key-card
- * rule and the universal-staple rule appear only when the pack carries an overview and staples,
- * and the harness passes neither.
+ * grounding in how the deck plays, and the three rationale rules. Two more depend on the pack,
+ * each on its own: the strategy block and the Key-card rule appear when it carries an overview,
+ * and the universal-staple rule when it carries staples. The harness passes neither.
  *
  * So `base` is v2's always-on lines over v1. `trim` changes only the pack (fewer staples) and
  * appends nothing, but its base moved with it. The `cite-*` variants add their rules to that base.
