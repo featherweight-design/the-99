@@ -6,8 +6,8 @@
 // the older pair stays exactly as it was until the switch is retired.
 //
 // THE RAIL OPENS ONLY THE CURRENT CHAPTER. That is R9.1's fallback, taken on
-// measurement (audit E4): with all 44 entries open the list is 1,507px against
-// 702px of rail at 1300x820, 46.6% visible, under the 60% bar. It collapses the
+// measurement (audit E4): with all 39 entries open the list is 1,365px against
+// 702px of rail at 1300x820, 51.4% visible, under the 60% bar. It collapses the
 // LIST, never the page, so ruling 4 holds. A search opens every chapter that
 // holds a match.
 //
