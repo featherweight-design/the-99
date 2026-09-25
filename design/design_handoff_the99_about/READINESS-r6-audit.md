@@ -9,13 +9,13 @@
 
 Code references were read on `origin/main` at the branch point of `design/about-r6`.
 
-## Verdict: 🟡 Yellow, pending Hugh's two answers
+## Verdict: 🟢 Green (Hugh answered Q1 and Q2 on 2026-09-25; §4)
 
 Every ruling holds. None of the six rulings is broken, and every §5 call is made. Nothing needs a
 design round trip. Two things wait on Hugh (§4, Q1–Q2). The eng findings (E1–E9) are wording the plan must
 pin down, not design changes. Two of them (E8, E9) settle gaps in R6 itself, and each has only
 one defensible answer. R6's own open item (rail length) is a measurement engineering owes.
-It goes Green once Hugh answers Q1 and Q2.
+Hugh answered both on 2026-09-25, so it is Green.
 
 ## §1 The six rulings
 
@@ -66,7 +66,14 @@ It goes Green once Hugh answers Q1 and Q2.
 `--accent` top rule. That is a new way to emphasize new entries, which Hugh asked for, but it spends
 more `--accent`, and the first round asked for the NEW plate's accent to be ratified (`READINESS.md:33`). It is **Q1 for Hugh**.
 
-## §4 Questions for Hugh
+## §4 Questions for Hugh — answered 2026-09-25
+
+- **Q1: approved.** The accent emphasis stands exactly as drawn: the pill before the title and a 2px
+  `--accent` top rule, on new entries only.
+- **Q2: no new About entry.** The existing entry that covers the About page is edited, at the next
+  version.
+
+The questions as asked:
 
 1. **Accept §P0's new-entry emphasis?** It moves the NEW pill before the title and adds a 2px accent
    rule across the top of each new entry. It is not a design problem, but it adds accent on the page,
