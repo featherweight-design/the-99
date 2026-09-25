@@ -72,8 +72,10 @@ const phase = (page) => panel(page).getAttribute("data-phase");
 // Scoped to the signed-in fixture account: another account's presses during the run neither move
 // these counts nor get deleted by the cleanup.
 const players = new Set();
-// The reads this run made, by id: each Stop's body names one, and a delivered look's address names
-// another. Cleanup deletes exactly these, so a session sharing the account keeps its own rows.
+// The reads this run made, by id. Every request that names one is read: the Look press (its
+// action's arguments carry the id the panel chose, before any read exists) and each Stop, plus a
+// delivered look's address. Cleanup deletes exactly these, so a session sharing the account keeps
+// its own rows, and a run that dies mid-look still names the read it started.
 const readIds = new Set();
 const units = async (since, userId) =>
   (await sql`select status, count(*)::int as n from model_calls where feature = 'intake' and user_id = ${userId} and created_at >= ${since} group by status`)
@@ -107,8 +109,8 @@ async function run() {
       if (!userId) throw new Error("no signed-in user id to scope the ledger to");
       players.add(userId);
       page.on("request", (req) => {
-        if (!req.url().endsWith("/decks/new/choose/stop") || req.method() !== "POST") return;
-        try { const id = JSON.parse(req.postData() ?? "{}").readId; if (typeof id === "string") readIds.add(id.toLowerCase()); } catch {}
+        if (req.method() !== "POST") return;
+        for (const m of (req.postData() ?? "").matchAll(/"readId"\s*:\s*"([0-9a-fA-F-]{36})"/g)) readIds.add(m[1].toLowerCase());
       });
       const at = (s) => `${s} @ ${width}`;
 

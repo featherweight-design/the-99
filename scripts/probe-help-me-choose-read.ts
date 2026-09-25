@@ -90,6 +90,7 @@ async function refuseSharedDatabase() {
 
 async function main() {
   await refuseSharedDatabase();
+  const extraUsers: string[] = [];
   try {
     const { runDeeperRead } = await import("../src/lib/intake/deeper-read");
     const store = await import("../src/lib/intake/run-store");
@@ -271,6 +272,7 @@ async function main() {
     // a player who Stops early more times than the cap in a day is still never charged.
     check("the stop its press claimed is consumed", await stopsFor(earlyId), 0);
     const CYCLER = `probe-cycle-${randomUUID()}`;
+    extraUsers.push(CYCLER);
     let cyclesTaken = 0;
     for (let i = 0; i <= store.EARLY_STOPS_MAX; i += 1) {
       const id = randomUUID();
@@ -279,15 +281,14 @@ async function main() {
       if (took && press.kind === "stopped") cyclesTaken += 1;
     }
     check("more early Stops than the cap, each claimed by its press, all take", cyclesTaken, store.EARLY_STOPS_MAX + 1);
-    await fixture.execute(sql`delete from intake_read_stops where user_id = ${CYCLER}`);
     // Bounded per player: the route takes any id a signed-in caller sends, so a caller minting ids
     // stops at the cap rather than growing the table.
     const CAPPED = `probe-cap-${randomUUID()}`;
+    extraUsers.push(CAPPED);
     await fixture.execute(sql`insert into intake_read_stops (read_id, user_id)
       select gen_random_uuid(), ${CAPPED} from generate_series(1, ${store.EARLY_STOPS_MAX})`);
     const overCap = randomUUID();
     check("a Stop past the per-player cap is not taken, and records nothing", [await store.cancelRead(overCap, CAPPED), await stopsFor(overCap)], [false, 0]);
-    await fixture.execute(sql`delete from intake_read_stops where user_id = ${CAPPED}`);
     // Purged at the Stop as well: a player who never starts another look leaves none behind.
     const stale = randomUUID();
     await fixture.execute(sql`insert into intake_read_stops (read_id, user_id, created_at) values (${stale}, ${EARLY}, now() - interval '25 hours')`);
@@ -295,6 +296,12 @@ async function main() {
     check("a Stop purges that player's stops past keeping", await stopsFor(stale), 0);
   } finally {
     await fixture.execute(sql`delete from intake_read_stops where user_id in (${USER}, ${OTHER}, ${EARLY})`);
+    // The per-case fixture players, registered before their first write so a throw cannot strand them.
+    for (const id of extraUsers) {
+      await fixture.execute(sql`delete from intake_read_stops where user_id = ${id}`);
+      await fixture.execute(sql`delete from intake_reads where user_id = ${id}`);
+      await fixture.execute(sql`delete from model_calls where user_id = ${id}`);
+    }
     await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER}, ${EARLY})`);
     await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER}, ${EARLY})`);
     await pool.end();
