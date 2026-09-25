@@ -47,7 +47,11 @@ export function AboutSheet({ state }: { state: SheetState }) {
   // after mount is what makes a live region speak; text present at mount is not
   // announced.
   useEffect(() => {
-    if (drawn) setAnnounce(heading);
+    if (!drawn) return;
+    // A tick later rather than in the effect body, so the live region is in the
+    // accessibility tree, empty, before its text arrives.
+    const t = window.setTimeout(() => setAnnounce(heading), 0);
+    return () => window.clearTimeout(t);
   }, [drawn, heading]);
 
   useEffect(() => {

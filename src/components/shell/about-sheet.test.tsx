@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
@@ -113,10 +113,12 @@ describe("AboutSheet", () => {
     expect(document.activeElement).toBe(document.body);
   });
 
-  it("announces its heading once through a polite live region (N10)", () => {
+  it("announces its heading once through a polite live region, after mount (N10)", async () => {
     render(<AboutSheet state={{ kind: "behind", entries: entries(3) }} />);
     const live = document.querySelector("[aria-live='polite']");
-    expect(live?.textContent).toBe("3 new in About");
+    // Empty at mount: text present when a live region appears is not spoken.
+    expect(live?.textContent).toBe("");
+    await waitFor(() => expect(live?.textContent).toBe("3 new in About"));
   });
 
   it("reserves its height at the page foot while open, and releases it on close (N5)", () => {
