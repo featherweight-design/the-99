@@ -19,6 +19,12 @@
  * staple is chosen through `loadUniversalStaples`, the one definition, never a list of our own.
  * Both decks are deleted in a `finally`, and the About row is put back as the run found it. Needs
  * a server with SWAP_TOOLS_ENABLED=true (PROBE_BASE). Point it at local-dev, never production.
+ *
+ * Four mutations fail it: the add revalidating inside the action (1,392,099 bytes against 77), the
+ * phone door's 44px row removed (22px), the door's focus return removed (focus on BODY), and the
+ * picker at 640 wide. The reply is measured from `/collection` and not the deck page, and that is
+ * the lesson of its first run: from the deck page the inline revalidation cost about 3 KB and the
+ * check passed over it, because revalidating the deck's own paths re-renders almost nothing there.
  */
 import { readFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -122,11 +128,14 @@ void (async () => {
     // The staple, through the one definition, and colorless so the blue deck can take it.
     const staples = [...(await loadUniversalStaples(drizzle(pool) as never))];
     const { rows: [staple] } = await pool.query(
-      `select oracle_id, name from cards where oracle_id = any($1::uuid[]) and cardinality(color_identity) = 0
-         and commander_legal and name not like '%//%' order by name limit 1`,
-      [staples],
+      `select c.oracle_id, c.name from cards c where c.oracle_id = any($1::uuid[]) and cardinality(c.color_identity) = 0
+         and c.commander_legal and c.name not like '%//%'
+         and exists (select 1 from collection_items ci where ci.user_id = $2 and ci.oracle_id = c.oracle_id)
+       order by c.name limit 1`,
+      [staples, userId],
     );
-    if (!staple) throw new Error("No colorless universal staple on this database.");
+    // Owned, so `/collection` can open it: that is the route whose reply measures the deferral.
+    if (!staple) throw new Error("The account owns no colorless universal staple on this database.");
     const { rows: [kenrith] } = await pool.query(`select oracle_id from cards where name = 'Kenrith, the Returned King'`);
     const { rows: [blue] } = await pool.query(
       `select oracle_id from cards where commander_legal and type_line ~* 'legendary creature'
@@ -178,22 +187,11 @@ void (async () => {
       const heldRow = sheet.getByTestId("fits-holds-row").filter({ hasText: "probe · fits holder" });
       report(`${w.label} holder listed as holding`, (await heldRow.count()) === 1, (await heldRow.count()) ? (await heldRow.innerText()).replace(/\s+/g, " ") : "absent");
 
-      // Add, and the reply's size.
-      let replyBytes = -1;
-      const onResponse = async (res: { request: () => { method: () => string; headers: () => Record<string, string> }; body: () => Promise<Buffer> }) => {
-        const req = res.request();
-        if (req.method() === "POST" && req.headers()["next-action"]) {
-          const size = (await res.body().catch(() => Buffer.alloc(0))).length;
-          if (replyBytes < 0) replyBytes = size;
-        }
-      };
-      page.on("response", onResponse as never);
+      // Add.
       await row.getByRole("button", { name: /^Add / }).click();
       await row.getByText(copy.added).waitFor({ timeout: 15_000 });
-      page.off("response", onResponse as never);
       const { rows: written } = await pool.query(`select 1 from deck_cards where deck_id = $1 and oracle_id = $2`, [taker, staple.oracle_id]);
       report(`${w.label} add written`, written.length === 1, `${written.length} row`);
-      report(`${w.label} add reply is small`, replyBytes >= 0 && replyBytes < 20_000, `${replyBytes} bytes`);
       const open = row.getByRole("link", { name: copy.openDeck });
       report(`${w.label} open the deck`, (await open.getAttribute("href")) === `/decks/${taker}`, (await open.getAttribute("href")) ?? "none");
 
@@ -209,7 +207,25 @@ void (async () => {
       report(`${w.label} card still open`, (await cardDialogs(page).count()) === 1, "card");
       await page.keyboard.press("Escape");
     }
-  } catch (e) {
+
+      // THE REPLY, from `/collection`: a revalidation inside the action would re-render that route into
+      // its reply (1.6 MB measured by probe:printing-pick), where after() leaves a few bytes. The deck
+      // page cannot show it, since revalidating the deck's own paths re-renders almost nothing there.
+      await page.setViewportSize(WIDTHS[0].viewport);
+      await pool.query(`delete from deck_cards where deck_id = $1`, [taker]);
+      await page.goto(`${BASE}/collection?card=${staple.oracle_id}`, { waitUntil: "domcontentloaded" });
+      await cardDialogs(page).first().waitFor({ timeout: 20_000 });
+      await visibleDoor(page).click();
+      const sheet = picker(page);
+      const row = sheet.getByTestId("fits-row").filter({ hasText: "probe · fits taker" });
+      await row.waitFor({ timeout: 20_000 });
+      const reply = page.waitForResponse((res) => res.request().method() === "POST"
+        && Boolean(res.request().headers()["next-action"]) && res.request().postData()?.includes(taker) === true);
+      await row.getByRole("button", { name: /^Add / }).click();
+      const bytes = (await (await reply).body()).length;
+      await row.getByText(copy.added).waitFor({ timeout: 15_000 });
+      report("/collection add reply is small", bytes < 20_000, `${bytes.toLocaleString()} bytes`);
+    } catch (e) {
     failures += 1;
     console.log(` FAIL  the run threw — ${(e as Error).message}`);
   } finally {
