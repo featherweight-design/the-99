@@ -7,6 +7,7 @@ import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
+import { MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
 import { serializeChooseParams } from "../../../lib/intake/params";
@@ -36,7 +37,9 @@ export default async function NewDeckPage({
       const handOff = asked && answers ? {
         answers,
         create: {
-          themes: answers.themes.map((t) => t.label),
+          // The first eight: themes only write the brief, which `createDeck` bounds at that; the
+          // block still lists every theme the player asked for.
+          themes: answers.themes.slice(0, MAX_THEMES).map((t) => t.label),
           cardOracleId: answers.card?.oracleId ?? null,
           budgetDollars: answers.budgetDollars,
           bracket: answers.bracket,

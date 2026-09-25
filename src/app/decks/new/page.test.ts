@@ -35,6 +35,13 @@ describe("/decks/new", () => {
     expect(p.handOff?.create).toEqual({ themes: ["Dinosaurs"], cardOracleId: null, budgetDollars: 150, bracket: null });
   });
 
+  it("hands the create no more themes than it takes, so a wide ask still makes its deck", async () => {
+    const nine = Array.from({ length: 9 }, (_, i) => ({ slug: `t${i}`, label: `Theme ${i}`, pct: null }));
+    stub.answers.mockResolvedValue({ themes: nine, card: null, budgetDollars: null, bracket: null });
+    const p = await props({ commander: COMMANDER, t: nine.map((t) => t.slug).join(","), v: "results" });
+    expect((p.handOff?.create as { themes: string[] }).themes).toHaveLength(8);
+  });
+
   it("draws today's page for a commander link that is not a result's press", async () => {
     expect((await props({ commander: COMMANDER, t: "dinosaurs" })).handOff).toBeUndefined();
     expect(stub.answers).not.toHaveBeenCalled();
