@@ -172,3 +172,49 @@ The `*-ink.svg` files and `fact-*.svg` are for the frames only. The code draws f
 | Eng 3 (read state) | Accepted; legality needs its own key (F11) |
 | Eng 4 (foot recompute) | F1, and it needs H1 |
 | Eng 5 (contrast) | The figure is corrected in F17 |
+
+---
+
+## Addendum: the tile's notice marker (2026-09-24)
+
+**Audited:** `addendum-tile-marker/` against `origin/main` at `47a8a07a`, under Hugh's ruling of 2026-09-24: the
+deck header keeps the full chip and the Notices sheet, and the /decks tile shows only a small red `!`. It amends
+HANDOFF §1 and §1a for the tile alone.
+
+**Verdict for the addendum: Green.** Every asked item is drawn, and the meaning is findable at both widths
+without hover, which is where the retired deck-status marks failed. Nothing goes back to Design. Two of Design's
+choices need Hugh's word (H7, H8). Neither holds the verdict: each is a one-line change either way.
+
+### The asked items
+
+| Asked | Answered | Checked against |
+|---|---|---|
+| The marker's place, one notice | Yes. An 18px circle in the tag's slot, after the bracket chip, or after the status pill with no chip. Gap 8, centred in the 22 / 24 chips row | the tag's mount, `src/components/decks/deck-card.tsx:550` |
+| With legality and data notices together | ONE mark, in `--danger`, never two. The spoken name carries both counts (F20) | `NoticeSummary`, `src/lib/notices/summary-sql.ts:10-12` |
+| The desktop tooltip | Yes. The shipped `FactTooltip` with a `sentence`: 400ms, fine pointers only, portalled. One sentence each for not legal, notices and both | `src/components/cards/fact-tooltip.tsx:27`, `:135`, `:158` |
+| How a phone player learns what it means | A key line on /decks at both widths, reusing `MarkKey`, drawn only when a tile in the current shelf and filter carries a mark. A tap tooltip, a first-run hint and a word beside the mark were each tried and rejected, with reasons | `src/components/decks/mark-key.tsx:33-35` |
+| The tile with and without the marker, kept level | Yes, across the three footer rows of #939, at 340 and 358. The mark fits inside the chips row, and the footer is untouched | `deck-card.tsx:261`, `:319`; `probe:notices-tile` |
+| Announced to screen readers | Yes. The mark is `aria-hidden`, and the tile link's name already carries `noticeSpoken` | `deck-card.tsx:315`, `:602-606`; `src/components/decks/notice-tag.tsx:45` |
+
+**About entry:** none new, and none needed. The parent's entry (`ABOUT-entry.md:23`) already says "a small
+notice sits after its bracket on the deck page and its tile", which stays true of the mark.
+
+### Findings
+
+| # | Sev | Evidence (origin/main) | Finding and correction | Owner |
+|---|---|---|---|---|
+| F19 | Medium | `deck-card.tsx:602-606` | **The mark sits under the tile's full-cover link.** The link is `absolute inset-0` and last in the DOM, so the mark never gets the pointer and its tooltip cannot open. Design lifts the mark's wrapper above it and forwards a click with `router.push`, which drops cmd-click and middle-click (open in a new tab), where the rest of the tile keeps them. **Correction:** lift the wrapper, but make it a second `Link` to the same href with `tabIndex={-1}` and `aria-hidden`, so every kind of click behaves as the tile's does and nothing is added to the tab order | eng |
+| F20 | Medium | `summary-sql.ts:10-12`, `:73-78` | **The summary returns one kind.** It picks legality over data, so "both" cannot be spoken or put in the tooltip. **Correction:** return the unread data count beside a legality kind, and build the spoken name from both parts with the existing strings, as Design's copy file says | eng |
+| F21 | Low | `decks-view.tsx:1053` | **The key is the first item of a list.** The tiles are a `<ul>`, so the key line is an `<li>` spanning the grid (`col-span-full`), with its region label, and not a bare `div` inside the list | eng |
+| F22 | Low | `deck-card.tsx:261`, `:319`, `:534`; `scripts/probe-notices-tile.mjs:48-57` | **The yield may go.** `YIELD` was sized for the `Not legal` chip, which the tile no longer draws. Design estimates the widest row with the mark at about 333px from `md` and 320 below, near the 330 floor. **Correction:** re-run `probe:notices-tile` with the mark, and delete `YIELD` and the `face={false}` branch only if both widths land at or under 330, as Design says. The probe reads the band from the shipped classes, so it has to change with them | eng |
+| F23 | Low | addendum READINESS eng 5; parent H5 | **Measure the glyph's contrast in the theme tests.** The `!` is a 12px graphic on its own tint, and Design measures it at 3.5:1 against a 3:1 bar. It carries no word, since the key and the spoken name do. The parent's H5 (4.5:1 for the *Not legal* text) applies to the header chip, which keeps its text. **Correction:** add both inks on their tints to `status-style.test.ts` at 3:1, in every theme | eng |
+| F24 | Low | `tile-marker · copy strings.ts` | **Six new strings go to `/copy-review`:** three tooltip sentences, the key's two words, and its region label | `/copy-review` |
+
+### For Hugh
+
+- **H7 (Design's call, against the ruling's wording).** You ruled a small RED `!`. Design draws red only when a
+  card is not legal, and a blue-grey `!` (the card-facts color) when the data behind the deck moved, such as the
+  Game Changer list changing. The reasoning: a red mark for a list update reads as a broken deck. Keep the two
+  colors, or red for both? Red for both drops one key entry and nothing else.
+- **H8 (Design's call).** Once you've opened the notices, a legality mark stays red on the tile, with no
+  "read" state at this size. The deck header still shows read versus unread. OK?
