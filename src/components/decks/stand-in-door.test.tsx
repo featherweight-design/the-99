@@ -206,6 +206,18 @@ describe("the door on a locked card", () => {
     expect(doors()).toHaveLength(0);
   });
 
+  // A lock that lands, settles or reverts WHILE the card is open moves its door: the provider calls
+  // the renderer during its own render, so the rows it reads must be fresh by then.
+  it("hides and restores the door on a card already open as the lock changes", async () => {
+    const view = render(drawRows([PLATEAU]));
+    await press("shop plateau");
+    expect(doors()).toHaveLength(2);
+    await act(async () => view.rerender(drawRows([{ ...PLATEAU, locked: true }])));
+    expect(doors()).toHaveLength(0);
+    await act(async () => view.rerender(drawRows([{ ...PLATEAU, locked: false }])));
+    expect(doors()).toHaveLength(2);
+  });
+
   // The list the page draws changes under the registration (the optimistic lock), not a remount.
   it("hides the door once the drawn list says the card is locked, before any server reply", async () => {
     const view = render(drawRows([PLATEAU]));
