@@ -149,3 +149,39 @@ describe("FitsPicker", () => {
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
   });
 });
+
+describe("the Fits door", () => {
+  const withGate = (gate: Partial<BrowseCard>): BrowseCard => ({
+    oracleId: "o-birds", name: "Birds of Paradise", typeLine: "Creature", manaCost: "{G}", cmc: 1, oracleText: null,
+    keywords: [], rarity: "rare", colorIdentity: ["G"], imageUri: null, printedName: null, quantity: 2, printings: [],
+    setCodes: [], primarySetCode: "", preferredPrinting: null, ...gate,
+  });
+  async function openCard(gate: Partial<BrowseCard>) {
+    const { CardDetailTrigger } = await import("./card-detail-provider");
+    render(
+      <CardDetailProvider fetchCard={async () => withGate(gate)}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => { fireEvent.click(screen.getByText("open")); });
+  }
+
+  it("draws on a Commander-legal card for a reader with a deck, at both widths", async () => {
+    await openCard({ commanderLegal: true, hasDecks: true });
+    expect(screen.getAllByTestId("fits-door")).toHaveLength(2);
+  });
+
+  it("draws nothing for a card that is not legal, a reader with no deck, or a payload without the gate", async () => {
+    await openCard({ commanderLegal: false, hasDecks: true });
+    expect(screen.queryAllByTestId("fits-door")).toHaveLength(0);
+  });
+
+  it("stacks the picker over the card, which stays mounted and covered", async () => {
+    actions.loadFitsAction.mockResolvedValue(read());
+    await openCard({ commanderLegal: true, hasDecks: true });
+    await act(async () => { fireEvent.click(screen.getAllByTestId("fits-door")[0]); });
+    await settle();
+    expect(screen.getByTestId("fits-picker")).toBeInTheDocument();
+    expect(screen.getAllByTestId("fits-door")[0].closest("[inert]")).not.toBeNull();
+  });
+});
