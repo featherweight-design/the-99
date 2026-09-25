@@ -259,10 +259,34 @@ the more valuable half.
 | Candidate | Why not |
 | --- | --- |
 | A different Scryfall size per surface | Every printing stores `normal` (488×680). The preview box is 252×352 CSS px, so `normal` is already right at DPR 2, and anything smaller is visibly softer — which the ruling excludes. `browse.ts` is also not this lane's file. |
-| Modal art requested on press rather than after the details action | `card-modal.tsx` is contested tonight (swap-tools 4c, Locked). Deferred to the owning lane; the mechanism is the same as PR 1 and should win the same ~200 ms. |
 | A Vercel/`next/image` proxy | Adds a hop to an already-CDN'd path. See the CDN table above. |
 | Lean-first payload split | Net loss for images; would add a round trip before the hover can start. See above. |
 | `facts`/`availability`/`price` deferral | Real payload weight, but deferring changes when a row's marks appear — outside this lane's ruling. |
+
+### Modal art on press — **DONE by the swap-tools lane**
+
+Deferred here because `card-modal.tsx` was contested, then taken by the lane that owns it. The same
+mechanism as PR 1: `CardDetailTrigger` takes an optional `imageUri`, and the press asks for it with a
+detached `Image` alongside the details read, where the modal could otherwise only ask once that read
+answered and named the printing. Nothing drawn changes. Only the decklist row passes it, because
+`probe:image-timing --modal` found its `imageUri` equal to the modal's URL on all 10 presses at 1300.
+A trigger whose opener cannot promise that passes nothing, and the press would otherwise fetch an
+image nothing draws.
+
+`probe:image-timing --modal`: a keyboard press on a decklist row's name (a mouse click hovers first
+and the preview's preload fills the cache), production build, local-dev, five cold presses per width
+on a 99-card deck. Figures are medians, in ms from the press:
+
+| Width | Build | Action answered | Art asked | Art in | Asked before the action answered |
+| --- | --- | --- | --- | --- | --- |
+| 1300 | before | 221 | 232 | **448** | 0 of 5 |
+| 1300 | after | 232 | 7 | **238** | 4 of 5 |
+| 390 | before | 226 | 236 | **452** | 0 of 5 |
+| 390 | after | 224 | 6 | **224** | 4 of 5 |
+
+The before runs are the probe's mutation, since main is the change reverted: the same instrument reads
+0 of 5 there. One press in each after-run read no action end (row 7 at 1300, row 4 at 390), because the POST's
+finish was not captured. Its art still arrived at 234 and 224 ms.
 
 ## Done means
 
