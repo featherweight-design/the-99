@@ -222,7 +222,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
   }))
-    .filter((k) => offerable(k.ids, inDeck));
+    .filter((k) => offerable(k.ids, currentIds, inDeck));
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));

@@ -29,6 +29,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
 import { CommanderSection, ZoneHint } from "./change-commander-review";
 import { commanderZoneHint } from "./change-commander-banner";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
@@ -1014,7 +1015,11 @@ export function ReviewChanges({
               contested={contested}
               heading={copy.groupOut(outCount)}
               headingTone="var(--warning)"
-              note={copy.outNote(released)}
+              // A trade's only cut is the new commander leaving for the command zone, which the
+              // pool sentence would misdescribe (R3 and the half-trade addendum, the review page).
+              note={outRows.length > 0 && outRows.every((r) => commanderZoneHint(state, r.oracleId, false) !== null)
+                ? changeCommanderCopy.review.outNoteToZone
+                : copy.outNote(released)}
               rows={outRows}
               onRestore={restore}
               restoreErrors={restoreErrors}

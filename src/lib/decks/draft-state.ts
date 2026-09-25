@@ -287,7 +287,16 @@ async function readDraft(
   // to know how many to take out of the sleeve. What a basic is kept OUT of is
   // the money — see `bucketAdds`, and the two reads scoped below.
   const facts = await loadNameFacts(changedIds);
-  const basics = new Set(facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId));
+  // A commander the change moved INTO the 99 (a trade) keeps the copy it led with, so it buys
+  // nothing and asks no claim, which is a basic's treatment in the money: it rides that set.
+  const returning = commander
+    ? [commander.from.commanderOracleId, commander.from.partnerOracleId]
+        .filter((id): id is string => id !== null && diff.adds.some((a) => a.oracleId === id))
+    : [];
+  const basics = new Set([
+    ...facts.filter((f) => isBasicLand(f.typeLine)).map((f) => f.oracleId),
+    ...returning,
+  ]);
   const adds = diff.adds;
   const removes = diff.removes;
 
@@ -508,6 +517,12 @@ export type DraftRows = {
  * it. `quantity` on each row is the DELTA, which is what the row's figure means
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
+/** Whether an add is an old commander the change moved into the 99. */
+function returnsFromCommand(state: DraftState, oracleId: string, added: boolean): boolean {
+  const from = state.commander?.from;
+  return added && from !== undefined && (from.commanderOracleId === oracleId || from.partnerOracleId === oracleId);
+}
+
 export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
   const read = await readDraft(deckId, userId, true);
   const { state } = read;
@@ -545,7 +560,8 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
       // on the one card every Shopping surface in this app already treats as
       // unlimited. Stated here rather than in the row, so no component has to
       // learn what a basic is.
-      owned: isBasicLand(name.typeLine) || detail.owned,
+      // So is a commander the change moved into the 99: it keeps the copy it led with.
+      owned: isBasicLand(name.typeLine) || detail.owned || returnsFromCommand(state, change.oracleId, add !== null),
       // The deck's own statement about this slot, carried so the review row has
       // it. `owned` is NOT set true for a printed card — the collection has not
       // moved — so the flag rides beside it and the row decides what to draw.

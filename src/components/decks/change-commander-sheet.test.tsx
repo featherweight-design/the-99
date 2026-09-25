@@ -135,6 +135,60 @@ describe("ChangeCommanderSheet for a pair", () => {
     toBuy: [],
   });
 
+  // The half-trade (addendum): Reyhan comes out of the 98 while both old halves leave.
+  const halfTradeData = () => data({
+    ...pairData(),
+    yours: [pairOf(half("Ishai"), half("Reyhan", { inDeck: true, availability: null }), 30)],
+  });
+
+  it("confirms a half-trade: its labels, each card's fate, and the choice defaulting to the first commander", async () => {
+    readChangeCandidates.mockResolvedValue(halfTradeData());
+    mount(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Choose Ishai and Reyhan" }));
+    expect(screen.getByText("Leave the command zone")).toBeTruthy();
+    expect(screen.getByText("Lead the deck")).toBeTruthy();
+    expect(screen.queryByText("Moves to the command zone")).toBeNull();
+    const [outFates, inFates] = screen.getAllByTestId("half-trade-fates");
+    expect(outFates.textContent).toBe("into the 98leaves the deck");
+    expect(inFates.textContent).toBe("freefrom the 98");
+    const group = screen.getByRole("radiogroup", { name: "Which one stays in the 98?" });
+    expect(group).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Tymna the Weaver" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByText(
+      "Reyhan leaves the 98 for the command zone, and Ishai joins it there. Tymna the Weaver takes Reyhan's slot, and Thrasios leaves the deck. The deck stays at 98.",
+    )).toBeTruthy();
+    expect(screen.getByText("Lands in your pending changes, not yet a version. Discard undoes the whole swap.")).toBeTruthy();
+  });
+
+  it("rewrites the sentence and the fates when the choice flips, by press or by arrow key, and writes it", async () => {
+    readChangeCandidates.mockResolvedValue(halfTradeData());
+    changeCommander.mockResolvedValue({ ok: true });
+    mount(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Choose Ishai and Reyhan" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Thrasios" }));
+    expect(screen.getByRole("radio", { name: "Thrasios" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByText(/Thrasios takes Reyhan's slot, and Tymna the Weaver leaves the deck\./)).toBeTruthy();
+    expect(screen.getAllByTestId("half-trade-fates")[0].textContent).toBe("leaves the deckinto the 98");
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Thrasios" }), { key: "ArrowLeft" });
+    expect(screen.getByRole("radio", { name: "Tymna the Weaver" }).getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Tymna the Weaver" }));
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Tymna the Weaver" }), { key: "ArrowRight" });
+    fireEvent.click(screen.getByRole("button", { name: "Make Ishai and Reyhan commanders" }));
+    await waitFor(() => expect(changeCommander).toHaveBeenCalledWith(
+      "d1", { commanderOracleId: "ishai", partnerOracleId: "reyhan" }, "thrasios",
+    ));
+  });
+
+  it("keeps the choice across Back and Choose again", async () => {
+    readChangeCandidates.mockResolvedValue(halfTradeData());
+    mount(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Choose Ishai and Reyhan" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Thrasios" }));
+    fireEvent.click(screen.getByRole("button", { name: "Back to the list" }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose Ishai and Reyhan" }));
+    expect(screen.getByRole("radio", { name: "Thrasios" }).getAttribute("aria-checked")).toBe("true");
+  });
+
   it("confirms both halves in and both out, and writes the pair", async () => {
     readChangeCandidates.mockResolvedValue(pairData());
     changeCommander.mockResolvedValue({ ok: true });

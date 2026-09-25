@@ -1268,6 +1268,27 @@ describe("ReviewChanges", () => {
       );
     });
 
+    // Change commander: a trade's only cut is the new commander leaving for the command zone, so
+    // `Going out` says so instead of the pool sentence; beside an ordinary cut, the pool sentence stays.
+    it("notes a trade's cut as moving to the command zone, and keeps the pool note beside another cut", () => {
+      const trade = {
+        from: { commanderOracleId: "korvold", partnerOracleId: null },
+        to: { commanderOracleId: "o2", partnerOracleId: null },
+      };
+      const { unmount } = render(
+        <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE} state={{ ...STATE, commander: trade }} cardCount={CARD_COUNT} />,
+      );
+      expect(screen.getByText("it moves to the command zone")).toBeTruthy();
+      unmount();
+      render(
+        <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold"
+          rows={{ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] }}
+          {...SHAPE} state={{ ...STATE, commander: trade }} cardCount={CARD_COUNT} />,
+      );
+      expect(screen.queryByText("it moves to the command zone")).toBeNull();
+    });
+
     // Change commander: a moved commander is a change the columns do not list, so emptying
     // them is not the deck back at its version, and the route does not redirect.
     it("does not call the last put-back the last change while the commander moved", async () => {
