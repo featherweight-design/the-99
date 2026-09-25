@@ -141,7 +141,7 @@ export function useCardDetail(): CardDetailContextValue {
  * focus-return would then have nothing to hand focus back to on close.
  */
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, children,
 }: {
   oracleId: string;
   name: string;
@@ -169,6 +169,8 @@ export function CardDetailTrigger({
    * same reason `top-off-list.tsx` names its type column.
    */
   testId?: string;
+  /** Opened from a Shopping row: the card draws the swap tools' door (audit F17). */
+  door?: boolean;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
@@ -177,7 +179,7 @@ export function CardDetailTrigger({
     <button
       type="button"
       data-testid={testId}
-      onClick={() => open(oracleId, siblings)}
+      onClick={() => open(oracleId, siblings, undefined, door ? { door } : undefined)}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
