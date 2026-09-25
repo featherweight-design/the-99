@@ -103,6 +103,15 @@ async function main() {
     `plain ${plain.filled}, budgeted ${budgeted.filled}, bracket 2 ${bracketed.filled}`);
   check("bracket 4 with no budget is no gate: the plan equals the plain one", JSON.stringify(unasked.rows) === JSON.stringify(plain.rows),
     `${unasked.rows.length} rows against ${plain.rows.length}`);
+
+  console.log("\n4. A row's trial figures");
+  const { trialFill } = await import("../src/lib/intake/trial");
+  const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null });
+  check("the trial fill fills the body, owns what it can and prices the rest within the budget",
+    trial.body === budgeted.filled && trial.owned < trial.body && trial.buyCents <= BUDGET_CENTS && !trial.unpricedCard,
+    `own ${trial.owned} of ${trial.body}, about $${(trial.buyCents / 100).toFixed(2)} to buy`);
+  check("its buy figure is the probe's own count of the same fill", trial.buyCents === spend(budgeted),
+    `trial ${trial.buyCents}, independent ${spend(budgeted)}`);
 }
 
 main()
