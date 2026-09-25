@@ -164,8 +164,8 @@ Swap Tools :217).
 | text-wrap | `pretty` |
 | Key (land) | `sheet.leadLands(colors)`; colors e.g. `white and red` |
 | Key (fetch) | `sheet.leadFetch(types)`; types e.g. `Mountain or a Forest` |
-| Key (spell, partner) | `sheet.leadSpells(roles, mv, commander)`; commander = the commander's short name or the pair `A + B` |
-| Key (spell, nothing listed for the pair, F14) | a new key: `leadSpells` without its second clause (owed to /copy-review) |
+| Key (spell, partner) | v2 D1: sentences joined by a space: `sheet.leadSpellsJob(roles, mv)`, then `sheet.leadSpellsTypes(plural)` when both type groups draw, then `sheet.leadSpellsOrder(card, commander)`, then `sheet.leadSpellsStaples` when a staple is listed; commander = the commander's short name or the pair `A + B` |
+| Key (spell, nothing listed for the pair, F14) | `sheet.leadSpellsOrderUnlisted(card)` in place of `leadSpellsOrder` |
 | Key (sold-out original, F5) | a new free-copies-only lead (owed to /copy-review) |
 
 ---
@@ -175,18 +175,24 @@ Swap Tools :217).
 | Element | Property | Value |
 |---|---|---|
 | Group | display / flex-direction | `flex` / `column` |
-| Heading | key, in order | `sheet.groupFree` (always first) → lands and fetch: `sheet.groupCheapest`; spells: `sheet.groupByCommander(commander)` then `sheet.groupUnlisted(commander)` |
+| Heading | key, in order | v2 D1 (ranking-rebuild addendum §1b): `sheet.groupSameType(plural)` first, then `sheet.groupOtherTypes`. A land or fetch draws `groupSameType("lands")` alone. The `yours, free`, `to buy`, staples, by-commander and unlisted groups are retired; ownership is the row's dot and `free` tag |
+| Heading row | layout | `flex`, `align-items: baseline`, `justify-content: space-between`, `gap: 10px`; the heading at left, the order note at right |
+| Order note | key | `sheet.orderMostShared` for spells, `sheet.orderBestMana` for lands and fetches |
+| Order note | font / size / color / white-space | mono / `10px` / `var(--fg-locked)` / `nowrap` |
+| Rows shown | count | `STAND_IN_GROUP_SHOWN` (5, Hugh's Q3); a group of 5 or fewer draws no toggle |
+| Show all | element | `button`, `aria-expanded`; `sheet.showAll(n, noun)` ▾, then `sheet.showFewer` ▴; expands the group in place |
+| Show all | size | `min-height: 34px` desktop, `44px` below `md`; `padding-left: 43px`; `font-size: 12.5px`, weight 500, `var(--accent)`; caret `10px`, `var(--fg-faint)`; `border-bottom: 1px solid var(--border)` |
+| Group cap | count | `STAND_IN_GROUP_CAP` (30) ranked cards, staples aside: a staple is never cut |
 | Heading | padding | `0 0 6px` |
 | Heading | font-family / size | mono / `9.5px` |
 | Heading | letter-spacing / text-transform | `0.12em` / `uppercase` |
 | Heading | color | `var(--fg-faint)` |
 | Heading | border-bottom | `1px solid var(--border)` |
-| Group | condition | a group renders only when it has rows (partner draws no unlisted group; sold-out draws `groupFree` only) |
+| Group | condition | a group renders only when it has rows (a sold-out original's free copies only) |
 | Rows | rank number | none: the heading carries the order |
-| Row order | within `groupFree` | v2 PR B: lands and fetches on the ladder (rung, then synergy, then price); spells by the commander's synergy, then price |
-| Row order | `groupCheapest` (`best mana first`) | v2 PR B: the ladder (`landRung`: untapped, untapped with a condition or catch, tapped, utility), then synergy, then price |
-| Row order | by commander | v2 PR B: descending by the commander (or pair) synergy, never drawn; a card is listed when the index holds its support row |
-| Row order | unlisted | ascending by drawn price |
+| Row order | lands and fetches | the ladder (`landRung`: untapped, untapped with a condition or catch, tapped, utility), then synergy, then price with a free copy at 0 (addendum audit ruling 2); staples last |
+| Row order | spells (d9's D1 ruling) | the roles and themes shared with the original, most first; then synergy, an unlisted card having none; then price with a free copy at 0; staples last |
+| Other-types row | facts | its main type first (`sorcery`, …): the heading cannot name it |
 
 ---
 
@@ -475,18 +481,18 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
-| Lands | original is a land with colors; stand-ins found | head plate, `leadLands`, `groupFree` + `groupCheapest`, rows with drawback facts, foot | deck name, original (name, price, over, colors, own drawback), rows (name, price or free, drawback kind + args, soft-held marker), `when` |
+| Lands | original is a land with colors; stand-ins found | head plate, `leadLands`, `groupSameType("lands")`, rows with drawback facts, foot | deck name, original (name, price, over, colors, own drawback), rows (name, price or free, drawback kind + args, soft-held marker), `when` |
 | Land, unnamed drawback | classifier returns "unnamed" for a stand-in | row facts `drawback.unnamed`, italic | `unnamed: true` |
 | Land, utility original (H3) | the original's text does more than make its colors | as Lands; each stand-in's facts add what it gives up | the original's named non-mana ability (new key) |
-| Fetch | original is a fetch land; stand-ins found by land types | head `jobFinds` + drawback, `leadFetch`, `groupFree` + `groupCheapest`, rows with `basicOnly` + drawback | types, `basicOnly`, entered-tapped / life drawbacks |
-| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, `leadSpells`, `groupFree`, `groupByCommander`, `groupUnlisted`, rows with role · MV and no figure; listed rows run by synergy, never drawn (v2 PR B) | roles, mv, commander short name |
+| Fetch | original is a fetch land; stand-ins found by land types | head `jobFinds` + drawback, `leadFetch`, `groupSameType("lands")`, rows with `basicOnly` + drawback | types, `basicOnly`, entered-tapped / life drawbacks |
+| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with MV and no figure (v2 D1) | roles, mv, commander short name |
 | Partner deck | spells kind, deck led by a pair | as Spells, `commander` = `A + B`, ordered by the pair's synergy from pair support | pair name |
-| Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | lead without its second clause (new key), `groupUnlisted` only | pair name |
+| Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | `leadSpellsOrderUnlisted` in the lead, the type groups as Spells | pair name |
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |
 | No role (land) | land with no color and no fetch | sentence `noRoleLand(name)` | name |
 | Nothing cheaper (spell) | no same-role card at MV ≤ is cheaper, and no free copy | sentence `nothingCheaper(roles, mv, commander, price)` | roles, mv, commander, original price |
 | Nothing cheaper (land) | no land making those colors is cheaper, and no free copy | sentence `nothingCheaperLand(colors, price)` | colors, original price |
-| Sold-out original (F5) | original's price state is sold out: never over, reached from the card modal | head with sold-out BuyTag and no over text; new free-only lead; `groupFree` only; foot | free stand-ins only |
+| Sold-out original (F5) | original's price state is sold out: never over, reached from the card modal | head with sold-out BuyTag and no over text; new free-only lead; the type groups, free rows only; foot | free stand-ins only |
 | Sold-out, no free copy (F5) | as above, no free stand-in | new price-free sentence | name, job |
 | Loading | payload not yet read | head plate, loading block (crown, `loadingHeading`, `loadingLands/Fetch/Spells`) | kind + colors / types / roles for the status |
 | Failed | payload read threw | head plate, failed block, Try again | original name (`kept`) |
