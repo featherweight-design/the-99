@@ -52,7 +52,7 @@
     },
     {
       "id": "results-narrow",
-      "label": "results: too narrow, a few fit",
+      "label": "results: one color exactly, one theme (best fits)",
       "view": "src/components/intake/narrow-note.tsx",
       "steps": [
         {
