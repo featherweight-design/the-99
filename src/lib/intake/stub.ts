@@ -1,6 +1,6 @@
 import type { ModelOutcome } from "../model/client";
 import { matchWords, type PhraseIndex } from "./match";
-import type { ReadResponse } from "./read";
+import { READ_MAX_CARDS, READ_MAX_THEMES, type ReadResponse } from "./read";
 
 /**
  * The model stand-in every non-production read uses unless `INTAKE_LIVE=1`, as the synopsis's
@@ -49,13 +49,13 @@ export function stubReply(words: string, index: PhraseIndex, mode: StubMode): Mo
   const { chips, phrases } = matchWords(words, index);
   const value: ReadResponse = { themes: [], cards: [], budgetDollars: null, bracket: null, notUnderstood: [] };
   for (const c of chips) {
-    if (c.kind === "theme" && value.themes.length < 6) value.themes.push(c.label);
-    if (c.kind === "card" && value.cards.length < 3) value.cards.push(c.name);
+    if (c.kind === "theme" && value.themes.length < READ_MAX_THEMES) value.themes.push(c.label);
+    if (c.kind === "card" && value.cards.length < READ_MAX_CARDS) value.cards.push(c.name);
     if (c.kind === "budget") value.budgetDollars = c.dollars;
     if (c.kind === "bracket") value.bracket = c.bracket;
   }
   // Inside the reply's own contract: at most six themes, as the real schema enforces.
-  if (mode === "wider" && !value.themes.includes("Tokens") && value.themes.length < 6) value.themes.push("Tokens");
+  if (mode === "wider" && !value.themes.includes("Tokens") && value.themes.length < READ_MAX_THEMES) value.themes.push("Tokens");
   // The player's own phrases, verbatim, as the model is asked to copy them.
   value.notUnderstood.push(...phrases.slice(0, 10).map((p) => p.slice(0, 120)));
   return { ok: true, value, usage: USAGE };
