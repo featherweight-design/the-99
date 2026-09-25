@@ -233,7 +233,8 @@ export function DeeperLook({
             type="button"
             onClick={press}
             disabled={closed !== null}
-            aria-label={`${pill}. ${label}.`}
+            // The cost first, in the name as on the pill; the live offer's name is the copy's own.
+            aria-label={closed === null && phase === "offer" ? copy.deeper.aria : `${pill}. ${label}.`}
             className={
               closed === null
                 ? `${buttonBase} border-0 bg-[color:var(--accent)] text-[color:var(--bg)] cursor-pointer`

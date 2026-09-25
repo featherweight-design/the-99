@@ -11,7 +11,7 @@
 //   4. Nothing moves, and the panel stays inside its bar.
 //
 // It reads the ledger, so it needs the database the server uses, and it deletes the intake rows it
-// caused in a `finally`. That database must be local-dev or a scratch branch: it refuses staging
+// caused, scoped to the account it signed in as and to the run's own window, in a `finally`. That database must be local-dev or a scratch branch: it refuses staging
 // and production, and a branch it cannot read.
 //
 //   PROBE_TARGET_URL=<scratch> E2E_AUDIT_USER_EMAIL=... PROBE_BASE=http://localhost:3220 \
@@ -69,8 +69,11 @@ function report(label, ok, detail) {
 const WORDS = "dinosaurs that stomp";
 const panel = (page) => page.locator(`${PAGE} [data-testid='deeper-look']`);
 const phase = (page) => panel(page).getAttribute("data-phase");
-const units = async (since) =>
-  (await sql`select status, count(*)::int as n from model_calls where feature = 'intake' and created_at >= ${since} group by status`)
+// Scoped to the signed-in fixture account: another account's presses during the run neither move
+// these counts nor get deleted by the cleanup.
+const players = new Set();
+const units = async (since, userId) =>
+  (await sql`select status, count(*)::int as n from model_calls where feature = 'intake' and user_id = ${userId} and created_at >= ${since} group by status`)
     .reduce((m, r) => ({ ...m, [r.status]: r.n }), {});
 
 // Words of its own per width: an ask already read is answered from the store, uncharged, and the
@@ -97,6 +100,9 @@ async function run() {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
       await signIn(page);
+      const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
+      if (!userId) throw new Error("no signed-in user id to scope the ledger to");
+      players.add(userId);
       const at = (s) => `${s} @ ${width}`;
 
       // 1. The offer.
@@ -115,7 +121,7 @@ async function run() {
       report(at("the panel sits inside the bar and does not overflow"), inside === true, String(inside));
 
       // 2. Stop while it runs.
-      const beforeStop = await units(t0);
+      const beforeStop = await units(t0, userId);
       await button.click();
       await page.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "looking", PAGE);
       const dimmed = await page.locator(`${PAGE} [data-testid='results-dim']`).getAttribute("data-looking");
@@ -129,7 +135,7 @@ async function run() {
       await page.locator(`${PAGE} button`, { hasText: "Stop" }).click();
       await page.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "offer", PAGE, { timeout: 30_000 });
       await page.waitForTimeout(6_000); // let the held reply land and settle, so the ledger is final
-      const afterStop = await units(t0);
+      const afterStop = await units(t0, userId);
       report(at("a Stop while it runs returns the offer and un-dims the results"),
         dimmed === "true" && (await page.locator(`${PAGE} [data-testid='results-dim']`).getAttribute("data-looking")) === null,
         `dimmed while looking: ${dimmed}`);
@@ -155,7 +161,7 @@ async function run() {
       report(at("the added chip is drawn dashed, and tagged"), chipStyle?.style === "dashed" && /Tokens.*deeper/.test(chipStyle.text ?? ""),
         JSON.stringify(chipStyle));
       report(at("offered once: no second press"), (await page.locator(`${PAGE} button`, { hasText: "Look deeper" }).count()) === 0, "none drawn");
-      const afterDone = await units(t0);
+      const afterDone = await units(t0, userId);
       report(at("and spends exactly one credit"), (afterDone.spent ?? 0) === (afterStop.spent ?? 0) + 1,
         `after the stop ${JSON.stringify(afterStop)}, after the look ${JSON.stringify(afterDone)}`);
 
@@ -166,9 +172,11 @@ async function run() {
     }
   } finally {
     await browser.close();
-    await sql`delete from intake_read_stops where created_at >= ${t0}`;
-    await sql`delete from intake_reads where created_at >= ${t0}`;
-    await sql`delete from model_calls where feature = 'intake' and created_at >= ${t0}`;
+    for (const id of players) {
+      await sql`delete from intake_read_stops where user_id = ${id} and created_at >= ${t0}`;
+      await sql`delete from intake_reads where user_id = ${id} and created_at >= ${t0}`;
+      await sql`delete from model_calls where feature = 'intake' and user_id = ${id} and created_at >= ${t0}`;
+    }
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;

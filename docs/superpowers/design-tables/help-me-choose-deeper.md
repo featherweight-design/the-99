@@ -214,11 +214,12 @@ answers / Start over). The bar is a flex column, gap 14; padding 14 (mobile) / 1
 | Property | Mobile | Desktop |
 |---|---|---|
 | Renders | in every state | same |
-| copy, 3a / 3d / 3e | `creditsCopy.standing` | same |
+| copy, 3a / 3d | `creditsCopy.first` (ruled: STATES "Credit line, by allowance" gives its examples in `first`'s wording, and a press follows) | same |
+| copy, 3e | `creditsCopy.standing` (no press follows) | same |
 | copy, 3b | `deeper.pendingLine` | same |
 | copy, 3c | `deeper.doneLine(creditsCopy.standing)` | same |
-| copy, 3f | `creditsCopy.spent`, widened (R4) — `deeper.spentLine(reopensAt)` in the copy file | same |
-| copy, 3g | `creditsCopy.paused`, reason widened (R4) | same |
+| copy, 3f | `creditsCopy.spent`. `deeper.spentLine` was dropped (orchestrator ruling); the widened tail naming deeper looks lands in `creditsCopy` with F9, in PR 6b | same |
+| copy, 3g | `creditsCopy.paused`; its reason widens with F9, in PR 6b | same |
 | copy, owner share | `creditsCopy.ownerShare` (R2) | same |
 | font-family | mono | mono |
 | font-size | 10px | 10.5px |
@@ -327,14 +328,14 @@ The same line as before a look; only its label key changes. It is not a chip.
 
 | State | Triggering condition | What renders | Key props |
 |---|---|---|---|
-| 3a offer (`leftover`) | Results screen; the submit had words; no look run for these words yet; ≥ 1 credit left; not paused or owner-share | Chips + `Not used` phrases; panel with title, lead, live button (`1 credit` · Look deeper), standing line; first results at opacity 1 | title `deeper.title`; lead `deeper.lead`; stub `deeper.cost`; label `deeper.action`; aria `deeper.aria`; line `creditsCopy.standing` |
+| 3a offer (`leftover`) | Results screen; the submit had words; no look run for these words yet; ≥ 1 credit left; not paused or owner-share | Chips + `Not used` phrases; panel with title, lead, live button (`1 credit` · Look deeper), standing line; first results at opacity 1 | title `deeper.title`; lead `deeper.lead`; stub `deeper.cost`; label `deeper.action`; aria `deeper.aria`; line `creditsCopy.first` |
 | 3a, words all matched (R1) | Same, but no phrase left unused (4c, 4d, 4e, 5b with words) | As 3a, without the Not used row | same as 3a |
 | 3b looking (`reading`) | The player pressed Look deeper; the look is running | Title and lead change; hairline button (`1 credit` · Looking…) in `--fg-muted` with Stop beside it; line `deeper.pendingLine`; first results at 0.45 | title `deeper.pendingTitle`; lead `deeper.pendingLead`; stub `deeper.cost`; label `deeper.actionPending`; Stop `deeper.stop`; line `deeper.pendingLine` |
 | 3c done (`read`) | The look returned ≥ 1 valid answer | Deeper chip(s) with dashed accent edge + `deeper`; `Still not used` with the remaining phrases; panel title + `DONE` tag, lead, no button, line; results re-ranked with the new answer's figure on each row (canvas: 3 figures) | title `deeper.doneTitle`; tag `deeper.doneTag`; lead `deeper.doneLead`; line `deeper.doneLine(standing)`; chip `readAs.deeperMark` |
-| 3d failed (`failed`) | The look errored or timed out; credit refunded | Title + `DIDN'T FINISH` tag (danger); failed lead; live button (`1 credit` · Try again); standing line; first results at 1; `Not used` unchanged | title `deeper.title`; tag `deeper.failTag`; lead `deeper.failedLead`; label `deeper.retry`; line `creditsCopy.standing` |
+| 3d failed (`failed`) | The look errored or timed out; credit refunded | Title + `DIDN'T FINISH` tag (danger); failed lead; live button (`1 credit` · Try again); standing line; first results at 1; `Not used` unchanged | title `deeper.title`; tag `deeper.failTag`; lead `deeper.failedLead`; label `deeper.retry`; line `creditsCopy.first` |
 | 3e nothing to add (`emptyread`) | The look returned no valid answer; credit refunded (READINESS 1, audit F4) | Title `Deeper look`, no tag; empty lead; no button (no second offer for the same words); standing line; `Still not used` with every phrase; first results | title `deeper.doneTitle`; lead `deeper.emptyLead`; line `creditsCopy.standing` |
-| 3f no credits (`spent`) | 0 credits left; not paused; owner share not used | Title + lead as 3a; disabled button (`0 left` · Look deeper); spent line; first results | stub `deeper.costSpent`; line `creditsCopy.spent` (widened, R4) |
-| 3g paused (`paused`) | App-wide spend limit reached (highest precedence) | Title + lead as 3a; disabled button (`Paused` · Look deeper); paused line; first results | stub `deeper.costPaused`; line `creditsCopy.paused` (reason widened, R4) |
+| 3f no credits (`spent`) | 0 credits left; not paused; owner share not used | Title + lead as 3a; disabled button (`0 left` · Look deeper); spent line; first results | stub `deeper.costSpent`; line `creditsCopy.spent` (widened with F9, PR 6b) |
+| 3g paused (`paused`) | App-wide spend limit reached (highest precedence) | Title + lead as 3a; disabled button (`Paused` · Look deeper); paused line; first results | stub `deeper.costPaused`; line `creditsCopy.paused` (reason widened with F9, PR 6b) |
 | Owner share (F11, no frame) | Owner's share used; not paused (precedes spent) | 3g's disabled button with a different line | stub `deeper.costPaused`; line `creditsCopy.ownerShare` |
 | No offer | Results screen and the submit had no words (2a blank, 4a, 4b, 4f, 5a, 5c–5e) | No panel; no deeper chip; no Not used row | — |
 
@@ -342,8 +343,8 @@ Credit line by allowance (the line in 3a/3d/3e and the stub):
 
 | Allowance | Stub | Button | Line |
 |---|---|---|---|
-| ≥ 1 left, none out | `1 credit` | live | `creditsCopy.standing` |
-| ≥ 1 left, some out | `1 credit` | live | `creditsCopy.standing` (with next-at time) |
-| 0 left | `0 left` | disabled | `creditsCopy.spent`, widened |
+| ≥ 1 left, none out | `1 credit` | live | `creditsCopy.first` |
+| ≥ 1 left, some out | `1 credit` | live | `creditsCopy.first` (with next-at time) |
+| 0 left | `0 left` | disabled | `creditsCopy.spent`, widened with F9 (PR 6b) |
 | owner's share used | `Paused` | disabled | `creditsCopy.ownerShare` |
 | app paused | `Paused` | disabled | `creditsCopy.paused`, reason widened |
