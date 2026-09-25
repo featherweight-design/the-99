@@ -1,5 +1,5 @@
 {
-  "id": "9a8546f1-a63a-4b82-a127-f911bd97101f",
+  "id": "d169e687-99c7-435d-ab3d-65c7bb6b2c51",
   "prevId": "8aa23115-6580-41a2-98fb-d22bddbd08cc",
   "version": "7",
   "dialect": "postgresql",
@@ -4128,7 +4128,7 @@
       "checkConstraints": {
         "model_calls_feature_check": {
           "name": "model_calls_feature_check",
-          "value": "\"model_calls\".\"feature\" in ('tuning', 'synopsis', 'intake')"
+          "value": "\"model_calls\".\"feature\" in ('tuning', 'synopsis')"
         },
         "model_calls_status_check": {
           "name": "model_calls_status_check",

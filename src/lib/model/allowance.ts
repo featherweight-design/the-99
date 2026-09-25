@@ -105,9 +105,9 @@ async function monthSpend(q: Tx | typeof db, userId: string, now: Date): Promise
  * What "one more call would not fit" is measured against: the named feature's own worst-case call,
  * or with none named, the cheapest call any feature can make.
  *
- * A panel names its feature. Measured against the cheapest instead, a cheap feature (Help me
- * choose's read) would leave a panel whose own call is larger saying it is available while its
- * reservation is refused (Help me choose plan, 2026-09-25).
+ * A panel names its feature. Measured against the cheapest instead, every panel but the cheapest
+ * feature's would say it is available in the month's last margin while its own reservation is
+ * refused: today tuning's call is the cheaper one, so the overview's panel would.
  */
 export function callMicroFor(feature?: ModelFeature): number {
   if (feature) return featureWorstCaseMicroUsd(feature);

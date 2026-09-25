@@ -4,8 +4,9 @@
 // WHAT ONLY A DATABASE CAN ANSWER HERE.
 //   THE MIGRATION'S RULES. A budget answer is whole dollars of at least $1 (stored as cents, a
 //   multiple of 100), a bracket answer is 1 to 5, a build-around card must be a card the catalog
-//   holds, `model_calls` accepts the new `intake` feature and still refuses an unknown one, and a
-//   player holds at most ONE pending deeper read. Each is a constraint or a partial index, which no
+//   holds, and a player holds at most ONE pending deeper read. `model_calls` does NOT yet accept an
+//   `intake` feature, and that is asserted too: the ledger may hold only features the code can
+//   price, so the constraint moves with the feature's `FEATURE_CALLS` entry (PR 4). Each is a constraint or a partial index, which no
 //   unit test here can reach.
 //   "PAUSED" IS JUDGED PER FEATURE. `readAllowance` compares the month's app-wide spend plus one
 //   call against the hard stop, and the call it adds is now the named feature's own worst case. A
@@ -17,8 +18,8 @@
 // between the two calls' worst cases. The cap is app-wide, so while it stands EVERY account on the
 // target reads paused for the dearer feature. That is why this probe is pointed at a SCRATCH
 // branch, never at `local-dev` where other sessions' dev servers read the same ledger. It refuses
-// to run when the month holds an unpriced call still in flight, whose worst case it cannot place
-// without restating `countsAtWorstCase`. Every row it writes is under a per-run `user_id` and is
+// to run when the month holds an unpriced call still inside `RESERVATION_TTL_MS`, which counts at
+// its worst case and which it cannot place without restating `countsAtWorstCase`. Every row it writes is under a per-run `user_id` and is
 // deleted in a `finally`.
 //
 //   PROBE_TARGET_URL=<scratch branch> pnpm probe:help-me-choose-plumbing
@@ -33,7 +34,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 
-import type { ModelFeature } from "../src/lib/model/allowance-rule";
+import { RESERVATION_TTL_MS, type ModelFeature } from "../src/lib/model/allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
 import { HARD_STOP_USD, monthStartUtc, usdToMicro } from "../src/lib/model/spend-rule";
 
@@ -89,13 +90,11 @@ async function migration() {
   check("a card the catalog does not hold is refused", await refusal(sql`
     update decks set answer_card_oracle_id = '00000000-0000-0000-0000-000000000000'::uuid where id = ${deck.id}`), "23503");
 
-  check("model_calls accepts the intake feature", await refusal(sql`
-    insert into model_calls (user_id, feature, status) values (${USER}, 'intake', 'refunded')`), null);
-  check("model_calls still refuses an unknown feature", await refusal(sql`
-    insert into model_calls (user_id, feature, status) values (${USER}, 'nonsense', 'refunded')`), "23514");
+  check("model_calls refuses intake until the code can price it", await refusal(sql`
+    insert into model_calls (user_id, feature, status) values (${USER}, 'intake', 'refunded')`), "23514");
 
   const [call] = await rows<{ id: string }>(sql`
-    insert into model_calls (user_id, feature, status) values (${USER}, 'intake', 'refunded') returning id`);
+    insert into model_calls (user_id, feature, status) values (${USER}, 'tuning', 'refunded') returning id`);
   const read = (status: string) => sql`
     insert into intake_reads (user_id, words_hash, model, model_call_id, status)
     values (${USER}, 'h', 'claude-sonnet-5', ${call.id}::uuid, ${status})`;
@@ -127,7 +126,7 @@ async function paused() {
   const [inFlight] = await rows<{ n: number }>(sql`
     select count(*)::int as n from model_calls
     where cost_micro_usd is null and status in ('reserved', 'refunded') and created_at >= ${start.toISOString()}::timestamp
-      and created_at > now() - interval '1 day'`);
+      and created_at > ${new Date(now.getTime() - RESERVATION_TTL_MS).toISOString()}::timestamp`);
   if (inFlight.n > 0) {
     check("no unpriced call is in flight this month (the sentinel cannot be placed otherwise)", inFlight.n, 0);
     return;

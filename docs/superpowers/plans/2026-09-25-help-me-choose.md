@@ -111,19 +111,22 @@ synopsis's.
 - Migration 0061 (ruling 3). It adds:
   - `intake_reads`;
   - the answer columns on `decks`;
-  - `'intake'` in `model_calls_feature_check`;
   - the card-first index on `commander_support_cards`, if the brief's index is not already there.
     It is: `commander_support_cards_oracle_idx` on `oracle_id`, so the migration adds none.
 - The per-feature paused check and its two readers.
-- The flag reader, `.env.example` and `docs/deployment.md`.
 - Tests, and `probe:help-me-choose-plumbing` for the migration and the paused check. It runs on a
   scratch branch rather than local-dev, because the paused case writes an app-wide spend sentinel
   that would pause every dev server reading local-dev's ledger.
 - **Moved to PR 4 while building:** the model feature (`'intake'` in `ModelFeature`, its
   `FEATURE_CALLS` entry, and `src/lib/intake/limits.ts`). `FEATURE_CALLS` holds each feature's
   measured input ceiling, and that is measured with count_tokens on the prompt, which PR 4 writes.
-  Registered here, it would be a guessed ceiling pricing every reservation. The database already
-  accepts `'intake'` from PR 1; nothing writes it until PR 4.
+  Registered here, it would be a guessed ceiling pricing every reservation. `'intake'` in
+  `model_calls_feature_check` moves with it, in PR 4's own migration: the ledger may hold only
+  features the code can price, since one unpriced row the code cannot price makes `readAllowance`
+  throw for every player.
+- **Moved to PR 5:** the flag reader, `.env.example` and `docs/deployment.md`. The route and the
+  doors it gates arrive there, and a flag with no reader would tell an operator to set a variable
+  that changes nothing.
 
 **PR 2: the search engine (brief §6).**
 - The literal matcher. Engineering owns its stop words.
@@ -158,7 +161,8 @@ synopsis's.
 
 **PR 4: the deeper read.**
 - The model feature, moved from PR 1: `ModelFeature`, `FEATURE_CALLS` with its measured input
-  ceiling, and `src/lib/intake/limits.ts`.
+  ceiling, `src/lib/intake/limits.ts`, and a migration adding `'intake'` to
+  `model_calls_feature_check`.
 - The prompt, the response schema, and the validator: vocabulary and catalog, with control beating
   words.
 - The run store and the reaper.
@@ -170,6 +174,7 @@ synopsis's.
 - Mutations.
 
 **PR 5: the intake and results screens.**
+- The flag reader, `.env.example` and `docs/deployment.md`, moved from PR 1.
 - `/decks/new/choose`:
   - the form (2a, 2b);
   - the results: the bar, the order line, 12 rows then *Show 12 more*, and the best-fit cards;
