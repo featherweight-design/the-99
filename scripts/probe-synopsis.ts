@@ -570,6 +570,59 @@ async function run() {
   check("…with nothing on screen", (await state()).synopsis, null);
   await fixture.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid`);
 
+  // 11c · THE LIST UNDER THE DECK ROW'S LOCK (found/notices-synopsis-stale-list-window). An edit
+  //       that commits after the write read its reading, and before the reservation, must refuse
+  //       the write with nothing reserved, rather than charge for and write the list it replaced.
+  //       Two connections, because a lock is invisible in every value the write returns: a second
+  //       one holds the deck row with an edit in flight, the write waits on the lock, and the edit
+  //       commits while it waits. With the lock removed the write reads the committed list before
+  //       the edit lands, reserves, and writes.
+  await analyze(deck.id);
+  {
+    const held = new Set(current.map((c) => c.oracle_id));
+    const spare = [...spares, ...body].find((c) => !held.has(c.oracle_id))!;
+    const out = current[0];
+    const before11c = await ledger();
+    // Its own pool: `pool` in this function is the fixture's card pool.
+    const lockPool = new Pool({ connectionString: DATABASE_URL });
+    const holder = await lockPool.connect();
+    try {
+      await holder.query("begin");
+      await holder.query("select 1 from decks where id = $1 for update", [deck.id]);
+      // The edit the way the app makes one: the swap and `touchDeck`'s dirty mark, in its transaction.
+      await holder.query("update deck_cards set oracle_id = $1 where deck_id = $2 and oracle_id = $3", [spare.oracle_id, deck.id, out.oracle_id]);
+      await holder.query("update deck_profiles set dirty = true where deck_id = $1", [deck.id]);
+      const racing = writeSynopsisFor(deck.id, USER, deps);
+      let waiting = false;
+      for (let i = 0; i < 100 && !waiting; i += 1) {
+        const [w] = await rows<{ n: number }>(sql`select count(*)::int as n from pg_stat_activity
+          where wait_event_type = 'Lock' and query ilike '%"decks"%for update%'`);
+        waiting = w.n > 0;
+        if (!waiting) await new Promise((r) => setTimeout(r, 100));
+      }
+      check("a write waits on the deck row while an edit holds it", waiting, true);
+      await holder.query("commit");
+      current.shift();
+      current.push(spare);
+      check("an edit landing while it waits refuses the write", (await racing).kind, "no_reading");
+      check("…reserving and charging nothing", await ledger(), before11c);
+      const [{ n }] = await rows<{ n: number }>(sql`select count(*)::int as n from deck_synopses where deck_id = ${deck.id}::uuid`);
+      check("…and writing no run", n, 0);
+    } finally {
+      await holder.query("rollback").catch(() => {});
+      holder.release();
+      await lockPool.end();
+    }
+    // Back to the list section 12 expects, the way the app would make the edit.
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`update deck_cards set oracle_id = ${out.oracle_id}::uuid
+        where deck_id = ${deck.id}::uuid and oracle_id = ${spare.oracle_id}::uuid`);
+      await touchDeck(tx, deck.id);
+    });
+    current.pop();
+    current.unshift(out);
+  }
+
   // 12 · The allowance: spent, the write says so, the analysis is untouched.
   await swap(body[1]); // left the deck in section 5
   await analyze(deck.id);
