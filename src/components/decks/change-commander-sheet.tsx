@@ -163,7 +163,7 @@ function Failed({ onRetry }: { onRetry: () => void }) {
       <span style={{ color: "var(--fg)", opacity: 0.3 }}><SwapGlyph size={56} /></span>
       <h3 className="font-display text-[21px]" style={{ color: "var(--fg)" }}>{copy.sheet.failed.heading}</h3>
       <p className="text-[13.5px]" style={{ color: "var(--fg-body)" }}>{copy.sheet.failed.body}</p>
-      <PrimaryButton className="min-h-[44px]" onClick={onRetry}>{copy.sheet.failed.cta}</PrimaryButton>
+      <PrimaryButton className="min-h-[44px] px-[18px] text-[13px]" onClick={onRetry}>{copy.sheet.failed.cta}</PrimaryButton>
     </div>
   );
 }
@@ -548,7 +548,7 @@ function Confirm({
       ) : null}
       <p className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{lands}</p>
       <div className="flex flex-col gap-[8px] md:flex-row">
-        <PrimaryButton className="min-h-[44px]" onClick={make} aria-busy={writing}>
+        <PrimaryButton className="min-h-[44px] px-[18px] text-[13px]" onClick={make} aria-busy={writing}>
           <span style={{ opacity: writing ? 0.6 : 1 }}>
             {writing
               ? copy.confirm.pending
@@ -559,7 +559,7 @@ function Confirm({
                   : copy.confirm.cta(nuShort)}
           </span>
         </PrimaryButton>
-        <GhostButton className="min-h-[44px]" onClick={onBack}>{copy.confirm.backList}</GhostButton>
+        <GhostButton className="min-h-[44px] px-[18px] text-[13px]" onClick={onBack}>{copy.confirm.backList}</GhostButton>
       </div>
       {failed ? (
         <p role="alert" className="font-mono text-[11px]" style={{ color: "var(--danger)" }}>

@@ -166,6 +166,11 @@ async function walk(page, width, fixture) {
   const back = dialog.getByRole("button", { name: "Back to the list" });
   report(`confirm ${tag}`, await back.isVisible(), "Back to the list visible");
   report(`list hidden ${tag}`, !(await rows.first().isVisible()), "rows hidden behind the confirm");
+  // The actions carry side padding: a button sized by its label alone reads as text on a slab.
+  for (const name of [/^Make .* commander$/, "Back to the list"]) {
+    const pad = await dialog.getByRole("button", { name }).evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+    report(`action padding ${tag}`, pad >= 12, `${name}: ${pad}px`);
+  }
   await back.click();
   report(`back ${tag}`, (await rows.count()) === count && (await rows.first().isVisible()), `${await rows.count()} row(s) again`);
   report(`back keeps the open row ${tag}`, (await figure.getAttribute("aria-expanded")) === "true", "still open");
