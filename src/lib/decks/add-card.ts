@@ -86,9 +86,9 @@ export async function addCardToDeckFor(
 
   // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
   // return before validation so a full deck doesn't spuriously reject it.
-  // Still revalidate: the click means this page's HTML disagreed with the row
-  // that exists, and without a fresh render the optimistic "✓ In deck" would
-  // flash back to "Add" when the transition ends.
+  // `held` still tells the caller to revalidate the deck's surfaces: the click means that page's
+  // HTML disagreed with the row that exists, and without a fresh render the optimistic "✓ In deck"
+  // would flash back to "Add" when the transition ends.
   if (existingRow && !isBasicLand(card.typeLine)) return { result: { ok: true }, wrote: "held" };
 
   // Lock the deck row so the 99-card cap check and the write are atomic —

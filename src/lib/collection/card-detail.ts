@@ -140,16 +140,6 @@ export function catalogCard(
 }
 
 /**
- * The decks printing this card, newest first.
- *
- * Membership-scoped like every other proxy read: a row whose card has left the
- * deck names no deck here. `pruneOrphanProxies` means such a row should not
- * exist at all, and this is the reading half of that belt-and-braces pair.
- *
- * Failure is swallowed to null-ish, as the availability read beside it is: the
- * modal omits a block rather than losing the card.
- */
-/**
  * The Fits door's gate, in one read: whether the card is Commander-legal, and whether the reader
  * has a deck with a commander. Swallowed to an empty object on failure, which leaves the door shut.
  */
@@ -169,6 +159,16 @@ async function fitsGate(userId: string, oracleId: string): Promise<{ commanderLe
   }
 }
 
+/**
+ * The decks printing this card, newest first.
+ *
+ * Membership-scoped like every other proxy read: a row whose card has left the
+ * deck names no deck here. `pruneOrphanProxies` means such a row should not
+ * exist at all, and this is the reading half of that belt-and-braces pair.
+ *
+ * Failure is swallowed to null-ish, as the availability read beside it is: the
+ * modal omits a block rather than losing the card.
+ */
 async function proxyingDecks(userId: string, oracleId: string): Promise<ProxyingDeck[] | null> {
   try {
     // INSIDE the try, as `pricesFor` does it: a module that fails to resolve is
