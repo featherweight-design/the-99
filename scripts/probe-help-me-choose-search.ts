@@ -155,6 +155,10 @@ async function main() {
   const basic = await searchCommanders(USER, { ...none, card: forest.oracle_id });
   check("a basic land is no build-around card, whatever the URL says", basic.order === "owned" && basic.card === null,
     `order ${basic.order}, card ${JSON.stringify(basic.card)}`);
+  check("and the owned order it falls back to still carries its support counts",
+    JSON.stringify(basic.rows.slice(0, 5).map((r) => [r.candidate.oracleId, r.candidate.ownedSupport]))
+      === JSON.stringify(all.rows.slice(0, 5).map((r) => [r.candidate.oracleId, r.candidate.ownedSupport])),
+    basic.rows.slice(0, 3).map((r) => `${r.candidate.name} ${r.candidate.ownedSupport}`).join(", "));
   const [a, b] = [await loadIntakeCatalog(), await loadIntakeCatalog()];
   check("the catalog is read once and kept", a === b && a.themes.length === vocab.length, `${a.themes.length} themes`);
 }

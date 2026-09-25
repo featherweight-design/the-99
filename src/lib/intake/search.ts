@@ -46,6 +46,9 @@ export async function loadIntakeCatalog(now: number = Date.now()): Promise<{ the
   const generation = await catalogGeneration();
   if (memo && memo.generation === generation && now - memo.at < CATALOG_MEMO_MS) return memo.value;
   const value = loadThemeVocabulary().then(async (themes) => ({ themes, index: await loadPhraseIndex(themes) }));
+  // A read that started earlier never replaces one that started later: around a catalog refresh
+  // an old-generation read can finish last, and must not roll the memo back to it.
+  if (memo && memo.at > now) return value;
   memo = { generation, at: now, value };
   // A failed read is not kept: the next request tries again.
   value.catch(() => { if (memo?.value === value) memo = null; });
@@ -70,8 +73,14 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
 /** The search, with the build-around card's own facts for its chip (owned, price, flags). */
 export type SearchOutcome = SearchResult & { card: CardFacts | null };
 
-export async function searchCommanders(userId: string, answers: Answers): Promise<SearchOutcome> {
-  const card = answers.card;
+export async function searchCommanders(userId: string, asked: Answers): Promise<SearchOutcome> {
+  // The card is resolved FIRST. A card id that parses but names no card any more (a stale link), or
+  // one the intake could never have offered (a basic, a banned card), is dropped, as every invalid
+  // answer is, and the search then runs as if no card were asked: every read below, the owned
+  // order's support counts included, is decided on the answers it actually runs.
+  const cardRow = asked.card === null ? null : await loadCardRow(userId, asked.card);
+  const card = cardRow === null ? null : asked.card;
+  const answers: Answers = { ...asked, card };
   // Owned support is the no-theme order's only input, and it is the dearest figure here: a count
   // over every commander's support list. It is read only when that order is the one in use.
   const needOwnedSupport = answers.themes.length === 0 && card === null;
@@ -109,11 +118,10 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
 
   const ids = rows.map((r) => r.id);
   const lookup = card === null ? ids : [...ids, card];
-  const [flags, prices, combos, cardRow] = await Promise.all([
+  const [flags, prices, combos] = await Promise.all([
     loadBracketFlags(lookup),
     loadPrices(lookup),
     card === null ? Promise.resolve(new Map<string, { combos: number; loops: number }>()) : loadCombosWith(card),
-    card === null ? Promise.resolve(null) : loadCardRow(userId, card),
   ]);
 
   const candidates: Candidate[] = rows.map((r) => ({
@@ -144,10 +152,7 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
     massLandDenial: flags.get(card)?.massLandDenial ?? false,
     extraTurn: flags.get(card)?.extraTurn ?? false,
   };
-  // A card id that parses but names no card any more (a stale link), or one the intake could never
-  // have offered (a basic, a banned card), is dropped, as every invalid answer is: the search then runs, and reports its order, as if no card were asked.
-  const effective = card !== null && cardRow === null ? { ...answers, card: null } : answers;
-  return { ...rankCandidates(candidates, effective, cardFacts), card: cardFacts };
+  return { ...rankCandidates(candidates, answers, cardFacts), card: cardFacts };
 }
 
 /**
