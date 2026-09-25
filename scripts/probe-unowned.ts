@@ -1,6 +1,6 @@
 // Gate 1 (state reachability) probe for #176 — hand-run, like probe-bottom.mjs.
 //
-// The unowned-staple branch in getDeckSuggestions is only reachable when EDHREC
+// The unowned-staple branch in loadDeckSuggestions is only reachable when EDHREC
 // returns topCards AND the catalog holds a colour-legal match the user does not
 // own and has not already added. Types compiling and the route computing the
 // field say nothing about that; this runs the real query against the real dev
@@ -12,6 +12,8 @@ import { and, arrayContained, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { cards, collectionItems, deckCards, decks } from "../src/db/schema";
 import { getEdhrecData } from "../src/lib/edhrec/client";
+import { loadDeckSuggestions } from "../src/lib/decks/suggestions-read";
+import { SHELF_CAP } from "../src/lib/decks/shelf-cap";
 
 async function main() {
   const deckRows = await db
@@ -66,6 +68,9 @@ async function main() {
       ).length;
     }
 
+    const { suggestions } = await loadDeckSuggestions(deck.id, deck.userId);
+    const unownedFromLoader = suggestions.filter((s) => !s.owned).length;
+
     console.log(
       [
         `deck ${deck.id.slice(0, 8)}`,
@@ -74,7 +79,12 @@ async function main() {
         `catalog matches ${candidates}`,
         `owned ${owned.size}`,
         `in deck ${inDeck.size}`,
-        `-> unowned suggestions ${Math.min(eligible, 5)}`,
+        `eligible ${eligible}`,
+        // The loader's own count, not a restatement of its slice: a literal here once
+        // said five while the shelf was capped at six, and agreed with a loader that
+        // had the same stale five (#391). With eligible >= SHELF_CAP this must read
+        // SHELF_CAP.
+        `-> unowned suggestions ${unownedFromLoader} (cap ${SHELF_CAP})`,
       ].join(" · "),
     );
   }
