@@ -82,7 +82,16 @@ function useSearch(
     } else if (e.key === "Enter" && searching) {
       e.preventDefault();
       const first = result.chapters[0]?.entries[0];
-      if (first) window.location.hash = first.id;
+      if (!first) return;
+      // Press the row rather than set the hash: setting the hash the address
+      // already carries does nothing at all, so a second Enter on the same
+      // query would neither scroll nor re-land the jump mark. A click on the
+      // row's own link does both, same hash or not.
+      const row = [...(list.current?.querySelectorAll<HTMLAnchorElement>("a[data-entry-row]") ?? [])].find(
+        (a) => a.getAttribute("href") === `#${first.id}`,
+      );
+      if (row) row.click();
+      else window.location.hash = first.id;
     } else if (e.key === "ArrowDown" && searching) {
       e.preventDefault();
       list.current?.querySelector<HTMLAnchorElement>("a[data-entry-row]")?.focus();

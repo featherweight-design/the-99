@@ -81,16 +81,28 @@ describe("the search (§R)", () => {
     expect((field(rail()) as HTMLInputElement).value).toBe("");
   });
 
-  it("jumps to the first match on Enter, and clears on Escape (§R5)", () => {
+  // Enter presses the first row's link (next test). jsdom does not follow a
+  // link to a fragment, so the address is read in a browser, by probe:about.
+  it("clears on Escape (§R5)", () => {
     render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
     type(rail(), "combo");
-    const first = entryRows(rail())[0].getAttribute("href")!;
+    fireEvent.keyDown(field(rail()), { key: "Escape" });
+    expect((field(rail()) as HTMLInputElement).value).toBe("");
+  });
+
+  it("presses the first row on Enter, so a second Enter on the same query lands again", () => {
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    type(rail(), "combo");
+    const row = entryRows(rail())[0];
+    const pressed = vi.fn();
+    row.addEventListener("click", pressed);
     act(() => {
       fireEvent.keyDown(field(rail()), { key: "Enter" });
     });
-    expect(window.location.hash).toBe(first);
-    fireEvent.keyDown(field(rail()), { key: "Escape" });
-    expect((field(rail()) as HTMLInputElement).value).toBe("");
+    act(() => {
+      fireEvent.keyDown(field(rail()), { key: "Enter" });
+    });
+    expect(pressed).toHaveBeenCalledTimes(2);
   });
 
   it("moves into the list on the down arrow", () => {
