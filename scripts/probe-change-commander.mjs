@@ -430,7 +430,8 @@ async function main() {
         await htDialog.waitFor({ state: "hidden" });
       }
     }
-    // The outcome on the review page: the note names both fates, and the footer counts 1 back in the pool.
+    // The outcome on the review page: the note names both fates, the columns' notes and rows, and
+    // the footer counts 1 back in the pool.
     await page.goto(`${BASE}/decks/${ht.deckId}/changes`, { waitUntil: "domcontentloaded" });
     const htSection = onPage(page, '[data-testid="review-commander"]');
     await htSection.waitFor({ state: "visible", timeout: 30_000 });
@@ -442,7 +443,18 @@ async function main() {
     report("half-trade going-out note", htColumns.includes("it moves to the command zone"), htColumns.slice(0, 160));
     // The old commander moving into the 98 keeps the copy it led with: no buy tag on its row, even
     // though the fixture's collection does not hold it.
-    report("half-trade: the returning commander buys nothing", !/buy·\$/.test(htColumns), htColumns.slice(0, 160));
+    // Read on the row itself (the one carrying a command-zone hint in Coming in), for any buy tag:
+    // priced, unpriced (`buy` alone) or sold out.
+    const returningRow = await onPage(page, "#review").evaluate((el) => {
+      const hint = el.querySelector('[data-zone-hint="in"]');
+      let row = hint;
+      while (row && row.parentElement && !row.parentElement.matches("ul, ol, section, #review")) row = row.parentElement;
+      return row?.textContent ?? null;
+    });
+    report("half-trade: the returning commander buys nothing", returningRow !== null && !/buy/i.test(returningRow), returningRow ?? "no row");
+    // The footer counts the one released commander back in the pool.
+    const footer = (await onPage(page, "#review").evaluate((el) => el.closest("main")?.textContent ?? "")) ?? "";
+    report("half-trade: 1 back in the pool", /1 back in the pool/.test(footer), "footer");
   } finally {
     // Each step on its own, so one failing cannot skip the next.
     for (const id of made) await sql`delete from decks where id = ${id}`.catch((e) => { failures += 1; console.error(e); });

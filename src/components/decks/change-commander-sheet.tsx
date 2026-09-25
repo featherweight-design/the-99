@@ -635,7 +635,11 @@ function StaysChoice({
 function InFate({ half, body, newestAsOf }: { half: CandidateHalf; body: number; newestAsOf: Date | null }) {
   if (half.inDeck) return <>{copy.confirm.cardFromBody(body)}</>;
   if (!half.owned) return <BuyTag variant="row" price={half.price} newestAsOf={newestAsOf} />;
-  return half.availability && half.availability.free > 0 ? <>{copy.sheet.free}</> : null;
+  // Owned but every copy held elsewhere: the list row's held marker, so the confirm still says so.
+  if (!half.availability) return null;
+  return half.availability.free > 0
+    ? <>{copy.sheet.free}</>
+    : <AvailabilityMarker availability={half.availability} density="row" />;
 }
 
 function Confirm({

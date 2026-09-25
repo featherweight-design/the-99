@@ -509,6 +509,12 @@ export type DraftRows = {
   rows: { in: DraftRow[]; out: DraftRow[] };
 };
 
+/** Whether an add is an old commander the change moved into the 99. */
+function returnsFromCommand(state: DraftState, oracleId: string, added: boolean): boolean {
+  const from = state.commander?.from;
+  return added && from !== undefined && (from.commanderOracleId === oracleId || from.partnerOracleId === oracleId);
+}
+
 /**
  * Every changed card with the facts a row draws.
  *
@@ -517,12 +523,6 @@ export type DraftRows = {
  * it. `quantity` on each row is the DELTA, which is what the row's figure means
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
-/** Whether an add is an old commander the change moved into the 99. */
-function returnsFromCommand(state: DraftState, oracleId: string, added: boolean): boolean {
-  const from = state.commander?.from;
-  return added && from !== undefined && (from.commanderOracleId === oracleId || from.partnerOracleId === oracleId);
-}
-
 export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
   const read = await readDraft(deckId, userId, true);
   const { state } = read;
