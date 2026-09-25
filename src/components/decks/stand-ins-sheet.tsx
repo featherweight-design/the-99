@@ -53,9 +53,9 @@ const factOf = (cents: number, foilOnly: boolean, asOf: Date): PriceFact =>
   ({ cents: foilOnly ? null : cents, foilCents: foilOnly ? cents : null, etchedCents: null, asOf });
 
 const APPLY =
-  "inline-flex items-center justify-center h-[44px] w-[72px] rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]";
+  "inline-flex items-center justify-center h-[44px] w-[72px] rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] leading-none bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]";
 const QUIET =
-  "ml-auto min-h-[44px] rounded-[8px] px-[14px] text-[13px] md:min-h-[32px] md:rounded-[7px] md:px-[11px] md:py-[6px] md:text-[12px] font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]";
+  "ml-auto min-h-[44px] rounded-[8px] px-[14px] text-[13px] md:min-h-[32px] md:rounded-[7px] md:px-[11px] md:py-[6px] md:text-[12px] leading-none font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]";
 
 /** What the sheet knows about one row's Take: the press in flight, a refusal, or a throw. */
 type RowTake = {
@@ -141,14 +141,14 @@ function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newest
             <button
               type="button"
               onClick={take.refused.onReread}
-              className="inline-flex items-center justify-center h-[44px] px-[14px] rounded-[8px] text-[13px] md:h-auto md:px-[13px] md:py-[6px] md:rounded-[7px] md:text-[12.5px] font-semibold bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
+              className="inline-flex items-center justify-center h-[44px] px-[14px] rounded-[8px] text-[13px] md:h-auto md:px-[13px] md:py-[6px] md:rounded-[7px] md:text-[12.5px] leading-none font-semibold bg-transparent cursor-pointer text-[color:var(--accent)] [border:1px_solid_var(--accent)]"
             >
               {copy.refused.reread}
             </button>
             <button
               type="button"
               onClick={take.refused.onClose}
-              className="min-h-[44px] px-[10px] rounded-[8px] text-[13px] md:min-h-[30px] md:px-[6px] md:py-[4px] md:rounded-[7px] md:text-[12px] font-medium bg-transparent border-0 cursor-pointer text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+              className="min-h-[44px] px-[10px] rounded-[8px] text-[13px] md:min-h-[30px] md:px-[6px] md:py-[4px] md:rounded-[7px] md:text-[12px] leading-none font-medium bg-transparent border-0 cursor-pointer text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
             >
               {copy.refused.close}
             </button>

@@ -1,5 +1,7 @@
 # Design table: Take, the receipt, the card's door and the stacked card (swap tools PR 4b)
 
+**Addendum (#949).** The revised `Stand-ins Sheet.dc.html` makes Take, taken's Undo swap, `Read the list again` and `Close` real `<button>`s built on `btn` and `quiet`, both of which now carry `lineHeight: 1`. Each is drawn `leading-none`, so the desktop buttons are 3–4px shorter than the R2 spans.
+
 **Sources.** `design/design_handoff_the99_swap_tools/`: `Stand-ins Sheet.dc.html` (primary for Take, taken,
 `takenNote` and the refused panel: the template at :78-121 and `renderVals()` at :132-245), `Shopping View.dc.html`
 (the receipt, the bought stand-in's pending rule, the strip, pill and group counts after a take: template :94-99,
