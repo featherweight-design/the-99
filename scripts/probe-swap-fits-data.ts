@@ -29,6 +29,7 @@ import { addCardToDeckFor } from "../src/lib/decks/add-card";
 import { primaryRole } from "../src/lib/decks/read";
 import { commitVersion } from "../src/lib/decks/versions";
 import { loadFits } from "../src/lib/swaps/fits";
+import { loadCardDetail } from "../src/lib/collection/card-detail";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -119,6 +120,14 @@ async function main() {
   await commitVersion(holds, null);
   const owned = await loadFits(USER, x.oracle_id);
   check("availability: owned and free", [owned?.owned, owned?.free], [2, 1]);
+
+  // 3b. The Fits door's gate rides BOTH branches of the card payload: an owned card (two copies
+  //     above) and an unowned one, and it reads no decks for a reader who has none.
+  const ownedCard = await loadCardDetail(USER, x.oracle_id);
+  check("gate: an owned card carries it", [ownedCard?.commanderLegal, ownedCard?.hasDecks], [true, true]);
+  const unownedCard = await loadCardDetail(USER, peers[0].oracle_id);
+  check("gate: an unowned card carries it", [unownedCard?.quantity, unownedCard?.commanderLegal, unownedCard?.hasDecks], [0, true, true]);
+  check("gate: a reader with no decks has none", (await loadCardDetail(`${USER}-nobody`, x.oracle_id))?.hasDecks, false);
 
   // 4. A deck the card LEADS holds it, even with no deck_cards row.
   const led = await loadFits(USER, x.commander);

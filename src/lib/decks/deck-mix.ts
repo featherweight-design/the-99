@@ -66,7 +66,10 @@ export async function loadDeckMix(deckId: string, userId: string): Promise<Recom
 
 /** A deck's commanders, as `loadMixesForCommanders` keys them. */
 export type CommanderPair = { commanderOracleId: string; partnerOracleId: string | null };
-export const mixKey = (p: CommanderPair) => `${p.commanderOracleId}|${p.partnerOracleId ?? ""}`;
+/** The pair's key, ORDER-INSENSITIVE: two decks choosing the same partners in opposite columns ask
+ *  the same question, and the skeleton read canonicalizes the pair anyway. */
+export const mixKey = (p: CommanderPair) =>
+  p.partnerOracleId === null ? `${p.commanderOracleId}|` : [p.commanderOracleId, p.partnerOracleId].sort().join("|");
 
 /**
  * The mix for MANY decks at once (Fits your decks), resolved once per distinct commander pair

@@ -14,6 +14,13 @@ const flat = recommendedMix(null, false);
 const mixesFor = (rows: DeckRow[], mix: RecommendedMix = measured) =>
   new Map(rows.map((r) => [mixKey({ commanderOracleId: r.commander_oracle_id, partnerOracleId: r.partner_oracle_id }), mix]));
 
+describe("mixKey", () => {
+  it("keys a pair the same whichever column each commander sits in", () => {
+    expect(mixKey({ commanderOracleId: "a", partnerOracleId: "b" })).toBe(mixKey({ commanderOracleId: "b", partnerOracleId: "a" }));
+    expect(mixKey({ commanderOracleId: "a", partnerOracleId: null })).not.toBe(mixKey({ commanderOracleId: "a", partnerOracleId: "b" }));
+  });
+});
+
 describe("shapeFits", () => {
   it("sorts the decks into fit, holds and ruled out by colors, each by name", () => {
     const rows = [

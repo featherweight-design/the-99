@@ -1,3 +1,4 @@
+import type { SQL } from "drizzle-orm";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { ModalComboPartner } from "../combos/near-miss";
 // One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
@@ -143,16 +144,21 @@ export function catalogCard(
  * The Fits door's gate, in one read: whether the card is Commander-legal, and whether the reader
  * has a deck with a commander. Swallowed to an empty object on failure, which leaves the door shut.
  */
-async function fitsGate(userId: string, oracleId: string): Promise<{ commanderLegal?: boolean; hasDecks?: boolean }> {
+type GateReader = { execute: (q: SQL) => Promise<{ rows: unknown[] }> };
+export async function fitsGate(
+  userId: string,
+  oracleId: string,
+  on?: GateReader,
+): Promise<{ commanderLegal?: boolean; hasDecks?: boolean }> {
   try {
-    const { db } = await import("../../db");
+    const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
     const { sql } = await import("drizzle-orm");
-    const { rows } = await db.execute<{ commander_legal: boolean; has_decks: boolean }>(sql`
+    const { rows } = await reader.execute(sql`
       select c.commander_legal,
         exists (select 1 from decks d where d.user_id = ${userId} and d.commander_oracle_id is not null) as has_decks
       from cards c where c.oracle_id = ${oracleId}
     `);
-    const r = rows[0];
+    const r = rows[0] as { commander_legal: boolean; has_decks: boolean } | undefined;
     return r ? { commanderLegal: r.commander_legal, hasDecks: r.has_decks } : {};
   } catch {
     return {};
