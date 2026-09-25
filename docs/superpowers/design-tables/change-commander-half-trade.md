@@ -132,7 +132,7 @@ elements they sit inside where a value is needed to place them.
 | A7.3 | Sentence (stay Thrasios) | text | `Reyhan leaves the 98 for the command zone, and Ishai joins it there. Thrasios takes Reyhan's slot, and Tymna leaves the deck. The deck stays at 98.` | same |
 | A7.4 | Sentence (stay Tymna) | text | `… Tymna takes Reyhan's slot, and Thrasios leaves the deck. The deck stays at 98.` | same |
 | A7.5 | Buy line | render | — (fixture owns both; shipped buy line unchanged when present) | — |
-| A7.6 | Lands line | text | `Lands in your pending changes, not yet a version. Discard puts all three back where they were.` (`landsHalfTrade`) | same |
+| A7.6 | Lands line | text | `Lands in your pending changes, not yet a version. Discard undoes the whole swap.` (`landsHalfTrade`; Hugh's tightening at /copy-review, 2026-09-25. The canvas draws "Discard puts all three back where they were.") | same |
 | A7.7 | Lands line | type | Plex Mono 10.5px; lh 1.6; `var(--fg-faint)`; text-wrap pretty | same |
 
 ### A8. Footer buttons
