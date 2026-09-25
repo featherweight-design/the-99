@@ -2,6 +2,9 @@
 
 **Status: 🟢 Approved (user LGTM, 2026-09-24).** Hugh still owes two decisions, listed below. The canonical canvas is `The 99 - Swap Tools.dc.html`. `README.md` §R2–§R4 record every change after R1. Where they disagree with R1, the later round wins.
 
+## Addendum (2026-09-24, approved)
+`addendum_staples_door_stacking/` answers three questions the build was waiting on: the staple read, the door on the shipped modal, and card → sheet → card. Its `ADDENDUM-README.md` wins on those three questions. It supersedes amendment 3(b) below: the door moves to the art column on desktop, and to a 44px strip under the art header on the phone.
+
 ## Files
 | File | What engineering takes from it |
 |---|---|
@@ -51,6 +54,7 @@
 7. **Copy.**
 
 ## Checks
+- **Buttons are real `<button>`s**, matching the Apply skin in `suggestion-card.tsx`: 1px `--accent` border, transparent fill, radius 7 on desktop and 8 on the phone. The quiet skin is `--border-strong` and `--fg-muted`.
 - **No score and no combined figure.** Stand-in facts are separate clauses. Each fitting deck shows two chips with no joining glyph.
 - **Colour never carries a state alone.**
   - Over the limit also shows `over $10`, and free also shows `free`.

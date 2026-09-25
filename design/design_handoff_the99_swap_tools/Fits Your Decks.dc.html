@@ -110,8 +110,8 @@
             <div style="display:flex;flex-direction:column;gap:7px;padding:10px 0;border-bottom:1px solid var(--border);">
               <div style="display:flex;align-items:center;gap:10px;min-width:0;">
                 <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">{{ r.name }}</span>
-                <sc-if value="{{ r.addFree }}" hint-placeholder-val="{{ true }}"><span aria-label="Add {{ card.name }} to the {{ r.name }} draft, using your free copy" style="{{ addStyle }}">Add</span></sc-if>
-                <sc-if value="{{ r.addBuy }}" hint-placeholder-val="{{ false }}"><span aria-label="Add {{ card.name }} to the {{ r.name }} draft as a card to buy" style="{{ addBuyStyle }}">Add to buy</span></sc-if>
+                <sc-if value="{{ r.addFree }}" hint-placeholder-val="{{ true }}"><button type="button" aria-label="Add {{ card.name }} to the {{ r.name }} draft, using your free copy" style="{{ addStyle }}">Add</button></sc-if>
+                <sc-if value="{{ r.addBuy }}" hint-placeholder-val="{{ false }}"><button type="button" aria-label="Add {{ card.name }} to the {{ r.name }} draft as a card to buy" style="{{ addBuyStyle }}">Add to buy</button></sc-if>
                 <sc-if value="{{ r.added }}" hint-placeholder-val="{{ false }}"><span style="{{ addedStyle }}"><span aria-hidden="true" style="width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:9px;border:1px solid var(--success);">✓</span>in the draft</span></sc-if>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -185,8 +185,8 @@ class Component extends DCLogic {
       copies,
       copiesStyle: { flex: "none", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11.5, color: copies && copies.includes("none") ? "var(--avail-hard-fg)" : "var(--fg-body)", whiteSpace: "nowrap" },
       addBuyStyle: phone
-        ? { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, padding: "0 12px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" }
-        : { flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 11px", fontSize: 12, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" },
+        ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, padding: "0 12px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" }
+        : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 11px", fontSize: 12, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" },
       phone, wide, isCard, isPicker: !isCard, card, rows, minorGroups, sentence, loading, crown,
       hasJoin: rows.length > 0,
       pipStyle: { flex: "none", width: 24, height: 24, borderRadius: "50%", background: card.pip, marginTop: 4 },
@@ -208,8 +208,8 @@ class Component extends DCLogic {
       bodyStyle: { padding: phone ? "14px 16px 24px" : "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14 },
       minorRow: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 44 : 34, borderBottom: "1px solid var(--border)" },
       addStyle: phone
-        ? { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, minWidth: 64, padding: "0 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
-        : { flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" },
+        ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, minWidth: 64, padding: "0 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+        : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" },
       addedStyle: { flex: "none", display: "inline-flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: 9.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--success)" },
     };
   }

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --accent-strong:#AB6E37; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-hard:var(--accent); --avail-hard-fg:#D9975C; --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --accent-strong:#D33E7E; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-hard:var(--accent); --avail-hard-fg:#DF8AA7; --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:none;width:322px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 28px;background:var(--bg);">
+      <div style="width:264px;height:368px;border-radius:13px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;padding:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ c.artName }}</span></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Click to zoom</span>
+      <sc-if value="{{ c.flip }}" hint-placeholder-val="{{ false }}"><span aria-label="Turn the card over" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg-body);">↻</span></sc-if>
+      <span style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;">{{ c.price }}</span><sc-if value="{{ c.from }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ c.from }}</span></sc-if></span>
+      <sc-if value="{{ door }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:2px;">
+          <span style="{{ doorLimitStyle }}">{{ doorLimit }}</span>
+          <sc-if value="{{ doorLink }}" hint-placeholder-val="{{ true }}"><span role="button" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;"><span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;">⇄</span><span style="border-bottom:1px solid var(--accent-shadow);">See cheaper stand-ins →</span></span></sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;flex:none;height:180px;background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;justify-content:space-between;padding:12px 16px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ c.artName }}</span>
+      <span style="display:flex;align-items:center;gap:8px;"><sc-if value="{{ c.flip }}" hint-placeholder-val="{{ false }}"><span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);font-size:14px;color:var(--fg-body);">↻</span></sc-if><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;background:var(--bg);">{{ c.price }}</span></span>
+      <span aria-label="{{ phoneCloseAria }}" style="position:absolute;top:6px;right:6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg);">×</span>
+    </div>
+    <sc-if value="{{ door }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 6px 0 16px;border-bottom:1px solid var(--border);background:var(--bg);">
+        <span style="{{ doorLimitStylePhone }}">{{ doorLimit }}</span>
+        <sc-if value="{{ doorLink }}" hint-placeholder-val="{{ true }}"><span role="button" style="flex:none;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 10px;font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;"><span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;">⇄</span><span style="border-bottom:1px solid var(--accent-shadow);">See cheaper stand-ins →</span></span></sc-if>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <div style="{{ rightStyle }}">
+    <div style="{{ viewportStyle }}">
+      <div style="{{ scrollStyle }}">
+        <div style="{{ titleBlock }}">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <h2 style="{{ titleStyle }}">{{ c.name }}</h2>
+            <sc-if value="{{ c.pipsBeside }}" hint-placeholder-val="{{ true }}"><span style="flex:none;display:flex;gap:4px;margin-top:6px;"><sc-for list="{{ c.pips }}" as="p" hint-placeholder-count="1"><span style="{{ p.style }}">{{ p.t }}</span></sc-for></span></sc-if>
+          </div>
+          <span style="font-size:14px;line-height:1.5;color:var(--fg-muted);">{{ c.type }}</span>
+          <sc-if value="{{ c.pipsBelow }}" hint-placeholder-val="{{ false }}"><span style="display:flex;gap:5px;margin-top:6px;"><sc-for list="{{ c.pips }}" as="p" hint-placeholder-count="3"><span style="{{ p.style }}">{{ p.t }}</span></sc-for></span></sc-if>
+        </div>
+
+        <div style="{{ box }}"><sc-for list="{{ c.oracle }}" as="o" hint-placeholder-count="2"><p style="margin:0 0 10px;font-size:14.5px;line-height:1.7;color:var(--fg-body);">{{ o }}</p></sc-for></div>
+
+        <sc-if value="{{ c.facts }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ box }}">
+            <h3 style="margin:0 0 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Bracket facts</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <span style="display:flex;align-items:center;gap:12px;font-size:15px;color:var(--fg-body);"><span aria-hidden="true" style="width:16px;text-align:center;color:var(--fact);">ϟ</span>game changer</span>
+              <span style="display:flex;align-items:center;gap:12px;font-size:15px;color:var(--fg-body);"><span aria-hidden="true" style="width:16px;text-align:center;color:var(--fact);">⤒</span>tutor</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ c.combos }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ comboBox }}">
+            <span aria-hidden="true" style="font-size:16px;color:var(--fact);">∞</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Two-card combos</span>
+            <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">1 you own</span>
+            <span aria-hidden="true" style="font-size:9px;color:var(--fg-muted);">▼</span>
+          </div>
+        </sc-if>
+
+        <div style="{{ box }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">×{{ c.owned }}</span><sc-if value="{{ c.noneFree }}" hint-placeholder-val="{{ true }}"><span style="color:var(--fg-faint);">·</span><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--avail-hard-fg);"><span style="display:block;width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span>none free</span></sc-if></div>
+          <sc-if value="{{ c.claims }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your decks</div>
+            <sc-for list="{{ c.claims }}" as="d" hint-placeholder-count="1"><div style="margin-top:8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--fg-body);"><span style="text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-strong);">{{ d }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">{{ c.claimNote }}</span></div></sc-for>
+            <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">{{ c.split }}</div>
+            <sc-if value="{{ c.noneFree }}" hint-placeholder-val="{{ true }}"><p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:var(--fg-muted);">You can still build with it. You’d be taking it out of something.</p></sc-if>
+          </sc-if>
+        </div>
+
+        <div style="{{ metaStyle }}">
+          <sc-if value="{{ c.setPicker }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:7px;margin:-10px -12px;padding:10px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--elevated);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-faint);">SET</span><span style="font-size:14.5px;color:var(--fg);white-space:nowrap;">{{ c.set }}</span><span style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;color:var(--accent);white-space:nowrap;"><span style="display:block;width:6px;height:6px;transform:rotate(45deg);background:var(--accent);"></span>YOUR PICK <span style="color:var(--fg-faint);">· of 2 ▾</span></span></div>
+          </sc-if>
+          <sc-if value="{{ c.setPlain }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-faint);">SET</span><span style="font-size:14.5px;color:var(--fg);white-space:nowrap;">{{ c.set }}</span></div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-faint);">RARITY</span><span style="font-size:14.5px;color:var(--accent);">{{ c.rarity }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-faint);">IDENTITY</span><span style="display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--fg);white-space:nowrap;"><span style="{{ c.idDot }}"></span>{{ c.identity }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-faint);">YOU OWN</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);white-space:nowrap;">{{ c.youOwn }}</span></div>
+        </div>
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><div style="height:1px;"></div></sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{ stacked }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ stackFoot }}">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;"><span style="min-width:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ inPlaceOf }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ c.price }}</span></span></div>
+        <button type="button" style="{{ takeStyle }}">{{ takeLabel }}</button>
+        <span style="{{ stackNav }}"><span style="color:var(--accent);">‹</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">3 of 4</span><span style="color:var(--accent);">›</span></span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ notStacked }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ footStyle }}">
+      <div style="{{ footLinks }}">
+        <span style="{{ linkStyle }}"><span style="border-bottom:1px solid var(--accent-shadow);">Buy any printing at Mana Pool ↗</span></span>
+        <span role="button" style="{{ findStyle }}"><span aria-hidden="true" style="display:flex;gap:3px;"><span style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--accent);"></span><span style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--accent);"></span></span><span style="border-bottom:1px solid var(--accent-shadow);">Find a deck for it →</span></span>
+      </div>
+      <span style="{{ navStyle }}"><span style="color:var(--fg-locked);">‹ Prev</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">{{ c.pos }}</span><span style="color:var(--accent);">Next ›</span></span>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ stackedWide }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:22px;right:22px;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--border-strong);background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;"><span aria-hidden="true">←</span>Cheaper stand-ins</span></sc-if>
+    <sc-if value="{{ plainWide }}" hint-placeholder-val="{{ true }}"><span aria-label="Close" style="position:absolute;top:22px;right:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:15px;color:var(--fg-body);">✕</span></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:824,&quot;height&quot;:625},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;card&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mutation&quot;,&quot;tutor&quot;,&quot;tovolar&quot;,&quot;birds&quot;,&quot;plateau&quot;,&quot;karplusan&quot;,&quot;canyon&quot;],&quot;default&quot;:&quot;plateau&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;scroll&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;top&quot;,&quot;bottom&quot;],&quot;default&quot;:&quot;top&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;door&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;over&quot;,&quot;under&quot;,&quot;swapped&quot;],&quot;default&quot;:&quot;over&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;stacked&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const wide = !phone;
+    const which = this.props.card ?? "mutation";
+    const bottom = (this.props.scroll ?? "top") === "bottom";
+    const pip = (t, bg, fg = "#1A1612") => ({ t, style: { width: 26, height: 26, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 600, background: bg, color: fg } });
+    const W = "#D8D2C4", R = "#E59A76", U = "#AFCDEB", G = "#9CC39A";
+    const dot = (bg) => ({ width: 16, height: 16, borderRadius: "50%", background: bg, flex: "none" });
+    const C = {
+      mutation: { name: "Acquired Mutation", artName: "Acquired Mutation", type: "Enchantment — Aura", pips: [pip("2", W), pip("R", R)], oracle: ["Enchant creature", "Enchanted creature gets +2/+2 and is goaded. (It attacks each combat if able and attacks a player other than you if able.)", "Whenever enchanted creature attacks, defending player gets two rad counters."], price: "$0.15", from: "", owned: "1", claims: ["HD Tune - Scrappy Survivors"], split: "1 in use · 0 free", set: "PIP · 53", rarity: "Uncommon", identity: "Red", idDot: dot(R), youOwn: "×1 copy", pos: "21 of 2,805", offset: 150 },
+      tutor: { name: "Mystical Tutor", artName: "Mystical Tutor", type: "Instant", pips: [pip("U", U)], oracle: ["Search your library for an instant or sorcery card, reveal it, then shuffle and put that card on top."], facts: true, combos: true, price: "$21.03", from: "from $14.45", owned: "2", claims: ["HD - Avatar Aang", "HD - Gods"], split: "2 in use · 0 free", set: "TLE · 308 +1 more", setPicker: true, rarity: "Rare", identity: "Blue", idDot: dot("#4E7DBF"), youOwn: "×2 copies", pos: "1 of 1", offset: 520 },
+      tovolar: { name: "Tovolar, Dire Overlord // Tovolar, the Midnight Scourge", artName: "Tovolar, Dire Overlord", type: "Legendary Creature — Human Werewolf // Legendary Creature — Werewolf", pips: [pip("1", W), pip("R", R), pip("G", G)], below: true, flip: true, oracle: ["Whenever a Wolf or Werewolf you control deals combat damage to a player, draw a card.", "At the beginning of your upkeep, if you control three or more Wolves and/or Werewolves, it becomes night. Then transform any number of Human Werewolves you control.", "Daybound", "//", "Whenever a Wolf or Werewolf you control deals combat damage to a player, draw a card.", "{X}{R}{G}: Target Wolf or Werewolf you control gets +X/+0 and gains trample until end of turn.", "Nightbound"], price: "$0.17", from: "", owned: "1", claims: ["HD - Tovolar"], split: "1 in use · 0 free", set: "MID · 246", rarity: "Rare", identity: "G/R", idDot: dot("#9A958C"), youOwn: "×1 copy", pos: "2 of 3", offset: 760 },
+      plateau: { name: "Plateau", artName: "Plateau", type: "Land — Mountain Plains", pips: [], oracle: ["({T}: Add {R} or {W}.)"], price: "$293.84", from: "", owned: "0", hasFree: true, claims: ["HD Gishath"], claimNote: "to buy", split: "0 owned · 1 on Shopping", set: "3ED", rarity: "Rare", identity: "R/W", idDot: dot("#C9876A"), youOwn: "none", pos: "3 of 14" },
+      karplusan: { name: "Karplusan Forest", artName: "Karplusan Forest", type: "Land", pips: [], oracle: ["{T}: Add {C}.", "{T}: Add {R} or {G}. Karplusan Forest deals 1 damage to you."], price: "$1.10", from: "", owned: "0", hasFree: true, claims: ["HD Gishath"], claimNote: "to buy", split: "0 owned · 1 on Shopping", set: "DMU · 250", rarity: "Rare", identity: "R/G", idDot: dot("#A88C5A"), youOwn: "none", pos: "7 of 14" },
+      canyon: { name: "Sunbaked Canyon", artName: "Sunbaked Canyon", type: "Land", pips: [], oracle: ["{T}, Pay 1 life: Add {R} or {W}.", "{1}, {T}, Sacrifice Sunbaked Canyon: Draw a card. Activate only as a sorcery."], price: "$1.12", from: "", owned: "0", hasFree: true, claims: null, claimNote: "", split: "", set: "MH1 · 247", rarity: "Rare", identity: "R/W", idDot: dot("#C9876A"), youOwn: "none", pos: "3 of 4" },
+      birds: { name: "Birds of Paradise", artName: "Birds of Paradise", type: "Creature — Bird", pips: [pip("G", G)], oracle: ["Flying", "{T}: Add one mana of any color."], price: "$7.90", from: "from $6.20", owned: "2", hasFree: true, claims: ["HD Tymna + Thrasios"], split: "1 in use · 1 free", set: "M12 · 165", rarity: "Rare", identity: "Green", idDot: dot("#5E9A5A"), youOwn: "×2 copies", pos: "4 of 12", offset: 0 },
+    };
+    const c = C[which];
+    c.claimNote = c.claimNote ?? "holds 1";
+    const door = this.props.door ?? null;
+    const stacked = !!this.props.stacked;
+    const doorText = { over: "over your $10 limit", under: "under your $10 limit", swapped: "swapped out · Sunbaked Canyon is in" }[door] || "";
+    const doorInk = door === "over" ? "var(--warning)" : door === "swapped" ? "var(--success)" : "var(--fg-faint)";
+    c.noneFree = !c.hasFree; c.pipsBeside = !c.below; c.pipsBelow = !!c.below;
+    c.setPlain = !c.setPicker; c.facts = !!c.facts; c.combos = !!c.combos; c.flip = !!c.flip;
+    const H = 625, FOOT = 92;
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, wide, c, door: !!door, doorLimit: doorText, doorLink: door === "over" || door === "under",
+      doorLimitStyle: { fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, color: doorInk, whiteSpace: "nowrap" },
+      doorLimitStylePhone: { flex: 1, minWidth: 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, color: doorInk, whiteSpace: "nowrap" },
+      notStacked: !stacked,
+      stackNav: { display: "flex", alignItems: "center", gap: 12, minHeight: phone ? 44 : 32, fontSize: 14, whiteSpace: "nowrap", ...(phone ? { justifyContent: "space-between" } : {}) },
+      stacked, stackedWide: stacked && wide, plainWide: !stacked && wide,
+      phoneCloseAria: stacked ? "Back to cheaper stand-ins" : "Close",
+      inPlaceOf: phone ? "in place of Plateau · 3 of 4" : "in place of Plateau, in HD Gishath",
+      takeLabel: phone ? "Take Sunbaked Canyon" : "Take",
+      stackFoot: phone
+        ? { display: "flex", flexDirection: "column", alignItems: "stretch", gap: 8, padding: "10px 16px 12px", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "10px 30px", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" },
+      takeStyle: phone
+        ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", height: 44, borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+        : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", height: 32, borderRadius: 7, padding: "0 14px", fontSize: 12.5, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" },
+      titleBlock: { display: "flex", flexDirection: "column", gap: 6, paddingRight: wide ? 44 : 0 },
+      rootStyle: phone
+        ? { width: 390, background: "var(--surface-rail)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" }
+        : { width: 824, height: H, background: "var(--surface-rail)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", border: "1px solid var(--border-strong)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.45)" },
+      rightStyle: phone ? { display: "flex", flexDirection: "column" } : { position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column" },
+      viewportStyle: phone ? {} : { flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: bottom ? "flex-end" : "flex-start" },
+      scrollStyle: { display: "flex", flexDirection: "column", gap: phone ? 16 : 22, padding: phone ? "18px 16px 20px" : "30px 30px 26px", flex: "none" },
+      titleStyle: { margin: 0, flex: phone ? 1 : "0 1 auto", fontFamily: "var(--display)", fontWeight: 700, fontSize: phone ? 23 : 29, lineHeight: 1.18, color: "var(--fg)", textWrap: "balance" },
+      box: { borderRadius: 12, padding: phone ? "16px 16px" : "20px 20px", background: "var(--bg)", border: "1px solid var(--border)" },
+      comboBox: { display: "flex", alignItems: "center", gap: 12, borderRadius: 12, padding: phone ? "18px 16px" : "30px 20px", background: "var(--bg)", border: "1px solid var(--border)" },
+      metaStyle: phone
+        ? { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: "18px 16px", padding: "4px 2px" }
+        : { display: "flex", gap: 38, padding: "8px 0 4px" },
+      footStyle: phone
+        ? { display: "flex", flexDirection: "column", gap: 4, padding: "6px 16px 24px", borderTop: "1px solid var(--border)", margin: "0 0" }
+        : { flex: "none", height: FOOT, display: "flex", alignItems: "center", gap: 16, margin: "0 30px", borderTop: "1px solid var(--border)" },
+      footLinks: { display: "flex", flexDirection: "column", gap: phone ? 0 : 8, flex: 1, minWidth: 0 },
+      linkStyle: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontSize: phone ? 14 : 13.5, fontWeight: 500, color: "var(--accent)", whiteSpace: "nowrap" },
+      findStyle: { display: "inline-flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 0, fontSize: phone ? 14 : 13.5, fontWeight: 500, color: "var(--accent)", whiteSpace: "nowrap" },
+      navStyle: { display: "flex", alignItems: "center", gap: 14, minHeight: phone ? 44 : 0, fontSize: 14, whiteSpace: "nowrap", ...(phone ? { justifyContent: "space-between" } : {}) },
+    };
+  }
+}
+</script>
+</body>
+</html>
