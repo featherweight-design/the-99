@@ -148,6 +148,9 @@ async function main() {
   check("an owned mark is only ever on a commander the player owns", ownedCount === markedOwned.length, `${ownedCount} of ${markedOwned.length}`);
   const byCardPage = await loadResultsPage(USER, { ...none, card: solRing.oracle_id });
   check("a card ask returns the card's own facts", byCardPage.card?.oracleId === solRing.oracle_id, JSON.stringify(byCardPage.card));
+  const stale = await searchCommanders(USER, { ...none, card: "00000000-0000-4000-8000-00000000dead" });
+  check("a card that no longer exists is dropped: the owned order, and no card facts", stale.order === "owned" && stale.card === null,
+    `order ${stale.order}, card ${JSON.stringify(stale.card)}`);
   const [a, b] = [await loadIntakeCatalog(), await loadIntakeCatalog()];
   check("the catalog is read once and kept", a === b && a.themes.length === vocab.length, `${a.themes.length} themes`);
 }

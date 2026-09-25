@@ -144,7 +144,10 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
     massLandDenial: flags.get(card)?.massLandDenial ?? false,
     extraTurn: flags.get(card)?.extraTurn ?? false,
   };
-  return { ...rankCandidates(candidates, answers, cardFacts), card: cardFacts };
+  // A card id that parses but names no card any more (a stale link) is dropped, as every invalid
+  // answer is: the search then runs, and reports its order, as if no card were asked.
+  const effective = card !== null && cardRow === null ? { ...answers, card: null } : answers;
+  return { ...rankCandidates(candidates, effective, cardFacts), card: cardFacts };
 }
 
 async function loadCardRow(userId: string, oracleId: string): Promise<{ owned: boolean; gameChanger: boolean } | null> {
