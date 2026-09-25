@@ -42,6 +42,7 @@ function useCurrentPlace(chapters: readonly ContentsChapter[]) {
     if (typeof IntersectionObserver === "undefined") return;
     const chapterIds = chapters.map((c) => `chapter-${c.id}`);
     const entryIds = chapters.flatMap((c) => c.entries.map((e) => e.id));
+    const chapterOf = new Map(chapters.flatMap((c) => c.entries.map((e) => [e.id, c.id] as const)));
     const targets = [...chapterIds, ...entryIds]
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
@@ -55,8 +56,13 @@ function useCurrentPlace(chapters: readonly ContentsChapter[]) {
       // on, and a jump lands its entry 20px down with the previous entry's last
       // lines above it. First-in-order marked that previous entry.
       const entry = entryIds.findLast((id) => onScreen.current.get(id)) ?? null;
+      // The entry decides the chapter when there is one. At a chapter boundary
+      // the previous section's tail can share the band with the next chapter's
+      // first entry, and opening the section's chapter would hide that entry.
       setPlace((prev) => ({
-        chapter: chapter ? (chapter.replace("chapter-", "") as AboutChapter) : prev.chapter,
+        chapter:
+          (entry ? chapterOf.get(entry) : undefined) ??
+          (chapter ? (chapter.replace("chapter-", "") as AboutChapter) : prev.chapter),
         entry,
       }));
     }, CURRENT_BAND);

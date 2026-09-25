@@ -175,6 +175,19 @@ describe("which row the rail marks (§Q3)", () => {
     }
   });
 
+  it("opens the chapter of the marked entry when the section above still shares the band", () => {
+    const io = fakeObservers();
+    try {
+      render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+      const next = aboutEntries.find((e) => e.chapter === "03")!;
+      io.land("chapter-02", next.id);
+      const current = rail().querySelector("[aria-current='true']");
+      expect(current?.getAttribute("href")).toBe(`#${next.id}`);
+    } finally {
+      io.restore();
+    }
+  });
+
   it("marks the later of two entries sharing the band, where a jump puts its entry", () => {
     const observers: { cb: IntersectionObserverCallback; targets: Element[] }[] = [];
     const original = globalThis.IntersectionObserver;
