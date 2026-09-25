@@ -278,6 +278,8 @@ async function main() {
     await onPage(page, "button").filter({ hasText: /^Discard/ }).filter({ visible: true }).first().click();
     const why = onPage(page, "p").filter({ hasText: "leads it again." }).filter({ visible: true });
     report("discard names the old commander", (await why.count()) === 1, (await why.first().textContent().catch(() => "")) ?? "");
+    // PROBE_SHOT=<dir> photographs the confirm, for copy review.
+    if (process.env.PROBE_SHOT) await page.screenshot({ path: `${process.env.PROBE_SHOT}/discard-commander-390.png` });
     // The fixture moved only its commander: the card clause must not be drawn over zero cards.
     const whyText = (await why.first().textContent().catch(() => "")) ?? "";
     report("discard has no empty card clause", !/not stored anywhere|\.\s{2}/.test(whyText), whyText);
