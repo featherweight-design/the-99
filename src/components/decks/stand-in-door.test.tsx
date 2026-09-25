@@ -86,6 +86,27 @@ describe("the card modal's door (swap tools PR 4c)", () => {
     expect(doors()[0]).toHaveTextContent(copy.underLimit("$10"));
   });
 
+  // A card with no figure makes no claim about the limit: "under" is only ever said of a price.
+  it("says nothing about the limit for a card with no price, and still offers the stand-ins", async () => {
+    const UNPRICED = { ...row("o-unpriced", "Unpriced Land", 0), price: null } as DeckDetailCard;
+    cards["o-unpriced"] = browse("o-unpriced", "Unpriced Land");
+    render(
+      <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <StandInDoorRegistration shoppingCards={[UNPRICED]} newestAsOf={asOf} />
+          <CardDetailTrigger oracleId="o-unpriced" name="Unpriced Land" door>shop unpriced</CardDetailTrigger>
+        </CardDetailProvider>
+      </SwapToolsProvider>,
+    );
+    await press("shop unpriced");
+    expect(doors()).toHaveLength(2);
+    for (const d of doors()) {
+      expect(d).not.toHaveTextContent(copy.underLimit("$10"));
+      expect(d).not.toHaveTextContent(copy.overLimit("$10"));
+    }
+    expect(screen.getAllByRole("button", { name: /See cheaper stand-ins/ })).toHaveLength(2);
+  });
+
   it("says what came in after a take, and is no longer a control", async () => {
     const receipt: SwapReceipt = {
       swapId: "s1", deckId: "d1", cutOracleId: "o-plateau", cut: "Plateau", add: "Rugged Prairie",

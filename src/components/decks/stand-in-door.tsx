@@ -15,6 +15,7 @@ import { useCardDetail } from "../cards/card-detail-provider";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useSwapTools } from "../../lib/swaps/context";
+import { priceOf, priceState } from "../../lib/decks/price";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 
 const copy = swapToolsCopy.modal;
@@ -77,7 +78,11 @@ export function StandInDoor({
   if (!tools) return null;
   const figure = formatLimit(tools.limitCents);
   const over = isOverLimit(card.price, newestAsOf, tools.limitCents);
-  const line = taken ? copy.swapped(taken.add) : over ? copy.overLimit(figure) : copy.underLimit(figure);
+  // "Under your limit" is a claim about a figure, so a card with no figure to draw (no price, or
+  // sold out at the newest run) makes no claim at all: `isOverLimit` is false for those too, and
+  // reading its negation as "under" would make an unknown price sound cheap.
+  const priced = card.price ? priceOf(card.price, priceState(card.price, newestAsOf)) !== null : false;
+  const line = taken ? copy.swapped(taken.add) : over ? copy.overLimit(figure) : priced ? copy.underLimit(figure) : null;
   const ink = taken ? "var(--success)" : over ? "var(--warning)" : "var(--fg-faint)";
 
   const link = taken ? null : (
@@ -110,7 +115,7 @@ export function StandInDoor({
   }
   return (
     <div data-testid="stand-in-door" className="flex flex-col items-center gap-[8px]">
-      <span className="whitespace-nowrap font-mono text-[10.5px]" style={{ color: ink }}>{line}</span>
+      {line ? <span className="whitespace-nowrap font-mono text-[10.5px]" style={{ color: ink }}>{line}</span> : null}
       {link}
     </div>
   );
