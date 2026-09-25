@@ -268,7 +268,7 @@ export function StandInsSheet({
       if (result.ok) {
         setTaken({ addId: row.oracleId, add: row.name, swapId: result.swapId });
         tools.addReceipt({
-          swapId: result.swapId, cutOracleId: card.oracleId, cut: name, add: row.name,
+          swapId: result.swapId, deckId: tools.deckId, cutOracleId: card.oracleId, cut: name, add: row.name,
           cutCard: card,
           free: result.addWasFree, cutLeft: result.cutLeft,
         });

@@ -67,4 +67,4 @@ Not a gap for this PR:
 - the receipt draws in the section the cut sat in, and Undo swap brings the row back;
 - a take refused after the cut left the draft names its cause, and Take stays live.
 
-Two mutations fail it: the footer suppressed, and the receipt never added.
+Three mutations fail it: the footer suppressed, the receipt never added, and the receipt filed in the wrong section (`receiptHome` returning another key).

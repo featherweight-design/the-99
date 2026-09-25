@@ -1259,7 +1259,7 @@ describe("receiptHome", () => {
 describe("a swap receipt keeps the Shopping list up when the take emptied it", () => {
   it("draws the receipt, and not the empty state, when no row is left to buy", async () => {
     const cut = makeCard({ oracleId: "plateau", name: "Plateau", role: "land", owned: false, typeLine: "Land", cardTypeGroup: "Lands" });
-    const receipt: SwapReceipt = { swapId: "s1", cutOracleId: "plateau", cut: "Plateau", add: "Rugged Prairie", cutCard: cut, free: true, cutLeft: 0 };
+    const receipt: SwapReceipt = { swapId: "s1", deckId: "deck-1", cutOracleId: "plateau", cut: "Plateau", add: "Rugged Prairie", cutCard: cut, free: true, cutLeft: 0 };
     await act(async () => renderDecklist([rampOwned, drawOwned], { filled: true, receipts: [receipt] }));
     expect(screen.getByTestId("swap-receipt")).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading)).not.toBeInTheDocument();
@@ -1269,8 +1269,8 @@ describe("a swap receipt keeps the Shopping list up when the take emptied it", (
     const land = (id: string, name: string) =>
       makeCard({ oracleId: id, name, role: "land", owned: false, typeLine: "Land", cardTypeGroup: "Lands" });
     const receipts: SwapReceipt[] = [
-      { swapId: "s1", cutOracleId: "a", cut: "A", add: "X", cutCard: land("a", "A"), free: true, cutLeft: 0 },
-      { swapId: "s2", cutOracleId: "b", cut: "B", add: "Y", cutCard: land("b", "B"), free: true, cutLeft: 0 },
+      { swapId: "s1", deckId: "deck-1", cutOracleId: "a", cut: "A", add: "X", cutCard: land("a", "A"), free: true, cutLeft: 0 },
+      { swapId: "s2", deckId: "deck-1", cutOracleId: "b", cut: "B", add: "Y", cutCard: land("b", "B"), free: true, cutLeft: 0 },
     ];
     await act(async () => renderDecklist([rampUnowned], { grouping: "type", receipts }));
     expect(screen.getAllByTestId("swap-receipt")).toHaveLength(2);

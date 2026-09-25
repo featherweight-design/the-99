@@ -13,7 +13,7 @@ const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/contex
 const { SwapReceiptRow } = await import("./swap-receipt");
 
 const base: SwapReceipt = {
-  swapId: "s1", cutOracleId: "c1", cut: "Plateau", add: "Rugged Prairie",
+  swapId: "s1", deckId: "d1", cutOracleId: "c1", cut: "Plateau", add: "Rugged Prairie",
   cutCard: { name: "Plateau", oracleId: "c1", cardTypeGroup: "Lands", role: "land" } as DeckDetailCard, free: false, cutLeft: 0,
 };
 
@@ -83,5 +83,23 @@ describe("SwapReceiptRow", () => {
       );
     });
     expect(screen.queryByTestId("swap-receipt")).toBeNull();
+
+    // A take made on d1 that lands after the move is refused; one made on d2 draws.
+    await act(async () => {
+      rerender(
+        <SwapToolsProvider deckId="d2" deckName="Other" storedLimitCents={null}>
+          <Harness receipt={{ ...base, swapId: "late" }} />
+        </SwapToolsProvider>,
+      );
+    });
+    expect(screen.queryByTestId("swap-receipt")).toBeNull();
+    await act(async () => {
+      rerender(
+        <SwapToolsProvider deckId="d2" deckName="Other" storedLimitCents={null}>
+          <Harness receipt={{ ...base, swapId: "here", deckId: "d2" }} />
+        </SwapToolsProvider>,
+      );
+    });
+    expect(screen.getByTestId("swap-receipt")).toBeInTheDocument();
   });
 });

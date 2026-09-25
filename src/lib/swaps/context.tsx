@@ -6,7 +6,7 @@
  * surface reading `null` draws nothing of the swap tools. That is how the flag reaches a row
  * without threading a prop through every component between the page and it.
  */
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { DeckDetailCard } from "../decks/grouping";
 import { effectiveLimit } from "./limit";
@@ -41,6 +41,8 @@ export type SwapTools = {
  */
 export type SwapReceipt = {
   swapId: string;
+  /** The deck the take was made on. A take that lands after the builder moved to another deck is dropped. */
+  deckId: string;
   cutOracleId: string;
   cut: string;
   add: string;
@@ -81,7 +83,14 @@ export function SwapToolsProvider({
   }
   const closeStandIns = useCallback(() => setStandIns(null), []);
   const [announcement, setAnnouncement] = useState("");
-  const addReceipt = useCallback((r: SwapReceipt) => setReceipts((all) => [...all.filter((x) => x.swapId !== r.swapId), r]), []);
+  const deckRef = useRef(deckId);
+  useEffect(() => {
+    deckRef.current = deckId;
+  }, [deckId]);
+  const addReceipt = useCallback((r: SwapReceipt) => {
+    if (r.deckId !== deckRef.current) return;
+    setReceipts((all) => [...all.filter((x) => x.swapId !== r.swapId), r]);
+  }, []);
   const dropReceipt = useCallback((swapId: string) => setReceipts((all) => all.filter((x) => x.swapId !== swapId)), []);
   const value = useMemo(
     () => ({
