@@ -718,7 +718,7 @@ Record the counts in the probe's header.
 **Files:**
 - `src/lib/copy/about.ts`:
   - the `aboutMenuCopy` comment (`:743-744`) becomes "the sheet is the notification" (E6);
-  - **the Q2 edit, pending Hugh's pick below**.
+  - the Q2 edit to `pageIntro` (below).
 - `src/components/shell/account-menu.tsx:24-26`: comment only (shared, so ask).
 - `AGENTS.md`: the `probe:verdict-block` note about "Since #658 `proxy.ts` redirects…" gets "or, with `ABOUT_SHEET_ENABLED`, shows the sheet; probes clear both through `scripts/lib/about-clear.mjs`". Also a short `probe:about` entry.
 - `about.version.json`: re-pin the hash, version 9.
