@@ -261,3 +261,74 @@ Hugh approved the addendum's audit on 2026-09-24, including the three parent fil
   Vault), should it come first among the cards to buy, cheapest first, in a group of its own? The alternative is
   ruling 6's order, where it sits by how often this commander's decks run it. One thing to weigh: the staple row no
   longer shows that figure, so ruling 6's order would rank it by a number the reader cannot see.
+
+## Addendum: the ranking rebuild (2026-09-25)
+
+**Audited:** 2026-09-25, against `origin/main` at `bef62491`.
+**Package:** `addendum_ranking_rebuild/`, committed as delivered (additions only). It covers:
+- `ADDENDUM-README.md`, `Ranking Addendum.dc.html` and `support.js`;
+- child copies of `Stand-ins Sheet` (states `lands`, `landsall`, `creature`, `creatureall`);
+- a child copy of `Fits Your Decks` (the Basalt Monolith picker).
+
+**Against:** Hugh's v2 rulings of 2026-09-25 (`docs/superpowers/plans/2026-09-25-swap-tools-v2.md`, "Hugh's answers").
+
+**Verdict for the addendum: Green.** Build it in PR D.
+- Every visible piece the v2 plan sent to Design is drawn at 390 and 1300:
+  - the land row's mana line (1a);
+  - the type groups and Show all (1b);
+  - Find a deck's reason line (1c).
+- Two conflicts with Hugh's rulings are already ruled. They are copy inside boxes Design drew, not Design work (R1, R2 below).
+- Three product questions go to Hugh (below). None of them needs Design.
+
+### Ruled, not open (orchestrator, 2026-09-25, on Hugh's standing Q2 ruling)
+
+- **R1, the non-land fact line.** Design drew `MV 1 · in 58% of Gishath decks, 41% of Naya`. Hugh's ruling
+  stands: a row shows the card's jobs and what it gives up, with no %, and synergy orders the list unseen.
+  - The line takes the land row's own treatment: facts in `--fg-body`, and the gives-up segment in `--fg-muted`.
+  - Its shape is roughly `{type · }MV n · also {extra jobs, from the approved theme vocabulary} · gives up: {a job
+    the original does that this card does not}`, for example `MV 1 · also flies`.
+  - The wording goes through /copy-review. The facts are capped so the row keeps its two lines at 390.
+- **R2, Find a deck's third fallback.** The row drops `in 6% of Atraxa decks, 4% of four-color`. With no combo or
+  theme, it shows the need alone, or another line /copy-review finds honest, and never the shares.
+- **Design's readings are accepted as drawn:**
+  - a land is offered only lands;
+  - a staple sorts after the synergy-ranked cards in its type group, which retires the staples addendum's
+    `to buy · staples, cheapest first` group (shipped in #997; PR D removes it);
+  - the one-shot lands are shown, as `{color} once, by sacrificing it`, in rung 4. This is the "revisit in D" from
+    Hugh's Q9.
+
+### Against the code
+
+- **One-shot lands.** #1006 makes `landColors` count only repeatable mana, so a one-shot color no longer matches
+  at all. Showing those lands in rung 4 needs a second read beside it (the colors a land makes once) for the
+  gather to match on and the `{color} once` segment to name.
+- **Ownership.** The `yours, free` and `to buy` groups are retired, and ownership stays as the dot and the `free`
+  tag. The ranking already knows `free` per row (`freeAfterTake`), so this is a regrouping. No data is missing.
+- **The mana line** is built from `landColors` and `drawbacks()`:
+  - `untapped if …` comes from `entersTappedUnless`;
+  - `untapped with …` comes from a life price.
+  - Every form has a parse today, so nothing new is needed.
+- **Type groups** read `mainType` (on branch `swap-tools-v2-rank`), where an artifact creature is a creature
+  (Hugh's Q4).
+- **The reason line's combo** is a join over `spellbook_variant_cards` against the deck's draft plus its
+  commanders. "Every other piece is in that deck" is Hugh's Q8.
+- **The reason line's theme** reads the approved theme classifier (`recs/themes.ts`, on branch
+  `swap-tools-v2-themes`).
+- **Tokens.** Only `--fg`, `--fg-body` and `--fg-muted` are new to these rows, and all three are declared.
+- **Show all** is a text button, 34px tall on desktop and 44px on the phone, with `aria-expanded`. That matches
+  the shipped disclosure pattern.
+- **The About entries** (A3, A4): the README points to `design_handoff_the99_about/addendum-launch-entries/`, and
+  that folder is not in this checkout. They are batched at launch in any case; the folder is owed with the entries.
+
+### For Hugh (product calls, no Design needed)
+
+1. **How many per group before "Show all": 3 (as drawn) or 5 (your Q3)?** Design drew 3 after your Q3 answer of 5.
+   The canvas's rows fit either. My recommendation is 3: the rows now carry a mana line and gives-up segment, and
+   three keep the first screen of a phone sheet whole.
+2. **Within a land rung, does a free copy lead, or does synergy?** The README says both ("synergy first, then price.
+   Free copies count as price 0, so they lead"), and those can disagree. The drawn lead sentence says "free copies
+   and the cheapest lead". My recommendation: rung, then free first, then synergy, then price. It is what the lead
+   says, and what you own is the cheapest swap there is.
+3. **Should "artifacts" be a theme?** Find a deck's example reason, `Joins 11 other artifact cards` (Basalt
+   Monolith), names a theme outside your approved list. Adding "artifacts matter" (cards that count or care about
+   artifacts) is one more text rule. Without it, that row falls to the need-only line (R2).
