@@ -87,7 +87,7 @@ describe("seededAnswersIntent (F2)", () => {
       .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, with Doubling Season, under $150, bracket 3.");
   });
 
-  it("names two themes as a list", () => {
+  it("names several themes as a list", () => {
     expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { ...none, themes: ["Dinosaurs", "Ramp", "Landfall"] }))
       .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, Ramp and Landfall.");
   });

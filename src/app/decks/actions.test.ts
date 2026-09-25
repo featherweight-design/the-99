@@ -2361,6 +2361,28 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     expect(inserts[inserts.length - 1].values).toMatchObject({ filled: false, answerBracket: 4, intentSeeded: true });
   });
 
+  it("retries a failed fill to the stored answers: the build-around card first, and the body whole", async () => {
+    stub.state.decks.push({
+      id: "deck-2", userId: "user_1", commanderOracleId: COMMANDER_ORACLE,
+      answerCardOracleId: "card-build-around", answerBracket: 4, answerBudgetCents: null,
+    });
+    stub.state.cards.push(commanderCard());
+    // Enough for the plan to fill the whole body by itself, which is what put a stored card at 100.
+    stub.state.collectionItems.push(
+      ...Array.from({ length: 120 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 40 }, (_, i) => forestCard(i, 4)),
+    );
+
+    await fillDeck("deck-2");
+
+    const inserted = stub.state.insertCalls
+      .filter((c) => c.table === "deck_cards")
+      .flatMap((c) => c.values as { oracleId: string; quantity: number }[]);
+    // The card is placed first; the cap on the body is `capToBody`'s, pinned in fill.test.ts.
+    expect(inserted[0].oracleId).toBe("card-build-around");
+    expect(inserted.reduce((n, r) => n + r.quantity, 0)).toBeLessThanOrEqual(99);
+  });
+
   it("refuses a budget that is not whole dollars, and a bracket outside 1 to 5", async () => {
     stub.state.cards.push(commanderCard());
     await expect(runAsked({ ...answers, budgetDollars: 1.5 })).rejects.toThrow("budget must be whole dollars");

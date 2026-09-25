@@ -47,7 +47,7 @@ import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import {
-  dedupeSelectionFromPool, planFill,
+  capToBody, dedupeSelectionFromPool, planFill,
   type FillCandidate, type FillPlan, type FillShortfall, type PlanFillArgs,
 } from "../../lib/decks/fill";
 import { loadFillGate, type DeckAnswers } from "../../lib/intake/fill-facts";
@@ -397,18 +397,7 @@ export async function createDeck(
         ...selected.map((oracleId) => ({ deckId: deck.id, oracleId, quantity: 1, auto: true })),
         ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       ];
-      const capped: typeof rows = [];
-      let built = 0;
-      for (const row of rows) {
-        const remaining = bodySize - built;
-        if (remaining <= 0) break;
-        // A stack that overruns the cap is truncated, not dropped. Skipping it
-        // would leave the deck short of its body with room still on the table —
-        // two slots left and a stack of four Forests next would spend neither.
-        const quantity = Math.min(row.quantity, remaining);
-        capped.push({ ...row, quantity });
-        built += quantity;
-      }
+      const capped = capToBody(rows, bodySize);
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
 
@@ -795,10 +784,12 @@ export async function fillDeck(deckId: string): Promise<void> {
     new Set(buildAround ? [buildAround] : []),
     answers === null ? {} : { answers },
   );
-  const rows = [
+  // The card first, then as much of the plan as fits: the plan fills a whole body on its own, so
+  // uncapped a stored card made 100.
+  const rows = capToBody([
     ...(buildAround ? [{ oracleId: buildAround, quantity: 1, role: "other" as const }] : []),
     ...plan.rows,
-  ];
+  ], deckBodySize(hasPartner));
   await db.transaction(async (tx) => {
     // Lock the deck row before re-reading, the same way addCardToDeck does.
     // Without it the read sees a snapshot: a hand-add that commits between the

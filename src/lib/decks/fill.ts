@@ -319,6 +319,27 @@ export function dedupeSelectionFromPool<T extends { oracleId: string }>(
   return pool.filter((c) => !picked.has(c.oracleId));
 }
 
+/**
+ * What a create or a retry writes: the rows it was given, in order, until the body is full. A stack
+ * that overruns the cap is TRUNCATED, not dropped, since skipping it would leave the deck short with
+ * room still on the table (two slots left and a stack of four Forests next would spend neither).
+ * Quantities are summed, not rows counted, because `planFill` stacks basics.
+ *
+ * One rule for both paths: the plan fills a whole body on its own, so anything placed ahead of it
+ * (a selection, a build-around card) is what the cap takes back off the tail.
+ */
+export function capToBody<T extends { quantity: number }>(rows: readonly T[], bodySize: number): T[] {
+  const capped: T[] = [];
+  let built = 0;
+  for (const row of rows) {
+    const quantity = Math.min(row.quantity, bodySize - built);
+    if (quantity <= 0) break;
+    capped.push({ ...row, quantity });
+    built += quantity;
+  }
+  return capped;
+}
+
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
   const { hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate } = args;
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
