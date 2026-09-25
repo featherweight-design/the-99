@@ -2322,3 +2322,48 @@ describe("chooseBulkFill", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe("createDeck — Help me choose's answers (F1, F2)", () => {
+  // Bracket 4 states no limits and no budget is asked, so no gate reads the database: what is
+  // proved here is what the create WRITES, and the gates themselves are `fill-gate.test.ts`'s.
+  const answers = { themes: ["Superfriends"], cardOracleId: null, budgetDollars: null, bracket: 4 };
+  const runAsked = async (a: Parameters<typeof createDeck>[4]) => {
+    try {
+      await createDeck(COMMANDER_ORACLE, "My Deck", [], null, a);
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+  };
+
+  it("stores the answers on the deck and writes them as the brief, in the insert", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await runAsked(answers);
+
+    const insert = stub.state.insertCalls.find((c) => c.table === "decks")!;
+    expect(insert.values).toMatchObject({
+      answerBracket: 4, answerBudgetCents: null, answerCardOracleId: null,
+      intent: "Built around Atraxa, Praetors' Voice: Superfriends, bracket 4.", intentSeeded: true,
+    });
+    // The fill's own brief is not written over the answers.
+    expect(stub.state.updateCalls.some((c) => (c.values as { intent?: string }).intent?.includes("from the cards you own"))).toBe(false);
+  });
+
+  it("keeps the answers on the empty deck a failed fill leaves, so the retry fills to them", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    stub.state.transactionError = new Error("transaction failed");
+
+    await runAsked(answers);
+
+    const inserts = stub.state.insertCalls.filter((c) => c.table === "decks");
+    expect(inserts[inserts.length - 1].values).toMatchObject({ filled: false, answerBracket: 4, intentSeeded: true });
+  });
+
+  it("refuses a budget that is not whole dollars, and a bracket outside 1 to 5", async () => {
+    stub.state.cards.push(commanderCard());
+    await expect(runAsked({ ...answers, budgetDollars: 1.5 })).rejects.toThrow("budget must be whole dollars");
+    await expect(runAsked({ ...answers, bracket: 6 })).rejects.toThrow("bracket must be 1 to 5");
+  });
+});

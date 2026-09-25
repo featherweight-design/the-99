@@ -55,6 +55,35 @@ export function seededIntent(commanderNames: readonly string[]): string {
 }
 
 /**
+ * The intent a Help me choose deck is seeded with: what the player asked, as the brief (F2). The
+ * same cap and the same kind of chain as `seededIntent`: the full sentence, then the commander and
+ * its themes, then `seededIntent`'s own chain. With nothing asked it is `seededIntent`.
+ *
+ * Themes are not stored on the deck (they chose the commander and steer nothing after), so a fill
+ * retried after a failed create writes the sentence without them: shorter, and still true.
+ */
+export function seededAnswersIntent(
+  commanderNames: readonly string[],
+  answers: { themes: readonly string[]; cardName: string | null; budgetDollars: number | null; bracket: number | null },
+): string {
+  const names = commanderNames.join(" and ");
+  const { seededAnswers, answerThemes, answerCard, answerBudget, answerBracket, maxLength } = deckTuningCopy.intent;
+  const themes = answers.themes.length > 0 ? [answerThemes(answers.themes)] : [];
+  const full = [
+    ...themes,
+    ...(answers.cardName !== null ? [answerCard(answers.cardName)] : []),
+    ...(answers.budgetDollars !== null ? [answerBudget(answers.budgetDollars)] : []),
+    ...(answers.bracket !== null ? [answerBracket(answers.bracket)] : []),
+  ];
+  for (const parts of [full, themes]) {
+    if (parts.length === 0) continue;
+    const sentence = seededAnswers(names, parts);
+    if (countCharacters(sentence) <= maxLength) return sentence;
+  }
+  return seededIntent(commanderNames);
+}
+
+/**
  * The answer's own worst case, from the response schema's caps rather than guessed. One suggestion
  * at its longest is 200 + 200 + 400 + 80 characters of text plus four 160-character citations:
  * 1,520 characters, about 400 tokens, and about 460 with its JSON keys. Five of those is 2,300.

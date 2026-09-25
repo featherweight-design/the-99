@@ -55,6 +55,14 @@ export const deckTuningCopy = {
     // the one thing the chip exists to prevent.
     seededBrief: (commanders: string) => `Built around ${commanders}, from the cards you own.`,
     seededBriefShort: (commanders: string) => `Built around ${commanders}.`,
+    // Help me choose's answers as the brief (design: *Built around {commander}: {theme}, with
+    // {card}, under {$cap}, bracket {n}.*). Owed to /copy-review with the rest of the line's copy.
+    seededAnswers: (commanders: string, parts: readonly string[]) => `Built around ${commanders}: ${parts.join(", ")}.`,
+    answerThemes: (labels: readonly string[]) =>
+      labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`,
+    answerCard: (name: string) => `with ${name}`,
+    answerBudget: (dollars: number) => `under $${dollars}`,
+    answerBracket: (bracket: number) => `bracket ${bracket}`,
     // PLACEHOLDER refusals, owed to /copy-review. The shipped MutationError draws them.
     tooLong: "Keep it to one line of 120 characters.",
     refused: "That did not save. Try again.",
