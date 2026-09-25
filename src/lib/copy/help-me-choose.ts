@@ -6,9 +6,9 @@
 // HANDOFF §2's, not the file's. The strings the canvas draws with no key in the file are added
 // here and marked `// canvas`.
 //
-// OWED TO /copy-review, with pictures, before this ships (plan: F6, F8): every `// canvas` string,
-// the unpriced row's line (F8: it must say the buy figure leaves the card out), and the two places
-// the canvas and the file disagree (the owned-order sub, and the loading sub).
+// Copy-reviewed with pictures on 2026-09-25 (plan: F6, F8): every `// canvas` string ships as
+// transcribed, and the unpriced row's line (F8) says the buy figure leaves the card out. The
+// owned-order sub takes the canvas's pair, and lands with the screens (PR 5b-ii).
 //
 // Never the words AI, model or LLM: the deeper read is "a deeper look" (audit wording rule).
 
@@ -83,8 +83,8 @@ export const helpMeChooseCopy = {
     ownLine: (owned: number, buy: string, cap?: string) => `you own ${owned} of its 99 · about ${buy} to buy${cap ? `, inside ${cap}` : ""}`,
     free: "owned · free",
     held: (deck: string | null) => (deck ? availabilityCopy.marker.hardIn(deck) : availabilityCopy.marker.hard),
-    // F8, owed: the line must also say the buy figure leaves the card out.
-    unpriced: (card: string) => `${card}: no price on record, placed anyway`,
+    // F8, ruled at copy review (2026-09-25): the line says the buy figure leaves the card out.
+    unpriced: (card: string) => `${card}: no price on record. It’s in the deck, but not in the figure to buy.`,
     rowPending: "Counting what you own…",
     rowFailed: "Couldn’t count what you own.",
     retry: "Retry",
