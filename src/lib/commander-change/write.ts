@@ -15,7 +15,7 @@ import { canPair, partnerAbility } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
 import { isCommanderCandidate } from "../recs/score";
-import { commanderMoved, type CommanderPair } from "./pending";
+import { commanderMoved, offerable, type CommanderPair } from "./pending";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -85,6 +85,11 @@ export async function writeCommanderChange(
   const body = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
     .from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
   const inBody = new Map(body.map((r) => [r.oracleId, r.quantity]));
+  // The loader's hold-back, enforced where it cannot be skipped: a pair with a half in the 98.
+  // A kept half leads already and is never a body row, so the whole new pair is what is tested.
+  if (!offerable(toIds, new Set(inBody.keys()))) {
+    return { ok: false, reason: "illegal" };
+  }
 
   // The trade: each arriving half that comes out of the 99 frees one slot, and a departing
   // half takes it. A commander that arrives from outside the 99 opens no slot, so the one it

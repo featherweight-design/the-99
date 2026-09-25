@@ -1,0 +1,46 @@
+{
+  "feature": "Change commander (sub-project 7), PR 3: the door on the commander's art and the sheet",
+  "note": "Needs a server with CHANGE_COMMANDER_ENABLED=true. CC_DECK is a single-commander deck the signed-in account owns, with a commander crop (on local-dev, any of the account's decks).",
+  "rows": [
+    {
+      "id": "door",
+      "label": "/decks/[id] header: the joined plate on the art (desktop), the vertical pair (phone)",
+      "view": "src/components/decks/change-commander-door.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "sheet",
+      "label": "/decks/[id]: the sheet, Yours then To buy, pressed from the door",
+      "view": "src/components/decks/change-commander-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-testid='change-commander-row']", "settle": 600 }
+      ]
+    },
+    {
+      "id": "figure",
+      "label": "/decks/[id] sheet: a figure opened on its cards",
+      "view": "src/components/decks/change-commander-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-testid='change-commander-row']", "settle": 600 },
+        { "click": "[data-testid='change-commander-row'] button[aria-expanded='false']", "settle": 500 }
+      ]
+    },
+    {
+      "id": "confirm",
+      "label": "/decks/[id] sheet: the confirm, Choose pressed on the first candidate",
+      "view": "src/components/decks/change-commander-sheet.tsx",
+      "steps": [
+        { "goto": "/decks/${CC_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-testid='change-commander-row']", "settle": 600 },
+        { "click": "[data-testid='change-commander-row'] [data-choose]", "settle": 600 }
+      ]
+    }
+  ]
+}

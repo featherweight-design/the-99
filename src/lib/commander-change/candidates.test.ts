@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { groupCandidates, isYours, type Candidate, type CandidateHalf } from "./candidates";
+import { offerable } from "./pending";
 
 const half = (name: string, over: Partial<CandidateHalf> = {}): CandidateHalf => ({
   oracleId: name, name, manaCost: null, cmc: 0, artCropUri: null, imageUri: null,
@@ -34,5 +35,19 @@ describe("groupCandidates", () => {
     ]);
     expect(yours.map((c) => c.halves[0].name)).toEqual(["Bob", "Amy", "Zed"]);
     expect(toBuy.map((c) => c.halves[0].name)).toEqual(["Cheap", "Pricey"]);
+  });
+});
+
+describe("offerable", () => {
+  it("offers a single even when it is in the 99 (that is the trade)", () => {
+    expect(offerable(["a"], new Set(["a"]))).toBe(true);
+  });
+
+  it("holds back a pair with a half already in the 98, until its half-trade copy exists", () => {
+    expect(offerable(["a", "b"], new Set(["b"]))).toBe(false);
+  });
+
+  it("offers a pair with neither half in the deck", () => {
+    expect(offerable(["a", "b"], new Set(["c"]))).toBe(true);
   });
 });

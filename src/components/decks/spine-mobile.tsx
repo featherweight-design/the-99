@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { FullCardTrigger } from "../commanders/full-card-trigger";
+import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
@@ -262,14 +262,9 @@ export function SpineMobile({
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
-        {/* §G — with no crop there is no printing to open. */}
-        {commander.artCropUri ? (
-          <FullCardTrigger
-            oracleId={commander.oracleId}
-            placement="deck-mobile"
-            bandTapTarget={false}
-          />
-        ) : null}
+        {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
+            alone, or nothing with the switch off. */}
+        <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
 
         <div
           // The block the ramp is keyed to, hooked so a probe measures it rather

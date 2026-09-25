@@ -12,12 +12,19 @@
  *   there is, so no row is ever drawn in that state.
  *
  * The file's `plural` helper is not carried either: no string here uses it.
+ *
+ * Four strings are added: `sheet.close.single` / `.pair`, the close control's name, which every
+ * `ModalChrome` sheet carries and the handoff's file does not; and `sheet.groupNote` /
+ * `groupNotePairBuy`, the group headings' right notes, which the canvas draws and the copy file
+ * omits.
  */
 export const changeCommanderCopy = {
   door: { single: "Change commander", pair: "Change pair", aria: "Change commander", menu: "Edit deck" },
 
   sheet: {
     title: { single: "Change commander", pair: "Change pair" },
+    // Not in the handoff's file: every sheet's close control names the sheet it closes.
+    close: { single: "Close change commander", pair: "Close change pair" },
     lede: {
       single: "Commanders who can lead these 99 without changing a card. The figure is how many of this deck's cards their decks run.",
       pair: "Pairs who can lead these 98 without changing a card. The figure is how many of this deck's cards their decks run.",
@@ -26,6 +33,9 @@ export const changeCommanderCopy = {
       `${n} of your cards are counted. Basic lands and the staples every deck runs, like Sol Ring, are left out.`,
     groupYours: (n: number) => `Yours · ${n}`,
     groupBuy: (n: number) => `To buy · ${n}`,
+    // From the canvas's group headings (not in the handoff's copy file): each group's right note.
+    groupNote: "by figure",
+    groupNotePairBuy: "a half to buy",
     ownsNone: "You own none of them yet.",
     more: (step: number) => `Show ${step} more`,
     moreLeft: (n: number) => `${n} left`,

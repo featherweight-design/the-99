@@ -22,6 +22,7 @@ import { loadPrices } from "../decks/price-query";
 import { isCommanderCandidate } from "../recs/score";
 import { loadUniversalStaples } from "../staples/universal";
 import { MIN_CANDIDATE_DECKS, fitBody, fitCount, type Fit } from "./fit";
+import { offerable } from "./pending";
 
 export type CandidateHalf = {
   oracleId: string;
@@ -220,7 +221,8 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
   const legal = keys.filter((k) => k.ids.every((id) => {
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
-  }));
+  }))
+    .filter((k) => offerable(k.ids, inDeck));
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));

@@ -10,7 +10,7 @@ import { useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { IdentityPips } from "../commanders/commander-art";
-import { FullCardTrigger } from "../commanders/full-card-trigger";
+import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
@@ -225,15 +225,10 @@ export function SpineDesktop({
           colorIdentity={commander.colorIdentity}
         />
       </div>
-      {/* §G — with no crop there is no printing to open, so the pill is absent.
-          It is absolutely positioned, so its absence shifts nothing. */}
-      {commander.artCropUri ? (
-        <FullCardTrigger
-          oracleId={commander.oracleId}
-          placement="deck-desktop"
-          bandTapTarget={false}
-        />
-      ) : null}
+      {/* §G — with no crop there is no printing to open, so the pill is absent (the door then
+          draws its ⇄ half alone, or nothing with the switch off). It is absolutely
+          positioned, so its absence shifts nothing. */}
+      <ChangeCommanderDoor oracleId={commander.oracleId} width="desktop" hasCrop={Boolean(commander.artCropUri)} />
 
       <div
         // The inset switches on the same breakpoint the portrait does: 592 clears

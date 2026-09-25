@@ -37,6 +37,8 @@ import { noticesEnabled } from "../../../lib/notices/flag";
 import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
+import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
+import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
 import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
@@ -415,7 +417,22 @@ export default async function DeckBuilderPage({
       )}
     />
   );
-  return swapTools ? (
+  const tooled = swapTools ? (
     <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{shell}</SwapToolsProvider>
   ) : shell;
+  // Change commander's door and sheet read this context; without it the deck header draws exactly
+  // the card-details trigger it drew before the feature (audit F6).
+  return changeCommanderEnabled() ? (
+    <ChangeCommanderProvider
+      // One provider per deck: a client navigation to another deck must not carry an open sheet
+      // or its chosen candidate across, where it would be written against the new deck.
+      key={id}
+      deckId={id}
+      deckName={detail.name}
+      pair={detail.partner !== null}
+      hasVersion={versions.length > 0}
+    >
+      {tooled}
+    </ChangeCommanderProvider>
+  ) : tooled;
 }

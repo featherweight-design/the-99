@@ -59,3 +59,15 @@ export function deckCommanderMovedSql(deck: string): SQL {
     limit 1
   ), false)`;
 }
+
+/**
+ * Whether a candidate can be offered at all. A single always can. A pair with a half already in the
+ * 98 cannot: the write would trade that half and release the other old commander, and the design
+ * has no sentence for a half-trade (`confirm.trade` says the two trade places, which would be
+ * false). The write refuses one too, so a stale sheet or a crafted request cannot reach it. Held
+ * back, not given invented copy, until Design draws it (the-99-d9, 2026-09-25). It has
+ * never occurred: staging indexes one usable pair.
+ */
+export function offerable(ids: readonly string[], inDeck: ReadonlySet<string>): boolean {
+  return ids.length === 1 || !ids.some((id) => inDeck.has(id));
+}
