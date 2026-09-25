@@ -348,4 +348,91 @@ describe("HoverPreviewProvider", () => {
     act(() => void vi.advanceTimersByTime(240));
     expect(screen.getByTestId("hover-preview").className).toContain("z-[60]");
   });
+
+  // The preload. The box's 240ms is a deliberate calm, but before this the
+  // `background: url(…)` was only set when the box mounted, so the REQUEST could
+  // not start until the calm was over and the reader paid delay-then-fetch in
+  // series. These cases pin when the bytes are asked for, which is the only
+  // thing that changed — nothing about what is drawn.
+  describe("image preload", () => {
+    /** Every `new Image()` this render made, by src, with the order preserved. */
+    function trackImages() {
+      const made: string[] = [];
+      const Original = window.Image;
+      class Spy {
+        decoding = "";
+        set src(v: string) {
+          made.push(v);
+        }
+      }
+      // @ts-expect-error — a stand-in for the constructor, narrower than the DOM's
+      window.Image = Spy;
+      return {
+        made,
+        restore: () => {
+          window.Image = Original;
+        },
+      };
+    }
+
+    it("asks for the image before the box appears", () => {
+      const spy = trackImages();
+      try {
+        render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+        fireEvent.mouseEnter(screen.getByTestId("a"));
+        // Past the preload, short of the box.
+        act(() => void vi.advanceTimersByTime(50));
+        expect(spy.made).toEqual([ART]);
+        expect(screen.queryByTestId("hover-preview")).toBeNull();
+        // And the box still arrives on its own schedule, unchanged.
+        act(() => void vi.advanceTimersByTime(190));
+        expect(screen.getByTestId("hover-preview")).toBeTruthy();
+      } finally {
+        spy.restore();
+      }
+    });
+
+    // The cost of the win, and the bound on it: `mouseenter` fires for every row
+    // a pointer brushes, so a scan down 99 rows must not ask for 99 images.
+    it("asks for nothing when a row is crossed in passing", () => {
+      const spy = trackImages();
+      try {
+        render(
+          <Harness
+            rows={[
+              { name: "a", imageUri: ART, box: LEFT_COLUMN },
+              { name: "b", imageUri: `${ART}?b`, box: LEFT_COLUMN },
+            ]}
+          />,
+        );
+        fireEvent.mouseEnter(screen.getByTestId("a"));
+        act(() => void vi.advanceTimersByTime(30));
+        fireEvent.mouseEnter(screen.getByTestId("b"));
+        act(() => void vi.advanceTimersByTime(30));
+        // Neither row was rested on long enough to be worth 93KB.
+        expect(spy.made).toEqual([]);
+        // The row the pointer actually settles on is the one that is fetched.
+        act(() => void vi.advanceTimersByTime(30));
+        expect(spy.made).toEqual([`${ART}?b`]);
+      } finally {
+        spy.restore();
+      }
+    });
+
+    it("asks once for a row the pointer returns to", () => {
+      const spy = trackImages();
+      try {
+        render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+        fireEvent.mouseEnter(screen.getByTestId("a"));
+        act(() => void vi.advanceTimersByTime(60));
+        fireEvent.mouseLeave(screen.getByTestId("a"));
+        act(() => void vi.advanceTimersByTime(200));
+        fireEvent.mouseEnter(screen.getByTestId("a"));
+        act(() => void vi.advanceTimersByTime(60));
+        expect(spy.made).toEqual([ART]);
+      } finally {
+        spy.restore();
+      }
+    });
+  });
 });
