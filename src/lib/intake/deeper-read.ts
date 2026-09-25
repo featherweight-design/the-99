@@ -4,7 +4,7 @@ import type { PhraseIndex } from "./match";
 import { buildReadPrompt, readResponseSchema, validateRead, type ReadResponse } from "./read";
 import { settleRead, startRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
 import { intakeLive, STUB_MODEL, stubMode, stubReply } from "./stub";
-import { loadPhraseIndex, loadThemeVocabulary } from "./search";
+import { loadIntakeCatalog } from "./search";
 
 /**
  * One press of *Look deeper*, end to end: reserve, call, validate, settle. SERVER-ONLY. The Server
@@ -35,9 +35,10 @@ export type DeeperReadDeps = {
   now: () => Date;
 };
 
+/** The vocabulary and the phrase index from the search's memo, so a press never rebuilds them. */
 async function loadIndex(): Promise<{ labels: string[]; index: PhraseIndex }> {
-  const themes = await loadThemeVocabulary();
-  return { labels: themes.map((t) => t.label), index: await loadPhraseIndex(themes) };
+  const { themes, index } = await loadIntakeCatalog();
+  return { labels: themes.map((t) => t.label), index };
 }
 
 /** The real model in production or under `INTAKE_LIVE=1`; the stub everywhere else. */

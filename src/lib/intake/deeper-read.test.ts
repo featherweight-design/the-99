@@ -6,7 +6,7 @@ const store = vi.hoisted(() => ({
   wordsHash: () => "hash",
 }));
 vi.mock("./run-store", () => store);
-vi.mock("./search", () => ({ loadPhraseIndex: vi.fn(), loadThemeVocabulary: vi.fn() }));
+vi.mock("./search", () => ({ loadIntakeCatalog: vi.fn() }));
 
 import type { ModelOutcome } from "../model/client";
 import { runDeeperRead, type DeeperReadDeps } from "./deeper-read";
