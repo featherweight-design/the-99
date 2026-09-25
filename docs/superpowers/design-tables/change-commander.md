@@ -534,3 +534,29 @@ Scope excludes HANDOFF §4 (after the swap: header band, pending banner, review 
 | 16 | Confirm | brew | deck has no version | 4c (`confirm.brew`) |
 | 17 | Confirm | writing | primary pressed, write in flight | `confirm.pending` at 0.6, not disabled |
 | 18 | Confirm | failed | write fails | 4d, R3-D (danger line below actions; primary `confirm.failedRetry`) |
+
+---
+
+## Gap report (pre-PR gate, 2026-09-25)
+
+Verified row by row against this table: about 218 of 314 property rows matched. The rest fell into
+74 visual gaps and 1 state gap (27: with no commander crop the door was not drawn at all, so such a
+deck could not change its commander). The confirm pass left 1 gap (33: a `className` replaced
+`CostPips`' own display and gap). It is fixed, and `probe-change-commander.mjs` now asserts the run's
+computed `display: flex` / `gap: 3px`; reverting the fix fails it at both widths.
+
+**Deliberate, and not changed here:**
+
+| Item | Design | Build | Why |
+|---|---|---|---|
+| 8–12 | sheet max-height 708, header padding and gap, title 16/1.2, aside 11.5 | `ModalChrome` as shipped | Shared by every sheet in the app; a change there is not this feature's to make |
+| 13 | aside (the deck's name) on the phone | desktop only | The phone's 43px header cut the title to "Change c…"; approved by the-99-d9 on the verdict-lean precedent |
+| 18 | `sheet.more(8)` | `sheet.more(min(8, left))` | "Show 8 more" over "3 left" says two things at once |
+| 59 | back link min-height 32 | 44 | The touch floor every control in the app keeps |
+| 67 | a pair's price summed | summed only when both halves carry a live normal price; otherwise a tag per half | A sum over a sold-out, foil-only or unpriced half quotes a price the feed never gave |
+| 5 | desktop ⇄ half named `door.aria` | named by its visible label | Label-in-name: the visible words are "Change pair" on a pair deck |
+| 74 (focus) | focus moves to the banner's commander line | not in this PR | The banner line is PR 4's |
+
+**Copy structure found here and added to the module** (sent to `/copy-review`): `sheet.groupNote`
+("by figure") and `sheet.groupNotePairBuy` ("a half to buy"), which the canvas draws and the copy
+file omits.

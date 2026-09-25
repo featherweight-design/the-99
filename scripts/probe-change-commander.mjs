@@ -154,6 +154,16 @@ async function walk(page, width, fixture) {
   const thumb = await rect(rows.first().locator("span[aria-hidden=true]").first());
   report(`thumb ${tag}`, Math.round(thumb.w) === 56 && Math.round(thumb.h) === 41, `${thumb.w}x${thumb.h}px`);
 
+  // The row's pip run is laid out as a run: a className that replaced CostPips' own would leave
+  // an inline span with the pips touching, and every markup assertion would still pass.
+  const run = await rows.first().evaluate((el) => {
+    // The mana-value comparison's sibling wraps the first half's run.
+    const compare = [...el.querySelectorAll("span")].find((x) => /^\((same as|\d+ (less|more) than) /.test(x.textContent ?? ""));
+    const box = compare?.previousElementSibling?.lastElementChild;
+    return box ? { display: getComputedStyle(box).display, gap: getComputedStyle(box).columnGap } : null;
+  });
+  report(`pip run ${tag}`, run?.display === "flex" && run.gap === "3px", JSON.stringify(run));
+
   // The figure opens the cards it counts, and says so.
   const figure = rows.first().locator("button[aria-expanded]");
   await figure.click();

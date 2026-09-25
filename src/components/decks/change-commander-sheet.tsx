@@ -352,7 +352,7 @@ function ManaValue({ halves, current }: { halves: CandidateHalf[]; current: { cm
           {i > 0 ? (
             <span className="px-[3px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>+</span>
           ) : null}
-          <CostPips cost={h.manaCost} size={13} className="flex-none items-center" />
+          <CostPips cost={h.manaCost} size={13} className="flex flex-none items-center gap-[3px]" />
         </span>
       ))}
       <span className="font-mono text-[11px] leading-[1.4]" style={{ color: "var(--fg-muted)" }}>
@@ -503,7 +503,7 @@ function Plate({
               {i > 0 ? (
                 <span className="px-[3px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>+</span>
               ) : null}
-              <CostPips cost={c.manaCost} size={13} className="flex-none items-center" />
+              <CostPips cost={c.manaCost} size={13} className="flex flex-none items-center gap-[3px]" />
             </span>
           ))}
         </span>
