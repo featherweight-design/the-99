@@ -9,6 +9,13 @@ describe("commanderSlug", () => {
     expect(commanderSlug("K'rrik, Son of Yawgmoth")).toBe("krrik-son-of-yawgmoth");
     expect(commanderSlug("Dandân")).toBe("dandan");
   });
+  // #712: U+A789 is a modifier letter colon, not a colon. EDHREC serves this
+  // commander at `ratonhnhaketon` (200); the separating pass used to turn the
+  // mark into a hyphen and ask for `ratonhnhake-ton`, which has no page.
+  it("drops a modifier mark inside a word rather than separating on it", () => {
+    expect(commanderSlug("Ratonhnhak\u00e9\ua789ton")).toBe("ratonhnhaketon");
+    expect(commanderSlug("Ka\u02bbiwi, the Mark")).toBe("kaiwi-the-mark");
+  });
   it("uses only the front face of a DFC name", () => {
     expect(commanderSlug("Esika, God of the Tree // The Prismatic Bridge")).toBe("esika-god-of-the-tree");
   });

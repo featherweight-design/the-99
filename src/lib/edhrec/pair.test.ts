@@ -85,10 +85,39 @@ describe("fetchPair", () => {
   // distinction `fetchEdhrecUncached` draws, and getting it wrong would overwrite a good row
   // with an absent one.
   it("reports unreachable on a rate limit rather than absent", async () => {
+    // The page probe says the page exists, so a 403 here can only be a throttle.
+    const pageExists = async () => ({ status: 200 });
     for (const status of [429, 403]) {
-      const res = await fetchPair("A", "B", async () => ({ ok: false, status, json: async () => ({}) }));
+      const res = await fetchPair("A", "B", async () => ({ ok: false, status, json: async () => ({}) }), pageExists);
       expect(res).toEqual({ data: null, unreachable: true, rawPayload: null });
     }
+  });
+
+  // #712: a slug with no page answers a JSON 403, the same status as a throttle. The HTML
+  // page's 404 says which it is, and a missing first guess must still try the other order —
+  // before the probe, the pair stopped as unreachable and the second arrangement was never
+  // asked.
+  it("tries the other arrangement when the first 403s on a page that does not exist", async () => {
+    const fetcher = vi.fn(async (url: string) =>
+      url.includes("a-name-b-name")
+        ? { ok: false, status: 403, json: async () => ({}) }
+        : ok({ container: { json_dict: { cardlists: [] } } }),
+    );
+    const probe = vi.fn(async (url: string) => ({ status: url.endsWith("/a-name-b-name") ? 404 : 200 }));
+    const res = await fetchPair("A name", "B name", fetcher, probe);
+    expect(res.unreachable).toBe(false);
+    expect(res.data).not.toBeNull();
+    expect(probe).toHaveBeenCalledWith("https://edhrec.com/commanders/a-name-b-name");
+  });
+
+  it("reports absent when neither arrangement has a page", async () => {
+    const res = await fetchPair(
+      "A name", "B name",
+      async () => ({ ok: false, status: 403, json: async () => ({}) }),
+      async () => ({ status: 404 }),
+    );
+    expect(res.unreachable).toBe(false);
+    expect(res.data).toBeNull();
   });
 
   // An unparseable redirect target is upstream behaving in a way we do not understand, not a

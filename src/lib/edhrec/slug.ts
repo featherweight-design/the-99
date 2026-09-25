@@ -5,6 +5,13 @@ export function commanderSlug(name: string): string {
     .replace(/[\u0300-\u036f]/g, "") // combining diacritical marks left by NFD
     .toLowerCase()
     .replace(/['‘’]/g, "")
+    // Modifier letters and symbols are dropped for the same reason apostrophes are:
+    // EDHREC treats them as part of the word. `Ratonhnhaké꞉ton` carries U+A789, a
+    // modifier letter COLON rather than a colon, and EDHREC serves it at
+    // `ratonhnhaketon`; the separating pass below turned it into a hyphen and asked
+    // for a page that does not exist (#712). One name in the catalog carries one of
+    // these today, so this is the class rather than that card.
+    .replace(/[\p{Lm}\p{Sk}]/gu, "")
     // Dropped, not separated. EDHREC slugs an initialism by removing its periods —
     // "Scientist Supreme of A.I.M." is `scientist-supreme-of-aim`, not
     // `...-a-i-m` — and the separating pass below would otherwise turn each period
