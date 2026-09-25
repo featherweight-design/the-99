@@ -115,6 +115,20 @@ Per the brief, one prompt through Hugh:
   round.
 - **Q9.** The one-shot lands are hidden now and revisited in D.
 
+## Ruled for D (d9, 2026-09-25)
+
+- **D1, the sheet's order: sharing crosses the old groups.** The rebuilt sheet has type groups only (the same type,
+  then other types). `byCommander` and `unlisted` stop being groups, as the ranking-rebuild addendum retires them.
+  Within a type group, rows sort by:
+  1. the roles and themes shared with the original, most first (Q6);
+  2. the commander's synergy, with an unlisted card counting as having none, so it follows the listed cards at the
+     same share count;
+  3. price, with a free copy counting as 0;
+  4. staples last, as Design drew them.
+
+  So on Runadi, an unlisted card sharing ramp, counters and haste leads the listed cards that share ramp alone. C
+  applies the share count inside today's groups and leaves the regroup to D.
+
 ## Questions for Hugh (as asked)
 
 1. **Pain lands and shocks: rung 1 or 2?** A painland taps for colorless with no drawback and hurts only for color;
