@@ -582,7 +582,7 @@ async function flipWalk(browser, who) {
     );
     await visitAbout(page, userId, "stand-ins");
 
-    // F5. The three figures, drawn by the page's own components, at both widths.
+    // F5. The five figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE}/about#locked-cards`, { waitUntil: "networkidle" });

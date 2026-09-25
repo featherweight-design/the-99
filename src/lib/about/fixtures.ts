@@ -1845,7 +1845,8 @@ export const FITS = {
 /**
  * `stand-ins` — Shopping's limit line over one row it marks, then the first group of that row's
  * stand-ins. Design's fixture: Plateau at $293.84 in HD - Gishath, six cards to buy with one over
- * the limit, and the same-type lands group, eight long, showing three before `Show all`.
+ * the limit, and the same-type lands group. Design drew it eight long showing three; the sheet shows
+ * `STAND_IN_GROUP_SHOWN` (five), so the group is six long and draws `Show all 6 lands`.
  *
  * The group's strings are the sheet's own builders (`swapToolsCopy.sheet`, `drawbackText`), so the
  * heading, the order note and each mana line are what the sheet would print for these lands.
