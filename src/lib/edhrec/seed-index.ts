@@ -191,6 +191,8 @@ async function loadCommandersFromDb(): Promise<IndexCommander[]> {
     .select({
       oracleId: cards.oracleId, name: cards.name,
       typeLine: cards.typeLine, oracleText: cards.oracleText,
+      // Both read by isCommanderCandidate, which refuses a melded card (#712).
+      layout: cards.layout, manaCost: cards.manaCost,
     })
     .from(cards)
     // Both halves of the filter, in the same order the live path applies them:

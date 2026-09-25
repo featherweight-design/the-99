@@ -216,7 +216,33 @@ export function completeness(
   return Math.round((100 * s.edhrecOwnedCount) / s.edhrecTotal);
 }
 
-export function isCommanderCandidate(card: Pick<PoolCard, "typeLine" | "oracleText">): boolean {
+/**
+ * Whether a card is the MELDED half of a meld pair: the one that only exists once two
+ * other cards are exiled together, and which no player can start the game with.
+ *
+ * Scryfall marks all three cards of a meld set `layout: "meld"` — the two halves AND the
+ * result — so the layout alone would drop real commanders: Bruna, the Fading Light and
+ * Gisela, the Broken Blade are both meld halves and both lead decks. What separates the
+ * result is that it is never CAST. It has no mana cost, and every half that is a spell
+ * has one. The only halves with no cost are lands (Hanweir Battlements, Argoth, Sanctum
+ * of Nature), which the land clause excludes. That makes this exact by construction
+ * across every meld card in the catalog, not a heuristic: it picks out Brisela, Hanweir,
+ * Mishra Lost to Phyrexia, Titania Gaea Incarnate, Ragnarok, Urza Planeswalker and
+ * Chittering Host, and nothing else.
+ *
+ * Scryfall's own record of this is the `meld_result` component in `all_parts`, which the
+ * ingest does not store. Should it ever start to, that is the better signal (#712).
+ */
+export function isMeldResult(card: { layout: string | null; manaCost: string | null; typeLine: string }): boolean {
+  return card.layout === "meld" && !card.manaCost && !/\bland\b/i.test(frontFaceTypeLine(card.typeLine));
+}
+
+export function isCommanderCandidate(card: Pick<PoolCard, "typeLine" | "oracleText" | "manaCost"> & { layout: string | null }): boolean {
+  // A melded card cannot lead a deck: it is not a card you can begin the game with, and
+  // EDHREC has no page for one. Its type line reads "Legendary Creature" all the same, and
+  // `commander_legal` describes deck legality rather than the right to lead one, so neither
+  // check below would stop it (#712).
+  if (isMeldResult(card)) return false;
   const typeLine = frontFaceTypeLine(card.typeLine);
   // Only the front face can make a card eligible to be a commander. Testing the
   // joined string lets a back face qualify a card it shouldn't, which is how

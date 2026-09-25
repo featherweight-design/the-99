@@ -192,13 +192,15 @@ export function finalizeRecommendations(
  */
 export const loadCollectionPool = cache(async function loadCollectionPool(
   userId: string,
-): Promise<{ collection: PoolCard[]; uniqueCardsRead: number }> {
+): Promise<{ collection: (PoolCard & { layout: string | null })[]; uniqueCardsRead: number }> {
   const owned = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords,
       colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
       imageUri: cards.imageUri, artCropUri: cards.artCropUri, manaCost: cards.manaCost,
+      // Read by isCommanderCandidate, which refuses a melded card (#712).
+      layout: cards.layout,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
@@ -222,6 +224,8 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
       oracleText: cards.oracleText, keywords: cards.keywords,
       colorIdentity: cards.colorIdentity, imageUri: cards.imageUri,
       artCropUri: cards.artCropUri, manaCost: cards.manaCost,
+      // Read by isCommanderCandidate, which refuses a melded card (#712).
+      layout: cards.layout,
     })
     .from(cards)
     // Commander legality is part of the lookup, not a later check: the pool this

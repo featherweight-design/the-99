@@ -7,6 +7,7 @@ import {
   SYNERGY_WEIGHT,
   completeness,
   isCommanderCandidate,
+  isMeldResult,
   scoreCommander,
   type PoolCard,
 } from "./score";
@@ -49,12 +50,66 @@ const support = (names: string[] | null): SupportList | null =>
         }),
       };
 
+// #712. Every card here is a real meld card, read off the catalog on 2026-09-24 with its
+// layout, mana cost and type line as Scryfall gives them.
+const meld = (name: string, manaCost: string | null, typeLine: string, oracleText = "") =>
+  ({ name, layout: "meld", manaCost, typeLine, oracleText });
+const MELD_RESULTS = [
+  meld("Brisela, Voice of Nightmares", null, "Legendary Creature — Eldrazi Angel"),
+  meld("Hanweir, the Writhing Township", null, "Legendary Creature — Eldrazi Ooze"),
+  meld("Mishra, Lost to Phyrexia", null, "Legendary Artifact Creature — Phyrexian Artificer"),
+  meld("Titania, Gaea Incarnate", null, "Legendary Creature — Elemental Avatar"),
+  meld("Ragnarok, Divine Deliverance", null, "Legendary Creature — Beast Avatar"),
+];
+// A melded planeswalker. The front-face rule already refuses it — a planeswalker leads
+// only by saying so, and this one does not — so it pins isMeldResult and nothing more.
+const MELDED_PLANESWALKER = meld("Urza, Planeswalker", null, "Legendary Planeswalker — Urza");
+const MELD_HALVES_THAT_LEAD = [
+  meld("Bruna, the Fading Light", "{5}{W}{W}", "Legendary Creature — Angel Horror"),
+  meld("Gisela, the Broken Blade", "{2}{W}{W}", "Legendary Creature — Angel Horror"),
+  meld("Mishra, Claimed by Gix", "{2}{B}{R}", "Legendary Creature — Phyrexian Human Artificer"),
+  meld("Urza, Lord Protector", "{1}{W}{U}", "Legendary Creature — Human Artificer"),
+  meld("Titania, Voice of Gaea", "{1}{G}{G}", "Legendary Creature — Elemental"),
+];
+
+describe("meld results", () => {
+  it.each(MELD_RESULTS)("never offers $name, a melded card, as a commander", (card) => {
+    expect(isMeldResult(card)).toBe(true);
+    expect(isCommanderCandidate(card)).toBe(false);
+  });
+
+  it("recognises a melded planeswalker as a meld result", () => {
+    expect(isMeldResult(MELDED_PLANESWALKER)).toBe(true);
+  });
+
+  // The other half of the rule, and the reason it is not `layout === "meld"`: these are
+  // meld cards too, and each one leads decks.
+  it.each(MELD_HALVES_THAT_LEAD)("still offers $name, a meld half", (card) => {
+    expect(isMeldResult(card)).toBe(false);
+    expect(isCommanderCandidate(card)).toBe(true);
+  });
+
+  // A land half has no mana cost either. It is not a candidate on any rule, so this is
+  // asserted on isMeldResult directly: through isCommanderCandidate the land clause
+  // could be deleted and nothing would notice.
+  it("does not call a land half a melded card", () => {
+    expect(isMeldResult(meld("Hanweir Battlements", null, "Land"))).toBe(false);
+    expect(isMeldResult(meld("Argoth, Sanctum of Nature", null, "Land"))).toBe(false);
+  });
+
+  it("treats an empty cost like a missing one", () => {
+    expect(isMeldResult(meld("Brisela, Voice of Nightmares", "", "Legendary Creature — Eldrazi Angel"))).toBe(true);
+  });
+});
+
 describe("isCommanderCandidate", () => {
   it("accepts legendary creatures", () => {
-    expect(isCommanderCandidate({ typeLine: "Legendary Creature — Elf", oracleText: "" })).toBe(true);
+    expect(isCommanderCandidate({ layout: "normal", manaCost: "{1}", typeLine: "Legendary Creature — Elf", oracleText: "" })).toBe(true);
   });
   it("accepts 'can be your commander' cards", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Legendary Planeswalker — Teferi",
       oracleText: "Teferi, Temporal Archmage can be your commander.",
     })).toBe(true);
@@ -63,51 +118,67 @@ describe("isCommanderCandidate", () => {
     // Hearthhull, the Worldseed. Its eligibility is printed nowhere in the text:
     // Station's reminder only says it becomes a creature at 8+.
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Legendary Artifact — Spacecraft",
       oracleText: "Station (Tap another creature you control: Put charge counters equal to its power on this Spacecraft.)",
     })).toBe(true);
   });
   it("accepts a legendary Vehicle that never becomes a creature on its own", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Legendary Artifact — Vehicle",
       oracleText: "Flying, vigilance\nCrew 3",
     })).toBe(true);
   });
   it("rejects a Vehicle that is not legendary", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Artifact — Vehicle",
       oracleText: "Crew 1",
     })).toBe(false);
   });
   it("rejects a card whose back face is the legendary Vehicle", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Artifact — Equipment // Legendary Artifact — Vehicle",
       oracleText: "Equipped creature gets +1/+0.\n//\nCrew 2",
     })).toBe(false);
   });
   it("rejects ordinary cards", () => {
-    expect(isCommanderCandidate({ typeLine: "Instant", oracleText: "Draw a card." })).toBe(false);
+    expect(isCommanderCandidate({ layout: "normal", manaCost: "{1}", typeLine: "Instant", oracleText: "Draw a card." })).toBe(false);
   });
   it("rejects a card whose back face is the legendary creature", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Land // Legendary Creature — Demon",
       oracleText: "{T}: Add {C}.\n//\nFlying, haste",
     })).toBe(false);
   });
   it("accepts a double-faced card whose front face is the legendary creature", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Legendary Creature — God // Legendary Creature — Bird",
       oracleText: "Alrund gets +1/+1.\n//\nFlying",
     })).toBe(true);
   });
   it("rejects a non-legendary werewolf transform card", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Creature — Human Soldier Werewolf // Creature — Werewolf",
       oracleText: "When this enters, exile target creature.\n//\nTrample",
     })).toBe(false);
   });
   it("ignores 'can be your commander' printed on a back face", () => {
     expect(isCommanderCandidate({
+      layout: "normal",
+      manaCost: "{1}",
       typeLine: "Land // Legendary Planeswalker — Nissa",
       oracleText: "{T}: Add {G}.\n//\nNissa can be your commander.",
     })).toBe(false);

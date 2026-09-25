@@ -1220,6 +1220,9 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
       imageUri: cards.imageUri,
       typeLine: cards.typeLine,
       oracleText: cards.oracleText,
+      // Both read by isCommanderCandidate, which refuses a melded card (#712).
+      layout: cards.layout,
+      manaCost: cards.manaCost,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
@@ -1230,7 +1233,7 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
   // Split: candidates are legendary creatures / "can be your commander" cards;
   // the full ownedRows set is used as the pool for poolCount calculation.
   const candidates = ownedRows.filter((r) =>
-    isCommanderCandidate({ typeLine: r.typeLine, oracleText: r.oracleText }),
+    isCommanderCandidate(r),
   );
 
   if (candidates.length === 0) return [];

@@ -13,6 +13,9 @@ export type DetailedCatalogCard = CatalogCard & {
   commanderLegal: boolean;
   colorIdentity: string[];
   imageUri: string | null;
+  /** Both read by the commander-candidate check, which refuses a melded card (#712). */
+  layout: string | null;
+  manaCost: string | null;
 };
 /** One row of `printings` — every printing in existence, keyed by its printing-level id. */
 export type PrintingIdentity = { scryfallId: string; oracleId: string };
