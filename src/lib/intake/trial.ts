@@ -1,5 +1,7 @@
 import { buildFillPlan } from "../../app/decks/actions";
 import { loadAvailability } from "../decks/availability-query";
+import { deckBodySize } from "../decks/deck-size";
+import { capToBody } from "../decks/fill";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
 import { db } from "../../db";
@@ -38,7 +40,9 @@ export async function trialFill(
 ): Promise<TrialFigures> {
   const card = answers.cardOracleId;
   const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), { answers });
-  const rows = [...(card ? [{ oracleId: card, quantity: 1 }] : []), ...plan.rows];
+  // The plan fills a whole body beside the card, so the card's row would make it 100: cap it
+  // exactly as `createDeck` and `fillDeck` do.
+  const rows = capToBody([...(card ? [{ oracleId: card, quantity: 1 }] : []), ...plan.rows], deckBodySize(false));
   const ids = [...new Set(rows.map((r) => r.oracleId))];
 
   const [prices, availability, facts] = await Promise.all([

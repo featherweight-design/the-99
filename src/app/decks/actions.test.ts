@@ -2350,6 +2350,21 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     expect(stub.state.updateCalls.some((c) => (c.values as { intent?: string }).intent?.includes("from the cards you own"))).toBe(false);
   });
 
+  it("drops a basic land named as the build-around card: neither stored nor placed", async () => {
+    // A uuid-shaped id, so the selection's shape filter cannot be what drops it.
+    const basic = { ...forestCard(1), oracleId: "0000f0e5-0000-4000-8000-000000000001" };
+    stub.state.cards.push(commanderCard(), basic);
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await runAsked({ ...answers, cardOracleId: basic.oracleId });
+
+    const insert = stub.state.insertCalls.find((c) => c.table === "decks")!;
+    expect(insert.values).toMatchObject({ answerCardOracleId: null });
+    const placed = stub.state.insertCalls.filter((c) => c.table === "deck_cards")
+      .flatMap((c) => (Array.isArray(c.values) ? c.values : [c.values]) as { oracleId: string }[]);
+    expect(placed.some((r) => r.oracleId === basic.oracleId)).toBe(false);
+  });
+
   it("keeps the answers on the empty deck a failed fill leaves, so the retry fills to them", async () => {
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));

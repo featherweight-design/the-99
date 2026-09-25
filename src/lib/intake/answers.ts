@@ -37,6 +37,8 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
   if (bracket !== null && !(Number.isInteger(bracket) && bracket >= 1 && bracket <= 5)) {
     throw new Error("bracket must be 1 to 5");
   }
+  // The shape only: that the card exists, is legal here and is not a basic land needs its catalog
+  // row, and `createDeck` reads that row (a basic named as the answer is dropped there).
   if (cardOracleId !== null && !isUuid(cardOracleId)) throw new Error("card not found");
   if (!Array.isArray(raw.themes) || raw.themes.length > MAX_THEMES
     || raw.themes.some((t) => typeof t !== "string" || t.trim().length === 0 || t.length > MAX_THEME_LABEL || /[\r\n]/.test(t))) {

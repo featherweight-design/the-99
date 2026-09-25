@@ -349,9 +349,14 @@ export async function createDeck(
             name: cards.name,
             commanderLegal: cards.commanderLegal,
             colorIdentity: cards.colorIdentity,
+            typeLine: cards.typeLine,
           })
           .from(cards)
           .where(inArray(cards.oracleId, requested))
+          // A basic land is never a build-around card (the free match leaves basics out), and
+          // `validateCardForDeck` admits one. This action is directly callable, so the rule holds
+          // here too: a basic named as the answer is dropped, neither placed nor stored.
+          .then((rows) => rows.filter((c) => !(c.oracleId === asked?.cardOracleId && isBasicLand(c.typeLine))))
       : [];
     // `built: 0` asks about legality alone, exactly as restoreAutoCards does —
     // the cap is enforced by the loop inside the transaction below.

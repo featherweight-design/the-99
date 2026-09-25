@@ -112,6 +112,11 @@ async function main() {
     `own ${trial.owned} of ${trial.body}, about $${(trial.buyCents / 100).toFixed(2)} to buy`);
   check("its buy figure is the probe's own count of the same fill", trial.buyCents === spend(budgeted),
     `trial ${trial.buyCents}, independent ${spend(budgeted)}`);
+  // The plan fills a whole body beside the build-around card, so without the cap its row makes 100.
+  const around = plain.rows.find((r) => r.quantity === 1)!.oracleId;
+  const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around });
+  check("with a build-around card the trial body is still the whole body, never one over",
+    withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
 }
 
 main()
