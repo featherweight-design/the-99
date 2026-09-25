@@ -152,6 +152,37 @@ describe("the price under the art", () => {
     expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
   });
 
+  // The unowned case end to end (Zul Ashur): the catalog lists FDC #135 first, which the feed
+  // never carried. `catalogCard` now opens it on the cheapest live printing, so the tag is that
+  // figure, and the `from` line goes because the printing on screen IS the cheapest.
+  it("opens an unowned card on its cheapest live printing: its figure, no `no stock`, no `from` line", async () => {
+    const { catalogCard } = await import("../../lib/collection/card-detail");
+    const prices = indexPriceRows([
+      priceRow({ scryfall_id: "s-fdc", set_code: "FDC", collector_number: "135", price_cents: null, as_of: null as unknown as string }),
+      priceRow({ scryfall_id: "s-77", set_code: "FDN", collector_number: "77", price_cents: 32 }),
+      priceRow({ scryfall_id: "s-326", set_code: "FDN", collector_number: "326", price_cents: 203 }),
+    ]);
+    const catalog = catalogCard(
+      {
+        oracleId: "o1", scryfallId: "s-nowhere", name: "Zul Ashur, Lich Lord", typeLine: "Legendary Creature",
+        manaCost: "{1}{B}", cmc: 2, oracleText: "", keywords: [], rarity: "rare", colorIdentity: ["B"],
+        imageUri: "https://img/oracle.jpg", layout: "normal", backImageUri: null,
+      },
+      [
+        { scryfallId: "s-fdc", setCode: "fdc", setName: "Foundations Commander", collectorNumber: "135", releasedAt: "2024-11-15", imageUri: "https://img/fdc.jpg", backImageUri: null, flavorName: null },
+        { scryfallId: "s-77", setCode: "fdn", setName: "Foundations", collectorNumber: "77", releasedAt: "2024-11-15", imageUri: "https://img/77.jpg", backImageUri: null, flavorName: null },
+        { scryfallId: "s-326", setCode: "fdn", setName: "Foundations", collectorNumber: "326", releasedAt: "2024-11-15", imageUri: "https://img/326.jpg", backImageUri: null, flavorName: null },
+      ],
+      prices,
+    );
+    mount({ ...catalog, prices });
+
+    expect(screen.getAllByText("$0.32").length).toBeGreaterThan(0);
+    expect(screen.queryByText(setPageCopy.cell.noStock)).toBeNull();
+    expect(screen.queryByTestId("modal-price-from-desktop")).toBeNull();
+    expect(screen.queryByTestId("modal-price-from-mobile")).toBeNull();
+  });
+
   it("names the cheapest printing beside a `no stock` tag", () => {
     // Same reader, same question, and no figure on screen to hold the answer
     // against — which is the case that most needs it.
