@@ -180,10 +180,20 @@ async function walk(browser, width, userIdRef) {
   }
 
   // 1b. A re-render of the root layout keeps it.
-  await page.evaluate(() => window.next?.router?.refresh());
+  // Fails closed: with no refresh to call, the visibility read below would only
+  // re-read the card already on screen and pass over a sheet that unmounts.
+  const refreshed = await page.evaluate(() => {
+    if (typeof window.next?.router?.refresh !== "function") return false;
+    window.next.router.refresh();
+    return true;
+  });
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(800);
-  report(L("survives router.refresh()"), await card.isVisible());
+  report(
+    L("survives router.refresh()"),
+    refreshed && (await card.isVisible()),
+    refreshed ? "" : "no router.refresh on the page",
+  );
   if (!width.full) {
     await context.close();
     return;
@@ -203,9 +213,14 @@ async function walk(browser, width, userIdRef) {
   await card.waitFor({ timeout: 15_000 });
   await card.getByRole("button", { name: "Show me" }).click();
   await page.waitForURL(/\/about$/);
-  await page.waitForTimeout(600);
   const index = onPage(page, "nav[aria-labelledby='whats-new-heading']");
-  report(L("Show me lands on /about, card gone, index there"), !(await card.isVisible()) && (await index.isVisible()));
+  // The URL moves before the page has streamed in, so a fixed pause read an
+  // absent index now and then. Wait for the index itself; a build that never
+  // draws it still fails, 15 seconds later.
+  await index.waitFor({ timeout: 15_000 }).catch(() => {});
+  const cardGone = !(await card.isVisible());
+  const indexThere = await index.isVisible();
+  report(L("Show me lands on /about, card gone, index there"), cardGone && indexThere, `card gone ${cardGone}, index ${indexThere}`);
   await page.waitForTimeout(1500);
   report(L("the open recorded the visit (ruling 3)"), (await readSeen(userId)) === VERSION, `seen ${await readSeen(userId)}`);
   await page.reload({ waitUntil: "networkidle" });
