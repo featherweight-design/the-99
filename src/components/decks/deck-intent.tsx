@@ -22,9 +22,13 @@ export function DeckIntentAsk({
   fix,
   save,
   onSaved,
+  runBlocked = false,
 }: {
   deckId: string;
   fix: { axis: string; hurt: number; games: number } | null;
+  /** The suggestions cannot run now (every card locked, Locked): the skip line, which promises
+   *  "the suggestions still run", is not drawn (Hugh, 2026-09-25). */
+  runBlocked?: boolean;
   save: (deckId: string, formData: FormData) => Promise<{ ok: true } | { ok: false; message: string }>;
   onSaved: (line: string) => void;
 }) {
@@ -95,13 +99,15 @@ export function DeckIntentAsk({
         >
           {copy.save}
         </button>
-        <button
-          type="button"
-          onClick={() => setSkipped(true)}
-          className="font-mono text-[10.5px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]"
-        >
-          {copy.skip}
-        </button>
+        {runBlocked ? null : (
+          <button
+            type="button"
+            onClick={() => setSkipped(true)}
+            className="font-mono text-[10.5px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-muted)]"
+          >
+            {copy.skip}
+          </button>
+        )}
       </div>
       {refused ? <MutationError message={refused} /> : null}
     </form>

@@ -1,10 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckSuggestionItems, deckSuggestionRuns, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { ModelErrorClass } from "../model/client";
+import { neverCutEnabled } from "../decks/never-cut-flag";
 import { PROFILE_VERSION } from "../profile/version";
 import { intentTooLong, TUNING_MODEL } from "./limits";
 import { PROMPT_VERSION } from "./prompt-version";
@@ -26,10 +27,13 @@ import type { ValidatedSuggestion } from "./validate";
  * player has already been shown the state whoever superseded it wrote.
  */
 
-/** The five values `deck_suggestion_runs_error_class_check` allows. */
-export type ErrorClass = ModelErrorClass | "ungrounded" | "interrupted";
+/** The six values `deck_suggestion_runs_error_class_check` allows. `locked_only` (Locked, F10): a run
+ *  whose every suggestion cut a locked card. Refunded like every failure. */
+export type ErrorClass = ModelErrorClass | "ungrounded" | "interrupted" | "locked_only";
 
 class RunSupersededError extends Error {}
+/** Thrown inside `startRun`'s transaction to abandon it, reserving nothing. */
+class AllLockedError extends Error {}
 
 export type { Billed };
 
@@ -73,10 +77,26 @@ export async function startRun(
    * started and never another tab's (the row's default makes one when absent).
    */
   opts: { runId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" }> {
+): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
+      // EVERY CARD LOCKED is re-checked HERE, in the reservation's own transaction and under the
+      // deck row lock `setCardLocked` also takes (Locked, never cut). The gate's read came from a
+      // snapshot taken before this: a last card locked in between would otherwise still reserve a
+      // credit and call the model for a deck with nothing to cut. Deck row first, then the unit,
+      // the order the overview's `startRun` takes.
+      if (neverCutEnabled()) {
+        await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+        const { rows: [body] } = await tx.execute<{ cards: number; open: number }>(sql`
+          select count(*)::int as cards,
+                 count(*) filter (where not exists (
+                   select 1 from deck_locks l
+                   where l.deck_id = dc.deck_id and l.oracle_id = dc.oracle_id and l.removed_at is null
+                 ))::int as open
+          from deck_cards dc where dc.deck_id = ${deckId}`);
+        if (body && body.cards > 0 && body.open === 0) throw new AllLockedError();
+      }
       const unit = await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({
@@ -91,6 +111,7 @@ export async function startRun(
     return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
+    if (err instanceof AllLockedError) return { kind: "allLocked" };
     // Only the partial index means "a run is already in flight here". A dropped connection or
     // a missing column must not be reported as that.
     if (isUniqueViolation(err)) return { kind: "in_flight" };

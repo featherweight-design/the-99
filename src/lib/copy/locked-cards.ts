@@ -11,5 +11,16 @@ export const lockedCardsCopy = {
   tuning: {
     /** The no-longer-applies row's third reason, beside `cutGone` and `addAlreadyIn`. */
     cutLocked: (card: string) => `You locked ${card}.`,
+    /** Ready, when every card but the commander is locked: primary disabled, no credit used. */
+    allLocked: (commander: string) =>
+      `Every card but ${commander} is locked, so there is nothing we could suggest cutting. Unlock a card and suggestions can run again.`,
+    allLockedNote: "No credit is used.",
+    /** F10: a run whose every suggestion cut a locked card. New copy, for /copy-review. */
+    lockedOnlyBody: "Every swap it found would have cut a card you locked, so none could be shown.",
+    /** Its note, in place of `ungrounded`'s "log another game" (Hugh, 2026-09-25). */
+    lockedOnlyNote: "Unlock a card to let it be suggested.",
+    /** The decklist tag the prompt puts on a locked card, and the system line it extends. */
+    promptTag: "locked",
+    promptRule: "Never suggest cutting a card marked as a commander or as locked. The player chose to keep it.",
   },
 } as const;

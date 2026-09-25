@@ -1,0 +1,2 @@
+ALTER TABLE "deck_suggestion_runs" DROP CONSTRAINT "deck_suggestion_runs_error_class_check";--> statement-breakpoint
+ALTER TABLE "deck_suggestion_runs" ADD CONSTRAINT "deck_suggestion_runs_error_class_check" CHECK ("deck_suggestion_runs"."error_class" is null or "deck_suggestion_runs"."error_class" in ('upstream_busy', 'timeout', 'malformed', 'ungrounded', 'interrupted', 'locked_only'));

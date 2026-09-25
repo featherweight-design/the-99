@@ -152,3 +152,19 @@ describe("the overview and the universal staples (v2)", () => {
     ]);
   });
 });
+
+// Locked, D5: the pack is what tags a locked card in the prompt and what the validator reads, so the
+// mapping itself is pinned here rather than hand-set in those tests' packs.
+describe("buildEvidencePack and the locks", () => {
+  it("marks a locked card, and never the commander or an unlocked card", () => {
+    const pack = buildEvidencePack({ ...input(), locked: new Set(["r0", "cmd"]) });
+    const locked = (id: string) => pack.cards.find((c) => c.oracleId === id)?.locked;
+    expect(locked("r0")).toBe(true);
+    expect(locked("r1")).toBeUndefined();
+    expect(locked("cmd")).toBeUndefined();
+  });
+
+  it("builds the pack it built before locks for a deck with none", () => {
+    expect(buildEvidencePack({ ...input(), locked: new Set() })).toEqual(buildEvidencePack(input()));
+  });
+});

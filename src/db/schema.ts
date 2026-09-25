@@ -1726,7 +1726,9 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   ),
   check(
     "deck_suggestion_runs_error_class_check",
-    sql`${t.errorClass} is null or ${t.errorClass} in ('upstream_busy', 'timeout', 'malformed', 'ungrounded', 'interrupted')`,
+    // `locked_only` (Locked, F10): every suggestion cut a card the player locked, so the empty
+    // result says that rather than `ungrounded`'s three causes. Refunded like every failure.
+    sql`${t.errorClass} is null or ${t.errorClass} in ('upstream_busy', 'timeout', 'malformed', 'ungrounded', 'interrupted', 'locked_only')`,
   ),
   // The constraint that makes a second concurrent run on one deck impossible: the loser of the
   // race gets a unique violation, not a second run. Partial, so a deck accumulates any number

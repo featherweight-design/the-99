@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -374,3 +375,40 @@ describe("manifestRows", () => {
     expect(rows.some((r) => r.key === "notes")).toBe(false);
   });
 });
+
+describe("TuningPanel: Locked (never cut)", () => {
+  // Every card but the commander locked: the lead says so, the press is disabled, and the note says
+  // no credit is used, in place of the credit line (the design's STATES row).
+  it("draws the all-locked lead with the primary disabled and no credit spent", async () => {
+    const d = deps([{ ...fresh, allLocked: "Kykar, Wind's Fury" }]);
+    await draw(d);
+    expect(screen.getByText(lockedCardsCopy.tuning.allLocked("Kykar, Wind's Fury"))).toBeInTheDocument();
+    expect(screen.getByText(lockedCardsCopy.tuning.allLockedNote)).toBeInTheDocument();
+    const primary = screen.getByRole("button", { name: copy.suggest });
+    expect(primary).toHaveAttribute("aria-disabled", "true");
+    await press(copy.suggest);
+    expect(d.run).not.toHaveBeenCalled();
+    // Hugh, 2026-09-25: the intent ask's skip line promises the suggestions still run, so it goes.
+    expect(screen.queryByText(deckTuningCopy.intent.skip)).not.toBeInTheDocument();
+  });
+
+  // Over an existing set, the sentence joins the note (the lead is the set's), and only the
+  // credit line gives way: the press stays disabled.
+  it("says why the press is disabled over an existing set too", async () => {
+    await draw(deps([{ ...results, allLocked: "Kykar" }]));
+    const sentence = lockedCardsCopy.tuning.allLocked("Kykar");
+    expect(screen.getByText((t) => t.includes(sentence) && t.includes(lockedCardsCopy.tuning.allLockedNote))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: copy.again })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  // F10: a run whose every suggestion cut a locked card says that, not ungrounded's three causes.
+  it("names the lock when every suggestion cut a locked card", async () => {
+    await draw(deps([{ ...fresh, run: { ...okRun, status: "failed", errorClass: "locked_only" } }]));
+    expect(screen.getByText(lockedCardsCopy.tuning.lockedOnlyBody)).toBeInTheDocument();
+    expect(screen.queryByText(deckTuningCopy.failure.ungrounded.body)).not.toBeInTheDocument();
+    // And its note names the fix, not "log another game" (Hugh, 2026-09-25).
+    expect(screen.getByText((t) => t.includes(lockedCardsCopy.tuning.lockedOnlyNote))).toBeInTheDocument();
+    expect(screen.queryByText((t) => t.includes(deckTuningCopy.failure.ungrounded.note))).not.toBeInTheDocument();
+  });
+});
+

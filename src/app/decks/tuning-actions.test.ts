@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
   reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
-  contextRead: 0, packInput: undefined as unknown }));
+  contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -13,12 +13,13 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   EVIDENCE_STEPS: ["games", "notes", "decklist", "intent", "collection"],
   tuningInputs: async () => {
     calls.inputs += 1;
-    return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp" };
+    return { head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked };
   },
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
-  readTuningState: async () => ({
+  readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null }) => ({
     run: { id: "r", status: "ok" }, items: [], lastOkFingerprint: "fp", lastOkAt: new Date(),
     stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
+    allLocked: opts?.allLocked ?? null,
   }),
   readEvidenceStep: async () => 1,
   readOwnedOracleIds: async () => new Set(),
@@ -28,6 +29,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     return { cards: [], skeleton: { staples: [] } };
   },
   withBracketAfter: async () => [],
+  commanderName: async () => "Kykar, Wind's Fury",
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
   saveIntent: async () => { calls.saved += 1; return "saved"; },
@@ -61,6 +63,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
   setDismissed: async () => "deck",
 }));
 
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { applySuggestion, readTuningEvidence, runTuning, saveDeckIntent } from "./tuning-actions";
@@ -73,6 +76,7 @@ beforeEach(() => {
   calls.applied = 0;
   calls.saved = 0;
   calls.startKind = "in_flight";
+  calls.allLocked = null;
   calls.reachModel = false;
   calls.finished = [];
   calls.modelRequest = undefined;
@@ -197,5 +201,28 @@ describe("saveDeckIntent's field", () => {
     form.set("intent", "");
     expect((await saveDeckIntent(DECK, form)).ok).toBe(true);
     expect(calls.saved).toBe(1);
+  });
+});
+
+
+// Locked (never cut): every card but the commander locked. Refused by the gate, BEFORE `startRun`
+// reserves a credit, and even with "anyway": the panel's "No credit is used." is the server's truth.
+describe("runTuning with every card locked", () => {
+  it("refuses before any credit is reserved, anyway or not", async () => {
+    calls.allLocked = "Kykar, Wind's Fury";
+    const expected = { ok: false, message: lockedCardsCopy.tuning.allLocked("Kykar, Wind's Fury") };
+    expect(await runTuning(DECK)).toEqual(expected);
+    expect(await runTuning(DECK, { anyway: true })).toEqual(expected);
+    expect(calls.started).toBe(0);
+  });
+
+  // The last card locked AFTER the gate's snapshot: `startRun` re-checks under the deck row lock
+  // and refuses inside its transaction, so nothing is reserved; the action says why.
+  it("says why when startRun finds every card locked under its lock", async () => {
+    calls.startKind = "allLocked";
+    expect(await runTuning(DECK, { anyway: true })).toEqual({
+      ok: false, message: lockedCardsCopy.tuning.allLocked("Kykar, Wind's Fury"),
+    });
+    expect(calls.started).toBe(1);
   });
 });

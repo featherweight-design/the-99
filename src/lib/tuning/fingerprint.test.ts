@@ -10,6 +10,21 @@ const base: FingerprintInput = {
 };
 
 describe("tuningFingerprint", () => {
+  // Locked, D6. The hash of a deck with no locks must not move, or every tuning gate in production
+  // (where the switch is off) would reopen at once. Pinned to the literal hash, not only to itself.
+  it("hashes a deck with no locks exactly as before locks existed", () => {
+    const before = "890518455c4146b0351e082f4cbac27fb2d65357bd493557c4aea280cf707c8f";
+    expect(tuningFingerprint(base)).toBe(before);
+    expect(tuningFingerprint({ ...base, locks: [] })).toBe(before);
+  });
+
+  it("changes when a card is locked, whatever order the locks arrive in", () => {
+    const one = tuningFingerprint({ ...base, locks: ["a", "b"] });
+    expect(one).not.toBe(tuningFingerprint(base));
+    expect(tuningFingerprint({ ...base, locks: ["b", "a"] })).toBe(one);
+    expect(tuningFingerprint({ ...base, locks: ["a"] })).not.toBe(one);
+  });
+
   it("ignores the order games arrive in, and the order of their marks", () => {
     const two = { ...base, games: [...base.games, { ...base.games[0], id: "g2", hurt: ["speed", "mana"] }] };
     const shuffled = { ...two, games: [...two.games].reverse().map((g) => ({ ...g, hurt: [...g.hurt].reverse() })) };
