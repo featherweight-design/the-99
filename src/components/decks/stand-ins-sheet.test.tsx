@@ -105,6 +105,22 @@ describe("StandInsSheet", () => {
       expect(takeButton("Swords to Plowshares")).toBeInTheDocument();
     });
 
+    it("starts one swap for two presses before the first lands, and holds every Take while it runs", async () => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      let land: (v: unknown) => void = () => {};
+      takeStandInAction.mockReset().mockReturnValue(new Promise((r) => { land = r; }));
+      await open();
+      // Both presses in one frame, before a render can disable anything: only the ref can refuse the second.
+      await act(async () => {
+        takeButton("Chaos Warp").click();
+        takeButton("Swords to Plowshares").click();
+      });
+      expect(takeStandInAction).toHaveBeenCalledTimes(1);
+      expect(takeButton("Swords to Plowshares")).toBeDisabled();
+      await act(async () => land({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 }));
+      expect(screen.getByTestId("receipts")).toHaveTextContent("Anguished Unmaking>Chaos Warp:false");
+    });
+
     it("names the cause of a refusal only when the swap body reported it (F11)", async () => {
       loadStandInsAction.mockReset().mockResolvedValue(READ);
       takeStandInAction.mockResolvedValueOnce({ ok: false, reason: "cutGone" }).mockResolvedValueOnce({ ok: false, reason: "addHeld" });

@@ -11,7 +11,7 @@
  * Take is PR 4b's: a press that swaps needs its receipt, its refusal and its undo, and a Take drawn
  * without them would be a control that does nothing. The row's grid keeps its first two columns.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -62,6 +62,8 @@ type RowTake = {
   /** Null once a take has landed on another row: Take is removed, not disabled (R2). */
   onTake: (() => void) | null;
   taking: boolean;
+  /** A take is in flight on some row: every Take waits for it, so one sheet makes one swap. */
+  busy: boolean;
   refused: { body: string; onReread: () => void; onClose: () => void } | null;
   error: string | null;
   cut: string;
@@ -111,7 +113,7 @@ function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newest
             <button
               type="button"
               onClick={take.onTake}
-              disabled={take.taking}
+              disabled={take.busy}
               aria-label={copy.takeAria(row.name, take.cut)}
               className={APPLY}
             >
@@ -245,6 +247,9 @@ export function StandInsSheet({
   const [failedTake, setFailedTake] = useState<string | null>(null);
   const [undoing, setUndoing] = useState(false);
   const [undoFailed, setUndoFailed] = useState(false);
+  // A ref, not the `taking` state: two presses in one frame both read the state before either
+  // render lands, and each would start its own swap.
+  const inFlight = useRef(false);
 
   if (!tools) return null;
   const model = load.state === "ready" ? sheetModel(load.read) : null;
@@ -253,6 +258,8 @@ export function StandInsSheet({
   const name = printedFaceName(card);
 
   const take = async (row: SheetRow) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setTaking(row.oracleId);
     setRefused(null);
     setFailedTake(null);
@@ -272,6 +279,7 @@ export function StandInsSheet({
     } catch {
       setFailedTake(row.oracleId);
     } finally {
+      inFlight.current = false;
       setTaking(null);
     }
   };
@@ -299,6 +307,7 @@ export function StandInsSheet({
   const rowTake = (row: SheetRow): RowTake => ({
     onTake: taken ? null : () => void take(row),
     taking: taking === row.oracleId,
+    busy: taking !== null,
     cut: name,
     error: failedTake === row.oracleId ? copy.takeFailed : null,
     refused: refused?.addId === row.oracleId

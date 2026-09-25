@@ -310,15 +310,20 @@ The row itself stays live with Take.
 
 ### 7.3 The Take footer (`CardModal` footer slot, READINESS amendment 3c)
 
+**Desktop takes the shipped nav row, by ruling** (gap report, "Decided by engineering"). The stacked card keeps
+CardModal's own desktop Prev/Next row (`mx-[32px] mb-[30px] pt-[20px]`, `border-top: 1px solid var(--border)`,
+no background of its own), and the Take footer takes the Mana Pool link's place in it. The desktop column below
+records the canvas's own footer box, which this build does not draw. The phone column is built as drawn.
+
 | Element | Property | Desktop | Mobile |
 |---|---|---|---|
 | Condition | — | the card was opened stacked from the stand-ins sheet | same |
 | Footer | position | `margin-top: auto` (pinned to the card's bottom) | `flex: none` at the bottom of the card's column (pinned) |
 | Footer | display / direction | `flex` / row, `align-items: center` | `flex` / `column` |
 | Footer | gap | `12px` | `8px` |
-| Footer | padding | `12px 24px` | `10px 16px 20px` |
+| Footer | padding | canvas `12px 24px`; built: the nav row's `pt 20 / mb 30 / mx 32` | `10px 16px 20px` |
 | Footer | border-top | `1px solid var(--border)` | same |
-| Footer | background | `var(--surface-sunken)` | same |
+| Footer | background | canvas `var(--surface-sunken)`; built: none (the card's own ground) | `var(--surface-sunken)` |
 | Pager | content | `‹`, position `pos of total`, `›` (paging the sheet's list, §7.4) | **none** (F8) |
 | Pager | font-family / size / color | mono / `11px` / `var(--fg-faint)` | — |
 | In place of | key | `modal.inPlaceOf(cut, deck)` | `modal.inPlaceOfShort(cut, pos, total)` |
