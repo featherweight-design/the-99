@@ -26,6 +26,7 @@ describe("the deeper read's stub", () => {
       { kind: "card", oracleId: "ds", name: "Doubling Season" },
     ]);
     expect(read.useful).toBe(true);
+    expect(read.notUnderstood).toEqual(["big energy"]);
   });
 
   it("carries the budget and bracket the words name", () => {

@@ -38,7 +38,7 @@ export function stubReply(words: string, index: PhraseIndex, mode: StubMode): Mo
   if (mode === "nothing") {
     return { ok: true, usage: USAGE, value: { themes: ["Not A Theme"], cards: [], budgetDollars: null, bracket: null, notUnderstood: [words.slice(0, 120)] } };
   }
-  const { chips, leftover } = matchWords(words, index);
+  const { chips, phrases } = matchWords(words, index);
   const value: ReadResponse = { themes: [], cards: [], budgetDollars: null, bracket: null, notUnderstood: [] };
   for (const c of chips) {
     if (c.kind === "theme" && value.themes.length < 6) value.themes.push(c.label);
@@ -46,6 +46,7 @@ export function stubReply(words: string, index: PhraseIndex, mode: StubMode): Mo
     if (c.kind === "budget") value.budgetDollars = c.dollars;
     if (c.kind === "bracket") value.bracket = c.bracket;
   }
-  if (leftover.length > 0) value.notUnderstood.push(leftover.join(" ").slice(0, 120));
+  // The player's own phrases, verbatim, as the model is asked to copy them.
+  value.notUnderstood.push(...phrases.slice(0, 10).map((p) => p.slice(0, 120)));
   return { ok: true, value, usage: USAGE };
 }
