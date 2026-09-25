@@ -18,7 +18,8 @@
 // IT NEVER WRITES TO THE FIXTURE DECK. Each run COPIES it (the deck row, its cards and its stored
 // reading) to a new deck under the same account, stamped with this probe's name, locks cards on
 // the copy, and deletes the copy in a `finally`; locks, cards and the reading cascade. A run that
-// dies before its `finally` leaves only a stamped copy, which the next run sweeps on its way in.
+// dies before its `finally` leaves only a stamped copy, which a later run sweeps once it is 30
+// minutes old (never sooner, since a younger copy may be a concurrent run's).
 // It also raises the account's `user_prefs.about_version_seen`, as every signed-in probe here does. Needs a server with NEVER_CUT_ENABLED=true and
 // ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
 //
@@ -136,12 +137,15 @@ async function run() {
     const page = await context.newPage();
     const userId = await signIn(page);
     const { gcs } = await fixture(userId);
-    // Debris from a run that never reached its `finally`: stamped copies only, never the source.
-    await sql`delete from decks where user_id = ${userId} and name = ${STAMP} and id <> ${SOURCE}`;
+    // Debris from a run that never reached its `finally`: stamped copies only, never the source, and
+    // only STALE ones. A run takes about a minute, so a copy younger than 30 minutes may belong to a
+    // concurrent run on the same account and is left alone.
+    await sql`delete from decks where user_id = ${userId} and name = ${STAMP} and id <> ${SOURCE}
+      and created_at < now() - interval '30 minutes'`;
     const copy = crypto.randomUUID();
     DECK = copy; // the `finally` deletes it from here on, even if a copy step below throws
     await sql`insert into decks select (jsonb_populate_record(null::decks,
-      to_jsonb(d) || jsonb_build_object('id', ${copy}::text, 'name', ${STAMP}::text))).* from decks d where d.id = ${SOURCE}`;
+      to_jsonb(d) || jsonb_build_object('id', ${copy}::text, 'name', ${STAMP}::text, 'created_at', now()))).* from decks d where d.id = ${SOURCE}`;
     await sql`insert into deck_cards select (jsonb_populate_record(null::deck_cards,
       to_jsonb(c) || jsonb_build_object('deck_id', ${copy}::text))).* from deck_cards c where c.deck_id = ${SOURCE}`;
     await sql`insert into deck_profiles select (jsonb_populate_record(null::deck_profiles,
