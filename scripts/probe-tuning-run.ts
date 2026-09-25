@@ -481,8 +481,10 @@ async function run() {
     const context = await readTuningContext(head);
     check("13 · the run reads the live list's own overview, not the newer one", context.overview, { strategy: [`Win with [[${key}]].`], keyCards: [key] });
     const universalIds = await loadUniversalStaples();
+    // An empty set would pass every staple check here while measuring nothing: a database whose
+    // staple index was never built is a failure of this case, not a pass.
+    if (universalIds.size === 0) fail("13 · universal staples", "format_staples names none on this database; build the staple index first");
     check("13 · every universal staple is named through the catalog", context.universal.length, universalIds.size);
-    if (universalIds.size === 0) console.log("note  13 · this database holds no universal staples, so the staple half measured nothing");
 
     const profile = await loadDeckProfileFromHead(head);
     const pack = buildEvidencePack({ profile, play: buildPlayGroup([]), intent: null, owned: new Set(), ...context });
@@ -490,7 +492,7 @@ async function run() {
     const { system, user } = buildPrompt(pack);
     check("13 · the prompt carries the strategy and the Key card",
       [user.includes(`How this deck plays (from its own overview):\n- Win with ${key}.`), user.includes(`Key cards, never to be cut: ${key}.`)], [true, true]);
-    check("13 · and names the universal staples", universalIds.size === 0 || context.universal.every((u2) => system.includes(u2.name)), true);
+    check("13 · and names the universal staples", universalIds.size > 0 && context.universal.every((u2) => system.includes(u2.name)), true);
 
     const resolved = new Map([[key, c.body[0]], [other, c.body[1]], [add, c.add]]);
     const response = { suggestions: [{ add, cut: key, rationale: "r", rationaleShort: "r", evidence: [{ kind: "decklist", value: key }] }] } as TuningResponse;
