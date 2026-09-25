@@ -86,8 +86,12 @@ export const changeCommanderCopy = {
     ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
     pending: "Changing…",
     failed: (oldShort: string) => `We couldn't change the commander. ${oldShort} still leads this deck.`,
+    // The pair forms a pair reaches (audit F9: two names never share a singular verb). A pair never
+    // trades (`offerable` holds a half in the 98 back), so `trade` has no pair form.
+    failedPair: (oldShort: string) => `We couldn't change the commanders. ${oldShort} still lead this deck.`,
     failedRetry: "Try again",
     announced: (nu: string) => `${nu} leads this deck now. The change is pending.`,
+    announcedPair: (nu: string) => `${nu} lead this deck now. The change is pending.`,
   },
 
   banner: {
@@ -110,5 +114,12 @@ export const changeCommanderCopy = {
   discard: {
     // Appended to deckVersioningCopy.discard.consequence's head when the draft holds a commander change.
     commanderBack: (oldShort: string) => `${oldShort} leads it again.`,
+    // The pair form the audit owes (F9); the handoff's file carries the single only.
+    commanderBackPair: (a: string, b: string) => `${a} and ${b} lead it again.`,
+    // A draft that moved ONLY its commander. deckVersioningCopy.discard.consequence names the cards
+    // added and cut and would lose its subject over zero of each ("3 cards.  are not stored
+    // anywhere"), so this draft takes the version clause alone; `commanderBack` follows it.
+    commanderOnly: (version: number, date: string, cards: number) =>
+      `The deck goes back to v${version} as committed on ${date}: ${cards} ${cards === 1 ? "card" : "cards"}.`,
   },
 } as const;

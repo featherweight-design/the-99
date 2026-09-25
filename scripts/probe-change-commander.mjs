@@ -92,11 +92,13 @@ async function signIn(page) {
 
 /** Cleanup handles, each set BEFORE the write it undoes, so a throw part-way through strands
  *  nothing. */
-let fixtureDeckId = null;
+/** Every fixture deck, in the order made. */
+const made = [];
 let restorePrefs = null;
 
-/** A committed mono-green deck holding three cards a real mono-green candidate's decks run. */
-async function buildFixture(userId) {
+/** A committed mono-green deck holding three cards a real mono-green candidate's decks run. With
+ *  `trade`, the target also sits in the 99, so choosing it trades places (STATES 21b). */
+async function buildFixture(userId, { trade = false } = {}) {
   const [lead] = await sql`
     select c.oracle_id from cards c join commander_support cs on cs.commander_oracle_id = c.oracle_id
     where c.commander_legal and c.color_identity = '{G}' and c.type_line ilike 'Legendary Creature%'
@@ -113,10 +115,11 @@ async function buildFixture(userId) {
     where sc.commander_oracle_id = ${target.oracle_id} and k.color_identity <@ '{G}'::text[]
       and k.type_line not ilike '%Land%' and sc.oracle_id not in (select oracle_id from format_staples)
     order by sc.oracle_id limit 3`;
+  if (trade) hits.push({ oracle_id: target.oracle_id });
   const [deck] = await sql`
     insert into decks (user_id, name, commander_oracle_id)
     values (${userId}, 'probe:change-commander', ${lead.oracle_id}) returning id`;
-  fixtureDeckId = deck.id;
+  made.push(deck.id);
   for (const h of hits) {
     await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${h.oracle_id}, 1)`;
   }
@@ -126,7 +129,7 @@ async function buildFixture(userId) {
   for (const h of hits) {
     await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${v.id}, ${h.oracle_id}, 1)`;
   }
-  return { deckId: deck.id, lead: lead.oracle_id };
+  return { deckId: deck.id, lead: lead.oracle_id, target: target.oracle_id };
 }
 
 const rect = (locator) => locator.evaluate((el) => {
@@ -250,9 +253,82 @@ async function main() {
     report("write", live.c !== fixture.lead, `commander ${live.c === fixture.lead ? "unchanged" : "moved"}`);
     const [v] = await sql`select commander_oracle_id as c from deck_versions where deck_id = ${fixture.deckId}`;
     report("write is a draft change", v.c === fixture.lead, "the version still holds the old commander");
+
+    // PR 4: the pending banner names the swap on its own line, and focus lands there.
+    const line = onPage(page, '[data-testid="banner-commander-line"]').filter({ visible: true });
+    await line.first().waitFor({ state: "visible", timeout: 30_000 });
+    report("banner line", (await line.count()) === 1, (await line.first().textContent()) ?? "");
+    report("focus lands on the banner line", await line.first().evaluate((el) => el === document.activeElement), "document.activeElement");
+
+    // The review page draws the Commander section first, at both widths.
+    for (const width of WIDTHS) {
+      await page.setViewportSize(width.viewport);
+      await page.goto(`${BASE}/decks/${fixture.deckId}/changes`, { waitUntil: "domcontentloaded" });
+      const section = onPage(page, '[data-testid="review-commander"]');
+      await section.waitFor({ state: "visible", timeout: 30_000 });
+      const first = await section.evaluate((el) => {
+        // Above the columns (`#review`), which the strip and the chips also sit above: a section
+        // mounted anywhere below the lede but inside the columns would fail this.
+        const columns = document.querySelector("main #review");
+        return columns !== null && el.getBoundingClientRect().bottom <= columns.getBoundingClientRect().top;
+      });
+      report(`review section first @${width.label}`, first, "above the columns");
+      report(`review rows @${width.label}`, (await section.locator("> div > div").count()) === 2, "was and now");
+    }
+
+    // Discard names the old commander back, then puts it back.
+    await page.goto(`${BASE}/decks/${fixture.deckId}`, { waitUntil: "domcontentloaded" });
+    await onPage(page, "button").filter({ hasText: /^Discard/ }).filter({ visible: true }).first().click();
+    const why = onPage(page, "p").filter({ hasText: "leads it again." }).filter({ visible: true });
+    report("discard names the old commander", (await why.count()) === 1, (await why.first().textContent().catch(() => "")) ?? "");
+    // PROBE_SHOT=<dir> photographs the confirm, for copy review.
+    if (process.env.PROBE_SHOT) await page.screenshot({ path: `${process.env.PROBE_SHOT}/discard-commander-390.png` });
+    // The fixture moved only its commander: the card clause must not be drawn over zero cards.
+    const whyText = (await why.first().textContent().catch(() => "")) ?? "";
+    report("discard has no empty card clause", !/not stored anywhere|\.\s{2}/.test(whyText), whyText);
+
+    // A trade (STATES 21b): the chosen commander was in the 99. On the review page the old
+    // commander's row in `Coming in` reads that it came `from the command zone`, the new one's row
+    // in `Going out` reads that it went `to the command zone`, and each hint stands where the row's
+    // usual action (Pull it, Put back) would be.
+    const traded = await buildFixture(userId, { trade: true });
+    await page.setViewportSize(WIDTHS[0].viewport);
+    await page.goto(`${BASE}/decks/${traded.deckId}`, { waitUntil: "domcontentloaded" });
+    await onPage(page, '[data-testid="change-commander-door"]').filter({ visible: true })
+      .getByRole("button", { name: "Change commander" }).click();
+    const tradeDialog = page.getByRole("dialog", { name: "Change commander" });
+    const tradeRow = tradeDialog.locator('[data-testid="change-commander-row"]').filter({ hasText: "trades places" }).first();
+    await tradeRow.waitFor({ state: "visible", timeout: 30_000 });
+    await tradeRow.locator("[data-choose]").click();
+    await tradeDialog.getByRole("button", { name: /^Make .* commander$/ }).click();
+    await tradeDialog.waitFor({ state: "hidden", timeout: 30_000 });
+    const [moved] = await sql`select commander_oracle_id as c from decks where id = ${traded.deckId}`;
+    report("trade write", moved.c === traded.target, `commander ${moved.c === traded.target ? "is the traded card" : "did not move to it"}`);
+    for (const width of WIDTHS) {
+      await page.setViewportSize(width.viewport);
+      await page.goto(`${BASE}/decks/${traded.deckId}/changes`, { waitUntil: "domcontentloaded" });
+      const tradeSection = onPage(page, '[data-testid="review-commander"]');
+      await tradeSection.waitFor({ state: "visible", timeout: 30_000 });
+      // The traded card keeps the copy it had in the 99, and the fixture's collection does not hold
+      // it: a buy tag here would be a purchase the trade never asks for.
+      const tradeText = (await tradeSection.textContent()) ?? "";
+      report(`trade buys nothing @${width.label}`, !/buy/i.test(tradeText), tradeText.slice(0, 120));
+      const columns = onPage(page, "#review");
+      // The phone draws one column at a time behind a segmented pair; read what the document holds.
+      const hints = await columns.evaluate((el) => ["in", "out"].map((side) => {
+        const hint = el.querySelector(`[data-zone-hint="${side}"]`);
+        const slot = hint?.parentElement;
+        const action = [...(slot?.querySelectorAll("button") ?? [])].some((b) => /Pull it|Put back/.test(b.textContent ?? ""));
+        return { side, text: hint?.textContent ?? null, action };
+      }));
+      const [coming, going] = hints;
+      report(`trade zone hints @${width.label}`,
+        coming.text === "from the command zone" && going.text === "to the command zone" && !coming.action && !going.action,
+        JSON.stringify(hints));
+    }
   } finally {
     // Each step on its own, so one failing cannot skip the next.
-    if (fixtureDeckId) await sql`delete from decks where id = ${fixtureDeckId}`.catch((e) => { failures += 1; console.error(e); });
+    for (const id of made) await sql`delete from decks where id = ${id}`.catch((e) => { failures += 1; console.error(e); });
     if (restorePrefs) await restorePrefs().catch((e) => { failures += 1; console.error(e); });
     await browser.close();
   }

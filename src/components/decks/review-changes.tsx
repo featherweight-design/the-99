@@ -27,6 +27,8 @@ import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
+import { CommanderSection, ZoneHint } from "./change-commander-review";
+import { commanderZoneHint } from "./change-commander-banner";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
@@ -181,6 +183,7 @@ export function Column({
   columnKey,
   newestAsOf,
   claimsKnown,
+  zoneHint,
 }: {
   deckId: string;
   /** The contested cards among this column's rows. The chooser hangs under the ones that match. */
@@ -210,6 +213,8 @@ export function Column({
    *  columns can hold an `Artifacts` group, and two elements with one id is a
    *  focus target that lands on whichever came first. */
   columnKey: "in" | "out";
+  /** Change commander: a traded card's command-zone hint, or null. Absent, no row carries one. */
+  zoneHint?: (oracleId: string, added: boolean) => string | null;
   /** The newest `as_of` in the price table, so a row can tell a live price from
    *  a sold-out printing's last one. */
   newestAsOf: Date | null;
@@ -335,7 +340,11 @@ export function Column({
                   // unowned card has nothing to pull from and a free one
                   // needs nothing pulled.
                   action={
-                    pullClaim
+                    // A trade's old commander, arriving from the command zone, says so in
+                    // the slot a pull would use (handoff §4).
+                    zoneHint?.(row.oracleId, true)
+                      ? <ZoneHint side="in" text={zoneHint(row.oracleId, true)!} />
+                      : pullClaim
                       ? (
                           <PullControl
                             deckId={deckId}
@@ -359,7 +368,11 @@ export function Column({
                   // underneath the control rather than beside it — the same
                   // shape `PullControl` uses on the other side of the page.
                   action={
-                    onRestore && restorable(row)
+                    // A trade's new commander left for the command zone: no Put back, which
+                    // would re-add the card now leading the deck, and the zone named instead.
+                    zoneHint?.(row.oracleId, false)
+                      ? <ZoneHint side="out" text={zoneHint(row.oracleId, false)!} />
+                      : onRestore && restorable(row)
                       ? (
                           <div className="inline-flex flex-col items-end flex-none">
                             <PutBackControl
@@ -766,7 +779,8 @@ export function ReviewChanges({
         // route's own `admitsReview` asks it the same way. The pair used to be
         // two questions and two flags, because a moved basic could empty both
         // columns while the draft still differed.
-        const redirecting = outAfter === 0 && inCount === 0;
+        // A moved commander is a change the columns do not list, so the route stays.
+        const redirecting = outAfter === 0 && inCount === 0 && !state.commander;
         draftAnnouncer().textContent =
           redirecting
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
@@ -885,7 +899,8 @@ export function ReviewChanges({
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
             {firstCommit
               ? copy.firstHeading(liveCardCount)
-              : copy.heading(inCount + outCount, state.version?.number ?? 1)}
+              // A moved commander is one change on top of the cards (handoff §4).
+              : copy.heading(inCount + outCount + (state.commander ? 1 : 0), state.version?.number ?? 1)}
           </h1>
           {/* Desktop only. At 390px the sentence is five lines above a list the
               reader came here to read, and the pulls it describes are on that
@@ -901,6 +916,9 @@ export function ReviewChanges({
           {/* Under the lede and above the columns, because it answers the other
               question the page is asked: the columns say which cards moved, and
               this says where the deck's shape went. */}
+          {/* Change commander: first under the lede, above the strip (handoff §4). Absent unless
+              the draft moved its commander. */}
+          <CommanderSection state={state} />
           <ChangedStrip before={before} after={liveAfter} mix={mix} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
@@ -961,6 +979,7 @@ export function ReviewChanges({
               contradict it. */}
           {inCount > 0 && (
             <Column
+              zoneHint={(id, added) => commanderZoneHint(state, id, added)}
               deckId={deckId}
               contested={contested}
               heading={copy.groupIn(inCount)}
@@ -990,6 +1009,7 @@ export function ReviewChanges({
           )}
           {outCount > 0 && (
             <Column
+              zoneHint={(id, added) => commanderZoneHint(state, id, added)}
               deckId={deckId}
               contested={contested}
               heading={copy.groupOut(outCount)}

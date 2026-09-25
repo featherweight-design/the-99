@@ -25,6 +25,10 @@ type Door = {
   /** Read out once a change lands. Held here, because the sheet that makes the change is gone by
    *  the time a screen reader would read a live region inside it. */
   announce: (text: string) => void;
+  /** Set when a change lands, until the banner's commander line takes focus (handoff §3: on
+   *  success focus lands on the banner's commander line). */
+  focusPending: boolean;
+  focusTaken: () => void;
 };
 
 const Context = createContext<Door | null>(null);
@@ -44,12 +48,15 @@ export function ChangeCommanderProvider({
 }) {
   const [openFrom, setOpenFrom] = useState<DoorWidth | null>(null);
   const [announced, setAnnounced] = useState("");
+  const [focusPending, setFocusPending] = useState(false);
   const value = useMemo(() => ({
     deckId, deckName, pair, hasVersion, openFrom,
     openSheet: (from: DoorWidth) => setOpenFrom(from),
     closeSheet: () => setOpenFrom(null),
-    announce: setAnnounced,
-  }), [deckId, deckName, pair, hasVersion, openFrom]);
+    announce: (text: string) => { setAnnounced(text); setFocusPending(true); },
+    focusPending,
+    focusTaken: () => setFocusPending(false),
+  }), [deckId, deckName, pair, hasVersion, openFrom, focusPending]);
   return (
     <Context.Provider value={value}>
       {children}

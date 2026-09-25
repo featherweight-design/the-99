@@ -18,6 +18,7 @@ import { formatDeckDate } from "../../lib/decks/format";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips } from "../ui/cost-pips";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
+import { CommanderNameLine, CommanderSentence, commanderZoneHint } from "./change-commander-banner";
 
 const copy = deckVersioningCopy.pending;
 
@@ -185,6 +186,8 @@ function NameLine({
   // `pullFrom`, never `heldBy`: the hint offers a pull, and `heldBy` includes the
   // holders the server refuses one from.
   const holder = add ? state.pullFrom.get(change.oracleId) : undefined;
+  // A trade's two card lines say which way they moved through the command zone (handoff §4).
+  const zone = commanderZoneHint(state, change.oracleId, add !== undefined);
   return (
     <li className="flex items-center gap-[9px] min-h-[34px]">
       <span
@@ -197,7 +200,9 @@ function NameLine({
       <span className="flex-1 min-w-0 text-[13px] text-[color:var(--fg)]">
         {changeLabel(state, change)}
       </span>
-      {add ? (
+      {zone ? (
+        <span className="flex-none font-mono text-[10px] text-[color:var(--fg-locked)]">{zone}</span>
+      ) : add ? (
         holder && (
           // Shrinks and truncates rather than `flex-none`: a deck name is valid up
           // to 120 characters, and on the phone an unshrinkable one pushes the
@@ -339,6 +344,8 @@ export function PendingBanner({ state, deckId, versionCards, onDiscarded }: Pend
 
         {inline ? (
           <ul className="m-0 p-0 list-none flex flex-col gap-[5px] mb-[14px]">
+            {/* Change commander: its own line, first (handoff §4). Absent unless the commander moved. */}
+            <CommanderNameLine state={state} tileClass={PRICE_TILE} />
             {state.addChanges.map((c, i) => (
               <NameLine key={c.oracleId} state={state} change={c} add={state.adds[i]} />
             ))}
@@ -354,12 +361,15 @@ export function PendingBanner({ state, deckId, versionCards, onDiscarded }: Pend
              telling the player the commit asks for nothing. The pull clause
              is a second line only because it is a different offer, not a
              second total. */
-          money && (
+          <>
+          <CommanderSentence state={state} sentenceClass={MONEY_SENTENCE} />
+          {money && (
             <p className={MONEY_SENTENCE}>
               {money}
               {state.pullableCount > 0 && ` ${copy.moneyPulls(state.pullableCount)}`}
             </p>
-          )
+          )}
+          </>
         )}
 
         {/* The hierarchy inverts with the density, and `Commit as v{n}` is

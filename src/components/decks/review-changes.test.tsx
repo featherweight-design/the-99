@@ -1268,6 +1268,28 @@ describe("ReviewChanges", () => {
       );
     });
 
+    // Change commander: a moved commander is a change the columns do not list, so emptying
+    // them is not the deck back at its version, and the route does not redirect.
+    it("does not call the last put-back the last change while the commander moved", async () => {
+      render(
+        <ReviewChanges mix={TEST_MIX}
+          deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
+          {...SHAPE}
+          state={{ ...STATE, commander: {
+            from: { commanderOracleId: "korvold", partnerOracleId: null },
+            to: { commanderOracleId: "prosper", partnerOracleId: null },
+          } }}
+          cardCount={CARD_COUNT}
+        />,
+      );
+      await act(async () => {
+        fireEvent.click(putBack());
+      });
+      await settle();
+      const spoken = document.getElementById("draft-announcer")?.textContent ?? "";
+      expect(spoken).toBe(deckVersioningCopy.restore.announcedLastOut("Mox Diamond", CARD_COUNT + 1));
+    });
+
     // A commit started FIRST used to race a restore started second: the sheet is
     // not unmounted while its own write runs, so nothing on this page knew about
     // it, and the guard only ever shut one way.

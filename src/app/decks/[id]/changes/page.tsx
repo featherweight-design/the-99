@@ -14,6 +14,7 @@ import { ReviewChanges } from "../../../../components/decks/review-changes";
 import { loadContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
+import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
 
 // Versioned like every other cached payload here: the key travels with the SHAPE of what it
 // stores, so a mix that grows a field is never read back from an entry that lacks it.
@@ -145,7 +146,8 @@ export default async function ChangesPage({
   // staples join for the same five integers, measured at 632-831ms steady state.
   const mix = await cacheForUser(
     userId,
-    [...DECK_MIX_KEY, id, await indexGeneration()],
+    // Change commander: the live commander joins the key, switch on only (audit F5).
+    [...DECK_MIX_KEY, id, await indexGeneration(), ...(await commanderKeyParts(id))],
     () => loadDeckMix(id, userId),
   );
 

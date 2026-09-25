@@ -27,6 +27,7 @@ import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { commanderMoved, type CommanderPair } from "../commander-change/pending";
+import { loadCommanderRows } from "../commander-change/draft-rows";
 
 // `DraftState`, `DraftAdd`, the two counts and the two claim selectors live in
 // `draft-shape.ts` — the banner and the pull control are client components and
@@ -268,9 +269,17 @@ async function readDraft(
         to: live,
       }
     : null;
+  // The moved commanders' names, for the banner's and the review page's commander line. Their
+  // own read, merged into `names` only: a commander is not a card row, so it must not reach the
+  // cost track, the basics set or the row facts.
+  // The version's body goes with them: a half that arrives out of the 99 keeps that card's copy.
+  const commanderRows = commander
+    ? await loadCommanderRows(userId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
+    : null;
+  const commanderNames = new Map((commanderRows?.rows ?? []).map((r) => [r.oracleId, r.name]));
   // A commander-only draft has changes and no card row: its state is the empty
-  // one plus the move, so nothing below reads a card it does not have.
-  if (changedIds.length === 0) return bare({ ...empty, commander });
+  // one plus the move and its names, so nothing below reads a card it does not have.
+  if (changedIds.length === 0) return bare({ ...empty, commander, commanderRows, names: commanderNames });
 
   // The changed cards, basics among them. A basic stays in both lists and is
   // drawn like any other row: cutting five Swamps to make room for five other
@@ -283,7 +292,7 @@ async function readDraft(
   const removes = diff.removes;
 
   const changed = changedIds;
-  const names = new Map(facts.map((f) => [f.oracleId, f.name]));
+  const names = new Map([...commanderNames, ...facts.map((f) => [f.oracleId, f.name] as const)]);
   // Same scope as `names`, and the cost track is drawn beside a changed name and
   // nowhere else. A card the catalog gives no cost stays out of the map rather
   // than entering it as a null, so its track draws nothing.
@@ -390,6 +399,7 @@ async function readDraft(
       pricedCopies: summary.pricedCopies,
       newestAsOf: prices?.newestAsOf ?? null,
       commander,
+      commanderRows,
     },
     availability,
     prices,
