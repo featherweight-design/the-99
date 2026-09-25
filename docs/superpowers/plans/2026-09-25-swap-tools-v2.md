@@ -129,6 +129,24 @@ Per the brief, one prompt through Hugh:
   So on Runadi, an unlisted card sharing ramp, counters and haste leads the listed cards that share ramp alone. C
   applies the share count inside today's groups and leaves the regroup to D.
 
+## D, split into three PRs (proposed; each needs B and C merged, and none depends on another open PR)
+
+The ranking-rebuild addendum (merged as #1007) and its READINESS rulings are the handoff. Every new string goes
+through /copy-review before its PR opens. `feature-acceptance` and `design-review` run on each of the three.
+
+| PR | Items | What changes |
+|---|---|---|
+| **D1: the sheet's groups** | 3, 6, and D1's order | `rankStandIns` returns type groups instead of free/cheapest/staples/byCommander/unlisted: `same type · {plural}` then `other types`, or one `same type · lands`. Each heading carries its order note on the right (`by {cmdr} synergy`, `best mana first`). Each group shows 5 (Q3) with a `Show all {n} {noun} ▾` / `Show fewer ▴` row, 34px (44px on the phone), with `aria-expanded`. A group of 5 or fewer has no toggle. Ownership moves onto the row (the green dot and the `free` tag). Staples sort last in their group. An other-types row starts with its type. |
+| **D2: the row lines** | 1's "once", Q2 | Lands get the mana line: `makes {colors}, untapped` / `untapped if …` / `untapped with …` / `tapped`, then ` · {drawback}` in `--fg-muted`. A one-time color becomes `{color} once, by sacrificing it`, so the 17 one-shot lands come back, on rung 4. Non-lands get `{type · }MV n · also {extra jobs from themes} · gives up: {job}`, with no %, capped at two lines at 390. |
+| **D3: Find a deck's reason line** | 10, 11, Q7, Q8 | `Completes a combo with {card}` (Spellbook, where every other piece is in that deck's draft, commander included; the name is dotted and opens the card), else `Joins {n} other {theme} cards`, else the need alone (d9's third fallback, with no shares). Then ` · this deck {need}`. Order: combo, then theme, then synergy. |
+
+- **Inventory** (`docs/superpowers/inventories/swap-tools-v2.json`), 390 and 1300: the stand-ins sheet for a land,
+  a fetch, a creature spell and a noncreature spell, each with Show all expanded; and the Find a deck picker from
+  `/collection` and from the card modal. `check:shared` holds the sheet to one component on both doors.
+- **Probes:** `probe:swap-sheet` grows the toggle (press, count, `aria-expanded`, the 44px phone target) and the
+  row's two-line cap at 390. `probe:swap-engine` asserts the type groups and the D1 order on Hugh's pulled decks.
+- **About:** nothing here. The entries are batched at the launch and wait on #1004 and Design's drawings.
+
 ## Questions for Hugh (as asked)
 
 1. **Pain lands and shocks: rung 1 or 2?** A painland taps for colorless with no drawback and hurts only for color;
