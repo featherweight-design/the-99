@@ -82,8 +82,8 @@ describe("the stand-ins sheet's model", () => {
       // In the engine's own order, costs first: the model puts `finds only a basic` ahead of them.
       cheapest: [standIn("Evolving Wilds", { drawbacks: [{ kind: "entersTapped" }, { kind: "basicOnly" }] })],
     }));
-    expect(m.job.startsWith(copy.jobFinds("Mountain or Forest"))).toBe(true);
-    expect(m.lead).toBe(copy.leadFetch("Mountain or a Forest"));
+    expect(m.job.startsWith(copy.jobFinds("a Mountain or Forest"))).toBe(true);
+    expect(m.lead).toBe(copy.leadFetch("a Mountain or a Forest"));
     expect(m.groups[0].rows[0].facts).toEqual([copy.drawback.basicOnly, copy.drawback.entersTapped]);
   });
 
@@ -109,6 +109,23 @@ describe("the stand-ins sheet's model", () => {
     expect(some.lead).toBe(copy.leadSoldOut);
     expect(some.groups.map((g) => g.heading)).toEqual([copy.groupFree]);
     expect(sheetModel(read({ originalCents: null })).sentence).toBe(copy.soldOutNone("Anguished Unmaking"));
+  });
+
+  it("gives each basic type its own article: a Plains, an Island", () => {
+      const m = sheetModel(read({
+        job: { kind: "fetch", types: ["plains", "island"], basicOnly: false },
+        original: card("Flooded Strand", "Land"),
+        cheapest: [standIn("A", { givesUp: [] })],
+      }));
+      expect(m.job).toContain(copy.jobFinds("a Plains or Island"));
+      expect(m.lead).toBe(copy.leadFetch("a Plains or an Island"));
+      const island = sheetModel(read({
+        job: { kind: "fetch", types: ["island", "forest"], basicOnly: false },
+        original: card("Misty Rainforest", "Land"),
+        cheapest: [standIn("A", { givesUp: [] })],
+      }));
+      expect(island.job).toContain(copy.jobFinds("an Island or Forest"));
+      expect(island.lead).toBe(copy.leadFetch("an Island or a Forest"));
   });
 
   it("names a spell's job while loading, and waits for the read on a land", () => {
@@ -139,8 +156,19 @@ describe("the stand-ins sheet's model", () => {
         original: card("Some Fetch", "Land"),
         cheapest: [standIn("A", { givesUp: [quoted] }), standIn("B", { givesUp: [quoted] })],
       }));
-      expect(m.lead).toBe(copy.leadFetchGivesUp("Island", "“Threshold — {U}, {T}…”"));
+      expect(m.lead).toBe(copy.leadFetchGivesUp("an Island", "“Threshold — {U}, {T}…”"));
       expect(m.groups[0].rows.every((r) => r.facts.length === 0)).toBe(true);
+    });
+
+    it("keeps each row's own clause on a sold-out sheet, whose lead names no give-up", () => {
+      const m = sheetModel(read({
+        job: { kind: "land", colors: ["W", "U"] },
+        original: cavern,
+        originalCents: null,
+        free: [standIn("Command Tower", { free: true, givesUp: [uncounterable] })],
+      }));
+      expect(m.lead).toBe(copy.leadSoldOut);
+      expect(m.groups[0].rows[0].facts).toEqual([copy.givesUp("uncounterable spells")]);
     });
 
     it("keeps each row's own clause when the stand-ins give up different things", () => {

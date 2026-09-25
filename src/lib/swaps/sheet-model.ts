@@ -28,9 +28,10 @@ export function listWords(words: readonly string[], joiner: "and" | "or"): strin
 }
 
 const colorsText = (colors: readonly Color[]) => listWords(colors.map((c) => COLOR_WORD[c]), "and");
-/** `Mountain or Forest` in the job line's `finds a {types} card`; the lead repeats the article: `a Mountain or a Forest`. */
+const article = (word: string) => `${/^[AEIOU]/.test(word) ? "an" : "a"} ${word}`;
+/** `a Mountain or Forest` in the job line's `finds {types} card`; the lead repeats the article: `a Mountain or an Island`. */
 const typesText = (types: readonly BasicType[], each = false) =>
-  listWords(types.map((t, i) => (each && i > 0 ? `a ${TYPE_WORD[t]}` : TYPE_WORD[t])), "or");
+  listWords(types.map((t, i) => (i === 0 || each ? article(TYPE_WORD[t]) : TYPE_WORD[t])), "or");
 const rolesText = (roles: readonly SpellRole[]) => listWords(roles, "and");
 
 export function drawbackText(d: Drawback, colors: readonly Color[]): string {
@@ -119,8 +120,9 @@ export function sheetModel(read: StandInsRead): SheetModel {
   // show only what differs. Mixed, each row keeps its own clause.
   const everyRow = [...read.free, ...read.cheapest];
   const givenUpKey = (s: StandIn) => s.givesUp.map(abilityText).join("|");
+  // A sold-out lead names no give-up, so a sold-out sheet keeps every row's own clause.
   const shared =
-    job.kind !== "spell" && everyRow.length > 0 && everyRow[0].givesUp.length > 0
+    !soldOut && job.kind !== "spell" && everyRow.length > 0 && everyRow[0].givesUp.length > 0
       && everyRow.every((s) => givenUpKey(s) === givenUpKey(everyRow[0]))
       ? listWords(everyRow[0].givesUp.map(abilityText), "and")
       : null;

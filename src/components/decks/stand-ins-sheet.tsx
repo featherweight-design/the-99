@@ -53,7 +53,7 @@ const factOf = (cents: number, foilOnly: boolean, asOf: Date): PriceFact =>
 function StandInRow({ row, newestAsOf }: { row: SheetRow; newestAsOf: Date | null }) {
   return (
     <li
-      className="grid grid-cols-[minmax(0,1fr)_72px] md:grid-cols-[minmax(0,1fr)_96px] gap-x-[10px] gap-y-[6px] md:gap-x-[12px] md:gap-y-0 items-center py-[10px] md:py-[9px] border-b border-[color:var(--border)]"
+      className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_96px] gap-x-[10px] gap-y-[6px] md:gap-x-[12px] md:gap-y-0 items-center py-[10px] md:py-[9px] border-b border-[color:var(--border)]"
     >
       <div className="flex flex-col gap-[3px] min-w-0">
         <div className="flex items-center gap-[7px] min-w-0">

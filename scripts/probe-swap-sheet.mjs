@@ -103,11 +103,17 @@ async function signIn(page) {
 }
 
 
+/** The first named card the account does not own whose every live non-foil price is above $10, so its row draws a ⇄. */
 async function firstUnowned(userId, names) {
   const { rows } = await pool.query(
-    `select c.oracle_id, c.name from cards c
+    `with newest as (select max(as_of) t from printing_prices)
+     select c.oracle_id, c.name from cards c
       where c.name = any($2::text[])
-        and not exists (select 1 from collection_items ci where ci.user_id = $1 and ci.oracle_id = c.oracle_id)`,
+        and not exists (select 1 from collection_items ci where ci.user_id = $1 and ci.oracle_id = c.oracle_id)
+        and exists (select 1 from printings p join printing_prices pp on pp.scryfall_id = p.scryfall_id, newest
+                     where p.oracle_id = c.oracle_id and pp.as_of = newest.t and pp.price_cents is not null)
+        and not exists (select 1 from printings p join printing_prices pp on pp.scryfall_id = p.scryfall_id, newest
+                         where p.oracle_id = c.oracle_id and pp.as_of = newest.t and pp.price_cents <= 1000)`,
     [userId, names],
   );
   return names.map((n) => rows.find((r) => r.name === n)).find(Boolean) ?? null;
@@ -119,7 +125,7 @@ async function buildDeck(userId, onDeck) {
   const picks = {};
   for (const [kind, names] of Object.entries(KINDS)) {
     picks[kind] = await firstUnowned(userId, names);
-    if (!picks[kind]) throw new Error(`The account owns every ${kind} fixture: ${names.join(", ")}.`);
+    if (!picks[kind]) throw new Error(`No ${kind} fixture is unowned and above $10: ${names.join(", ")}.`);
   }
   const { rows: [under] } = await pool.query(
     `with newest as (select max(as_of) t from printing_prices)
@@ -224,7 +230,7 @@ try {
           emptyRows: [...sheet.querySelectorAll("li")].filter((li) => !li.querySelector("p")).length,
           blankLines: [...sheet.querySelectorAll("li")].filter((li) => {
             if (li.querySelector("p")) return false;
-            const cell = li.querySelector(":scope > div > div");
+            const cell = li.querySelector(":scope > div");
             const line = cell?.firstElementChild;
             return cell && line && cell.getBoundingClientRect().height > line.getBoundingClientRect().height + 1;
           }).length,

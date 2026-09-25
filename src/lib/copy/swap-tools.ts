@@ -35,7 +35,8 @@ export const swapToolsCopy = {
     replacing: (deck: string) => `replacing, in ${deck}`,
     // The job line under the original.
     jobColors: (colors: string) => `makes ${colors}`,
-    jobFinds: (types: string) => `finds a ${types} card`,
+    /** `types` carries its own article: `an Island`, `a Mountain or Forest`. */
+    jobFinds: (types: string) => `finds ${types} card`,
     jobRole: (roles: string, mv: number) => `${roles} · mana value ${mv}`,
     jobNoRole: "no role we can name",
     givesUpNothing: "gives up nothing",
@@ -45,9 +46,9 @@ export const swapToolsCopy = {
     leadLandsGivesUp: (colors: string, ability: string) =>
       `Every land here makes ${colors}. Free copies come first, then the cheapest, and each gives up ${ability}.`,
     leadFetchGivesUp: (types: string, ability: string) =>
-      `Every land here finds a ${types}. Free copies come first, then the cheapest, and each gives up ${ability}.`,
+      `Every land here finds ${types}. Free copies come first, then the cheapest, and each gives up ${ability}.`,
     leadFetch: (types: string) =>
-      `Every land here finds a ${types}. Free copies come first, then the cheapest, and each says what it gives up.`,
+      `Every land here finds ${types}. Free copies come first, then the cheapest, and each says what it gives up.`,
     leadSpells: (roles: string, mv: number, commander: string) =>
       `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the rest by how often ${commander} decks run them.`,
     /** F14: the index lists nothing for this commander or pair, so the order clause has nothing to name. Owed to /copy-review. */

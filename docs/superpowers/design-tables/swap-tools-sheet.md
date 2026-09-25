@@ -194,6 +194,8 @@ Swap Tools :217).
 
 ### 5.1 Row shell and grid
 
+**PR 4a draws no Take**, so it ships the grid without Take's track: `minmax(0,1fr) 96px` on desktop and a single `minmax(0,1fr)` column on the phone. PR 4b adds the Take column as specified below.
+
 | Property | Desktop | Phone |
 |---|---|---|
 | Wrapper border-bottom | `1px solid var(--border)` | same |
@@ -288,7 +290,9 @@ Clauses are joined by ` · ` in the component; no clause is a score and no figur
 | border-radius / padding | `4px` / `1px 6px` |
 | color / background | `var(--success)` / `color-mix(in oklab, var(--success) 13%, transparent)` |
 
-### 5.5 Take cell (resting only; outcomes are PR 4b)
+### 5.5 Take cell: DEFERRED to PR 4b
+
+Not drawn in PR 4a, and `sheet.take` / `sheet.takeAria` are added with it. The rows below are the contract 4b builds to.
 
 | Property | Desktop | Phone |
 |---|---|---|
