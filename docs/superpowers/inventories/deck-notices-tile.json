@@ -1,6 +1,6 @@
 {
-  "feature": "Deck notices \u2014 the tile (PR 5)",
-  "note": "One route at both widths, photographed with the notice fixture standing: run `PROBE_KEEP=1 pnpm probe:notices-tile` first, which leaves a range deck holding a banned card, a single-mark deck with an unread data notice, and a deck with no reading holding a banned card. The next run of that probe puts all three back. The yield is visible at 390 (a 356px tile, inside the 330 to 408 band) and not at 1300 desktop's wider tiles; the probe asserts both by measurement, and this sheet is for the eye.",
+  "feature": "Deck notices \u2014 the tile (PR 5, marker addendum)",
+  "note": "One route at both widths, photographed with the notice fixture standing: run `PROBE_KEEP=1 pnpm probe:notices-tile` first, which leaves a range deck holding a banned card, a single-mark deck with an unread data notice, and a deck with no reading holding a banned card. The next run of that probe puts all three back. Since the tile marker addendum (#953) the notice is one 18px mark and the yield window is 330 to 336, measured: neither width photographed here lands in it (356px at 390, 387px at 1300), so the probe reaches it at 1132 (a 331px tile) and asserts it by measurement. This sheet is for the eye.",
   "rows": [
     {
       "id": "decks-desktop",

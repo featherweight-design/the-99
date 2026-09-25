@@ -48,14 +48,13 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_
 /** The yield's band, READ from the tile's shipped classes (`deck-card.tsx`, `YIELD`), so a changed
  *  threshold is measured rather than compared with a copy of itself. */
 const SHIPPED = readFileSync(new URL("../src/components/decks/deck-card.tsx", import.meta.url), "utf8");
-const band = (key) => {
-  const m = SHIPPED.match(new RegExp(`${key}: \\{ faced: "@min-\\[(\\d+)px\\]:@max-\\[(\\d+)px\\]:hidden"`));
-  if (!m) throw new Error(`deck-card.tsx has no ${key} yield band`);
+// ONE window since the tile marker addendum: the mark is 18px whatever its ink (F22).
+const band = () => {
+  const m = SHIPPED.match(/const YIELD = \{ faced: "@min-\[(\d+)px\]:@max-\[(\d+)px\]:hidden"/);
+  if (!m) throw new Error("deck-card.tsx has no yield band");
   return [Number(m[1]), Number(m[2])];
 };
-const [FLOOR, YIELD_TO] = band("notLegal");
-const [DATA_FLOOR, YIELD_DATA_TO] = band("data");
-if (DATA_FLOOR !== FLOOR) throw new Error("the two yield bands no longer share a floor");
+const [FLOOR, YIELD_TO] = band();
 
 let failures = 0;
 const check = (label, actual, expected) => {
@@ -158,14 +157,15 @@ async function sleeve(deckId, oracleId) {
 }
 
 /**
- * Three decks, each carrying one state: an unanswered RANGE reading with a banned card (the widest
- * row, and the yield), a SINGLE-mark reading touched by a planted Game Changer entry (`● 1`), and a
- * deck with NO reading holding a banned card (`Not legal` in the chip's slot).
+ * Three decks, each carrying one state: an unanswered RANGE reading with a banned card AND a planted
+ * data entry (the widest row, the yield, and the red mark's both-counts tooltip), a SINGLE-mark
+ * reading touched by a planted Game Changer entry (a blue-grey `!`), and a deck with NO reading
+ * holding a banned card (a red `!` in the chip's slot).
  */
 async function buildFixtures(userId) {
   const [range] = await sql`
-    select d.id, d.name from decks d join deck_profiles p on p.deck_id = d.id
-    where d.user_id = ${userId} and cardinality(p.permits) = 2
+    select d.id, d.name, p.analyzed_oracle_ids from decks d join deck_profiles p on p.deck_id = d.id
+    where d.user_id = ${userId} and cardinality(p.permits) = 2 and cardinality(p.analyzed_oracle_ids) > 0
       and (d.declared_bracket is null or not (d.declared_bracket = any(p.permits)))
     order by d.id limit 1`;
   const [data] = await sql`
@@ -187,14 +187,21 @@ async function buildFixtures(userId) {
   if (!rangeBan || !bareBan) return null;
   await sleeve(range.id, rangeBan);
   await sleeve(bare.id, bareBan);
-  // One planted entry on a card the single-mark reading analyzed. It is past that reading's mark and
-  // past its read mark by construction: the log head moves forward.
-  const [{ seq }] = await sql`
-    insert into deck_data_changes (kind, direction, oracle_ids, detail)
-    values ('gameChanger', 'added', array[${data.analyzed_oracle_ids[0]}]::uuid[], ${JSON.stringify({ probe: PROBE_MARK })}::jsonb)
-    returning seq`;
-  held.seqs.push(Number(seq));
-  hold();
+  // One planted entry on a card each reading analyzed. Each is past its reading's mark and past its
+  // read mark by construction: the log head moves forward. The range deck's is what makes its mark
+  // the BOTH state (F20), so the tooltip check reads a state the fixture built, never a stray log row.
+  // The range deck's card is one the single-mark reading did NOT analyze, or its entry would count on
+  // that tile too and the data deck's `1 notice` would read 2.
+  const rangeOnly = range.analyzed_oracle_ids.find((id) => !data.analyzed_oracle_ids.includes(id));
+  if (!rangeOnly) return null;
+  for (const card of [data.analyzed_oracle_ids[0], rangeOnly]) {
+    const [{ seq }] = await sql`
+      insert into deck_data_changes (kind, direction, oracle_ids, detail)
+      values ('gameChanger', 'added', array[${card}]::uuid[], ${JSON.stringify({ probe: PROBE_MARK })}::jsonb)
+      returning seq`;
+    held.seqs.push(Number(seq));
+    hold();
+  }
   return { range, data, bare };
 }
 
@@ -202,11 +209,14 @@ async function buildFixtures(userId) {
 const READ_TILES = (main) => [...main.querySelectorAll("article")].filter((a) => a.querySelector(".deck-card-footer")).map((a) => {
   const footer = a.querySelector(".deck-card-footer");
   const chips = a.querySelector("[data-deck-chips]");
-  const tag = a.querySelector("[data-notice-tag]");
+  const mark = a.querySelector("[data-notice-mark]");
+  const markLink = mark?.closest("a");
   const count = a.querySelector("[data-deck-count]");
   const bar = a.querySelector("[data-deck-bar]");
   const shown = [...a.querySelectorAll("[data-testid='bracket-chip']")].filter((c) => c.getBoundingClientRect().width > 0);
-  const link = a.querySelector("a[href^='/decks/']");
+  // The COVER link: since F19 the mark is a second link to the same deck, earlier in the DOM.
+  const link = a.querySelector("a[href^='/decks/']:not([data-notice-link])");
+  const resolved = (token) => { const n = document.createElement("span"); n.style.color = `var(${token})`; a.appendChild(n); const c = getComputedStyle(n).color; n.remove(); return c; };
   return {
     href: link?.getAttribute("href"),
     name: link?.getAttribute("aria-label") ?? "",
@@ -217,20 +227,35 @@ const READ_TILES = (main) => [...main.querySelectorAll("article")].filter((a) =>
     chipsFits: chips.scrollWidth <= chips.clientWidth,
     wrap: getComputedStyle(chips).flexWrap,
     faces: shown.map((c) => c.textContent.trim().length > 0),
-    tag: tag && { kind: tag.dataset.noticeTag, text: tag.textContent, color: getComputedStyle(tag).color,
-      edge: getComputedStyle(tag).borderTopColor, dot: !!tag.querySelector("[data-notice-dot]"),
+    mark: mark && {
+      kind: mark.dataset.noticeMark, glyph: mark.textContent, color: getComputedStyle(mark).color,
+      size: [Math.round(mark.getBoundingClientRect().width), Math.round(mark.getBoundingClientRect().height)],
+      link: markLink && { href: markLink.getAttribute("href"), tab: markLink.getAttribute("tabindex"), hidden: markLink.getAttribute("aria-hidden") },
+      // F19, as a HIT TEST rather than a class: the element at the mark's centre must be inside
+      // the mark's own link, or the cover link swallows the pointer and the tooltip never opens.
+      onTop: (() => {
+        // elementFromPoint answers null for a point outside the viewport, so bring the mark in first.
+        mark.scrollIntoView({ block: "center" });
+        const r = mark.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !!hit && !!markLink && markLink.contains(hit) ? true : `${hit ? hit.outerHTML.slice(0, 120) : "null"}`;
+      })(),
       // Against every DRAWN box in the row, never the previous sibling: the yield's twin wrappers
       // are `display: contents` or `none` and report an empty rect, which every build passes.
       afterChip: (() => {
-        // Below the floor the row wraps, so "after" is to the left on the tag's line or on a line above.
-        const t = tag.getBoundingClientRect();
+        // Below the floor the row wraps, so "after" is to the left on the mark's line or on a line above.
+        // The link is under test too (F19), so a build without one measures from the mark itself.
+        const host = markLink ?? mark;
+        const t = host.getBoundingClientRect();
         const drawn = [...chips.querySelectorAll(":scope > *, [data-testid='bracket-chip']")]
-          .filter((e) => e !== tag && !tag.contains(e) && e.getBoundingClientRect().width > 0);
+          .filter((e) => e !== host && !host.contains(e) && e.getBoundingClientRect().width > 0);
         return drawn.length > 0 && drawn.every((e) => {
           const r = e.getBoundingClientRect();
           return r.bottom <= t.top + 0.5 || r.right <= t.left + 0.5;
         });
       })() },
+    danger: resolved("--danger"),
+    fact: resolved("--fact"),
     // `--fg` RESOLVED to the colour a computed style reports, on a throwaway node in this tile.
     fg: (() => { const n = document.createElement("span"); n.style.color = "var(--fg)"; a.appendChild(n); const c = getComputedStyle(n).color; n.remove(); return c; })(),
     countWidth: count.getBoundingClientRect().width,
@@ -240,12 +265,12 @@ const READ_TILES = (main) => [...main.querySelectorAll("article")].filter((a) =>
 
 /**
  * The width a chips row NEEDS in its widest forms, measured from the tile's own nodes: the pill
- * set to `Unresolved`, the range chip to `Exhibition or Core`, and the tag as it is. The clone is
+ * set to `Unresolved`, the range chip to `Exhibition or Core`, and the notice mark as it is. The clone is
  * laid out at max-content off-screen, in the tile, so it takes the tile's own type at this width.
  */
-const MEASURE_WORST = (article, dataTagHtml) => {
+const MEASURE_WORST = (article) => {
   const row = article.querySelector("[data-deck-chips]");
-  const measure = (faced, tagHtml = null) => {
+  const measure = (faced) => {
     const clone = row.cloneNode(true);
     clone.style.cssText = "position:absolute;left:-9999px;top:0;width:max-content;flex-wrap:nowrap;height:auto";
     const pill = clone.firstElementChild;
@@ -258,14 +283,6 @@ const MEASURE_WORST = (article, dataTagHtml) => {
       const wrap = c.parentElement.dataset.deckChips === undefined ? c.parentElement : c;
       if ((c === faceChip) !== faced) wrap.remove();
       else if (wrap !== c) wrap.style.display = "contents";
-    }
-    if (tagHtml) {
-      // The data form in the legality tag's place: the data fixture's own tag, at its widest count.
-      const tag = clone.querySelector("[data-notice-tag]");
-      tag.insertAdjacentHTML("afterend", tagHtml);
-      tag.remove();
-      const data = clone.querySelector("[data-notice-tag]");
-      data.lastChild.textContent = "99";
     }
     article.appendChild(clone);
     const width = clone.getBoundingClientRect().width;
@@ -280,7 +297,7 @@ const MEASURE_WORST = (article, dataTagHtml) => {
   const countFits = c2.scrollWidth <= count.clientWidth;
   c2.remove();
   const pad = parseFloat(getComputedStyle(article.querySelector(".deck-card-footer")).paddingLeft) * 2;
-  return { faced: measure(true) + pad, marks: measure(false) + pad, dataFaced: measure(true, dataTagHtml) + pad, countFits };
+  return { faced: measure(true) + pad, marks: measure(false) + pad, countFits };
 };
 
 async function main() {
@@ -294,6 +311,9 @@ async function main() {
       // Wide enough for a tile past the yield, where the range keeps its name beside a notice.
       { label: "1600", width: 1600, height: 900 },
       { label: "1300", width: 1300, height: 900 },
+      // INSIDE the yield: three columns put the tile at ~331px, under the 332.1px the faced row needs,
+      // so this is the one width where the name must go. Without it no run exercises the window.
+      { label: "1132", width: 1132, height: 900 },
       { label: "1000", width: 1000, height: 900 },
       { label: "390", width: 390, height: 844, isMobile: true, hasTouch: true },
     ]) {
@@ -344,18 +364,25 @@ async function main() {
       if (EXPECT_OFF) {
         // The release switch: with notices off, not one tile on the page draws a tag, the three
         // fixture tiles included, whose state would draw one with the switch on.
-        check(`${vp.label} · notices switched off: no tile draws a notice`, tiles.filter((t) => t.tag).map((t) => t.href), []);
+        check(`${vp.label} · notices switched off: no tile draws a notice`, tiles.filter((t) => t.mark).map((t) => t.href), []);
+        check(`${vp.label} · notices switched off: no key line`, await page.locator("main [data-decks-mark-key]").count(), 0);
         await context.close();
         continue;
       }
 
-      // The notice, drawn after the chip (or the pill), and named in the link.
-      check(`${vp.label} · range deck: Not legal with its dot, after the chip`,
-        range.tag && [range.tag.kind, range.tag.text, range.tag.dot, range.tag.afterChip], ["notLegalUnread", "Not legal", true, true]);
-      check(`${vp.label} · data deck: the count with its dot`, data.tag && [data.tag.kind, data.tag.text, data.tag.dot], ["unread", "1", true]);
-      check(`${vp.label} · bare deck: Not legal in the chip's slot, no chip`, bare.tag && [bare.tag.kind, bare.faces.length], ["notLegalUnread", 0]);
-      check(`${vp.label} · H5: Not legal's words are --fg, and its edge is not`,
-        [range.tag.color === range.fg, range.tag.edge === range.fg], [true, false]);
+      // The mark (tile marker addendum), drawn after the chip (or the pill), and named in the link.
+      check(`${vp.label} · range deck: one 18px red !, after the chip`,
+        range.mark && [range.mark.kind, range.mark.glyph, range.mark.size, range.mark.afterChip], ["notLegal", "!", [18, 18], true]);
+      check(`${vp.label} · data deck: one 18px --fact !`, data.mark && [data.mark.kind, data.mark.size], ["unread", [18, 18]]);
+      check(`${vp.label} · bare deck: the mark in the chip's slot, no chip`, bare.mark && [bare.mark.kind, bare.faces.length], ["notLegal", 0]);
+      check(`${vp.label} · H7: legality inks --danger, data --fact`,
+        [range.mark.color === range.danger, data.mark.color === data.fact], [true, true]);
+      check(`${vp.label} · F19: the mark is its own link to the deck, out of the tab order and the tree`,
+        range.mark.link, { href: `/decks/${fixture.range.id}`, tab: "-1", hidden: "true" });
+      check(`${vp.label} · F19: and it sits ON TOP of the cover link`, [range.mark.onTop, data.mark.onTop, bare.mark.onTop], [true, true, true]);
+      // The key (§3), at both widths, naming both marks this page draws.
+      const keyWords = await page.locator("main [data-decks-mark-key]").evaluate((li) => li.textContent).catch(() => null);
+      check(`${vp.label} · the key names both marks`, keyWords && [/not legal in this deck/.test(keyWords), /notices since analyzed/.test(keyWords)], [true, true]);
       check(`${vp.label} · each link names its notice`, [
         /2? ?cards? not legal in this deck/.test(range.name),
         /1 notice since this deck was analyzed/.test(data.name),
@@ -368,13 +395,27 @@ async function main() {
         range.faces, [!yields]);
 
       // The threshold, MEASURED: the widest forms need no more than the tile ships.
-      const dataTag = await onPage(page, `article:has(a[href="/decks/${fixture.data.id}"]) [data-notice-tag]`).evaluate((t) => t.outerHTML);
-      const worst = await onPage(page, `article:has(a[href="/decks/${fixture.range.id}"])`).evaluate(MEASURE_WORST, dataTag);
-      console.log(`      widest row: ${worst.faced.toFixed(1)}px with names (${worst.dataFaced.toFixed(1)}px beside \`● 99\`), ${worst.marks.toFixed(1)}px with marks only`);
-      check(`${vp.label} · Unresolved + Exhibition or Core + Not legal fit at ${YIELD_TO}px`, worst.faced <= YIELD_TO, true);
-      check(`${vp.label} · and beside \`● 99\` they fit at ${YIELD_DATA_TO}px`, worst.dataFaced <= YIELD_DATA_TO, true);
+      const worst = await onPage(page, `article:has(a[href="/decks/${fixture.range.id}"])`).evaluate(MEASURE_WORST);
+      console.log(`      widest row: ${worst.faced.toFixed(1)}px with names, ${worst.marks.toFixed(1)}px with marks only`);
+      check(`${vp.label} · Unresolved + Exhibition or Core + the mark fit at ${YIELD_TO}px`, worst.faced <= YIELD_TO, true);
       check(`${vp.label} · and marks only fit at the ${FLOOR}px floor`, worst.marks <= FLOOR, true);
       check(`${vp.label} · 100 / 99 fits the count slot`, worst.countFits, true);
+
+      // The tooltip (§2), on a fine pointer only: hover the range deck's mark past the 400ms delay.
+      if (!vp.isMobile) {
+        const target = onPage(page, `article:has(a[href="/decks/${fixture.range.id}"]:not([data-notice-link])) [data-notice-mark]`);
+        await target.hover();
+        await page.waitForTimeout(700);
+        const bubble = await page.locator("[data-testid='fact-tooltip']").first().textContent({ timeout: 2000 }).catch(() => null);
+        // The range deck also carries unread data, so its sentence is F20's BOTH form: both counts, one mark.
+        check(`${vp.label} · hovering the mark opens its sentence, naming both counts (F20)`, bubble && /not legal in this deck, and \d+ notices? since it was analyzed\. Open the deck/.test(bubble), true);
+        await page.mouse.move(0, 0);
+      }
+      // A PRESS on the mark opens the deck, as the rest of the tile does (F19): it is a link, not
+      // a forwarded click.
+      await onPage(page, `article:has(a[href="/decks/${fixture.data.id}"]:not([data-notice-link])) [data-notice-mark]`).click();
+      await page.waitForURL(`**/decks/${fixture.data.id}`, { timeout: 15_000 }).catch(() => {});
+      check(`${vp.label} · pressing the mark opens its deck`, new URL(page.url()).pathname, `/decks/${fixture.data.id}`);
       await context.close();
     }
   } finally {

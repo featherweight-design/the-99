@@ -19,12 +19,31 @@ export const deckNoticesCopy = {
       unread: (n: number) => `${notices(n)} since this deck was analyzed`,
       notLegal: (n: number) => `${cards(n)} not legal in this deck`,
     },
-    /** The header's full face (`● 3 notices`); the tile draws the condensed `● 3`. */
+    /** The header's full face (`● 3 notices`). The tile draws one `!` mark instead (the tile marker addendum). */
     count: notices,
     aria: {
       unread: (n: number) => `${notices(n)} since this deck was analyzed. Open notices`,
       read: (n: number) => `${notices(n)}, read. Open notices`,
       notLegal: (n: number) => `${cards(n)} not legal in this deck. Open notices`,
+    },
+  },
+  /**
+   * The /decks tile's `!` mark (tile marker addendum, #953). Queued for /copy-review. The mark is
+   * aria-hidden: the tile link's name says it with `tag.spoken`, both parts when both stand.
+   */
+  mark: {
+    /** FactTooltip `sentence`, desktop only. */
+    tooltip: {
+      notLegal: (n: number) => `${cards(n)} not legal in this deck. Open the deck to see which.`,
+      unread: (n: number) => `${notices(n)} since this deck was analyzed. Open the deck to read them.`,
+      both: (legal: number, data: number) =>
+        `${cards(legal)} not legal in this deck, and ${notices(data)} since it was analyzed. Open the deck to see them.`,
+    },
+    /** The /decks key; each entry drawn only when a shown tile draws that mark. */
+    key: {
+      regionAria: "Deck marks",
+      notLegal: "not legal in this deck",
+      unread: "notices since analyzed",
     },
   },
   sheet: {

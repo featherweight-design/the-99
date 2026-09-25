@@ -14,7 +14,8 @@ import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 import { BracketChip } from "./bracket-chip";
-import { NoticeTag, noticeSpoken } from "./notice-tag";
+import { NoticeMark, noticeSentence, noticeSpoken } from "./notice-tag";
+import { FactTooltip } from "../cards/fact-tooltip";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -251,19 +252,15 @@ interface DeckCardProps {
  * pass a property check on both columns while being wrong.
  */
 /**
- * The yield's two halves, by the tile's container width (HANDOFF §1a, readiness F6). From the band
- * floor (330) to the width that holds the widest pill, the widest range and `Not legal` on one
- * line, the range draws marks only. The upper figure is MEASURED by `probe:notices-tile`, not
- * derived: the handoff's 366 counted a 73px pill and a 168px range, and the widest shipped forms
- * are `Unresolved` and `Exhibition or Core`, which need 404.5px from `md` (386.3 below it) beside
- * `Not legal`, and 354.3 beside `● 99`. Each threshold leaves a few pixels for a platform's glyphs.
+ * The yield (HANDOFF §1a, readiness F6; the tile marker addendum §5, F22). From the band floor (330)
+ * to the width that holds the widest pill, the widest range and the notice mark on one line, a
+ * RANGE beside a mark draws marks only. The mark is 18px whatever its ink, so one window serves
+ * both kinds, where the retired tag needed two (`Not legal` and `● 99`). The upper figure is
+ * MEASURED by `probe:notices-tile`, never derived: `Unresolved` and `Exhibition or Core` beside the
+ * mark measured 332.1px from `md` (321.3px on a phone), so the window closes at 336, leaving a few
+ * pixels for a platform's glyphs.
  */
-const YIELD = {
-  notLegal: { faced: "@min-[330px]:@max-[408px]:hidden", marks: "hidden @min-[330px]:@max-[408px]:contents" },
-  // A range beside `● 99` needs 354.3px from `md`, so the data tag reaches the yield too, in a
-  // narrower window: the handoff's "only range + Not legal" holds only above it.
-  data: { faced: "@min-[330px]:@max-[358px]:hidden", marks: "hidden @min-[330px]:@max-[358px]:contents" },
-};
+const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
   deck, shopping, now, folders, onCreateFolder, say, onMoved, keepsFocus, closeAfterCreate,
@@ -316,7 +313,7 @@ export function DeckCard({
   const spokenStatus = notice ? `${withBracket}, ${notice}` : withBracket;
   // The yield applies only to a RANGE beside a notice: a single mark's name fits beside any tag.
   const yieldsFace = Boolean(deck.bracket && deck.notice && verdictHead(deck.bracket.permits, deck.bracket.answered).split);
-  const yieldClasses = YIELD[deck.notice?.kind === "unread" ? "data" : "notLegal"];
+  const yieldClasses = YIELD;
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(
@@ -547,7 +544,24 @@ export function DeckCard({
               <BracketChip permits={deck.bracket.permits} answered={deck.bracket.answered} />
             )
           ) : null}
-          {deck.notice ? <NoticeTag notice={deck.notice} /> : null}
+          {deck.notice ? (
+            // F19: the mark is lifted OVER the tile's cover link (last in the DOM, `absolute
+            // inset-0`) so its tooltip can open, as a SECOND link to the same deck rather than a
+            // forwarded click: cmd-click and middle-click then open a new tab, as the rest of the
+            // tile does. Out of the tab order and the accessibility tree, since the cover link is
+            // the tile's one target and already says the notice.
+            <Link
+              href={`/decks/${deck.id}`}
+              tabIndex={-1}
+              aria-hidden="true"
+              data-notice-link
+              className="relative z-10 inline-flex flex-none"
+            >
+              <FactTooltip sentence={noticeSentence(deck.notice)}>
+                <NoticeMark notice={deck.notice} />
+              </FactTooltip>
+            </Link>
+          ) : null}
         </span>
 
         {/* 3 · Progress, then the count in a fixed slot sized for `100 / 99` at 12.5px (readiness

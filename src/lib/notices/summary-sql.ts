@@ -4,12 +4,14 @@ import { cards, deckCards, deckDataChanges, deckProfiles, decks } from "../../db
 
 /**
  * The deck list's notice, for the tile (plan D6): `none | unread | notLegalUnread | notLegalRead`.
- * Legality wins over data (HANDOFF §1, "the more serious face wins; never two tags"). A data notice
- * the player has read draws nothing on the tile, so it reads as none here.
+ * Legality wins the mark's ink (HANDOFF §1; the tile marker addendum draws ONE mark, H7). A
+ * legality kind also carries the unread DATA count beside it (addendum F20), so the tile's tooltip
+ * and its spoken name can name both. A data notice the player has read draws nothing on the tile,
+ * so it reads as none here, and as 0 beside a legality kind.
  */
 export type NoticeSummary =
   | { kind: "unread"; count: number }
-  | { kind: "notLegalUnread" | "notLegalRead"; count: number }
+  | { kind: "notLegalUnread" | "notLegalRead"; count: number; dataUnread: number }
   | null;
 
 /**
@@ -74,7 +76,8 @@ export function noticeSummarySql() {
           when array(select oracle_id from off order by oracle_id)
              = array(select distinct s from unnest(coalesce(${decks}.notices_legal_seen, '{}'::uuid[])) s order by s)
           then 'notLegalRead' else 'notLegalUnread' end,
-        'count', (select count(*)::int from off))
+        'count', (select count(*)::int from off),
+        'dataUnread', (select n from pending))
       when (select n from pending) > 0 then json_build_object('kind', 'unread', 'count', (select n from pending))
       else null end
   )`;
