@@ -676,6 +676,9 @@ export function CardDetailProvider({
             : null}
           backLabel={backLabel}
           door={door && doorRender ? (layout) => doorRender(card.oracleId, layout) : null}
+          // Opened from a Shopping row, the phone's card starts at 52 so a sheet opened over it steps
+          // down from there (audit F16); every other opener keeps the full-height card.
+          phoneTop={door && doorRender && sheetsBelow === 0 ? 52 : undefined}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from.

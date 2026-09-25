@@ -1418,7 +1418,11 @@ export function CardModal({
       role="presentation"
       onClick={covered ? undefined : onClose}
       style={{
-        background: stacked ? "transparent" : "color-mix(in oklab, var(--bg) 72%, transparent)",
+        // A stand-in over a sheet over its original draws its own lighter scrim (addendum §3), so the
+        // two layers under it read as two steps down; any other stacked card leaves the sheet's.
+        background: dropped
+          ? "color-mix(in oklab, var(--bg) 60%, transparent)"
+          : stacked ? "transparent" : "color-mix(in oklab, var(--bg) 72%, transparent)",
       }}
       data-stacked={stacked || undefined}
     >
