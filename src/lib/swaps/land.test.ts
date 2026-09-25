@@ -312,6 +312,11 @@ describe("colorSource and landCatch", () => {
     ["Lotus Vale", "If this land would enter, sacrifice two untapped lands instead. If you do, put this land onto the battlefield. If you don't, put it into its owner's graveyard.\n{T}: Add three mana of any one color.", "condition"],
     ["Forbidden Orchard", "{T}: Add one mana of any color.\nWhenever you tap this land for mana, target opponent creates a 1/1 colorless Spirit creature token.", "condition"],
   ])("%s has a %s catch", (name, text, want) => expect(landCatch(L(name, "Land", text))).toBe(want));
+  // Older templating names the card rather than saying `this land`; the catch reads the same.
+  it.each([
+    ["Undiscovered Paradise", "{T}: Add one mana of any color. During your next untap step, as you untap your permanents, return Undiscovered Paradise to its owner's hand.", "utility"],
+    ["Glimmervoid", "At the beginning of the end step, if you control no artifacts, sacrifice Glimmervoid.\n{T}: Add one mana of any color.", "condition"],
+  ])("%s named by its own name still has a %s catch", (name, text, want) => expect(landCatch(L(name, "Land", text))).toBe(want));
   it("reads no catch in a fetch's own cost, or in a plain dual", () => {
     expect(landCatch(FOOTHILLS)).toBeNull();
     expect(landCatch(PLATEAU)).toBeNull();

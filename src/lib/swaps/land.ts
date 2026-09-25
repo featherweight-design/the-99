@@ -134,7 +134,9 @@ export function colorSource(card: LandText, color: Color): "free" | "conditional
  * bounce, Forbidden Orchard's gift). The cost line of a fetch (`{T}, Sacrifice this land:`) is not a catch.
  */
 export function landCatch(card: LandText): "condition" | "utility" | null {
-  const text = stripReminders(frontText(card)).toLowerCase();
+  // The catalog's current Oracle says `this land`; older templating names the card, so the name reads the same.
+  const self = card.name.split(" // ")[0].toLowerCase();
+  const text = stripReminders(frontText(card)).toLowerCase().split(self).join("this land");
   if (/opponent gains control of this land|return this land to its owner's hand|doesn't untap during your untap step/.test(text)) return "utility";
   // Lotus Vale's `sacrifice two untapped lands` is paid to put it into play, which is a catch too.
   if (/sacrifice (this land|it) unless|if you control no [^.]*, sacrifice this land|opponent creates|sacrifice (two|an?) untapped lands?/.test(text)) return "condition";
