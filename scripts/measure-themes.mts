@@ -12,7 +12,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { cardThemes, type Theme } from "../src/lib/recs/themes";
+import { cardThemes, creatureSubtypes, type Theme } from "../src/lib/recs/themes";
 import { loadCreatureTypes } from "../src/lib/swaps/gather";
 
 // The cards each rule was sized against over the three passes (themes.test.ts holds their text).
@@ -42,7 +42,11 @@ void (async () => {
       if (KNOWN.includes(r.name)) caught.set(t, [...(caught.get(t) ?? []), r.name.split(",")[0]]);
     }
   }
-  console.log(`${rows.length} Commander-legal cards, ${types.size} creature types, ${none} with no theme\n`);
+  // What the query leaves out of every creature's subtypes: a card type's own words (Forest from Dryad Arbor,
+  // Equipment, Treasure). With them in, `Forests you control` read as tribal: 1,314 against 1,159 (2026-09-25).
+  const excluded = [...new Set(rows.flatMap((r) => creatureSubtypes(r.type_line)))].filter((t) => !types.has(t)).sort();
+  console.log(`${rows.length} Commander-legal cards, ${types.size} creature types, ${none} with no theme`);
+  console.log(`card-type subtypes left out of the creature types: ${excluded.join(", ") || "none"}\n`);
   for (const [t, n] of [...counts].sort((a, b) => b[1] - a[1])) {
     console.log(`${t.padEnd(14)} ${String(n).padStart(6)}  ${(caught.get(t) ?? []).join(", ")}`);
   }
