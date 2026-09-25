@@ -1244,6 +1244,7 @@ export function BuilderShell({
                   opening={opening}
                   onRequest={requestAnalysis}
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
+                  pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   legality={{ built, size: bodySize }}
                   declaration={{
                     declared: declaration.declared,
@@ -1281,6 +1282,7 @@ export function BuilderShell({
                         settled={synopsis.view.current}
                         onWrite={synopsis.write}
                         onRetry={synopsis.retry}
+                        onSeeWhich={openNoticesSheet}
                         reanalyze={{
                           onPress: requestAnalysis,
                           disabled: profile.state.kind === "loading" || built !== bodySize,
@@ -1616,6 +1618,7 @@ export function BuilderShell({
                         kind: "reanalyze",
                         busy: footBusy,
                         failed: footFailed ? deckNoticesCopy.sheet.foot.failed : null,
+                        note: noticesShown.violationCount > 0 ? deckNoticesCopy.check.note : null,
                         onPress: reanalyzeFromNotices,
                       }
               }

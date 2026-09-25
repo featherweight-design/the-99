@@ -1,4 +1,5 @@
 import { creditsCopy, monthName } from "../../lib/copy/credits";
+import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
 
@@ -14,8 +15,17 @@ import type { SynopsisView } from "./synopsis-state";
  */
 export type PressWhere = "analyze" | "reanalyze";
 
-export function pressNote(view: SynopsisView, where: PressWhere): { text: string; writes: boolean } | null {
-  if (view.kind !== "ready" || !view.current || !view.state.pressWrites) return null;
+/** `see`: the note is the overview check's, which carries *See which →* to the Notices sheet. */
+export type PressNote = { text: string; writes: boolean; see?: true };
+
+export function pressNote(view: SynopsisView, where: PressWhere): PressNote | null {
+  if (view.kind !== "ready" || !view.current) return null;
+  // THE CHECK FIRST (deck notices HANDOFF §6, plan D10): while a legality entry stands, the press
+  // reads the bracket and the overview is withheld, whatever the list or the credits would say. The
+  // slot then reads the check note, on a list that already has its overview too. A short deck's
+  // `blocked` line still wins over it (F13): the components draw no note over a blocked press.
+  if (view.state.illegal) return { text: deckNoticesCopy.check.note, writes: false, see: true };
+  if (!view.state.pressWrites) return null;
   const { allowance } = view.state;
   const left = Math.max(0, allowance.limit - allowance.used);
   // The press still reads the bracket, which is free; only the overview is withheld. So every form

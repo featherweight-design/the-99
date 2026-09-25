@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cards, deckProfiles, deckSynopses } from "../../db/schema";
+import { cards, deckProfiles, deckSynopses, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall } from "../model/allowance";
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
@@ -17,6 +17,8 @@ import { STUB_MODEL, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionId, SectionVerdict, SynopsisOutcome } from "./types";
 import { marksIn, validateSynopsis } from "./validate";
 import { overviewDataMovedFor } from "../notices/overview";
+import { noticesEnabled } from "../notices/flag";
+import { holdsIllegalCard, liveOffendingIds } from "../notices/read";
 
 /**
  * Writing a synopsis: reserve, call, check, store, settle. SERVER-ONLY: it imports the database.
@@ -63,7 +65,10 @@ export type WriteResult =
    *  and nothing was charged. */
   | { kind: "superseded" }
   /** A retry with nothing to retry, or a retry over a list the synopsis no longer describes. */
-  | { kind: "nothing_to_retry" };
+  | { kind: "nothing_to_retry" }
+  /** The deck holds a card a legality notice stands for (deck notices HANDOFF §6, plan D10): a new
+   *  overview is withheld. Refused before the reservation, so nothing was called or charged. */
+  | { kind: "illegal" };
 
 /** `deadlineMs` is what is left of the write's one budget: the repair gets only the remainder. */
 export type ModelCall = (req: { system: string; user: string; deadlineMs: number }, facts: SynopsisFacts) =>
@@ -258,13 +263,28 @@ async function startRun(
    * concurrent press would have written; the moved one it replaces does not stop it.
    */
   replacing = false,
-): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow }> {
+): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
   try {
     const handle = await db.transaction(async (tx) => {
+      // THE LEGALITY CHECK, AGAIN, UNDER THE DECK ROW'S LOCK and before the reservation (deck
+      // notices HANDOFF §6). `run` checks first so a withheld write reads nothing, but a card added
+      // between that check and here would otherwise get a charged overview for an illegal list. The
+      // deck row is locked first, the order every card edit takes, so an edit waits for this
+      // reservation or this waits for the edit, and the list checked is the list reserved for.
+      if (noticesEnabled()) {
+        const [deck] = await tx
+          .select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+          .from(decks)
+          .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+          .for("update");
+        if (deck && (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0) {
+          throw new IllegalDeckError();
+        }
+      }
       const unit = await reserveModelCall(tx, userId, "synopsis", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       // REUSE, DECIDED AGAIN UNDER THE LOCK `reserveModelCall` just took. Two first presses both
@@ -289,6 +309,7 @@ async function startRun(
     });
     return { kind: "started", ...handle };
   } catch (err) {
+    if (err instanceof IllegalDeckError) return { kind: "illegal" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
       const synopsis = await readShownSynopsis(deckId, userId, list);
@@ -300,6 +321,7 @@ async function startRun(
 }
 
 class AlreadyWrittenError extends Error {}
+class IllegalDeckError extends Error {}
 
 /**
  * The outcome and the unit, together. Guarded on `pending`, so a run the reaper already failed
@@ -351,6 +373,10 @@ async function run(
   deps: GenerateDeps,
   retry: SynopsisRow | null,
 ): Promise<WriteResult> {
+  // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
+  // nothing and starts no run, a retry included.
+  // Behind the notices switch: off, the check is not there and the write runs as before.
+  if (noticesEnabled() && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);

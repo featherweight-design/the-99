@@ -24,6 +24,7 @@ import "./lib/env.mjs";
 // The notices switch (src/lib/notices/flag.ts) gates H1 and D11; this probe proves them ON, and
 // case 13 turns it off once to prove the switch does.
 process.env.NOTICES_ENABLED = "true";
+import { Pool } from "@neondatabase/serverless";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
@@ -292,6 +293,57 @@ async function run() {
   await markNoticesRead(deck.id, USER, (await loadDeckNotices(deck.id, USER))!.readMarks);
   check("15 · a mark of the deck's own set is written", await legalSeen(), [banned.oracle_id]);
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
+
+  // 16 · The check before the overview (HANDOFF §6, plan D10): with a card that is not legal in the
+  //      deck, the write refuses BEFORE its reservation, so no run row is written and no call is
+  //      recorded; the read says so (`illegal`, nothing would spend); the saved overview stays.
+  const runs = async () => (await rows<{ n: number }>(sql`
+    select (select count(*) from deck_synopses where deck_id = ${deck.id}::uuid)::int
+         + (select count(*) from model_calls where user_id = ${USER})::int as n`))[0].n;
+  await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}::uuid, ${banned.oracle_id}::uuid, 1)`);
+  const before14 = await runs();
+  check("16 · the write refuses as illegal", (await writeSynopsisFor(deck.id, USER, generate)).kind, "illegal");
+  check("16 · and writes no run and records no call", await runs(), before14);
+  const s14 = await overview();
+  check("16 · the read says illegal, keeps the saved overview, and would spend nothing", [s14.illegal, s14.synopsis !== null, s14.wouldSpend], [true, true, false]);
+  process.env.NOTICES_ENABLED = "false";
+  check("16 · with notices switched off, the read does not say illegal", (await overview()).illegal, false);
+  process.env.NOTICES_ENABLED = "true";
+  await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
+  check("16 · the card leaving lifts the check", (await overview()).illegal, false);
+
+  // 17 · The check is made AGAIN under the deck row's lock, inside the reservation's transaction: a
+  //      card that lands after the first check and before the reservation still refuses the write.
+  //      Two connections, because a lock is invisible in every value the write returns: a second
+  //      one holds the deck row, the write passes its first check and waits on the lock, and the
+  //      holder adds the banned card and commits while it waits.
+  await computeAndStoreProfile(deck.id, USER, deps);
+  await db.execute(sql`delete from deck_synopses where deck_id = ${deck.id}::uuid`);
+  const lockPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const holder = await lockPool.connect();
+  try {
+    await holder.query("begin");
+    await holder.query("select 1 from decks where id = $1 for update", [deck.id]);
+    const before17 = await runs();
+    const racing = writeSynopsisFor(deck.id, USER, generate);
+    let waiting = false;
+    for (let i = 0; i < 100 && !waiting; i += 1) {
+      const [w] = await rows<{ n: number }>(sql`select count(*)::int as n from pg_stat_activity
+        where wait_event_type = 'Lock' and query ilike '%"decks"%for update%'`);
+      waiting = w.n > 0;
+      if (!waiting) await new Promise((r) => setTimeout(r, 100));
+    }
+    check("17 · the write waits on the deck row", waiting, true);
+    await holder.query("insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)", [deck.id, banned.oracle_id]);
+    await holder.query("commit");
+    check("17 · a card landing while it waits still refuses the write", (await racing).kind, "illegal");
+    check("17 · and it reserved nothing", await runs(), before17);
+  } finally {
+    await holder.query("rollback").catch(() => {});
+    holder.release();
+    await lockPool.end();
+    await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
+  }
 }
 
 /**

@@ -39,6 +39,7 @@ export function synopsisState(over: Partial<SynopsisState> = {}): SynopsisState 
     lastRefused: null,
     art: {},
     pending: false,
+    illegal: false,
     ...over,
   };
 }

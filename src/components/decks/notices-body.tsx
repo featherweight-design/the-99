@@ -14,6 +14,8 @@
  * banner, since the banner's Re-analyze reads both. A deck never analyzed has no foot; its legality
  * groups carry their own.
  */
+import { useId } from "react";
+
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { GhostButton } from "../ui/button";
 import { colorNames } from "../../lib/copy/color-labels";
@@ -28,7 +30,10 @@ import { ModalChrome } from "./receipt-modal";
 
 export type NoticesFoot =
   | { kind: "none" }
-  | { kind: "reanalyze"; busy: boolean; failed: string | null; onPress: () => void }
+  /** `note`: the overview check's note while a legality entry stands (plan D12, F3 (b)), without
+   *  *See which →*, which would open the sheet it sits in. The foot never writes an overview, so it
+   *  carries no credit note. */
+  | { kind: "reanalyze"; busy: boolean; failed: string | null; note?: string | null; onPress: () => void }
   | { kind: "toTab"; onPress: () => void };
 
 const LEGAL_GROUPS = new Set<NoticeGroup>(["notLegal", "outsideColors"]);
@@ -194,6 +199,7 @@ function ViolationRow({
 
 function Foot({ foot }: { foot: Exclude<NoticesFoot, { kind: "none" }> }) {
   const failed = foot.kind === "reanalyze" ? foot.failed : null;
+  const noteId = useId();
   return (
     <div
       data-notices-foot={foot.kind}
@@ -208,11 +214,23 @@ function Foot({ foot }: { foot: Exclude<NoticesFoot, { kind: "none" }> }) {
       >
         {failed ?? (foot.kind === "reanalyze" ? copy.sheet.foot.holds : copy.sheet.foot.dirty)}
       </p>
+      {/* The note slot, in CREDITS' banner placement: sentence, note, button at 1300 (the note
+          right-aligned beside the press); centered under the button at 390. */}
+      {foot.kind === "reanalyze" && foot.note ? (
+        <p
+          id={noteId}
+          data-testid="notices-foot-note"
+          className="order-3 m-0 w-full text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:order-none md:w-auto md:max-w-[340px] md:text-right md:text-[11px]"
+        >
+          {foot.note}
+        </p>
+      ) : null}
       {foot.kind === "reanalyze" ? (
         <GhostButton
           onClick={foot.onPress}
           disabled={foot.busy}
           aria-busy={foot.busy}
+          aria-describedby={foot.note ? noteId : undefined}
           className="h-[44px] w-full flex-none rounded-[8px] text-[14px] font-medium md:h-[36px] md:w-auto md:px-[16px] md:text-[13px]"
         >
           {foot.failed ? deckAnalysisCopy.banner.tryAgain : deckAnalysisCopy.banner.reanalyze}

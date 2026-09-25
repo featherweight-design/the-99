@@ -9,6 +9,14 @@ const left = { used: 1, limit: 5, reopensAt: null, nextAt: new Date() };
 const spent = { used: 5, limit: 5, reopensAt: new Date(), nextAt: new Date() };
 
 describe("synopsisStatus", () => {
+  // Deck notices plan D10: a withheld overview spends nothing, whatever else would write.
+  it("spends nothing on a deck holding a card that is not legal", () => {
+    expect(synopsisStatus({ reading: { fresh: true, list: "B" }, synopsis: { fingerprint: "A" }, allowance: left, pending: false, illegal: true }))
+      .toEqual({ stale: true, wouldSpend: false });
+    expect(synopsisStatus({ reading: { fresh: true, list: "B" }, synopsis: null, allowance: left, pending: false, illegal: true }))
+      .toEqual({ stale: false, wouldSpend: false });
+  });
+
   it("reads a synopsis for the analyzed list as current, and spends nothing to press", () => {
     expect(synopsisStatus({ reading: { fresh: true, list: "A" }, synopsis: { fingerprint: "A" }, allowance: left, pending: false }))
       .toEqual({ stale: false, wouldSpend: false });

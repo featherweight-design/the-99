@@ -10,12 +10,14 @@ import { HoverPreviewProvider } from "./hover-preview";
 import { SynopsisOverview } from "./synopsis-overview";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { clockTime } from "../../lib/copy/credits";
+import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
 
 const onWrite = vi.fn();
 const onRetry = vi.fn();
 const onReanalyze = vi.fn();
+const onSeeWhich = vi.fn();
 const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
 const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean; reanalyzeBlocked: boolean }> = {}) =>
   render(
@@ -29,6 +31,7 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         settled={over.settled ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
+        onSeeWhich={onSeeWhich}
         reanalyze={{ onPress: onReanalyze, disabled: over.reanalyzeBlocked ?? false, note: null }}
       />
     </CardDetailProvider>,
@@ -38,6 +41,7 @@ beforeEach(() => {
   onWrite.mockClear();
   onRetry.mockClear();
   onReanalyze.mockClear();
+  onSeeWhich.mockClear();
 });
 
 describe("SynopsisOverview", () => {
@@ -214,7 +218,7 @@ describe("SynopsisOverview", () => {
       <CardDetailProvider fetchCard={async () => null}>
         <SynopsisOverview
           state={synopsisState({ stale: true })} busy={false} deckName="Hoof" art={new Map()}
-          readingFresh={false} settled onWrite={onWrite} onRetry={onRetry}
+          readingFresh={false} settled onWrite={onWrite} onRetry={onRetry} onSeeWhich={onSeeWhich}
           reanalyze={{ onPress: onReanalyze, disabled: false, note: "Also writes the overview, using a credit. 2 of 3 left." }}
         />
       </CardDetailProvider>,
@@ -310,7 +314,7 @@ describe("SynopsisOverview", () => {
             <SynopsisOverview
               state={synopsisState({ art: { craterhoof: "https://img/hoof.jpg" } })}
               busy={false} deckName="Hoof" art={new Map()} readingFresh settled
-              onWrite={onWrite} onRetry={onRetry} reanalyze={{ onPress: onReanalyze, disabled: false, note: null }}
+              onWrite={onWrite} onRetry={onRetry} onSeeWhich={onSeeWhich} reanalyze={{ onPress: onReanalyze, disabled: false, note: null }}
             />
           </HoverPreviewProvider>
         </CardDetailProvider>,
@@ -322,5 +326,43 @@ describe("SynopsisOverview", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// The check before the overview (deck notices HANDOFF §6, plan D10, H3, Q4).
+describe("SynopsisOverview on a deck holding a card that is not legal", () => {
+  it("withholds a new overview: the line, Write one disabled, and See which", () => {
+    draw(synopsisState({ synopsis: null, illegal: true, wouldSpend: false }));
+    const withheld = screen.getByTestId("overview-withheld");
+    expect(withheld.textContent).toContain(deckNoticesCopy.check.withheld);
+    const write = within(withheld).getByRole("button", { name: copy.writeOne });
+    expect(inert(write)).toBe(true);
+    fireEvent.click(write);
+    expect(onWrite).not.toHaveBeenCalled();
+    fireEvent.click(within(withheld).getByRole("button", { name: new RegExp(deckNoticesCopy.check.seeWhich) }));
+    expect(onSeeWhich).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a saved overview whole under the warning line, and offers no write", () => {
+    draw(synopsisState({ illegal: true, stale: true }));
+    const warning = screen.getByTestId("overview-warning");
+    expect(warning.textContent).toContain(deckNoticesCopy.check.warning);
+    expect(screen.getByTestId("synopsis-overview").textContent).toContain("then close with");
+    expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
+    expect(screen.queryByTestId("overview-withheld")).toBeNull();
+  });
+
+  // Pre-open pass: the modal's own control offered a disabled write with nothing to say why.
+  it("offers no write in the modal either, on an illegal deck", () => {
+    draw(synopsisState({ illegal: true, stale: true }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.entry) }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: copy.writeNew })).toBeNull();
+  });
+
+  it("draws no check line on a legal deck", () => {
+    draw(synopsisState());
+    expect(screen.queryByTestId("overview-warning")).toBeNull();
+    expect(screen.queryByTestId("overview-withheld")).toBeNull();
   });
 });

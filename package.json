@@ -101,7 +101,7 @@
     "probe:declaration-ask": "node scripts/probe-declaration-ask.mjs",
     "probe:version-comparison": "node scripts/probe-version-comparison.mjs",
     "probe:verdict-lean": "node scripts/probe-verdict-lean.mjs",
-    "probe:synopsis-ui": "node scripts/probe-synopsis-ui.mjs",
+    "probe:synopsis-ui": "tsx scripts/probe-synopsis-ui.mjs",
     "probe:upgrade-path": "node scripts/probe-upgrade-path.mjs",
     "measure:roles": "tsx scripts/measure-role-targets.mts",
     "probe:card-mark": "node scripts/probe-card-mark.mjs",

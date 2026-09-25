@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { synopsisState } from "./__fixtures__/synopsis";
 import { pressNote } from "./synopsis-note";
 import { creditsCopy } from "../../lib/copy/credits";
+import { deckNoticesCopy } from "../../lib/copy/notices";
 import type { SynopsisView } from "./synopsis-state";
 import type { SynopsisState } from "../../lib/synopsis/read";
 
@@ -14,6 +15,15 @@ const ready = (over: Partial<SynopsisState> = {}, current = true): SynopsisView 
 const out = { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() };
 
 describe("pressNote", () => {
+  // Deck notices HANDOFF §6: while a legality entry stands the slot reads the check, first and
+  // whatever the list or the credits would say, and the press writes nothing.
+  it("reads the overview check on a deck holding a card that is not legal", () => {
+    for (const over of [{ pressWrites: true }, { pressWrites: false }, { pressWrites: true, allowance: out }]) {
+      const n = pressNote(ready({ ...over, illegal: true }), "analyze")!;
+      expect(n).toEqual({ text: deckNoticesCopy.check.note, writes: false, see: true });
+    }
+  });
+
   it("names the credit a writing press spends, and says it writes", () => {
     const n = pressNote(ready({ pressWrites: true }), "analyze")!;
     expect(n.writes).toBe(true);
