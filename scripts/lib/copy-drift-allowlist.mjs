@@ -16,11 +16,6 @@ export const WORD_DRIFT_ALLOWLIST = [
   { quoted: "rows didn't parse quantity columns mostly nothing fatal want to see the carnage?", reason: "plural arm of a singular/plural branch" },
   { quoted: "put all declined candidates back on the list", reason: "plural arm of a singular/plural branch" },
 
-  // ── A quoting artefact, not drift ──────────────────────────────────────
-  // The table writes straight quotes where the component renders curly ones,
-  // inside a span whose own delimiters are already consumed.
-  { quoted: "no card you own matches \" \" in 's colours", reason: "straight quotes in the table, curly in the component" },
-
   // ── A table deliberately quoting the form that was REPLACED ────────────
   // `add-panel-addendum.md:288` documents a locked block and states the change
   // in its own note: "the second `ninety-nine` → `the ones`". The before-form

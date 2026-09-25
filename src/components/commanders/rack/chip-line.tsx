@@ -7,7 +7,7 @@
 // empty row says nothing: a disabled `Clear` beside no chips is already the
 // whole of "nothing to clear".
 //
-// One chip per CONTROL, never one per hue: two pips lit is "2 colours", the
+// One chip per CONTROL, never one per hue: two pips lit is "2 colors", the
 // same collapse `activeControlCount` counts. Removing a chip returns its
 // control to the lane's default; `Clear` returns all of them.
 

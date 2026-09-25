@@ -179,7 +179,7 @@ describe("FilterChassis", () => {
       <FilterChassis
         {...base}
         controls={null}
-        chips={[{ key: "colors", label: "2 colours", dots: ["#111", "#222"], onRemove: () => {} }]}
+        chips={[{ key: "colors", label: "2 colors", dots: ["#111", "#222"], onRemove: () => {} }]}
       />,
     );
     const swatches = container.querySelectorAll("[data-chassis-row='chips'] span[aria-hidden] span");
@@ -235,13 +235,13 @@ describe("FilterChassis", () => {
         {...base}
         controls={null}
         chips={[
-          { key: "colors", label: "2 colours", spoken: "White, Black", onRemove: () => {} },
+          { key: "colors", label: "2 colors", spoken: "White, Black", onRemove: () => {} },
         ]}
       />,
     );
     expect(screen.getByRole("button", { name: "Remove filter: White, Black" })).toBeTruthy();
     // The count stays on screen; only what is spoken changes.
-    const count = screen.getByText("2 colours");
+    const count = screen.getByText("2 colors");
     expect(count).toBeTruthy();
     // And the names are heard reading the ROW, not only on entering the button.
     expect(count.getAttribute("aria-hidden")).toBe("true");

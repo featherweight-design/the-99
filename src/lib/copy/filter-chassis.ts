@@ -2,7 +2,7 @@
 //
 // Strings the commander lanes already own are re-exported from `lanes.ts` rather
 // than restated: the chassis mounts one control on four routes, so a second
-// definition of "Colour identity" would be a second thing to keep in step.
+// definition of "Color identity" would be a second thing to keep in step.
 // Where a string is new it is new because `/decks` and `/collection` had no
 // equivalent — neither route captioned its colour control at all.
 
@@ -53,7 +53,7 @@ export const chassisCopy = {
      */
     pipAriaUnavailable: (name: string) => `${name}, no matches`,
     /** Reused on the commander lanes; stated for the two routes that had none. */
-    legend: "Colour",
+    legend: "Color",
     /** Chip label past one pip — never one chip per hue. */
     collapsed: filterCopy.colour.collapsed,
     /**
@@ -62,7 +62,7 @@ export const chassisCopy = {
      * that return very different lists.
      */
     collapsedExactly: (count: number) =>
-      `Exactly ${fmt(count)} ${count === 1 ? "colour" : "colours"}`,
+      `Exactly ${fmt(count)} ${count === 1 ? "color" : "colors"}`,
     /** The five hues, in WUBRG order, with the names the lanes already use. */
     /**
      * Keyed lowercase by `lanes.ts`; the pips look up through a lowercased

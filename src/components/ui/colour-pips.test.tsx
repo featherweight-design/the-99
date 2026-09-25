@@ -93,8 +93,8 @@ describe("chassisCopy.colour", () => {
     const { chassisCopy } = await import("../../lib/copy/filter-chassis");
     // `Exactly` can be on with one pip lit, so this branch reaches count 1 —
     // unlike `collapsed`, which only ever draws past one.
-    expect(chassisCopy.colour.collapsedExactly(1)).toBe("Exactly 1 colour");
-    expect(chassisCopy.colour.collapsedExactly(3)).toBe("Exactly 3 colours");
+    expect(chassisCopy.colour.collapsedExactly(1)).toBe("Exactly 1 color");
+    expect(chassisCopy.colour.collapsedExactly(3)).toBe("Exactly 3 colors");
   });
 
   it("refuses a hue no surviving card carries, and says why", () => {

@@ -1075,7 +1075,7 @@ describe("what each chapter 01 figure actually draws", () => {
 
   it("browse: a chip per narrowing, a count, and the reading choice", () => {
     const el = plate("browse");
-    expect(el.textContent).toContain("1 colour");
+    expect(el.textContent).toContain("1 color");
     expect(el.textContent).toContain("The Hobbit");
     expect(el.textContent).toContain("Showing");
     // The third key line is the grid-or-rows choice, which the first version

@@ -17,7 +17,7 @@ describe("FilterSheet", () => {
       <FilterSheet open onOpenChange={() => {}} params={defaultParams("discover")} lane="discover" onChange={() => {}} shown={3301} resultLine="3301 of 3301" />,
     );
     const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
-    expect(legends).toEqual(["Colour identity"]);
+    expect(legends).toEqual(["Color identity"]);
   });
 
   // Reported as redundant: two doors to one control, with one of them behind a

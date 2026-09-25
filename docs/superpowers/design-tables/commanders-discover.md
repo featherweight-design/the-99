@@ -226,7 +226,7 @@ does not set are omitted rather than guessed.
 
 ---
 
-## Component: Colour match (Any / Exactly)
+## Component: Color match (Any / Exactly)
 
 > **The group carries no padding of its own.** The table below specifies the segments'
 > own `0 8px` and the 2px between them, and nothing else — the box's 10px either side
@@ -662,8 +662,8 @@ does not set are omitted rather than guessed.
 | text-transform | uppercase | — |
 | color | #8E8269 | — |
 | margin-bottom | 9px | — |
-| section order (owned) | Colour identity · Colour match · Build from · Order | — |
-| section order (discover) | Scope · Colour identity · Colour match · Order | — |
+| section order (owned) | Color identity · Color match · Build from · Order | — |
+| section order (discover) | Scope · Color identity · Color match · Order | — |
 
 ### Option pill
 
@@ -1188,7 +1188,7 @@ nothing. The ownership pip's two readings and the accessible name's leading clau
 |---|---|---|
 | opacity (unlit) | — (touch) | raised from .34 |
 
-### Colour match — hover
+### Color match — hover
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -1228,10 +1228,10 @@ nothing. The ownership pip's two readings and the accessible name's leading clau
 
 | State | Triggering condition | What renders | Key requirements |
 |---|---|---|---|
-| 1 · No filters — owned (canvas B) | No param set on `/commanders` | Empty placeholder-toned search; five pips at opacity .34; colour match **greyed**; Build from at `All my cards` hairline; Order at `Fit` hairline; chip line holds `filterCopy.chips.none`; Clear present and inert; result `commandersCopy.result.rest(148)` | Must **not** print `148 of 148`. Clear is present, not absent. Chip line still reserves 22px. |
+| 1 · No filters — owned (canvas B) | No param set on `/commanders` | Empty placeholder-toned search; five pips at opacity .34; color match **greyed**; Build from at `All my cards` hairline; Order at `Fit` hairline; chip line holds `filterCopy.chips.none`; Clear present and inert; result `commandersCopy.result.rest(148)` | Must **not** print `148 of 148`. Clear is present, not absent. Chip line still reserves 22px. |
 | 1 · No filters — discover (canvas B-equivalent) | No param set on `/discover` | Scope leads at `Best fit`, hairline, no chip; no availability control at all; Order at `Popularity`; result `discoverCopy.result.rest(3301)` | Must **not** print `3,301 of 3,301`. Scope is never greyed and never empty. |
 | 1 · No filters — phone (E1) | Same, below 1024px | Persistent row: search · order icon · `Filters` with **no badge**, all 44px; result line directly under the row | Badge absent at zero. Canvas E1 draws no chip line even though STATES reserves 30px — treat the reservation as authoritative. |
-| 2 · Colour only — owned (D1) | ≥1 pip lit, nothing else off default | Two pips lit at 1.5px #EDE6D8; wrapper border brass; colour match now **live** at `Any` with `Any` filled; one colour chip (pip squares + names + ✕); result `filtered(31, 148)` | Un-lighting the last pip re-greys match and **keeps its value** — the chip goes, the mode does not reset. |
+| 2 · Colour only — owned (D1) | ≥1 pip lit, nothing else off default | Two pips lit at 1.5px #EDE6D8; wrapper border brass; color match now **live** at `Any` with `Any` filled; one colour chip (pip squares + names + ✕); result `filtered(31, 148)` | Un-lighting the last pip re-greys match and **keeps its value** — the chip goes, the mode does not reset. |
 | 2 · Colour only — discover | Same on `/discover` | Identical shape; result `filtered(412, 3301)` | Same greying rule. |
 | 2 · Colour only — phone | Same, below 1024px | One chip on the row; badge `1` | Two or more pips collapse to `filterCopy.colour.collapsed(n)` before the row runs out of width. |
 | 3 · Colour + search — owned (D2) | Query non-empty AND ≥1 pip lit | Search filled, border brass, clear ✕ present; two chips in control order — `"druid"` then colour — then Clear; result `filtered(4, 148)` | Search must **not** gain a scope of its own; it narrows this lane in place. |
@@ -1240,13 +1240,13 @@ nothing. The ownership pip's two readings and the accessible name's leading clau
 | 4 · Exact mode — owned (D3) | `m=exact` with a colour lit; drawn as the five-control worst case (query, two pips, `Exactly`, `Free cards only`, `Name A–Z`) | All five controls carry their own brass border; five chips on one line; result `filtered(2,148)` + `filterCopy.match.excludedAside(6)` appended, aside in #8E8269 | The aside is appended to the **same sentence**, not a second line, and renders only when `Exactly` is active **and** the counts differ. |
 | 4 · Exact mode — discover | Same on `/discover` | Four controls (no availability), so four chips | Same aside rule. |
 | 4 · Exact mode — phone | Same, below 1024px | Fifth chip collapses: two chips + `+3` + Clear; badge `4` (owned) or `3` (discover) | Badge counts controls off default, not values; ceiling is the control count, so no `9+`. |
-| 5 · Sheet open — owned (E3) | `Filters` tapped below 1024px on `/commanders` | Sections in rack order: Colour identity (44px pips) · Colour match (two 44px pills) · Build from (two 44px pills + mono explainer) · Order (three 44px pills); footer filled `filterCopy.sheet.dismiss(4)` + `Clear` | Search is **not** in the sheet. Taps apply immediately; header count and footer label both update live; the primary only dismisses. |
-| 5 · Sheet open — discover (E4) | Same on `/discover` | Four sections, **Scope first**, carrying both glosses; colour match greyed **with** `filterCopy.match.disabledHint`; footer `Show 3,301 commanders`, `Clear` inert at #6E6654 | The sheet is the only place the scope glosses render. Must **not** stage changes behind an Apply or become a centred dialog at any width. Esc, handle-drag, backdrop tap and the primary are the same action; **Esc never reverts**. |
+| 5 · Sheet open — owned (E3) | `Filters` tapped below 1024px on `/commanders` | Sections in rack order: Color identity (44px pips) · Color match (two 44px pills) · Build from (two 44px pills + mono explainer) · Order (three 44px pills); footer filled `filterCopy.sheet.dismiss(4)` + `Clear` | Search is **not** in the sheet. Taps apply immediately; header count and footer label both update live; the primary only dismisses. |
+| 5 · Sheet open — discover (E4) | Same on `/discover` | Four sections, **Scope first**, carrying both glosses; color match greyed **with** `filterCopy.match.disabledHint`; footer `Show 3,301 commanders`, `Clear` inert at #6E6654 | The sheet is the only place the scope glosses render. Must **not** stage changes behind an Apply or become a centred dialog at any width. Esc, handle-drag, backdrop tap and the primary are the same action; **Esc never reverts**. |
 | 6 · Filtered to zero — owned (D4) | Any filter combination yielding 0 rows on `/commanders` | Rack unchanged; result `filtered(0, 148)`; below it three diamonds, `commandersCopy.empty.heading`, one sentence naming the control, a filled specific correction (`fixDrop`/`fixMode`) and a hairline `Clear all filters` | The correction is the **single control whose removal yields the most rows**; ties break toward the most recently changed control. Where no single control fixes it, render `bodyNoSingleFix` and only `Clear all filters`. |
-| 6 · Filtered to zero — discover (D5) | Same on `/discover` | Result `filtered(0, 3301)`; heading `discoverCopy.empty.heading`; body carries the lane boundary via `discoverCopy.empty.body(q, total)`; second button `discoverCopy.empty.otherLane` — same query, other lane; colour match greyed (both labels #6E6654, wrapper 1px #2A241D) | Must **not** hide, disable or collapse the rack. |
+| 6 · Filtered to zero — discover (D5) | Same on `/discover` | Result `filtered(0, 3301)`; heading `discoverCopy.empty.heading`; body carries the lane boundary via `discoverCopy.empty.body(q, total)`; second button `discoverCopy.empty.otherLane` — same query, other lane; color match greyed (both labels #6E6654, wrapper 1px #2A241D) | Must **not** hide, disable or collapse the rack. |
 | 6 · Filtered to zero — phone (E5) | Same, below 1024px | Five controls active with chip overflow: two chips + `+3` + Clear pinned right; badge `4`; result `0 of 148`; buttons stack full-width at 48px | Rack controls remain the way out of a zero result. |
 
-## State Coverage — Colour match control
+## State Coverage — Color match control
 
 | State | Triggering condition | What renders | Key requirements |
 |---|---|---|---|
@@ -1273,8 +1273,8 @@ nothing. The ownership pip's two readings and the accessible name's leading clau
 
 | State | Triggering condition | What renders | Key requirements |
 |---|---|---|---|
-| Owned lane, any state | Route `/commanders` | Search · pips · colour match · Build from · Order; rows print the play-style sentence, the mechanic gap line, then Fit and the deck count. **No price** — every commander here is owned, and §7.4 row 5 unmounts the slot. | Scope control is **absent**, not greyed — the lane is the scope. The delta, the three-segment ramp, the availability line and the receipts all retired with `RecCard`. |
-| Discover lane, any state | Route `/discover` | Scope (leading) · search · pips · colour match · Order; rows print the play-style sentence, the mechanic gap line, then Fit, the deck count and the price | Availability is **absent**, not greyed. The two lanes now draw ONE row component, so the old "discovery does not blend" note is gone with it: both print Fit, and it is the same figure Commander Details prints. |
+| Owned lane, any state | Route `/commanders` | Search · pips · color match · Build from · Order; rows print the play-style sentence, the mechanic gap line, then Fit and the deck count. **No price** — every commander here is owned, and §7.4 row 5 unmounts the slot. | Scope control is **absent**, not greyed — the lane is the scope. The delta, the three-segment ramp, the availability line and the receipts all retired with `RecCard`. |
+| Discover lane, any state | Route `/discover` | Scope (leading) · search · pips · color match · Order; rows print the play-style sentence, the mechanic gap line, then Fit, the deck count and the price | Availability is **absent**, not greyed. The two lanes now draw ONE row component, so the old "discovery does not blend" note is gone with it: both print Fit, and it is the same figure Commander Details prints. |
 | Any state, either lane | — | No printing thumbnail at rest at either breakpoint; the art bleed is the card image | I3 applies only if a printing is ever named. |
 | Any state, either lane | — | No header CTA; the row is the action | `Clear` and the zero state's correction are the only buttons around the list. |
 | Filtered row vs unfiltered row | Any filter active | Identical figure set | Filtering never trims a row to fit. |

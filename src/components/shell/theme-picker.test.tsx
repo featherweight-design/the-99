@@ -21,7 +21,7 @@ describe("ThemePicker", () => {
 
   it("is a labelled radiogroup with six options", () => {
     render(<ThemePicker current="amonkhet" />);
-    expect(screen.getByRole("radiogroup", { name: "Colour theme" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Color theme" })).toBeInTheDocument();
     expect(screen.getAllByRole("radio")).toHaveLength(6);
   });
 

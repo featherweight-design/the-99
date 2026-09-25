@@ -16,14 +16,14 @@ export const filterCopy = {
   },
 
   colour: {
-    legend: "Colour identity",
+    legend: "Color identity",
     names: { w: "White", u: "Blue", b: "Black", r: "Red", g: "Green" },
     // Chip label past one pip — never one chip per hue.
-    collapsed: (count: number) => `${count} colours`,
+    collapsed: (count: number) => `${count} colors`,
   },
 
   match: {
-    legend: "Colour match",
+    legend: "Color match",
     any: "Any of these",
     exactly: "Exactly these",
     anyShort: "Any",
@@ -107,7 +107,7 @@ export const commandersCopy = {
     heading: "Nothing in the pile matches",
     // One control named, one row count promised. Only when a single control fixes it.
     bodyOneFix: (name: string, control: string, rows: number) =>
-      `${name} is in your commanders, but ${control} excludes it. Drop the colour and you get ${
+      `${name} is in your commanders, but ${control} excludes it. Drop the color and you get ${
         rows === 1 ? "one row" : `${rows} rows`
       } back.`,
     bodyMode: (q: string, control: string) =>

@@ -147,7 +147,7 @@ export const collectionChassisCopy = {
   chip: {
     /** The term itself, as `/decks` does: "Search" would name the field, not the filter. */
     search: (q: string) => `"${q}"`,
-    colours: (n: number) => (n === 1 ? "1 colour" : `${count(n)} colours`),
+    colours: (n: number) => (n === 1 ? "1 color" : `${count(n)} colors`),
     types: (n: number, first: string) => (n === 1 ? first : `${count(n)} types`),
     sets: (n: number, first: string) => (n === 1 ? first : `${count(n)} sets`),
     availability: (n: number, first: string) => (n === 1 ? first : `${count(n)} states`),

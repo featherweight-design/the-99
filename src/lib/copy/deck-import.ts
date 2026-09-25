@@ -165,12 +165,12 @@ export const deckImportCopy = {
     heading: "Which one's the commander?",
     subMobile: "The list doesn't say, so you tell us.",
     sub:
-      "This list doesn't say. Pick the one you're building around: it sets the colours and anchors everything we suggest.",
+      "This list doesn't say. Pick the one you're building around: it sets the colors and anchors everything we suggest.",
     // A list with exactly one unmarked legendary still opens the picker — only a
     // list with none is the dead end — so the singular is reachable, not
     // theoretical.
     introMobile: (n: number) =>
-      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you're building around: it sets the colours and anchors everything we suggest.`,
+      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you're building around: it sets the colors and anchors everything we suggest.`,
     count: (n: number) =>
       n === 1
         ? "1 legendary creature in this import"
@@ -352,7 +352,7 @@ export const deckImportCopy = {
     resultsCount: (n: number) => `${n} result${n === 1 ? "" : "s"}`,
     filterCaptionMobile: "every card, owned or not: you're naming a line, not shopping",
     filterCaption:
-      "every card, owned or not, in every colour: you're naming a line that's already in the deck, not shopping for a new one",
+      "every card, owned or not, in every color: you're naming a line that's already in the deck, not shopping for a new one",
     ownedToggleLabel: "Owned only",
     keyboardHint: "↑↓ to move · ↵ to use the top match · Esc to collapse",
     // Right slot of the active row. The bar says '↵ add'; here it never adds.
@@ -569,7 +569,7 @@ export const deckImportCopy = {
     conflict: {
       heading: (listCommander: string) => `That list is a ${listCommander} deck`,
       body: (deckCommander: string) =>
-        `This deck is built around ${deckCommander}. Changing the commander re-decides the colours and the legality of all ninety-nine, so we will not swap it out from under you.`,
+        `This deck is built around ${deckCommander}. Changing the commander re-decides the colors and the legality of all ninety-nine, so we will not swap it out from under you.`,
       primary: "Import it as a new deck",
       cancel: "Cancel",
     },

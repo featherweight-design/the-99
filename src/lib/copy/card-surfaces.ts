@@ -17,7 +17,7 @@ const SYMBOL: Record<string, string> = {
   B: "black",
   R: "red",
   G: "green",
-  C: "colourless",
+  C: "colorless",
   X: "X",
 };
 

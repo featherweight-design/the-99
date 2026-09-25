@@ -81,7 +81,7 @@ async function signIn(page) {
  * coin toss between the control under test and a neighbour with different
  * padding.
  */
-const MATCH_GROUP = '[role="radiogroup"][aria-label="Colour match"]:visible';
+const MATCH_GROUP = '[role="radiogroup"][aria-label="Color match"]:visible';
 
 /** The control, reached the way every browser script here reaches page content. */
 const matchGroup = (page) => onPage(page, MATCH_GROUP).first();

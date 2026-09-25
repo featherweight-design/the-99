@@ -171,7 +171,7 @@ export function FilterRack({
     key: chip.key,
     label: chip.label,
     // The colour chip collapses its values to a count, so the swatches are the
-    // only thing that says which hues are lit. Dropping them made "2 colours"
+    // only thing that says which hues are lit. Dropping them made "2 colors"
     // mean two unnamed colours.
     dots: chip.dots,
     spoken: chip.spoken,

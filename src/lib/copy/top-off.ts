@@ -215,7 +215,7 @@ export const topOffCopy = {
     /** A tick that stops being legal while the list is open. It unticks
      *  itself, keeps its slot, and says which rule caught it. */
     illegalInDeck: 'already in the deck',
-    illegalColour: 'not in these colours',
+    illegalColour: 'not in these colors',
     illegalUntickable: 'untickable',
 
     /** A decline. Lifted from the tuning card's dismissed row, deliberately:

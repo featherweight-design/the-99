@@ -267,7 +267,7 @@ export const addPanelCopy = {
   quickAddEmpty: {
     heading: "Nothing in the pile by that name",
     body: (query: string, commanderShortName: string) =>
-      `No card you own matches “${query}” in ${commanderShortName}’s colours.`,
+      `No card you own matches “${query}” in ${commanderShortName}’s colors.`,
     dropFilter: "Search all cards instead",
     // Shown when the owned filter is already off — then it really is a miss.
     bodyAllCards: (query: string, identity: string) =>

@@ -372,7 +372,7 @@ state 9 → `Moxfield link`, `File` (Canvas:1032–1084).
 | bottom rule | `1px solid --border` | `1px solid --border` | Canvas:441, 492 |
 | heading text | `Which one's the commander?` | same | copy.commander.heading |
 | heading type | Cinzel 700, 20px, `--fg` | Cinzel 700, 28px, `--fg` | Canvas:442, 493 |
-| sub text | `The list doesn't say, so you tell us.` | `This list doesn't say. Pick the one you're building around — it sets the colours, anchors the recommendations, and gives the deck its face.` | copy.commander.subMobile / .sub |
+| sub text | `The list doesn't say, so you tell us.` | `This list doesn't say. Pick the one you're building around: it sets the colors and anchors everything we suggest.` | copy.commander.subMobile / .sub |
 | sub type | mono 10px, `--fg-faint`, margin `4px 0 0` | 14px, `--fg-muted`, margin `4px 0 0` | Canvas:443, 494 |
 | intro / count line | `{n} legendary creatures came over. Pick the one you're building around — …` — 13px, line-height 1.55, `--fg-body`, margin-bottom 14px | `{n} legendary creatures in this import` — mono 11px `--fg-faint`, margin-bottom 14px | copy.commander.introMobile / .count; Canvas:446, 498 |
 | body padding | `16px 18px 12px` | `24px 40px` (left column, `flex:1`) | Canvas:445, 497 |
