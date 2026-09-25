@@ -1,7 +1,7 @@
-import { fireEvent, renderHook } from "@testing-library/react";
-import { useRef } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { useDialogA11y } from "./dialog";
+import { fireEvent, renderHook, waitFor } from "@testing-library/react";
+import { StrictMode, useRef } from "react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { useBackDismiss, useDialogA11y } from "./dialog";
 
 // The trap roots below are appended by hand rather than rendered, so Testing
 // Library's automatic cleanup does not know about them.
@@ -301,5 +301,154 @@ describe("useDialogA11y return focus", () => {
     mountWith({ current: null }).unmount();
 
     expect(document.activeElement).toBe(opener);
+  });
+});
+
+// #155. jsdom keeps a real session history — pushState, back() and an async
+// popstate — so these run against the same mechanism a browser uses. Each case
+// waits for history to settle before the next, because back() is queued, not
+// immediate, and a leftover pop would be read by the following case.
+describe("useBackDismiss", () => {
+  const settle = () => new Promise((r) => setTimeout(r, 20));
+  // The cases above unmount dialogs without waiting for them. Each one's self-pop is
+  // a back() jsdom may answer with nothing, and the count it leaves expires after a
+  // second — which is the rule, so it is waited out rather than reset.
+  beforeAll(() => new Promise((r) => setTimeout(r, 1_100)));
+  afterEach(async () => {
+    await settle();
+    window.history.replaceState(null, "", "/");
+  });
+
+  function open(onClose = vi.fn(), canClose?: () => boolean) {
+    const hook = renderHook(
+      ({ isOpen }: { isOpen: boolean }) => useBackDismiss(isOpen, onClose, canClose),
+      { initialProps: { isOpen: true } },
+    );
+    return { onClose, hook };
+  }
+
+  // Counted as calls, never as history.length: a push truncates whatever forward
+  // entries an earlier case left, so the length can stay put or even fall.
+  it("puts one entry under an open dialog, and Back closes the dialog rather than leaving", async () => {
+    const push = vi.spyOn(window.history, "pushState");
+    const { onClose } = open();
+    expect(push).toHaveBeenCalledTimes(1);
+    push.mockRestore();
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it("takes its own entry back off when the dialog closes some other way", async () => {
+    const start = window.history.length;
+    const { onClose, hook } = open();
+    const back = vi.spyOn(window.history, "back");
+    hook.unmount();
+    await settle();
+    // The half that fails without the self-pop: nothing else here can tell a
+    // removed entry from a stranded one, because both land on the same path.
+    expect(back).toHaveBeenCalledTimes(1);
+    back.mockRestore();
+    // Back again now has nothing of ours to step over: the next pop is the
+    // reader's own navigation, and it closes nothing.
+    expect(onClose).not.toHaveBeenCalled();
+    const spy = vi.fn();
+    window.addEventListener("popstate", spy);
+    window.history.pushState(null, "", "/next");
+    window.history.back();
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+    window.removeEventListener("popstate", spy);
+    expect(window.location.pathname).toBe("/");
+    expect(window.history.length).toBeGreaterThanOrEqual(start);
+  });
+
+  it("closes only the top dialog on each Back", async () => {
+    const under = open();
+    const over = open();
+    window.history.back();
+    await waitFor(() => expect(over.onClose).toHaveBeenCalledTimes(1));
+    expect(under.onClose).not.toHaveBeenCalled();
+    over.hook.unmount();
+    window.history.back();
+    await waitFor(() => expect(under.onClose).toHaveBeenCalledTimes(1));
+  });
+
+  // Two presses, because one proves nothing: the entry before the dialog's is at
+  // the same URL. Without the entry going back on, the second press would leave.
+  it("keeps the dialog, and its entry, while it refuses to close", async () => {
+    window.history.pushState(null, "", "/route");
+    const { onClose } = open(vi.fn(), () => false);
+    window.history.back();
+    await settle();
+    window.history.back();
+    await settle();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe("/route");
+  });
+
+  it("does not step back over a navigation the dialog made", async () => {
+    const { hook } = open();
+    window.history.pushState(null, "", "/elsewhere");
+    hook.unmount();
+    await settle();
+    expect(window.location.pathname).toBe("/elsewhere");
+  });
+
+  it("keeps a URL the dialog wrote while open", async () => {
+    const { hook } = open();
+    window.history.replaceState(null, "", "/?set=abc");
+    hook.unmount();
+    await settle();
+    expect(window.location.pathname + window.location.search).toBe("/?set=abc");
+  });
+
+  it("keeps a URL the dialog wrote while open when Back closes it", async () => {
+    // jsdom has no Navigation API, so this is the fallback: the URL the pop lands
+    // on is the predecessor's. Only a back() this module issues knows what it
+    // left, which is the case above; this one records what the fallback costs.
+    const { onClose } = open();
+    window.history.replaceState(null, "", "/?set=abc");
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(window.location.search).toBe("");
+  });
+
+  // The card modal's Escape closes the zoom, then the printing region, then the
+  // dialog. Back does the same, so a dialog still up after its close is given a
+  // fresh entry, or the next Back would leave the route with it open.
+  it("steps down one rung per Back, like Escape", async () => {
+    const onClose = vi.fn();
+    renderHook(() => useBackDismiss(true, onClose));
+    const push = vi.spyOn(window.history, "pushState");
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(push).toHaveBeenCalledTimes(1), { timeout: 1_000 });
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(2));
+    push.mockRestore();
+  });
+
+  it("takes its entry off on a later close after refusing a Back", async () => {
+    let refusing = true;
+    const hook = renderHook(() => useBackDismiss(true, vi.fn(), () => !refusing));
+    window.history.back();
+    await settle();
+    refusing = false;
+    const back = vi.spyOn(window.history, "back");
+    hook.unmount();
+    await settle();
+    expect(back).toHaveBeenCalledTimes(1);
+    back.mockRestore();
+  });
+
+  it("pushes once under StrictMode's remount, and steps back not at all", async () => {
+    const push = vi.spyOn(window.history, "pushState");
+    const back = vi.spyOn(window.history, "back");
+    const hook = renderHook(() => useBackDismiss(true, vi.fn()), { wrapper: StrictMode });
+    await settle();
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(back).not.toHaveBeenCalled();
+    push.mockRestore();
+    back.mockRestore();
+    hook.unmount();
   });
 });

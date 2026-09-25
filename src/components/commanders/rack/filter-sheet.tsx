@@ -29,7 +29,7 @@ import {
   type Lane,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
-import { useScrollLock } from "../../../lib/a11y/dialog";
+import { useBackDismiss, useScrollLock } from "../../../lib/a11y/dialog";
 import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
@@ -88,6 +88,8 @@ export function FilterSheet({
   // its Escape and its drag dismissal — so it takes the lock alone rather than
   // `useDialogA11y` whole, through the same counter every other dialog uses.
   useScrollLock(open);
+  // And Back closes it rather than leaving the route (#155).
+  useBackDismiss(open, () => onOpenChange(false));
 
   // aria-modal means focus has to start inside the sheet, and the key handler
   // is bound to the dialog — without this, Esc would never reach it.
