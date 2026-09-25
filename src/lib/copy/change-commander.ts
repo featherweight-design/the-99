@@ -110,5 +110,10 @@ export const changeCommanderCopy = {
   discard: {
     // Appended to deckVersioningCopy.discard.consequence's head when the draft holds a commander change.
     commanderBack: (oldShort: string) => `${oldShort} leads it again.`,
+    // A draft that moved ONLY its commander. deckVersioningCopy.discard.consequence names the cards
+    // added and cut and would lose its subject over zero of each ("3 cards.  are not stored
+    // anywhere"), so this draft takes the version clause alone; `commanderBack` follows it.
+    commanderOnly: (version: number, date: string, cards: number) =>
+      `The deck goes back to v${version} as committed on ${date}: ${cards} ${cards === 1 ? "card" : "cards"}.`,
   },
 } as const;

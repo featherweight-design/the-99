@@ -68,3 +68,14 @@ describe("commanderBackClause", () => {
     expect(commanderBackClause({ ...COMMITTED, commander: null })).toBeNull();
   });
 });
+
+describe("Discard on a commander-only draft", () => {
+  it("states the version and the commander coming back, with no empty card clause", async () => {
+    const { DiscardConfirm } = await import("./discard-draft");
+    render(<DiscardConfirm deckId="d1" state={swapped()} versionCards={99} onCancel={() => {}} />);
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("99 cards. Korvold leads it again.");
+    expect(text).not.toContain("not stored anywhere");
+    expect(text).not.toMatch(/\.\s{2}/);
+  });
+});

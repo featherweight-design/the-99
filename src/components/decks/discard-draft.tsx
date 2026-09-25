@@ -29,6 +29,7 @@ import { PRIMARY } from "../ui/button";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
 import { commanderBackClause } from "./change-commander-banner";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const copy = deckVersioningCopy.discard;
 
@@ -243,13 +244,16 @@ export function DiscardConfirm({
   // than on the sentence's words: a re-worded consequence finds no match and
   // renders whole, which is a lost emphasis and never a mangled sentence.
   const stamp = `v${version.number} as committed on ${formatDeckDate(version.committedAt)}`;
-  const sentence = copy.consequence(
-    version.number,
-    formatDeckDate(version.committedAt),
-    versionCards,
-    state.adds.length,
-    state.removes.length,
-  );
+  // A commander-only draft moved no card, so the card clause has nothing to name (change commander).
+  const sentence = state.commander && state.adds.length === 0 && state.removes.length === 0
+    ? changeCommanderCopy.discard.commanderOnly(version.number, formatDeckDate(version.committedAt), versionCards)
+    : copy.consequence(
+      version.number,
+      formatDeckDate(version.committedAt),
+      versionCards,
+      state.adds.length,
+      state.removes.length,
+    );
   const [head, tail] = sentence.split(stamp);
   // Change commander: a discard also puts the committed commander back, and says so.
   const commanderBack = commanderBackClause(state);

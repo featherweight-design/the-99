@@ -278,6 +278,9 @@ async function main() {
     await onPage(page, "button").filter({ hasText: /^Discard/ }).filter({ visible: true }).first().click();
     const why = onPage(page, "p").filter({ hasText: "leads it again." }).filter({ visible: true });
     report("discard names the old commander", (await why.count()) === 1, (await why.first().textContent().catch(() => "")) ?? "");
+    // The fixture moved only its commander: the card clause must not be drawn over zero cards.
+    const whyText = (await why.first().textContent().catch(() => "")) ?? "";
+    report("discard has no empty card clause", !/not stored anywhere|\.\s{2}/.test(whyText), whyText);
   } finally {
     // Each step on its own, so one failing cannot skip the next.
     if (fixtureDeckId) await sql`delete from decks where id = ${fixtureDeckId}`.catch((e) => { failures += 1; console.error(e); });
