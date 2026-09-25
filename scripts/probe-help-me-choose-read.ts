@@ -172,6 +172,24 @@ async function main() {
     check("a press reusing a settled read's id is refused as a reuse, not as in flight",
       (await store.startRead(USER, "again", INTAKE_MODEL, { readId: ok })).kind, "reused");
 
+    console.log("\n4b. A settle landing between a waiting press's two reads");
+    // The waiting press reads "is this ask stored?" then "is anything pending?". A settle committing
+    // between the two must not read as idle, which would drop the answer the press waited for.
+    const racing = randomUUID();
+    const racingWords = `big dumb lizards ${racing}`;
+    let letGo!: () => void;
+    const hold = new Promise<void>((r) => { letGo = r; });
+    let calledIn!: () => void;
+    const calling = new Promise<void>((r) => { calledIn = r; });
+    const settling = run(racing, async () => { calledIn(); await hold; return reply(["Dinosaurs"]); }, racingWords);
+    await calling;
+    const raced = await store.readStatus(USER, store.wordsHash(racingWords, controls), new Date(), async () => {
+      letGo();
+      await settling;
+    });
+    check("a settle committing between the reads leaves the snapshot reading it as running, never idle", raced.kind, "running");
+    check("and the next ask finds the stored read", (await store.readStatus(USER, store.wordsHash(racingWords, controls))).kind, "stored");
+
     console.log("\n5. The reaper frees a stranded read");
     const stranded = randomUUID();
     const past = new Date(Date.now() - INTAKE_REAPER_CUTOFF_MS - 60_000);
