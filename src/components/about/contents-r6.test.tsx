@@ -119,6 +119,43 @@ describe("the rail (§Q1–Q3, E4 fallback)", () => {
   });
 });
 
+describe("which row the rail marks (§Q3)", () => {
+  it("marks the later of two entries sharing the band, where a jump puts its entry", () => {
+    const observers: { cb: IntersectionObserverCallback; targets: Element[] }[] = [];
+    const original = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class {
+      targets: Element[] = [];
+      constructor(cb: IntersectionObserverCallback) {
+        observers.push({ cb, targets: this.targets });
+      }
+      observe(t: Element) {
+        this.targets.push(t);
+      }
+      disconnect() {}
+      unobserve() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof IntersectionObserver;
+    try {
+      render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+      const chapter3 = aboutEntries.filter((e) => e.chapter === "03");
+      const [above, landed] = chapter3;
+      // Both placements observe; the band is the same for each, so both hear it.
+      const hit = (id: string) =>
+        ({ target: document.getElementById(id)!, isIntersecting: true }) as unknown as IntersectionObserverEntry;
+      act(() => {
+        for (const o of observers.filter((o) => o.targets.some((t) => t.id === "chapter-03")))
+          o.cb([hit("chapter-03"), hit(above.id), hit(landed.id)], {} as IntersectionObserver);
+      });
+      const current = rail().querySelector("[aria-current='true']");
+      expect(current?.getAttribute("href")).toBe(`#${landed.id}`);
+    } finally {
+      globalThis.IntersectionObserver = original;
+    }
+  });
+});
+
 describe("the phone list (§Q4–Q7)", () => {
   it("starts with every chapter closed, even for a reader who is behind (Q7)", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);

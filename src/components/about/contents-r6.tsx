@@ -50,7 +50,11 @@ function useCurrentPlace(chapters: readonly ContentsChapter[]) {
     const observer = new IntersectionObserver((hits) => {
       for (const hit of hits) onScreen.current.set(hit.target.id, hit.isIntersecting);
       const chapter = chapterIds.find((id) => onScreen.current.get(id));
-      const entry = entryIds.find((id) => onScreen.current.get(id)) ?? null;
+      // The LAST entry in the band, not the first. Entries are short, so the band
+      // usually holds the tail of the one above as well as the one the reader is
+      // on, and a jump lands its entry 20px down with the previous entry's last
+      // lines above it. First-in-order marked that previous entry.
+      const entry = entryIds.findLast((id) => onScreen.current.get(id)) ?? null;
       setPlace((prev) => ({
         chapter: chapter ? (chapter.replace("chapter-", "") as AboutChapter) : prev.chapter,
         entry,
