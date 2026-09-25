@@ -81,6 +81,8 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   const owned = read ? read.owned : card.quantity;
   const free = read ? read.free ?? 0 : card.availability?.free ?? 0;
   const freeNow = Math.max(0, free);
+  // The payload's count is the card as it opened, so once an add has spent a copy only a read knows.
+  const countsKnown = read !== null || added.length === 0;
 
   const add = async (deck: FitDeck) => {
     if (inFlight.current) return;
@@ -101,7 +103,9 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
         ? copy.addedToBuy
         : after && Math.max(0, after.free ?? 0) === 0 ? copy.addedUsedLast : copy.addedFree;
       setAdded((a) => [...a, { deckId: deck.id, note }]);
-      if (after) setLoad({ state: "ready", read: after });
+      // A failed re-read leaves no count to draw: the old one is spent, and every row's Add or Add to
+      // buy would be a claim about it. So the picker fails, and Try again reads the server's count.
+      setLoad(after ? { state: "ready", read: after } : { state: "failed" });
     } catch {
       setRefused(deck.id);
     } finally {
@@ -142,13 +146,13 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
               {copy.identity(colorsOf(card.colorIdentity))}
             </span>
           </span>
-          <span
+          {countsKnown ? <span
             data-testid="fits-copies"
             className="flex-none font-mono text-[11.5px] whitespace-nowrap"
             style={{ color: freeNow > 0 ? "var(--fg-body)" : "var(--avail-hard-fg)" }}
           >
             {copy.copies(owned, freeNow)}
-          </span>
+          </span> : null}
         </section>
 
         {read?.staple ? (

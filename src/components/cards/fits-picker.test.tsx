@@ -111,16 +111,29 @@ describe("FitsPicker", () => {
     expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(2, 0));
   });
 
-  it("claims no last copy when the re-read after an add fails", async () => {
-    actions.loadFitsAction.mockResolvedValueOnce(read()).mockRejectedValueOnce(new Error("down"));
+  it("claims no count when the re-read after an add fails, and Try again brings the stamp back", async () => {
+    let land: (r: FitsRead) => void = () => {};
+    actions.loadFitsAction.mockResolvedValueOnce(read()).mockRejectedValueOnce(new Error("down"))
+      .mockReturnValueOnce(new Promise<FitsRead>((resolve) => { land = resolve; }));
     actions.addFromFits.mockResolvedValue({ ok: true });
     draw();
     await settle();
     await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: /using your free copy/ })[0]); });
     await settle();
-    const [gishath] = screen.getAllByTestId("fits-row");
+    // No row offers an Add against a count that is spent, and the plate draws no count at all.
+    expect(screen.getByRole("alert")).toHaveTextContent(copy.failed.heading);
+    expect(screen.queryAllByTestId("fits-row")).toHaveLength(0);
+    expect(screen.queryByTestId("fits-copies")).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: swapToolsCopy.sheet.retry })); });
+    // Loading again, the payload's count is still the spent one.
+    expect(screen.queryByTestId("fits-copies")).toBeNull();
+    await act(async () => { land(read({ free: 0, fits: [read().fits[1]] })); });
+    await settle();
+    const [gishath, kinnan] = screen.getAllByTestId("fits-row");
     expect(gishath).toHaveTextContent(copy.addedFree);
     expect(gishath).not.toHaveTextContent(copy.addedUsedLast);
+    expect(kinnan).toHaveTextContent(copy.addToBuy);
+    expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(2, 0));
   });
 
   it("keeps the button and says the deck is unchanged when an add is refused", async () => {
