@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import {
   applySuggestion,
@@ -166,7 +167,10 @@ export function TuningPanel({
   // The spend cap's two states disable the press exactly as a spent allowance does, and only the
   // note under it changes. Paused wins (it is the whole app), then the owner's share, then spent.
   const paused = state.allowance.paused;
-  const blocked = spent || !!paused || state.allowance.ownerShare === true;
+  // Every card but the commander locked (Locked, never cut): nothing to cut, so the press is
+  // disabled and the server refuses it before a credit is reserved (the gate's `allLocked`).
+  const allLocked = !reading && state.allLocked ? state.allLocked : null;
+  const blocked = spent || !!paused || state.allowance.ownerShare === true || allLocked !== null;
 
   async function press(anyway = false) {
     if (!state) return;
@@ -332,7 +336,9 @@ export function TuningPanel({
     body = (
       <>
         <Lead>
-          {facts.gameCount === 0
+          {allLocked !== null
+            ? lockedCardsCopy.tuning.allLocked(allLocked)
+            : facts.gameCount === 0
             ? copy.noGamesLead
             : facts.fix === null
               ? copy.unmarkedLead(cap(numberWord(facts.gameCount)))
@@ -356,7 +362,16 @@ export function TuningPanel({
         : primary.again
           ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
           : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
-  const noteLine = note ? `${note} · ${credit}` : credit;
+  // With every card locked, the CREDIT line gives way to the one fact that matters: nothing is spent.
+  // The state's own note (a set's tally, a failure's note) stays. Outside the never-run lead, where
+  // the sentence is the lead, it joins the note so every state says why the press is disabled.
+  const lockedNote = allLocked === null
+    ? null
+    : neverRun
+      ? lockedCardsCopy.tuning.allLockedNote
+      : `${lockedCardsCopy.tuning.allLocked(allLocked)} ${lockedCardsCopy.tuning.allLockedNote}`;
+  const tail = lockedNote ?? credit;
+  const noteLine = note ? `${note} · ${tail}` : tail;
 
   return (
     <section
@@ -380,6 +395,7 @@ export function TuningPanel({
       {body}
       {neverRun && intent === null ? (
         <DeckIntentAsk
+          runBlocked={allLocked !== null}
           deckId={deckId}
           fix={facts.fix ? { axis: axisName(facts.fix.key), hurt: facts.fix.hurt, games: facts.gameCount } : null}
           save={deps.saveIntent}
@@ -520,6 +536,9 @@ function failureCopy(errorClass: string | null): FailureCopy {
     case "timeout": return f.timeout;
     case "malformed": return f.malformed;
     case "ungrounded": return f.ungrounded;
+    // F10: every suggestion cut a card the player locked. `ungrounded`'s frame, with the body and
+    // the note naming the actual cause (Hugh, 2026-09-25: "log another game" does not fit it).
+    case "locked_only": return { ...f.ungrounded, body: lockedCardsCopy.tuning.lockedOnlyBody, note: lockedCardsCopy.tuning.lockedOnlyNote };
     default: return f.interrupted;
   }
 }

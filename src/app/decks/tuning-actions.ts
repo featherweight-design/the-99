@@ -2,6 +2,7 @@
 
 import { inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { db } from "../../db";
 import { cards } from "../../db/schema";
@@ -14,6 +15,7 @@ import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import {
   profileOfHead,
+  commanderName,
   readEvidenceStep,
   readOwnedOracleIds,
   readTuningContext,
@@ -93,9 +95,11 @@ export async function runTuning(
 
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
-  const { head, games, intent, declared, fingerprint, readVersion } = inputs;
+  const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked } = inputs;
 
-  const gate = gateReason(await readTuningState(deckId, userId, fingerprint));
+  // `allLocked` is a gate reason, so this refusal lands BEFORE `startRun` reserves a credit: the
+  // panel's "No credit is used." is true of the server, not only of a disabled button.
+  const gate = gateReason(await readTuningState(deckId, userId, fingerprint, new Date(), { allLocked }));
   if (gate && !(gate.kind === "unchanged" && anyway)) return { ok: false, message: gate.message };
 
   const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested });
@@ -103,6 +107,10 @@ export async function runTuning(
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
   if (started.kind === "in_flight") return { ok: false, message: deckTuningCopy.announce.started };
+  // The last card was locked after the gate's snapshot: refused under the lock, nothing reserved.
+  if (started.kind === "allLocked") {
+    return { ok: false, message: lockedCardsCopy.tuning.allLocked(await commanderName(head)) };
+  }
 
   // The run and its ledger unit, held for the whole request: every settle below reaches the unit
   // by its own id, so a deck deleted mid-call (which cascades the run row away) still gets its bill.
@@ -125,7 +133,9 @@ export async function runTuning(
       ]),
       readTuningContext(head),
     ]);
-    const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned, overview, universal });
+    const pack = buildEvidencePack({
+      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked),
+    });
     const { system, user } = buildPrompt(pack);
     const outcome = await callModel({
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
@@ -143,7 +153,12 @@ export async function runTuning(
       .where(inArray(cards.name, names));
     const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
 
-    const { kept, droppedCount } = validateSuggestions({ response: outcome.value, pack, resolveName });
+    const { kept, droppedCount, drops } = validateSuggestions({ response: outcome.value, pack, resolveName });
+    // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
+    // that rather than `ungrounded`'s three causes. Refunded like every failure.
+    if (kept.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {
+      return await fail("locked_only", droppedCount);
+    }
     if (kept.length === 0) return await fail("ungrounded", droppedCount);
 
     // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
@@ -174,7 +189,7 @@ export async function readTuningPanel(deckId: string): Promise<TuningState | nul
   if (!isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return null;
-  return readTuningState(deckId, userId, inputs.fingerprint);
+  return readTuningState(deckId, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked });
 }
 
 /**

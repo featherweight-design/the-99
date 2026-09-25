@@ -82,4 +82,8 @@ export type TuningState = {
   gameCount: number;
   /** The price table's newest `as_of`, which the buy tag measures a price's liveness against. */
   newestPriceAsOf: Date | null;
+  /** Every card but the commander is locked (Locked, never cut): the commander's name, for the
+   *  lead. Nothing could be cut, so the run is refused before any credit is reserved. Absent or
+   *  null otherwise, and always while `NEVER_CUT_ENABLED` is off. */
+  allLocked?: string | null;
 };

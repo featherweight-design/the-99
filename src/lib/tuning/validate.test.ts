@@ -290,3 +290,29 @@ describe("v2's cut rules: what the deck depends on", () => {
     expect(run({ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }] }).drops.map((d) => d.rule)).not.toContain("universalStaple");
   });
 });
+
+describe("Locked (never cut): the validator's filter", () => {
+  const locked: EvidencePack = {
+    ...pack,
+    cards: pack.cards.map((c) => (c.oracleId === "bear" ? { ...c, locked: true } : c)),
+  };
+  const check = (...s: TuningSuggestion[]) => validateSuggestions({ response: { suggestions: s }, pack: locked, resolveName });
+
+  it("drops a suggestion that cuts a locked card, whatever it cites (D4)", () => {
+    const out = check(good);
+    expect(out.kept).toHaveLength(0);
+    expect(out.drops).toEqual([{ position: 0, rule: "neverCut" }]);
+  });
+
+  // F4: the lead's "dropped N" is about suggestions the model got wrong; a locked cut is the
+  // player's rule working, so it is listed but not counted.
+  it("lists the drop but leaves it out of droppedCount", () => {
+    const out = check(good, { ...good, add: "Nonesuch", cut: "Oxen" });
+    expect(out.drops.map((d) => d.rule)).toEqual(["neverCut", "cardExists"]);
+    expect(out.droppedCount).toBe(1);
+  });
+
+  it("keeps a cut of an unlocked card in the same deck", () => {
+    expect(check({ ...good, cut: "Oxen" }).kept).toHaveLength(1);
+  });
+});

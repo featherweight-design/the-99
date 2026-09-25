@@ -31,6 +31,9 @@ export type EvidencePack = {
     quantity: number;
     owned: boolean;
     commander: boolean;
+    /** The player locked it (Locked, never cut): the prompt tags it and the validator drops any cut
+     *  of it. Absent, like false, for every card of a deck with no locks, so its prompt is today's. */
+    locked?: boolean;
   }[];
   targets: {
     /**
@@ -67,6 +70,9 @@ export function buildEvidencePack(input: {
   play: ProfilePlay;
   intent: string | null;
   owned: ReadonlySet<string>;
+  /** The deck's live locks (D5): an INPUT, like `owned`, read in the run's own request and never
+   *  stored in the analysis, so toggling a lock never marks a reading stale. */
+  locked?: ReadonlySet<string>;
   now?: Date;
   /** The deck's shown overview: its strategy steps and its Key cards' names, as written. */
   overview?: { strategy: string[]; keyCards: string[] } | null;
@@ -117,6 +123,8 @@ export function buildEvidencePack(input: {
       quantity: c.quantity,
       owned: owned.has(c.oracleId),
       commander: commanderIds.has(c.oracleId),
+      // Only when set: a pack for a deck with no locks is the object it was before locks existed.
+      ...(input.locked?.has(c.oracleId) && !commanderIds.has(c.oracleId) ? { locked: true } : {}),
     })),
     targets: {
       roles: ROLE_ORDER.map((role) => ({

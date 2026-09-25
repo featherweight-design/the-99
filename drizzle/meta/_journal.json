@@ -435,6 +435,13 @@
       "when": 1790301170687,
       "tag": "0061_never_cut",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1790304448356,
+      "tag": "0062_tuning_locked_only",
+      "breakpoints": true
     }
   ]
 }

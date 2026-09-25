@@ -4,6 +4,7 @@ import { deckTuningCopy } from "../copy/deck-tuning";
 import type { EvidencePack } from "./evidence";
 import { MAX_SUGGESTIONS } from "./limits";
 import { noteDate } from "./note-date";
+import { lockedCardsCopy } from "../copy/locked-cards";
 
 /**
  * The evidence pack, rendered as the two messages a tuning run sends. Pure string work.
@@ -24,7 +25,11 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   const universal = pack.universal ?? [];
   // One name per card the player would recognise: two oracle cards sharing a name print once.
   const universalNames = [...new Set(universal.map((u) => u.name))];
-  const system = [SYSTEM, ...strategyRules(universalNames, !!pack.strategy), ...RATIONALE_RULES].join("\n");
+  // Locked (never cut): the commander line gains "or as locked" ONLY for a deck that has locks, so a
+  // deck with none sends today's prompt byte for byte (`prompt.test.ts` pins it). No PROMPT_VERSION
+  // bump: the lock ids join the gate's fingerprint, which reopens a locked deck's gate alone.
+  const base = pack.cards.some((c) => c.locked) ? SYSTEM.replace(COMMANDER_RULE, LOCKED_RULE) : SYSTEM;
+  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...RATIONALE_RULES].join("\n");
   const block = pack.strategy ? strategyBlock(pack.strategy) : null;
   return { system, user: block ? `${renderPack(pack)}\n\n${block}` : renderPack(pack) };
 }
@@ -63,6 +68,9 @@ function strategyBlock(strategy: NonNullable<EvidencePack["strategy"]>): string 
   ].join("\n");
 }
 
+const COMMANDER_RULE = "Never suggest cutting a card marked as a commander.";
+const LOCKED_RULE = lockedCardsCopy.tuning.promptRule;
+
 const SYSTEM = [
   "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.",
   `Propose at most ${MAX_SUGGESTIONS} swaps. Each swap cuts exactly one card from the deck and adds exactly one card. Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.`,
@@ -72,7 +80,7 @@ const SYSTEM = [
   "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",
   "An intent citation quotes the player's own words, whole or a part of them.",
   "A mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".",
-  "Name cards exactly as the decklist and the staples list spell them. Never suggest cutting a card marked as a commander.",
+  `Name cards exactly as the decklist and the staples list spell them. ${COMMANDER_RULE}`,
   "Rules. A suggestion that breaks any of these is discarded before the player sees it:",
   ...Object.values(deckTuningCopy.suggestionRules).map((rule) => `- ${rule}`),
   "Write the rationale in plain words for the player. rationaleShort is the same point in at most 80 characters.",
@@ -133,7 +141,11 @@ function renderPack(pack: EvidencePack): string {
 
   lines.push("", `Decklist (${pack.cards.reduce((n, c) => n + c.quantity, 0)} cards):`);
   for (const c of pack.cards) {
-    const tags = [c.commander ? "commander" : null, c.roles.length > 0 ? c.roles.join(", ") : null].filter(Boolean);
+    const tags = [
+      c.commander ? "commander" : null,
+      c.locked ? lockedCardsCopy.tuning.promptTag : null,
+      c.roles.length > 0 ? c.roles.join(", ") : null,
+    ].filter(Boolean);
     lines.push(`- ${c.quantity > 1 ? `${c.quantity}x ` : ""}${c.name} (${c.typeLine})${tags.length > 0 ? ` [${tags.join("; ")}]` : ""}`);
   }
 

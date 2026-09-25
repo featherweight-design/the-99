@@ -30,6 +30,12 @@ export type FingerprintInput = {
    *  it. The developer seed script (`pnpm db:seed:collection`) replaces without an upload row,
    *  so a seeded collection does not move this; a fixture account is the only reader of that. */
   collection: string | null;
+  /**
+   * The deck's live locks (Locked, D6): locking a card on an unchanged list reopens the gate, since
+   * it changes what a run may suggest. Joins the hash ONLY when non-empty, so a deck with no locks
+   * hashes exactly as before and no gate in production reopens for a feature switched off there.
+   */
+  locks?: readonly string[];
 };
 
 const byteOrder = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
@@ -49,6 +55,7 @@ export function tuningFingerprint(input: FingerprintInput): string {
       games,
       intent: input.intent ?? "",
       collection: input.collection ?? "",
+      ...(input.locks && input.locks.length > 0 ? { locks: [...input.locks].sort(byteOrder) } : {}),
     }))
     .digest("hex");
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MODEL_FRIEND_DAILY_ALLOWANCE, type Allowance } from "../model/allowance-rule";
+import { lockedCardsCopy } from "../copy/locked-cards";
 import { gateReason } from "./gate";
 import type { TuningRun, TuningState } from "./state";
 
@@ -21,6 +22,15 @@ const settled: TuningState = { ...fresh, run: run("ok"), lastOkFingerprint: "fp"
 describe("gateReason", () => {
   it("opens a deck with no games and no runs", () => {
     expect(gateReason(fresh)).toBeNull();
+  });
+
+  // Locked: every card but the commander locked. Ahead of `unchanged`, since pressing "anyway"
+  // would find nothing to cut; behind a run already in flight.
+  it("refuses with every card locked, ahead of unchanged and behind a run in flight", () => {
+    expect(gateReason({ ...settled, allLocked: "Kykar" })?.kind).toBe("allLocked");
+    expect(gateReason({ ...fresh, allLocked: "Kykar" })?.message).toBe(lockedCardsCopy.tuning.allLocked("Kykar"));
+    expect(gateReason({ ...fresh, allLocked: "Kykar", run: run("pending") })?.kind).toBe("in_flight");
+    expect(gateReason({ ...fresh, allLocked: null })).toBeNull();
   });
 
   it("refuses while a run is in flight", () => {

@@ -23,7 +23,9 @@ import type { TuningResponse, TuningSuggestion } from "./response-schema";
  *     player wrote, a cited intent was stated;
  *  6. presentation — the text rules, on the rationale, the short rationale and every citation.
  *
- * Every drop is counted. Survivors are renumbered, so the card list has no holes.
+ * Every drop is LISTED in `drops`, and every drop but `neverCut` is COUNTED in `droppedCount` (the
+ * lead's "we dropped N"): a cut of a card the player locked is the player's rule working, not a
+ * suggestion the model got wrong (Locked, F4). Survivors are renumbered, so the card list has no holes.
  */
 export type ResolvedCard = { oracleId: string; colorIdentity: string[]; commanderLegal: boolean };
 
@@ -40,7 +42,7 @@ export type ValidatedSuggestion = {
 
 /** Why a suggestion was dropped: a rule key the model was instructed with, or one of the
  *  structural checks no instruction covers. */
-export type Drop = { position: number; rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" };
+export type Drop = { position: number; rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" | "neverCut" };
 
 export function validateSuggestions(args: {
   response: TuningResponse;
@@ -94,7 +96,10 @@ export function validateSuggestions(args: {
     });
   });
 
-  return { kept, droppedCount: drops.length, drops };
+  // A `neverCut` drop is NOT counted (Locked, F4): the lead's "we dropped N" describes suggestions
+  // the model got wrong, and a cut of a card the player locked is the player's rule working, not a
+  // failed suggestion. Still listed in `drops`, so a run whose every drop is one can say so (F10).
+  return { kept, droppedCount: drops.filter((d) => d.rule !== "neverCut").length, drops };
 
   function firstFailure(s: TuningSuggestion): Drop["rule"] | null {
     const add = resolveName(s.add);
@@ -103,6 +108,8 @@ export function validateSuggestions(args: {
 
     const cutRow = inDeck.get(cut.oracleId);
     if (!cutRow || cutRow.commander) return "cutInDeck";
+    // Never cut (Locked): a FILTER, whatever the prompt told the model (D4).
+    if (cutRow.locked) return "neverCut";
     if (keyCards.has(cut.oracleId)) return "keyCard";
     // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
     // game, a note or their stated intent, each checked against what they wrote below. A role

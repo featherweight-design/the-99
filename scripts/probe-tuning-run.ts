@@ -29,6 +29,9 @@
 //      and the prompt and validator built from that pack carry and enforce them. The model's
 //      effort and retry floor are `tuning-actions.test.ts`'s and `client.test.ts`'s, and a
 //      failure's refund is case 9's; no model is called here either.
+//  14  Locked (never cut): a cut locked since the run no longer applies, is named, and is refused;
+//      the lock moves the fingerprint and reopens the gate; a `locked_only` run is written and
+//      refunded (the 0062 constraint). The validator's own `neverCut` drop is `validate.test.ts`'s.
 // Case 11, the seeding in `createDeck` (and `fillDeck` declining to seed), needs a session and
 // an EDHREC fetch, so it lives in `src/app/decks/actions.test.ts` against the stubbed driver.
 //
@@ -439,6 +442,45 @@ async function run() {
     const moved = await readTuningState(deck, u, "fp-v");
     check("12 · an item whose cut the deck no longer holds does not apply", moved.items.map((i) => i.applies), [false]);
     check("12 · and apply refuses it", await applyItem(itemId, u), null);
+  }
+
+  // 14 · Locked (never cut): a cut the player locks after the run no longer applies, is named as
+  //      locked, and is refused by the apply; the lock reopens the gate on an unchanged list (D6);
+  //      and a run whose every cut was locked settles as `locked_only`, refunded like any failure.
+  {
+    process.env.NEVER_CUT_ENABLED = "true";
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    const unlocked = await tuningInputs(deck, u);
+    const { itemId } = await answered(u, deck, c, unlocked!.fingerprint);
+    check("14 · before a lock, the gate reads unchanged", gateReason(await readTuningState(deck, u, unlocked!.fingerprint))?.kind ?? null, "unchanged");
+    await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${deck}::uuid, ${c.body[0]}::uuid)`);
+    const locked = await tuningInputs(deck, u);
+    check("14 · locking a card moves the fingerprint (D6)", locked!.fingerprint !== unlocked!.fingerprint, true);
+    const state = await readTuningState(deck, u, locked!.fingerprint);
+    check("14 · and reopens the gate", gateReason(state), null);
+    check("14 · the item no longer applies, and says the cut is locked", state.items.map((i) => [i.applies, i.cutLocked]), [[false, true]]);
+    check("14 · the apply refuses it", await applyItem(itemId, u), null);
+    check("14 · and the locked card is still in the deck", await cardRow(deck, c.body[0]), { quantity: 1, auto: false });
+
+    // The gate read a snapshot; the reservation re-checks under the deck row lock. With every card
+    // locked, `startRun` refuses inside its transaction and reserves nothing.
+    const allowanceBefore = (await readAllowance(u)).used;
+    const everyCard = await fixture.execute<{ oracle_id: string }>(sql`select oracle_id from deck_cards where deck_id = ${deck}::uuid`);
+    for (const r of everyCard.rows) {
+      await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${deck}::uuid, ${r.oracle_id}::uuid) on conflict do nothing`);
+    }
+    const refused = await startRun(u, deck, "fp-all-locked", null);
+    check("14 · with every card locked, startRun refuses under the lock", refused.kind, "allLocked");
+    check("14 · and reserves nothing", (await readAllowance(u)).used, allowanceBefore);
+    await fixture.execute(sql`delete from deck_locks where deck_id = ${deck}::uuid and oracle_id <> ${c.body[0]}::uuid`);
+
+    const run = await startRun(u, deck, locked!.fingerprint, null);
+    if (run.kind !== "started") return fail("case 14 start", run.kind);
+    await finishRun(run, { status: "failed", errorClass: "locked_only" });
+    const settled = await runRow(run.runId);
+    check("14 · a locked-only run is written (the constraint allows it) and refunded", settled?.unit, "refunded");
+    check("14 · and the panel reads its class", (await readTuningState(deck, u, locked!.fingerprint)).run?.errorClass, "locked_only");
   }
 
   // 12 · A commit landing BETWEEN the read and the run's start still retires the set: the run

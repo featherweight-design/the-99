@@ -31,6 +31,7 @@ import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { neverCutEnabled } from "./never-cut-flag";
+import { liveLockedIds } from "./locks";
 
 /**
  * Deck tuning's reads. SERVER-ONLY: it imports the database.
@@ -49,6 +50,11 @@ export type TuningInputs = {
   /** The deck's newest version number in the same snapshot as `head`, or null for none. A run
    *  records it, and a newer version later retires the set. */
   readVersion: number | null;
+  /** The deck's live locks, read in the same snapshot as `head` (Locked, D5/D6). Empty while
+   *  `NEVER_CUT_ENABLED` is off, so the gate and the pack are what they were before locks. */
+  locked: string[];
+  /** The commander's name when every other card is locked, else null (the gate's `allLocked`). */
+  allLocked: string | null;
 };
 
 /** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
@@ -60,10 +66,11 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     if (!head) return null;
     const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
       .where(eq(deckVersions.deckId, deckId));
-    return { head, readVersion: v?.n ?? null };
+    const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
+    return { head, readVersion: v?.n ?? null, locked };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
   if (!snapshot) return null;
-  const { head, readVersion } = snapshot;
+  const { head, readVersion, locked } = snapshot;
   const [games, [deck], [upload]] = await Promise.all([
     listDeckGames(deckId, userId),
     db.select({ intent: decks.intent })
@@ -80,8 +87,18 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     games,
     intent,
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
+    locks: locked,
   });
-  return { head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint, readVersion };
+  // Every card but the commander locked: a body card is every `deck_cards` row, the commander is not
+  // one (membership is `deck_cards`), and an empty body has nothing locked either.
+  const lockedSet = new Set(locked);
+  const body = head.cards.filter((c) => c.oracleId !== head.commanderOracleId && c.oracleId !== head.partnerOracleId);
+  const allLocked = body.length > 0 && body.every((c) => lockedSet.has(c.oracleId))
+    ? await commanderName(head)
+    : null;
+  return {
+    head, games, intent, declared: (head.declaredBracket as Bracket | null) ?? null, fingerprint, readVersion, locked, allLocked,
+  };
 }
 
 /**
@@ -164,6 +181,14 @@ export function swapped(
   return [...next].map(([oracleId, quantity]) => ({ oracleId, quantity }));
 }
 
+/** "Name" or "Name and Partner", as the lead names the deck's commanders. */
+export async function commanderName(head: ProfileHead): Promise<string> {
+  const ids = [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])];
+  const rows = await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards)
+    .where(inArray(cards.oracleId, ids));
+  return ids.map((id) => rows.find((r) => r.oracleId === id)?.name ?? "").filter(Boolean).join(" and ");
+}
+
 /**
  * The panel's state. Reaps this deck's abandoned runs on the way past, refunding their units in
  * the same transaction, then reads. Scoped to the deck being read: one player opening a deck
@@ -174,6 +199,7 @@ export async function readTuningState(
   userId: string,
   fingerprint: string,
   now: Date = new Date(),
+  opts: { allLocked?: string | null } = {},
 ): Promise<TuningState> {
   await db.transaction(async (tx) => {
     const reaped = await tx.update(deckSuggestionRuns)
@@ -232,6 +258,7 @@ export async function readTuningState(
     allowance,
     gameCount: games?.count ?? 0,
     newestPriceAsOf,
+    allLocked: opts.allLocked ?? null,
   };
 }
 

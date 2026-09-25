@@ -136,3 +136,19 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
     expect(buildPrompt(fixture.pack)).toEqual({ system: fixture.system, user: fixture.user });
   });
 });
+
+describe("Locked (never cut) in the prompt", () => {
+  it("tags a locked card and widens the commander rule, only for a deck with locks", async () => {
+    const { lockedCardsCopy } = await import("../copy/locked-cards");
+    const base = pack;
+    const plain = buildPrompt(base);
+    expect(plain.system).not.toContain(lockedCardsCopy.tuning.promptRule);
+    expect(plain.user).not.toContain("[locked");
+    const withLock = { ...base, cards: base.cards.map((c, i) => (i === base.cards.length - 1 && !c.commander ? { ...c, locked: true } : c)) };
+    const locked = buildPrompt(withLock);
+    expect(locked.system).toContain(lockedCardsCopy.tuning.promptRule);
+    expect(locked.user).toMatch(/\[locked/);
+    // Everything but the one line is the same prompt.
+    expect(locked.system.replace(lockedCardsCopy.tuning.promptRule, "Never suggest cutting a card marked as a commander.")).toBe(plain.system);
+  });
+});
