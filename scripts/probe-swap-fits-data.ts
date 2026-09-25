@@ -194,6 +194,28 @@ async function main() {
     join cards cb on cb.oracle_id = b.oracle_id and cb.commander_legal and cb.type_line !~* 'land'
     where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
     order by v.popularity desc nulls last, v.variant_id limit 20`);
+  // Read straight off the index, NOT through `loadCompletionPartners`, so a prune dropping too much fails
+  // HERE rather than hiding the fixture from the check.
+  const raw = pairs[0];
+  // The pair read's candidate prune (v2 D3) drops only what could never be a row. EQUIVALENCE: for a deck
+  // holding this pair's piece AND a piece of an unrelated pair, the pruned read with the candidate named
+  // equals the unpruned read filtered to it, and the unpruned read has rows the prune had to drop.
+  const [other] = await rows<{ held: string }>(sql`
+    select a.oracle_id as held
+    from spellbook_variants v
+    join spellbook_variant_cards a on a.variant_id = v.variant_id and not a.must_be_commander
+    where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      and not exists (select 1 from spellbook_variant_cards z where z.variant_id = v.variant_id
+                        and z.oracle_id in (${raw.want}::uuid, ${raw.held}::uuid))
+    order by v.popularity desc nulls last, v.variant_id limit 1`);
+  const args = { present: [raw.held, other.held], commanders: [legend.oracle_id] };
+  const key = (r: PairRow) => `${r.variant_id}|${r.present_id}|${r.missing_id}`;
+  const pruned = (await rows<PairRow>(pairsWithOnePiece({ ...args, missingIn: [raw.want] }))).map(key).sort();
+  const everything = await rows<PairRow>(pairsWithOnePiece({ ...args, missingIn: null }));
+  const filtered = everything.filter((r) => r.missing_id === raw.want).map(key).sort();
+  check("prune: the named-candidate read equals the unpruned read filtered to it", pruned, filtered);
+  check("prune: and the unpruned read held rows the prune had to drop",
+    pruned.length > 0 && everything.some((r) => r.missing_id !== raw.want), true);
   let combo: { held: string; want: string; name: string } | null = null;
   for (const p of pairs) {
     const got = (await loadCompletionPartners({ deckOracleIds: [p.held], commanderOracleIds: [legend.oracle_id], candidateOracleIds: [p.want] })).get(p.want);
@@ -225,25 +247,6 @@ async function main() {
     check("combo: the partner is named from the list read, with no name query",
       sent.some((q) => /spellbook_variant/.test(q)) && !sent.some((q) => /^select oracle_id, name from cards where oracle_id = any/.test(q.trim())), true);
 
-    // The pair read's candidate prune (v2 D3) drops only what could never be a row. EQUIVALENCE: for a deck
-    // holding this pair's piece AND a piece of an unrelated pair, the pruned read with the candidate named
-    // equals the unpruned read filtered to it, and the unpruned read has rows the prune had to drop.
-    const [other] = await rows<{ held: string }>(sql`
-      select a.oracle_id as held
-      from spellbook_variants v
-      join spellbook_variant_cards a on a.variant_id = v.variant_id and not a.must_be_commander
-      where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
-        and not exists (select 1 from spellbook_variant_cards z where z.variant_id = v.variant_id
-                          and z.oracle_id in (${combo.want}::uuid, ${combo.held}::uuid))
-      order by v.popularity desc nulls last, v.variant_id limit 1`);
-    const args = { present: [combo.held, other.held], commanders: [legend.oracle_id] };
-    const key = (r: PairRow) => `${r.variant_id}|${r.present_id}|${r.missing_id}`;
-    const pruned = (await rows<PairRow>(pairsWithOnePiece({ ...args, missingIn: [combo.want] }))).map(key).sort();
-    const everything = await rows<PairRow>(pairsWithOnePiece({ ...args, missingIn: null }));
-    const filtered = everything.filter((r) => r.missing_id === combo.want).map(key).sort();
-    check("prune: the named-candidate read equals the unpruned read filtered to it", pruned, filtered);
-    check("prune: and the unpruned read held rows the prune had to drop",
-      pruned.length > 0 && everything.some((r) => r.missing_id !== combo.want), true);
   }
 
   // 6. The add Fits calls is the deck page's add.
