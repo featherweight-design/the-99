@@ -326,7 +326,7 @@ records the canvas's own footer box, which this build does not draw. The phone c
 | Footer | background | canvas `var(--surface-sunken)`; built: none (the card's own ground) | `var(--surface-sunken)` |
 | Pager | content | `‹`, position `pos of total`, `›` (paging the sheet's list, §7.4) | **none** (F8) |
 | Pager | font-family / size / color | mono / `11px` / `var(--fg-faint)` | — |
-| In place of | key | `modal.inPlaceOf(cut, deck)` | `modal.inPlaceOfShort(cut, pos, total)` |
+| In place of | key | `modal.inPlaceOf(cut, deck)` | same: the canvas's `inPlaceOfShort` prints a position the phone cannot page to (F8), so it is not built (gap report) |
 | In place of | flex / font-family / size / color | `1` / mono / `10.5px` / `var(--fg-muted)` | same |
 | Mobile line 1 | display / align-items / gap | — | `flex` / `center` / `8px` (in place of, then the tag) |
 | Tag, free | key / style | `sheet.free`; mono `9.5px`, radius `4px`, padding `1px 6px`, `var(--success)` on `color-mix(in oklab, var(--success) 13%, transparent)` | same |
@@ -342,7 +342,7 @@ records the canvas's own footer box, which this build does not draw. The phone c
 | Property | Value | Source |
 |---|---|---|
 | List paged | the sheet's own stand-ins, in the sheet's order, across its groups (`1 of 4` = 2 free + 2 to buy); the original is not in the list | README R2; Swap Tools :157, :181 |
-| Phone | no Prev/Next (F8); `inPlaceOfShort` still prints the position | audit F8; Swap Tools :199 |
+| Phone | no Prev/Next (F8), and so no position: the footer reads `inPlaceOf(cut, deck)` | audit F8; Swap Tools :199; gap report |
 | After a take | not drawn (Take closes the card) | — |
 
 ### 7.5 The head plate's name
