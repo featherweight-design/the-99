@@ -276,3 +276,48 @@ describe("the Fits door", () => {
     expect(cardNode?.closest("[inert]")).not.toBeNull();
   });
 });
+
+// E1 (About launch entries): the plate, the rows and the holds were drawn inline by the picker and
+// are now `FitsPlate`, `FitsRows` and `FitsHolds`, which the About figure mounts on their own. The
+// snapshots were written by the picker BEFORE that extraction, so each state below proves the picker
+// still draws exactly what it drew: at rest, with an add in flight, after a refusal, and after an add.
+describe("the picker's markup across the E1 extraction", () => {
+  const body = () => screen.getByTestId("fits-picker").innerHTML;
+  const firstAdd = () => screen.getAllByRole("button", { name: /using your free copy/ })[0];
+
+  it("is unchanged at rest, with its rows and holds loaded", async () => {
+    actions.loadFitsAction.mockResolvedValue(read());
+    draw();
+    await settle();
+    expect(body()).toMatchSnapshot();
+  });
+
+  it("is unchanged with an add in flight", async () => {
+    actions.loadFitsAction.mockResolvedValue(read());
+    actions.addFromFits.mockReturnValue(new Promise(() => {}));
+    draw();
+    await settle();
+    await act(async () => { fireEvent.click(firstAdd()); });
+    expect(body()).toMatchSnapshot();
+  });
+
+  it("is unchanged after a refused add", async () => {
+    actions.loadFitsAction.mockResolvedValue(read());
+    actions.addFromFits.mockResolvedValue({ ok: false, message: "full" });
+    draw();
+    await settle();
+    await act(async () => { fireEvent.click(firstAdd()); });
+    await settle();
+    expect(body()).toMatchSnapshot();
+  });
+
+  it("is unchanged after an add, with its note", async () => {
+    actions.loadFitsAction.mockResolvedValueOnce(read()).mockResolvedValueOnce(read({ free: 0 }));
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    draw();
+    await settle();
+    await act(async () => { fireEvent.click(firstAdd()); });
+    await settle();
+    expect(body()).toMatchSnapshot();
+  });
+});
