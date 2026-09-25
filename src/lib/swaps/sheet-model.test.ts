@@ -25,7 +25,8 @@ describe("the stand-ins sheet's model", () => {
     expect(listWords(["Plains", "Island", "Swamp"], "or")).toBe("Plains, Island or Swamp");
   });
 
-  it("orders a spell's groups free, then by the commander, then unlisted, with the figure on listed rows", () => {
+  // Hugh's Q2: no % on a stand-in row, listed or not; the order carries the commander's preference.
+  it("orders a spell's groups free, then by the commander, then unlisted, with no figure on any row", () => {
     const m = sheetModel(read({
       free: [standIn("Swords", { free: true })],
       byCommander: [standIn("Path", { inclusion: 41.6 })],
@@ -34,7 +35,7 @@ describe("the stand-ins sheet's model", () => {
     expect(m.groups.map((g) => g.heading)).toEqual([
       copy.groupFree, copy.groupByCommander("Gishath"), copy.groupUnlisted("Gishath"),
     ]);
-    expect(m.groups[1].rows[0].facts).toEqual(["removal", copy.mv(2), copy.figure("42", "Gishath")]);
+    expect(m.groups[1].rows[0].facts).toEqual(["removal", copy.mv(2)]);
     expect(m.groups[2].rows[0].facts).toEqual(["removal", copy.mv(2)]);
     expect(m.lead).toBe(copy.leadSpells("removal", 2, "Gishath"));
     expect(m.foot).toBe(true);
@@ -52,7 +53,7 @@ describe("the stand-ins sheet's model", () => {
     // Neither staple row quotes its figure as this commander's: a free staple keeps the clause too.
     expect(m.groups[0].rows[0].facts).toEqual(["removal", copy.mv(2), copy.stapleFact]);
     expect(m.groups[1].rows[0].facts).toEqual(["removal", copy.mv(2), copy.stapleFact]);
-    expect(m.groups[2].rows[0].facts).toEqual(["removal", copy.mv(2), copy.figure("42", "Gishath")]);
+    expect(m.groups[2].rows[0].facts).toEqual(["removal", copy.mv(2)]);
     expect(m.lead).toBe(copy.leadSpellsStaples("removal", 2, "Gishath"));
   });
 
