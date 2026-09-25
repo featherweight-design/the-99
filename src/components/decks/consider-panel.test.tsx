@@ -317,7 +317,7 @@ describe("ConsiderPanel — tiles", () => {
   });
 });
 
-// getDeckSuggestions appends up to five unowned EDHREC staples. They used to
+// loadDeckSuggestions appends up to SHELF_CAP unowned EDHREC staples. They used to
 // say so only by the absence of an aria-hidden dot.
 describe("ConsiderPanel — unowned staples", () => {
   const unowned = (name: string) => suggestion({ name, owned: false });
