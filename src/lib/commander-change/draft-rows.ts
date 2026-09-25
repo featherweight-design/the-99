@@ -40,22 +40,37 @@ export async function loadCommanderRows(
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, toIds))),
   ]);
   const ownedIds = new Set(owned.map((o) => o.oracleId));
-  const toBuy = toIds.filter((id) => !ownedIds.has(id));
+  const toBuy = buyIds(fromIds, toIds, ownedIds);
   const prices = toBuy.length > 0 ? await loadPrices(toBuy).catch(() => null) : null;
+  return {
+    rows: commanderRows(fromIds, toIds, ownedIds, facts, prices?.prices ?? null),
+    newestAsOf: prices?.newestAsOf ?? null,
+  };
+}
+
+/** The halves to buy: ARRIVING and unowned. A half a pair keeps already leads the deck. */
+export function buyIds(fromIds: readonly string[], toIds: readonly string[], owned: ReadonlySet<string>): string[] {
+  return toIds.filter((id) => !fromIds.includes(id) && !owned.has(id));
+}
+
+/** The `was` rows, then the `now` rows, each marked to buy by `buyIds`. */
+export function commanderRows(
+  fromIds: readonly string[], toIds: readonly string[], owned: ReadonlySet<string>,
+  facts: readonly { oracleId: string; name: string; artCropUri: string | null }[],
+  prices: ReadonlyMap<string, PriceFact> | null,
+): CommanderRow[] {
+  const buying = new Set(buyIds(fromIds, toIds, owned));
   const byId = new Map(facts.map((f) => [f.oracleId, f]));
   const row = (id: string, side: "from" | "to"): CommanderRow => {
-    const buy = side === "to" && !ownedIds.has(id);
+    const buy = side === "to" && buying.has(id);
     return {
       oracleId: id,
       name: byId.get(id)?.name ?? "",
       artCropUri: byId.get(id)?.artCropUri ?? null,
       side,
       buy,
-      price: buy ? prices?.prices.get(id) ?? null : null,
+      price: buy ? prices?.get(id) ?? null : null,
     };
   };
-  return {
-    rows: [...fromIds.map((id) => row(id, "from")), ...toIds.map((id) => row(id, "to"))],
-    newestAsOf: prices?.newestAsOf ?? null,
-  };
+  return [...fromIds.map((id) => row(id, "from")), ...toIds.map((id) => row(id, "to"))];
 }

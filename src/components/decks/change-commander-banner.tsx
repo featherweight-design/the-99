@@ -21,13 +21,13 @@ function pairName(state: DraftState, pair: CommanderPair): string {
 }
 
 /** The price tile for the new commander's halves to buy: one figure per half the feed prices. */
-function buyFigures(state: DraftState): string[] {
+function buyFigures(state: DraftState): { id: string; figure: string }[] {
   const rows = state.commanderRows;
   if (!rows) return [];
   return rows.rows
     .filter((r) => r.buy && r.price)
-    .map((r) => formatPriceFigure(r.price!, priceState(r.price!, rows.newestAsOf)))
-    .filter((f): f is string => f !== null);
+    .map((r) => ({ id: r.oracleId, figure: formatPriceFigure(r.price!, priceState(r.price!, rows.newestAsOf)) }))
+    .filter((f): f is { id: string; figure: string } => f.figure !== null);
 }
 
 /**
@@ -61,7 +61,7 @@ export function CommanderNameLine({ state, tileClass }: { state: DraftState; til
       <span className="flex-none font-mono text-[10px] text-[color:var(--fg-locked)]">
         {pair ? copy.banner.hintPair : copy.banner.hint}
       </span>
-      {buyFigures(state).map((f) => <span key={f} className={tileClass}>{f}</span>)}
+      {buyFigures(state).map((f) => <span key={f.id} className={tileClass}>{f.figure}</span>)}
     </li>
   );
 }

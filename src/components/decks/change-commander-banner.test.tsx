@@ -30,6 +30,31 @@ describe("the pending banner's commander line", () => {
     expect(screen.queryByText(/^\+\d/)).toBeNull();
   });
 
+  it("draws a figure per half to buy, even when two halves cost the same", () => {
+    const asOf = new Date("2026-09-20T00:00:00Z");
+    const price = { cents: 151, foilCents: null, etchedCents: null, asOf };
+    const half = (id: string) => ({ oracleId: id, name: id, artCropUri: null, side: "to" as const, buy: true, price });
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <PendingBanner
+        state={swapped({
+          names: new Map([...names, ["kraum", "Kraum"], ["tana", "Tana"]]),
+          commander: {
+            from: { commanderOracleId: "korvold", partnerOracleId: "prosper" },
+            to: { commanderOracleId: "kraum", partnerOracleId: "tana" },
+          },
+          commanderRows: { rows: [half("kraum"), half("tana")], newestAsOf: asOf },
+        })}
+        deckId="d1"
+        versionCards={98}
+      />,
+    );
+    const line = screen.getByTestId("banner-commander-line");
+    expect(line.textContent?.match(/\$1\.51/g)?.length).toBe(2);
+    expect(errors.mock.calls.some((c) => String(c[0]).includes("same key"))).toBe(false);
+    errors.mockRestore();
+  });
+
   it("draws nothing for a draft whose commander did not move", () => {
     render(<PendingBanner state={{ ...COMMITTED, commander: null }} deckId="d1" versionCards={99} />);
     expect(screen.queryByTestId("banner-commander-line")).toBeNull();
