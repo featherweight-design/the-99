@@ -496,6 +496,32 @@
       ]
     },
     {
+      "id": "fig-fits-your-decks",
+      "label": "/about \u2014 the Find a deck figure (needs SWAP_TOOLS_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='fits-your-decks']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='fits-your-decks']"
+        }
+      ]
+    },
+    {
+      "id": "fig-stand-ins",
+      "label": "/about \u2014 the Cheaper stand-ins figure (needs SWAP_TOOLS_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='stand-ins']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='stand-ins']"
+        }
+      ]
+    },
+    {
       "id": "about-with-destination",
       "label": "/about \u2014 arriving with a destination, as the gate appends it",
       "view": "src/components/about/about-page.tsx",

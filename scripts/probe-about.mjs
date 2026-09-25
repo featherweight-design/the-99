@@ -12,7 +12,7 @@
 // THE FLIP WALK. An entry tied to a feature switch is announced by turning the switch on
 // (Hugh, 2026-09-25), and a switch is read when the server starts, so the walk OWNS its server:
 // it starts `next dev` with every switch off, then restarts it with Change commander on, then
-// with Locked cards on as well, then with Help me choose on too, then with all three off. Next 16 allows one `next dev` per project,
+// with Locked cards on as well, then Help me choose, then swap tools, then with all four off. Next 16 allows one `next dev` per project,
 // so stop any dev server running in this worktree first. What it proves, in order:
 //   F1  every switch off: a reader at the current version sees nothing, and the browser is marked
 //       (every returning reader sits there, and each launch entry's \`since\` equals it, so a
@@ -22,8 +22,9 @@
 //   F3  opening /about records the entry by id, draws its figure, and the sheet stays away;
 //   F4  Locked cards on LATER: the reader who met the first entry is shown only the second;
 //   F4b Help me choose on third: named alone, though it sits first on the page;
-//   F5  the three figures draw at 390 and 1300 without overflowing the page;
-//   F6  all off again: none of the three entries is on the page.
+//   F4c swap tools on fourth: ONE switch announces TWO entries, named together in page order;
+//   F5  the five figures draw at 390 and 1300 without overflowing the page;
+//   F6  all off again: none of the five entries is on the page.
 // It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
 // marks every entry seen and fails F2–F4 on a working build. Re-run before believing that red.
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
@@ -366,7 +367,7 @@ async function walk(browser, width, userIdRef) {
 
 // ── The flip walk (--flip) ──────────────────────────────────────────────────────────────────
 
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED"];
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED"];
 
 /** `next dev` in this worktree with exactly the named switches on; resolves once it serves. */
 async function startServer(on) {
@@ -445,6 +446,8 @@ async function figureFacts(page) {
     const locked = within("locked-cards");
     const change = within("change-commander");
     const choose = within("help-me-choose");
+    const fits = within("fits-your-decks");
+    const standIns = within("stand-ins");
     return {
       locked: locked && {
         inside: locked.inside,
@@ -477,6 +480,23 @@ async function figureFacts(page) {
           pcts: ["74%", "41%", "81%", "34%"].map((p) => fig.includes(p)),
         };
       })(),
+      fits: fits && {
+        inside: fits.inside,
+        plate: fits.li.querySelectorAll("[data-testid=fits-plate]").length,
+        rows: fits.li.querySelectorAll("[data-testid=fits-row]").length,
+        holds: fits.li.querySelectorAll("[data-testid=fits-holds-row]").length,
+        // One reason of each kind, in the shipped order: the combo first, then the theme.
+        reasons: [...fits.li.querySelectorAll("[data-testid=fits-reason]")].map((n) => n.textContent.split(" ")[0]),
+      },
+      standIns: standIns && {
+        inside: standIns.inside,
+        limit: standIns.li.querySelectorAll("[data-testid=stand-in-limit]").length,
+        // The marked row's ⇄, found by the label it carries only when the row is over the limit.
+        door: standIns.li.querySelectorAll("button[aria-label^='Cheaper stand-ins for Plateau']").length,
+        // Five of the group's six rows, then its toggle.
+        rows: standIns.li.querySelectorAll("[data-testid=stand-in-row]").length,
+        showAll: [...standIns.li.querySelectorAll("button")].filter((b) => /^Show all 6 lands/.test(b.textContent.trim())).length,
+      },
       pageOverflow: document.documentElement.scrollWidth - innerWidth,
     };
   });
@@ -540,7 +560,7 @@ async function flipWalk(browser, who) {
     // F4b. Help me choose on THIRD. It sits first on the page, in chapter 02, and must still be
     // named alone: the two it follows were met by id.
     await stopServer(server);
-    server = await startServer(SWITCHES);
+    server = await startServer(["CHANGE_COMMANDER_ENABLED", "NEVER_CUT_ENABLED", "HELP_ME_CHOOSE_ENABLED"]);
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     const third = await sheetTitles(page, card);
     report(
@@ -549,6 +569,18 @@ async function flipWalk(browser, who) {
       JSON.stringify(third),
     );
     await visitAbout(page, userId, "help-me-choose");
+
+    // F4c. Swap tools on FOURTH: one switch, two entries, named together and in page order.
+    await stopServer(server);
+    server = await startServer(SWITCHES);
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const fourth = await sheetTitles(page, card);
+    report(
+      "F4c one switch names both of its entries, in page order",
+      JSON.stringify(fourth) === JSON.stringify(["Find a deck for it", "Cheaper stand-ins"]),
+      JSON.stringify(fourth),
+    );
+    await visitAbout(page, userId, "stand-ins");
 
     // F5. The three figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
@@ -577,22 +609,32 @@ async function flipWalk(browser, who) {
         JSON.stringify(f.choose),
       );
       report(
+        `F5 ${w}: Find a deck draws its plate, a combo row then a theme row, and one deck that holds it`,
+        f.fits?.plate === 1 && f.fits.rows === 2 && f.fits.holds === 1 && JSON.stringify(f.fits.reasons) === JSON.stringify(["Completes", "Joins"]),
+        JSON.stringify(f.fits),
+      );
+      report(
+        `F5 ${w}: Cheaper stand-ins draws the limit line, the marked row's door, five rows and Show all`,
+        f.standIns?.limit === 1 && f.standIns.door === 1 && f.standIns.rows === 5 && f.standIns.showAll === 1,
+        JSON.stringify(f.standIns),
+      );
+      report(
         `F5 ${w}: no figure overflows its entry or the page`,
-        f.locked?.inside && f.change?.inside && f.choose?.inside && f.pageOverflow <= 0,
+        f.locked?.inside && f.change?.inside && f.choose?.inside && f.fits?.inside && f.standIns?.inside && f.pageOverflow <= 0,
         `overflow ${f.pageOverflow}`,
       );
     }
     await page.setViewportSize({ width: 1300, height: 820 });
 
-    // F6. All off: none of the three entries is on the page.
+    // F6. All off: none of the five entries is on the page.
     await stopServer(server);
     server = await startServer([]);
     await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const gone = await page.evaluate(
-      () => ["locked-cards", "change-commander", "help-me-choose"].every((id) => !document.getElementById(id)),
+      () => ["locked-cards", "change-commander", "help-me-choose", "fits-your-decks", "stand-ins"].every((id) => !document.getElementById(id)),
     );
-    report("F6 switches off again: none of the three entries is on the page", gone);
+    report("F6 switches off again: none of the five entries is on the page", gone);
     await context.close();
   } finally {
     await stopServer(server);
