@@ -158,10 +158,13 @@ settle), so some fetch is still exposed on a cold connection. Preloading at 0 ms
 would also let a pointer brushing 99 rows request 99 images of 93 KB. The 50 ms settle buys the bound
 and costs part of the win; that trade is deliberate.
 
-**The 240 ms delay is now the whole cost**, and it is a design decision (`OPEN_DELAY`, "what makes an
-instant appearance calm rather than twitchy"). Shortening it would make the preview appear sooner and
-is **not** this lane's call — it changes the feel of the surface, which Hugh's ruling excludes. Noted
-for him rather than built.
+**The 240 ms delay is now the whole cost** — and it stays. `OPEN_DELAY` is a design decision ("what
+makes an instant appearance calm rather than twitchy"), and with the fetch hidden inside it, it is
+the only thing left between the pointer and the card. It was put to Hugh with these figures.
+
+> **SETTLED — Hugh, 2026-09-25: keep `OPEN_DELAY` at 240 ms.** Not to be revisited by this lane or
+> reopened by a later one on the grounds that it is now the largest remaining number. Making the
+> preview appear sooner means changing how the surface feels, which is a product call he has made.
 
 Proof: `probe:image-timing` before and after at 1300, the figures above; the 390 run records the
 documented desktop-only skip, because `(hover: hover)` gates the surface and no phone reader reaches
