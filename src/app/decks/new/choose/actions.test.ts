@@ -4,19 +4,17 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ run: vi.fn(), cancel: vi.fn() }));
+const stub = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/intake/deeper-read", () => ({ runDeeperRead: stub.run }));
-vi.mock("../../../../lib/intake/run-store", () => ({ cancelRead: stub.cancel }));
 
-import { lookDeeper, stopDeeperRead } from "./actions";
+import { lookDeeper } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: null };
 
 beforeEach(() => {
   stub.run.mockReset().mockResolvedValue({ kind: "read", chips: [], notUsed: [], notUnderstood: [] });
-  stub.cancel.mockReset().mockResolvedValue(true);
 });
 
 describe("lookDeeper", () => {
@@ -39,15 +37,5 @@ describe("lookDeeper", () => {
     expect(stub.run).toHaveBeenCalledWith("user_1", {
       readId: ID, words: "big lizards", controls: { budgetDollars: 100_000, bracket: 5 },
     });
-  });
-});
-
-describe("stopDeeperRead", () => {
-  it("refuses an id that is not a uuid, and stops only the reader's own", async () => {
-    expect(await stopDeeperRead("nope")).toBe(false);
-    expect(await stopDeeperRead(7 as never)).toBe(false);
-    expect(stub.cancel).not.toHaveBeenCalled();
-    expect(await stopDeeperRead(ID)).toBe(true);
-    expect(stub.cancel).toHaveBeenCalledWith(ID, "user_1");
   });
 });
