@@ -30,6 +30,7 @@ import { primaryRole } from "../src/lib/decks/read";
 import { commitVersion } from "../src/lib/decks/versions";
 import { loadFits } from "../src/lib/swaps/fits";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
+import { loadUniversalStaples } from "../src/lib/staples/universal";
 
 neonConfig.webSocketConstructor = ws;
 // The card payload's Fits gate reads only with the swap tools on, as a deployment with them on does.
@@ -179,7 +180,14 @@ async function main() {
   check("add: another reader's deck is refused",
     await addCardToDeckFor(OTHER, fits, peers[0].oracle_id, { relock: false }).then(() => "written", () => "refused"), "refused");
 
-  // 7. A card that does not exist reads as nothing.
+  // 7. The staple flag comes from the one staple definition: true for a universal staple, false for
+  //    the fixture card. An empty staple set fails rather than passing, since then no card could read true.
+  const staples = [...(await loadUniversalStaples())].sort();
+  if (staples.length === 0) throw new Error("format_staples names no universal staple on this database");
+  check("staple: a universal staple reads as one", (await loadFits(USER, staples[0]))?.staple, true);
+  check("staple: the fixture card does not", r?.staple, false);
+
+  // 8. A card that does not exist reads as nothing.
   check("unknown card: null", await loadFits(USER, "00000000-0000-4000-8000-000000000000"), null);
 }
 

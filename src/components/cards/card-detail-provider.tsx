@@ -12,6 +12,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
+import { FitsPicker } from "./fits-picker";
 import { CardModal } from "./card-modal";
 
 export const cardDetailCopy = {
@@ -512,6 +513,12 @@ export function CardDetailProvider({
     [load],
   );
 
+  // Fits your decks (swap tools PR 5b): the card the picker is open for, stacked over that card. The
+  // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
+  // which leaves them absent while the swap tools are off (`fitsGate`), so no door is drawn then.
+  const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
+  const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks ? () => setFitsFor(c) : null);
+
   // Bumping `latest` is what abandons an in-flight fetch: without it, a card
   // requested before the close lands afterwards and re-opens the modal.
   // `failed` is cleared too, or the live region keeps announcing a failure the
@@ -527,7 +534,8 @@ export function CardDetailProvider({
     setPendingOracleId(null);
     setFailed(false);
     setDoor(false);
-  }, [show]);
+    setFitsFor(null);
+  }, [show, setFitsFor]);
 
   // The card a sheet opened OVER (the door's stand-ins sheet): lifted out of the live slot while the
   // sheet is up, so a card opened from the sheet stacks over both instead of replacing it, and put
@@ -650,8 +658,13 @@ export function CardDetailProvider({
           total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
           onClose={NOOP}
           covered
-          phoneTop={52}
+          // Where it sat live: 52 for a card whose Shopping door drew (F16), by the same test the live
+          // card uses; full height for any other, including a Shopping card its door has nothing for.
+          phoneTop={held.door && doorRender && doorRender(held.card.oracleId, "art") !== null ? 52 : undefined}
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
+          // Kept mounted under the picker it opened, so its close can hand focus back to the door.
+          onFindDeck={fitsDoor(held.card)}
+          fitsOpen={fitsFor !== null}
           onPrev={null}
           onNext={null}
         />
@@ -683,6 +696,9 @@ export function CardDetailProvider({
             ? (layout) => sheetFooter(card.oracleId, layout)
             : null}
           backLabel={backLabel}
+          // Fits your decks' door, on a card whose footer is still its own: a stand-in's Take replaces it.
+          onFindDeck={sheetFooter && sheetFooter(card.oracleId, "row") !== null ? null : fitsDoor(card)}
+          fitsOpen={fitsFor !== null}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
@@ -750,6 +766,7 @@ export function CardDetailProvider({
           }
         />
       ) : null}
+      {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
     </CardDetailContext.Provider>
   );
 }

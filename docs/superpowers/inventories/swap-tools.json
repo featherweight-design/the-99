@@ -68,7 +68,7 @@
     },
     {
       "id": "sheet-land",
-      "label": "/decks/[id] Shopping: the ⇄ on Plateau, the stand-ins sheet for a land, 640 on desktop, a sheet from 52px on the phone",
+      "label": "/decks/[id] Shopping: the \u21c4 on Plateau, the stand-ins sheet for a land, 640 on desktop, a sheet from 52px on the phone",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
         {
@@ -94,7 +94,7 @@
     },
     {
       "id": "sheet-fetch",
-      "label": "/decks/[id] Shopping: the ⇄ on Wooded Foothills, the stand-ins sheet for a fetch, 640 on desktop, a sheet from 52px on the phone",
+      "label": "/decks/[id] Shopping: the \u21c4 on Wooded Foothills, the stand-ins sheet for a fetch, 640 on desktop, a sheet from 52px on the phone",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
         {
@@ -120,7 +120,7 @@
     },
     {
       "id": "sheet-spell",
-      "label": "/decks/[id] Shopping: the ⇄ on Deadly Rollick, the stand-ins sheet for a spell, 640 on desktop, a sheet from 52px on the phone",
+      "label": "/decks/[id] Shopping: the \u21c4 on Deadly Rollick, the stand-ins sheet for a spell, 640 on desktop, a sheet from 52px on the phone",
       "view": "src/components/decks/stand-ins-sheet.tsx",
       "steps": [
         {
@@ -202,6 +202,51 @@
         {
           "wait": "[data-testid='stand-ins-sheet'] h4",
           "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "fits-collection",
+      "label": "/collection: a universal staple's card, Find a deck for it \u2192 pressed, the picker over the card with the staple chip and note",
+      "view": "src/components/cards/fits-picker.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${FITS_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='fits-row']",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "fits-deck",
+      "label": "/decks/[id]: the same card opened from the holding deck's list, the picker listing that deck as holding it",
+      "view": "src/components/cards/fits-picker.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FITS_HOLDER}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${FITS_CARD_NAME}",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='fits-holds-row']",
+          "settle": 1200
         }
       ]
     }

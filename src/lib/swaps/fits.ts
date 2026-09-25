@@ -16,6 +16,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { loadMixesForCommanders, mixKey } from "../decks/deck-mix";
 import type { RecommendedMix } from "../decks/mix";
 import { primaryRole } from "../decks/read";
+import { loadUniversalStaples } from "../staples/universal";
 
 export type FitRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
@@ -33,6 +34,10 @@ export type FitDeck = {
 
 export type FitsRead = {
   card: { oracleId: string; name: string; colorIdentity: string[]; commanderLegal: boolean; role: FitRole | "other" };
+  /** A universal staple (`src/lib/staples/universal.ts`): nearly every deck plays it whatever it is
+   *  doing, so the picker names it `staple · any commander` rather than quoting one commander's
+   *  inclusion as though that figure were about this deck (addendum, F1). */
+  staple: boolean;
   /** Copies the reader owns, and how many no committed deck has claimed (null: none owned). */
   owned: number;
   free: number | null;
@@ -66,6 +71,7 @@ export function shapeFits(
   roleCounts: ReadonlyMap<string, number>,
   mixes: ReadonlyMap<string, RecommendedMix>,
   availability: { owned: number; free: number | null },
+  staple = false,
 ): FitsRead {
   const fits: FitDeck[] = [];
   const holds: FitsRead["holds"] = [];
@@ -95,6 +101,7 @@ export function shapeFits(
   }
   return {
     card,
+    staple,
     owned: availability.owned,
     free: availability.free,
     fits: fits.sort(byName),
@@ -153,16 +160,20 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
   // draws no need, so its cards and its mix would be read for nothing.
   const open = rows.filter((r) => r.holds === 0 && !r.leads && card.colorIdentity.every((x) => r.identity.includes(x)));
 
-  const [roleCounts, mixes, availability] = await Promise.all([
+  const [roleCounts, mixes, availability, staples] = await Promise.all([
     card.role === "other" || open.length === 0 ? new Map<string, number>() : countRole(open.map((r) => r.id), card.role),
     // A card with no role draws no need, so no deck's mix is read for it.
     card.role === "other" || open.length === 0
       ? new Map<string, RecommendedMix>()
       : loadMixesForCommanders(open.map((r) => ({ commanderOracleId: r.commander_oracle_id, partnerOracleId: r.partner_oracle_id }))),
     loadAvailability(userId, { oracleIds: [oracleId] }),
+    // The one staple definition, never a second lookup of our own (F18). NOT fail-soft: a staple
+    // the read could not classify would draw a percentage as this commander's, which is false, so a
+    // failure fails the read and the picker shows its failed state.
+    loadUniversalStaples(),
   ]);
   const a = availability.get(oracleId);
-  return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null });
+  return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId));
 }
 
 /**

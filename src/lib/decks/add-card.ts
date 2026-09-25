@@ -128,10 +128,14 @@ export async function addCardToDeckFor(
       const inserted = await tx.insert(deckCards).values({ deckId, oracleId })
         .onConflictDoNothing()
         .returning({ oracleId: deckCards.oracleId });
-      if (inserted.length > 0) await touchDeck(tx, deckId);
+      // Nothing inserted: a concurrent add landed between the read above and this statement, so
+      // this request wrote nothing and reports `held`, exactly as the early return does.
+      if (inserted.length === 0) return "held" as const;
+      await touchDeck(tx, deckId);
     }
     return null;
   });
+  if (rejection === "held") return { result: { ok: true }, wrote: "held" };
   if (rejection) return { result: { ok: false, message: deckAddRejectionMessage(rejection) }, wrote: "refused" };
   return { result: { ok: true }, wrote: "added" };
 }

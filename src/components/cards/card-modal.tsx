@@ -39,6 +39,7 @@ import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, printedNameCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
+import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { ProxyControl } from "../decks/proxy-control";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -436,6 +437,8 @@ export function CardModal({
   stacked = false,
   backLabel,
   footer = null,
+  onFindDeck = null,
+  fitsOpen = false,
   door = null,
   phoneTop,
   covered = false,
@@ -483,6 +486,14 @@ export function CardModal({
    * card opened to be chosen is chosen from where the reader already is. Drawn per layout.
    */
   footer?: ((layout: "row" | "column") => ReactNode) | null;
+  /**
+   * Fits your decks (swap tools, R2): the footer's `Find a deck for it →` door, under the Mana Pool
+   * link. Null draws none, which is every card that is not Commander-legal, every reader with no deck,
+   * and every card whose footer is a sheet's own (a stand-in's Take).
+   */
+  onFindDeck?: (() => void) | null;
+  /** The picker the door opened is up, so its close hands focus back to the door. */
+  fitsOpen?: boolean;
   /** The deck this card was opened from, which scopes the proxy control. Null
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
@@ -1869,10 +1880,15 @@ export function CardModal({
                 printing". Above md: the link lives in the pinned nav row. */}
             {footer ? null : (
               <div
-                className="md:hidden flex items-center min-h-[44px] mt-[14px]"
+                className="md:hidden flex flex-col mt-[14px]"
                 style={{ borderTop: "1px solid var(--border)" }}
               >
-                <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+                <div className="flex items-center min-h-[44px]">
+                  <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+                </div>
+                {onFindDeck ? (
+                  <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" />
+                ) : null}
               </div>
             )}
           </div>
@@ -1887,7 +1903,12 @@ export function CardModal({
                 from wherever focus starts. That start is now named — the dialog
                 focuses the ✕ that has layout, since the art became a button and would
                 otherwise have taken it — but the order after it is still this one. */}
-            {footer ? footer("row") : <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />}
+            {footer ? footer("row") : onFindDeck ? (
+              <span className="flex flex-col gap-[8px] min-w-0">
+                <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+                <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" />
+              </span>
+            ) : <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />}
             <span className="ml-auto flex items-center gap-[14px] flex-none">
               <button
                 type="button"

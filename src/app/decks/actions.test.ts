@@ -895,6 +895,16 @@ describe("addCardToDeck — the touch stamp follows the insert", () => {
     expect(await addCardToDeck(DECK, CARD)).toEqual({ ok: true });
     expect(stamped()).toBe(false);
   });
+  // A concurrent add can land between the read for an existing row and this insert. The request
+  // wrote nothing, so it must say `held`: Fits your decks stamps `in the draft` only on `added`.
+  it("reports held, not added, when the conflict clause swallowed the insert", async () => {
+    ownDeck();
+    stub.state.insertConflictWrites = false;
+    const { addCardToDeckFor } = await import("../../lib/decks/add-card");
+    expect((await addCardToDeckFor("user_1", DECK, CARD, { relock: false })).wrote).toBe("held");
+    stub.state.insertConflictWrites = true;
+    expect((await addCardToDeckFor("user_1", DECK, CARD, { relock: false })).wrote).toBe("added");
+  });
 });
 
 // L1 (D2): Put back passes `relock`, which wakes the card's dormant lock inside the add's own
