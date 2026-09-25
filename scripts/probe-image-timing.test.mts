@@ -61,6 +61,7 @@ describe("phasesOf", () => {
     const p = phasesOf({
       timing: { dnsStart: 0, dnsEnd: 6.1, connectStart: 6.1, connectEnd: 150.5, sslStart: 70, sslEnd: 144.4, sendStart: 150.5, receiveHeadersEnd: 223.8 },
       encodedDataLength: 95631,
+      fromCache: false,
       status: 200,
     });
     expect(p.dnsMs).toBeCloseTo(6.1);
@@ -73,6 +74,7 @@ describe("phasesOf", () => {
     const p = phasesOf({
       timing: { dnsStart: -1, dnsEnd: -1, connectStart: -1, connectEnd: -1, sslStart: -1, sslEnd: -1, sendStart: 0, receiveHeadersEnd: 141.8 },
       encodedDataLength: 95631,
+      fromCache: false,
       status: 200,
     });
     expect(p.dnsMs).toBeNull();
