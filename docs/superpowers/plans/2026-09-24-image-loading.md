@@ -69,8 +69,11 @@ Two more measurements bound what is worth building:
 - **A second hover of the same card costs zero network requests.** `cache-control: public,
   max-age=31556952` works. All of the cost is the first look at a given card.
 - **The connection is already open before any hover.** The deck page fetches commander art during
-  page load, paying `dns 0.9 ms, tls 80.6 ms, ttfb 75 ms`. By hover time the HTTP/2 connection to
-  `cards.scryfall.io` is warm and the hover's own request pays neither DNS nor TLS.
+  page load, and that request pays the whole handshake: `dns ~1 ms`, `tls ~75 ms`, and **~145 ms of
+  `connect` in total** — `connectMs` spans TCP *and* TLS, so the TLS figure is a component of it, not
+  an alternative to it. (An earlier draft quoted only `dns 0.9 ms, tls 80.6 ms` here and ~145 ms
+  elsewhere, which read as two different costs for one request.) By hover time that connection is
+  warm, and the hover's own request pays neither DNS nor TLS.
 
 ## The CDN question, answered
 
@@ -179,19 +182,77 @@ documented desktop-only skip, because `(hover: hover)` gates the surface and no 
 it. Two mutations, both confirmed failing: disabling the preload fails 3 unit cases, and removing the
 50 ms settle fails the brushed-row case.
 
-### PR 2 — preconnect to the image host
+### PR 2 — preconnect to the image host — **TRIED AND WITHDRAWN**
 
-`src/app/layout.tsx` only: `<link rel="preconnect" href="https://cards.scryfall.io" crossOrigin="anonymous" />`.
+Built, measured on two instruments, and withdrawn. It ships no behaviour change; only this section and
+the `--first-image` probe mode that tested it.
 
-This does **not** help hover — the connection is already warm by then. It helps the **first** image
-of a page load, which today pays `dns 0.9 ms + tls 80.6 ms` inside the commander-art request. A
-preconnect overlaps that handshake with the document and RSC fetch.
+`<link rel="preconnect" href="https://cards.scryfall.io">` in the root layout, aimed at the connection
+setup the first card image pays on a page load. **It changes nothing.**
 
-Draws nothing different: no markup a reader sees, no layout, no new request. Expected: ~80 ms earlier
-first image on the deck page and on `/collection`.
+Three socket-cold runs per variant, first card image of the deck page at 1300, correlated to the
+request that opened the connection:
 
-Proof: CDP phases for the first Scryfall request on a cold context, before and after — `tlsMs`
-should move from ~80 ms to null (reused) and the request should start sooner.
+| Variant | TLS | Connect total (TCP + TLS) |
+| --- | --- | --- |
+| No preconnect | 77.2 / 72.6 / 75.0 ms — mean **74.9** | 149.7 / 141.3 / 144.4 ms — mean **145.1** |
+| `preconnect` | 72.6 / 76.3 / 74.8 ms — mean **74.6** | 142.6 / 151.0 / 145.1 ms — mean **146.2** |
+
+The distributions overlap completely. The image request performs its own DNS and its own full TLS
+handshake with the hint present, so the preconnected socket is not the one it uses.
+
+**Two hypotheses tested and ruled out.**
+
+*CORS mismatch.* A socket's pool key includes its CORS mode, and a CSS background image is a
+**no-CORS** request — so `crossOrigin="anonymous"` would warm a connection the image never uses. Both
+variants were measured. Without `crossOrigin` the figures are identical, so this is not the cause.
+
+*The hint never reaching the browser.* Verified directly in the served HTML:
+`curl | grep 'rel="preconnect"'` returns `rel="preconnect" href="https://cards.scryfall.io"`. It is
+present.
+
+**Why it does not work here is UNEXPLAINED, and this section will not invent a reason.** An earlier
+draft asserted there was no idle time between parsing the hint and discovering the image. That was
+wrong, and the pre-open review caught it: `/decks/[id]/loading.tsx` makes this route stream, so the
+`<head>` flushes immediately while the commander art arrives after the page's data reads — hundreds of
+milliseconds later. There is ample idle time; the preconnect simply does not appear to be used.
+Settling it needs a browser net-log capture (`chrome://net-export`) showing whether Chromium opened
+the speculative socket at all and what became of it. That is a follow-up, not a guess to write down
+here.
+
+**What this does and does not license.** It does not license "preconnect is useless" as a general
+claim, and it does not license a proxy on speed grounds. What it establishes is narrow and measured:
+on this app's card surfaces, adding this hint does not move the first image's handshake, so the ~145 ms
+of setup is not reachable this way. The proxy remains recommended against on the added hop and on
+per-source-image billing across 102,902 printings; its one unique benefit is connection reuse plus the
+timing visibility that the missing `Timing-Allow-Origin` denies us, and the speed half of that is
+bounded by this 145 ms, once per page load.
+
+**The instrument needed three corrections before its numbers meant anything**, all found by the
+pre-open review, and each one had produced a figure that flattered the conclusion:
+
+- **Socket-cold, not merely cache-cold.** The first version signed in on `/` inside the same context
+  and then navigated to the deck page. `/` draws commander art, so a connection to the image host
+  could already be open before the page under test loaded — making every variant look reused. Sign-in
+  now happens once and its cookies travel by `storageState`; each run gets a context that has never
+  spoken to the image host.
+- **The request that opened the socket, not the first response.** Several images can be requested at
+  once over HTTP/2, and a sibling joining an already-opening connection reports `dnsStart: -1,
+  sslStart: -1` — indistinguishable from a working preconnect. Requests are now ordered by
+  `requestWillBeSent` and correlated by `requestId`. (This page turns out to issue exactly one image
+  request, so it did not bite here — but it would on `/collection`.)
+- **Real bytes.** `encodedDataLength` is only final at `loadingFinished`; passing 0 made every row
+  claim a 0-byte fetch and made a disk-cache hit indistinguishable from a fresh one. Now 90 KB, which
+  is also a useful cross-check that the request measured is a card image.
+
+An earlier version of this section quoted a third variant's TTFB of 154.5 ms alongside two of ~74 ms
+and still called the figures identical. That sample sat within 0.4 ms of its own run's connect total,
+so it was almost certainly a transposition; it came from the flawed instrument and is superseded by
+the table above.
+
+**Kept:** `pnpm probe:image-timing --first-image`. A negative result is only durable if the next person
+can re-run it in one command — and this one took two instruments to establish, so the instrument is
+the more valuable half.
 
 ## What is written up instead of built
 
@@ -205,6 +266,8 @@ should move from ~80 ms to null (reused) and the request should start sooner.
 
 ## Done means
 
-PR 1 and PR 2 merged, each with a before/after `probe:image-timing` figure in its body and a
-mutation proving the probe measures the change; this doc merged with PR 1; `found` entries filed;
-`the-99-d9` reported after the plan and after each merge.
+PR 1 merged with a before/after `probe:image-timing` figure and a mutation proving the probe measures
+the change — done (#969). PR 2 attempted, measured, and **withdrawn on its own evidence**: the
+preconnect moves no figure, and a line of markup that changes nothing has no reason to exist. Its
+disproof and the probe mode behind it ship here. `found` entries filed; `the-99-d9` reported after the
+plan and after each outcome.
