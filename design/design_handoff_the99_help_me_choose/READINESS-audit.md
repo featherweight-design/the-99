@@ -6,6 +6,12 @@
 **Package:** this folder, committed as delivered. `HANDOFF.md` is the source, and it records three review passes
 with Hugh (R1.1 to R1.3). Design's own `READINESS.md` is answered in §5.
 
+## Hugh's rulings (2026-09-24)
+
+- **H1 confirmed:** after *Find commanders*, the answers show as fixed chips with *Change answers*, as drawn.
+- **H2 confirmed:** *Look deeper* is offered whenever the player typed words. It costs a credit only when pressed,
+  and a failed look is refunded.
+
 ## Verdict: Green
 
 Build it, with the engineering corrections below. Design answered all seven §4 calls. Every state the brief asks
