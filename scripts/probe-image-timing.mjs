@@ -58,7 +58,7 @@ const HEIGHT = WIDTH < 768 ? 844 : 900;
  * from a real reader's browser either, for the same reason. Only a same-origin
  * proxy would make these numbers visible in production.
  *
- * `timing` is CDP's `Network.ResourseTiming`, whose fields are millisecond
+ * `timing` is CDP's `Network.ResourceTiming`, whose fields are millisecond
  * offsets from `requestTime` (seconds), and -1 where a phase did not happen —
  * a reused connection reports dnsStart -1, which is the distinction the
  * preconnect candidate lives or dies on.
@@ -239,10 +239,13 @@ async function main() {
 
       for (const mode of ["cold", "warm"]) {
         if (mode === "cold") await cdp.send("Network.clearBrowserCache");
-        // PER MODE. Shared across modes, the warm row inherited the cold row's
-        // request timestamp and reported the fetch starting eight seconds before
-        // the box — a cached image makes no request at all, and null says so.
+        // PER MODE, BOTH MAPS. Scoping the timestamps and leaving the responses
+        // shared was the same bug half-fixed: a warm hover usually fires no
+        // `responseReceived` at all, so the lookup fell through to the COLD run's
+        // record and the warm row reported phases from a request it never made.
+        // Cleared together, a cached image reports nothing, which is the truth.
         imageRequestedAt = new Map();
+        imageResponses.clear();
         await page.goto(`${BASE}${deck}`, { waitUntil: "load" });
         await page.waitForTimeout(1200);
         await page.evaluate(() => {
@@ -341,7 +344,7 @@ async function main() {
             `fetch ${pageDuration ? pageDuration.durationMs : "?"}ms, ` +
             `${timing && !timing.missing ? Math.round(phasesOf(timing).encodedBytes / 1024) : "?"}KB, ` +
             `decode ${decodeMs ?? "?"}ms` +
-            (timing?.missing ? ` | scryfall entries seen: ${JSON.stringify(timing.scryfallEntries)}` : ""),
+            (timing?.missing ? ` | CDP saw ${timing.seen} image response(s), none for this URL` : ""),
         );
         await page.mouse.move(0, 0);
         await page.waitForTimeout(300);

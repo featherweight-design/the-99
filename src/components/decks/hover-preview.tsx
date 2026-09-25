@@ -53,14 +53,17 @@ const CLOSE_DELAY = 80;
  * and then the fetch.
  *
  * Measured on local-dev against a production build, three runs each way at
- * 1300x900 with a cold cache: pointer enter to painted fell from a median 441ms
- * to 377ms, and the request now leaves about 210ms earlier relative to the box
- * mounting. The image is a 93KB `normal` JPEG and the request takes ~220ms, so
- * roughly 30ms of it is still exposed beyond the 190ms this can hide.
+ * 1300x900 with a cold cache. Before, the box is demonstrably empty when it
+ * appears — the first frame a probe can sample is 4,675 bytes of flat colour —
+ * and the card arrives at a median 441ms. After, that first sample is already
+ * 162,019 bytes: the card, drawn. THE BLANK BOX IS NO LONGER OBSERVABLE.
  *
- * The figures are not a sum: part of the fetch already overlapped the box mount
- * even before this change, because the browser starts a background image as soon
- * as it parses the style, a few tens of ms before the element is observable.
+ * The exact painted time afterwards is unmeasurable rather than merely unknown:
+ * paint happens between the box mounting and the earliest screenshot, so the win
+ * is bounded at 72-123ms and no point figure inside that is claimed.
+ *
+ * The one unambiguous figure is where the request starts: ~210ms earlier,
+ * relative to the box mounting, from a CDP timestamp rather than from paint.
  *
  * Starting the fetch here puts it inside the wait instead of after it. The box
  * still appears at the same moment, in the same place, at the same size, from
