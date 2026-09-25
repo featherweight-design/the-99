@@ -8,7 +8,6 @@ import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { ModelErrorClass } from "../model/client";
 import { INTAKE_REAPER_CUTOFF_MS } from "./limits";
-import { phraseKey } from "./match";
 import type { ReadResult } from "./read";
 
 /**
@@ -52,9 +51,18 @@ export type ReadControls = { budgetDollars: number | null; bracket: number | nul
  * second press gets the first one's chips back, charged nothing. A changed control is a different
  * ask, since the chips it keeps depend on it.
  */
+/**
+ * The words' form for the hash: Unicode-normalized, case-folded, runs of space collapsed. NOT
+ * `phraseKey`, which keeps only ASCII letters and digits and would hash two different asks in
+ * another script, or two strings of emoji, alike, and hand one of them the other's read.
+ */
+function askKey(words: string): string {
+  return words.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 export function wordsHash(words: string, controls: ReadControls): string {
   return createHash("sha256")
-    .update(JSON.stringify([phraseKey(words), controls.budgetDollars, controls.bracket]))
+    .update(JSON.stringify([askKey(words), controls.budgetDollars, controls.bracket]))
     .digest("hex");
 }
 

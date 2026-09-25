@@ -80,3 +80,14 @@ describe("runDeeperRead", () => {
     expect(store.settleRead).not.toHaveBeenCalled();
   });
 });
+
+describe("wordsHash", () => {
+  it("tells apart asks in any script, and folds spacing and case", async () => {
+    const { wordsHash } = await vi.importActual<typeof import("./run-store")>("./run-store");
+    const none = { budgetDollars: null, bracket: null };
+    expect(wordsHash("龙", none)).not.toBe(wordsHash("火", none));
+    expect(wordsHash("🐉", none)).not.toBe(wordsHash("🔥", none));
+    expect(wordsHash("Big  Lizards", none)).toBe(wordsHash("big lizards", none));
+    expect(wordsHash("big lizards", none)).not.toBe(wordsHash("big lizards", { budgetDollars: 100, bracket: null }));
+  });
+});
