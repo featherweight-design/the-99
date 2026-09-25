@@ -64,4 +64,24 @@ describe("SwapReceiptRow", () => {
     expect(screen.queryByTestId("swap-receipt")).toBeNull();
     expect(screen.getByText(swapToolsCopy.announce.undone("Plateau", "Rugged Prairie"))).toBeInTheDocument();
   });
+
+  it("drops the receipts when the builder moves to another deck", async () => {
+    let rerender: (ui: React.ReactElement) => void = () => {};
+    await act(async () => {
+      ({ rerender } = render(
+        <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+          <Harness receipt={base} />
+        </SwapToolsProvider>,
+      ));
+    });
+    expect(screen.getByTestId("swap-receipt")).toBeInTheDocument();
+    await act(async () => {
+      rerender(
+        <SwapToolsProvider deckId="d2" deckName="Other" storedLimitCents={null}>
+          <Harness receipt={base} />
+        </SwapToolsProvider>,
+      );
+    });
+    expect(screen.queryByTestId("swap-receipt")).toBeNull();
+  });
 });

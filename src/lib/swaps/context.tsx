@@ -70,6 +70,15 @@ export function SwapToolsProvider({
 }) {
   const [receipts, setReceipts] = useState<SwapReceipt[]>([]);
   const [standIns, setStandIns] = useState<DeckDetailCard | null>(null);
+  // The builder survives a client navigation from one deck to another, and so does this provider.
+  // A receipt and an open sheet belong to the deck they were made on, so both are dropped when the
+  // deck changes: adjusted during render, so deck B never paints once with deck A's.
+  const [forDeck, setForDeck] = useState(deckId);
+  if (forDeck !== deckId) {
+    setForDeck(deckId);
+    setReceipts([]);
+    setStandIns(null);
+  }
   const closeStandIns = useCallback(() => setStandIns(null), []);
   const [announcement, setAnnouncement] = useState("");
   const addReceipt = useCallback((r: SwapReceipt) => setReceipts((all) => [...all.filter((x) => x.swapId !== r.swapId), r]), []);
