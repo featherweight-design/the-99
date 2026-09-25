@@ -102,6 +102,8 @@ async function release() {
     await sql`delete from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`;
     if (calls.length > 0) await sql`delete from model_calls where user_id = ${id} and id = any(${calls}::uuid[])`;
   }
+  // Deleted, so the next call counts only what came after.
+  readIds.clear();
   return ids.length;
 }
 
@@ -263,7 +265,7 @@ async function run() {
     }
   } finally {
     await browser.close();
-    console.log(`cleaned up ${await release()} read(s) this run made`);
+    console.log(`cleaned up the last ${await release()} read(s) this run made`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;

@@ -133,11 +133,17 @@ export function DeeperLook({
       case "nothing":
         deliver(out);
         return;
-      case "in_flight":
       case "reused":
-        // Another look of the player's is running (another tab), or this press's own id is
-        // already written (a press sent twice). No state in the table says otherwise, so the panel
-        // stays Looking and asks until that look settles. Nothing was reserved for this press.
+        // This press's own id is already written: the press was sent twice, and its first send is
+        // the read now running, holding its unit. It is still this press's, so Stop cancels it by
+        // its id rather than only ending the wait.
+        own.current = readId;
+        await wait(mine);
+        return;
+      case "in_flight":
+        // Another look of the player's is running (another tab). No state in the table says
+        // otherwise, so the panel stays Looking and asks until that look settles. Nothing was
+        // reserved for this press, so Stop only ends the wait.
         await wait(mine);
         return;
       case "refused":
@@ -193,7 +199,10 @@ export function DeeperLook({
       enter("failed");
       setAnnounced(copy.deeper.failTag);
     } finally {
-      if (token.current === mine) waiting.current = false;
+      if (token.current === mine) {
+        waiting.current = false;
+        own.current = null;
+      }
     }
   }
 

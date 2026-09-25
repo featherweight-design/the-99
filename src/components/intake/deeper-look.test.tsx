@@ -124,6 +124,19 @@ describe("the deeper look", () => {
       expect(status).not.toHaveBeenCalled();
     });
 
+    it("stops a press sent twice by its own id, since its first send is the read running", async () => {
+      const status = vi.fn().mockResolvedValue({ kind: "running" });
+      const stop = vi.fn(async () => true);
+      const look = vi.fn(async () => ({ kind: "reused" }));
+      draw({ look, stop, status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
+      expect(stop).toHaveBeenCalledWith((look.mock.calls[0] as unknown as [{ readId: string }])[0].readId);
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("offer");
+      await poll();
+      expect(status).not.toHaveBeenCalled();
+    });
+
     it("reads as failed when that look is still running at the wait's end", async () => {
       const status = vi.fn().mockResolvedValue({ kind: "running" });
       draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop: vi.fn(), status });
