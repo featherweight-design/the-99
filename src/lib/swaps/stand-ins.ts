@@ -12,7 +12,7 @@ import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import { cardThemes, type Theme } from "../recs/themes";
 import {
-  colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
+  colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, landColorsOnce, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
 
 /** How many stand-ins a group shows before `Show all` (Hugh's Q3). */
@@ -71,7 +71,9 @@ export function sameJob(job: Job, card: CardRow): { shared: SpellRole[] } | null
       return null;
     case "land": {
       if (!isLandFace(card.typeLine)) return null;
-      const colors = landColors(card);
+      // A color the land makes only by sacrificing itself still answers the job, once: the addendum shows
+      // those lands on the ladder's last rung (`colorSource` reads that color as utility), named on the row.
+      const colors = new Set([...landColors(card), ...landColorsOnce(card)]);
       return job.colors.every((c) => colors.has(c)) ? { shared: [] } : null;
     }
     case "fetch": {
@@ -127,6 +129,8 @@ export type StandIn = {
   shared: SpellRole[];
   /** The themes it shares with the original (`cardThemes`): a spell's second match, beside its roles (Q6). */
   sharedThemes: Theme[];
+  /** The job's colors this land makes only once, by sacrificing itself; its row names them. */
+  once: Color[];
   /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
   rung: 1 | 2 | 3 | 4 | null;
   drawbacks: Drawback[];
@@ -263,6 +267,7 @@ export function rankStandIns(
       shared: match.shared,
       sharedThemes: originalThemes.length > 0 ? cardThemes(c, isCreatureType).filter((t) => originalThemes.includes(t)) : [],
       drawbacks: isLand ? drawbacks(c) : [],
+      once: job.kind === "land" ? job.colors.filter((color) => landColorsOnce(c).has(color)) : [],
       // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.
       rung: isLand ? landRung(drawbacks(c), sourceFor(c, job), landCatch(c)) : null,
       givesUp: isLand ? givesUp(original, c) : [],
