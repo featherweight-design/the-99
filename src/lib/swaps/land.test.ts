@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, landColors, makesFreely, nameAbility, nonManaAbilities, quote,
+  drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, makesFreely, nameAbility, nonManaAbilities, quote,
   QUOTE_BUDGET, type LandText,
 } from "./land";
 
@@ -282,4 +282,34 @@ describe("makesFreely", () => {
   });
 
   it("does not make a color the land never makes", () => expect(makesFreely(MOUNTAIN, "W")).toBe(false));
+});
+
+// The rest of Plateau's rung 1 on HD - Gishath before this read (staging text, 2026-09-25): each has a catch.
+describe("colorSource and landCatch", () => {
+  const verge = L("Sunbillow Verge", "Land", "{T}: Add {W}.\n{T}: Add {R}. Activate only if you control a Mountain or a Plains.");
+  const havens = L("The Grey Havens", "Land", "When The Grey Havens enters, scry 1.\n{T}: Add {C}.\n{T}: Add one mana of any color among legendary creature cards in your graveyard.");
+  const plaza = L("Plaza of Heroes", "Land", "{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a legendary spell.\n{T}: Add one mana of any color among legendary permanents you control.");
+  const paliano = L("Paliano, the High City", "Legendary Land", "Reveal this card as you draft it.\n{T}: Add one mana of any color chosen as you drafted cards named Paliano, the High City.");
+  it("reads a verge's second color as conditional, like a checkland", () => {
+    expect(colorSource(verge, "W")).toBe("free");
+    expect(colorSource(verge, "R")).toBe("conditional");
+  });
+  it("gives no color to a grant that depends on other cards or on a draft", () => {
+    expect(landColors(havens).size).toBe(0);
+    expect(landColors(paliano).size).toBe(0);
+    expect(colorSource(plaza, "R")).toBe("utility");
+  });
+  it.each([
+    ["Rainbow Vale", "{T}: Add one mana of any color. An opponent gains control of this land at the beginning of the next end step.", "utility"],
+    ["Undiscovered Paradise", "{T}: Add one mana of any color. During your next untap step, as you untap your permanents, return this land to its owner's hand.", "utility"],
+    ["Forsaken City", "This land doesn't untap during your untap step.\nAt the beginning of your upkeep, you may exile a card from your hand. If you do, untap this land.\n{T}: Add one mana of any color.", "utility"],
+    ["Glimmervoid", "At the beginning of the end step, if you control no artifacts, sacrifice this land.\n{T}: Add one mana of any color.", "condition"],
+    ["Rith's Grove", "When this land enters, sacrifice it unless you return a non-Lair land you control to its owner's hand.\n{T}: Add {R}, {G}, or {W}.", "condition"],
+    ["Forbidden Orchard", "{T}: Add one mana of any color.\nWhenever you tap this land for mana, target opponent creates a 1/1 colorless Spirit creature token.", "condition"],
+  ])("%s has a %s catch", (name, text, want) => expect(landCatch(L(name, "Land", text))).toBe(want));
+  it("reads no catch in a fetch's own cost, or in a plain dual", () => {
+    expect(landCatch(FOOTHILLS)).toBeNull();
+    expect(landCatch(PLATEAU)).toBeNull();
+    expect(landCatch(FOUNDRY)).toBeNull();
+  });
 });

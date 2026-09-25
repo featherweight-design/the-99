@@ -11,7 +11,7 @@ import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
 import {
-  drawbacks, fetchFinds, givesUp, landColors, makesFreely, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
+  colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
 
 /** How many stand-ins a group shows. A presentation cap, stated once: the design draws no count. */
@@ -165,11 +165,22 @@ function stocked(id: string, priced: Priced): { cents: number; foilOnly: boolean
  * makes the colors only by paying for them, only for a narrow use, or only once (`makesFreely`).
  * `basicOnly` is a limit on what a fetch finds rather than a cost of playing it, so it moves nothing.
  */
-export function landRung(list: readonly Drawback[], freely = true): 1 | 2 | 3 | 4 {
-  if (!freely) return 4;
+export function landRung(
+  list: readonly Drawback[],
+  source: "free" | "conditional" | "utility" = "free",
+  catchOf: "condition" | "utility" | null = null,
+): 1 | 2 | 3 | 4 {
+  if (source === "utility" || catchOf === "utility") return 4;
   if (list.some((d) => d.kind === "entersTapped")) return 3;
-  if (list.some((d) => d.kind !== "basicOnly")) return 2;
+  if (source === "conditional" || catchOf === "condition" || list.some((d) => d.kind !== "basicOnly")) return 2;
   return 1;
+}
+
+/** The worst of the colors a land is asked for: one utility color makes the land utility for this job. */
+function sourceFor(card: CardRow, job: Job): "free" | "conditional" | "utility" {
+  if (job.kind !== "land") return "free";
+  const each = job.colors.map((color) => colorSource(card, color));
+  return each.includes("utility") ? "utility" : each.includes("conditional") ? "conditional" : "free";
 }
 
 const MAIN_TYPES = ["creature", "planeswalker", "battle", "instant", "sorcery", "artifact", "enchantment", "land"] as const;
@@ -232,7 +243,7 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
       shared: match.shared,
       drawbacks: isLand ? drawbacks(c) : [],
       // A fetch finds its types rather than making colors, so only a land's colors are read for freeness.
-      rung: isLand ? landRung(drawbacks(c), job.kind !== "land" || job.colors.every((color) => makesFreely(c, color))) : null,
+      rung: isLand ? landRung(drawbacks(c), sourceFor(c, job), landCatch(c)) : null,
       givesUp: isLand ? givesUp(original, c) : [],
     };
     if (row.free) groups.free.push(row);

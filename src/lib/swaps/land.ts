@@ -38,7 +38,9 @@ function stripReminders(text: string): string {
  * never matches) reads yours. Command Tower's grant is the commander's identity, which is every
  * color the deck can hold, so it counts in full.
  */
-const CONDITIONAL_GRANT = /\bcould produce\b|\bamong lands\b/;
+// Also `among legendary creature cards in your graveyard` (The Grey Havens), `among legendary permanents you
+// control` (Plaza of Heroes), and Paliano's colors `chosen as you drafted`, which a Commander game never has.
+const CONDITIONAL_GRANT = /\bcould produce\b|\bamong (lands|[^.]*\b(cards|permanents))\b|\bas you drafted\b/;
 
 /**
  * A mana ability whose COST sacrifices the land itself makes its mana once, and then the land is
@@ -91,8 +93,18 @@ export function landColors(card: LandText): Set<Color> {
  * every land at the head of Plateau's $0.15 wall was one of these three.
  */
 export function makesFreely(card: LandText, color: Color): boolean {
+  return colorSource(card, color) !== "utility";
+}
+
+/**
+ * How a land makes `color`: `free` (a basic type, or {T} and at most a life payment), `conditional` (an
+ * ability that says `Activate only if…`: a verge's second color, like a checkland's), or `utility`
+ * (only by paying, only for a narrow use, or only from a trigger: `makesFreely` above).
+ */
+export function colorSource(card: LandText, color: Color): "free" | "conditional" | "utility" {
   const typeLine = card.typeLine.split(" // ")[0].toLowerCase();
-  for (const t of BASIC_TYPES) if (TYPE_COLOR[t] === color && new RegExp(`\\b${t}\\b`).test(typeLine)) return true;
+  for (const t of BASIC_TYPES) if (TYPE_COLOR[t] === color && new RegExp(`\\b${t}\\b`).test(typeLine)) return "free";
+  let conditional = false;
   const text = stripReminders(frontText(card));
   for (const line of text.split("\n")) {
     const colon = line.indexOf(":");
@@ -105,9 +117,25 @@ export function makesFreely(card: LandText, color: Color): boolean {
     if (/spend this mana only/.test(effect)) continue;
     const makes = (ANY_COLOR.test(effect) && !CONDITIONAL_GRANT.test(effect))
       || [...effect.matchAll(/\badd\b([^.]*)/g)].some((m) => m[1].includes(`{${color.toLowerCase()}}`));
-    if (makes) return true;
+    if (!makes) continue;
+    if (/activate only\b/.test(effect)) conditional = true;
+    else return "free";
   }
-  return false;
+  return conditional ? "conditional" : "utility";
+}
+
+/**
+ * A land's catch, read from the whole card rather than from its mana ability (v2 item 2): what the land
+ * costs you to keep, beside what it costs to tap. `utility` is a land that leaves or does not come back
+ * (Rainbow Vale goes to an opponent, Undiscovered Paradise returns to hand, Forsaken City does not untap);
+ * `condition` is one that asks something to stay or to be played (Glimmervoid's artifact, Rith's Grove's
+ * bounce, Forbidden Orchard's gift). The cost line of a fetch (`{T}, Sacrifice this land:`) is not a catch.
+ */
+export function landCatch(card: LandText): "condition" | "utility" | null {
+  const text = stripReminders(frontText(card)).toLowerCase();
+  if (/opponent gains control of this land|return this land to its owner's hand|doesn't untap during your untap step/.test(text)) return "utility";
+  if (/sacrifice (this land|it) unless|if you control no [^.]*, sacrifice this land|opponent creates/.test(text)) return "condition";
+  return null;
 }
 
 export type Finds = { types: Set<BasicType>; basicOnly: boolean };

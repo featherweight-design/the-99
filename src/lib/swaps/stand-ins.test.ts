@@ -247,8 +247,11 @@ describe("landRung", () => {
     expect(landRung([{ kind: "lifeFetch", amount: 1 }])).toBe(2);
   });
   it("puts utility mana fourth, ahead of everything else it costs", () => {
-    expect(landRung([], false)).toBe(4);
-    expect(landRung([{ kind: "entersTapped" }], false)).toBe(4);
+    expect(landRung([], "utility")).toBe(4);
+    expect(landRung([{ kind: "entersTapped" }], "utility")).toBe(4);
+    expect(landRung([], "free", "utility")).toBe(4);
+    expect(landRung([], "conditional")).toBe(2);
+    expect(landRung([], "free", "condition")).toBe(2);
   });
   it("puts entering tapped third, whatever else it costs", () => {
     expect(landRung([{ kind: "entersTapped" }])).toBe(3);
