@@ -3,12 +3,12 @@
 // answer, so a read the player paid for is never thrown away).
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
-vi.mock("../../app/decks/new/choose/actions", () => ({ lookDeeper: vi.fn() }));
+vi.mock("../../app/decks/new/choose/actions", () => ({ lookDeeper: vi.fn(), lookStatus: vi.fn() }));
 
 const { DeeperLook, DeeperLookScope, DimWhileLooking, standingLine } = await import("./deeper-look");
 const { emptyParams } = await import("../../lib/intake/params");
@@ -18,7 +18,7 @@ const standing = (over = {}) => ({
   used: 1, limit: 3, nextAt: null, reopensAt: null, paused: null, ownerShare: false, now: "2026-09-25T12:00:00Z", ...over,
 });
 
-function draw(deps: { look: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }, over: object | null = {}, settled: "read" | "nothing" | null = null) {
+function draw(deps: { look: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn>; status?: ReturnType<typeof vi.fn> }, over: object | null = {}, settled: "read" | "nothing" | null = null) {
   return render(
     <DeeperLookScope>
       <DeeperLook params={params} standing={over === null ? null : standing(over)} settled={settled} deps={deps as never} />
@@ -79,6 +79,91 @@ describe("the deeper look", () => {
     draw({ look, stop: vi.fn() });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
     expect(new URL(push.mock.calls[0][0], "http://x").searchParams.get("r")).toBe(STORED);
+  });
+
+  describe("a press that finds another look already running", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+    const poll = () => act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
+
+    for (const kind of ["in_flight", "reused"] as const) {
+      it(`stays Looking on ${kind}, polls, and delivers that look's read of this ask`, async () => {
+        const look = vi.fn(async () => ({ kind }));
+        const status = vi.fn()
+          .mockResolvedValueOnce({ kind: "running" })
+          .mockResolvedValueOnce({ kind: "read", readId: "0000aaaa-0000-4000-8000-0000000000dd", chips: [], notUsed: [], notUnderstood: [] });
+        draw({ look, stop: vi.fn(), status });
+        await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+        expect(screen.getByTestId("deeper-look").dataset.phase).toBe("looking");
+        await poll();
+        expect(screen.getByTestId("deeper-look").dataset.phase).toBe("looking");
+        expect(push).not.toHaveBeenCalled();
+        await poll();
+        expect(status).toHaveBeenCalledWith({ words: params.words, budgetDollars: null, bracket: null });
+        expect(new URL(push.mock.calls[0][0], "http://x").searchParams.get("r")).toBe("0000aaaa-0000-4000-8000-0000000000dd");
+      });
+    }
+
+    it("returns the offer when that look ended without answering this ask, and reads the standing again", async () => {
+      const status = vi.fn().mockResolvedValue({ kind: "idle" });
+      draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop: vi.fn(), status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await poll();
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("offer");
+      expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it("holds the limit when an ask hangs past it, and delivers nothing late", async () => {
+      let answer!: (v: unknown) => void;
+      const status = vi.fn(() => new Promise((r) => { answer = r; }));
+      draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop: vi.fn(), status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await act(async () => { await vi.advanceTimersByTimeAsync(122_000); });
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("failed");
+      await act(async () => answer({ kind: "read", readId: "0000aaaa-0000-4000-8000-0000000000cc", chips: [], notUsed: [], notUnderstood: [] }));
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("lets Stop end the wait, asking nothing more", async () => {
+      const status = vi.fn().mockResolvedValue({ kind: "running" });
+      const stop = vi.fn();
+      draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop, status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("offer");
+      expect(stop).not.toHaveBeenCalled();
+      await poll();
+      expect(status).not.toHaveBeenCalled();
+    });
+
+    it("stops a press sent twice by its own id, since its first send is the read running", async () => {
+      const status = vi.fn().mockResolvedValue({ kind: "running" });
+      const stop = vi.fn(async () => true);
+      const look = vi.fn(async () => ({ kind: "reused" }));
+      draw({ look, stop, status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
+      expect(stop).toHaveBeenCalledWith((look.mock.calls[0] as unknown as [{ readId: string }])[0].readId);
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("offer");
+      await poll();
+      expect(status).not.toHaveBeenCalled();
+    });
+
+    it("reads as failed when that look is still running at the wait's end", async () => {
+      const status = vi.fn().mockResolvedValue({ kind: "running" });
+      draw({ look: vi.fn(async () => ({ kind: "in_flight" })), stop: vi.fn(), status });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+      await act(async () => { await vi.advanceTimersByTimeAsync(122_000); });
+      expect(screen.getByTestId("deeper-look").dataset.phase).toBe("failed");
+    });
+  });
+
+  it("reads a refused press as failed, without waiting", async () => {
+    const status = vi.fn();
+    draw({ look: vi.fn(async () => ({ kind: "refused" })), stop: vi.fn(), status });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+    expect(screen.getByTestId("deeper-look").dataset.phase).toBe("failed");
+    expect(status).not.toHaveBeenCalled();
   });
 
   it("believes a Stop only when it took: the credit is back and the offer returns", async () => {

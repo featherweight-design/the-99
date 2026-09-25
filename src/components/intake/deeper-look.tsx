@@ -16,9 +16,10 @@
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { lookDeeper } from "../../app/decks/new/choose/actions";
+import { lookDeeper, lookStatus, type LookDeeperResult } from "../../app/decks/new/choose/actions";
 import { creditsCopy } from "../../lib/copy/credits";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
+import { INTAKE_POLL_MS, INTAKE_WAIT_MS } from "../../lib/intake/limits";
 import type { ChooseParams } from "../../lib/intake/params";
 import { deeperTarget } from "../../lib/intake/submit";
 
@@ -81,7 +82,7 @@ export function DeeperLook({
   params,
   standing,
   settled,
-  deps = { look: lookDeeper, stop: postStop },
+  deps = { look: lookDeeper, stop: postStop, status: lookStatus },
 }: {
   params: ChooseParams;
   /**
@@ -91,7 +92,7 @@ export function DeeperLook({
   standing: Standing | null;
   /** What the page found at `r`: the read this panel's press already produced, if any. */
   settled: "read" | "nothing" | null;
-  deps?: { look: typeof lookDeeper; stop: (readId: string) => Promise<boolean> };
+  deps?: { look: typeof lookDeeper; stop: (readId: string) => Promise<boolean>; status: typeof lookStatus };
 }) {
   const router = useRouter();
   const { setLooking } = useContext(Looking);
@@ -100,6 +101,8 @@ export function DeeperLook({
   const [announced, setAnnounced] = useState("");
   const token = useRef(0);
   const own = useRef<string | null>(null);
+  // Waiting on another look of the player's rather than running one of its own (`wait`).
+  const waiting = useRef(false);
   const closed = standing ? closedBy(standing) : null;
 
   // The results dim while, and only while, this panel is looking; a panel that leaves (the page
@@ -127,12 +130,26 @@ export function DeeperLook({
     setStopping(false);
     switch (out.kind) {
       case "read":
-        // Pushed, not replaced: Back returns to the first results, which are still true.
-        // The read's own id: a repeated ask answers with the read already stored, under its id.
-        router.push(deeperTarget(params, out, out.readId));
-        return;
       case "nothing":
-        router.push(deeperTarget(params, { chips: [], notUsed: out.notUsed, notUnderstood: out.notUnderstood }, out.readId));
+        deliver(out);
+        return;
+      case "reused":
+        // This press's own id is already written: the press was sent twice, and its first send is
+        // the read now running, holding its unit. It is still this press's, so Stop cancels it by
+        // its id rather than only ending the wait.
+        own.current = readId;
+        await wait(mine);
+        return;
+      case "in_flight":
+        // Another look of the player's is running (another tab). No state in the table says
+        // otherwise, so the panel stays Looking and asks until that look settles. Nothing was
+        // reserved for this press, so Stop only ends the wait.
+        await wait(mine);
+        return;
+      case "refused":
+        // The press's own input was out of shape: nothing was reserved, and Retry is a new press.
+        enter("failed");
+        setAnnounced(copy.deeper.failTag);
         return;
       case "stopped":
         enter("offer");
@@ -151,7 +168,63 @@ export function DeeperLook({
     }
   }
 
+  /** A settled read, delivered by address. */
+  function deliver(out: Extract<LookDeeperResult, { kind: "read" | "nothing" }>) {
+    // Pushed, not replaced: Back returns to the first results, which are still true.
+    // The read's own id: a repeated ask answers with the read already stored, under its id.
+    router.push(deeperTarget(params, out.kind === "read" ? out : { chips: [], notUsed: out.notUsed, notUnderstood: out.notUnderstood }, out.readId));
+  }
+
+  /**
+   * Waits on the look already running, asking every `INTAKE_POLL_MS`: its read of this ask is
+   * delivered as this press's would be; a look that ended without answering it returns the offer,
+   * since nothing was spent; and one still running at `INTAKE_WAIT_MS` reads as failed.
+   */
+  async function wait(mine: number) {
+    waiting.current = true;
+    const until = Date.now() + INTAKE_WAIT_MS;
+    try {
+      while (Date.now() < until) {
+        await new Promise((r) => setTimeout(r, INTAKE_POLL_MS));
+        if (token.current !== mine) return;
+        // Each ask races what is left of the wait: one that hangs, or answers after it, reads as
+        // the wait running out, so no read is delivered past the limit.
+        const s = await Promise.race([
+          deps
+            .status({ words: params.words, budgetDollars: params.budgetDollars, bracket: params.bracket })
+            // A failed ask says nothing about the other look: ask again next time.
+            .catch(() => ({ kind: "running" as const })),
+          new Promise<{ kind: "expired" }>((r) => setTimeout(() => r({ kind: "expired" }), Math.max(0, until - Date.now()))),
+        ]);
+        if (token.current !== mine) return;
+        if (s.kind === "read" || s.kind === "nothing") return deliver(s);
+        if (s.kind === "idle") {
+          // The other look is over and may have spent a credit: read the standing again.
+          enter("offer");
+          router.refresh();
+          return;
+        }
+        if (s.kind === "refused" || s.kind === "expired") break;
+      }
+      enter("failed");
+      setAnnounced(copy.deeper.failTag);
+    } finally {
+      if (token.current === mine) {
+        waiting.current = false;
+        own.current = null;
+      }
+    }
+  }
+
   async function stop() {
+    // Waiting on another look, there is nothing of this press's to stop: Stop ends the wait.
+    if (!own.current && waiting.current) {
+      token.current += 1;
+      waiting.current = false;
+      enter("offer");
+      setAnnounced(copy.deeper.stopped);
+      return;
+    }
     const readId = own.current;
     if (!readId || stopping) return;
     const mine = token.current;

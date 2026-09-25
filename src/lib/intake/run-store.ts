@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { intakeReadStops, intakeReads } from "../../db/schema";
@@ -128,6 +128,35 @@ async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: s
     ))
     .orderBy(desc(intakeReads.createdAt)).limit(1);
   return row?.chips ? { id: row.id, read: row.chips as StoredRead, useful: row.status === "ok" } : null;
+}
+
+/**
+ * Where an ask stands for a press that found another look already running (`in_flight`), or found
+ * its own id already written (`reused`). READ ONLY: nothing is reaped or reserved. `stored` is
+ * this ask's read, as a repeat press would find it; `running` is a live pending read of the
+ * player's, whatever its words; `idle` is neither, so the other look ended without answering this
+ * ask and a press would start one.
+ */
+export async function readStatus(
+  userId: string,
+  hash: string,
+  now: Date = new Date(),
+  /** The probe's seam: runs between the two reads, where a settle landing would split them. */
+  between?: () => Promise<void>,
+): Promise<{ kind: "stored"; read: StoredRead; readId: string; useful: boolean } | { kind: "running" } | { kind: "idle" }> {
+  // ONE SNAPSHOT for both reads. As separate statements a settle committing between them reads as
+  // neither stored nor pending, `idle`, and the waiting panel drops the very answer it waited for.
+  return db.transaction(async (tx) => {
+    const stored = await storedRead(tx, userId, hash);
+    if (stored) return { kind: "stored" as const, read: stored.read, readId: stored.id, useful: stored.useful };
+    await between?.();
+    // A pending read the reaper would fail is abandoned, not running: past the cutoff nothing will
+    // settle it.
+    const [pending] = await tx.select({ id: intakeReads.id }).from(intakeReads)
+      .where(and(eq(intakeReads.userId, userId), eq(intakeReads.status, "pending"), gte(intakeReads.createdAt, reapCutoff(now))))
+      .limit(1);
+    return pending ? { kind: "running" as const } : { kind: "idle" as const };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
 export function reapCutoff(now: Date): Date {

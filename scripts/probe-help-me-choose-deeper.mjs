@@ -92,6 +92,21 @@ async function toResults(page, width) {
   await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 90_000 });
 }
 
+/** Deletes the reads this run made, their stops and their ledger units; the count it deleted. */
+async function release() {
+  const ids = [...readIds];
+  for (const id of players) {
+    if (ids.length === 0) continue;
+    const calls = (await sql`select model_call_id from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`).map((r) => r.model_call_id);
+    await sql`delete from intake_read_stops where user_id = ${id} and read_id = any(${ids}::uuid[])`;
+    await sql`delete from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`;
+    if (calls.length > 0) await sql`delete from model_calls where user_id = ${id} and id = any(${calls}::uuid[])`;
+  }
+  // Deleted, so the next call counts only what came after.
+  readIds.clear();
+  return ids.length;
+}
+
 async function run() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
   if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
@@ -208,19 +223,49 @@ async function run() {
       // 4. Nothing moves.
       const moving = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running").length);
       report(at("nothing moves"), moving === 0, `${moving} running animation(s)`);
+
+      // 5. A press while another tab's look runs (close-out gap 6): the one-pending index refuses
+      //    it as in flight, and the panel stays Looking and waits rather than reading DIDN'T FINISH.
+      //    The other tab's look answers ITS words, not these, so the wait ends on the offer, and
+      //    this press spends nothing.
+      // The fixture holds three credits a month and this run spends four: its own spent units go
+      // first, which are this run's to delete.
+      await release();
+      const other = await context.newPage();
+      other.on("request", (req) => {
+        if (req.method() !== "POST") return;
+        for (const m of (req.postData() ?? "").matchAll(/"readId"\s*:\s*"([0-9a-fA-F-]{36})"/g)) readIds.add(m[1].toLowerCase());
+      });
+      await toResults(other, `${width}-other`);
+      await toResults(page, `${width}-waiting`);
+      const beforeWait = await units(t0, userId);
+      await other.locator(`${PAGE} button`, { hasText: "Look deeper" }).click();
+      await other.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "looking", PAGE);
+      await page.locator(`${PAGE} button`, { hasText: "Look deeper" }).click();
+      await page.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "looking", PAGE);
+      // Read every phase the panel passes through, until it settles on something other than Looking.
+      const seen = await page.evaluate(async (scope) => {
+        const phases = [];
+        const until = Date.now() + 45_000;
+        while (Date.now() < until) {
+          const p = document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase;
+          if (phases[phases.length - 1] !== p) phases.push(p);
+          if (phases.length > 1 && p !== "looking") break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        return phases;
+      }, PAGE);
+      report(at("a press while another look runs stays Looking, then returns the offer"),
+        JSON.stringify(seen) === JSON.stringify(["looking", "offer"]), JSON.stringify(seen));
+      await other.waitForURL((u) => u.searchParams.has("r"), { timeout: 60_000 }).catch(() => {});
+      const afterWait = await units(t0, userId);
+      report(at("and that press spends nothing"), (afterWait.spent ?? 0) === (beforeWait.spent ?? 0) + 1 && !afterWait.reserved,
+        `before ${JSON.stringify(beforeWait)}, after ${JSON.stringify(afterWait)} (the other tab's look is the one credit)`);
       await context.close();
     }
   } finally {
     await browser.close();
-    const ids = [...readIds];
-    for (const id of players) {
-      if (ids.length === 0) continue;
-      const calls = (await sql`select model_call_id from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`).map((r) => r.model_call_id);
-      await sql`delete from intake_read_stops where user_id = ${id} and read_id = any(${ids}::uuid[])`;
-      await sql`delete from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`;
-      if (calls.length > 0) await sql`delete from model_calls where user_id = ${id} and id = any(${calls}::uuid[])`;
-    }
-    console.log(`cleaned up ${ids.length} read(s) this run made`);
+    console.log(`cleaned up the last ${await release()} read(s) this run made`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;

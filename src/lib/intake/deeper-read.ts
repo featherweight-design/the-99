@@ -2,7 +2,7 @@ import { callModel, type ModelOutcome } from "../model/client";
 import { INTAKE_DEADLINE_MS, INTAKE_EFFORT, INTAKE_MAX_TOKENS, INTAKE_MODEL, INTAKE_RETRY_FLOOR_MS } from "./limits";
 import type { PhraseIndex } from "./match";
 import { buildReadPrompt, readResponseSchema, validateRead, type ReadResponse } from "./read";
-import { settleRead, startRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
+import { readStatus, settleRead, startRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
 import { intakeLive, STUB_MODEL, stubDelayMs, stubMode, stubReply } from "./stub";
 import { loadIntakeCatalog } from "./search";
 
@@ -27,6 +27,24 @@ export type DeeperReadOutcome =
   /** The press reused the id of a read that already exists. */
   | { kind: "reused" };
 // A repeat of an ask already read returns `read`, from the store, and reserves nothing.
+
+/** Where an ask stands while a press waits on another look: its settled read, or not yet, or never. */
+export type DeeperStatus =
+  | Extract<DeeperReadOutcome, { kind: "read" | "nothing" }>
+  | { kind: "running" }
+  | { kind: "idle" };
+
+/** A waiting press's poll. Read only: it reserves nothing and starts nothing. */
+export async function deeperStatus(
+  userId: string,
+  input: { words: string; controls: { budgetDollars: number | null; bracket: number | null } },
+): Promise<DeeperStatus> {
+  const status = await readStatus(userId, wordsHash(input.words, input.controls));
+  if (status.kind !== "stored") return status;
+  return status.useful
+    ? { kind: "read", readId: status.readId, ...status.read }
+    : { kind: "nothing", readId: status.readId, notUsed: status.read.notUsed, notUnderstood: status.read.notUnderstood };
+}
 
 export type DeeperReadDeps = {
   /** Stored on the read, so the ledger prices it and a probe can prove the stub ran. */
