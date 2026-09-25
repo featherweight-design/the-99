@@ -1,0 +1,198 @@
+{
+  "feature": "Locked (never cut), sub-project 5.1",
+  "note": "Every surface the lock draws on or changes: the decklist's list view and its Lock cards mode, the card view's tiles, the Shopping list and the card modal's stand-ins door, the review screen's Put back, and the climb's What would have to go sheet.\n\nThe fixture is BUILT, because no account on local-dev holds a lock: `LOCKED_DECK` is a committed copy of a whole template deck carrying three plain locks (one on an auto card, so Clear all auto reports it), a locked Game Changer asked for twice so it lands on the Shopping list (`LOCKED_SHOP_NAME`), and one DORMANT lock on a card cut from the draft, which is what puts a locked row in the review screen's Out column. `LOCKED_CLIMB_DECK` is a copy of the upgrade-path fixture with two of its five Game Changers locked, so the lower rung's sheet draws both the locked candidates and the out-of-reach note.\n\nThe Pull it guard is not photographed here: it needs a SECOND deck holding the card locked, and `probe:review-locks` builds and asserts exactly that. A sheet cell of a row with no Pull it would read as coverage while proving nothing.",
+  "rows": [
+    {
+      "id": "deck-list",
+      "label": "/decks/[id] list view: the lock mark after a locked row's name",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "scrollTo": "[data-testid$=lock-mark]:visible",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "lock-mode",
+      "label": "/decks/[id] Lock cards mode: every remove control a lock toggle, the key line replaced",
+      "view": "src/components/decks/lock-cards.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Lock cards$",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-testid=row-lock-toggle][aria-pressed=true]:visible",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "card-view",
+      "label": "/decks/[id] card view: the tile's lock mark and, in the mode, its toggle",
+      "view": "src/components/decks/deck-card-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Card view$",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid=tile-lock-mark]:visible",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "card-view-mode",
+      "label": "/decks/[id] card view in Lock cards mode",
+      "view": "src/components/decks/deck-card-tile.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Card view$",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Lock cards$",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-testid=tile-lock-toggle]:visible",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "shopping",
+      "label": "/decks/[id] Shopping: no Lock cards, and the locked row draws no stand-ins mark",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+$",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid$=lock-mark]:visible",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "shopping-modal",
+      "label": "Card modal opened from a locked Shopping row: no See cheaper stand-ins door",
+      "view": "src/components/decks/stand-in-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+$",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "${LOCKED_SHOP_NAME}",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "label": "/decks/[id]/changes: the locked card in the Out column, and its Put back",
+      "view": "src/components/decks/review-changes.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}/changes",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "scrollTo": "button:has-text(\"Put back\"):visible",
+          "settle": 500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "review-phone",
+      "label": "/decks/[id]/changes: the locked card in the Out column, and its Put back (the phone pairs the columns, so Going out is pressed first)",
+      "view": "src/components/decks/review-changes.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_DECK}/changes",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Going out",
+          "settle": 800
+        },
+        {
+          "scrollTo": "button:has-text(\"Put back\"):visible",
+          "settle": 500
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "climb",
+      "label": "Analysis tab, What would have to go: locked candidates listed last, the out-of-reach note",
+      "view": "src/components/decks/upgrade-path.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${LOCKED_CLIMB_DECK}",
+          "wait": "h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "what would have to go",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

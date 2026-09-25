@@ -13,14 +13,15 @@
 //   - A locked card removed with its ✕ and brought back with the row's Undo comes back LOCKED (L1).
 //   - The card view (4b): the mode is kept across List and Card, a tile's toggle locks its card,
 //     the tile keeps its lock on the meta line at rest (F8), and the tile's Undo returns it locked.
-//   - Under the Shopping filter Lock cards is absent.
+//   - Under the Shopping filter Lock cards is absent, and a locked card opened from its Shopping row
+//     draws no stand-ins door while an unlocked one does (PR 6's modal half; SWAP_TOOLS_ENABLED=true).
 //   - T1: at 1300 the toolbar, with two-digit auto and kept counts and a draft note at v10, is one
 //     line. 1280 is printed, not asserted (the addendum records it as about 5px over).
 //
 // Fixture, built per width under the signed-in account and deleted in a `finally` (cards, versions
 // and locks cascade): a committed copy of the template at version 10, twelve of its cards marked
 // auto, and one card cut from the draft so the toolbar carries a draft note. Needs a server with
-// NEVER_CUT_ENABLED=true. Point it at `local-dev`, never production.
+// NEVER_CUT_ENABLED=true and SWAP_TOOLS_ENABLED=true. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3239 node scripts/probe-deck-locks.mjs
 import { readFileSync } from "node:fs";
@@ -132,6 +133,16 @@ async function buildDeck(userId, name, made) {
   if (!crowded) throw new Error("The template holds no Game Changer singleton for the crowded tile.");
   await sql`update deck_cards set quantity = 2 where deck_id = ${id} and oracle_id = ${crowded.oracle_id}`;
   await sql`insert into deck_locks (deck_id, oracle_id) values (${id}, ${crowded.oracle_id})`;
+  // And an UNLOCKED card asked for twice, so the Shopping list always holds a row that does draw
+  // the stand-ins door: the locked row's missing door means nothing without one beside it.
+  const [short] = await sql`
+    select dc.oracle_id from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
+    where dc.deck_id = ${id} and dc.quantity = 1 and c.type_line not like 'Basic Land%'
+      and dc.oracle_id not in (${plain.oracle_id}, ${tile.oracle_id}, ${crowded.oracle_id}, ${picks[12].oracle_id})
+      and dc.oracle_id <> all(${autos}::uuid[])
+    order by dc.oracle_id limit 1`;
+  if (!short) throw new Error("The template holds no further singleton for the unlocked Shopping row.");
+  await sql`update deck_cards set quantity = 2 where deck_id = ${id} and oracle_id = ${short.oracle_id}`;
   await sql`update deck_cards set auto = true where deck_id = ${id} and oracle_id = any(${autos}::uuid[])`;
   await sql`delete from deck_cards where deck_id = ${id} and oracle_id = ${picks[12].oracle_id}`;
   return {
@@ -318,6 +329,44 @@ async function run() {
         await page.waitForTimeout(400);
         const present = await onPageRole(page, "button", /^Lock cards$/).filter({ visible: true }).count();
         report(`${tag} · Lock cards is absent under Shopping`, present === 0, `${present} drawn`);
+
+        // PR 6's modal half: a card locked in this deck, opened from its Shopping row, draws no
+        // stand-ins door (offering stand-ins is offering to cut it), while an unlocked one does, so
+        // the check cannot pass on a page that never draws the door. Needs SWAP_TOOLS_ENABLED=true.
+        // Opened by the row trigger's WHOLE accessible name, never a name parsed out of it: a card name
+        // may itself hold a comma, and the label runs on past it with the copy count and marks.
+        const doorsOn = async (label) => {
+          const exact = new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+          await visible(onPageRole(page, "button", exact)).click();
+          await page.getByRole("dialog").first().waitFor({ state: "visible" });
+          await page.waitForTimeout(400);
+          const n = await page.getByRole("button", { name: /See cheaper stand-ins/ }).filter({ visible: true }).count();
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(300);
+          return n;
+        };
+        const lockedNames = new Set([fx.plain.name, fx.tile.name, fx.crowded.name, fx.autoLocked.name]);
+        // Both chosen off the Shopping rows actually drawn, so each is a card this list holds.
+        const [lockedLabel, unlockedLabel] = await page.evaluate((locked) => {
+          const labels = [...document.querySelectorAll("main button")]
+            .filter((b) => b.getBoundingClientRect().width > 0)
+            .map((b) => b.getAttribute("aria-label") ?? "")
+            .filter((l) => l.startsWith("View details for "));
+          // A label names a card when it is that name exactly or runs on past it with a comma.
+          const isLocked = (l) => locked.some((n) => l === `View details for ${n}` || l.startsWith(`View details for ${n},`));
+          return [labels.find(isLocked) ?? null, labels.find((l) => !isLocked(l)) ?? null];
+        }, [...lockedNames]);
+        // Both rows are required: without an unlocked row beside it, the locked row's missing door
+        // would pass on a page that never draws a door at all. Absent, this fails and says why.
+        if (!lockedLabel || !unlockedLabel) {
+          report(`${tag} · a locked card opened from Shopping draws no stand-ins door`, false,
+            `the Shopping list holds ${lockedLabel ? "no unlocked row" : "no locked row"}: the fixture did not build the state this check needs`);
+        }
+        const lockedDoors = lockedLabel ? await doorsOn(lockedLabel) : -1;
+        const unlockedDoors = unlockedLabel ? await doorsOn(unlockedLabel) : 0;
+        const lockedName = lockedLabel, unlockedName = unlockedLabel;
+        if (lockedLabel && unlockedLabel) report(`${tag} · a locked card opened from Shopping draws no stand-ins door`, lockedDoors === 0 && unlockedDoors > 0,
+          `locked ${lockedName ?? "(none on the Shopping list)"}: ${lockedDoors}; unlocked ${unlockedName}: ${unlockedDoors}`);
       } else {
         report(`${tag} · Lock cards is absent under Shopping`, false, "no Shopping pill to press: the fixture buys nothing");
       }

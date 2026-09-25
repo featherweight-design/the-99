@@ -139,15 +139,25 @@ export function StandInDoorRegistration({
   useEffect(() => {
     rows.current = { shoppingCards, receipts: tools?.receipts ?? [], newestAsOf };
   });
+  // The locked cards among the rows, as one key. The provider calls the renderer during its OWN
+  // render, before the effect above refreshes `rows`, so a lock that lands, settles or reverts while
+  // a card is open would leave its door as it was. Re-registering on this key hands the provider a
+  // new renderer, which re-renders it against the fresh rows; nothing else churns the registration.
+  const lockedKey = shoppingCards.filter((c) => c.locked).map((c) => c.oracleId).join(" ");
   useEffect(
     () =>
       registerDoor((oracleId, layout) => {
         const { shoppingCards: list, receipts, newestAsOf: asOf } = rows.current;
         const card = list.find((c) => c.oracleId === oracleId)
           ?? receipts.findLast((r) => r.cutOracleId === oracleId)?.cutCard;
-        return card ? <StandInDoor card={card} layout={layout} newestAsOf={asOf} /> : null;
+        // No door for a card the player LOCKED in this deck (Locked, L4 and PR 6): offering stand-ins
+        // is offering to cut it. The modal says nothing else about the lock; the door is simply
+        // absent, as the Shopping row's ⇄ is. `locked` comes off the list the page draws, so a lock
+        // pressed a moment ago hides it before the server has settled.
+        return card && !card.locked ? <StandInDoor card={card} layout={layout} newestAsOf={asOf} /> : null;
       }),
-    [registerDoor],
+    // `lockedKey` is read by nothing inside: it is here to re-register (see above).
+    [registerDoor, lockedKey],
   );
   return null;
 }
