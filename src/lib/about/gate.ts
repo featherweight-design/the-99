@@ -4,7 +4,8 @@
 // Pure so it can be tested: the proxy itself needs a request, a session and a
 // Postgres connection, and none of the rules below need any of the three.
 
-import { ABOUT_VERSION } from "../copy/about";
+import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
+import { isFirstRun, switchedIds, unseenEntries, type SeenState } from "./visible";
 
 /** The cookie the gate writes on its own redirect. */
 export const ABOUT_COOKIE = "about_v";
@@ -160,16 +161,35 @@ export function gateDecision(args: {
  */
 export const SHEET_COOKIE = "about_sheet";
 
-/** Set by the proxy on a document load that draws the sheet; carries the pre-visit `seen`. */
+/**
+ * Set by the proxy on a document load that draws the sheet: `0` for a first-run reader, or the
+ * ids of the visible entries this reader has not seen, comma-separated, in page order.
+ */
 export const SHEET_HEADER = "x-about-sheet";
 
-/** True when this browser has already shown the sheet for this version, as this reader. */
+/**
+ * The sheet cookie's value: the reader, the version, and every switched entry this deployment
+ * draws. The switched ids are what retire it when a switch flips: a browser that has shown the
+ * sheet for one set of entries has not shown it for a set with one more in it, so the cookie
+ * stops matching and the proxy decides again. With no switch on it is `<userId>.<version>`,
+ * byte for byte what it was before entries had switches, so no browser is re-asked.
+ */
+export function sheetCookieValue(
+  userId: string,
+  visible: readonly AboutEntry[],
+  version: number = ABOUT_VERSION,
+): string {
+  return [cookieValue(userId, version), ...switchedIds(visible)].join("+");
+}
+
+/** True when this browser has already shown the sheet for these entries, as this reader. */
 export function sheetCookieIsCurrent(
   raw: string | undefined,
   userId: string,
+  visible: readonly AboutEntry[],
   version: number = ABOUT_VERSION,
 ): boolean {
-  return raw === cookieValue(userId, version);
+  return raw === sheetCookieValue(userId, visible, version);
 }
 
 /**
@@ -192,16 +212,22 @@ export function isDocumentLoad(method: string, headers: Headers): boolean {
 
 export type SheetDecision =
   | { show: false; cookie: string }
-  | { show: true; seen: number; cookie: string };
+  | { show: true; header: string; cookie: string };
 
 /**
- * Whether this document load draws the sheet. Both answers carry the cookie, so
- * the sheet shows once per browser per version and a current reader costs one
- * read, as the gate does.
+ * Whether this document load draws the sheet, and what the header tells the root layout. Both
+ * answers carry the cookie, so the sheet shows once per browser per set of entries and a
+ * current reader costs one read.
  */
-export function sheetDecision(args: { userId: string; seen: number; version?: number }): SheetDecision {
-  const version = args.version ?? ABOUT_VERSION;
-  const cookie = cookieValue(args.userId, version);
-  if (args.seen >= version) return { show: false, cookie };
-  return { show: true, seen: args.seen, cookie };
+export function sheetDecision(args: {
+  userId: string;
+  seen: SeenState;
+  visible: readonly AboutEntry[];
+  version?: number;
+}): SheetDecision {
+  const cookie = sheetCookieValue(args.userId, args.visible, args.version ?? ABOUT_VERSION);
+  if (isFirstRun(args.seen)) return { show: true, header: "0", cookie };
+  const unseen = unseenEntries(args.visible, args.seen);
+  if (unseen.length === 0) return { show: false, cookie };
+  return { show: true, header: unseen.map((e) => e.id).join(","), cookie };
 }

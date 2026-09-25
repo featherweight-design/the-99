@@ -1,0 +1,1 @@
+ALTER TABLE "user_prefs" ADD COLUMN "about_seen_ids" text[] DEFAULT '{}'::text[] NOT NULL;

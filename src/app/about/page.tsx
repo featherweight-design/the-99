@@ -2,7 +2,7 @@
 // is invite-only, so there is no public version of this page.
 
 import { requireUserId } from "../../lib/auth";
-import { aboutVersionSeen } from "../../lib/about/read";
+import { aboutSeen } from "../../lib/about/read";
 import { AboutPage } from "../../components/about/about-page";
 import { aboutSheetEnabled } from "../../lib/about/flag";
 
@@ -25,6 +25,13 @@ export default async function AboutRoute({
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
-  const seen = await aboutVersionSeen(userId);
-  return <AboutPage seen={seen} next={soleNext(params.next)} sheetMode={aboutSheetEnabled()} />;
+  const seen = await aboutSeen(userId);
+  return (
+    <AboutPage
+      seen={seen.version}
+      seenIds={seen.ids}
+      next={soleNext(params.next)}
+      sheetMode={aboutSheetEnabled()}
+    />
+  );
 }

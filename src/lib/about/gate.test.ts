@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION } from "../copy/about";
+import { ABOUT_VERSION, aboutEntries } from "../copy/about";
 import {
   ABOUT_COOKIE,
   cookieIsCurrent,
@@ -161,17 +161,26 @@ describe("gateDecision", () => {
 });
 
 describe("the sheet (R6)", () => {
-  it("shows the sheet to a reader who is behind, carrying their pre-visit seen", () => {
-    expect(sheetDecision({ userId: "u", seen: 8, version: 9 })).toEqual({ show: true, seen: 8, cookie: "u.9" });
+  const all = aboutEntries;
+  const seen = (version: number, ids: string[] = []) => ({ version, ids });
+
+  it("shows the sheet to a reader who is behind, naming what they have not seen", () => {
+    const d = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9 });
+    const want = all.filter((e) => e.since > 8).map((e) => e.id).join(",");
+    expect(d).toEqual({ show: true, header: want, cookie: "u.9" });
   });
 
-  it("shows the first-run variant at seen 0", () => {
-    expect(sheetDecision({ userId: "u", seen: 0, version: 9 })).toEqual({ show: true, seen: 0, cookie: "u.9" });
+  it("shows the first-run variant to a brand-new account", () => {
+    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: 9 })).toEqual({
+      show: true,
+      header: "0",
+      cookie: "u.9",
+    });
   });
 
   it("does not show it to a current reader, but still marks the browser", () => {
-    expect(sheetDecision({ userId: "u", seen: 9, version: 9 })).toEqual({ show: false, cookie: "u.9" });
-    expect(sheetDecision({ userId: "u", seen: 12, version: 9 })).toEqual({ show: false, cookie: "u.9" });
+    expect(sheetDecision({ userId: "u", seen: seen(9), visible: all, version: 9 })).toEqual({ show: false, cookie: "u.9" });
+    expect(sheetDecision({ userId: "u", seen: seen(12), visible: all, version: 9 })).toEqual({ show: false, cookie: "u.9" });
   });
 
   it("uses a new cookie, never the gate's (E1)", () => {
@@ -180,10 +189,10 @@ describe("the sheet (R6)", () => {
   });
 
   it("binds the cookie to the reader and the version", () => {
-    expect(sheetCookieIsCurrent("u.9", "u", 9)).toBe(true);
-    expect(sheetCookieIsCurrent("u.9", "other", 9)).toBe(false);
-    expect(sheetCookieIsCurrent("u.8", "u", 9)).toBe(false);
-    expect(sheetCookieIsCurrent(undefined, "u", 9)).toBe(false);
+    expect(sheetCookieIsCurrent("u.9", "u", all, 9)).toBe(true);
+    expect(sheetCookieIsCurrent("u.9", "other", all, 9)).toBe(false);
+    expect(sheetCookieIsCurrent("u.8", "u", all, 9)).toBe(false);
+    expect(sheetCookieIsCurrent(undefined, "u", all, 9)).toBe(false);
   });
 
   it("acts on document loads only, never a client transition or a prefetch", () => {

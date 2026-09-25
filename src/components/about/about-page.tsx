@@ -22,10 +22,10 @@ import { ContentsList, ContentsRail } from "./contents-rail";
 import { ContentsListR6, ContentsRailR6 } from "./contents-r6";
 import { JumpMark } from "./jump-mark";
 import { RecordVisit } from "./record-visit";
+import { unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import {
   ABOUT_VERSION,
   aboutCopy,
-  aboutEntries,
   type AboutChapter,
   type AboutEntry,
 } from "../../lib/copy/about";
@@ -38,7 +38,7 @@ const CHAPTERS: AboutChapter[] = ["01", "02", "03", "04"];
  * reader at 0 has never been here, so marking every `since: 1` entry would
  * mark the whole page and teach them nothing.
  */
-function isNew(entry: AboutEntry, seen: number): boolean {
+function isNewByVersion(entry: AboutEntry, seen: number): boolean {
   return seen > 0 && entry.since > seen;
 }
 
@@ -227,10 +227,13 @@ function WhatsNewIndex({ entries }: { entries: AboutEntry[] }) {
 
 export function AboutPage({
   seen,
+  seenIds = [],
   next,
   sheetMode = false,
 }: {
   seen: number;
+  /** The switched entries this reader has already met, by id (`user_prefs.about_seen_ids`). */
+  seenIds?: readonly string[];
   next?: string;
   /**
    * `ABOUT_SHEET_ENABLED` (About R6): no redirect reaches this page, so it
@@ -239,8 +242,16 @@ export function AboutPage({
    */
   sheetMode?: boolean;
 }) {
-  const behind = seen < ABOUT_VERSION;
-  const newCount = aboutEntries.filter((e) => isNew(e, seen)).length;
+  // Only the entries this deployment draws: one tied to a switch that is off is not on the page.
+  const visible = visibleEntries();
+  // With the sheet, "new" is the one rule the sheet and the proxy read, so the page marks exactly
+  // what the sheet announced. Without it the page keeps the version rule it always had.
+  const seenState: SeenState = { version: seen, ids: seenIds };
+  const unseen = new Set(unseenEntries(visible, seenState).map((e) => e.id));
+  const isNew = (entry: AboutEntry): boolean =>
+    sheetMode ? unseen.has(entry.id) : isNewByVersion(entry, seen);
+  const behind = seen < ABOUT_VERSION || (sheetMode && unseen.size > 0);
+  const newCount = visible.filter((e) => isNew(e)).length;
   // Validated here as well as in the action: the page PRINTS the destination,
   // and printing an unvalidated value is its own small problem.
   const destination = safeNext(next);
@@ -260,24 +271,24 @@ export function AboutPage({
    */
   const redirected = typeof next === "string" && next.length > 0;
   const offerDismiss = !sheetMode && behind && redirected;
-  const newEntries = aboutEntries.filter((e) => isNew(e, seen));
+  const newEntries = visible.filter((e) => isNew(e));
   // Counted here, where `seen` is known — the rail is a client component and
   // has no business reading the reader's acknowledged version.
   const railChapters = CHAPTERS.map((n) => {
-    const entries = aboutEntries.filter((e) => e.chapter === n);
+    const entries = visible.filter((e) => e.chapter === n);
     return {
       id: n,
       title: aboutCopy.chapters[n].title,
       count: entries.length,
-      newCount: entries.filter((e) => isNew(e, seen)).length,
+      newCount: entries.filter((e) => isNew(e)).length,
     };
   });
   // R6: the same chapters, carrying their entries for the entry-level contents.
   const contentsChapters = railChapters.map((c) => ({
     ...c,
-    entries: aboutEntries
+    entries: visible
       .filter((e) => e.chapter === c.id)
-      .map((e) => ({ id: e.id, title: e.title, isNew: isNew(e, seen) })),
+      .map((e) => ({ id: e.id, title: e.title, isNew: isNew(e) })),
   }));
   const destinationClause =
     destination === "/"
@@ -348,13 +359,13 @@ export function AboutPage({
           </p>
 
           <ul className="mt-[14px] list-none space-y-[14px] p-0">
-            {aboutEntries
+            {visible
               .filter((e) => e.chapter === n)
               .map((entry) => (
                 <Entry
                   key={entry.id}
                   entry={entry}
-                  marked={isNew(entry, seen)}
+                  marked={isNew(entry)}
                   sheetMode={sheetMode}
                 />
               ))}

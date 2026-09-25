@@ -2,12 +2,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const requireUserId = vi.fn(async () => "user_1");
 const markAboutSeen = vi.fn(async () => {});
+const markAboutVisited = vi.fn(async () => {});
 const redirect = vi.fn((to: string) => {
   throw new Error(`REDIRECT:${to}`);
 });
 
 vi.mock("../../lib/auth", () => ({ requireUserId }));
-vi.mock("../../lib/about/read", () => ({ markAboutSeen }));
+vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited }));
 vi.mock("next/navigation", () => ({ redirect }));
 
 const { dismissAbout, recordAboutVisit } = await import("./actions");
@@ -28,6 +29,7 @@ async function dismiss(next?: string): Promise<string> {
 beforeEach(() => {
   requireUserId.mockClear();
   markAboutSeen.mockClear();
+  markAboutVisited.mockClear();
   redirect.mockClear();
 });
 
@@ -55,10 +57,12 @@ describe("dismissAbout", () => {
 });
 
 describe("recordAboutVisit (R6)", () => {
-  it("records the current version for the signed-in reader", async () => {
+  it("records the current version and the switched entries this deployment draws", async () => {
     await recordAboutVisit();
     expect(requireUserId).toHaveBeenCalledOnce();
-    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+    // No shipped entry has a switch yet, so the ids are empty; the entry-level rule is
+    // `visible.test.ts`'s, and the stored union is `read.test.ts`'s.
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
   });
 
   it("never redirects, so the index stays where the reader is reading it", async () => {

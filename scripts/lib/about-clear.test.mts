@@ -4,7 +4,7 @@
 // location — every path here would resolve against `http://localhost/`.
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { sheetCookie } from "./about-clear.mjs";
+import { catalogIds, sheetCookie } from "./about-clear.mjs";
 
 describe("sheetCookie", () => {
   it("is the proxy's cookie, bound to the reader and the current version", () => {
@@ -34,5 +34,12 @@ describe("every probe that clears the About gate also clears the sheet (E5)", ()
     const src = readFileSync(new URL(f, dir), "utf8");
     expect(src).toMatch(/import \{ clearAboutSheet \} from "\.\/lib\/about-clear\.mjs";/);
     expect(src).toMatch(/await clearAboutSheet\(page, /);
+  });
+});
+
+describe("catalogIds", () => {
+  it("reads exactly the catalog's ids, in order", async () => {
+    const { aboutEntries } = await import("../../src/lib/copy/about");
+    expect(catalogIds()).toEqual(aboutEntries.map((e) => e.id));
   });
 });

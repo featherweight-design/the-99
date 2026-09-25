@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const protect = vi.fn(async () => ({ userId: "user_1" }));
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
-const aboutVersionSeen = vi.fn(async () => 0);
+const aboutVersionSeen = vi.fn(async (_userId?: string) => 0);
 
 vi.mock("@clerk/nextjs/server", () => ({
   // The real one wraps the callback; here it IS the callback, so a test can
@@ -18,7 +18,12 @@ vi.mock("@clerk/nextjs/server", () => ({
   createRouteMatcher: (routes: string[]) => (req: NextRequest) =>
     routes.some((r) => r === req.nextUrl.pathname || (r.includes("(") && false)),
 }));
-vi.mock("./lib/about/read", () => ({ aboutVersionSeen }));
+// The sheet reads the whole seen state; its version half is the same mock, so every test that
+// sets a version sets both. No switched entry exists yet, so the ids are always empty here.
+vi.mock("./lib/about/read", () => ({
+  aboutVersionSeen,
+  aboutSeen: async (userId: string) => ({ version: await aboutVersionSeen(userId), ids: [] }),
+}));
 
 const proxy = (await import("./proxy")).default as unknown as (
   auth: unknown,
@@ -137,16 +142,22 @@ describe("with the sheet switch on", () => {
     delete process.env.ABOUT_SHEET_ENABLED;
   });
 
-  it("never redirects a reader who is behind, and hands the layout their seen", async () => {
+  // What the header names for a reader at `seen`: the entries newer than it, in page order.
+  const unseenAfter = async (seen: number) => {
+    const { aboutEntries } = await import("./lib/copy/about");
+    return aboutEntries.filter((e) => e.since > seen).map((e) => e.id).join(",");
+  };
+
+  it("never redirects a reader who is behind, and names what they have not seen", async () => {
     aboutVersionSeen.mockResolvedValue(8);
     const res = await proxy(auth, request("/decks"));
     expect(res?.status).not.toBe(307);
     expect(res?.headers.get("location")).toBeNull();
-    expect(sheetHeader(res)).toBe("8");
+    expect(sheetHeader(res)).toBe(await unseenAfter(8));
     expect(res?.cookies.get("about_sheet")?.value).toMatch(/^user_1\./);
   });
 
-  it("hands the layout seen 0 for a brand-new account", async () => {
+  it("hands the layout the first-run mark for a brand-new account", async () => {
     aboutVersionSeen.mockResolvedValue(0);
     expect(sheetHeader(await proxy(auth, request("/")))).toBe("0");
   });
@@ -170,7 +181,7 @@ describe("with the sheet switch on", () => {
     const { cookieValue } = await import("./lib/about/gate");
     aboutVersionSeen.mockResolvedValue(8);
     const res = await proxy(auth, request("/decks", {}, cookieValue("user_1")));
-    expect(sheetHeader(res)).toBe("8");
+    expect(sheetHeader(res)).toBe(await unseenAfter(8));
   });
 
   it("costs no read once this browser has shown the sheet", async () => {

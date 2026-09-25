@@ -1410,10 +1410,17 @@ export const deckDataChanges = pgTable("deck_data_changes", {
  * acknowledged by pressing the page's dismiss. 0 is the default and means
  * "never seen", which is every account at launch. A row is written on first
  * dismiss; its absence reads as 0 rather than as an error.
+ *
+ * `about_seen_ids` records the About entries this reader has seen BY ID, for the
+ * entries tied to a feature switch (Hugh, 2026-09-25). Switches flip in any order, so
+ * a version number cannot say which of them a reader has met: switch B on and read
+ * it, switch A on later, and A must still read as new. `about_version_seen` stays the
+ * floor for every entry with no switch, so no row needs a backfill.
  */
 export const userPrefs = pgTable("user_prefs", {
   userId: text("user_id").primaryKey(),
   aboutVersionSeen: integer("about_version_seen").notNull().default(0),
+  aboutSeenIds: text("about_seen_ids").array().notNull().default(sql`'{}'::text[]`),
 });
 
 /**

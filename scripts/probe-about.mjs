@@ -28,10 +28,10 @@
 // sheet's list have nothing to show, and every check about them would pass over an
 // empty page, so the run stops and says so.
 //
-// IT WRITES ONE VALUE: the account's `user_prefs.about_version_seen`. What was there is
-// HELD ON DISK before the first write and put back in a `finally`, and a run that finds
-// a hold file left by a crashed run restores THAT first, so the account is never left
-// behind. The same rule as `scripts/lib/profile-hold.mjs`, for the same reason.
+// IT WRITES ONE ROW: the account's `user_prefs` — `about_version_seen` and, since entries
+// follow their features' switches, `about_seen_ids`. Both are HELD ON DISK before the first
+// write and put back in a `finally`, and a run that finds a hold file left by a crashed run
+// restores THAT first, so the account is never left behind. The same rule as `scripts/lib/profile-hold.mjs`, for the same reason.
 //
 // MUTATIONS RUN AGAINST IT (each fails the run; what failed after the arrow):
 //   - the proxy reading `about_v` as "shown"                     → 4 fails, check 7 (E1) among them, at 390 and 1300
@@ -98,9 +98,16 @@ async function signIn(page) {
 
 const readSeen = async (userId) =>
   (await sql`select about_version_seen from user_prefs where user_id = ${userId}`)[0]?.about_version_seen ?? null;
-const setSeen = (userId, v) =>
-  sql`insert into user_prefs (user_id, about_version_seen) values (${userId}, ${v})
-      on conflict (user_id) do update set about_version_seen = ${v}`;
+const readRow = async (userId) =>
+  (await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`)[0] ?? null;
+/**
+ * Sets the version AND clears the seen ids. "Behind" has to mean behind on both: with an
+ * entry's switch on in this server, a stale id would mark that entry seen and the sheet the
+ * probe is waiting for would never draw.
+ */
+const setSeen = (userId, v, ids = []) =>
+  sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids) values (${userId}, ${v}, ${ids})
+      on conflict (user_id) do update set about_version_seen = ${v}, about_seen_ids = ${ids}`;
 
 /** The account's own value, held on disk for the length of the run. */
 function holdPath(userId) {
@@ -111,15 +118,17 @@ async function hold(userId) {
   if (existsSync(file)) {
     const { value } = JSON.parse(readFileSync(file, "utf8"));
     await restore(userId, value);
-    console.log(`  (restored ${value} left by an earlier run before capturing)`);
+    console.log(`  (restored ${JSON.stringify(value)} left by an earlier run before capturing)`);
   }
-  const value = await readSeen(userId);
+  const value = await readRow(userId);
   writeFileSync(file, JSON.stringify({ value }));
   return value;
 }
 async function restore(userId, value) {
   if (value === null) await sql`delete from user_prefs where user_id = ${userId}`;
-  else await setSeen(userId, value);
+  // A hold file written before the ids column held the bare version.
+  else if (typeof value === "number") await setSeen(userId, value);
+  else await setSeen(userId, value.about_version_seen, value.about_seen_ids ?? []);
 }
 
 /** Puts this browser and account back to "behind, and never shown the sheet". */

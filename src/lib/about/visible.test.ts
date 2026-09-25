@@ -1,0 +1,95 @@
+import { describe, expect, it } from "vitest";
+import { ABOUT_VERSION, aboutEntries, type AboutEntry } from "../copy/about";
+import { sheetCookieValue, sheetDecision } from "./gate";
+import { readSheetState } from "./sheet-state";
+import { isSeen, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
+
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const OFF = {} as unknown as NodeJS.ProcessEnv;
+
+/** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
+const plain: AboutEntry = { ...aboutEntries[0], id: "plain", since: 3 };
+const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "NEVER_CUT_ENABLED" };
+const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "CHANGE_COMMANDER_ENABLED" };
+const catalog = [plain, a, b];
+const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
+
+describe("with no entry tied to a switch, nothing changes (the invariance Hugh's ruling requires)", () => {
+  // TODAY's rules, stated as the spec this model must reproduce: the proxy shows the sheet
+  // below the version, the sheet lists `since > seen`, and the cookie is `<user>.<version>`.
+  const legacy = (s: number) =>
+    s === 0
+      ? { kind: "firstRun" as const }
+      : s >= ABOUT_VERSION
+        ? { kind: "none" as const }
+        : {
+            kind: "behind" as const,
+            entries: aboutEntries.filter((e) => e.since > s).map((e) => ({ id: e.id, title: e.title })),
+          };
+
+  it("holds for the shipped catalog, which ties no entry to a switch yet", () => {
+    expect(aboutEntries.filter((e) => e.switch)).toEqual([]);
+    expect(Math.max(...aboutEntries.map((e) => e.since))).toBe(ABOUT_VERSION);
+  });
+
+  it("draws every entry, whatever the switches say", () => {
+    expect(visibleEntries(OFF)).toEqual(aboutEntries);
+    expect(visibleEntries(ON)).toEqual(aboutEntries);
+  });
+
+  it("makes the same proxy decision, sheet and cookie as before at every seen", () => {
+    for (let s = 0; s <= ABOUT_VERSION + 2; s++) {
+      const d = sheetDecision({ userId: "u", seen: seen(s), visible: visibleEntries(ON) });
+      expect(d.cookie).toBe(`u.${ABOUT_VERSION}`);
+      const state = d.show ? readSheetState(new Headers({ "x-about-sheet": d.header })) : { kind: "none" };
+      expect(state, `seen ${s}`).toEqual(legacy(s));
+    }
+  });
+
+  it("marks the same entries new as the version rule did", () => {
+    for (let s = 1; s <= ABOUT_VERSION; s++) {
+      const now = unseenEntries(aboutEntries, seen(s)).map((e) => e.id);
+      const before = aboutEntries.filter((e) => e.since > s).map((e) => e.id);
+      expect(now, `seen ${s}`).toEqual(before);
+    }
+  });
+});
+
+describe("an entry tied to a switch", () => {
+  it("draws only while its switch is on", () => {
+    expect(visibleEntries(OFF, catalog)).toEqual([plain]);
+    expect(visibleEntries({ NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain, a]);
+    // The feature's own flag rule: anything but the exact string 'true' is off.
+    expect(visibleEntries({ NEVER_CUT_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
+  });
+
+  it("is seen by its id, never by the version", () => {
+    expect(isSeen(a, seen(99))).toBe(false);
+    expect(isSeen(a, seen(0, ["a"]))).toBe(true);
+    expect(isSeen(plain, seen(3))).toBe(true);
+  });
+
+  it("reads unseen when switched on after another was switched on and read (out of order)", () => {
+    // Switch B on, and the reader visits: the visit records the switched ids it drew.
+    const bOn = visibleEntries({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
+    const afterVisit = seen(9, switchedIds(bOn));
+    expect(unseenEntries(bOn, afterVisit)).toEqual([]);
+    // Now switch A on. A version number would say the reader is current; A is still new.
+    const both = visibleEntries(ON, catalog);
+    expect(unseenEntries(both, afterVisit).map((e) => e.id)).toEqual(["a"]);
+    const d = sheetDecision({ userId: "u", seen: afterVisit, visible: both, version: 9 });
+    expect(d).toEqual({ show: true, header: "a", cookie: "u.9+a+b" });
+  });
+
+  it("retires the sheet cookie when a switch flips, so the proxy decides again", () => {
+    const bOnly = visibleEntries({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
+    expect(sheetCookieValue("u", visibleEntries(OFF, catalog), 9)).toBe("u.9");
+    expect(sheetCookieValue("u", bOnly, 9)).toBe("u.9+b");
+    expect(sheetCookieValue("u", visibleEntries(ON, catalog), 9)).toBe("u.9+a+b");
+  });
+
+  it("still introduces the page to a brand-new account rather than listing it", () => {
+    expect(unseenEntries(visibleEntries(ON, catalog), seen(0))).toEqual([]);
+    expect(sheetDecision({ userId: "u", seen: seen(0), visible: visibleEntries(ON, catalog), version: 9 }).show).toBe(true);
+  });
+});
