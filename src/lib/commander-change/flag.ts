@@ -4,8 +4,10 @@
  * switch, on in staging and off in production until he walks it).
  *
  * The same shape as `swapToolsEnabled`: server-side, read per request, and OFF for anything but
- * the exact string `'true'`. With it off, the deck page draws today's `FullCardTrigger` unchanged
- * and `changeCommander` refuses (audit F6). Changing it on Vercel needs a redeploy.
+ * the exact string `'true'`. With it off, the deck page will draw today's `FullCardTrigger`
+ * unchanged (PR 3) and the `changeCommander` write will refuse (PR 2; audit F6). Neither exists
+ * yet, so today nothing writes the live commander columns after creation. Changing it on Vercel
+ * needs a redeploy.
  *
  * The draft's commander awareness is behind it too: with it off, `loadDraftState` reads no commander
  * column, and the claim read's `pending_decks` and the deck list's pending count emit the SQL they

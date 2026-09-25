@@ -47,7 +47,8 @@ type Row = {
  */
 // A deck whose live commander differs from its newest version's is pending too (change commander,
 // plan decision 2). With CHANGE_COMMANDER_ENABLED off the clause is ABSENT and the CTE is
-// byte-identical to the one before commanders could move (availability-query.test.ts pins that).
+// byte-identical to the one before commanders could move (src/lib/commander-change/queries.test.ts
+// pins that).
 const commanderPending = () => changeCommanderEnabled()
   ? sql` or exists (
       select 1 from decks lvd where lvd.id = nv.deck_id and ${deckCommanderMovedSql("lvd")}
