@@ -240,7 +240,7 @@ elements they sit inside where a value is needed to place them.
 | E1.1 | Back link | text | `← HD - Thrasios & Tymna` | same |
 | E1.2 | Heading | text | `3 changes since v3` | same |
 | E1.3 | Heading | type | `var(--display)` 700 18px | `var(--display)` 700 24px |
-| E1.4 | Lede | render | — | `The deck page already shows this list: this is what it costs to lock in as v4.` |
+| E1.4 | Lede | render | — | `The deck page already shows this list: this is what it costs to lock in as v${n}.` (drawn at v4) |
 | E1.5 | Section heading | text | `Commanders` | `Commanders` |
 | E1.6 | Section heading | type | Plex Mono 400 11px; 0.16em; uppercase; `var(--accent)`; flex none | same |
 | E1.7 | Heading row | layout | flex; align baseline; justify space-between; gap 10; padding-bottom 10; margin-bottom 10; border-bottom 1px solid `var(--elevated)` | same |
@@ -441,7 +441,7 @@ Copy wording differences are not scored (a separate review owns wording); `lands
 
 **E3. Columns**
 - E3.1–E3.3 ✅ shipped
-- E3.4 ❌ MISMATCH — design: `Going out` note `it moves to the command zone` / implementation: `copy.outNote(released)` (review-changes.tsx:1017) → `it goes back in the pool when you commit. Put one back and it never left.` That is false here: the only out row is Reyhan, who moves to the command zone; the released copy (Tymna) is in no column. No `it moves to the command zone` key exists. (`Coming in` note `1 free · 0 sleeved · 0 to buy` matches.)
+- E3.4 ❌ MISMATCH — design: `Going out` note `it moves to the command zone` / implementation: `copy.outNote(released)` (review-changes.tsx:1017) → the pool sentence (`deckVersioningCopy.review.outNote`, singular). That is false here: the only out row is Reyhan, who moves to the command zone; the released copy (Tymna) is in no column. No `it moves to the command zone` key exists. (`Coming in` note `1 free · 0 sleeved · 0 to buy` matches.)
 - E3.5–E3.6 ✅ shipped
 - E3.7 ✅ `ZoneHint side="in"` `from the command zone`
 - E3.8 ✅ `ZoneHint side="out"` `to the command zone`, Put back suppressed
@@ -476,7 +476,7 @@ Copy wording differences are not scored (a separate review owns wording); `lands
 ### Gaps
 
 Visual:
-1. src/components/decks/review-changes.tsx:1017 — `Going out` column note — text — `it moves to the command zone` → `outNote(released)`, "it goes back in the pool when you commit…" (false for this row; key missing)
+1. src/components/decks/review-changes.tsx:1017 — `Going out` column note — text — `it moves to the command zone` → `outNote(released)`, the pool sentence (false for this row; key missing)
 2. src/components/decks/change-commander-sheet.tsx:513 — fate line — position — last child of each tile box → a shared row below the tiles (differs only when names wrap unequally)
 3. src/components/decks/change-commander-sheet.tsx:588 — stays label — id — `stays-label` → `change-commander-stays` (non-visual; labelling intact)
 4. src/components/decks/change-commander-sheet.tsx:606 — stays option — tabindex — `0` on every option → roving `0`/`-1` (non-visual, deliberate a11y)
