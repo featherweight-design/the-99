@@ -18,7 +18,7 @@ import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls, type DeckView } from "./group-toggle";
+import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
 import { deckCardComparator } from "../../lib/decks/sort-cards";
 import {
   DECK_SORT_STORAGE_KEY,
@@ -198,10 +198,9 @@ export function buildMarkKeyEntries({
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
     }
-    // Locked, conditional like `buy` and `proxy`: it describes the rows below. Rows only for now,
-    // because the card view's tile draws no lock until Locked PR 4b gives it one, and a key never
-    // glosses a mark the reader cannot find on the screen beneath it.
-    if (!inCardView && shown.some((c) => c.locked)) {
+    // Locked, conditional like `buy` and `proxy`: it describes the rows or tiles below, both of
+    // which draw the closed lock (the tile's on its meta line since Locked PR 4b).
+    if (shown.some((c) => c.locked)) {
       entries.push({ id: "locked", sample: <LockMark />, word: lockedCardsCopy.mark.key });
     }
     // THE FACT ENTRIES FOLLOW THE CARDS, exactly as `buy` and `proxy` do.
@@ -348,15 +347,10 @@ export function Decklist({
   // same position, above the sweep receipt and the groups. The count is locked CARDS, one per
   // oracle id (T3), over the whole deck: the mode only runs under `All`, where that is the view.
   const lockedCardCount = cards.filter((c) => c.locked).length;
-  // THE LIST VIEW ONLY, until Locked 4b gives the card view's tiles a lock: in the card view the
-  // button is absent, and switching to it ends the mode, as Shopping does. A mode there would turn
-  // the button to Done and disable the bulk pair while every tile's ✕ still removes its card.
-  const lockHere = view === "list";
-  const pickView = (next: DeckView) => {
-    if (next !== "list" && lockMode) onLockModeChange?.(false);
-    chooseView(next);
-  };
-  const keyLine = lockMode && lockHere ? (
+  // BOTH VIEWS since Locked 4b, and the mode is KEPT across List and Card (the addendum's rule):
+  // every row's ✕ and every tile's ✕ column is the toggle while it runs. Only Shopping ends it,
+  // in the shell.
+  const keyLine = lockMode ? (
     <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
       {lockedCardsCopy.mode.line}{" "}
       <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(lockedCardCount)}</span>
@@ -366,8 +360,8 @@ export function Decklist({
   );
   // The toolbar's lock props, identical on all three of its mounts.
   const lockProps = {
-    lockMode: lockMode && lockHere,
-    onLockModeChange: lockHere ? onLockModeChange : undefined,
+    lockMode,
+    onLockModeChange,
     lockedAutoCount,
   };
 
@@ -676,7 +670,7 @@ export function Decklist({
             onFilterChange={onFilterChange}
             onGroupingChange={onGroupingChange}
             view={view}
-            onViewChange={pickView}
+            onViewChange={chooseView}
             autoCount={autoCount}
             keptCount={keptCount}
             sweepPending={sweepPending}
@@ -762,7 +756,7 @@ export function Decklist({
           onFilterChange={onFilterChange}
           onGroupingChange={onGroupingChange}
           view={view}
-          onViewChange={pickView}
+          onViewChange={chooseView}
           autoCount={autoCount}
           keptCount={keptCount}
           sweepPending={sweepPending}
@@ -915,7 +909,7 @@ export function Decklist({
         onFilterChange={onFilterChange}
         onGroupingChange={onGroupingChange}
         view={view}
-        onViewChange={pickView}
+        onViewChange={chooseView}
         autoCount={autoCount}
         keptCount={keptCount}
         sweepPending={sweepPending}

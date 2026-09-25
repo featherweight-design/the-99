@@ -50,6 +50,9 @@ import {
 } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 import { ProxyTag } from "./proxy-tag";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { useLockCards } from "./lock-cards";
+import { LockMark } from "./lock-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 
 /** Radius, plate and art shape — everything the undo tile shares with the live
@@ -137,6 +140,21 @@ export function DeckCardTile({
   // document order and skipped entirely by a reader tabbing between controls —
   // which is how most people meet this tile. The row solves it the same way.
   const draftDescriptionId = useId();
+  // Locked (PR 4b), read exactly as `decklist-row.tsx` reads it. `null` with the switch off, and then
+  // nothing below draws a lock: the tile is the tile it was. `locked` is the drawn answer, a press
+  // on this visit included (`useCardLocks`). The card view renders under `All` only, so the mode
+  // needs no Shopping test here.
+  const lockCards = useLockCards();
+  const locked = lockCards !== null && card.locked === true;
+  const lockMode = lockCards?.mode === true;
+  const lockError = lockCards?.errors.get(card.oracleId) ?? null;
+  const lockDescriptionId = useId();
+  // Both ids in reading order, as the row does: that the card is locked, then what the draft did.
+  // Said in the mode too, where the drawn mark gives way to the toggle but the card is no less
+  // locked.
+  const describedBy =
+    [locked ? lockDescriptionId : null, pendingMove ? draftDescriptionId : null].filter(Boolean).join(" ") ||
+    undefined;
   /** Spoken after the name, in the vocabulary's own order — see the `ariaLabel` below. */
   const factClause = card.facts?.length
     ? `, ${cardMarkCopy.rowAria(card.facts.map(cardFactName))}`
@@ -201,7 +219,7 @@ export function DeckCardTile({
             oracleId={card.oracleId}
             name={fullName}
             siblings={siblings}
-            describedBy={pendingMove ? draftDescriptionId : undefined}
+            describedBy={describedBy}
             // `undefined` below one copy on purpose: that is what makes the
             // provider compose the label from `name`, which carries the full
             // printed name. The single-copy tile is the common case, and a
@@ -382,11 +400,42 @@ export function DeckCardTile({
                   — which made Card view the one place a reader saw neither the glyphs nor
                   the words. The fix was always this direction: a surface that shows cards
                   shows what they are. */}
-              {(card.facts ?? []).map((fact) => (
-                <FactTooltip key={fact} fact={fact}>
-                  <CardFactMark fact={fact} silent />
-                </FactTooltip>
-              ))}
+              {/* THE LOCK (Locked, PR 4b), after the dot and the slot and before the fact marks
+                  (STATES, card tile). Hidden in the mode, where the ✕ column is the toggle and
+                  says the same thing in accent.
+
+                  THE TRUNCATION ORDER (audit F8). The meta line has no overflow rule of its own
+                  and at 390 it has about 120px, which a dot, a chip, a count and two fact marks
+                  already reach. Everything before the facts is `flex-none`, the lock included, so
+                  the facts are the one thing on the line that gives way. They sit in a group that
+                  WRAPS inside a one-glyph box and clips, so a mark that does not fit drops whole
+                  rather than being cut through. The group's first line opens with a zero-width
+                  item, because a wrapping line always keeps its first item: without it the first
+                  mark would stay on line 1 and be sliced when less than a glyph is left. The
+                  spacing rides each later mark rather than a gap, so the zero-width item moves
+                  nothing on a roomy line. The lock, the only place a tile says it is
+                  locked, never drops. A dropped fact is still spoken: the trigger's label carries
+                  every one. */}
+              {locked && !lockMode && (
+                <span className="flex flex-none items-center" data-testid="tile-lock-mark">
+                  <LockMark title={lockedCardsCopy.mark.title} />
+                </span>
+              )}
+              {card.facts?.length ? (
+                <span
+                  className="flex min-w-0 flex-wrap items-center h-[16px] overflow-hidden"
+                  data-testid="tile-fact-marks"
+                >
+                  <span aria-hidden="true" className="w-0 flex-none" data-testid="tile-fact-lead" />
+                  {card.facts.map((fact, i) => (
+                    <span key={fact} className={`flex flex-none${i > 0 ? " pl-[6px]" : ""}`}>
+                      <FactTooltip fact={fact}>
+                        <CardFactMark fact={fact} silent />
+                      </FactTooltip>
+                    </span>
+                  ))}
+                </span>
+              ) : null}
               {/* Rendered on `pendingMove`, NOT on `draftFigure`. A proxied tile
                   draws no figure and the draft still touched it, so a
                   description nested in the figure's branch would vanish exactly
@@ -395,6 +444,13 @@ export function DeckCardTile({
               {pendingMove && (
                 <span id={draftDescriptionId} className="sr-only">
                   {draftSpoken}
+                </span>
+              )}
+              {/* Outside the drawn mark's branch, so the mode hiding the mark cannot leave the
+                  trigger's `aria-describedby` pointing at nothing. */}
+              {locked && (
+                <span id={lockDescriptionId} className="sr-only">
+                  {lockedCardsCopy.mark.a11y}
                 </span>
               )}
             </>
@@ -409,6 +465,33 @@ export function DeckCardTile({
           name={displayName}
           nameTrail={<TwoFacedMark layout={card.layout} />}
           trailing={
+            lockCards && lockMode ? (
+              /* In the mode the ✕ column is the lock toggle (STATES, card tile), drawn at rest
+                 rather than on hover: the column keeps its width, 32px on desktop and 44px on the
+                 phone, so the mode costs the caption nothing. The box is 26×24 on desktop and 36px
+                 on the phone, skinned as the row's: unlocked, an open lock on a `--border-strong`
+                 box; locked, the closed lock in `--accent` on an accent box with a 14% fill. The ✕
+                 returns on `Done`. */
+              <button
+                type="button"
+                aria-pressed={locked}
+                aria-label={lockedCardsCopy.mode.toggleAria(displayName)}
+                aria-busy={lockCards.pending.has(card.oracleId)}
+                onClick={() => lockCards.toggle(card)}
+                data-testid="tile-lock-toggle"
+                className="flex-none self-stretch flex items-center justify-center w-[44px] md:w-[32px] bg-transparent border-0 p-0 cursor-pointer"
+              >
+                <span
+                  className={`flex items-center justify-center w-[36px] h-[36px] md:w-[26px] md:h-[24px] rounded-[6px] border ${
+                    locked
+                      ? "border-accent bg-[color:color-mix(in_oklab,var(--accent)_14%,transparent)]"
+                      : "border-border-strong"
+                  }`}
+                >
+                  <LockMark open={!locked} tone="mode" />
+                </span>
+              </button>
+            ) : (
             /* A full-height column rather than an item on the name line: this
                is the only way to remove a card in card view, so it takes the
                floor rather than the shortcut exception, and height is what a
@@ -432,10 +515,13 @@ export function DeckCardTile({
             >
               {addPanelCopy.row.remove}
             </button>
+            )
           }
         />
       </div>
       {error && !shellReportsFailure && <MutationError message={error} />}
+      {/* A refused lock reverts and says why here, under its tile, as the row does. */}
+      {lockError && <MutationError message={lockError} />}
     </li>
   );
 }

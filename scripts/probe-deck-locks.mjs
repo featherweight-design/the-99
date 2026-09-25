@@ -11,6 +11,8 @@
 //   - Clear all auto counts only the copies it can take, sweeps every auto card but the locked one,
 //     and its receipt says the locked card stayed.
 //   - A locked card removed with its ✕ and brought back with the row's Undo comes back LOCKED (L1).
+//   - The card view (4b): the mode is kept across List and Card, a tile's toggle locks its card,
+//     the tile keeps its lock on the meta line at rest (F8), and the tile's Undo returns it locked.
 //   - Under the Shopping filter Lock cards is absent.
 //   - T1: at 1300 the toolbar, with two-digit auto and kept counts and a draft note at v10, is one
 //     line. 1280 is printed, not asserted (the addendum records it as about 5px over).
@@ -105,19 +107,30 @@ async function buildDeck(userId, name, made) {
     select ${v.id}, oracle_id, quantity from deck_cards where deck_id = ${id}`;
   // The Undo card is colorless and legal, so its re-add passes validation on any template; the
   // twelve autos and the cut are any other non-basic singletons.
-  const [plain] = await sql`
+  const [plain, tile] = await sql`
     select dc.oracle_id, c.name from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
     where dc.deck_id = ${id} and dc.quantity = 1 and c.type_line not like 'Basic Land%'
       and cardinality(c.color_identity) = 0 and c.commander_legal
-    order by dc.oracle_id limit 1`;
-  if (!plain) throw new Error("The template holds no colorless legal singleton to Undo.");
+    order by dc.oracle_id limit 2`;
+  if (!tile) throw new Error("The template holds fewer than two colorless legal singletons to Undo.");
   const picks = await sql`
     select dc.oracle_id, c.name from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
     where dc.deck_id = ${id} and dc.quantity = 1 and c.type_line not like 'Basic Land%'
-      and dc.oracle_id <> ${plain.oracle_id}
+      and dc.oracle_id not in (${plain.oracle_id}, ${tile.oracle_id})
     order by dc.oracle_id limit 13`;
   if (picks.length < 13) throw new Error("The template holds fewer than 13 other non-basic singletons.");
   const autos = picks.slice(0, 12).map((p) => p.oracle_id);
+  // F8's crowded line: a Game Changer asked for twice against the one copy owned, locked, so its
+  // tile's meta line carries the dot, a `short` chip, a count, the lock and its fact marks at once.
+  const [crowded] = await sql`
+    select dc.oracle_id, c.name from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
+    where dc.deck_id = ${id} and dc.quantity = 1 and c.game_changer
+      and dc.oracle_id not in (${plain.oracle_id}, ${tile.oracle_id})
+      and dc.oracle_id <> all(${autos}::uuid[])
+    order by dc.oracle_id limit 1`;
+  if (!crowded) throw new Error("The template holds no Game Changer singleton for the crowded tile.");
+  await sql`update deck_cards set quantity = 2 where deck_id = ${id} and oracle_id = ${crowded.oracle_id}`;
+  await sql`insert into deck_locks (deck_id, oracle_id) values (${id}, ${crowded.oracle_id})`;
   await sql`update deck_cards set auto = true where deck_id = ${id} and oracle_id = any(${autos}::uuid[])`;
   await sql`delete from deck_cards where deck_id = ${id} and oracle_id = ${picks[12].oracle_id}`;
   return {
@@ -125,6 +138,8 @@ async function buildDeck(userId, name, made) {
     autoLocked: { oracleId: picks[0].oracle_id, name: picks[0].name },
     autos,
     plain: { oracleId: plain.oracle_id, name: plain.name },
+    tile: { oracleId: tile.oracle_id, name: tile.name },
+    crowded: { oracleId: crowded.oracle_id, name: crowded.name },
   };
 }
 
@@ -230,6 +245,70 @@ async function run() {
       const lock = await lockOf(fx.deckId, fx.plain.oracleId);
       report(`${tag} · Undo returns a locked card LOCKED (L1)`, gone && back && lock?.removed_at === null,
         `removed ${gone}, back ${back}, lock ${lock ? `removed_at ${lock.removed_at}` : "none"}`);
+
+      // The card view (Locked 4b): the mode is kept across List and Card, a tile's toggle locks its
+      // card, the tile keeps its mark at rest (never dropped from its meta line, F8), and the tile's
+      // Undo returns a locked card locked.
+      await lockButton.click();
+      await visible(onPageRole(page, "button", /^Card view$/)).click();
+      report(`${tag} · the mode is kept across List and Card`, await done.isVisible().catch(() => false), "");
+      const tileToggle = visible(onPage(page, `[data-testid="tile-lock-toggle"][aria-label="Lock ${fx.tile.name}"]`));
+      await tileToggle.click();
+      const tileHeld = await until(async () => (await lockOf(fx.deckId, fx.tile.oracleId))?.removed_at === null);
+      report(`${tag} · a tile's toggle locks ${fx.tile.name}`, (await tileToggle.getAttribute("aria-pressed")) === "true" && tileHeld, `in deck_locks: ${tileHeld}`);
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/deck-locks-card-mode-${label}.png` });
+      await done.click();
+      const tileMark = await page.evaluate((name) => {
+        const remove = [...document.querySelectorAll("main button")].find((b) => b.getAttribute("aria-label") === `Remove ${name}` && b.getBoundingClientRect().width > 0);
+        let tile = remove?.parentElement ?? null;
+        while (tile && !tile.querySelector('[data-testid="tile-lock-mark"]')) tile = tile.parentElement;
+        const mark = tile?.querySelector('[data-testid="tile-lock-mark"]');
+        if (!mark) return null;
+        const m = mark.getBoundingClientRect();
+        const line = mark.parentElement.getBoundingClientRect();
+        return { width: Math.round(m.width), inside: m.left >= line.left - 0.5 && m.right <= line.right + 0.5 };
+      }, fx.tile.name);
+      report(`${tag} · the tile keeps its lock on the meta line (F8)`, !!tileMark && tileMark.width > 0 && tileMark.inside, JSON.stringify(tileMark));
+      // F8 on the crowded line: the lock inside its line, and every fact mark either WHOLE inside the
+      // fact group or wholly outside it (dropped), never sliced.
+      const crowd = await page.evaluate((name) => {
+        // The tile is the nearest ancestor holding this card's own remove button (one copy or more).
+        const holder = (el) => {
+          for (let n = el; n; n = n.parentElement) {
+            if ([...n.querySelectorAll("button")].some((b) => ((l) => l.startsWith("Remove") && l.includes(name))(b.getAttribute("aria-label") ?? ""))) return n;
+          }
+          return null;
+        };
+        const line = [...document.querySelectorAll("main [data-testid='tile-lock-mark']")]
+          .filter((m) => m.getBoundingClientRect().width > 0)
+          .find((m) => { const t = holder(m); return t && t.querySelectorAll("[data-testid='tile-lock-mark']").length === 1; })
+          ?.parentElement;
+        if (!line) {
+          const removes = [...document.querySelectorAll("main button")].map((b) => b.getAttribute("aria-label") ?? "").filter((l) => l.includes(name));
+          return { missing: true, marks: document.querySelectorAll("main [data-testid='tile-lock-mark']").length, removes };
+        }
+        const mark = line.querySelector("[data-testid='tile-lock-mark']").getBoundingClientRect();
+        const lineBox = line.getBoundingClientRect();
+        const group = line.querySelector("[data-testid='tile-fact-marks']");
+        const g = group?.getBoundingClientRect();
+        const glyphs = group ? [...group.children].slice(1).map((el) => el.getBoundingClientRect()) : [];
+        const sliced = glyphs.filter((r) => r.top < g.bottom && r.bottom > g.top && r.left < g.right && r.right > g.right + 0.5).length;
+        const shown = glyphs.filter((r) => r.top < g.bottom && r.right <= g.right + 0.5).length;
+        return {
+          lockInside: mark.left >= lineBox.left - 0.5 && mark.right <= lineBox.right + 0.5 && mark.width > 0,
+          groupWidth: g ? Math.round(g.width) : null, glyphs: glyphs.length, shown, sliced,
+        };
+      }, fx.crowded.name);
+      report(`${tag} · the crowded line keeps its lock and slices no fact mark (F8)`, !!crowd && crowd.lockInside && crowd.sliced === 0 && crowd.glyphs > 0, JSON.stringify(crowd));
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/deck-locks-card-rest-${label}.png` });
+      await visible(onPage(page, `[aria-label="Remove ${fx.tile.name}"]`)).click();
+      const tileGone = await until(async () => !(await holds(fx.deckId, fx.tile.oracleId)));
+      await visible(onPage(page, `[aria-label="Undo removing ${fx.tile.name}"]`)).click();
+      const tileBack = await until(() => holds(fx.deckId, fx.tile.oracleId));
+      const tileLock = await lockOf(fx.deckId, fx.tile.oracleId);
+      report(`${tag} · the tile's Undo returns a locked card LOCKED (L1)`, tileGone && tileBack && tileLock?.removed_at === null,
+        `removed ${tileGone}, back ${tileBack}, lock ${tileLock ? `removed_at ${tileLock.removed_at}` : "none"}`);
+      await visible(onPageRole(page, "button", /^List view$/)).click();
 
       // Shopping: Lock cards is absent.
       const shopping = visible(onPageRole(page, "button", /^Shopping \d+$/));
