@@ -36,7 +36,7 @@ beforeEach(() => {
 describe("runDeeperRead", () => {
   it("settles a read with a valid chip as the chips, with its bill", async () => {
     const out = await runDeeperRead("u", input, deps(reply({ themes: ["Dinosaurs"] })));
-    expect(out).toEqual({ kind: "read", chips: [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }], notUsed: [], notUnderstood: [] });
+    expect(out).toEqual({ kind: "read", readId: "r", chips: [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }], notUsed: [], notUnderstood: [] });
     expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: true } });
     expect(store.settleRead.mock.calls[0][2]).toEqual({ model: "m", usage });
   });
@@ -65,9 +65,10 @@ describe("runDeeperRead", () => {
 
   it("offers an ask once: a repeat gets the stored read back and reserves nothing", async () => {
     const chips = [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }];
-    store.startRead.mockResolvedValue({ kind: "stored", read: { chips, notUsed: [], notUnderstood: [] } });
+    store.startRead.mockResolvedValue({ kind: "stored", read: { chips, notUsed: [], notUnderstood: [] }, readId: "first" });
     const d = deps(reply({}));
-    expect(await runDeeperRead("u", input, d)).toEqual({ kind: "read", chips, notUsed: [], notUnderstood: [] });
+    // The stored read's own id, never the repeat press's: the results page verifies the read by it.
+    expect(await runDeeperRead("u", input, d)).toEqual({ kind: "read", readId: "first", chips, notUsed: [], notUnderstood: [] });
     expect(d.model).not.toHaveBeenCalled();
     expect(store.settleRead).not.toHaveBeenCalled();
   });

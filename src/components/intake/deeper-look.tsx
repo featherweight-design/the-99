@@ -123,7 +123,8 @@ export function DeeperLook({
     switch (out.kind) {
       case "read":
         // Pushed, not replaced: Back returns to the first results, which are still true.
-        router.push(deeperTarget(params, out, readId));
+        // The read's own id: a repeated ask answers with the read already stored, under its id.
+        router.push(deeperTarget(params, out, out.readId));
         return;
       case "nothing":
         router.push(deeperTarget(params, { chips: [], notUsed: out.notUsed, notUnderstood: out.notUnderstood }, readId));

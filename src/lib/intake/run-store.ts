@@ -82,7 +82,7 @@ const STOP_KEPT_MS = 24 * 60 * 60 * 1000;
 class StoppedEarly extends Error {}
 
 class StoredFound extends Error {
-  constructor(readonly read: StoredRead) { super("stored"); }
+  constructor(readonly read: StoredRead, readonly readId: string) { super("stored"); }
 }
 
 /**
@@ -102,12 +102,12 @@ export async function loadOwnRead(readId: string, userId: string): Promise<{ kin
   return null;
 }
 
-/** The player's settled read of this ask, when there is one. */
-async function storedRead(tx: Tx, userId: string, hash: string): Promise<StoredRead | null> {
-  const [row] = await tx.select({ chips: intakeReads.chips }).from(intakeReads)
+/** The player's settled read of this ask, with its own id, when there is one. */
+async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: string; read: StoredRead } | null> {
+  const [row] = await tx.select({ id: intakeReads.id, chips: intakeReads.chips }).from(intakeReads)
     .where(and(eq(intakeReads.userId, userId), eq(intakeReads.wordsHash, hash), eq(intakeReads.status, "ok")))
     .orderBy(desc(intakeReads.createdAt)).limit(1);
-  return (row?.chips as StoredRead | undefined) ?? null;
+  return row?.chips ? { id: row.id, read: row.chips as StoredRead } : null;
 }
 
 export function reapCutoff(now: Date): Date {
@@ -145,7 +145,7 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead; readId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.
@@ -164,7 +164,7 @@ export async function startRead(
         if (early) throw new StoppedEarly();
       }
       const stored = await storedRead(tx, userId, hash);
-      if (stored) throw new StoredFound(stored);
+      if (stored) throw new StoredFound(stored.read, stored.id);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
@@ -175,7 +175,8 @@ export async function startRead(
     });
     return { kind: "started", ...handle };
   } catch (err) {
-    if (err instanceof StoredFound) return { kind: "stored", read: err.read };
+    // The stored read's OWN id, not the press's: the results page verifies the read by it.
+    if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId };
     if (err instanceof StoppedEarly) return { kind: "stopped" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.

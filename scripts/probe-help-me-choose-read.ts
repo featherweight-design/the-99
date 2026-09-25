@@ -115,6 +115,7 @@ async function main() {
     let asked = false;
     const again = await run(randomUUID(), async () => { asked = true; return reply(["Dinosaurs"]); }, `big dumb lizards ${ok}`);
     check("the same ask again gets the stored read back", [again.kind, asked], ["read", false]);
+    check("under the stored read's own id, which the results page can verify", again.kind === "read" ? again.readId : null, ok);
     check("and reserves nothing", await units(USER), unitsBefore);
 
     console.log("\n2. Nothing valid came back: refunded (F4)");

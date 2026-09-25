@@ -56,11 +56,19 @@ describe("the deeper look", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
     expect(screen.getByTestId("results-dim").dataset.looking).toBe("true");
     const readId = (look.mock.calls[0] as unknown as [{ readId: string }])[0].readId;
-    await act(async () => answer({ kind: "read", chips: [{ kind: "theme", slug: "tokens", label: "Tokens" }], notUsed: [], notUnderstood: ["stompy"] }));
+    await act(async () => answer({ kind: "read", readId, chips: [{ kind: "theme", slug: "tokens", label: "Tokens" }], notUsed: [], notUnderstood: ["stompy"] }));
     const to = new URL(push.mock.calls[0][0], "http://x");
     expect(to.searchParams.get("r")).toBe(readId);
     expect(to.searchParams.get("t")).toBe("dinosaurs,tokens");
     expect(to.searchParams.get("d")).toBe("t:tokens");
+  });
+
+  it("sends a repeated ask to the stored read's own id, which is the one the page can verify", async () => {
+    const STORED = "0000aaaa-0000-4000-8000-0000000000ff";
+    const look = vi.fn(async () => ({ kind: "read", readId: STORED, chips: [], notUsed: [], notUnderstood: [] }));
+    draw({ look, stop: vi.fn() });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
+    expect(new URL(push.mock.calls[0][0], "http://x").searchParams.get("r")).toBe(STORED);
   });
 
   it("believes a Stop only when it took: the credit is back and the offer returns", async () => {
@@ -82,7 +90,7 @@ describe("the deeper look", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /Look deeper/ })));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
     expect(screen.getByTestId("deeper-look").dataset.phase).toBe("looking");
-    await act(async () => answer({ kind: "read", chips: [], notUsed: [], notUnderstood: [] }));
+    await act(async () => answer({ kind: "read", readId: "0000aaaa-0000-4000-8000-0000000000ee", chips: [], notUsed: [], notUnderstood: [] }));
     expect(push).toHaveBeenCalledTimes(1);
   });
 

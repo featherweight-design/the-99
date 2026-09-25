@@ -15,7 +15,8 @@ import { loadIntakeCatalog } from "./search";
  */
 
 export type DeeperReadOutcome =
-  | ({ kind: "read" } & StoredRead)
+  /** `readId` names the row holding it: the press's own, or a stored read's when the ask repeats. */
+  | ({ kind: "read"; readId: string } & StoredRead)
   /** The read was valid in shape but nothing in it held up: refunded. */
   | { kind: "nothing"; notUsed: string[]; notUnderstood: string[] }
   /** The call failed: refunded. */
@@ -77,7 +78,7 @@ export async function runDeeperRead(
   const { labels, index } = await deps.loadIndex();
   const started = await startRead(userId, hash, deps.modelName, { readId: input.readId, now: deps.now() });
   // An ask already read is offered once: its chips come back and no unit was reserved.
-  if (started.kind === "stored") return { kind: "read", ...started.read };
+  if (started.kind === "stored") return { kind: "read", readId: started.readId, ...started.read };
   if (started.kind !== "started") return { kind: started.kind };
 
   const outcome = await deps.model(buildReadPrompt(input.words, labels), input.words, index);
@@ -90,6 +91,6 @@ export async function runDeeperRead(
   const settled = await settleRead({ ...started, userId }, { kind: "read", result }, billed);
   if (!settled) return { kind: "stopped" };
   return result.useful
-    ? { kind: "read", chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
+    ? { kind: "read", readId: started.readId, chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
     : { kind: "nothing", notUsed: result.notUsed, notUnderstood: result.notUnderstood };
 }
