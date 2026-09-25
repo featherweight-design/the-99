@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -143,5 +143,41 @@ describe("StandInsSheet", () => {
       expect(screen.getByRole("alert")).toHaveTextContent(T.takeFailed);
       expect(screen.queryByTestId("stand-in-taken")).toBeNull();
     });
+  });
+});
+
+// Swap tools v2, item 5: a stand-in row previews its card on hover, as a decklist row does, and a
+// press puts the box away so it cannot sit over the card the press stacks.
+describe("StandInsSheet row preview", () => {
+  const ART = "https://cards.example/chaos-warp.jpg";
+  const withArt = {
+    ...READ,
+    unlisted: [{ ...standIn("Chaos Warp", false), card: { ...cardRow("Chaos Warp"), imageUri: ART } }],
+  } as unknown as StandInsRead;
+
+  it("opens the card's preview after the hover delay, and a press closes it", async () => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true, configurable: true,
+      value: (query: string) => ({
+        matches: query === "(hover: hover)", media: query, onchange: null,
+        addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {},
+        dispatchEvent: () => false,
+      }),
+    });
+    loadStandInsAction.mockResolvedValue(withArt);
+    await open();
+    vi.useFakeTimers();
+    try {
+      const row = within(screen.getByTestId("stand-ins-sheet")).getByText("Chaos Warp").closest('[data-testid="stand-in-row"]')!;
+      fireEvent.mouseEnter(row, { clientX: 300, clientY: 300 });
+      act(() => void vi.advanceTimersByTime(240));
+      const box = screen.getByTestId("hover-preview");
+      expect(box.getAttribute("style")).toContain(ART);
+      fireEvent.pointerDown(row);
+      act(() => void vi.advanceTimersByTime(1000));
+      expect(screen.queryByTestId("hover-preview")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

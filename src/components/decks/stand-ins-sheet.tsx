@@ -25,6 +25,7 @@ import { loadingStatus, sheetModel, type SheetRow } from "../../lib/swaps/sheet-
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
+import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
 import { ModalChrome } from "./receipt-modal";
@@ -70,9 +71,16 @@ type RowTake = {
 };
 
 function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: string[] }) {
+  const preview = usePreviewRow(row.imageUri);
   return (
     <li className="border-b border-[color:var(--border)]">
-      <div className="grid grid-cols-[minmax(0,1fr)_72px] md:grid-cols-[minmax(0,1fr)_96px_64px] gap-x-[10px] gap-y-[6px] md:gap-x-[12px] md:gap-y-0 items-center py-[10px] md:py-[9px]">
+      <div
+        data-testid="stand-in-row"
+        {...preview}
+        // A press stacks the card over the sheet at z-50, under this box (z-60 over a sheet), and a
+        // pointer held still fires no leave: so the press puts the box away itself.
+        onPointerDown={preview.onMouseLeave}
+        className="grid grid-cols-[minmax(0,1fr)_72px] md:grid-cols-[minmax(0,1fr)_96px_64px] gap-x-[10px] gap-y-[6px] md:gap-x-[12px] md:gap-y-0 items-center py-[10px] md:py-[9px]">
         <div className="flex flex-col gap-[3px] min-w-0">
           <div className="flex items-center gap-[7px] min-w-0">
             <Thumb imageUri={row.imageUri} border="var(--border-dashed)" />
@@ -374,6 +382,9 @@ export function StandInsSheet({
   const provenance = newestAsOf ? provenanceForm(newestAsOf, new Date()) : null;
 
   return (
+    // Its own preview provider, as the version synopsis has (swap tools v2, item 5): a stand-in row
+    // previews its card like a decklist row does, raised above the sheet since it sits in a dialog.
+    <HoverPreviewProvider>
     <ModalChrome
       title={copy.title}
       closeLabel={copy.closeAria}
@@ -501,5 +512,6 @@ export function StandInsSheet({
         ) : null}
       </div>
     </ModalChrome>
+    </HoverPreviewProvider>
   );
 }
