@@ -63,6 +63,9 @@ export type Candidate = ThemeRow & BracketFacts & {
   /** How many of the commander's support cards the player owns inside its identity, not counting
    *  itself: `supportOverlap` over `commanderPool`, the /commanders scorer's `overlapOwned`. */
   ownedSupport: number;
+  /** Every support card inside its identity, the same count without the ownership test: the
+   *  owned order's *{n} of the {total} cards its decks run are yours*. 0 when not read. */
+  supportTotal: number;
 };
 
 export type AnswerKey =
@@ -83,7 +86,20 @@ export type SearchResult = {
   order: "fit" | "owned";
   rows: Ranked[];
   /** Set when fewer than `TOO_NARROW_BELOW` commanders pass and some answer was given. */
-  tooNarrow: { without: { answer: AnswerKey; count: number }[] } | null;
+  tooNarrow: {
+    without: { answer: AnswerKey; count: number }[];
+    /**
+     * Colors asked for EXACTLY, and how many pass with the control's *Any* instead (every one of
+     * them, other colors allowed). Null when it admits no more than the exact ask already does,
+     * as with all five colors, where the two modes mean the same.
+     */
+    widen: { count: number } | null;
+    /**
+     * The build-around card alone puts every deck over the bracket asked for: a Game Changer at
+     * 1 or 2, which allow none. The row that drops the card says so.
+     */
+    cardOverBracket: "gameChanger" | null;
+  } | null;
 };
 
 export function passes(c: Candidate, a: Answers, card: CardFacts | null, skip?: AnswerKey): boolean {
@@ -142,9 +158,19 @@ export function rankCandidates(candidates: readonly Candidate[], a: Answers, car
       without: answers
         .map((answer) => ({ answer, count: candidates.filter((c) => passes(c, a, card, answer)).length }))
         .sort((x, y) => y.count - x.count),
+      widen: widenCount(candidates, a, card, rows.length),
+      cardOverBracket: a.card !== null && card?.gameChanger === true && a.bracket !== null && a.bracket <= 2
+        ? "gameChanger" as const
+        : null,
     }
     : null;
   return { order, rows, tooNarrow };
+}
+
+function widenCount(candidates: readonly Candidate[], a: Answers, card: CardFacts | null, exact: number): { count: number } | null {
+  if (a.colors.length === 0 || a.match !== "exactly") return null;
+  const count = candidates.filter((c) => passes(c, { ...a, match: "contains" }, card)).length;
+  return count > exact ? { count } : null;
 }
 
 /** The weakest of a row's figures: it fits only as well as its worst answer. */

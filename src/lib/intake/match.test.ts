@@ -88,3 +88,23 @@ describe("the free match", () => {
     expect(match("+1/+1 counters").chips).toEqual([{ kind: "theme", slug: "plus-1-plus-1-counters", label: "+1/+1 Counters" }]);
   });
 });
+
+describe("the leftover phrases", () => {
+  it("keeps each unmatched run verbatim, split at a match, a figure and a clause break", () => {
+    expect(match("I want Dinosaurs that stomp, lots of little tokens under $200 and Big Energy").phrases)
+      .toEqual(["stomp", "little tokens", "Big Energy"]);
+  });
+
+  it("keeps a stop word inside a phrase and trims those at its ends", () => {
+    expect(match("the art of war with Dinosaurs").phrases).toEqual(["art of war"]);
+  });
+
+  it("splits at a clause mark inside a token, and leaves out a token that holds a match", () => {
+    expect(match("big lizards (wide) and stomp,roar").phrases).toEqual(["big lizards", "wide", "stomp", "roar"]);
+    expect(match("Dinosaurs-stomp with wings").phrases).toEqual(["wings"]);
+  });
+
+  it("gives no phrase for words that are all stop words", () => {
+    expect(match("I want a deck with Dinosaurs").phrases).toEqual([]);
+  });
+});

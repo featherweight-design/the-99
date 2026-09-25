@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { catalogGeneration } from "../cache/catalog-generation";
 import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { notBuiltBy } from "../decks/built";
@@ -32,6 +33,26 @@ export async function loadThemeVocabulary(): Promise<VocabularyTheme[]> {
 }
 
 /**
+ * The vocabulary and the phrase index, read once per server instance and kept while the catalog
+ * generation holds, for at most `CATALOG_MEMO_MS`. The index reads every commander-legal card
+ * name (about 30,000), which no submit should pay for, and it is too large for Next's data cache
+ * (2 MB an entry). A catalog refresh moves the generation; the commander index, which the
+ * vocabulary also reads, moves monthly and is caught by the window.
+ */
+const CATALOG_MEMO_MS = 10 * 60 * 1000;
+let memo: { generation: string; at: number; value: Promise<{ themes: VocabularyTheme[]; index: PhraseIndex }> } | null = null;
+
+export async function loadIntakeCatalog(now: number = Date.now()): Promise<{ themes: VocabularyTheme[]; index: PhraseIndex }> {
+  const generation = await catalogGeneration();
+  if (memo && memo.generation === generation && now - memo.at < CATALOG_MEMO_MS) return memo.value;
+  const value = loadThemeVocabulary().then(async (themes) => ({ themes, index: await loadPhraseIndex(themes) }));
+  memo = { generation, at: now, value };
+  // A failed read is not kept: the next request tries again.
+  value.catch(() => { if (memo?.value === value) memo = null; });
+  return value;
+}
+
+/**
  * The free match's index: the theme vocabulary and every COMMANDER-LEGAL card's name. A card the
  * format bans could never be placed in the deck (`validateCardForDeck` refuses it), so it is not a
  * build-around card either. Basic lands are left out through the repository's own rule,
@@ -46,7 +67,10 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
     .map((c) => ({ oracleId: c.oracle_id, name: c.name })));
 }
 
-export async function searchCommanders(userId: string, answers: Answers): Promise<SearchResult> {
+/** The search, with the build-around card's own facts for its chip (owned, price, flags). */
+export type SearchOutcome = SearchResult & { card: CardFacts | null };
+
+export async function searchCommanders(userId: string, answers: Answers): Promise<SearchOutcome> {
   const card = answers.card;
   // Owned support is the no-theme order's only input, and it is the dearest figure here: a count
   // over every commander's support list. It is read only when that order is the one in use.
@@ -68,14 +92,19 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
           -- commanderPool's two rules: inside the commander's identity, and not the commander.
           and sc.color_identity <@ c.color_identity and csc.oracle_id <> cs.commander_oracle_id
           and exists (select 1 from collection_items ci
-                      where ci.user_id = ${userId} and ci.oracle_id = csc.oracle_id))::int` : sql`0`} as owned_support
+                      where ci.user_id = ${userId} and ci.oracle_id = csc.oracle_id))::int` : sql`0`} as owned_support,
+      ${needOwnedSupport ? sql`(
+        select count(*) from commander_support_cards csc
+        join cards sc on sc.oracle_id = csc.oracle_id
+        where csc.commander_oracle_id = cs.commander_oracle_id
+          and sc.color_identity <@ c.color_identity and csc.oracle_id <> cs.commander_oracle_id)::int` : sql`0`} as support_total
     from commander_support cs
     join cards c on c.oracle_id = cs.commander_oracle_id
     where c.commander_legal and cs.synergy_state = 'ok'
       and ${notBuiltBy(userId, sql`cs.commander_oracle_id`)}
   `)).rows as {
     id: string; name: string; color_identity: string[]; deck_count: number | null; game_changer: boolean;
-    tags: EdhrecTag[]; owned: boolean; card_inclusion: number | null; owned_support: number;
+    tags: EdhrecTag[]; owned: boolean; card_inclusion: number | null; owned_support: number; support_total: number;
   }[];
 
   const ids = rows.map((r) => r.id);
@@ -101,6 +130,7 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
     cardInclusion: r.card_inclusion === null ? null : r.card_inclusion / 100,
     combosWithCard: combos.get(r.id) ?? { combos: 0, loops: 0 },
     ownedSupport: r.owned_support,
+    supportTotal: r.support_total,
     gameChanger: r.game_changer,
     massLandDenial: flags.get(r.id)?.massLandDenial ?? false,
     extraTurn: flags.get(r.id)?.extraTurn ?? false,
@@ -114,7 +144,7 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
     massLandDenial: flags.get(card)?.massLandDenial ?? false,
     extraTurn: flags.get(card)?.extraTurn ?? false,
   };
-  return rankCandidates(candidates, answers, cardFacts);
+  return { ...rankCandidates(candidates, answers, cardFacts), card: cardFacts };
 }
 
 async function loadCardRow(userId: string, oracleId: string): Promise<{ owned: boolean; gameChanger: boolean } | null> {

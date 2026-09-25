@@ -120,6 +120,36 @@ async function main() {
   const narrow = await searchCommanders(USER, { ...none, themes: [narrowTheme.slug], colors: ["W", "U", "B", "R", "G"], match: "exactly" });
   check("a narrow ask is named, with what each answer removes", narrow.rows.length < TOO_NARROW_BELOW && narrow.tooNarrow !== null
     && narrow.tooNarrow.without.length === 2, `${narrow.rows.length} rows; ${JSON.stringify(narrow.tooNarrow?.without)}`);
+  // Five colors exactly and five colors with others allowed are the same ask (there is no sixth
+  // color), so no widen may be offered: offering one would promise commanders it cannot bring.
+  check("a widen that admits no one more is not offered", narrow.tooNarrow?.widen === null, JSON.stringify(narrow.tooNarrow?.widen));
+  const mono = await searchCommanders(USER, { ...none, themes: [narrowTheme.slug], colors: ["G"], match: "exactly" });
+  check("a widen, when offered, admits more than the exact ask", mono.tooNarrow?.widen == null || mono.tooNarrow.widen.count > mono.rows.length,
+    `${mono.rows.length} exact, widen ${JSON.stringify(mono.tooNarrow?.widen)}`);
+
+  console.log("\n6. The page the screen draws");
+  const { loadResultsPage, RESULT_PAGE } = await import("../src/lib/intake/rows");
+  const { loadIntakeCatalog } = await import("../src/lib/intake/search");
+  const first = await loadResultsPage(USER, none);
+  const second = await loadResultsPage(USER, none, RESULT_PAGE);
+  check("a blank ask ships one page of rows, and says more exist", first.rows.length === RESULT_PAGE && first.hasMore,
+    `${first.rows.length} rows, hasMore ${first.hasMore}, of ${all.rows.length}`);
+  check("the next page continues the same order", second.rows[0]?.oracleId === all.rows[RESULT_PAGE]?.candidate.oracleId,
+    `${second.rows[0]?.name} against ${all.rows[RESULT_PAGE]?.candidate.name}`);
+  check("every row carries the support total it is counted against", first.rows.every((r) => r.supportTotal >= r.ownedSupport && r.supportTotal > 0),
+    first.rows.slice(0, 3).map((r) => `${r.ownedSupport}/${r.supportTotal}`).join(", "));
+  check("every row has art to draw", first.rows.every((r) => r.imageUri !== null), `${first.rows.filter((r) => !r.imageUri).length} without`);
+  const marks = [...first.rows, ...second.rows].map((r) => r.mark.kind);
+  check("rows carry the commander's own mark", marks.every((k) => k === "free" || k === "held" || k === "buy"),
+    JSON.stringify(Object.fromEntries(["free", "held", "buy"].map((k) => [k, marks.filter((m) => m === k).length]))));
+  const markedOwned = [...first.rows, ...second.rows].filter((r) => r.mark.kind !== "buy").map((r) => r.oracleId);
+  const [{ n: ownedCount }] = markedOwned.length === 0 ? [{ n: 0 }] : await rows<{ n: number }>(sql`
+    select count(distinct oracle_id)::int as n from collection_items where user_id = ${USER} and oracle_id = any(${sql.param(markedOwned)}::uuid[])`);
+  check("an owned mark is only ever on a commander the player owns", ownedCount === markedOwned.length, `${ownedCount} of ${markedOwned.length}`);
+  const byCardPage = await loadResultsPage(USER, { ...none, card: solRing.oracle_id });
+  check("a card ask returns the card's own facts", byCardPage.card?.oracleId === solRing.oracle_id, JSON.stringify(byCardPage.card));
+  const [a, b] = [await loadIntakeCatalog(), await loadIntakeCatalog()];
+  check("the catalog is read once and kept", a === b && a.themes.length === vocab.length, `${a.themes.length} themes`);
 }
 
 main()

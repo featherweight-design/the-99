@@ -5,7 +5,7 @@ import { rankCandidates, withinBracket, withinBudget, type Answers, type Candida
 const none: Answers = { colors: [], match: "contains", themes: [], card: null, budgetDollars: null, bracket: null };
 const cmd = (over: Partial<Candidate> & { name: string }): Candidate => ({
   oracleId: over.name, colorIdentity: ["G"], deckCount: 1000, tags: [],
-  owned: false, priceCents: 100, cardInclusion: null, combosWithCard: { combos: 0, loops: 0 }, ownedSupport: 0,
+  owned: false, priceCents: 100, cardInclusion: null, combosWithCard: { combos: 0, loops: 0 }, ownedSupport: 0, supportTotal: 0,
   gameChanger: false, massLandDenial: false, extraTurn: false,
   ...over,
 });
@@ -134,6 +134,22 @@ describe("too narrow (ruling 8)", () => {
       card({ oracleId: "gc", gameChanger: true, priceCents: 9_999 }));
     expect(r.rows).toEqual([]);
     expect(r.tooNarrow?.without.find((w) => w.answer.kind === "card")?.count).toBe(pool.length);
+  });
+
+  it("offers to widen exact colors to any of them, with its count", () => {
+    // Exactly green shuts out Dino, which is red and green; any-green lets it back.
+    const r = rankCandidates(pool, { ...none, colors: ["G"], match: "exactly", themes: ["dinos"] }, null);
+    expect(r.rows).toEqual([]);
+    expect(r.tooNarrow?.widen).toEqual({ count: 1 });
+    expect(rankCandidates(pool, { ...none, colors: ["R"], themes: ["dinos"] }, null).tooNarrow?.widen).toBeNull();
+    // Red and green exactly already holds Dino, so any-red-and-green admits no one more.
+    expect(rankCandidates(pool, { ...none, colors: ["R", "G"], match: "exactly", themes: ["dinos"] }, null).tooNarrow?.widen).toBeNull();
+  });
+
+  it("says when the build-around card alone is over a low bracket", () => {
+    const gc = card({ oracleId: "gc", gameChanger: true });
+    expect(rankCandidates(pool, { ...none, card: "gc", bracket: 2 }, gc).tooNarrow?.cardOverBracket).toBe("gameChanger");
+    expect(rankCandidates(pool, { ...none, card: "gc", bracket: 3, themes: ["dinos"] }, gc).tooNarrow?.cardOverBracket).toBeNull();
   });
 
   it("is not raised when enough pass, or when nothing was asked", () => {
