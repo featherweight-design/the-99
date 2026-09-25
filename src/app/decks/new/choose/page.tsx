@@ -70,7 +70,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   }
 
   const themeLabels = Object.fromEntries(themes.map((t) => [t.slug, t.label]));
-  const card = p.card ? await loadCardChip(userId, p.card) : null;
+  // A decoration, read outside the results' own recovery: a failure here draws the page without the
+  // card's chip rather than taking the whole route down before *Search failed* could offer a retry.
+  const card = p.card ? await loadCardChip(userId, p.card).catch(() => null) : null;
   const labels = { theme: (slug: string) => themeLabels[slug] ?? slug, card: card?.name ?? null };
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);
