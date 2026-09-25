@@ -144,19 +144,24 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
     massLandDenial: flags.get(card)?.massLandDenial ?? false,
     extraTurn: flags.get(card)?.extraTurn ?? false,
   };
-  // A card id that parses but names no card any more (a stale link) is dropped, as every invalid
-  // answer is: the search then runs, and reports its order, as if no card were asked.
+  // A card id that parses but names no card any more (a stale link), or one the intake could never
+  // have offered (a basic, a banned card), is dropped, as every invalid answer is: the search then runs, and reports its order, as if no card were asked.
   const effective = card !== null && cardRow === null ? { ...answers, card: null } : answers;
   return { ...rankCandidates(candidates, effective, cardFacts), card: cardFacts };
 }
 
+/**
+ * The build-around card, when it is one the intake could have offered: the free match's own
+ * eligibility (`loadPhraseIndex`), commander-legal and never a basic land. A card a hand-edited
+ * URL names outside that is no answer, and reads as null like a card that does not exist.
+ */
 async function loadCardRow(userId: string, oracleId: string): Promise<{ owned: boolean; gameChanger: boolean } | null> {
   const [row] = (await db.execute(sql`
-    select c.game_changer,
+    select c.game_changer, c.type_line,
       exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
-    from cards c where c.oracle_id = ${oracleId}::uuid
-  `)).rows as { game_changer: boolean; owned: boolean }[];
-  return row ? { owned: row.owned, gameChanger: row.game_changer } : null;
+    from cards c where c.oracle_id = ${oracleId}::uuid and c.commander_legal
+  `)).rows as { game_changer: boolean; type_line: string; owned: boolean }[];
+  return row && !isBasicLand(row.type_line) ? { owned: row.owned, gameChanger: row.game_changer } : null;
 }
 
 /**

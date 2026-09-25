@@ -151,6 +151,10 @@ async function main() {
   const stale = await searchCommanders(USER, { ...none, card: "00000000-0000-4000-8000-00000000dead" });
   check("a card that no longer exists is dropped: the owned order, and no card facts", stale.order === "owned" && stale.card === null,
     `order ${stale.order}, card ${JSON.stringify(stale.card)}`);
+  const [forest] = await rows<{ oracle_id: string }>(sql`select oracle_id from cards where name = 'Forest'`);
+  const basic = await searchCommanders(USER, { ...none, card: forest.oracle_id });
+  check("a basic land is no build-around card, whatever the URL says", basic.order === "owned" && basic.card === null,
+    `order ${basic.order}, card ${JSON.stringify(basic.card)}`);
   const [a, b] = [await loadIntakeCatalog(), await loadIntakeCatalog()];
   check("the catalog is read once and kept", a === b && a.themes.length === vocab.length, `${a.themes.length} themes`);
 }
