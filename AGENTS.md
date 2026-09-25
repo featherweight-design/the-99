@@ -1447,11 +1447,11 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `local-dev`, **never production**.
 
   **Every probe that clears the About gate calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`)
-  as well as writing `about_version_seen`. The write keeps the proxy from drawing the sheet again,
-  but the sign-in load happens BEFORE it, and with the switch on that load can already have drawn
-  a card on the current document — one that sits over the page and intercepts the probe's
-  presses. The helper sets the sheet's cookie and presses Later if a card is up, and never
-  touches the database. `about-clear.test.mts` sweeps every
+  as well as writing `about_version_seen` (audit E5). On every sign-in path today the write is
+  enough by itself — the first load is signed out and `Clerk.setActive` refreshes by RSC, and the
+  proxy decides on neither — so the helper is a GUARD: a probe that loads a document signed in
+  before its write would otherwise measure a page with a card over it, and say nothing. It sets
+  the sheet's cookie and presses Later if a card is up, and never touches the database. `about-clear.test.mts` sweeps every
   probe that writes the column and fails one that does not call it.
 
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter

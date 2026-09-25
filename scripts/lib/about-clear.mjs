@@ -3,11 +3,14 @@
 //
 // ADDITIVE, and deliberately so. Every probe already raises `user_prefs.about_version_seen`
 // for the account it signs in as, some with a capture-and-restore of their own, and that
-// write is what keeps the proxy from ever deciding to draw the sheet again. What it cannot
-// reach is the browser: the sign-in load happens BEFORE the write, and with the switch on
-// that load can already have drawn a sheet on the current document and left no cookie
-// the probe knows about. This sets the sheet's cookie for the current version and, if a
-// card is on screen, presses Later, which writes nothing.
+// write is what keeps the proxy from drawing the sheet on any later document load. On
+// every sign-in path here today that write is enough by itself: the first load is signed
+// out, so the proxy passes it, and `Clerk.setActive` refreshes through the router (an RSC
+// request), which the proxy never decides on. So this is a guard, not a fix, and it is
+// the audit's E5 rule rather than a response to a card anyone has seen: a probe that loads
+// a document signed in BEFORE its write would meet the sheet, and nothing in the probe
+// would say so. It sets the sheet's cookie for the current version, which the proxy reads
+// as "shown", and presses Later if a card is on screen, which writes nothing.
 //
 // It never touches the database, so no probe's cleanup has anything new to undo.
 
