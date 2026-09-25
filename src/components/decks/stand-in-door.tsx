@@ -145,7 +145,11 @@ export function StandInDoorRegistration({
         const { shoppingCards: list, receipts, newestAsOf: asOf } = rows.current;
         const card = list.find((c) => c.oracleId === oracleId)
           ?? receipts.findLast((r) => r.cutOracleId === oracleId)?.cutCard;
-        return card ? <StandInDoor card={card} layout={layout} newestAsOf={asOf} /> : null;
+        // No door for a card the player LOCKED in this deck (Locked, L4 and PR 6): offering stand-ins
+        // is offering to cut it. The modal says nothing else about the lock; the door is simply
+        // absent, as the Shopping row's ⇄ is. `locked` comes off the list the page draws, so a lock
+        // pressed a moment ago hides it before the server has settled.
+        return card && !card.locked ? <StandInDoor card={card} layout={layout} newestAsOf={asOf} /> : null;
       }),
     [registerDoor],
   );

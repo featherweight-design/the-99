@@ -179,6 +179,42 @@ describe("the card modal's door (swap tools PR 4c)", () => {
   });
 });
 
+// Locked (PR 6's modal half): a card locked in this deck draws no door, since offering stand-ins
+// is offering to cut it. `locked` rides the list the page draws, the shell's optimistic overrides
+// included, so a lock pressed a moment ago hides the door before the server has settled.
+describe("the door on a locked card", () => {
+  function drawRows(rows: DeckDetailCard[]) {
+    return (
+      <SwapToolsProvider deckId="d1" deckName="Deck" storedLimitCents={null}>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <StandInDoorRegistration shoppingCards={rows} newestAsOf={asOf} />
+          <CardDetailTrigger oracleId="o-plateau" name="Plateau" door>shop plateau</CardDetailTrigger>
+        </CardDetailProvider>
+      </SwapToolsProvider>
+    );
+  }
+
+  it("draws on an unlocked Shopping row and not on a locked one", async () => {
+    const view = render(drawRows([PLATEAU]));
+    await press("shop plateau");
+    expect(doors()).toHaveLength(2);
+    view.unmount();
+
+    render(drawRows([{ ...PLATEAU, locked: true }]));
+    await press("shop plateau");
+    expect(screen.getByRole("dialog", { name: /Plateau/ })).toBeInTheDocument();
+    expect(doors()).toHaveLength(0);
+  });
+
+  // The list the page draws changes under the registration (the optimistic lock), not a remount.
+  it("hides the door once the drawn list says the card is locked, before any server reply", async () => {
+    const view = render(drawRows([PLATEAU]));
+    view.rerender(drawRows([{ ...PLATEAU, locked: true }]));
+    await press("shop plateau");
+    expect(doors()).toHaveLength(0);
+  });
+});
+
 describe("focus after a take", () => {
   const receipt: SwapReceipt = {
     swapId: "s1", deckId: "d1", cutOracleId: "o-plateau", cut: "Plateau", add: "Rugged Prairie",
