@@ -35,11 +35,16 @@ through `/copy-review` with pictures, at build time.
 ## Engineering findings
 
 ### Every entry: gating
-**G1. The bump must follow four production flips, not one.** Each entry describes a feature that is
-switched off in production today: `HELP_ME_CHOOSE_ENABLED`, `NEVER_CUT_ENABLED`,
-`CHANGE_COMMANDER_ENABLED` and `SWAP_TOOLS_ENABLED`. If `ABOUT_VERSION` 10 ships while any of them is
-off, every account is shown an entry for a feature it cannot reach. The launch task either waits for
-all four, or ships only the entries whose switch is on.
+**G1. Resolved by Hugh's ruling on Q4 (2026-09-25): each entry is tied to its feature's switch.**
+An entry names its switch and renders only while that switch is on: `HELP_ME_CHOOSE_ENABLED`,
+`NEVER_CUT_ENABLED`, `CHANGE_COMMANDER_ENABLED` and `SWAP_TOOLS_ENABLED` (`ABOUT_SHEET_ENABLED` for
+the rethink). Staging shows all five. Production shows each one when its switch flips, and that flip
+announces it: the "new in About" sheet fires for any visible entry the reader hasn't seen. There is
+no batched version bump. **This replaces the single seen-version model.** Switches can flip out of
+order, so seen is recorded per reader as entry ids (a `user_prefs` migration). Entries `since` 1–9
+keep reading as seen for a reader at version 9 or above. The per-browser sheet dismissal follows the
+same model, and the `about.test.ts` hash still forces a deliberate re-pin. The build is replanned on
+this model once Q1–Q3 are answered.
 
 ### A1 Help me choose
 - **H1. The caption's hand-off is not on main.** "Picking one creates the deck and fills it under the
@@ -135,6 +140,4 @@ the revision.
 3. **Change commander on partner decks.** Staging indexes one pair with 20 or more decks, so a
    partner deck almost always sees no candidates. Should the entry mention pairs before the pair
    index is widened, or say singles only for now?
-4. **What goes out at version 10?** Help me choose isn't finished (PR 6, 6a and 6b are open), and
-   all four features need their production flip (G1). Does 10 wait for all five entries, or ship
-   with the ready ones and let the rest take 11?
+4. ~~What goes out at version 10?~~ **Answered (Hugh): each entry follows its own switch.** See G1.
