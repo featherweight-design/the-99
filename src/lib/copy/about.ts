@@ -745,3 +745,20 @@ export const aboutEntries: readonly AboutEntry[] = [
 export const aboutMenuCopy = {
   label: 'About The 99',
 } as const;
+
+// ---- The one-time sheet (About R6, STATES-about-r6.md §N, §R8) -------------
+// Drawn by the shell over whatever page a document load opened, once per
+// browser per version, while `ABOUT_SHEET_ENABLED` is on.
+export const aboutSheetCopy = {
+  heading: (n: number) => `${n} new in About`,
+  // Only ever for two or more: at four titles the card lists all four (§N2).
+  more: (n: number) => `and ${n} more`,
+  firstRunHeading: aboutCopy.pageTitle,
+  firstRunLine:
+    'One page that explains every mark, figure and status in the app, and where each one lives.',
+  show: 'Show me',
+  later: 'Later',
+  where: 'Always in your account menu, under About The 99.',
+  regionLabel: 'New in About',
+  regionLabelFirstRun: 'About The 99',
+} as const;
