@@ -95,6 +95,20 @@ export type PlanFillArgs = {
    * EVERY role it satisfies (§2.5a), and its type line joins the tie-break's tally.
    */
   held?: readonly HeldCard[];
+  /**
+   * A constraint the deck's owner asked for (Help me choose: a budget, a bracket). A card the gate
+   * refuses is passed over wherever it would have been placed, exactly as a card that closes no
+   * open floor is, and the fill carries on down its own order; `place` is told each card taken, in
+   * the order taken, so a running constraint (money left, combos assembled) moves with the fill.
+   *
+   * Absent, every card is admitted, and every caller before Help me choose is unchanged.
+   */
+  gate?: FillGate;
+};
+
+export type FillGate = {
+  admits(candidate: FillCandidate): boolean;
+  place(candidate: FillCandidate): void;
 };
 
 export type FillPlan = {
@@ -306,7 +320,8 @@ export function dedupeSelectionFromPool<T extends { oracleId: string }>(
 }
 
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
-  const { hasPartner, skeleton, synergyRank, slots, pool = "all", held } = args;
+  const { hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate } = args;
+  const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
   const landCeiling = landTarget(hasPartner, skeleton);
   const bodySize = deckBodySize(hasPartner);
@@ -369,6 +384,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     if (NON_LAND_ROLES.every((r) => counts[r] >= floors[r])) break;
     if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) { i += 1; continue; }
+    if (!admits(candidate)) { i += 1; continue; }
     const roles = rolesOfCandidate(candidate);
     // Spent on the first role it can close, in ramp→draw→removal→wipes order —
     // the coverage-panel order. This deliberately diverges from suggestDeck's
@@ -404,7 +420,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     let chosen = candidate;
     if (deficits.size > 0) {
       for (const other of ordered) {
-        if (other === candidate || spent.has(other.oracleId)) continue;
+        if (other === candidate || spent.has(other.oracleId) || !admits(other)) continue;
         const otherRoles = rolesOfCandidate(other);
         if (otherRoles.includes("land") || !otherRoles.includes(firstOpen)) continue;
         // WITHIN THE OWNERSHIP TIER. `byPreference` makes owned the first and absolute
@@ -433,6 +449,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       ?? firstOpen;
 
     spent.add(chosen.oracleId);
+    gate?.place(chosen);
     // EVERY ROLE IT SATISFIES, one slot spent. Spec §2.5a: the targets describe decks with a
     // card counted under each role it fills, so crediting one role would make this fill place
     // two cards where the decklists behind the target counted one.
@@ -473,8 +490,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const takeLand = (candidate: FillCandidate, quantity: number): number => {
     const room = Math.max(0, limit - filledSoFar());
     const take = Math.min(quantity, room);
-    if (take <= 0) return 0;
+    if (take <= 0 || !admits(candidate)) return 0;
     spent.add(candidate.oracleId);
+    gate?.place(candidate);
     counts.land += take;
     rows.push({ oracleId: candidate.oracleId, quantity: take, role: "land" });
     return take;
@@ -580,8 +598,10 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // card that is only a spell, which is what a deck with its mana base already down wants.
     if (playableAsLand(candidate.typeLine, candidate.layout)
       && counts.land + modalDrops + residualDrops >= landCeiling) continue;
+    if (!admits(candidate)) continue;
     if (playableAsLand(candidate.typeLine, candidate.layout)) residualDrops += 1;
     spent.add(candidate.oracleId);
+    gate?.place(candidate);
     placed.push({ typeLine: candidate.typeLine, quantity: 1 });
     rows.push({ oracleId: candidate.oracleId, quantity: 1, role: "other" });
   }

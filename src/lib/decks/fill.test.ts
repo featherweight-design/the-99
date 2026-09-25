@@ -704,3 +704,20 @@ describe("held", () => {
       .toBe("other");
   });
 });
+
+describe("a gate (Help me choose's budget and bracket)", () => {
+  it("passes over every card it refuses, in every pass, and hears each placement in order", () => {
+    const pool = [
+      ...poolOf(120),
+      ...Array.from({ length: 40 }, (_, i) => c({ oracleId: `land${i}`, typeLine: "Land", oracleText: "{T}: Add {C}." })),
+    ];
+    const refused = new Set(["p0", "p1", "p2", "p3", "p4", "land0", "land1"]);
+    const heard: string[] = [];
+    const plan = planFill(pool, { ...FLAT, gate: { admits: (x) => !refused.has(x.oracleId), place: (x) => heard.push(x.oracleId) } });
+    const placedIds = plan.rows.map((r) => r.oracleId);
+    expect(placedIds.filter((id) => refused.has(id))).toEqual([]);
+    expect(heard).toEqual(placedIds);
+    // The fill carried on past the refusals rather than stopping short.
+    expect(plan.filled).toBe(planFill(pool, FLAT).filled);
+  });
+});
