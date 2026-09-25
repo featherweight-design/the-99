@@ -7,7 +7,7 @@ import { placeReceipts } from "./place-receipts";
 
 const card = (name: string) => ({ name, oracleId: `id-${name}`, cmc: 2, price: null }) as unknown as DeckDetailCard;
 const receipt = (cut: string): SwapReceipt => ({
-  swapId: `s-${cut}`, cutOracleId: `id-${cut}`, cut, add: "X", sections: [], groupLabel: "", free: false, cutLeft: 0,
+  swapId: `s-${cut}`, cutOracleId: `id-${cut}`, cut, add: "X", cutCard: { name: cut, oracleId: `id-${cut}` } as DeckDetailCard, free: false, cutLeft: 0,
 });
 const names = (placed: ReturnType<typeof placeReceipts>) =>
   placed.map((p) => ("card" in p ? p.card.name : `[${p.receipt.cut}]`));

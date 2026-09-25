@@ -26,6 +26,13 @@ F4, F8, F10, F11 and F13 applied.
   is the page's note, and a reload shows the deck as it stands.
 - **A receipt takes its cut's slot in name order under the name sort, and the section's last slot
   under price or mana.** The cut's own figure has gone with its row.
+- **A receipt is filed by the list's own sectioning rules** (`receiptHome`). It goes to the cut's type
+  group under `By type`. Under `By role` it goes to the pinned spoken-for group when the cut was spoken
+  for, else its targeted role, else `Other`. When the take emptied that section, the receipt heads a
+  section of the same name, one per name. An open sheet or a standing receipt holds off the empty
+  Shopping state, which would otherwise take Undo swap away.
+- **The stand-in's name opens its card; the thumb does not.** §7.2 allows either. One trigger per row
+  keeps a single tab stop, and the name is the control the dotted rule marks.
 - **The one-copy-fewer receipt draws at both widths.** The canvas calls it unreachable; a basic, or
   a card held in several copies, reaches it.
 - **The hover preview on a stand-in is not attached.** The sheet mounts outside the list's
@@ -56,8 +63,8 @@ Not a gap for this PR:
 `probe:swap-sheet` presses through all of it at 390 and 1300 against a built deck:
 - a stand-in's card opens stacked with its footer, and desktop pages the sheet's list;
 - Take lands the taken row and puts away the other Takes, and the draft holds the add and not the
-  cut;
-- the receipt draws where the row was, and Undo swap brings the row back;
+  cut, each checked by name;
+- the receipt draws in the section the cut sat in, and Undo swap brings the row back;
 - a take refused after the cut left the draft names its cause, and Take stays live.
 
 Two mutations fail it: the footer suppressed, and the receipt never added.

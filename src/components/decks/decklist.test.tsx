@@ -5,6 +5,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { SwapReceipt } from "../../lib/swaps/context";
+import { useEffect } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
@@ -33,8 +35,16 @@ vi.mock("../../app/decks/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 // ── Dynamic imports (after mocks are set up) ─────────────────────────────────
-const { Decklist } = await import("./decklist");
+const { Decklist, receiptHome } = await import("./decklist");
 const { DecklistRow } = await import("./decklist-row");
+
+const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
+
+function SeedReceipts({ receipts }: { receipts: SwapReceipt[] }) {
+  const addReceipt = useSwapTools()!.addReceipt;
+  useEffect(() => receipts.forEach(addReceipt), [addReceipt, receipts]);
+  return null;
+}
 
 // ── Shared card factories ─────────────────────────────────────────────────────
 function makeCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name: string }): DeckDetailCard {
@@ -84,6 +94,8 @@ function renderDecklist(
     newestAsOf?: Date | null;
     onAnnounce?: (message: string) => void;
     pendingChanges?: ReadonlyMap<string, { from: number; to: number }>;
+    /** Swap receipts seeded into a `SwapToolsProvider` around the list. */
+    receipts?: SwapReceipt[];
   } = {},
 ) {
   const deckEdits = {
@@ -105,12 +117,21 @@ function renderDecklist(
     opts.pendingChanges
       ? <PendingChangeProvider value={{ moves: new Map(opts.pendingChanges) }}>{node}</PendingChangeProvider>
       : node;
+  const withSwaps = (node: React.ReactNode) =>
+    opts.receipts
+      ? (
+        <SwapToolsProvider deckId="deck-1" deckName="Deck" storedLimitCents={null}>
+          <SeedReceipts receipts={opts.receipts} />
+          {node}
+        </SwapToolsProvider>
+      )
+      : node;
 
   render(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}>{withDraft(
+      <AddOptimisticCardProvider value={deckEdits}>{withSwaps(withDraft(
         <Decklist mix={TEST_MIX}
           deckId="deck-1"
           cards={cards}
@@ -130,7 +151,7 @@ function renderDecklist(
           newestAsOf={opts.newestAsOf ?? null}
           onAnnounce={opts.onAnnounce}
         />
-      )}</AddOptimisticCardProvider>
+      ))}</AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
@@ -1208,5 +1229,54 @@ describe("writing one lane's order", () => {
     // This lane moved; the other tab's choice survived.
     expect(window.localStorage.getItem("the99:deck-sort"))
       .toBe("all:mana:desc|shopping:name:asc");
+  });
+});
+
+// A swap receipt draws in the section its cut sat in (swap tools, PR 4b), by the list's own rules.
+describe("receiptHome", () => {
+  it("files a cut by its type group under By type", () => {
+    expect(receiptHome(rampUnowned, "type")).toEqual({ key: "Artifacts", label: "Artifacts" });
+  });
+
+  it("files a targeted role's cut under that role, and any other role under Other", () => {
+    expect(receiptHome(rampUnowned, "role")).toEqual({ key: "ramp", label: "Ramp" });
+    const land = makeCard({ oracleId: "plateau", name: "Plateau", role: "land", owned: false, typeLine: "Land", cardTypeGroup: "Lands" });
+    expect(receiptHome(land, "role")).toEqual({ key: "other", label: "Other" });
+  });
+
+  it("files a spoken-for cut in the pinned spoken-for group, never its role", () => {
+    const spoken = makeCard({
+      oracleId: "demonic", name: "Demonic Tutor", role: "draw", owned: true,
+      availability: { owned: 1, free: -1, hard: 1, soft: 0, claims: [] },
+    });
+    expect(receiptHome(spoken, "role")).toEqual({
+      key: "spoken-for",
+      label: recommendationsCopy.shopping.spokenForGroupLabel,
+    });
+  });
+});
+
+describe("a swap receipt keeps the Shopping list up when the take emptied it", () => {
+  it("draws the receipt, and not the empty state, when no row is left to buy", async () => {
+    const cut = makeCard({ oracleId: "plateau", name: "Plateau", role: "land", owned: false, typeLine: "Land", cardTypeGroup: "Lands" });
+    const receipt: SwapReceipt = { swapId: "s1", cutOracleId: "plateau", cut: "Plateau", add: "Rugged Prairie", cutCard: cut, free: true, cutLeft: 0 };
+    await act(async () => renderDecklist([rampOwned, drawOwned], { filled: true, receipts: [receipt] }));
+    expect(screen.getByTestId("swap-receipt")).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading)).not.toBeInTheDocument();
+  });
+
+  it("gives two emptied sections of one name a single section", async () => {
+    const land = (id: string, name: string) =>
+      makeCard({ oracleId: id, name, role: "land", owned: false, typeLine: "Land", cardTypeGroup: "Lands" });
+    const receipts: SwapReceipt[] = [
+      { swapId: "s1", cutOracleId: "a", cut: "A", add: "X", cutCard: land("a", "A"), free: true, cutLeft: 0 },
+      { swapId: "s2", cutOracleId: "b", cut: "B", add: "Y", cutCard: land("b", "B"), free: true, cutLeft: 0 },
+    ];
+    await act(async () => renderDecklist([rampUnowned], { grouping: "type", receipts }));
+    expect(screen.getAllByTestId("swap-receipt")).toHaveLength(2);
+    // Both receipts sit in the one section, so exactly one `Lands` label heads them.
+    expect(screen.getAllByText("Lands", { exact: true })).toHaveLength(1);
+    const section = screen.getByText("Lands", { exact: true }).closest(".mb-\\[16px\\]") as HTMLElement;
+    expect(within(section).getAllByTestId("swap-receipt")).toHaveLength(2);
   });
 });

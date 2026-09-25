@@ -19,8 +19,7 @@ export function placeReceipts(
 ): Placed[] {
   const placed: Placed[] = cards.map((card) => ({ card }));
   for (const receipt of receipts) {
-    const asCard = { name: receipt.cut, oracleId: receipt.cutOracleId } as DeckDetailCard;
-    const at = sortKey === "name" ? placed.findIndex((p) => "card" in p && compare(asCard, p.card) < 0) : -1;
+    const at = sortKey === "name" ? placed.findIndex((p) => "card" in p && compare(receipt.cutCard, p.card) < 0) : -1;
     placed.splice(at === -1 ? placed.length : at, 0, { receipt });
   }
   return placed;

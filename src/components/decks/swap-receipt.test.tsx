@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { SwapReceipt } from "../../lib/swaps/context";
 
 const { undoSwapAction } = vi.hoisted(() => ({ undoSwapAction: vi.fn() }));
@@ -13,7 +14,7 @@ const { SwapReceiptRow } = await import("./swap-receipt");
 
 const base: SwapReceipt = {
   swapId: "s1", cutOracleId: "c1", cut: "Plateau", add: "Rugged Prairie",
-  sections: ["Lands"], groupLabel: "Lands", free: false, cutLeft: 0,
+  cutCard: { name: "Plateau", oracleId: "c1", cardTypeGroup: "Lands", role: "land" } as DeckDetailCard, free: false, cutLeft: 0,
 };
 
 /** Seeds the provider with one receipt, then draws whatever receipts it holds. */
@@ -37,7 +38,8 @@ async function draw(receipt: SwapReceipt) {
 describe("SwapReceiptRow", () => {
   it("reads the bought, free and one-copy-fewer outcomes, and speaks the swap", async () => {
     await draw(base);
-    expect(screen.getByTestId("swap-receipt")).toHaveTextContent(swapToolsCopy.row.receipt("Plateau", "Rugged Prairie"));
+    // Whole text, never a substring: the free form begins with the bought one.
+    expect(screen.getByText(swapToolsCopy.row.receipt("Plateau", "Rugged Prairie"), { exact: true })).toBeInTheDocument();
     expect(screen.getByText(swapToolsCopy.row.receiptAria("Plateau", "Rugged Prairie"))).toHaveClass("sr-only");
   });
 

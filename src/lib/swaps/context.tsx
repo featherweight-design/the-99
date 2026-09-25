@@ -45,12 +45,10 @@ export type SwapReceipt = {
   cut: string;
   add: string;
   /**
-   * The Shopping sections the cut could have sat in, first match wins: its type group under `By type`,
-   * its role (or `other`) under `By role`. `groupLabel` heads a section of its own when the cut was the
-   * last row of its section and the section has gone.
+   * The cut's row as the list drew it at the take. The list files the receipt with its own sectioning
+   * rules, so it lands where the row sat in either grouping, and the name sort compares the real card.
    */
-  sections: string[];
-  groupLabel: string;
+  cutCard: DeckDetailCard;
   /** From the take's own read, never the list's (audit note). */
   free: boolean;
   /** Copies of the cut still in the draft: the row stays and the receipt sits under it. */

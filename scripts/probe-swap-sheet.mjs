@@ -288,6 +288,10 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-testid="stand-ins-sheet"] h4'), null, { timeout: 30_000 });
       return page.getByRole("dialog", { name: "Cheaper stand-ins" });
     };
+    // The label of the Shopping section an element sits in: the section wrapper's first label.
+    const sectionOf = (loc) => loc.evaluate((el) =>
+      el.closest("div.mb-\\[16px\\]")?.querySelector("h3, span")?.textContent?.trim() ?? null);
+    const cutSection = await sectionOf(swapButton(page, cut));
     let sheet = await openSheet();
 
     // A stand-in's name opens its card stacked, with the Take footer, and the sheet stays under it.
@@ -322,8 +326,10 @@ try {
     report(`${tag} take: the taken row, and Take put away on the others`, (await takes.count()) === 0 && before > 1,
       `${before} Take buttons before, ${await takes.count()} after`);
     report(`${tag} take: the note under the head`, await sheet.getByText(/has left the draft/).isVisible(), "takenNote drawn");
-    const draft = await pool.query(`select count(*)::int n from deck_cards dc join cards c using (oracle_id) where dc.deck_id = $1 and c.name = any($2::text[])`, [deckId, [cut, addName]]);
-    report(`${tag} take: the draft holds the add and not the cut`, draft.rows[0].n === 1, `${draft.rows[0].n} of the two in the draft`);
+    const draft = await pool.query(`select c.name from deck_cards dc join cards c using (oracle_id) where dc.deck_id = $1 and c.name = any($2::text[])`, [deckId, [cut, addName]]);
+    const inDraft = draft.rows.map((r) => r.name);
+    report(`${tag} take: the draft holds the add and not the cut`, inDraft.includes(addName) && !inDraft.includes(cut),
+      `in the draft: ${inDraft.join(", ") || "neither"}`);
     await sheet.getByRole("button", { name: "Close cheaper stand-ins" }).click();
 
     // The receipt in the cut row's slot, then Undo swap from it.
@@ -333,6 +339,9 @@ try {
     // The receipt is the page's own note and draws at once; the row leaves when the revalidated page lands.
     const left = await swapButton(page, cut).waitFor({ state: "detached", timeout: 20_000 }).then(() => true, () => false);
     report(`${tag} receipt: the cut row has left the list`, left, left ? "no ⇄ for the cut" : "the cut's ⇄ is still drawn");
+    const receiptSection = await sectionOf(receipt);
+    report(`${tag} receipt: in the section the cut sat in`, cutSection !== null && receiptSection === cutSection,
+      `cut in ${cutSection}, receipt in ${receiptSection}`);
     const rbox = await receipt.boundingBox();
     if (w.label === 390) report(`${tag} receipt: 44px tall`, rbox && Math.round(rbox.height) >= 44, `${rbox?.height}px`);
     await receipt.getByRole("button", { name: /^Undo the swap/ }).click();
