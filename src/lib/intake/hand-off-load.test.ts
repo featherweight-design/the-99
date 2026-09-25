@@ -41,10 +41,10 @@ describe("loadHandOffAnswers", () => {
     expect((await loadHandOffAnswers("u", COMMANDER, ask())).themes[0].pct).toBeNull();
   });
 
-  it("drops what the results would drop: a slug no longer offered, and a card that is no card", async () => {
+  it("keeps what the results keep: a slug no longer offered, labeled by its slug; and drops a card that is no card", async () => {
     stub.chip.mockResolvedValue(null);
     const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["retired-theme", "dinosaurs"] }));
-    expect(a.themes.map((t) => t.slug)).toEqual(["dinosaurs"]);
+    expect(a.themes.map((t) => [t.slug, t.label])).toEqual([["retired-theme", "retired-theme"], ["dinosaurs", "Dinosaurs"]]);
     expect(a.card).toBeNull();
   });
 

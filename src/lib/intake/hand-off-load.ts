@@ -35,11 +35,9 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
   const themeRow: ThemeRow | null = row ? { deckCount: row.deck_count, tags: row.tags ?? [] } : null;
   const pct = (share: number | null) => (share === null ? null : Math.round(share * 100));
   return {
-    // A slug the vocabulary no longer offers is no answer, exactly as the results page drops it.
-    themes: p.themes.flatMap((slug) => {
-      const label = labels.get(slug);
-      return label ? [{ slug, label, pct: pct(themeRow ? themeShare(themeRow, slug) : null) }] : [];
-    }),
+    // Every theme asked is a row. One the vocabulary no longer offers is labeled by its slug,
+    // exactly as the results page labels it, so no answer is lost between the two screens.
+    themes: p.themes.map((slug) => ({ slug, label: labels.get(slug) ?? slug, pct: pct(themeRow ? themeShare(themeRow, slug) : null) })),
     // `inclusion` is stored as EDHREC publishes it, a percentage (`search.ts`).
     card: card ? { ...card, pct: row?.card_inclusion == null ? null : Math.round(row.card_inclusion) } : null,
     budgetDollars: p.budgetDollars,
