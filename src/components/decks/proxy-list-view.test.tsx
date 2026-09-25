@@ -6,7 +6,9 @@ import type { ProxyRow } from "../../lib/decks/proxy-list";
 
 /** One run, shared by every row: `priceState` compares each row's own `asOf`
  *  against this to tell a live figure from a frozen one. */
-const NEWEST = new Date("2026-09-15T09:00:00Z");
+// Relative to the clock, like OLD below: the view judges freshness against
+// \`new Date()\`, so a pinned date reads as fresh only until the calendar passes it.
+const NEWEST = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(),
