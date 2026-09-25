@@ -30,19 +30,22 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   // decks, and the previous deck's overview must never draw on the next one's tab.
   const [answer, setAnswer] = useState<{ state: SynopsisState; key: string; deckId: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  // A READ THAT FAILED, by deck and key: it settles the tab's opening as an answer would, so a
-  // failed overview read never holds the tab's loader up (its slot then draws nothing, as today).
-  const [failedFor, setFailedFor] = useState<string | null>(null);
-  // A VISIT'S OWN READ. Each time the tab opens, the effect below reads again; until that read
-  // answers, an answer from the last visit does not settle this one's opening, since what the
-  // re-read says may differ (an overview written in another tab). Set during render on the visit
-  // opening, cleared by the read settling.
-  const [awaiting, setAwaiting] = useState(active);
-  const [wasActive, setWasActive] = useState(active);
-  if (wasActive !== active) {
-    setWasActive(active);
-    if (active) setAwaiting(true);
+  // SETTLED IS A FACT ABOUT THE LATEST READ, never about an answer on hand. Every read the effect
+  // below starts (the tab opening, the key moving, the deck changing) is numbered here, during
+  // render, and `settled` holds only once THAT read has answered or failed: an answer kept from a
+  // last visit, or from a key the list has since returned to, may differ from what the new read
+  // says, and until it says it the credit notes are unpriced. A failure settles as an answer
+  // would, so a failed read never holds the tab's loader up.
+  const [asked, setAsked] = useState({ active, deckId, refreshKey, n: 0 });
+  if (asked.active !== active || asked.deckId !== deckId || asked.refreshKey !== refreshKey) {
+    setAsked({ active, deckId, refreshKey, n: asked.n + 1 });
   }
+  const [answeredRead, setAnsweredRead] = useState(-1);
+  // The latest read's number, readable from a press's continuation.
+  const latestRead = useRef(asked.n);
+  useEffect(() => {
+    latestRead.current = asked.n;
+  }, [asked.n]);
   const generation = useRef(0);
 
   // The key a read was asked under, and the deck on screen, readable from a continuation.
@@ -63,10 +66,11 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const got = await fetchSynopsis(deckId).catch(() => null);
     if (mine !== generation.current || !got) return;
     if ("synopsis" in got) setAnswer({ state: got, key, deckId });
-    // It superseded any read still out, so it answers for the visit as well.
-    setAwaiting(false);
+    // It superseded any read still out, so it answers for the latest one as well.
+    setAnsweredRead(latestRead.current);
   }, [deckId]);
 
+  const readNumber = asked.n;
   useEffect(() => {
     if (!active) return;
     // The read settles in a continuation rather than through `load`, so no state is set
@@ -76,17 +80,14 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
       (got) => {
         if (mine !== generation.current) return;
         if ("synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
-        else setFailedFor(`${deckId}|${refreshKey}`);
-        setAwaiting(false);
+        setAnsweredRead(readNumber);
       },
       // A failed read keeps what is on screen, never a stale `current`; the next key asks again.
       () => {
-        if (mine !== generation.current) return;
-        setFailedFor(`${deckId}|${refreshKey}`);
-        setAwaiting(false);
+        if (mine === generation.current) setAnsweredRead(readNumber);
       },
     );
-  }, [active, refreshKey, deckId]);
+  }, [active, refreshKey, deckId, readNumber]);
 
   const press = useCallback(async (run: () => Promise<WriteResult | { kind: string }>) => {
     setBusy(true);
@@ -109,12 +110,8 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     : { kind: "idle" };
   return {
     view,
-    /**
-     * The read for the key ON SCREEN has answered, or failed: the tab's opening need not wait on
-     * it. An answer for an older key does not count: the reading that just landed changed the
-     * key, and until the re-read answers, what a write would cost (the credit notes) is unpriced.
-     */
-    settled: !awaiting && ((view.kind === "ready" && view.current) || failedFor === `${deckId}|${refreshKey}`),
+    /** The latest read (this visit, this key, this deck) has answered or failed. */
+    settled: answeredRead === asked.n,
     write,
     retry,
   };

@@ -121,7 +121,10 @@ async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   // What this run created, deleted in the `finally`: filled BEFORE the write each one covers.
-  const created = { profiles: new Set(), synopses: new Set() };
+  // `synopses`: deck id to the overview rows it held before any press, so the cleanup deletes only
+  // rows this run wrote, whatever their status. A pending or refused row is not a shown overview,
+  // and a "Write one" over it writes a new row.
+  const created = { profiles: new Set(), synopses: new Map() };
   try {
     for (const width of [1300, 390]) {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
@@ -134,10 +137,11 @@ async function run() {
       // tab itself, if the deck lacks either.
       // What the deck had BEFORE any press: an Analyze press may write the overview as well as the
       // reading, so both are read here, ahead of every write, and not after the one that made them.
-      const [{ profiled, overviewed }] = await sql`
-        select exists(select 1 from deck_profiles where deck_id = ${deck.id}) as profiled,
-               exists(select 1 from deck_synopses where deck_id = ${deck.id}) as overviewed`;
-      if (!overviewed) created.synopses.add(deck.id);
+      const [{ profiled }] = await sql`select exists(select 1 from deck_profiles where deck_id = ${deck.id}) as profiled`;
+      if (!created.synopses.has(deck.id)) {
+        const before = (await sql`select id from deck_synopses where deck_id = ${deck.id}`).map((r) => r.id);
+        created.synopses.set(deck.id, before);
+      }
       if (!profiled) {
         created.profiles.add(deck.id);
         await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "domcontentloaded" });
@@ -230,9 +234,13 @@ async function run() {
   } finally {
     await browser.close();
     // Each step on its own, so one failing cannot skip the rest.
-    for (const id of created.synopses) {
+    let overviews = 0;
+    for (const [id, before] of created.synopses) {
       try {
-        const calls = (await sql`delete from deck_synopses where deck_id = ${id} returning model_call_id`).map((r) => r.model_call_id);
+        const calls = (await sql`
+          delete from deck_synopses where deck_id = ${id} and not (id = any(${before}::uuid[]))
+          returning model_call_id`).map((r) => r.model_call_id);
+        overviews += calls.length;
         if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
       } catch (error) {
         console.error(`cleanup: the overview on ${id} was left behind:`, error.message);
@@ -245,7 +253,7 @@ async function run() {
         console.error(`cleanup: the reading on ${id} was left behind:`, error.message);
       }
     }
-    console.log(`cleaned up ${created.profiles.size} reading(s) and ${created.synopses.size} overview(s) this run wrote`);
+    console.log(`cleaned up ${created.profiles.size} reading(s) and ${overviews} overview(s) this run wrote`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;
