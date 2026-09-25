@@ -7,6 +7,19 @@ current commander.
 **Package:** this folder, committed as delivered. R3 (top of the canvas) is the approved state; R2 and §1–§5 are
 the record, and §2–§5 render the approved components (`README.md`). Design's own `READINESS.md` is answered in §5.
 
+## Hugh's rulings (2026-09-25)
+
+Hugh approved this audit on 2026-09-25.
+
+- **H1: kept.** A half-owned pair sits with the pairs to buy, ranked by fit within that group, and its buy tag
+  names the half to buy.
+- **H2: corrected now.** The fit figure must not favor popular commanders on breadth alone. A card counts toward
+  "N of M" only when it appears in at least a set share of that candidate's decks, so a commander with thousands
+  of decks does not match more of the 99 just because more cards were ever played with it. The threshold is
+  measured, not asserted (F10).
+- **The mana value is accepted as drawn:** cost pips plus the relative phrase.
+- **About:** batched with the analysis line at launch. The sub-project 7 plan must name the batched About task.
+
 ## Verdict: Green
 
 Build it, with the engineering corrections below. Every §2 ruling holds, §4's calls are answered, every §3
@@ -96,16 +109,17 @@ All findings are engineering's. There are no Design findings.
 | F7 | Low | `schema.ts:38`; the sheet's `mvOf` | **Mana value comes from `cards.cmc`, never from parsing the cost.** The drawing's own arithmetic counts `{X}` as 1 and a hybrid `{2/W}` as 1, where the mana value counts X as 0 and `{2/W}` as 2. **Correction:** compare the catalog's `cmc`, summed for a pair; draw the pips from the cost as `CostPips` does | eng |
 | F8 | Low | Design's eng 6 | **Candidate availability excludes this deck.** A candidate already in the 99 bypasses the read, since the trade keeps its copy | eng |
 | F9 | Low | `change-commander - copy strings.ts` | **The copy goes to `/copy-review`**, as Design lists it, including `manaValueRel` | `/copy-review` |
+| F10 | Medium | brief §6 (known bias); Hugh's H2 | **The figure needs an inclusion threshold.** Today's rule counts a card toward "N of M" whenever the candidate's support list holds it at all, which favors commanders with long lists. **Correction, for the build plan to resolve:** count a card only when its inclusion for that candidate is at least a threshold share. Measure the threshold on `staging` during the plan (never assert it), and take it to Hugh with its distribution. If the row's wording has to follow the new meaning, that is a copy change for `/copy-review`, with a picture, and not a Design round | eng |
 
 ---
 
 ## 4 · For Hugh
 
-- **H1 (Design's call on §4.7).** A pair where one half is owned and the other must be bought sorts with the
+- **H1 (Design's call on §4.7, ruled above).** A pair where one half is owned and the other must be bought sorts with the
   pairs to buy, below every pair you own, even when its figure is higher than theirs. A half another deck holds
   still counts as owned.
   OK?
-- **H2 (the brief's known bias, §6).** A commander with many indexed decks has a longer support list, so it can
+- **H2 (the brief's known bias, §6, ruled above).** A commander with many indexed decks has a longer support list, so it can
   reach a higher figure than a rarely built one. The brief accepts that as the cost of a plain count and leaves
   it for you to overrule. Design repeats it as an open item. Keep it as is?
 
