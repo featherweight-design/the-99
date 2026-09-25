@@ -22,6 +22,19 @@ beforeEach(() => {
 });
 
 describe("useDeckSynopsis", () => {
+  // The tab's opening waits on this: settled once the first read answers OR fails, so a failed
+  // overview read never holds the loader up.
+  it("is settled once its first read answers, and once one fails", async () => {
+    const ok = renderHook(() => useDeckSynopsis("d1", true, "k"));
+    expect(ok.result.current.settled).toBe(false);
+    await waitFor(() => expect(ok.result.current.settled).toBe(true));
+    ok.unmount();
+    actions.fetchSynopsis.mockRejectedValueOnce(new Error("down"));
+    const failed = renderHook(() => useDeckSynopsis("d2", true, "k"));
+    await waitFor(() => expect(failed.result.current.settled).toBe(true));
+    expect(failed.result.current.view.kind).toBe("idle");
+  });
+
   it("reads nothing while the tab is closed", () => {
     const { result } = renderHook(() => useDeckSynopsis("d1", false, "k"));
     expect(actions.fetchSynopsis).not.toHaveBeenCalled();

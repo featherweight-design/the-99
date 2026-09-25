@@ -290,8 +290,9 @@ describe("AnalysisPanel", () => {
       const loader = container.querySelector("[data-opening-loader]")!;
       expect(loader).toHaveAttribute("data-opening-loader", "waiting");
       expect(loader.textContent).toBe("");
-      expect(screen.queryByTestId("analysis-empty")).toBeNull();
-      expect(screen.queryByText(MIX)).toBeNull();
+      // Mounted behind the loader so its reads can run, and drawn nowhere.
+      expect(screen.getByTestId("analysis-empty")).not.toBeVisible();
+      expect(screen.getByText(MIX)).not.toBeVisible();
     });
 
     it("draws the five marks and the word, and nothing else", () => {
@@ -300,17 +301,20 @@ describe("AnalysisPanel", () => {
       expect(loader).toHaveAttribute("role", "status");
       expect(loader.querySelectorAll(".anim-at-wave.at-wave-rest")).toHaveLength(5);
       expect(loader).toHaveTextContent(copy.opening);
-      expect(screen.queryByTestId("analysis-empty")).toBeNull();
-      expect(screen.queryByTestId("analysis-ring")).toBeNull();
-      expect(screen.queryByText(MIX)).toBeNull();
+      expect(screen.getByTestId("analysis-empty")).not.toBeVisible();
+      expect(screen.getByTestId("analysis-ring")).not.toBeVisible();
+      expect(screen.getByText(MIX)).not.toBeVisible();
     });
 
     // Held for the hold even once the reading landed: the reading waits behind the loader.
-    it("withholds a reading that landed while the loader is held", () => {
+    // Suggested changes is MOUNTED under the held loader, which is what lets its first read run
+    // before the tab paints (the shell holds the loader until that read settles), and it is drawn
+    // only once the loader lets go.
+    it("withholds a reading that landed while the loader is held, with Suggested changes mounted behind it", () => {
       opening("loader", ready());
-      expect(screen.queryByText(MIX)).toBeNull();
-      expect(screen.queryByText("tuning")).toBeNull();
-      expect(screen.getByText(copy.opening)).toBeInTheDocument();
+      expect(screen.getByText(MIX)).not.toBeVisible();
+      expect(screen.getByText("tuning")).not.toBeVisible();
+      expect(screen.getByText(copy.opening)).toBeVisible();
     });
 
     it("draws the mix again once the tab has its answer", () => {

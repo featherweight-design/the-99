@@ -30,6 +30,9 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   // decks, and the previous deck's overview must never draw on the next one's tab.
   const [answer, setAnswer] = useState<{ state: SynopsisState; key: string; deckId: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // A FIRST READ THAT FAILED, by deck: it settles the tab's opening as an answer would, so a
+  // failed overview read never holds the tab's loader up (its slot then draws nothing, as today).
+  const [failedFor, setFailedFor] = useState<string | null>(null);
   const generation = useRef(0);
 
   // The key a read was asked under, and the deck on screen, readable from a continuation.
@@ -59,10 +62,14 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const mine = ++generation.current;
     fetchSynopsis(deckId).then(
       (got) => {
-        if (mine === generation.current && "synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
+        if (mine !== generation.current) return;
+        if ("synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
+        else setFailedFor(deckId);
       },
       // A failed read keeps what is on screen, never a stale `current`; the next key asks again.
-      () => {},
+      () => {
+        if (mine === generation.current) setFailedFor(deckId);
+      },
     );
   }, [active, refreshKey, deckId]);
 
@@ -87,6 +94,8 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     : { kind: "idle" };
   return {
     view,
+    /** This deck's first read has answered, or failed: the tab's opening need not wait on it. */
+    settled: view.kind === "ready" || failedFor === deckId,
     write,
     retry,
   };

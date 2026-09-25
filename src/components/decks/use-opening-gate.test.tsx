@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isOpening, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpeningGate } from "./use-opening-gate";
+import { holdsOpening, isOpening, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -102,5 +102,41 @@ describe("isOpening", () => {
     expect(isOpening({ ...base, shown: false })).toBe(false);
     expect(isOpening({ ...base, kind: "loading" })).toBe(false);
     expect(isOpening({ ...base, kind: "ready" })).toBe(false);
+  });
+});
+
+// Hugh's staging walk, 2026-09-25: the opening waits on everything the tab paints, not on the
+// stored reading alone, and once a visit has opened nothing brings the loader back.
+describe("what the opening waits on", () => {
+  const all = { peekPending: false, overviewSettled: true, hasReading: true, suggestionsSettled: true };
+
+  it("lets go only once the reading, the overview and Suggested changes have all answered", () => {
+    expect(holdsOpening(all)).toBe(false);
+    expect(holdsOpening({ ...all, peekPending: true })).toBe(true);
+    expect(holdsOpening({ ...all, overviewSettled: false })).toBe(true);
+    expect(holdsOpening({ ...all, suggestionsSettled: false })).toBe(true);
+  });
+
+  it("does not wait on Suggested changes where there is no reading, since none is drawn", () => {
+    expect(holdsOpening({ ...all, hasReading: false, suggestionsSettled: false })).toBe(false);
+  });
+
+  it("gates a visit only until it first lets go, and a new visit opens afresh", () => {
+    const { result, rerender } = renderHook(({ holding, visit }) => useOpenOnce(holding, visit, true), {
+      initialProps: { holding: true, visit: "d:1" },
+    });
+    expect(result.current).toBe(true);
+    rerender({ holding: false, visit: "d:1" });
+    expect(result.current).toBe(false);
+    // A press over the open tab (a reading landing, Suggested changes mounting) holds nothing.
+    rerender({ holding: true, visit: "d:1" });
+    expect(result.current).toBe(false);
+    rerender({ holding: true, visit: "d:2" });
+    expect(result.current).toBe(true);
+  });
+
+  it("never gates a tab that is not shown", () => {
+    const { result } = renderHook(() => useOpenOnce(true, "d:1", false));
+    expect(result.current).toBe(false);
   });
 });

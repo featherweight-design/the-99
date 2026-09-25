@@ -34,6 +34,39 @@ export function isOpening({
 }
 
 /**
+ * WHAT THE OPENING WAITS ON (Hugh's staging walk, 2026-09-25): not the stored reading alone, but
+ * everything the tab paints on its first frame. The overview's first read (which also prices the
+ * credit notes beside Analyze) and, over a reading, Suggested changes' first read with its credit
+ * line. Before, each arrived on its own clock and the tab painted in pieces.
+ */
+export function holdsOpening({
+  peekPending,
+  overviewSettled,
+  hasReading,
+  suggestionsSettled,
+}: {
+  /** `isOpening`'s answer: a stored reading still being fetched. */
+  peekPending: boolean;
+  overviewSettled: boolean;
+  hasReading: boolean;
+  suggestionsSettled: boolean;
+}): boolean {
+  return peekPending || !overviewSettled || (hasReading && !suggestionsSettled);
+}
+
+/**
+ * ONCE PER VISIT. `holding` gates the tab only until it first lets go for `visit` (a deck and a
+ * visit to the tab): after that a press, a refetch or a reading landing never brings the loader
+ * back, which would read as the tab reloading under the player. A new visit opens afresh.
+ */
+export function useOpenOnce(holding: boolean, visit: string, shown: boolean): boolean {
+  const [opened, setOpened] = useState<string | null>(null);
+  // Adjusted during render, so the frame that lets go is the frame that latches.
+  if (shown && !holding && opened !== visit) setOpened(visit);
+  return shown && holding && opened !== visit;
+}
+
+/**
  * The opening loader's timing (Analysis tab handoff §8, 8a), for a fetch whose outcome the tab
  * cannot guess.
  *

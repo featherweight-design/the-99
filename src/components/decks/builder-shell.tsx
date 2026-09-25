@@ -21,7 +21,7 @@ import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
 import { useDeckSynopsis } from "./synopsis-state";
 import { shownReading, useDeckProfile } from "./use-deck-profile";
-import { isOpening, useOpeningGate } from "./use-opening-gate";
+import { holdsOpening, isOpening, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
@@ -369,15 +369,6 @@ export function BuilderShell({
   // anything to fetch: none, and the empty state is the answer at once; some, and the tab draws
   // the opening loader until the peek settles. Decided on the client from what the page already
   // ships, rather than shipping the reading itself (see the PR's Settled).
-  const opening = useOpeningGate(
-    isOpening({
-      shown: view === "analysis",
-      kind: profile.state.kind,
-      storedPermits,
-      peekSettled: profile.peekSettled,
-    }),
-    deck.id,
-  );
   // THE OVERVIEW, held here beside the profile for the same reason (synopsis plan, PR 3). Keyed on
   // the list and the reading on screen, so an edit or an analysis settling refetches whether the
   // stored overview is still current and what a write would cost. It never writes by itself.
@@ -388,6 +379,26 @@ export function BuilderShell({
     analysisEnabled && view === "analysis",
     `${listKey}|${reading?.analyzedAt ?? ""}|${readingFresh}`,
   );
+  // ...AND UNTIL EVERYTHING ELSE THE TAB DRAWS HAS ANSWERED (Hugh's staging walk, 2026-09-25):
+  // the overview (and the credit notes beside Analyze, which it prices) and, over a reading,
+  // Suggested changes with its own credit line. Each arrived on its own clock before, so the tab
+  // painted in pieces: an overview landing above a bracket already drawn, a credit line popping in
+  // after the rest. The loader now lets go once, onto the whole tab. ONLY THE OPENING waits: once a
+  // visit to the tab has opened, a press or a refetch never brings the loader back, which the
+  // latch below enforces. A new visit (the tab left and re-entered) opens afresh, since Suggested
+  // changes remounts and reads again.
+  const [visit, setVisit] = useState({ view, n: 0 });
+  if (visit.view !== view) setVisit({ view, n: view === "analysis" ? visit.n + 1 : visit.n });
+  const visitKey = `${deck.id}:${visit.n}`;
+  const [tuningSettled, setTuningSettled] = useState<string | null>(null);
+  const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
+  const holding = holdsOpening({
+    peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled }),
+    overviewSettled: !analysisEnabled || synopsis.settled,
+    hasReading: reading !== null,
+    suggestionsSettled: tuningSettled === visitKey,
+  });
+  const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
   const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze", deeperLooks) : null;
   const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze", deeperLooks) : null;
@@ -1364,6 +1375,7 @@ export function BuilderShell({
                         intent: deck.intent,
                       }}
                       onLogGame={() => setView("games")}
+                      onSettled={onTuningSettled}
                     />
                   )}
                 >

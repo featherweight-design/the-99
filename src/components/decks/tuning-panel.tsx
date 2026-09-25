@@ -94,6 +94,7 @@ export function TuningPanel({
   onLogGame,
   deps = SERVER,
   deeperLooks = false,
+  onSettled,
 }: {
   deckId: string;
   permits: readonly Bracket[];
@@ -103,8 +104,16 @@ export function TuningPanel({
   /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
       they read exactly as before the looks existed. */
   deeperLooks?: boolean;
+  /** The first read has answered or failed: the tab's opening holds its loader until it has, so
+   *  Suggested changes and its credit line never arrive after the rest of the tab. */
+  onSettled?: () => void;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
+  // Read through a ref, so a new callback from the shell never re-runs the first read.
+  const settledRef = useRef(onSettled);
+  useEffect(() => {
+    settledRef.current = onSettled;
+  }, [onSettled]);
   // Reading: the counts that have landed, by step; null before a press.
   const [counts, setCounts] = useState<Counts | null>(null);
   const [unchangedShown, setUnchangedShown] = useState(false);
@@ -142,10 +151,14 @@ export function TuningPanel({
     let live = true;
     deps.read(deckId).then(
       (next) => {
-        if (live) setState(next);
+        if (!live) return;
+        setState(next);
+        settledRef.current?.();
       },
       // A first read that fails draws nothing, as a deck with no reading does.
-      () => {},
+      () => {
+        if (live) settledRef.current?.();
+      },
     );
     return () => {
       live = false;

@@ -883,6 +883,27 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   five fail; the counts are in its header. Besides the `deck_profiles` row above, it writes only
   that one `user_prefs` row. Point it at `local-dev`, **never production**.
 
+- `pnpm probe:analysis-load-order` reads the Analysis tab's FIRST PAINT at 1300x900 and 390x844,
+  on a deck with versions, a stored analysis and a written overview (Hugh's staging walk,
+  2026-09-25). A MutationObserver installed before the tab is pressed stamps each part's first
+  visible frame and its top: the verdict, the overview, Suggested changes, and before any reading
+  the empty state with the credit note beside Analyze. They must all paint in ONE frame when the
+  loader lets go, and nothing may paint at or above a part already on screen. It also reads the
+  tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
+  scrolls rather than the page.
+
+  The rule it proves is `holdsOpening` in `use-opening-gate.ts`: the opening waits on the stored
+  reading, the overview's first read (which prices the credit notes) and, over a reading,
+  Suggested changes' first read. Each had arrived on its own clock, so an overview landed above a
+  bracket already drawn and a credit line popped in after the rest. Suggested changes mounts
+  HIDDEN behind the loader so its read can run, and `useOpenOnce` latches per visit so a press or
+  refetch never brings the loader back. Two browser mutations fail it: the gate on the peek alone
+  reproduces the overview landing above the verdict at both widths, and dropping the overview wait
+  delays the credit note ~700ms. Measure it on a staging-shaped deck set: `pull:staging` into a
+  scratch branch, and name the account with `PROBE_EMAIL` and the deck with `PROBE_DECK`. It
+  writes one analysis and one overview on the deck it walks (stub, free), and the About row.
+  Point `PROBE_TARGET_URL` at a scratch branch or `local-dev`, **never production**.
+
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
   dialogs at once, which jsdom has neither of.
