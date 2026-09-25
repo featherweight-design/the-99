@@ -225,7 +225,9 @@ synopsis's.
   3,434 tokens with the picker's 307 labels and the worst 800 characters of words, and 3,946 with
   all 401 tags. The plan's estimate of about 1,800 left out the output schema and dense words.
 - **The words are capped at 800 characters** (`READ_WORDS_MAX_CHARS`), and the action refuses a
-  longer press rather than trimming it. The form takes the same cap in PR 5.
+  longer press rather than trimming it. The orchestrator accepted the cap on one condition: PR 5's
+  field carries `maxLength={READ_WORDS_MAX_CHARS}`, so a player cannot type past it and only a
+  forged request ever reaches the refusal.
 - **The deadline is 100s, with a 40s retry floor.** It fits under the choose page's
   `maxDuration` of 120, which PR 5 sets. The reaper cutoff is 5 minutes, as for tuning and the
   synopsis.
