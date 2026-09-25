@@ -1,4 +1,5 @@
 import { commanderSlug } from "./slug";
+import { edhrecPageMissing, type PageProbe } from "./missing-page";
 import { parseEdhrecPayload } from "./parse";
 import type { EdhrecFetchResult } from "./client";
 import { synergyStateFrom } from "../recs/synergy-state";
@@ -81,6 +82,7 @@ export async function fetchPair(
   nameA: string,
   nameB: string,
   fetcher: PairFetcher,
+  probe?: PageProbe,
 ): Promise<PairFetchResult> {
   const [first, second] = pairSlugCandidates(nameA, nameB);
   const tried = new Set<string>();
@@ -98,8 +100,15 @@ export async function fetchPair(
       // distinction is the same one `synergyStateFrom` draws for single commanders.
       return { data: null, unreachable: true, rawPayload: null };
     }
-    // 429/403 mean the service is blocking us, which says nothing about the pair.
-    if (res.status === 429 || res.status === 403) return { data: null, unreachable: true, rawPayload: null };
+    // 429 means the service is throttling us, which says nothing about the pair.
+    if (res.status === 429) return { data: null, unreachable: true, rawPayload: null };
+    // 403 is a throttle OR a slug with no page, and the JSON API answers both the same way;
+    // the HTML page's 404 is what tells them apart (#712). A missing page takes the ordinary
+    // 4xx path below, so the other arrangement is still tried — before this, a first guess
+    // with no page stopped the pair as unreachable and the second was never asked.
+    if (res.status === 403 && !(await edhrecPageMissing(slug, probe))) {
+      return { data: null, unreachable: true, rawPayload: null };
+    }
     if (res.status >= 400 && res.status < 500) {
       // A genuine 4xx on the FIRST guess just means the other arrangement is the real one.
       slug = tried.has(second) ? null : second;

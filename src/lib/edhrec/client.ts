@@ -2,6 +2,7 @@ import { inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { edhrecCache } from "../../db/schema";
 import { commanderSlug } from "./slug";
+import { edhrecPageMissing } from "./missing-page";
 import { parseEdhrecPayload, type EdhrecData } from "./parse";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -108,15 +109,20 @@ export async function getEdhrecData(
 export async function fetchEdhrecUncached(commanderName: string): Promise<EdhrecFetchResult> {
   try {
     const res = await fetch(edhrecUrl(commanderName), edhrecInit());
-    // 429 and 403 mean the service is blocking the index run — a rate-limit or
-    // access denial that is temporary and says nothing about whether this
-    // commander is indexed. Treating them as absent would overwrite a good row
-    // (and delete all its support cards) with an empty absent row; instead,
-    // route them through the degraded path so the previous row survives.
-    // A resumed run would then see those rows as done and skip them, compounding
-    // the loss. 404 (commander genuinely not on EDHREC) remains absent — that
-    // IS a fact about the commander, not about the service.
-    if (res.status === 429 || res.status === 403) return { data: null, unreachable: true };
+    // 429 means the service is throttling the index run, which is temporary and
+    // says nothing about whether this commander is indexed. Treating it as absent
+    // would overwrite a good row (and delete all its support cards) with an empty
+    // absent row; instead, route it through the degraded path so the previous row
+    // survives. A resumed run would then see that row as done and skip it,
+    // compounding the loss.
+    if (res.status === 429) return { data: null, unreachable: true };
+    // 403 is ambiguous: a throttle, or a slug EDHREC has no page for at all. The
+    // HTML page tells them apart, and only its 404 makes this absent — see
+    // edhrecPageMissing for why anything else stays unreachable (#712).
+    if (res.status === 403) {
+      const missing = await edhrecPageMissing(commanderSlug(commanderName));
+      return { data: null, unreachable: !missing };
+    }
     // Other 4xx = not indexed on EDHREC. A data-shaped absence, not an outage.
     if (res.status >= 400 && res.status < 500) return { data: null, unreachable: false };
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
