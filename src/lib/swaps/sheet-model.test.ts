@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { swapToolsCopy } from "../copy/swap-tools";
 import type { StandInsRead } from "./gather";
-import { listWords, loadingStatus, sheetModel } from "./sheet-model";
+import { listWords, loadingStatus, rowGivesUp, sheetModel } from "./sheet-model";
 import type { CardRow, MainType, StandIn, StandInGroup } from "./stand-ins";
 
 const copy = swapToolsCopy.sheet;
@@ -96,9 +96,19 @@ describe("the stand-ins sheet's model", () => {
     // A condition that is a price is the condition itself: no second segment (addendum §1a).
     expect(lines[0]).toEqual([WR(copy.mana.untappedIf("you pay 2 life")), []]);
     expect(lines[1]).toEqual([WR(copy.mana.untapped), [copy.givesUp("uncounterable creatures")]]);
-    expect(lines[2]).toEqual([WR(copy.mana.untapped), [copy.givesUp("“Target player draws…”")]]);
+    // Close-out ruling 6: a row never quotes; an ability no pattern names is counted instead.
+    expect(lines[2]).toEqual([WR(copy.mana.untapped), [copy.givesUp(copy.otherAbilities(1, false))]]);
     // A mana line says what the land does, so a row with no cost says nothing more (the addendum's Sacred Foundry).
     expect(lines[3]).toEqual([WR(copy.mana.untapped), []]);
+  });
+
+  it("says a row's give-ups in one clause, named, then counts the ones no pattern names, never quoting them", () => {
+    expect(rowGivesUp([
+      { kind: "quoted", text: "You may choose not to untap this land…" },
+      { kind: "named", label: "storing mana" },
+      { kind: "quoted", text: "At the beginning of your upkeep…" },
+    ])).toEqual([copy.givesUp(`storing mana and ${copy.otherAbilities(2, true)}`)]);
+    expect(rowGivesUp([])).toEqual([]);
   });
 
   // Addendum §1a: the four forms of the mana line, and a one-shot color named in the cost segment.
@@ -114,9 +124,10 @@ describe("the stand-ins sheet's model", () => {
       ]),
     }));
     const [retreat, forge, confluence, highlands] = m.groups[0].rows;
-    expect(confluence.muted).toEqual([copy.drawback.life(1, "white and red")]);
+    // Close-out ruling 6: paid for every color the mana line names, so the cost does not repeat them.
+    expect(confluence.muted).toEqual([copy.drawback.lifeFetch(1)]);
     expect(retreat.body).toEqual([copy.mana.line("white and red", copy.mana.untappedWith("a Mountain or a Plains"))]);
-    expect(forge).toMatchObject({ body: [copy.mana.line("white and red", copy.mana.untapped)], muted: [copy.drawback.damage(1, "red and white")] });
+    expect(forge).toMatchObject({ body: [copy.mana.line("white and red", copy.mana.untapped)], muted: [copy.drawback.damageAny(1)] });
     expect(highlands).toMatchObject({ body: [copy.mana.line("red", copy.mana.tapped)], muted: [copy.mana.once("white")] });
   });
 
@@ -125,6 +136,66 @@ describe("the stand-ins sheet's model", () => {
       groups: [same([standIn("A", { synergy: 0.2, missing: ["castFree", "counters", "haste"] }), standIn("B", { missing: ["castFree", "counters", "haste"] })])],
     }));
     expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", `${copy.job.castFree}, ${copy.job.counters} and ${copy.job.haste}`));
+  });
+
+  // Close-out ruling 6: a cost for only some of the line's colors still names them, and one-shot colors share a clause.
+  it("names a cost's colors when it covers only some of the line's, and says every one-shot color in one clause", () => {
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W", "U", "B", "R", "G"] },
+      original: card("City of Brass", "Land", "{T}: Add one mana of any color. City of Brass deals 1 damage to you."),
+      groups: lands([
+        standIn("Tarnished Citadel", { drawbacks: [{ kind: "damage", amount: 3, colors: ["W", "U"] }] }),
+        standIn("Lotus Bloom Land", { once: ["U", "B", "R", "G"], drawbacks: [{ kind: "entersTapped" }] }),
+      ]),
+    }));
+    const [citadel, bloom] = m.groups[0].rows;
+    expect(citadel.muted).toEqual([copy.drawback.damage(3, "white and blue")]);
+    // Every color the line did not name, once: said as the rest of them.
+    expect(bloom.muted).toEqual([copy.mana.once(copy.everyOtherColor)]);
+    const two = sheetModel(read({
+      job: { kind: "land", colors: ["W", "U", "B"] },
+      original: card("Crumbling Necropolis", "Land", "{T}: Add {U}, {B}, or {R}."),
+      groups: lands([standIn("Two Once", { once: ["U", "B"], drawbacks: [{ kind: "entersTapped" }] })]),
+    }));
+    expect(two.groups[0].rows[0].muted).toEqual([copy.mana.once("blue and black")]);
+  });
+
+  it("writes a condition's count as a figure", () => {
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["R"] },
+      original: card("Mountain Hold", "Land", "{T}: Add {R}."),
+      groups: lands([
+        standIn("Arena Land", { drawbacks: [{ kind: "entersTappedUnless", condition: "your opponents control eight or more lands" }] }),
+        standIn("Few Land", { drawbacks: [{ kind: "entersTappedUnless", condition: "you control two or fewer other lands" }] }),
+      ]),
+    }));
+    expect(m.groups[0].rows.map((r) => r.body[0])).toEqual([
+      copy.mana.line("red", copy.mana.untappedIf("your opponents control 8 or more lands")),
+      copy.mana.line("red", copy.mana.untappedWith("2 or fewer other lands")),
+    ]);
+  });
+
+  it("says a reveal land's condition as the type in hand or play", () => {
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W", "U"] },
+      original: card("Tundra", "Land — Plains Island", "({T}: Add {W} or {U}.)"),
+      groups: lands([standIn("Fortified Beachhead", {
+        drawbacks: [{ kind: "entersTappedUnless", condition: "you revealed a soldier card this way or you control a soldier" }],
+      })]),
+    }));
+    expect(m.groups[0].rows[0].body).toEqual([copy.mana.line("white and blue", copy.mana.untappedWith(copy.mana.inHandOrPlay("Soldier")))]);
+  });
+
+  it("says all five colors as every color, and the Starting Town condition short", () => {
+    const m = sheetModel(read({
+      job: { kind: "land", colors: ["W", "U", "B", "R", "G"] },
+      original: card("City of Brass", "Land", "{T}: Add one mana of any color. City of Brass deals 1 damage to you."),
+      groups: lands([standIn("Starting Town", {
+        drawbacks: [{ kind: "entersTappedUnless", condition: "it's your first, second, or third turn of the game" }],
+      })]),
+    }));
+    expect(m.groups[0].rows[0].body).toEqual([copy.mana.line(copy.everyColor, copy.mana.untappedEarly)]);
+    expect(m.lead).toBe(copy.leadLands(copy.everyColor));
   });
 
   it("names what a land makes again and again when every job color is made only once", () => {

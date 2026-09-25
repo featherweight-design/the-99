@@ -114,6 +114,7 @@
     "check:constraints": "node scripts/check-constraints.mjs",
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
+    "measure:swap-lines": "tsx scripts/measure-swap-lines.mts",
     "measure:themes": "tsx scripts/measure-themes.mts",
     "probe:bracket": "tsx scripts/probe-bracket.ts",
     "probe:climb-locks": "node scripts/probe-climb-locks.mjs",

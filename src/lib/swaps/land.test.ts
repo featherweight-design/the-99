@@ -168,6 +168,7 @@ describe("nameAbility: one case per pattern", () => {
   const cases: [string, string][] = [
     ["spend this mana only to cast a creature spell, and that spell can't be countered.", "uncounterable spells"],
     ["{1}: this land becomes a 2/2 artifact creature until end of turn.", "becoming a creature"],
+    ["whenever restless cottage attacks, create a 2/2 black zombie creature token.", "becoming a creature"],
     ["channel — {1}{g}, discard this card: destroy target artifact.", "its channel ability"],
     ["{t}: add {g} for each creature you control.", "its extra mana"],
     ["{t}: add {c}{c}. this land deals 2 damage to you.", "its extra mana"],
@@ -199,6 +200,14 @@ describe("nameAbility: one case per pattern", () => {
     ["{2}{r}{w}, {t}: target creature gains double strike until end of turn.", "granting an ability"],
     ["colorless eldrazi spells you cast cost {2} less to cast.", "a cost reduction"],
     ["you have no maximum hand size.", "no maximum hand size"],
+    ["{1}, {t}: put a storage counter on this land.", "storing mana"],
+    ["you may choose not to untap this land during your untap step.", "storing mana"],
+    ["{5}{b}{r}, {t}, sacrifice mount doom and a legendary artifact: choose up to two creatures, then destroy the rest.", "a board wipe"],
+    // A storage land's payoff names the same thing as its charging, ahead of `its extra mana`.
+    ["remove any number of storage counters from this land: add {c} for each storage counter removed this way.", "storing mana"],
+    ["{4}, {t}: investigate.", "investigating"],
+    ["station", "station"],
+    ["{4}{u}, {t}, sacrifice this land: discover 4. activate only as a sorcery.", "discover"],
   ];
 
   it("covers every pattern exactly once", () => {
@@ -257,12 +266,25 @@ describe("givesUp (H3)", () => {
     expect(givesUp(FACTORY, FACTORY)).toEqual([]);
   });
 
+  it("gives up none of the original's drawbacks, which a stand-in loses nothing by lacking", () => {
+    const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
+    for (const land of [
+      L("Balduvian Trading Post", "Land", "If this land would enter, sacrifice an untapped Mountain instead. If you do, put this land onto the battlefield. If you don't, put it into its owner's graveyard.\n{T}: Add {C}{R}."),
+      L("Dromar's Cavern", "Land — Lair", "When this land enters, sacrifice it unless you return a non-Lair land you control to its owner's hand.\n{T}: Add {W}, {U}, or {B}."),
+      L("Rupture Spire", "Land", "This land enters tapped.\nWhen this land enters, sacrifice it unless you pay {1}.\n{T}: Add one mana of any color."),
+      L("Land Cap", "Land", "This land doesn't untap during your untap step if it has a depletion counter on it.\nAt the beginning of your upkeep, remove a depletion counter from this land.\n{T}: Add {W} or {U}. Put a depletion counter on this land."),
+    ]) {
+      expect(givesUp(land, wastes).filter((g) => g.kind === "quoted"), land.name).toEqual([]);
+    }
+  });
+
   it("keeps a QUOTED ability the stand-in shares, and still gives up one it does not", () => {
-    const ring = L("Mage-Ring Network", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
-    const twin = L("Storage Twin", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
+    // No pattern names this one (storage lands became `storing mana` in the close-out).
+    const ring = L("Time Tower", "Land", "{T}: Add {C}.\n{T}: Put a time counter on this land.");
+    const twin = L("Time Twin", "Land", "{T}: Add {C}.\n{T}: Put a time counter on this land.");
     expect(givesUp(ring, twin)).toEqual([]);
     expect(givesUp(ring, L("Wastes", "Basic Land", "({T}: Add {C}.)"))).toEqual([
-      { kind: "quoted", text: "{1}, {T}: put a storage counter on this land" },
+      { kind: "quoted", text: "{T}: put a time counter on this land" },
     ]);
   });
 });

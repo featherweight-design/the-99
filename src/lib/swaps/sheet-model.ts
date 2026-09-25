@@ -27,7 +27,9 @@ export function listWords(words: readonly string[], joiner: "and" | "or"): strin
   return `${words.slice(0, -1).join(", ")} ${joiner} ${words.at(-1)}`;
 }
 
-const colorsText = (colors: readonly Color[]) => listWords(colors.map((c) => COLOR_WORD[c]), "and");
+// Close-out ruling 6: all five read `every color`, 33 characters shorter on a line that has 72 at 390.
+const colorsText = (colors: readonly Color[]) =>
+  new Set(colors).size === 5 ? copy.everyColor : listWords(colors.map((c) => COLOR_WORD[c]), "and");
 const article = (word: string) => `${/^[AEIOU]/.test(word) ? "an" : "a"} ${word}`;
 /** `a Mountain or Forest` in the job line's `finds {types} card`; the lead repeats the article: `a Mountain or an Island`. */
 const typesText = (types: readonly BasicType[], each = false) =>
@@ -45,9 +47,23 @@ export function drawbackText(d: Drawback, colors: readonly Color[]): string {
   }
 }
 
-/** H3: a named ability as its label, an unnamed one quoted from the card's own text. */
+/** H3: a named ability as its label, an unnamed one quoted from the card's own text. The lead's form. */
 const abilityText = (g: GivenUp) => (g.kind === "named" ? g.label : `“${g.text}”`);
 export const givenUpText = (g: GivenUp) => copy.givesUp(abilityText(g));
+
+/**
+ * A row's form (close-out ruling 6, d9 from Hugh's emphasis on details): one `gives up` clause listing
+ * every named ability, then the unnamed ones COUNTED rather than quoted. A quote runs to 60 characters, and three
+ * of them put a row's facts at nine lines on a phone; the lead, said once above every row, may still
+ * quote what they share.
+ */
+export function rowGivesUp(list: readonly GivenUp[]): string[] {
+  if (list.length === 0) return [];
+  const named = list.filter((g) => g.kind === "named").map((g) => abilityText(g));
+  const unnamed = list.length - named.length;
+  // One clause, the abilities listed in it, as the lead says a shared give-up.
+  return [copy.givesUp(listWords(unnamed > 0 ? [...named, copy.otherAbilities(unnamed, named.length > 0)] : named, "and"))];
+}
 
 export type SheetRow = {
   oracleId: string;
@@ -108,11 +124,23 @@ const JOBS_SHOWN = 2;
 const jobWords = (jobs: readonly (keyof typeof copy.job)[]) => [...new Set(jobs.map((j) => copy.job[j]))].slice(0, JOBS_SHOWN);
 
 const BASIC = /\b(plains|island|swamp|mountain|forest)\b/g;
+const NUMBER_WORDS = ["two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const NUMBER = new RegExp(`\\b(?:${NUMBER_WORDS.join("|")})\\b(?= or (?:more|fewer|less)\\b)`, "gi");
+const EARLY_TURNS = /^it'?s your first, second,? or third turn of the game$/;
+const REVEAL = /^you revealed an? ([\w-]+) card this way or you control an? \1$/;
 /** A land's state on entering, from its drawbacks: the mana line's second half (addendum §1a). */
 function entering(list: readonly Drawback[]): string {
   const unless = list.find((d) => d.kind === "entersTappedUnless");
   if (unless?.kind === "entersTappedUnless") {
-    const cond = unless.condition.replace(BASIC, (t) => t[0].toUpperCase() + t.slice(1));
+    // Close-out ruling 6: the Starting Town lands' condition, said the short way.
+    if (EARLY_TURNS.test(unless.condition)) return copy.mana.untappedEarly;
+    // The reveal lands: `you revealed a soldier card this way or you control a soldier`.
+    const reveal = REVEAL.exec(unless.condition);
+    if (reveal) return copy.mana.untappedWith(copy.mana.inHandOrPlay(reveal[1][0].toUpperCase() + reveal[1].slice(1)));
+    const cond = unless.condition
+      .replace(BASIC, (t) => t[0].toUpperCase() + t.slice(1))
+      // Close-out ruling 6: a count as a figure, `8 or more lands`, as the condition's own `13 or less life` is.
+      .replace(NUMBER, (w) => String(NUMBER_WORDS.indexOf(w.toLowerCase()) + 2));
     return cond.startsWith("you control ") ? copy.mana.untappedWith(cond.slice("you control ".length)) : copy.mana.untappedIf(cond);
   }
   return list.some((d) => d.kind === "entersTapped") ? copy.mana.tapped : copy.mana.untapped;
@@ -185,7 +213,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
         muted: missing.length ? [copy.givesUp(listWords(missing, "and"))] : [],
       };
     }
-    const giving = shared !== null ? [] : s.givesUp.map(givenUpText);
+    const giving = shared !== null ? [] : rowGivesUp(s.givesUp);
     if (job.kind === "fetch") {
       const clauses = [...firstBasicOnly(s.drawbacks).map((d) => drawbackText(d, landColors)), ...giving];
       // H3: `gives up nothing` only when it is true, which is when nothing above was said.
@@ -194,24 +222,32 @@ export function sheetModel(read: StandInsRead): SheetModel {
     // A land: `makes {colors}, {state}`, with the entering condition read into the line itself, then the
     // costs that remain, the colors it makes only once, and what it gives up (addendum §1a).
     const again = job.colors.filter((c) => !s.once.includes(c));
+    // Every job color made only once: the line names what the land makes again and again instead
+    // (Ravaged Highlands for a white job still taps for red), and colorless only when that is nothing.
+    const order: Color[] = ["W", "U", "B", "R", "G"];
+    const lineColors = again.length ? again : (() => { const own = repeatableColors(s.card); return order.filter((c) => own.has(c)); })();
     // A cost is named for the colors this job asks for: Mana Confluence's life is paid for white and red
     // here, and naming all five would break the row's two lines at 390 to say nothing the reader asked.
+    // Close-out ruling 6: and not at all when it is paid for every color the mana line just named, where
+    // `for {colors}` repeats the line (a five-color painland's cost was 50 characters of it).
     const costs = s.drawbacks
       .filter((d) => d.kind !== "entersTapped" && d.kind !== "entersTappedUnless")
-      .map((d) => drawbackText(
-        d.kind === "damage" || d.kind === "life" ? { ...d, colors: d.colors.filter((c) => job.colors.includes(c)) } : d,
-        again.length ? again : job.colors,
-      ));
+      .map((d) => {
+        if (d.kind !== "damage" && d.kind !== "life") return drawbackText(d, again.length ? again : job.colors);
+        const paid = d.colors.filter((c) => job.colors.includes(c));
+        const every = paid.length === 0 || lineColors.every((c) => paid.includes(c));
+        return every
+          ? (d.kind === "life" ? copy.drawback.lifeFetch(d.amount) : copy.drawback.damageAny(d.amount))
+          : drawbackText({ ...d, colors: paid }, again.length ? again : job.colors);
+      });
     return {
-      // Every job color made only once: the line names what the land makes again and again instead
-      // (Ravaged Highlands for a white job still taps for red), and colorless only when that is nothing.
-      body: [copy.mana.line(
-        again.length ? colorsText(again)
-          : (() => { const own = repeatableColors(s.card); const order: Color[] = ["W", "U", "B", "R", "G"];
-            return own.size ? colorsText(order.filter((c) => own.has(c))) : copy.mana.colorless; })(),
-        entering(s.drawbacks),
-      )],
-      muted: [...costs, ...s.once.map((c) => copy.mana.once(COLOR_WORD[c])), ...giving],
+      body: [copy.mana.line(lineColors.length ? colorsText(lineColors) : copy.mana.colorless, entering(s.drawbacks))],
+      // Close-out ruling 6: the one-shot colors in one clause, not a clause each.
+      // All five made, the one-shot ones being every color the line did not name: `every other color`.
+      muted: [...costs, ...(s.once.length ? [copy.mana.once(
+        new Set([...lineColors, ...s.once]).size === 5 && lineColors.length > 0 && s.once.length > 1 ? copy.everyOtherColor
+          : colorsText(order.filter((c) => s.once.includes(c))),
+      )] : []), ...giving],
     };
   };
 
