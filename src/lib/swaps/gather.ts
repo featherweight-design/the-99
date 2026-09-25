@@ -73,6 +73,19 @@ export type StandInsRead = StandInGroups & {
 };
 
 /** Null when the deck is not this reader's, or the card is not in the catalog. */
+/**
+ * Every creature subtype the catalog prints, off front faces (`creatureSubtypes` in SQL): the tribal
+ * theme's vocabulary, read from the catalog so a new set's type arrives with the weekly refresh.
+ */
+async function loadCreatureTypes(): Promise<Set<string>> {
+  const rows = await db.execute<{ t: string }>(sql`
+    select distinct t from cards,
+      unnest(regexp_split_to_array(trim(split_part(split_part(type_line, ' // ', 1), ' — ', 2)), '\s+')) as t
+    where split_part(type_line, ' // ', 1) ~* '\mcreature\M' and t <> ''
+  `);
+  return new Set(rows.rows.map((r) => r.t));
+}
+
 export async function loadStandIns(deckId: string, userId: string, cutOracleId: string): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner
@@ -105,11 +118,15 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const draft = sql.param([...new Set([...draftRows.rows.map((r) => r.oracle_id), ...commanderIds])]);
 
   const job = jobOf(original);
-  const candidates: Row[] = job.kind === "none" ? [] : (await db.execute<Row>(
-    job.kind === "spell"
-      ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId, staples: sql.param([...staples]) })
-      : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
-  )).rows;
+  const [candidates, creatureTypes] = await Promise.all([
+    job.kind === "none" ? [] : db.execute<Row>(
+      job.kind === "spell"
+        ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId, staples: sql.param([...staples]) })
+        : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
+    ).then((r) => r.rows),
+    // Only a spell is matched on themes, so only a spell needs the tribal theme's type list.
+    job.kind === "spell" ? loadCreatureTypes() : new Set<string>(),
+  ]);
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
   const [availability, priced] = await Promise.all([
@@ -132,7 +149,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   });
 
   return {
-    ...rankStandIns(original, pool, priced),
+    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w)),
     original,
     commanders,
     newestAsOf: priced.newestAsOf,

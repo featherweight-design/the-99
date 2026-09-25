@@ -18,6 +18,8 @@ const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => {
   // A support row carries a figure; `listed` states it when a test needs a row with none.
   return { ...x, listed: over.listed ?? (x.inclusion !== null || x.synergy !== null) };
 };
+/** No creature types: these cases turn on roles, prices and the ladder, never on tribal. */
+const rank = (o: CardRow, c: Candidate[], p: Parameters<typeof rankStandIns>[2]) => rankStandIns(o, c, p, () => false);
 const fact = (cents: number | null, asOf = NOW, foilCents: number | null = null): PriceFact =>
   ({ cents, foilCents, etchedCents: null, asOf });
 
@@ -111,7 +113,7 @@ describe("rankStandIns", () => {
         [TOWER.oracleId, fact(30)],
       ]),
     };
-    const g = rankStandIns(PLATEAU, [cand(FOUNDRY), cand(RETREAT), cand(TOWER, { owned: 1, free: 1 })], priced);
+    const g = rank(PLATEAU, [cand(FOUNDRY), cand(RETREAT), cand(TOWER, { owned: 1, free: 1 })], priced);
     expect(g.originalCents).toBe(29384);
     expect(g.free.map((s) => s.card.name)).toEqual(["Command Tower"]);
     expect(g.cheapest.map((s) => s.card.name)).toEqual(["Clifftop Retreat", "Sacred Foundry"]);
@@ -127,7 +129,7 @@ describe("rankStandIns", () => {
         [ROCK_ZERO.oracleId, fact(100, STALE)],
       ]),
     };
-    const g = rankStandIns(VAULT, [cand(SOL_RING), cand(ROCK_ZERO), cand(card("Unpriced Rock", "Artifact", "{T}: Add {C}.", 1))], priced);
+    const g = rank(VAULT, [cand(SOL_RING), cand(ROCK_ZERO), cand(card("Unpriced Rock", "Artifact", "{T}: Add {C}.", 1))], priced);
     expect([...g.byCommander, ...g.unlisted]).toEqual([]);
   });
 
@@ -136,7 +138,7 @@ describe("rankStandIns", () => {
       newestAsOf: NOW,
       prices: new Map([[VAULT.oracleId, fact(3000, STALE)], [SOL_RING.oracleId, fact(100)]]),
     };
-    const g = rankStandIns(VAULT, [cand(SOL_RING), cand(ROCK_ZERO, { owned: 1, free: 1 })], priced);
+    const g = rank(VAULT, [cand(SOL_RING), cand(ROCK_ZERO, { owned: 1, free: 1 })], priced);
     expect(g.originalCents).toBeNull();
     expect(g.free.map((s) => s.card.name)).toEqual(["Mox Amber"]);
     expect([...g.byCommander, ...g.unlisted]).toEqual([]);
@@ -156,7 +158,7 @@ describe("rankStandIns", () => {
         [c.oracleId, fact(20)], [d.oracleId, fact(40)],
       ]),
     };
-    const g = rankStandIns(VAULT, [
+    const g = rank(VAULT, [
       cand(a, { inclusion: 12, synergy: 0.4 }), cand(b, { inclusion: 61, synergy: 0.02 }), cand(d), cand(c),
     ], priced);
     expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed Low", "Listed High"]);
@@ -169,9 +171,32 @@ describe("rankStandIns", () => {
     const a = card("No Inclusion", "Artifact", "{T}: Add {C}.", 1);
     const b = card("No Figures", "Artifact", "{T}: Add {C}.", 1);
     const priced = { newestAsOf: NOW, prices: new Map([[VAULT.oracleId, fact(3000)], [a.oracleId, fact(90)], [b.oracleId, fact(80)]]) };
-    const g = rankStandIns(VAULT, [cand(a, { synergy: 0.3 }), cand(b, { listed: true })], priced);
+    const g = rank(VAULT, [cand(a, { synergy: 0.3 }), cand(b, { listed: true })], priced);
     expect(g.byCommander.map((s) => s.card.name)).toEqual(["No Inclusion", "No Figures"]);
     expect(g.unlisted).toEqual([]);
+  });
+
+  // Q6: Runadi's case. A creature that ramps and grows counters outranks a sorcery that only ramps, whatever
+  // the synergy says, because it does more of the original's work.
+  it("orders spells by the roles and themes they share, before synergy", () => {
+    const orig = card("Counter Caller", "Creature — Elf Druid",
+      "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\nPut a +1/+1 counter on each other creature you control.", 4);
+    const sorcery = card("Plain Ramp", "Sorcery", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", 3);
+    const creature = card("Growing Ramp", "Creature — Elf", "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\nPut a +1/+1 counter on target creature.", 3);
+    const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [sorcery.oracleId, fact(50)], [creature.oracleId, fact(900)]]) };
+    const g = rank(orig, [cand(sorcery, { synergy: 0.5 }), cand(creature, { synergy: 0.01 })], priced);
+    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Growing Ramp", "Plain Ramp"]);
+    expect(g.byCommander[0].sharedThemes).toContain("counters");
+    expect(g.byCommander[1].sharedThemes).toEqual([]);
+  });
+
+  it("reads the tribal theme only through the catalog's creature types", () => {
+    const orig = card("Elf Lord", "Creature — Elf", "{T}: Add {G} for each Elf you control.\nOther Elves you control get +1/+1.", 3);
+    const other = card("Elf Friend", "Creature — Elf", "{T}: Add {G}.\nElves you control have haste.", 1);
+    const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [other.oracleId, fact(90)]]) };
+    const typed = rankStandIns(orig, [cand(other, { listed: true })], priced, (w) => w === "Elf");
+    expect(typed.byCommander[0].sharedThemes).toContain("tribal");
+    expect(rank(orig, [cand(other, { listed: true })], priced).byCommander[0].sharedThemes).not.toContain("tribal");
   });
 
   // v2 item 2: lands on the ladder, never the alphabet or price alone. Plateau's stand-ins in HD - Gishath were
@@ -190,7 +215,7 @@ describe("rankStandIns", () => {
         [clean.oracleId, fact(15)], [cleanSyn.oracleId, fact(900)], [paid.oracleId, fact(10)],
       ]),
     };
-    const g = rankStandIns(PLATEAU, [
+    const g = rank(PLATEAU, [
       cand(tapped, { synergy: 0.9 }), cand(check), cand(clean), cand(cleanSyn, { synergy: 0.3 }), cand(paid, { synergy: 0.95 }),
     ], priced);
     // The paid land is cheapest, first by name and highest in synergy, and still last: it is utility mana.
@@ -209,7 +234,7 @@ describe("rankStandIns", () => {
         [owned.oracleId, fact(90)], [listed.oracleId, fact(50)],
       ]),
     };
-    const g = rankStandIns(VAULT, [
+    const g = rank(VAULT, [
       // The dear staple's figure is the highest: by the commander's order it would lead.
       cand(dear, { inclusion: 95, isUniversal: true }), cand(cheap, { inclusion: 60, isUniversal: true }),
       cand(owned, { inclusion: 80, isUniversal: true, owned: 1, free: 1 }), cand(listed, { inclusion: 30 }),
@@ -225,26 +250,26 @@ describe("rankStandIns", () => {
       newestAsOf: NOW,
       prices: new Map([[VAULT.oracleId, fact(3000)], [SOL_RING.oracleId, fact(null, NOW, 700)]]),
     };
-    const g = rankStandIns(VAULT, [cand(SOL_RING)], priced);
+    const g = rank(VAULT, [cand(SOL_RING)], priced);
     expect(g.unlisted[0]).toMatchObject({ cents: 700, foilOnly: true });
   });
 
   it("offers nothing for a card with no job", () => {
-    const g = rankStandIns(GRAVE_PACT, [cand(SOL_RING, { owned: 1, free: 1 })], { newestAsOf: NOW, prices: new Map() });
+    const g = rank(GRAVE_PACT, [cand(SOL_RING, { owned: 1, free: 1 })], { newestAsOf: NOW, prices: new Map() });
     expect(g.job).toEqual({ kind: "none" });
     expect(g.free).toEqual([]);
   });
 
   it("caps each group", () => {
     const many = Array.from({ length: STAND_IN_GROUP_CAP + 5 }, (_, i) => card(`Rock ${i}`, "Artifact", "{T}: Add {C}.", 1));
-    const g = rankStandIns(VAULT, many.map((c) => cand(c, { owned: 1, free: 1 })), { newestAsOf: NOW, prices: new Map() });
+    const g = rank(VAULT, many.map((c) => cand(c, { owned: 1, free: 1 })), { newestAsOf: NOW, prices: new Map() });
     expect(g.free).toHaveLength(STAND_IN_GROUP_CAP);
   });
 
   it("carries what a utility land gives up onto each of its stand-ins (H3)", () => {
     const cradle = card("Gaea's Cradle", "Legendary Land", "{T}: Add {G} for each creature you control.");
     const forest = card("Forest", "Basic Land — Forest", "({T}: Add {G}.)");
-    const g = rankStandIns(cradle, [cand(forest)], { newestAsOf: NOW, prices: new Map([[cradle.oracleId, fact(90000)]]) });
+    const g = rank(cradle, [cand(forest)], { newestAsOf: NOW, prices: new Map([[cradle.oracleId, fact(90000)]]) });
     expect(g.free[0].givesUp).toEqual([{ kind: "named", label: "its extra mana" }]);
   });
 });
