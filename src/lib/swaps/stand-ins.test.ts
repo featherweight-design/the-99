@@ -149,7 +149,8 @@ describe("rankStandIns", () => {
     const priced = {
       newestAsOf: NOW,
       prices: new Map([
-        [VAULT.oracleId, fact(3000)], [a.oracleId, fact(50)], [b.oracleId, fact(900)],
+        // The higher-synergy card is the DEARER one, so neither inclusion nor price can produce this order.
+        [VAULT.oracleId, fact(3000)], [a.oracleId, fact(900)], [b.oracleId, fact(50)],
         [c.oracleId, fact(20)], [d.oracleId, fact(40)],
       ]),
     };
