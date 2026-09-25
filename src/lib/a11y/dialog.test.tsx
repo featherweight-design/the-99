@@ -460,6 +460,53 @@ describe("useBackDismiss", () => {
     back.mockRestore();
   });
 
+  // An orphan needs the Navigation API's entry keys, which jsdom has not got, so this
+  // case stands up the smallest stand-in that keeps a key per entry: pushState adds
+  // one past the current index, back() steps the index before jsdom's pop arrives.
+  it("steps past a lower dialog's orphan when the upper one closes", async () => {
+    const keys = ["base"];
+    let index = 0;
+    let next = 0;
+    const push = window.history.pushState.bind(window.history);
+    const back = window.history.back.bind(window.history);
+    const pushSpy = vi.spyOn(window.history, "pushState").mockImplementation((...args) => {
+      keys.splice(index + 1, keys.length, `k${next++}`);
+      index += 1;
+      push(...args);
+    });
+    const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {
+      index -= 1;
+      back();
+    });
+    Object.defineProperty(window, "navigation", {
+      configurable: true,
+      value: {
+        get currentEntry() { return { key: keys[index], index }; },
+        addEventListener: () => {},
+      },
+    });
+    try {
+      const lower = open();
+      const upper = open();
+      // The lower one closes first: its entry is not the current one, so it is left
+      // behind as an orphan rather than stepped back over.
+      lower.hook.unmount();
+      await settle();
+      expect(backSpy).not.toHaveBeenCalled();
+      upper.hook.unmount();
+      await settle();
+      await settle();
+      // The upper one's self-pop lands on the orphan and keeps going, so the reader
+      // is back on the entry both dialogs were opened from.
+      expect(backSpy).toHaveBeenCalledTimes(2);
+      expect(index).toBe(0);
+    } finally {
+      pushSpy.mockRestore();
+      backSpy.mockRestore();
+      delete (window as unknown as { navigation?: unknown }).navigation;
+    }
+  });
+
   it("pushes once under StrictMode's remount, and steps back not at all", async () => {
     const push = vi.spyOn(window.history, "pushState");
     const back = vi.spyOn(window.history, "back");

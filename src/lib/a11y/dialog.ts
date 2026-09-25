@@ -156,13 +156,23 @@ function onPopState() {
   const left = hrefBeforeTraverse;
   hrefBeforeTraverse = null;
   if (selfPops > 0 && Date.now() > selfPopsUntil) selfPops = 0;
+  const landed = currentKey();
   if (selfPops > 0) {
     selfPops -= 1;
+    if (landed !== null && orphans.has(landed)) {
+      // This module's own pop landed on another dialog's orphan — a dialog lower in
+      // the stack that closed first, while this one still held the top entry. Stopping
+      // here would leave the reader's next Back to spend itself on it.
+      orphans.delete(landed);
+      selfPops += 1;
+      selfPopsUntil = Date.now() + 1_000;
+      window.history.back();
+      return;
+    }
     restoreHref(pendingRestore);
     pendingRestore = null;
     return;
   }
-  const landed = currentKey();
   if (landed !== null && orphans.has(landed)) {
     // A dialog's entry left under a navigation it made: the same URL as its
     // predecessor, so landing here would be a Back that did nothing. Keep going.
