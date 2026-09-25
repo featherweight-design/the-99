@@ -24,6 +24,8 @@
 //   F4b Help me choose on third: named alone, though it sits first on the page;
 //   F5  the three figures draw at 390 and 1300 without overflowing the page;
 //   F6  all off again: none of the three entries is on the page.
+// It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
+// marks every entry seen and fails F2–F4 on a working build. Re-run before believing that red.
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
 // worktree's own `.env` at a migrated scratch branch.
 //
@@ -62,6 +64,7 @@
 //   --flip:
 //   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 and F4: the cookie from before each flip hides the sheet
 //   - the version floor applied to a switched entry too          → F2, F3 and F4: a reader at 9 is never announced either
+//   - `figures()` lighting no SETS RANK                           → F5's Help me choose check at 390 and 1300
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
