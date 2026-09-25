@@ -2,6 +2,7 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { runDeeperRead, type DeeperReadOutcome } from "../../../../lib/intake/deeper-read";
+import { MAX_BUDGET_DOLLARS } from "../../../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS } from "../../../../lib/intake/limits";
 import { cancelRead } from "../../../../lib/intake/run-store";
 import { isUuid } from "../../../../lib/uuid";
@@ -33,7 +34,7 @@ export async function lookDeeper(input: {
     || !isUuid(input.readId)
     || words.length === 0
     || words.length > READ_WORDS_MAX_CHARS
-    || !(budgetDollars === null || (Number.isInteger(budgetDollars) && budgetDollars >= 1))
+    || !(budgetDollars === null || (Number.isInteger(budgetDollars) && budgetDollars >= 1 && budgetDollars <= MAX_BUDGET_DOLLARS))
     || !(bracket === null || (Number.isInteger(bracket) && bracket >= 1 && bracket <= 5))
   ) return { kind: "refused" };
   return runDeeperRead(userId, { readId: input.readId, words, controls: { budgetDollars, bracket } });

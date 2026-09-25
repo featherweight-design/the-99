@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { INTAKE_MAX_TOKENS, INTAKE_MODEL } from "../intake/limits";
 import { SYNOPSIS_MAX_TOKENS } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
@@ -57,6 +58,13 @@ describe("FEATURE_CALLS", () => {
     // write can make two calls (the first answer and its repair) at a 3,000-token ceiling each.
     expect(featureWorstCaseMicroUsd("tuning")).toBe(208_000);
     expect(featureWorstCaseMicroUsd("synopsis")).toBe(312_000);
+    // The deeper read: one call at its measured 6,000-token input ceiling and 3,000 out, $0.084.
+    expect(FEATURE_CALLS.intake).toEqual({ model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 });
+    expect(featureWorstCaseMicroUsd("intake")).toBe(84_000);
+  });
+
+  it("has a rate for every feature's model, so no reservation can be priced at nothing", () => {
+    for (const call of Object.values(FEATURE_CALLS)) expect(RATES[call.model]).toBeDefined();
   });
 
   it("prices a reservation at the model it recorded, falling back to the feature's", () => {

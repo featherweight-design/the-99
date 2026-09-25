@@ -36,6 +36,7 @@ describe("validateRead", () => {
       { kind: "budget", dollars: 150 }, { kind: "bracket", bracket: 3 },
     ]);
     expect(read(reply({ budgetDollars: 0, bracket: 6 })).chips).toEqual([]);
+    expect(read(reply({ budgetDollars: 1_000_000 })).chips).toEqual([]);
   });
 
   it("lists a figure that disagrees with a set control under Not used, never over the control", () => {

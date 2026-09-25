@@ -1664,8 +1664,10 @@ export const modelCalls = pgTable("model_calls", {
  * cannot hang off a deck's row the way tuning's run and the overview do, and it needs a row of its
  * own because a Stop must refund (F4): written `pending` with its allowance unit BEFORE the model is
  * called, and settled with that unit in one transaction. A Stop cancels it and refunds, and a late
- * answer finds it no longer pending and writes nothing. `words_hash` is the words it was asked to
- * read, so a read is offered once per set of words. `chips` holds only what passed validation.
+ * answer finds it no longer pending and writes nothing. `words_hash` is what it was asked: the
+ * words and the budget and bracket controls they were read against (`wordsHash`). A repeat of an
+ * ask already read gets that read back uncharged, so a read is offered once per ask. `chips` holds
+ * only what passed validation.
  */
 export const intakeReads = pgTable("intake_reads", {
   id: uuid("id").primaryKey().defaultRandom(),

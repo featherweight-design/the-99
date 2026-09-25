@@ -2,7 +2,7 @@ import { callModel, type ModelOutcome } from "../model/client";
 import { INTAKE_DEADLINE_MS, INTAKE_EFFORT, INTAKE_MAX_TOKENS, INTAKE_MODEL, INTAKE_RETRY_FLOOR_MS } from "./limits";
 import type { PhraseIndex } from "./match";
 import { buildReadPrompt, readResponseSchema, validateRead, type ReadResponse } from "./read";
-import { settleRead, startRead, type ReadErrorClass, type StoredRead } from "./run-store";
+import { settleRead, startRead, storedRead, wordsHash, type ReadErrorClass, type StoredRead } from "./run-store";
 import { intakeLive, STUB_MODEL, stubMode, stubReply } from "./stub";
 import { loadPhraseIndex, loadThemeVocabulary } from "./search";
 
@@ -25,6 +25,7 @@ export type DeeperReadOutcome =
   | { kind: "allowance" | "paused" | "ownerShare" | "in_flight" }
   /** The press reused the id of a read that already exists. */
   | { kind: "reused" };
+// A repeat of an ask already read returns `read`, from the store, and reserves nothing.
 
 export type DeeperReadDeps = {
   /** Stored on the read, so the ledger prices it and a probe can prove the stub ran. */
@@ -67,8 +68,12 @@ export async function runDeeperRead(
   deps: DeeperReadDeps = defaultDeps(),
 ): Promise<DeeperReadOutcome> {
   // The index is read before the unit is reserved: a failed read of it costs the player nothing.
+  // An ask already read is offered once: its chips come back and no unit is reserved.
+  const hash = wordsHash(input.words, input.controls);
+  const stored = await storedRead(userId, hash);
+  if (stored) return { kind: "read", ...stored };
   const { labels, index } = await deps.loadIndex();
-  const started = await startRead(userId, input.words, deps.modelName, { readId: input.readId, now: deps.now() });
+  const started = await startRead(userId, hash, deps.modelName, { readId: input.readId, now: deps.now() });
   if (started.kind !== "started") return { kind: started.kind };
 
   const outcome = await deps.model(buildReadPrompt(input.words, labels), input.words, index);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { oneLine } from "../tuning/prompt";
+import { MAX_BUDGET_DOLLARS } from "./answers";
 import { phraseKey, type Chip, type PhraseIndex } from "./match";
 
 /**
@@ -104,7 +105,8 @@ export function validateRead(args: {
   }
 
   const budget = reply.budgetDollars;
-  if (budget !== null && Number.isInteger(budget) && budget >= 1) {
+  // The create path's own range: a budget it would refuse is never offered as a chip.
+  if (budget !== null && Number.isInteger(budget) && budget >= 1 && budget <= MAX_BUDGET_DOLLARS) {
     if (controls.budgetDollars !== null && controls.budgetDollars !== budget) notUsed.push(`$${budget}`);
     else if (controls.budgetDollars === null) push({ kind: "budget", dollars: budget });
   }

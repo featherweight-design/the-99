@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const store = vi.hoisted(() => ({
   startRead: vi.fn(),
   settleRead: vi.fn(),
+  storedRead: vi.fn(),
+  wordsHash: () => "hash",
 }));
 vi.mock("./run-store", () => store);
 vi.mock("./search", () => ({ loadPhraseIndex: vi.fn(), loadThemeVocabulary: vi.fn() }));
@@ -30,6 +32,7 @@ const handle = { kind: "started", readId: "r", callId: "c" };
 beforeEach(() => {
   store.startRead.mockReset().mockResolvedValue(handle);
   store.settleRead.mockReset().mockResolvedValue(true);
+  store.storedRead.mockReset().mockResolvedValue(null);
 });
 
 describe("runDeeperRead", () => {
@@ -55,6 +58,15 @@ describe("runDeeperRead", () => {
   it("reports a late answer as stopped", async () => {
     store.settleRead.mockResolvedValue(false);
     expect(await runDeeperRead("u", input, deps(reply({ themes: ["Dinosaurs"] })))).toEqual({ kind: "stopped" });
+  });
+
+  it("offers an ask once: a repeat gets the stored read back and reserves nothing", async () => {
+    const chips = [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }];
+    store.storedRead.mockResolvedValue({ chips, notUsed: [], notUnderstood: [] });
+    const d = deps(reply({}));
+    expect(await runDeeperRead("u", input, d)).toEqual({ kind: "read", chips, notUsed: [], notUnderstood: [] });
+    expect(store.startRead).not.toHaveBeenCalled();
+    expect(d.model).not.toHaveBeenCalled();
   });
 
   it("calls no model when the start was refused", async () => {

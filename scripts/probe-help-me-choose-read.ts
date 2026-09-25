@@ -81,8 +81,10 @@ async function main() {
       loadIndex: async () => ({ labels: ["Dinosaurs"], index }),
       now: () => new Date(),
     });
-    const run = (readId: string, model: () => Promise<ModelOutcome<ReadResponse>>) =>
-      runDeeperRead(USER, { readId, words: "big dumb lizards", controls }, deps(model));
+    // Each press reads its own words: an ask already read is answered from the store (once per
+    // ask), which would stop every later case from reaching the model at all.
+    const run = (readId: string, model: () => Promise<ModelOutcome<ReadResponse>>, words = `big dumb lizards ${readId}`) =>
+      runDeeperRead(USER, { readId, words, controls }, deps(model));
 
     console.log("\n1. A read with a valid chip spends its unit");
     const ok = randomUUID();
@@ -91,6 +93,11 @@ async function main() {
     check("the read is ok and holds its chip", [okRow.status, okRow.chips], ["ok", { chips: [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }], notUsed: [], notUnderstood: [] }]);
     check("its unit is spent, on the intake feature", [okRow.unit, okRow.feature], ["spent", "intake"]);
     check("its bill is recorded", (okRow.cost ?? 0) > 0, true);
+    const unitsBefore = await units(USER);
+    let asked = false;
+    const again = await run(randomUUID(), async () => { asked = true; return reply(["Dinosaurs"]); }, `big dumb lizards ${ok}`);
+    check("the same ask again gets the stored read back", [again.kind, asked], ["read", false]);
+    check("and reserves nothing", await units(USER), unitsBefore);
 
     console.log("\n2. Nothing valid came back: refunded (F4)");
     const nothing = randomUUID();

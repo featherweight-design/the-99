@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { and, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 
 import { db } from "../../db";
 import { intakeReads } from "../../db/schema";
@@ -42,13 +42,28 @@ export type ReadHandle = { readId: string; callId: string };
 /** What a settled read stores: every chip that survived, and the two lists the panel draws. */
 export type StoredRead = Omit<ReadResult, "useful">;
 
+export type ReadControls = { budgetDollars: number | null; bracket: number | null };
+
 /**
- * The words, as the row keeps them: a hash of their normalized form and nothing else. A read
- * need not keep what the player wrote to be accounted for, and two presses of the same words
- * read as the same hash however they were spaced or cased.
+ * What a read was asked, as the row keeps it: a hash of the words' normalized form and the two
+ * controls the validator read them against, and nothing else. A read need not keep what the player
+ * wrote to be accounted for. Two presses of the same words under the same controls hash alike
+ * however they were spaced or cased, and that is what makes a read offered ONCE per ask: the
+ * second press gets the first one's chips back, charged nothing. A changed control is a different
+ * ask, since the chips it keeps depend on it.
  */
-export function wordsHash(words: string): string {
-  return createHash("sha256").update(phraseKey(words)).digest("hex");
+export function wordsHash(words: string, controls: ReadControls): string {
+  return createHash("sha256")
+    .update(JSON.stringify([phraseKey(words), controls.budgetDollars, controls.bracket]))
+    .digest("hex");
+}
+
+/** The player's settled read of this ask, when there is one. */
+export async function storedRead(userId: string, hash: string): Promise<StoredRead | null> {
+  const [row] = await db.select({ chips: intakeReads.chips }).from(intakeReads)
+    .where(and(eq(intakeReads.userId, userId), eq(intakeReads.wordsHash, hash), eq(intakeReads.status, "ok")))
+    .orderBy(desc(intakeReads.createdAt)).limit(1);
+  return (row?.chips as StoredRead | undefined) ?? null;
 }
 
 export function reapCutoff(now: Date): Date {
@@ -80,7 +95,8 @@ export async function reapReads(tx: Tx, userId: string, now: Date = new Date()):
  */
 export async function startRead(
   userId: string,
-  words: string,
+  /** The ask's hash (`wordsHash`). */
+  hash: string,
   /** The model this read is made with: the real one, or the stub every non-live process uses. */
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
@@ -96,7 +112,7 @@ export async function startRead(
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
         ...(opts.readId ? { id: opts.readId } : {}),
-        userId, wordsHash: wordsHash(words), model, modelCallId: unit.id, status: "pending", createdAt: now,
+        userId, wordsHash: hash, model, modelCallId: unit.id, status: "pending", createdAt: now,
       }).returning({ id: intakeReads.id });
       return { readId: row.id, callId: unit.id };
     });
