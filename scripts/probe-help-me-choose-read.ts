@@ -71,7 +71,22 @@ async function readRow(readId: string): Promise<Row> {
 const units = async (userId: string) =>
   Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${userId}`)).rows[0] as { n: number }).n);
 
+// WHERE THIS PROBE MAY WRITE. It writes intake_reads and model_calls rows, so it refuses the
+// staging and production branches before its first write, and fails closed on a branch it cannot read.
+const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
+const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
+
+async function refuseSharedDatabase() {
+  const [r] = (await fixture.execute(sql`select current_setting('neon.branch_id', true) as branch`)).rows as { branch: string | null }[];
+  const branch = r?.branch ?? null;
+  if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH || process.env.VERCEL_ENV === "production") {
+    await pool.end();
+    throw new Error(`probe:help-me-choose-read writes fixture rows and refuses branch ${branch ?? "(unknown)"}; point PROBE_TARGET_URL at local-dev or a scratch branch.`);
+  }
+}
+
 async function main() {
+  await refuseSharedDatabase();
   try {
     const { runDeeperRead } = await import("../src/lib/intake/deeper-read");
     const store = await import("../src/lib/intake/run-store");
