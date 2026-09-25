@@ -91,13 +91,14 @@ export async function writeCommanderChange(
   // replaces simply leaves.
   const arrivingFromBody = toIds.filter((id) => !fromIds.includes(id) && inBody.has(id));
   const departing = fromIds.filter((id) => !toIds.includes(id));
+  const gone: string[] = [];
   for (const [i, id] of arrivingFromBody.entries()) {
     const quantity = inBody.get(id)!;
     if (quantity > 1) {
       await tx.update(deckCards).set({ quantity: quantity - 1 })
         .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, id)));
     } else {
-      await tx.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, id)));
+      gone.push(id);
     }
     const slot = departing[i];
     if (slot !== undefined) {
@@ -108,6 +109,8 @@ export async function writeCommanderChange(
         });
     }
   }
+  // In this function's own block, so the two prunes below reconcile what it removed.
+  if (gone.length > 0) await tx.delete(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, gone)));
 
   await tx.update(decks).set({
     commanderOracleId: to.commanderOracleId, partnerOracleId: to.partnerOracleId,
