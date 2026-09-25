@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
+import type { BrowseCard } from "../../lib/collection/browse";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -146,6 +147,21 @@ describe("ChangeCommanderSheet for a pair", () => {
     await waitFor(() => expect(changeCommander).toHaveBeenCalledWith(
       "d1", { commanderOracleId: "kraum, ludevic's opus", partnerOracleId: "tana, the bloodsower" },
     ));
+  });
+
+  it("names the way back from a stacked card Change commander, not the pair's title", async () => {
+    readChangeCandidates.mockResolvedValue(pairData());
+    render(
+      <CardDetailProvider fetchCard={async (id) => ({
+        oracleId: id, name: id, typeLine: "Legendary Creature", manaCost: "{U}", cmc: 1, oracleText: null,
+        keywords: [], rarity: "rare", colorIdentity: [], imageUri: null, printings: [], owned: [], proxiedBy: [],
+      }) as unknown as BrowseCard}>
+        <ChangeCommanderSheet deckId="d1" deckName="Jund" pair hasVersion onClose={() => {}} />
+      </CardDetailProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /Kraum, Ludevic's Opus/ }));
+    const back = await screen.findByTestId("card-modal-back");
+    expect(back.getAttribute("aria-label")).toBe("Back to Change commander");
   });
 });
 

@@ -219,7 +219,7 @@ async function main() {
   check("loader: the index holds a sub-floor {G} commander to hide", small.length > 0, true);
   if (small[0]) check("loader: a sub-floor commander is hidden", all.some((x) => x.key === small[0].id), false);
 
-  // ── A pair: swap one half, trade one out of the 98, refuse an illegal pairing ──
+  // ── A pair: swap one half, refuse a half out of the 98, refuse an illegal pairing ──
   const { rows: partnerRows } = await fixture.execute<Legend & { ci: string[] }>(sql`
     select c.oracle_id, c.name, c.type_line, c.oracle_text, c.mana_cost, c.layout, c.color_identity as ci
     from cards c
@@ -243,10 +243,13 @@ async function main() {
   check("pair swap: accepted", await write(pairDeck, anchor.oracle_id, p3.oracle_id), { ok: true });
   check("pair swap: one half moved", await live(pairDeck), { c: anchor.oracle_id, p: p3.oracle_id });
   await addCard(pairDeck, p2.oracle_id);
-  check("pair trade: accepted", await write(pairDeck, anchor.oracle_id, p2.oracle_id), { ok: true });
-  const pairBody = await bodyOf(pairDeck);
-  check("pair trade: the arriving half left the 98", pairBody.some((r) => r.startsWith(p2.oracle_id)), false);
-  check("pair trade: the departing half took its slot", pairBody.includes(`${p3.oracle_id}x1`), true);
+  // A half-trade is held back until Design draws it (`offerable`), and the write enforces that:
+  // a request the sheet would never send is refused, writing nothing.
+  const pairBefore = await bodyOf(pairDeck);
+  check("pair refused: a half from the 98", await write(pairDeck, anchor.oracle_id, p2.oracle_id),
+    { ok: false, reason: "illegal" });
+  check("pair refused: the 98 unchanged", await bodyOf(pairDeck), pairBefore);
+  check("pair refused: the pair unchanged", await live(pairDeck), { c: anchor.oracle_id, p: p3.oracle_id });
   check("pair refused: a half that cannot partner", await write(pairDeck, anchor.oracle_id, a.oracle_id),
     { ok: false, reason: "illegal" });
   check("pair refused: a single for a pair", await write(pairDeck, anchor.oracle_id), { ok: false, reason: "mismatch" });

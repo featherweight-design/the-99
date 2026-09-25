@@ -22,6 +22,7 @@ import { loadPrices } from "../decks/price-query";
 import { isCommanderCandidate } from "../recs/score";
 import { loadUniversalStaples } from "../staples/universal";
 import { MIN_CANDIDATE_DECKS, fitBody, fitCount, type Fit } from "./fit";
+import { offerable } from "./pending";
 
 export type CandidateHalf = {
   oracleId: string;
@@ -64,17 +65,6 @@ export type ChangeCandidates = {
   claimsKnown: boolean;
   newestAsOf: Date | null;
 };
-
-/**
- * Whether a candidate can be offered at all. A single always can. A pair with a half already in the
- * 98 cannot: the write would trade that half and release the other old commander, and the design
- * has no sentence for a half-trade (`confirm.trade` says the two trade places, which would be
- * false). Held back, not given invented copy, until Design draws it (the-99-d9, 2026-09-25). It has
- * never occurred: staging indexes one usable pair.
- */
-export function offerable(ids: readonly string[], inDeck: ReadonlySet<string>): boolean {
-  return ids.length === 1 || !ids.some((id) => inDeck.has(id));
-}
 
 /** Yours when every half is owned or already in the 99; To buy otherwise. */
 export function isYours(c: Pick<Candidate, "halves">): boolean {

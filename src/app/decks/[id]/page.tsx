@@ -424,6 +424,9 @@ export default async function DeckBuilderPage({
   // the card-details trigger it drew before the feature (audit F6).
   return changeCommanderEnabled() ? (
     <ChangeCommanderProvider
+      // One provider per deck: a client navigation to another deck must not carry an open sheet
+      // or its chosen candidate across, where it would be written against the new deck.
+      key={id}
       deckId={id}
       deckName={detail.name}
       pair={detail.partner !== null}

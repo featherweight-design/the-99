@@ -96,6 +96,9 @@ export function ChangeCommanderSheet({
       // cutting the title, the same call the verdict lean's qualifier made.
       aside={<span className="hidden md:inline">{deckName}</span>}
       closeLabel={pair ? copy.sheet.close.pair : copy.sheet.close.single}
+      // A stacked card's way back is `← Change commander` for a pair too (handoff §3), never the
+      // pair's title, which is what ModalChrome falls back to.
+      backLabel={copy.sheet.title.single}
       onClose={onClose}
       width={700}
     >

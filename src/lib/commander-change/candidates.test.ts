@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { groupCandidates, isYours, offerable, type Candidate, type CandidateHalf } from "./candidates";
+import { groupCandidates, isYours, type Candidate, type CandidateHalf } from "./candidates";
+import { offerable } from "./pending";
 
 const half = (name: string, over: Partial<CandidateHalf> = {}): CandidateHalf => ({
   oracleId: name, name, manaCost: null, cmc: 0, artCropUri: null, imageUri: null,
