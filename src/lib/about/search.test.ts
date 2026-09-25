@@ -10,7 +10,7 @@ describe("matchTitle", () => {
         return this.replace(/I/g, "ı").toLowerCase();
       });
     try {
-      expect(matchTitle("Import a collection", "i").matched).toBe(true);
+      expect(matchTitle("Import", "i").matched).toBe(true);
     } finally {
       turkish.mockRestore();
     }
