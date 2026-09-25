@@ -165,7 +165,7 @@ async function main() {
       === JSON.stringify(all.rows.slice(0, 5).map((r) => [r.candidate.oracleId, r.candidate.ownedSupport])),
     basic.rows.slice(0, 3).map((r) => `${r.candidate.name} ${r.candidate.ownedSupport}`).join(", "));
   const [a, b] = [await loadIntakeCatalog(), await loadIntakeCatalog()];
-  check("the catalog is read once and kept", a === b && a.themes.length === vocab.length, `${a.themes.length} themes`);
+  check("the catalog is read once and kept", a.themes === b.themes && a.index === b.index && a.themes.length === vocab.length, `${a.themes.length} themes`);
 }
 
 main()

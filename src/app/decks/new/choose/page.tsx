@@ -21,7 +21,7 @@ import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips } from "../../../../lib/intake/present";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
-import { loadIntakeCatalog } from "../../../../lib/intake/search";
+import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
 
 // A row's figures come from a real fill run in a Server Action posted from this page (PR 4's
@@ -51,7 +51,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     redirect(submitTarget(p, index));
   }
 
-  const { themes } = await loadIntakeCatalog();
+  // The labels only: the card-name index is built for a submit, never for a page that just draws.
+  const themes = await loadIntakeThemes();
 
   if (!p.results) {
     return (
