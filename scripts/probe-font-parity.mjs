@@ -130,6 +130,10 @@ async function main() {
             ["--font-cormorant-garamond", [600, 700]],
             ["--font-metamorphous", [400]],
             ["--font-plex-sans", [400, 500, 600]],
+            // The italic axis, measured because dropping it was invisible to
+            // every other reading here: the upright metrics matched, the page
+            // looked right, and only the request count moved.
+            ["--font-plex-sans", [400, 500, 600], "italic"],
             ["--font-plex-mono", [400, 500, 600]],
           ];
           const probe = document.createElement("span");
@@ -138,10 +142,10 @@ async function main() {
           probe.textContent = "Handgloves 0123 WiIl";
           document.body.appendChild(probe);
           const out = {};
-          for (const [variable, weights] of FACES) {
+          for (const [variable, weights, style = "normal"] of FACES) {
             const family = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
             if (!family) {
-              for (const weight of weights) out[`${variable}@${weight}`] = "VARIABLE-UNSET";
+              for (const weight of weights) out[`${variable}@${weight}/${style}`] = "VARIABLE-UNSET";
               continue;
             }
             for (const weight of weights) {
@@ -151,17 +155,18 @@ async function main() {
               // different weights cannot share an advance width, and that
               // identity was the tell that no real face had loaded.
               try {
-                await document.fonts.load(`${weight} 100px ${family}`);
+                await document.fonts.load(`${style} ${weight} 100px ${family}`);
               } catch {
-                out[`${variable}@${weight}`] = "LOAD-REJECTED";
+                out[`${variable}@${weight}/${style}`] = "LOAD-REJECTED";
                 continue;
               }
               probe.style.fontFamily = family;
               probe.style.fontWeight = String(weight);
+              probe.style.fontStyle = style;
               // Force layout after the face is available.
               void probe.offsetWidth;
               const r = probe.getBoundingClientRect();
-              out[`${variable}@${weight}`] = `${r.width.toFixed(2)}x${r.height.toFixed(2)}`;
+              out[`${variable}@${weight}/${style}`] = `${r.width.toFixed(2)}x${r.height.toFixed(2)}`;
             }
           }
           probe.remove();
