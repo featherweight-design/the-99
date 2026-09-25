@@ -75,6 +75,20 @@ describe("bracketGate", () => {
     expect(g.admits(card("b"))).toBe(true);
   });
 
+  it("fills around a fixed pair already above the answer, and raises it no further", () => {
+    // The commander and the build-around card are a two-card combo: the fixed cards alone permit
+    // no lower than 3. Held to 2, every card would be refused and the fill would come back short.
+    const f = facts({
+      combos: { a: [edge("v", "cmd")], cmd: [edge("v", "a")] },
+      flags: { g1: { gameChanger: true }, g2: { gameChanger: true }, g3: { gameChanger: true }, g4: { gameChanger: true } },
+    });
+    const g = bracketGate({ bracket: 2, commanderIds: ["cmd"], fixedIds: ["cmd", "a"], facts: f })!;
+    expect(g.admits(card("forest"))).toBe(true);
+    for (const id of ["g1", "g2", "g3"]) { expect(g.admits(card(id))).toBe(true); g.place(card(id)); }
+    // A fourth Game Changer would move the deck past 3, so it is still refused.
+    expect(g.admits(card("g4"))).toBe(false);
+  });
+
   it("at 3 places a combo, but refuses a turn loop", () => {
     const f = facts({ combos: { b: [edge("v", "a")], d: [edge("w", "c", { loop: true })] } });
     const g = bracketGate({ bracket: 3, commanderIds: ["cmd"], fixedIds: ["cmd", "a", "c"], facts: f })!;

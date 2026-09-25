@@ -103,9 +103,10 @@ export function bracketGate(args: {
     return out;
   };
 
-  const withinLimits = (id: string): boolean => {
-    const f = facts.flagsOf(id);
-    const next = completes(id, placed);
+  /** The lowest bracket the placed cards, plus `id` when one is given, permit. */
+  const lowestPermitted = (id: string | null): number => {
+    const f = id === null ? { gameChanger: false, massLandDenial: false, extraTurn: false } : facts.flagsOf(id);
+    const next = id === null ? [] : completes(id, placed);
     const allCombos = [...combos.values(), ...next];
     const v = violationsFor({
       gameChangers: counts.gameChangers + (f.gameChanger ? 1 : 0),
@@ -114,9 +115,9 @@ export function bracketGate(args: {
       combos: allCombos.length,
       loops: allCombos.filter((c) => c.loop).length,
     });
-    const allSearchers = facts.searches(id) ? [...searchers, id] : [...searchers];
+    const allSearchers = id !== null && facts.searches(id) ? [...searchers, id] : [...searchers];
     const assemblesCombo = bracket === 3 && comboLandsEarly(allCombos, reachesOf(allSearchers, allCombos), args.commanderIds);
-    return Math.min(...permitsFor({ ...v, assemblesCombo })) <= bracket;
+    return Math.min(...permitsFor({ ...v, assemblesCombo }));
   };
 
   const record = (id: string) => {
@@ -129,9 +130,15 @@ export function bracketGate(args: {
     if (facts.searches(id)) searchers.add(id);
   };
   for (const id of args.fixedIds) record(id);
+  // The fixed cards can already sit above the answer: a commander that tutors the build-around
+  // card's combo partner, say, which the search's two-card check does not model. Held to the
+  // answer then, the gate would refuse every card, basics included, and the fill would come back
+  // short. So the ceiling is the answer or the lowest bracket the fixed cards permit, whichever is
+  // higher: the deck is whole, and no card placed around them raises it further.
+  const ceiling = Math.max(bracket, lowestPermitted(null));
 
   return {
-    admits: (c) => withinLimits(c.oracleId),
+    admits: (c) => lowestPermitted(c.oracleId) <= ceiling,
     place: (c) => record(c.oracleId),
   };
 }
