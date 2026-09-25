@@ -1,9 +1,20 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GameHistoryRow } from "./game-history-row";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckGame } from "../../lib/decks/games";
+
+// The row drops the year for a game played in the current year, so every date this
+// file asserts on reads the way it does only while "now" is in 2026. Pinned, or the
+// file starts failing on 1 January. Date alone is faked: the tests await real timers.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-09-20T12:00:00"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 const deleteGame = vi.fn<(deckId: string, gameId: string) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
