@@ -1,3 +1,19 @@
+# About The 99 — R6 (current)
+
+**R6 replaces the redirect.** A reader who is behind gets a one-time, non-modal sheet over the route
+they opened. `/about` opens on a what's-new index. The contents lists all 39 entries under a title
+search that filters the list and never the page.
+
+| File | What it is |
+|---|---|
+| `The 99 - About Page (R6).dc.html` | **The deliverable.** §1 the sheet (one new, many, first run), §2 the index and the page without it, §3 the jumped-to entry, §4 the contents and search (matches, none, pressed). Frames are 1300×820 and 390×844, with a `theme` prop. |
+| `READINESS-r6.md` | **Start here.** What ships, measurements, behaviour, state, and what is still open. |
+| `STATES-about-r6.md` | The state tables §N–§R, the rulings it overturns and keeps (§R7), and the copy (§R8). Supersedes earlier STATES files where they disagree. |
+
+Everything below is R4, kept as the record. The figures and the entry grammar still govern.
+
+---
+
 # About The 99 — R4
 
 R3's three unscreenshotted figures were all wrong, as R3 predicted. **R4 corrects them, pastes the
