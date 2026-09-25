@@ -126,7 +126,7 @@ describe("with the sheet switch on", () => {
   // these cases exist for, so it fails rather than reading as an empty list.
   const overridden = (res: NextResponse | undefined) => {
     const list = res?.headers.get("x-middleware-override-headers");
-    expect(list, "request forwarded with its own headers").not.toBeNull();
+    expect(list, "request forwarded with its own headers").toBeTruthy();
     return (list ?? "").split(",");
   };
 
