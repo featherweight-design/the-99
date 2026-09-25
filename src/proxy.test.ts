@@ -121,8 +121,14 @@ describe("requests the gate keeps its hands off", () => {
 describe("with the sheet switch on", () => {
   const sheetHeader = (res: NextResponse | undefined) =>
     res?.headers.get("x-middleware-request-x-about-sheet") ?? null;
-  const overridden = (res: NextResponse | undefined) =>
-    (res?.headers.get("x-middleware-override-headers") ?? "").split(",");
+  // The forwarded request's header list. A missing list means the request went
+  // through UNTOUCHED, carrying whatever the client sent, which is the failure
+  // these cases exist for, so it fails rather than reading as an empty list.
+  const overridden = (res: NextResponse | undefined) => {
+    const list = res?.headers.get("x-middleware-override-headers");
+    expect(list, "request forwarded with its own headers").not.toBeNull();
+    return (list ?? "").split(",");
+  };
 
   beforeEach(() => {
     process.env.ABOUT_SHEET_ENABLED = "true";
