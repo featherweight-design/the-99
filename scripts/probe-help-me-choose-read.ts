@@ -181,6 +181,20 @@ async function main() {
       await holder.query("commit");
       check("a press racing a settle of the same ask gets that read back", (await racing).kind, "stored");
       check("and holds no second unit", await units(OTHER), 1);
+
+      // A Stop that arrives while a start is still inserting waits for it, and stops that read.
+      const stopId = randomUUID();
+      await holder.query("begin");
+      await holder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [`intake-read:${OTHER}`]);
+      const { rows: [unit] } = await holder.query(
+        "insert into model_calls (user_id, feature, status, model) values ($1, 'intake', 'reserved', $2) returning id", [OTHER, INTAKE_MODEL]);
+      await holder.query(
+        "insert into intake_reads (id, user_id, words_hash, model, model_call_id, status) values ($1, $2, 'stop-race', $3, $4, 'pending')",
+        [stopId, OTHER, INTAKE_MODEL, unit.id]);
+      const stopping = store.cancelRead(stopId, OTHER);
+      await new Promise((r) => setTimeout(r, 1_500));
+      await holder.query("commit");
+      check("a Stop racing a start waits for it, and stops that read", await stopping, true);
     } finally {
       holder.release();
     }

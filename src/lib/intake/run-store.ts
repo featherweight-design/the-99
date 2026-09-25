@@ -208,6 +208,9 @@ function stored({ chips, notUsed, notUnderstood }: ReadResult): StoredRead {
  */
 export async function cancelRead(readId: string, userId: string): Promise<boolean> {
   return db.transaction(async (tx) => {
+    // The same lock a start and a settle take, so a Stop that arrives while a start is still
+    // inserting waits for that insert and then finds the read pending, rather than finding nothing.
+    await lockAsks(tx, userId);
     const rows = await tx.update(intakeReads)
       .set({ status: "cancelled" })
       .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
