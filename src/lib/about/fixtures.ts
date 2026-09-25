@@ -1862,15 +1862,16 @@ export const STAND_INS = {
     heading: sheet.groupSameType("lands"),
     order: sheet.orderBestMana,
     noun: "lands",
-    // Ladder order (`landRung`): untapped on a condition or for life, then tapped. Within a rung the
-    // sheet orders by synergy, then price; these follow the ladder and claim no synergy figure.
+    // In the order `rankStandIns` gives them (its `byLadder`): the rung first (untapped on a condition
+    // or for life, then tapped), then synergy, which none of these carries, then free before priced,
+    // cheapest first, then the name.
     rows: [
-      { name: "Sacred Foundry", free: true, cents: null, body: [sheet.mana.line(WR, sheet.mana.untappedIf("you pay 2 life"))], muted: [] },
       { name: "Battlefield Forge", free: true, cents: null, body: [sheet.mana.line(WR, sheet.mana.untapped)], muted: [drawbackText({ kind: "damage", amount: 1, colors: [] }, ["W", "R"])] },
+      { name: "Sacred Foundry", free: true, cents: null, body: [sheet.mana.line(WR, sheet.mana.untappedIf("you pay 2 life"))], muted: [] },
       { name: "Sunbaked Canyon", free: false, cents: 112, body: [sheet.mana.line(WR, sheet.mana.untapped)], muted: [drawbackText({ kind: "life", amount: 1, colors: [] }, ["W", "R"])] },
       { name: "Clifftop Retreat", free: false, cents: 150, body: [sheet.mana.line(WR, sheet.mana.untappedWith("a Mountain or a Plains"))], muted: [] },
-      { name: "Needle Spires", free: false, cents: 25, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
       { name: "Wind-Scarred Crag", free: false, cents: 15, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
+      { name: "Needle Spires", free: false, cents: 25, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
     ].map((r, i) => ({ oracleId: `about-stand-in-${i}`, imageUri: null, soft: 0, foilOnly: false, ...r })),
   } satisfies SheetGroup,
 };

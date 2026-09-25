@@ -1580,7 +1580,7 @@ export function HelpMeChooseFigureBody() {
 }
 
 /**
- * `fits-your-decks` — Find a deck for it's body, drawn by the picker's own parts: the card plate, the
+ * `fits-your-decks` — the body of Find a deck for it, drawn by the picker's own parts: the card plate, the
  * decks that could take it (a combo reason, then a theme reason, as `shapeFits` orders them) and the
  * decks that already hold it. The picker itself is not mounted: it reads its decks when it opens.
  * `onAdd` is a no-op; `Specimen` is `inert`.
