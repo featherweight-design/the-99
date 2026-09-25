@@ -242,6 +242,20 @@ async function main() {
     const theirs = await store.startRead(OTHER, store.wordsHash("someone else's stop", controls), INTAKE_MODEL, { readId: shared });
     if (theirs.kind === "started") await store.cancelRead(theirs.readId, OTHER);
     check("an early Stop names only its own player's press", theirs.kind !== "stopped", true);
+    // The id is the client's, so two players can name one: each player's stop must stand for their
+    // own press. Keyed by id alone, the second insert met the first and did nothing, the Stop still
+    // reported it took, and that player's start reserved a unit.
+    const both = randomUUID();
+    await store.cancelRead(both, OTHER);
+    const unitsBoth = await units(EARLY);
+    check("a Stop is taken even when another player's stop names the same id", await store.cancelRead(both, EARLY), true);
+    const mine = await store.startRead(EARLY, store.wordsHash(`both ${both}`, controls), INTAKE_MODEL, { readId: both });
+    check("and that player's press is still refused, reserving nothing", [mine.kind, await units(EARLY)], ["stopped", unitsBoth]);
+    // Purged at the Stop as well: a player who never starts another look leaves none behind.
+    const stale = randomUUID();
+    await fixture.execute(sql`insert into intake_read_stops (read_id, user_id, created_at) values (${stale}, ${EARLY}, now() - interval '25 hours')`);
+    await store.cancelRead(randomUUID(), EARLY);
+    check("a Stop purges that player's stops past keeping", await stopsFor(stale), 0);
   } finally {
     await fixture.execute(sql`delete from intake_read_stops where user_id in (${USER}, ${OTHER}, ${EARLY})`);
     await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER}, ${EARLY})`);
