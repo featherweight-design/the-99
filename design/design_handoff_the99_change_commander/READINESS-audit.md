@@ -16,7 +16,13 @@ Hugh approved this audit on 2026-09-25.
 - **H2: corrected now.** The fit figure must not favor popular commanders on breadth alone. A card counts toward
   "N of M" only when it appears in at least a set share of that candidate's decks, so a commander with thousands
   of decks does not match more of the 99 just because more cards were ever played with it. The threshold is
-  measured, not asserted (F10).
+  measured, not asserted (F10). **Superseded the same day, below.**
+- **H2 revisited (Hugh, 2026-09-25): minimum sample only.** Measured on staging, a share threshold did not move
+  the figure's lean toward popular commanders (r 0.286 → 0.313 from no threshold to 30) and let more tiny-sample
+  commanders into the top ten. The ranking is the plain "N of M" count, with candidates under a minimum indexed
+  deck count hidden. N is measured, and the curve is recorded in `docs/superpowers/plans/2026-09-25-change-commander.md`
+  (N = 20). Cancelling the popularity lean is a possible follow-up if the staging walk reads as "the usual
+  suspects". No seam is built for it.
 - **The mana value is accepted as drawn:** cost pips plus the relative phrase.
 - **About:** batched with the analysis line at launch. The sub-project 7 plan must name the batched About task.
 
@@ -109,7 +115,7 @@ All findings are engineering's. There are no Design findings.
 | F7 | Low | `schema.ts:38`; the sheet's `mvOf` | **Mana value comes from `cards.cmc`, never from parsing the cost.** The drawing's own arithmetic counts `{X}` as 1 and a hybrid `{2/W}` as 1, where the mana value counts X as 0 and `{2/W}` as 2. **Correction:** compare the catalog's `cmc`, summed for a pair; draw the pips from the cost as `CostPips` does | eng |
 | F8 | Low | Design's eng 6 | **Candidate availability excludes this deck.** A candidate already in the 99 bypasses the read, since the trade keeps its copy | eng |
 | F9 | Low | `change-commander - copy strings.ts` | **The copy goes to `/copy-review`**, as Design lists it, including `manaValueRel`. It also needs a pair form of the discard line: `commanderBack` has only the singular, so a pair would read *Thrasios & Tymna leads it again* | `/copy-review` |
-| F10 | Medium | brief §6 (known bias); Hugh's H2 | **The figure needs an inclusion threshold.** The brief's rule counts a card toward "N of M" whenever the candidate's support list holds it at all, which favors commanders with long lists. **Correction, for the build plan to resolve:** count a card only when its inclusion for that candidate is at least a threshold share. Measure the threshold on `staging` during the plan (never assert it), and take it to Hugh with its distribution. If the row's wording has to follow the new meaning, that is a copy change for `/copy-review`, with a picture, and not a Design round | eng |
+| F10 | Medium | brief §6 (known bias); Hugh's H2, as revisited | **Candidates under a minimum sample are hidden.** Per H2 revisited, the figure stays the plain count, and a candidate (or pair) with fewer indexed decks than `MIN_CANDIDATE_DECKS` is dropped before ranking. N = 20, measured on staging, with the curve in the plan. An inclusion threshold is not used | eng |
 
 ---
 
