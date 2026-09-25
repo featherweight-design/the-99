@@ -20,7 +20,7 @@ import ws from "ws";
 import { commitVersion } from "../src/lib/decks/versions";
 import { isLandFace } from "../src/lib/cards/facet";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
-import { loadStandIns, type StandInsRead } from "../src/lib/swaps/gather";
+import { loadCreatureTypes, loadStandIns, type StandInsRead } from "../src/lib/swaps/gather";
 import { fetchFinds, landColors } from "../src/lib/swaps/land";
 import { jobOf, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
@@ -188,6 +188,13 @@ async function main() {
     !!forestRow && forestRow.givesUp.some((g) => g.kind === "named" && g.label === "its extra mana"),
     `free: ${names(cradles!.free).slice(0, 6).join(", ")}`);
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}::uuid and oracle_id in (${forest.oracle_id}::uuid, ${cradle.oracle_id}::uuid)`);
+
+  // 4c. The tribal theme's vocabulary, by the app's own query. Its regex escapes are the kind a template
+  //     literal cooks away, and a pattern that matches nothing returns an empty set with no error.
+  const types = await loadCreatureTypes();
+  check("themes: the catalog's creature types, and only creature types",
+    types.size > 250 && types.has("Elf") && types.has("Dinosaur") && !types.has("Forest") && !types.has("Dino"),
+    `${types.size} types; Elf ${types.has("Elf")}, Dinosaur ${types.has("Dinosaur")}, Forest ${types.has("Forest")}`);
 
   // 5. No job: no stand-in and no guess.
   const none = await loadStandIns(deckId, USER, roleless.oracle_id);

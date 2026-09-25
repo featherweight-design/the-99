@@ -72,20 +72,29 @@ export type StandInsRead = StandInGroups & {
   newestAsOf: Date | null;
 };
 
-/** Null when the deck is not this reader's, or the card is not in the catalog. */
 /**
  * Every creature subtype the catalog prints, off front faces (`creatureSubtypes` in SQL): the tribal
- * theme's vocabulary, read from the catalog so a new set's type arrives with the weekly refresh.
+ * theme's vocabulary, read from the Commander-legal catalog so a new set's type arrives with the weekly
+ * refresh. The regex escapes are doubled: a template literal cooks `\m` to `m`, and `sql` sends the cooked text.
  */
-async function loadCreatureTypes(): Promise<Set<string>> {
+export async function loadCreatureTypes(): Promise<Set<string>> {
+  // A subtype on an artifact, enchantment or land that is not a creature is that card type's own
+  // (Equipment, Treasure, Food, Saga, Forest), even where a creature also carries it (Dryad Arbor is a
+  // Land Creature — Forest Dryad). Measured on staging: nine words, none of them a creature type.
+  const front = sql.raw(`split_part(type_line, ' // ', 1)`);
+  const subtypes = sql.raw(`unnest(regexp_split_to_array(trim(split_part(split_part(type_line, ' // ', 1), ' — ', 2)), '\\s+'))`);
   const rows = await db.execute<{ t: string }>(sql`
-    select distinct t from cards,
-      unnest(regexp_split_to_array(trim(split_part(split_part(type_line, ' // ', 1), ' — ', 2)), '\s+')) as t
-    where split_part(type_line, ' // ', 1) ~* '\mcreature\M' and t <> ''
+    select distinct t from cards, ${subtypes} as t
+    where commander_legal and ${front} ~* '\\mcreature\\M' and t <> ''
+      and t not in (
+        select u from cards, ${subtypes} as u
+        where ${front} ~* '\\m(land|artifact|enchantment)\\M' and ${front} !~* '\\m(creature|kindred|tribal)\\M'
+      )
   `);
   return new Set(rows.rows.map((r) => r.t));
 }
 
+/** Null when the deck is not this reader's, or the card is not in the catalog. */
 export async function loadStandIns(deckId: string, userId: string, cutOracleId: string): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner

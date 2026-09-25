@@ -12,7 +12,8 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { cardThemes, creatureSubtypes, type Theme } from "../src/lib/recs/themes";
+import { cardThemes, type Theme } from "../src/lib/recs/themes";
+import { loadCreatureTypes } from "../src/lib/swaps/gather";
 
 // The cards each rule was sized against over the three passes (themes.test.ts holds their text).
 const KNOWN = [
@@ -26,8 +27,8 @@ type Row = { name: string; type_line: string; oracle_text: string | null };
 
 void (async () => {
   const rows = (await db.execute<Row>(sql`select name, type_line, oracle_text from cards where commander_legal`)).rows;
-  // The catalog's own creature subtypes, which is what the tribal rule is handed in the app.
-  const types = new Set(rows.flatMap((r) => creatureSubtypes(r.type_line)));
+  // The catalog's own creature subtypes, read by the app's own query: what the tribal rule is handed there.
+  const types = await loadCreatureTypes();
   const isType = (w: string) => types.has(w);
 
   const counts = new Map<Theme, number>();
