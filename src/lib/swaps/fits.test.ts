@@ -104,7 +104,7 @@ describe("shapeFits", () => {
 
 describe("themeReason", () => {
   const row = (id: string, typeLine: string, oracleText: string): DeckCard =>
-    ({ deck_id: "d", oracle_id: id, quantity: 1, type_line: typeLine, oracle_text: oracleText, keywords: [] });
+    ({ deck_id: "d", oracle_id: id, quantity: 1, name: id, type_line: typeLine, oracle_text: oracleText, keywords: [] });
   const MILL = "Target player mills three cards.";
   const TOKENS = "Create a 1/1 green Saproling creature token.";
   const elves = (w: string) => w === "Elf";

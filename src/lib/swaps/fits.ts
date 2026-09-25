@@ -185,9 +185,15 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
   // draws no need, so its cards and its mix would be read for nothing.
   const open = rows.filter((r) => r.holds === 0 && !r.leads && card.colorIdentity.every((x) => r.identity.includes(x)));
 
-  const [deckCards, creatureTypes, mixes, availability, staples] = await Promise.all([
+  const [deckCards, pieces, creatureTypes, mixes, availability, staples] = await Promise.all([
     // Read once for the role count and the theme count, and only for the decks that can take the card.
     open.length === 0 ? [] as DeckCard[] : readDeckCards(open.map((r) => r.id)),
+    // Which cards share a Spellbook variant with this one: a superset of every partner, so the full-rule
+    // read below runs only for a deck holding one. In this batch, not after it: it needs only the card.
+    open.length === 0 ? new Set<string>() : db.execute<{ oracle_id: string }>(sql`
+      select distinct other.oracle_id from spellbook_variant_cards me
+      join spellbook_variant_cards other on other.variant_id = me.variant_id and other.oracle_id <> me.oracle_id
+      where me.oracle_id = ${oracleId}::uuid`).then((r) => new Set(r.rows.map((x) => x.oracle_id))),
     open.length === 0 ? new Set<string>() : loadCreatureTypes(),
     // A card with no role draws no need, so no deck's mix is read for it.
     card.role === "other" || open.length === 0
@@ -211,12 +217,6 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     subtypes: creatureSubtypes(c.type_line),
   };
   const reasons = new Map<string, FitReason>();
-  // Which cards share a Spellbook variant with this one: a superset of every partner, read once, so the
-  // full-rule read below runs only for a deck that holds one (it cost ~1s run for every open deck).
-  const pieces = new Set((await db.execute<{ oracle_id: string }>(sql`
-    select distinct other.oracle_id from spellbook_variant_cards me
-    join spellbook_variant_cards other on other.variant_id = me.variant_id and other.oracle_id <> me.oracle_id
-    where me.oracle_id = ${oracleId}::uuid`)).rows.map((r) => r.oracle_id));
   await Promise.all(open.map(async (r) => {
     const cards = deckCards.filter((d) => d.deck_id === r.id);
     const commanders = r.partner_oracle_id ? [r.commander_oracle_id, r.partner_oracle_id] : [r.commander_oracle_id];
@@ -225,6 +225,7 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
       deckOracleIds: cards.map((d) => d.oracle_id),
       commanderOracleIds: commanders,
       candidateOracleIds: [oracleId],
+      knownNames: new Map([...cards.map((d) => [d.oracle_id, d.name] as const), ...commanders.map((id, i) => [id, r.commander_names[i]] as const)]),
     });
     const combo = partners.get(oracleId);
     if (combo) return void reasons.set(r.id, { kind: "combo", with: { oracleId: combo.partnerOracleId, name: combo.partnerName } });
@@ -245,6 +246,7 @@ export type DeckCard = {
   deck_id: string;
   oracle_id: string;
   quantity: number;
+  name: string;
   type_line: string;
   oracle_text: string | null;
   keywords: string[] | null;
@@ -253,7 +255,7 @@ export type DeckCard = {
 /** The open decks' decklist rows, read once for both counts below. */
 async function readDeckCards(deckIds: string[]): Promise<DeckCard[]> {
   const { rows } = await db.execute<DeckCard>(sql`
-    select dc.deck_id, dc.oracle_id, dc.quantity, c.type_line, c.oracle_text, c.keywords
+    select dc.deck_id, dc.oracle_id, dc.quantity, c.name, c.type_line, c.oracle_text, c.keywords
     from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
     where dc.deck_id = any(${sql.param(deckIds)}::uuid[])`);
   return rows;
