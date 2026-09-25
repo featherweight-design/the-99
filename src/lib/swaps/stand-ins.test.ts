@@ -13,9 +13,11 @@ const card = (name: string, typeLine: string, oracleText: string, cmc = 0): Card
   oracleId: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`,
   name, typeLine, oracleText, keywords: [], cmc, imageUri: null,
 });
-const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => ({
-  ...c, inclusion: null, synergy: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over,
-});
+const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => {
+  const x = { ...c, inclusion: null, synergy: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over };
+  // A support row carries a figure; `listed` states it when a test needs a row with none.
+  return { ...x, listed: over.listed ?? (x.inclusion !== null || x.synergy !== null) };
+};
 const fact = (cents: number | null, asOf = NOW, foilCents: number | null = null): PriceFact =>
   ({ cents, foilCents, etchedCents: null, asOf });
 
@@ -160,6 +162,16 @@ describe("rankStandIns", () => {
     expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed Low", "Listed High"]);
     expect(g.unlisted.map((s) => s.card.name)).toEqual(["Unlisted Cheap", "Unlisted Dear"]);
     expect(g.staples).toEqual([]);
+  });
+
+  // A support row can carry a synergy and no inclusion; the index lists it all the same.
+  it("groups a listed card by its support row, not by whether its inclusion is set", () => {
+    const a = card("No Inclusion", "Artifact", "{T}: Add {C}.", 1);
+    const b = card("No Figures", "Artifact", "{T}: Add {C}.", 1);
+    const priced = { newestAsOf: NOW, prices: new Map([[VAULT.oracleId, fact(3000)], [a.oracleId, fact(90)], [b.oracleId, fact(80)]]) };
+    const g = rankStandIns(VAULT, [cand(a, { synergy: 0.3 }), cand(b, { listed: true })], priced);
+    expect(g.byCommander.map((s) => s.card.name)).toEqual(["No Inclusion", "No Figures"]);
+    expect(g.unlisted).toEqual([]);
   });
 
   // v2 item 2: lands on the ladder, never the alphabet or price alone. Plateau's stand-ins in HD - Gishath were

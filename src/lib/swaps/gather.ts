@@ -55,6 +55,7 @@ type Row = {
   image_uri: string | null;
   inclusion: number | null;
   synergy: number | null;
+  listed: boolean;
   owned: number | null;
 };
 
@@ -89,7 +90,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
     `),
     db.execute<{ oracle_id: string }>(sql`select oracle_id from deck_cards where deck_id = ${deckId}`),
     db.execute<Row>(sql`
-      select oracle_id, name, type_line, oracle_text, keywords, cmc, image_uri, null::real as inclusion, null::real as synergy, null::int as owned
+      select oracle_id, name, type_line, oracle_text, keywords, cmc, image_uri, null::real as inclusion, null::real as synergy, false as listed, null::int as owned
       from cards where oracle_id = ${cutOracleId}
     `),
     loadUniversalStaples(),
@@ -122,6 +123,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
       ...toCard(r),
       inclusion: r.inclusion === null ? null : Number(r.inclusion),
       synergy: r.synergy === null ? null : Number(r.synergy),
+      listed: r.listed,
       isUniversal: staples.has(r.oracle_id),
       owned: Number(r.owned ?? 0),
       free: a ? a.free : null,
@@ -167,7 +169,7 @@ function ownedJoin(userId: string) {
 }
 
 const COLUMNS = sql`c.oracle_id, c.name, c.type_line, c.oracle_text, c.keywords, c.cmc, c.image_uri,
-  s.inclusion, s.synergy, o.owned`;
+  s.inclusion, s.synergy, (s.oracle_id is not null) as listed, o.owned`;
 
 /** Every legal land inside the identity: 1,112 in the whole catalog, so no bound is needed. */
 function landPool(a: PoolArgs) {

@@ -68,14 +68,14 @@ export const swapToolsCopy = {
     jobNoRole: "no role we can name",
     givesUpNothing: "gives up nothing",
     leadLands: (colors: string) =>
-      `Every land here makes ${colors}. Free copies come first, then untapped lands, then tapped ones, then any with a catch, and each says what it gives up.`,
+      `Every land here makes ${colors}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each says what it gives up.`,
     /** Hugh, 2026-09-24: every stand-in gives up the same thing, so the lead says it once. */
     leadLandsGivesUp: (colors: string, ability: string) =>
-      `Every land here makes ${colors}. Free copies come first, then untapped lands, then tapped ones, then any with a catch, and each gives up ${ability}.`,
+      `Every land here makes ${colors}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each gives up ${ability}.`,
     leadFetchGivesUp: (types: string, ability: string) =>
-      `Every land here finds ${types}. Free copies come first, then untapped lands, then tapped ones, then any with a catch, and each gives up ${ability}.`,
+      `Every land here finds ${types}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each gives up ${ability}.`,
     leadFetch: (types: string) =>
-      `Every land here finds ${types}. Free copies come first, then untapped lands, then tapped ones, then any with a catch, and each says what it gives up.`,
+      `Every land here finds ${types}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each says what it gives up.`,
     leadSpells: (roles: string, mv: number, commander: string) =>
       `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the cards ${commander} decks favor most over other decks of their colors.`,
     /** H4, addendum canvas: a paid staples group sits between the free copies and the commander's ranking. */

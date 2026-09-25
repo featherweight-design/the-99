@@ -103,6 +103,8 @@ export type Candidate = CardRow & {
    * decks of its colors do, -1..1. Null when the index does not list it. Orders, never drawn (Q2).
    */
   synergy: number | null;
+  /** The index holds a support row for this card, whatever figures that row carries. */
+  listed: boolean;
   isUniversal: boolean;
   owned: number;
   /** Copies free from this deck's vantage, from `loadAvailability`. Null when it owns none. */
@@ -250,7 +252,7 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
     else if (price && originalPrice && price.cents < originalPrice.cents) {
       if (isLand) groups.cheapest.push(row);
       else if (c.isUniversal) groups.staples.push(row);
-      else if (c.inclusion !== null) groups.byCommander.push(row);
+      else if (c.listed) groups.byCommander.push(row);
       else groups.unlisted.push(row);
     }
   }
