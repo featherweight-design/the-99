@@ -14,15 +14,19 @@ import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 
 const copy = helpMeChooseCopy.handOff;
 
-/** What the budget does, which turns on the card the fill pays for first. */
-export function budgetLine(card: HandOffAnswers["card"]): string {
+/**
+ * What the budget does, which turns on the card the fill pays for first. Null when that card's read
+ * failed: the create still places and pays for it, so no line is true until the card can be named.
+ */
+export function budgetLine(card: HandOffAnswers["card"], cardUnread = false): string | null {
+  if (cardUnread) return null;
   // An owned card costs the budget nothing, so it is not paid for first.
   if (card === null || card.owned) return copy.budgetAlone;
   return card.price.kind === "priced" ? copy.budgetFirst(card.name, formatCents(card.price.cents)) : copy.budgetUnknown(card.name);
 }
 
 export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffAnswers; changeHref: string }) {
-  const { themes, card, budgetDollars, bracket } = answers;
+  const { themes, card, cardUnread, budgetDollars, bracket } = answers;
   return (
     <CardDetailProvider>
       <section
@@ -60,7 +64,7 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
           </Row>
         )}
         {budgetDollars !== null && (
-          <Row k={copy.keys.budget} line={budgetLine(card)}>
+          <Row k={copy.keys.budget} line={budgetLine(card, cardUnread)}>
             <span className="tabular-nums">${budgetDollars.toLocaleString("en-US")}</span>
           </Row>
         )}

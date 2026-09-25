@@ -40,5 +40,7 @@ describe("Built from your answers", () => {
     // An owned card costs the budget nothing, and no card at all leaves the budget to the fill alone.
     expect(budgetLine(card({ owned: true }))).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
     expect(budgetLine(null)).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
+    // The card's read failed: the create still pays for it first, so no line is true yet.
+    expect(budgetLine(null, true)).toBeNull();
   });
 });
