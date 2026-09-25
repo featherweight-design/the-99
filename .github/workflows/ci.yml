@@ -42,6 +42,20 @@ jobs:
       - name: Migration constraint names
         run: pnpm check:constraints
 
+      # A route that renders a figure out of collection_items and is not invalidated
+      # by the collection replace serves a stale count until its cache expires. The
+      # list it checks against was built by reading and was wrong three rounds running.
+      - name: Collection route invalidation
+        run: pnpm check:collection-routes
+
+      # Routes meant to carry the same control have to render the same component, not
+      # a lookalike. Every inventory is passed; one with no `shares` block is a no-op.
+      - name: Shared components
+        run: |
+          for inventory in docs/superpowers/inventories/*.json; do
+            pnpm -s check:shared "$inventory" || exit 1
+          done
+
       - name: Test
         run: pnpm test
 
