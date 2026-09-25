@@ -113,10 +113,17 @@ synopsis's.
   - the answer columns on `decks`;
   - `'intake'` in `model_calls_feature_check`;
   - the card-first index on `commander_support_cards`, if the brief's index is not already there.
-- The model feature: `ModelFeature`, `FEATURE_CALLS`, and a new `src/lib/intake/limits.ts`.
+    It is: `commander_support_cards_oracle_idx` on `oracle_id`, so the migration adds none.
 - The per-feature paused check and its two readers.
 - The flag reader, `.env.example` and `docs/deployment.md`.
-- Tests, and a probe of the migration and the paused check on local-dev.
+- Tests, and `probe:help-me-choose-plumbing` for the migration and the paused check. It runs on a
+  scratch branch rather than local-dev, because the paused case writes an app-wide spend sentinel
+  that would pause every dev server reading local-dev's ledger.
+- **Moved to PR 4 while building:** the model feature (`'intake'` in `ModelFeature`, its
+  `FEATURE_CALLS` entry, and `src/lib/intake/limits.ts`). `FEATURE_CALLS` holds each feature's
+  measured input ceiling, and that is measured with count_tokens on the prompt, which PR 4 writes.
+  Registered here, it would be a guessed ceiling pricing every reservation. The database already
+  accepts `'intake'` from PR 1; nothing writes it until PR 4.
 
 **PR 2: the search engine (brief §6).**
 - The literal matcher. Engineering owns its stop words.
@@ -150,6 +157,8 @@ synopsis's.
 - `probe:fill`-style proof, and mutations.
 
 **PR 4: the deeper read.**
+- The model feature, moved from PR 1: `ModelFeature`, `FEATURE_CALLS` with its measured input
+  ceiling, and `src/lib/intake/limits.ts`.
 - The prompt, the response schema, and the validator: vocabulary and catalog, with control beating
   words.
 - The run store and the reaper.

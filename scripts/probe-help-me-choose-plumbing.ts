@@ -34,7 +34,7 @@ import { sql } from "drizzle-orm";
 import ws from "ws";
 
 import type { ModelFeature } from "../src/lib/model/allowance-rule";
-import { FEATURE_CALLS } from "../src/lib/model/prices";
+import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
 import { HARD_STOP_USD, monthStartUtc, usdToMicro } from "../src/lib/model/spend-rule";
 
 neonConfig.webSocketConstructor = ws;
@@ -108,7 +108,9 @@ async function migration() {
 async function paused() {
   console.log("\n2. Paused is judged per feature");
   const features = Object.keys(FEATURE_CALLS) as ModelFeature[];
-  const sized = features.map((f) => ({ f, micro: allowance.callMicroFor(f) })).sort((a, b) => a.micro - b.micro);
+  // Sized from the prices, never through `callMicroFor`: that is the rule under test, and a
+  // fixture sized by it agrees with it whatever it does.
+  const sized = features.map((f) => ({ f, micro: featureWorstCaseMicroUsd(f) })).sort((a, b) => a.micro - b.micro);
   const small = sized[0];
   const big = sized[sized.length - 1];
   if (small.micro === big.micro) {
