@@ -42,6 +42,13 @@ describe("/decks/new", () => {
     expect((p.handOff?.create as { themes: string[] }).themes).toHaveLength(8);
   });
 
+  it("still hands the create the card when only the card's read failed", async () => {
+    const CARD = "0000aaaa-0000-4000-8000-000000000001";
+    stub.answers.mockResolvedValue({ themes: [], card: null, cardUnread: true, budgetDollars: 150, bracket: null });
+    const p = await props({ commander: COMMANDER, a: CARD, b: "150", v: "results" });
+    expect((p.handOff?.create as { cardOracleId: string | null }).cardOracleId).toBe(CARD);
+  });
+
   it("draws today's page for a commander link that is not a result's press", async () => {
     expect((await props({ commander: COMMANDER, t: "dinosaurs" })).handOff).toBeUndefined();
     expect(stub.answers).not.toHaveBeenCalled();

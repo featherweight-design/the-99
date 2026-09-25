@@ -55,3 +55,17 @@ describe("loadHandOffAnswers", () => {
     expect([a.themes, a.card]).toEqual([[], null]);
   });
 });
+
+describe("loadHandOffAnswers when a read fails", () => {
+  it("fails soft, as the results page does: themes by their slugs, no figures, no card row", async () => {
+    stub.themes.mockRejectedValue(new Error("catalog down"));
+    stub.chip.mockRejectedValue(new Error("prices down"));
+    const { db } = await import("../../db");
+    vi.mocked(db.execute).mockRejectedValueOnce(new Error("index down"));
+    const a = await loadHandOffAnswers("u", COMMANDER, ask());
+    expect(a.themes).toEqual([{ slug: "dinosaurs", label: "dinosaurs", pct: null }]);
+    // A card whose read failed is unread, never "no card": the create still carries it.
+    expect([a.card, a.cardUnread]).toEqual([null, true]);
+    expect([a.budgetDollars, a.bracket]).toEqual([150, 2]);
+  });
+});

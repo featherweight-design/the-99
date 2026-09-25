@@ -168,7 +168,14 @@ async function run() {
     }
   } finally {
     await browser.close();
-    for (const id of decks) await sql`delete from decks where id = ${id} and user_id = ${userId}`;
+    // Each deck on its own: one failed delete must not leave the next width's deck behind.
+    for (const id of decks) {
+      try {
+        await sql`delete from decks where id = ${id} and user_id = ${userId}`;
+      } catch (error) {
+        report("cleanup deletes the deck it made", false, `${id}: ${error}`);
+      }
+    }
     if (userId && aboutBefore !== undefined) {
       // Every column back as it was, whatever the row holds: deleted, then the captured row restored.
       await sql`delete from user_prefs where user_id = ${userId}`;

@@ -10,6 +10,7 @@ const card = (over: Partial<NonNullable<HandOffAnswers["card"]>> = {}) => ({
 const all: HandOffAnswers = {
   themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }],
   card: card(),
+  cardUnread: false,
   budgetDollars: 150,
   bracket: 2,
 };
@@ -29,7 +30,7 @@ describe("Built from your answers", () => {
   });
 
   it("draws no row for an answer not given", () => {
-    render(<HandOffAnswersBlock answers={{ themes: [], card: null, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
+    render(<HandOffAnswersBlock answers={{ themes: [], card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
     expect(screen.getAllByTestId("hand-off-row")).toHaveLength(1);
   });
 
