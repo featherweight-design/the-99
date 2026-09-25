@@ -84,3 +84,10 @@ export function commanderZoneHint(state: DraftState, oracleId: string, added: bo
   if (!added && ids(state.commander.to).includes(oracleId)) return copy.banner.toZone;
   return null;
 }
+
+/** Discard's extra clause when the draft moved its commander: the old one leads again. */
+export function commanderBackClause(state: DraftState): string | null {
+  if (!state.commander) return null;
+  const old = ids(state.commander.from).map((id) => (state.names.get(id) ?? "").split(" // ")[0].split(",")[0].trim());
+  return copy.discard.commanderBack(old.join(" and "));
+}

@@ -60,3 +60,11 @@ describe("commanderZoneHint", () => {
     expect(commanderZoneHint({ ...s, commander: null }, "korvold", true)).toBeNull();
   });
 });
+
+describe("commanderBackClause", () => {
+  it("names the old commander back, and says nothing without a move", async () => {
+    const { commanderBackClause } = await import("./change-commander-banner");
+    expect(commanderBackClause(swapped())).toBe("Korvold leads it again.");
+    expect(commanderBackClause({ ...COMMITTED, commander: null })).toBeNull();
+  });
+});

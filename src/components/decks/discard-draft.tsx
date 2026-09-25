@@ -28,6 +28,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { PRIMARY } from "../ui/button";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
+import { commanderBackClause } from "./change-commander-banner";
 
 const copy = deckVersioningCopy.discard;
 
@@ -250,6 +251,8 @@ export function DiscardConfirm({
     state.removes.length,
   );
   const [head, tail] = sentence.split(stamp);
+  // Change commander: a discard also puts the committed commander back, and says so.
+  const commanderBack = commanderBackClause(state);
 
   return (
     <div className={`${CONFIRM_BOX} ${className}`} style={CONFIRM_BORDER}>
@@ -267,6 +270,7 @@ export function DiscardConfirm({
             {tail}
           </>
         )}
+        {commanderBack ? ` ${commanderBack}` : null}
       </p>
       {/* One element ordered twice: the safe answer on top at 390px, and on
           desktop a row reading from the act to the way out, as the design draws

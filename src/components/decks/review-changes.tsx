@@ -27,6 +27,7 @@ import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
+import { CommanderSection } from "./change-commander-review";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
@@ -885,7 +886,8 @@ export function ReviewChanges({
           <h1 className="font-display font-bold text-[18px] md:text-[24px] mt-[9px] mb-0 md:mt-[12px] md:mb-[8px] text-[color:var(--fg)]">
             {firstCommit
               ? copy.firstHeading(liveCardCount)
-              : copy.heading(inCount + outCount, state.version?.number ?? 1)}
+              // A moved commander is one change on top of the cards (handoff §4).
+              : copy.heading(inCount + outCount + (state.commander ? 1 : 0), state.version?.number ?? 1)}
           </h1>
           {/* Desktop only. At 390px the sentence is five lines above a list the
               reader came here to read, and the pulls it describes are on that
@@ -901,6 +903,9 @@ export function ReviewChanges({
           {/* Under the lede and above the columns, because it answers the other
               question the page is asked: the columns say which cards moved, and
               this says where the deck's shape went. */}
+          {/* Change commander: first under the lede, above the strip (handoff §4). Absent unless
+              the draft moved its commander. */}
+          <CommanderSection state={state} />
           <ChangedStrip before={before} after={liveAfter} mix={mix} />
 
           {/* Desktop only, and a nought is never drawn: an empty chip is a figure
