@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { groupCandidates, isYours, type Candidate, type CandidateHalf } from "./candidates";
 
 const half = (name: string, over: Partial<CandidateHalf> = {}): CandidateHalf => ({
-  oracleId: name, name, manaCost: null, cmc: 0, artCropUri: null,
+  oracleId: name, name, manaCost: null, cmc: 0, artCropUri: null, imageUri: null,
   inDeck: false, owned: false, availability: null, price: null, ...over,
 });
 const cand = (halves: CandidateHalf[], n: number): Candidate => ({

@@ -29,6 +29,8 @@ export type CandidateHalf = {
   manaCost: string | null;
   cmc: number;
   artCropUri: string | null;
+  /** The whole card, for the confirm's plates. */
+  imageUri: string | null;
   /** Already in this deck's 99: choosing it is a trade, and its copy is the one that moves. */
   inDeck: boolean;
   /** Owned at all, from the collection. Decides the group even when `availability` failed. */
@@ -52,7 +54,9 @@ export type Candidate = {
 export type ChangeCandidates = {
   /** The deck's current commander, or its pair: the confirm's "leaves" side and the mana-value
    *  comparison. */
-  current: { oracleId: string; name: string; cmc: number }[];
+  current: { oracleId: string; name: string; cmc: number; manaCost: string | null; imageUri: string | null }[];
+  /** The deck's color identity, sorted: the none state names it. */
+  identity: string[];
   /** M: the body the figure counts over (`copy.counted(n)`). */
   counted: number;
   yours: Candidate[];
@@ -84,14 +88,14 @@ function identityOf(rows: readonly { colorIdentity: string[] }[]): string[] {
 
 type CardFacts = {
   oracleId: string; name: string; manaCost: string | null; cmc: number; artCropUri: string | null;
-  typeLine: string; oracleText: string | null; layout: string | null; colorIdentity: string[];
+  imageUri: string | null; typeLine: string; oracleText: string | null; layout: string | null; colorIdentity: string[];
 };
 
 function readCards(ids: string[]): Promise<CardFacts[]> {
   if (ids.length === 0) return Promise.resolve([]);
   return db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, cmc: cards.cmc,
-    artCropUri: cards.artCropUri, typeLine: cards.typeLine, oracleText: cards.oracleText,
+    artCropUri: cards.artCropUri, imageUri: cards.imageUri, typeLine: cards.typeLine, oracleText: cards.oracleText,
     layout: cards.layout, colorIdentity: cards.colorIdentity,
   }).from(cards).where(inArray(cards.oracleId, ids));
 }
@@ -243,6 +247,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
         const here = inDeck.has(id);
         return {
           oracleId: id, name: f.name, manaCost: f.manaCost, cmc: f.cmc, artCropUri: f.artCropUri,
+          imageUri: f.imageUri,
           inDeck: here,
           owned: owned.has(id),
           availability: here ? null : availability?.get(id) ?? null,
@@ -255,8 +260,12 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
   return {
     current: currentIds.map((id) => {
       const f = currentCards.find((c) => c.oracleId === id);
-      return { oracleId: id, name: f?.name ?? "", cmc: f?.cmc ?? 0 };
+      return {
+        oracleId: id, name: f?.name ?? "", cmc: f?.cmc ?? 0,
+        manaCost: f?.manaCost ?? null, imageUri: f?.imageUri ?? null,
+      };
     }),
+    identity,
     counted: body.length,
     ...groupCandidates(candidates),
     claimsKnown: availability !== null,
