@@ -9,9 +9,21 @@ describe("the choose URL", () => {
   it("round-trips every answer", () => {
     const p: ChooseParams = {
       words: "big lizards", colors: ["r", "g"], match: "exactly", themes: ["dinosaurs", "landfall"],
-      card: CARD, budgetDollars: 150, bracket: 3, readId: null, results: true,
+      card: CARD, budgetDollars: 150, bracket: 3, readId: null, notUsed: ["that stomp", "$200"], results: true,
     };
     expect(parse(serializeChooseParams(p).slice(1))).toEqual(p);
+  });
+
+  it("carries Not used as one param, trimmed, deduplicated and capped", () => {
+    const many = Array.from({ length: 20 }, (_, i) => `phrase ${i}`);
+    const p = parse(serializeChooseParams({ ...emptyParams(), notUsed: [" a ", "a", "", "x".repeat(200), ...many] }).slice(1));
+    expect(p.notUsed).toHaveLength(12);
+    expect(p.notUsed.slice(0, 2)).toEqual(["a", "x".repeat(120)]);
+    expect(parse("n=" + encodeURIComponent("one\u001ftwo")).notUsed).toEqual(["one", "two"]);
+  });
+
+  it("reads at most the words box's limit of w", () => {
+    expect(parse(`w=${"a".repeat(900)}`).words).toHaveLength(800);
   });
 
   it("writes defaults as absences, so an empty form is a bare URL", () => {

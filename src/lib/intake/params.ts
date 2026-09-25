@@ -21,6 +21,7 @@ import type { Answers, Bracket } from "./rank";
  * | `b` | the budget, whole dollars |
  * | `k` | the bracket, 1 to 5 |
  * | `r` | a deeper read's id (PR 6) |
+ * | `n` | *Not used*: what the submit read in the words and set aside, joined by U+001F |
  * | `v=results` | the results screen; absent, the form, pre-filled from the rest |
  *
  * Defaults are absences, as the lanes serialize them. Anything malformed is dropped rather than
@@ -39,12 +40,25 @@ export type ChooseParams = {
   budgetDollars: number | null;
   bracket: Bracket | null;
   readId: string | null;
+  /**
+   * What the submit set aside, written once by the server when it resolved the words, so the
+   * results page never matches again: the words' unmatched phrases and anything `resolveWords`
+   * listed. Capped at `NOT_USED_MAX` entries of `NOT_USED_CHARS` each.
+   */
+  notUsed: string[];
   results: boolean;
 };
 
+/** The words box's limit, in characters. Also the most of `w` any read will look at. */
+export const READ_WORDS_MAX_CHARS = 800;
+export const NOT_USED_MAX = 12;
+export const NOT_USED_CHARS = 120;
+/** The ASCII unit separator: a character no phrase a player types can hold. */
+export const NOT_USED_SEPARATOR = "\u001f";
+
 export const emptyParams = (): ChooseParams => ({
   words: "", colors: [], match: "contains", themes: [], card: null,
-  budgetDollars: null, bracket: null, readId: null, results: false,
+  budgetDollars: null, bracket: null, readId: null, notUsed: [], results: false,
 });
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -60,7 +74,7 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
   const readId = sp.get("r");
   const card = sp.get("a");
   return {
-    words: sp.get("w") ?? "",
+    words: (sp.get("w") ?? "").slice(0, READ_WORDS_MAX_CHARS),
     colors: WUBRG.filter((c) => raw.includes(c.toUpperCase())),
     match: sp.get("m") === "exact" ? "exactly" : "contains",
     themes: [...new Set((sp.get("t") ?? "").split(",").filter((s) => SLUG.test(s)))],
@@ -68,6 +82,7 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
     budgetDollars: wholeNumber(sp.get("b"), 1, MAX_BUDGET_DOLLARS),
     bracket: wholeNumber(sp.get("k"), 1, 5) as Bracket | null,
     readId: readId !== null && isUuid(readId) ? readId : null,
+    notUsed: notUsedList((sp.get("n") ?? "").split(NOT_USED_SEPARATOR)),
     results: sp.get("v") === "results",
   };
 }
@@ -82,9 +97,22 @@ export function serializeChooseParams(p: ChooseParams): string {
   if (p.budgetDollars !== null) sp.set("b", String(p.budgetDollars));
   if (p.bracket !== null) sp.set("k", String(p.bracket));
   if (p.readId) sp.set("r", p.readId);
+  const notUsed = notUsedList(p.notUsed);
+  if (notUsed.length > 0) sp.set("n", notUsed.join(NOT_USED_SEPARATOR));
   if (p.results) sp.set("v", "results");
   const qs = sp.toString();
   return qs ? `?${qs}` : "";
+}
+
+/** Trimmed, deduplicated, each cut to `NOT_USED_CHARS`, at most `NOT_USED_MAX`. */
+export function notUsedList(raw: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const r of raw) {
+    const s = r.replaceAll(NOT_USED_SEPARATOR, " ").trim().slice(0, NOT_USED_CHARS);
+    if (s && !out.includes(s)) out.push(s);
+    if (out.length === NOT_USED_MAX) break;
+  }
+  return out;
 }
 
 /** The search's input. Colors go upper-case here: `filterByColors` compares card identities. */

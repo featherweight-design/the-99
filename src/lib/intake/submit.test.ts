@@ -1,0 +1,49 @@
+import { describe, expect, it } from "vitest";
+
+import { buildPhraseIndex } from "./match";
+import { emptyParams, parseChooseParams } from "./params";
+import { submitTarget } from "./submit";
+
+const DS = "0000aaaa-0000-4000-8000-000000000001";
+const SOL = "0000aaaa-0000-4000-8000-000000000002";
+const index = buildPhraseIndex(
+  [{ slug: "dinosaurs", label: "Dinosaurs" }, { slug: "landfall", label: "Landfall" }],
+  [{ oracleId: DS, name: "Doubling Season" }, { oracleId: SOL, name: "Sol Ring" }],
+);
+const target = (over: Partial<ReturnType<typeof emptyParams>>) => submitTarget({ ...emptyParams(), ...over }, index);
+const landed = (url: string) => {
+  expect(url.startsWith("/decks/new/choose?")).toBe(true);
+  return parseChooseParams(new URLSearchParams(url.split("?")[1]));
+};
+
+describe("the submit redirect", () => {
+  it("lands on the results with the words resolved into answers and the words kept", () => {
+    const p = landed(target({ words: "dinosaurs with Doubling Season under $150 bracket 2", colors: ["r", "g"] }));
+    expect(p).toMatchObject({
+      results: true,
+      words: "dinosaurs with Doubling Season under $150 bracket 2",
+      colors: ["r", "g"],
+      themes: ["dinosaurs"],
+      card: DS,
+      budgetDollars: 150,
+      bracket: 2,
+    });
+  });
+
+  it("lets a control the player set beat the words, and lists the overridden figure under Not used", () => {
+    const p = landed(target({ words: "landfall under $200", budgetDollars: 90, themes: ["dinosaurs"] }));
+    expect(p.budgetDollars).toBe(90);
+    expect(p.themes).toEqual(["dinosaurs", "landfall"]);
+    expect(p.notUsed).toContain("$200");
+  });
+
+  it("carries a second card and the unmatched phrases in n, so the results never match again", () => {
+    const p = landed(target({ words: "Doubling Season and Sol Ring, lots of little tokens" }));
+    expect(p.card).toBe(DS);
+    expect(p.notUsed).toEqual(expect.arrayContaining(["Sol Ring", "little tokens"]));
+  });
+
+  it("searches a blank submit with no index read at all", () => {
+    expect(submitTarget(emptyParams(), null)).toBe("/decks/new/choose?v=results");
+  });
+});

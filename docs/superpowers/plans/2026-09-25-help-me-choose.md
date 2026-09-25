@@ -271,6 +271,17 @@ well past 800 lines, so the boundary sits between the data the screens read and 
   generation, for at most ten minutes. The index is about 30,000 card names, past the data cache's
   2 MB entry limit.
 
+**PR 5b is split again, by layer (orchestrator informed, 2026-09-25).** Built whole, it came to
+about 2,400 lines over 29 files. A form/results seam would have put a route on staging (where the
+flag is on) whose submit redirected to results it could not draw, so the seam is between the logic
+and the screens instead, and every merge leaves staging whole:
+- **PR 5b-i, the logic (no UI):** the flag and its docs, the copy module, the submit's resolution
+  (`submit.ts`), `present.ts`, the `n` (Not used) parameter and the words cap in `params.ts`, the
+  card chip's read, and the row actions (`moreRows`, and `trialFillRows`, which counts a whole
+  slice in one action, since Next runs a page's Server Actions one at a time).
+- **PR 5b-ii, the route and the screens:** `/decks/new/choose`, its loading screen, every
+  component, the contact sheet's inventory, and migration 0064.
+
 **PR 5: the intake and results screens.**
 - The contract half of PR 4's column removal: a custom migration dropping
   `decks.answer_intent_pending` (`IF EXISTS`), now that no serving build selects it.

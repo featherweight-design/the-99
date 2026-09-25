@@ -97,3 +97,29 @@ async function decorate(userId: string, slice: readonly Ranked[]): Promise<Resul
     };
   });
 }
+
+/** The *We read this as* bar's card chip: its name, whether the player owns it, and its price. */
+export type CardChip = {
+  oracleId: string;
+  name: string;
+  owned: boolean;
+  price: ReturnType<typeof slotFor>;
+};
+
+/**
+ * Read apart from the search, because the bar is drawn before the search finishes: the results
+ * stream in under it. Null for an id the catalog does not hold, which drops the chip.
+ */
+export async function loadCardChip(userId: string, oracleId: string): Promise<CardChip | null> {
+  const [rows, prices] = await Promise.all([
+    db.execute(sql`
+      select c.name,
+        exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
+      from cards c where c.oracle_id = ${oracleId}::uuid
+    `).then((r) => r.rows as { name: string; owned: boolean }[]),
+    loadPrices([oracleId]),
+  ]);
+  const row = rows[0];
+  if (!row) return null;
+  return { oracleId, name: row.name, owned: row.owned, price: slotFor(prices.get(oracleId)) };
+}
