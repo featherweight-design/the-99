@@ -11,7 +11,7 @@ const reply = (over: Partial<ReadResponse> = {}): ReadResponse => ({
   themes: [], cards: [], budgetDollars: null, bracket: null, notUnderstood: [], ...over,
 });
 const none: { budgetDollars: number | null; bracket: number | null } = { budgetDollars: null, bracket: null };
-const WORDS = "arr big energy and more";
+const WORDS = "arr big energy and more dinosaurs";
 const read = (r: ReadResponse, controls = none) => validateRead({ reply: r, words: WORDS, index, controls });
 
 describe("validateRead", () => {
@@ -54,8 +54,8 @@ describe("validateRead", () => {
     expect(read(reply({ themes: ["Dinosaurs"] })).useful).toBe(true);
   });
 
-  it("keeps a Not understood phrase only when the player wrote it", () => {
-    const r = read(reply({ notUnderstood: ["Big Energy", "tiny lizards", "energy and"] }));
+  it("keeps a Not understood phrase only when the player wrote it and nothing maps it", () => {
+    const r = read(reply({ themes: ["Dinosaurs"], notUnderstood: ["Big Energy", "tiny lizards", "energy and", "Dinosaurs"] }));
     expect(r.notUnderstood).toEqual(["Big Energy", "energy and"]);
   });
 

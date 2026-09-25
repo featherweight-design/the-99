@@ -117,9 +117,11 @@ export function validateRead(args: {
   return {
     chips,
     notUsed,
-    // Only phrases the player wrote: the prompt asks for them verbatim, and nothing the model adds
-    // may be shown as the player's own words.
-    notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) => p.length > 0 && wrote(words, p)))],
+    // Only phrases the player wrote, since the prompt asks for them verbatim and nothing the model
+    // adds may be shown as the player's own words; and never one the vocabulary maps, which is a
+    // chip rather than something not understood.
+    notUnderstood: [...new Set(reply.notUnderstood.map((p) => oneLine(p).trim()).filter((p) =>
+      p.length > 0 && wrote(words, p) && !index.targets.has(phraseKey(p))))],
     useful: chips.length > 0,
   };
 }
