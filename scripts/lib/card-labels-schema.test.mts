@@ -97,3 +97,25 @@ describe("jobKey", () => {
     expect(jobKey(base)).toBe(jobKey({ ...base }));
   });
 });
+
+describe("the gold set", () => {
+  it("is well formed, with reasoning on every row", async () => {
+    const { validateGold } = await import("./card-labels-gold.mjs");
+    expect(validateGold()).toEqual([]);
+  });
+
+  // The hard negatives are the rows where the right answer is NO jobs — a Saga's
+  // lore counter, an artifact's charge counter. Without them the set cannot show
+  // a model OVER-labelling, which is the failure mode that produced the false
+  // matches in the first place.
+  it("keeps hard negatives, or it cannot measure over-labelling", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    expect(GOLD.filter((r) => r.jobs.length === 0).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("covers all four ramp kinds, including the one it found", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    const kinds = new Set(GOLD.flatMap((r) => r.jobs).map((j) => j.rampKind).filter(Boolean));
+    expect([...kinds].sort()).toEqual(["burstMana", "fetchesLand", "makesTreasure", "tapsForMana"]);
+  });
+});

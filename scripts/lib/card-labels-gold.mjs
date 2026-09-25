@@ -52,7 +52,7 @@ export const GOLD = [
   {
     name: "Generator Servant", klass: "named",
     jobs: [
-      j("role", "ramp", { rk: null, tr: "activated", rec: "oneShot" }),
+      j("role", "ramp", { rk: "burstMana", tr: "activated", rec: "oneShot" }),
       j("theme", "haste", { to: "creature", tr: "activated", rec: "oneShot" }),
     ],
     why: "rampKind null: a one-shot burst fits none of E1's three kinds (see the schema's note; raised with 2b). oneShot because the ability sacrifices the creature — the distinction the brief names. Haste is conditional twice over: only if that mana is spent, and only on a creature spell.",
@@ -248,7 +248,7 @@ export const GOLD = [
   // ---- conditionalMana: one-shot or gated mana, against a repeatable tap ------
   {
     name: "Blood Pet", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: null, tr: "activated", rec: "oneShot" }), j("theme", "sacOutlet", { tr: "activated", rec: "oneShot" })],
+    jobs: [j("role", "ramp", { rk: "burstMana", tr: "activated", rec: "oneShot" }), j("theme", "sacOutlet", { tr: "activated", rec: "oneShot" })],
     why: "The Generator Servant shape at its simplest, and the reason the kind gap is a class and not a curiosity: sacrifice itself for {B}. No kind fits.",
   },
   {
@@ -263,17 +263,17 @@ export const GOLD = [
   },
   {
     name: "Incubator Drone", klass: "conditionalMana",
-    jobs: [j("theme", "tokens", { tr: "etb", rec: "oneShot" }), j("role", "ramp", { rk: null, tr: "etb", rec: "oneShot" }), j("theme", "sacOutlet", { tr: "etb", rec: "oneShot" })],
+    jobs: [j("theme", "tokens", { tr: "etb", rec: "oneShot" }), j("role", "ramp", { rk: "burstMana", tr: "etb", rec: "oneShot" }), j("theme", "sacOutlet", { tr: "etb", rec: "oneShot" })],
     why: "The ramp is INDIRECT — the token sacrifices for {C}, the Drone never adds mana itself. A reader tracking only the Drone's own text sees no ramp at all; a player counts it.",
   },
   {
     name: "Kessig Naturalist // Lord of the Ulvenwald", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: null, tr: "attacks", rec: "oneShot" })],
+    jobs: [j("role", "ramp", { rk: "burstMana", tr: "attacks", rec: "oneShot" })],
     why: "Mana on ATTACK, once per combat, and it does not empty between steps. Not a tap, no Treasure — another kindless burst, and the front face is the only one the rules read.",
   },
   {
     name: "The Mana Rig", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: null, tr: "cast" })],
+    jobs: [j("role", "ramp", { rk: "burstMana", tr: "cast" })],
     why: "A Powerstone is Treasure-adjacent but is NOT a Treasure (it cannot pay for spells generally). Labelling it makesTreasure would be false; kindless.",
   },
   {
@@ -283,7 +283,7 @@ export const GOLD = [
   },
   {
     name: "Dora Milaje Elite", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: null, tr: "etb", rec: "oneShot" })],
+    jobs: [j("role", "ramp", { rk: "burstMana", tr: "etb", rec: "oneShot" })],
     why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. Kindless (Vibranium token).",
   },
   {
@@ -443,7 +443,7 @@ export const GOLD = [
   },
   {
     name: "Drowner of Truth // Drowned Jungle", klass: "twoFaced",
-    jobs: [j("theme", "tokens", { tr: "cast", rec: "oneShot" }), j("role", "ramp", { rk: null, tr: "cast", rec: "oneShot" })],
+    jobs: [j("theme", "tokens", { tr: "cast", rec: "oneShot" }), j("role", "ramp", { rk: "burstMana", tr: "cast", rec: "oneShot" })],
     why: "MDFC: the back is a land, but the FRONT is what the rules read. The Spawn tokens sacrifice for {C} — kindless burst again, and indirect.",
   },
   {
@@ -671,6 +671,10 @@ export function validateGold(rows = GOLD) {
     for (const job of row.jobs) {
       const problems = validateJob(job);
       if (problems.length) bad.push(`${row.name} [${job.kind}]: ${problems.join(", ")}`);
+      // A null kind was legal while the gap was open; d9 closed it on 2026-09-25
+      // with `burstMana`. A null now means a kind none of the four fits, which is
+      // a finding to raise rather than a label to leave sitting in the gold set.
+      if (job.rampKind === null) bad.push(`${row.name}: ramp with NO KIND — a new gap, report it`);
     }
   }
   return bad;

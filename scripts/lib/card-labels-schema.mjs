@@ -35,24 +35,28 @@ export const THEMES = [
 // Every job therefore carries the space it came from.
 export const SPACES = ["role", "theme"];
 
-// E1's three kinds. A stand-in keeps `ramp` only when its kind matches.
+// The ramp kinds. A stand-in keeps `ramp` only when its kind matches.
 //
-// `null` is a FOURTH state and not a fourth kind: it means none of the three
-// fits, and it is recorded rather than rounded off. Generator Servant --
-// `{T}, Sacrifice this creature: Add {C}{C}` -- is the case. It is not
-// `tapsForMana` (gone after one use), not `fetchesLand`, and not
-// `makesTreasure` (no token; the mana is added directly). `Blood Pet`, the
-// Eldrazi Scion tokens and every sacrifice-for-mana land are the same shape, so
-// the class is large rather than a curiosity. Raised with 2b 2026-09-25, whose
-// vocabulary it is; until they rule, a burst is labelled null and COUNTED, so
-// the report carries a measured figure instead of a forced kind. Forcing it to
-// `makesTreasure` would recreate the Warg-vs-Runadi false match, both being
-// "one-time mana".
+// `burstMana` is d9's ruling of 2026-09-25, and it closed a gap this gold set
+// found by hand. Generator Servant -- `{T}, Sacrifice this creature: Add {C}{C}`
+// -- is not `tapsForMana` (gone after one use), not `fetchesLand`, and not
+// `makesTreasure` (no token is created; the mana is added directly). `Blood Pet`,
+// the Eldrazi Scion tokens and every sacrifice-for-mana land are the same shape,
+// so the class is large rather than a curiosity. Folding it into `makesTreasure`
+// would have recreated the Warg-vs-Runadi false match, both being "one-time
+// mana" -- and would have lost the Treasure's leftover artifact, which sacrifice
+// outlets and artifact counts care about. It matches only itself.
 export const RAMP_KINDS = [
   "tapsForMana",    // a dork or a rock: mana every turn from a permanent's tap ability
   "fetchesLand",    // a search putting a land onto the battlefield or into hand
-  "makesTreasure",  // one-time or conditional; the Warg's combat-damage Treasure
+  "makesTreasure",  // a Treasure token, one-time or conditional; the Warg's
+  "burstMana",      // one-time mana from a consumed source; Generator Servant
 ];
+
+// `null` remains legal and now means a NEW gap: a ramp none of the four kinds
+// fits. It is kept rather than removed because the last gap was found by hand
+// labelling and would have been silently forced otherwise. A null in the gold
+// set is a finding to report, not a label to leave -- `validateGold` counts them.
 
 // What has to be true for the job to happen at all. `none` is the honest default
 // and is NOT the same as `activated`: an activated ability the controller can use
