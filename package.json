@@ -49,6 +49,7 @@
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",
+    "probe:locks": "tsx scripts/probe-locks.ts",
     "probe:sets": "node scripts/probe-sets.mjs",
     "probe:folders": "tsx scripts/probe-folders.ts",
     "probe:folder-flash": "node scripts/probe-folder-flash.mjs",

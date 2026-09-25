@@ -15,6 +15,7 @@ import { type CardQty, draftDiff } from "./draft-diff";
 import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
 import { pruneOrphanProxies } from "./prune-proxies";
+import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks";
 import { pruneOrphanAssignments } from "./prune-assignments";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -231,6 +232,9 @@ async function commitVersionIn(
   // runs, and for the same reason. This commit has just decided what the deck claims, so a
   // reservation for a card the new version does not list has nothing left to be about.
   await pruneOrphanAssignments(tx, deckId);
+  // A COMMIT ENDS A REMOVED CARD'S LOCK: the removal stayed (L1), so nothing may revive it now.
+  // A live lock on a card the version holds is untouched: locks are not versioned.
+  await clearDormantLocks(tx, deckId);
 
   // Counted off the rows this just snapshotted, and returned rather than left to
   // the caller's own read of `deck_cards`. A path that INSERTS a card the deck
@@ -298,6 +302,10 @@ export async function restoreDraftFromVersion(
       quantity: deckVersionCards.quantity,
     }).from(deckVersionCards).where(eq(deckVersionCards.versionId, versionId));
 
+    // A DISCARD BRINGS A REMOVED LOCKED CARD BACK LOCKED (Hugh, 2026-09-25): it undoes the removal,
+    // so the lock never ended. Woken BEFORE the reinsert, or the insert trigger deletes the dormant
+    // row in the insert's own statement and there is nothing left to wake.
+    await reviveDormantLocks(tx, deckId, rows.map((r) => r.oracleId));
     await tx.delete(deckCards).where(eq(deckCards.deckId, deckId));
     // Unresolved paste lines go with the draft. They are not `deck_cards` rows,
     // so the delete above does not reach them, and no version stores them — a
@@ -317,6 +325,10 @@ export async function restoreDraftFromVersion(
     // within one transaction. Reconciling against the restored list keeps that
     // card's proxy and drops only the ones whose slot the discard really cut.
     await pruneOrphanProxies(tx, deckId);
+    await pruneOrphanLocks(tx, deckId);
+    // What is still dormant now names a card the version does not hold (added and locked in the
+    // draft, then removed), and the discard does not bring it back, so its lock is over.
+    await clearDormantLocks(tx, deckId);
     // A discard rewrites `deck_cards` wholesale, so the draft's contents have
     // changed even though the deck now matches a version rather than diverging
     // from one. `commitVersionIn` above deliberately does NOT stamp: a commit

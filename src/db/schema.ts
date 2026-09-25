@@ -452,6 +452,35 @@ export const deckProxies = pgTable("deck_proxies", {
 ]);
 
 /**
+ * A player's "never cut this" on one card in one deck (Locked, sub-project 5.1). The tools that
+ * cut cards (tuning's suggestions, the swaps, the sweeps) read it as a FILTER inside their own
+ * transaction; the lock is never an instruction a model is trusted to follow.
+ *
+ * Shaped like `deck_proxies`, and for the same reason: a statement about one slot, not versioned,
+ * membership-scoped on every read. Membership is `deck_cards` ALONE: a commander is never cut, so
+ * it is never offered a lock.
+ *
+ * `removed_at` is the one thing a proxy does not have. A removal leaves the row DORMANT rather
+ * than deleting it (`pruneOrphanLocks`), because the lock ends only if the removal STAYS (L1):
+ * Undo, Put back and a discard bring the card back locked (the discard today; the three Undos are
+ * wired in Locked PR 5), and the review screen's Put back runs
+ * sessions after the removal, with nothing but this row to remember the lock by. A commit deletes
+ * the dormant rows (the removal stayed). Every OTHER way a card comes back arrives unlocked, and
+ * that is an `after insert` trigger on `deck_cards` (migration `never_cut`), which deletes a
+ * dormant row for the inserted card and never a live one: one place every add passes through.
+ */
+export const deckLocks = pgTable("deck_locks", {
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  removedAt: timestamp("removed_at"),
+}, (t) => [
+  primaryKey({ columns: [t.deckId, t.oracleId] }),
+  // Pull it asks about every deck holding a card, the opposite order to the key's.
+  index("deck_locks_oracle_idx").on(t.oracleId, t.deckId),
+]);
+
+/**
  * One committed state of a deck: what was sleeved, when, and why.
  *
  * A version stores the FULL list rather than a diff from its predecessor.

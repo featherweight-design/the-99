@@ -60,15 +60,18 @@ function enclosingBlockFrom(source: string, at: number): string {
   return source.slice(at);
 }
 
-function prunedAfter(source: string, at: number): boolean {
-  return /pruneOrphanProxies\(/.test(enclosingBlockFrom(source, at));
+// Both reconciles, proxies and locks (Locked, sub-project 5.1): a lock left live on a card that
+// has gone would make a re-added card arrive silently still locked, which F2 forbids.
+function prunedAfter(source: string, at: number, prune: string): boolean {
+  return new RegExp(`${prune}\\(`).test(enclosingBlockFrom(source, at));
 }
 
 describe("proxy rows are reconciled wherever deck membership shrinks", () => {
-  it.each(FILES)("%s prunes after every deck_cards delete", (file) => {
+  it.each(FILES.flatMap((file) => ["pruneOrphanProxies", "pruneOrphanLocks"].map((prune) => [file, prune])))(
+    "%s runs %s after every deck_cards delete", (file, prune) => {
     const source = readFileSync(file, "utf8");
     const offenders = deleteSites(source)
-      .filter((at) => !prunedAfter(source, at))
+      .filter((at) => !prunedAfter(source, at, prune))
       .map((at) => `${file}@${source.slice(0, at).split("\n").length}`);
     expect(offenders).toEqual([]);
   });
@@ -90,8 +93,24 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
     const del = source.indexOf(".delete(deckCards)");
     const reinsert = source.indexOf(".insert(deckCards)", del);
     const prune = source.indexOf("pruneOrphanProxies(", del);
+    const locks = source.indexOf("pruneOrphanLocks(", del);
     expect(reinsert).toBeGreaterThan(del);
     expect(prune).toBeGreaterThan(reinsert);
+    expect(locks).toBeGreaterThan(reinsert);
+  });
+
+  // The discard's other half runs the OTHER way round: a removed locked card comes back locked
+  // (Hugh, 2026-09-25), so its dormant lock is woken BEFORE the reinsert. After it, the insert
+  // trigger has already deleted the dormant row in the insert's own statement.
+  it("wakes the discard's dormant locks before the reinsert, and clears the rest after it", () => {
+    const source = readFileSync("src/lib/decks/versions.ts", "utf8");
+    const del = source.indexOf(".delete(deckCards)");
+    const reinsert = source.indexOf(".insert(deckCards)", del);
+    const revive = source.indexOf("reviveDormantLocks(");
+    const clear = source.indexOf("clearDormantLocks(", reinsert);
+    expect(revive).toBeGreaterThan(-1);
+    expect(revive).toBeLessThan(del);
+    expect(clear).toBeGreaterThan(reinsert);
   });
 
   it("covers every file that deletes deck_cards at all", () => {

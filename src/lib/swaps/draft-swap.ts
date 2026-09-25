@@ -19,6 +19,7 @@ import { cards, deckCards, deckProxies, decks, type ApplySnapshot } from "../../
 import { validateCardForDeck } from "../decks/add-validation";
 import { isBasicLand } from "../decks/grouping";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
+import { pruneOrphanLocks } from "../decks/locks";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -107,6 +108,7 @@ export async function applySwap(
     await tx.delete(deckCards).where(rowOf(deckId, cutOracleId));
     // The slot is gone, so the deck's statement about it goes with it.
     await pruneOrphanProxies(tx, deckId);
+    await pruneOrphanLocks(tx, deckId);
   }
   if (snapshot.add.quantity > 0) {
     await tx.update(deckCards).set({ quantity: snapshot.add.quantity + 1 }).where(rowOf(deckId, addOracleId));
@@ -143,6 +145,7 @@ export async function restoreSwap(
     await tx.delete(deckCards).where(rowOf(deckId, addOracleId));
     // A proxy mark put on the add while it was in the deck leaves with it.
     await pruneOrphanProxies(tx, deckId);
+    await pruneOrphanLocks(tx, deckId);
   } else {
     await tx.insert(deckCards)
       .values({ deckId, oracleId: addOracleId, quantity: snap.add.quantity, auto: snap.add.auto })
