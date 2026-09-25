@@ -1043,3 +1043,38 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
   });
 });
+
+// The modal's art is asked for on the PRESS, alongside the details read, when the opener knows it:
+// otherwise it could only be asked for once the read answered and named the printing.
+describe("CardDetailTrigger's art preload", () => {
+  it("asks for the art before the details read answers, and draws nothing for it", async () => {
+    const asked: string[] = [];
+    const Real = window.Image;
+    class Spy { set src(v: string) { asked.push(v); } }
+    vi.stubGlobal("Image", Spy);
+    window.Image = Spy as unknown as typeof Image;
+    try {
+      // A read that never answers: whatever was asked for, the press asked for it.
+      const fetchCard = vi.fn(() => new Promise<BrowseCard | null>(() => {}));
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" imageUri="https://cards.scryfall.io/normal/front/a/b/signet.jpg">
+            Arcane Signet
+          </CardDetailTrigger>
+          <CardDetailTrigger oracleId="o-sol" name="Sol Ring">Sol Ring</CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
+      expect(fetchCard).toHaveBeenCalledTimes(1);
+      expect(asked).toEqual(["https://cards.scryfall.io/normal/front/a/b/signet.jpg"]);
+      expect(document.querySelectorAll("img")).toHaveLength(0);
+
+      // A trigger that does not know the art asks for nothing.
+      await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
+      expect(asked).toHaveLength(1);
+    } finally {
+      window.Image = Real;
+      vi.unstubAllGlobals();
+    }
+  });
+});

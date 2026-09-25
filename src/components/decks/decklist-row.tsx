@@ -454,6 +454,7 @@ export function DecklistRow({
                 name={fullName}
                 siblings={siblings}
                 door={opensDoor}
+                imageUri={card.imageUri}
                 className={nameTextClass}
                 describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}

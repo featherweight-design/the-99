@@ -142,7 +142,7 @@ export function useCardDetail(): CardDetailContextValue {
  * focus-return would then have nothing to hand focus back to on close.
  */
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, children,
 }: {
   oracleId: string;
   name: string;
@@ -172,6 +172,15 @@ export function CardDetailTrigger({
   testId?: string;
   /** Opened from a Shopping row: the card draws the swap tools' door (audit F17). */
   door?: boolean;
+  /**
+   * The art the modal will draw, when the opener already knows it. The press asks for it at once,
+   * alongside the details read, where otherwise it could only be asked for once that read answered
+   * and named the printing: measured, the read answers at ~221ms and the art arrived at ~448ms,
+   * strictly after it. Pass it only where it IS the modal's URL — the decklist row's `imageUri`
+   * matched the modal's on every press `probe:image-timing --modal` made — or the press fetches an
+   * image nothing draws.
+   */
+  imageUri?: string | null;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
@@ -180,7 +189,12 @@ export function CardDetailTrigger({
     <button
       type="button"
       data-testid={testId}
-      onClick={() => open(oracleId, siblings, undefined, door ? { door } : undefined)}
+      onClick={() => {
+        // A detached Image, as the hover preview's preload (#969): no DOM node, nothing drawn, and
+        // the bytes land in the HTTP cache the modal's background then reads.
+        if (imageUri) new window.Image().src = imageUri;
+        open(oracleId, siblings, undefined, door ? { door } : undefined);
+      }}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
