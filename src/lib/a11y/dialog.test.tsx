@@ -460,6 +460,23 @@ describe("useBackDismiss", () => {
     back.mockRestore();
   });
 
+  // The release is scheduled BY the unmount, so it outlives the component on
+  // purpose — and at the end of a test file it outlives the document as well, when
+  // the environment is torn down with the timer still queued. It must then do
+  // nothing rather than throw an unhandled ReferenceError into the run.
+  it("does nothing when its release fires after the window has gone", () => {
+    vi.useFakeTimers();
+    try {
+      const hook = renderHook(() => useBackDismiss(true, vi.fn()));
+      hook.unmount();
+      vi.stubGlobal("window", undefined);
+      expect(() => vi.runOnlyPendingTimers()).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("pushes once under StrictMode's remount, and steps back not at all", async () => {
     const push = vi.spyOn(window.history, "pushState");
     const back = vi.spyOn(window.history, "back");

@@ -255,6 +255,12 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
       entry.release = setTimeout(() => {
         entry.release = null;
         held.current = null;
+        // This timer is the unmount's own work — the self-pop, and the one-task wait
+        // that lets a StrictMode remount reclaim the entry — so it has to outlive the
+        // component and cannot be cleared by it. It can outlive the DOCUMENT too: a
+        // test file's environment is torn down with the timer still queued, and the
+        // reads below then raise on a window that no longer exists.
+        if (typeof window === "undefined") return;
         if (!entry.onHistory) return;
         entry.onHistory = false;
         const current = currentKey();
