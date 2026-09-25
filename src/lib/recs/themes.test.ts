@@ -62,7 +62,7 @@ describe("cardThemes on the cards each rule was sized against", () => {
     ["Gishath, Sun's Avatar", ["tribal"]],
     ["Kindred Discovery", ["tribal", "draw"]],
     ["Herald's Horn", ["tribal"]],
-    ["Lord of Atlantis", ["tribal"]],
+    ["Lord of Atlantis", ["tribal", "pump"]],
   ])("%s reads as %j", (name, want) => expect(themes(name)).toEqual(expect.arrayContaining(want)));
 
   it("gives a plain card no theme", () => {
@@ -79,6 +79,7 @@ describe("cardThemes on the cards each rule was sized against", () => {
   // Pass 3 sampled Mirkwood Channeler for its "Forests you control", but the same card targets "Elf you
   // control": it IS tribal, and the land type beside it neither makes nor unmakes that.
   it("reads the tribe beside a land type", () => expect(themes("Mirkwood Channeler")).toContain("tribal"));
+  it("reads a typed target's +X/+X as a pump", () => expect(themes("Mirkwood Channeler")).toContain("pump"));
 });
 
 describe("caresAboutType", () => {

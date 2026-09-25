@@ -48,8 +48,10 @@ const stripReminders = (text: string) => text.replace(/\([^)]*\)/g, "");
 const RULES: readonly [Exclude<Theme, "tribal">, RegExp][] = [
   ["counters", /\+1\/\+1 counters?/],
   // "Creatures you control gain trample and get +X/+X" (Craterhoof) is a pump: the clause between the
-  // subject and "get" is what pass 1 missed.
-  ["pump", /(creatures you control|other [a-z ]*creatures you control|target creature)[^.]*\bgets? \+[0-9x]/],
+  // subject and "get" is what pass 1 missed. A lord ("Other Elves you control get +1/+1") and a typed
+  // target ("target Elf you control gets +X/+X", Mirkwood Channeler) are pumps too, as is an old lord that
+  // names no controller ("Other Merfolk get +1/+1": Lord of Atlantis, Goblin King): 1,451 → 1,718.
+  ["pump", /(creatures you control|other [a-z ]*you control|target [a-z ]*(creature|you control))[^.]*\bgets? \+[0-9x]|\bother [a-z]+ gets? \+[0-9x]/],
   // "Equipped creature has hexproof and haste" (Swiftfoot Boots) grants it too.
   ["haste", /\b(have|has|gains?) [a-z, ]*\bhaste\b/],
   ["evasion", /\b(have|gains?) (flying|trample|menace)\b|can't be blocked/],
