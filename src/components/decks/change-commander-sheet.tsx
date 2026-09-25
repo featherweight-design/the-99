@@ -65,7 +65,7 @@ export function ChangeCommanderSheet({
   // A half-trade's answer to "which one stays", per candidate, so Back and Choose again keep it.
   const [staysBy, setStaysBy] = useState<Record<string, string>>({});
   // Back to the list restores it as it was: the list stays mounted behind the confirm (its open
-  // row and Show more count survive), and the scroll offset is put back by hand, because the
+  // row and each group's Show all survive), and the scroll offset is put back by hand, because the
   // confirm's height moved it.
   const listScroll = useRef<number | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -158,8 +158,9 @@ function Loading({ pair }: { pair: boolean }) {
     <div role="status" className="flex flex-col">
       <Lede pair={pair} />
       <p
-        className="mt-[16px] pb-[8px] font-mono text-[10.5px]"
-        style={{ color: "var(--fg-faint)", borderBottom: "1px solid var(--elevated)" }}
+        // Its rule sits where the group heading's will, so it takes that rule: 6px and `--border`.
+        className="mt-[16px] pb-[6px] font-mono text-[10.5px] border-b border-[color:var(--border)]"
+        style={{ color: "var(--fg-faint)" }}
       >
         {copy.sheet.loading}
       </p>
@@ -249,7 +250,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
     <>
       <Lede pair={pair} counted={data.counted} />
       {data.yours.length > 0 ? (
-        <section aria-label={copy.sheet.groupYours(data.yours.length)}>
+        <section className="flex flex-col" aria-label={copy.sheet.groupYours(data.yours.length)}>
           <CandidateGroupHeading label={copy.sheet.groupYours(data.yours.length)} note={copy.sheet.groupNote} />
           {yours.map(row)}
           <GroupToggle total={data.yours.length} all={allYours} onToggle={() => setAllYours((v) => !v)} />
@@ -258,7 +259,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
         <p className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{copy.sheet.ownsNone}</p>
       )}
       {data.toBuy.length > 0 ? (
-        <section aria-label={copy.sheet.groupBuy(data.toBuy.length)}>
+        <section className="flex flex-col" aria-label={copy.sheet.groupBuy(data.toBuy.length)}>
           <CandidateGroupHeading
             label={copy.sheet.groupBuy(data.toBuy.length)}
             note={pair ? copy.sheet.groupNotePairBuy : copy.sheet.groupNote}

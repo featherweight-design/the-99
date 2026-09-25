@@ -190,11 +190,14 @@ async function holdOneYours(page, userId, fixture) {
   const label = (await freeRow.count()) ? await freeRow.locator("[data-choose]").getAttribute("aria-label") : null;
   await page.keyboard.press("Escape");
   if (!report("held fixture", label !== null, label ?? "no free row in Yours to hold")) return null;
+  // The label carries the SHORT name (`shortName`: cut at a comma or ` // `), so the lookup matches
+  // either the whole name or one that starts with it and a cut.
   const name = label.replace(/^Choose /, "");
   const [card] = await sql`
     select c.oracle_id, sum(ci.quantity)::int as owned from cards c
     join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = ${userId}
-    where c.name = ${name} group by c.oracle_id`;
+    where (c.name = ${name} or c.name like ${name + ",%"} or c.name like ${name + " // %"})
+    group by c.oracle_id order by c.oracle_id limit 1`;
   if (!report("held fixture owned", card !== undefined, name)) return null;
   const [holder] = await sql`
     insert into decks (user_id, name, commander_oracle_id)
@@ -282,7 +285,7 @@ async function walk(page, width, fixture) {
   // card is found BY ITS NAME rather than by a marker count, so a run that lost it fails.
   if (fixture.held) {
     await dialog.getByRole("button", { name: /^Show all \d+/ }).first().click().catch(() => {});
-    const heldRow = rows.filter({ has: page.getByRole("button", { name: `Choose ${fixture.held}` }) });
+    const heldRow = rows.filter({ has: page.getByRole("button", { name: `Choose ${fixture.held}`, exact: true }) });
     const mark = heldRow.locator("span", { hasText: /^none free/ }).first();
     const m = (await mark.count()) === 0 ? null : await mark.evaluate((el) => {
       const cs = getComputedStyle(el);

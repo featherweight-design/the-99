@@ -365,7 +365,7 @@ handoff's §2.5 `Show more` (+8, To buy only, focus to the first new row).
 | Caption | copy key | `sheet.loading` | same | copy |
 | | typography | mono 10.5px | same | canvas |
 | | color | `--fg-faint` | `--fg-faint` | canvas |
-| | padding-bottom / border-bottom | 8px / 1px solid `--elevated` | same | canvas |
+| | padding-bottom / border-bottom | 6px / 1px solid `--border`, the group heading's rule it stands in for | same | Hugh's ruling, 2026-09-25; was 8px / `--elevated` (canvas) |
 | Skeleton row (×4) | layout | flex, gap 12px, align flex-start | same | canvas |
 | | padding | 12px 0 | same | canvas |
 | | border-bottom | 1px solid `--border` | same | canvas |
