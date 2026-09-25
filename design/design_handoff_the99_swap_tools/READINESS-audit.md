@@ -248,5 +248,5 @@ changes no drawing.
 
 - **H4 (Design's reading).** When a stand-in list offers a staple you'd have to buy (Sol Ring in place of Mana
   Vault), should it come first among the cards to buy, cheapest first, in a group of its own? The alternative is
-  ruling 6's order, where it sits by how often this commander's decks run it. Design chose its own group because
-  a staple's figure is high for every commander, so it says nothing about this one.
+  ruling 6's order, where it sits by how often this commander's decks run it. One thing to weigh: the staple row no
+  longer shows that figure, so ruling 6's order would rank it by a number the reader cannot see.
