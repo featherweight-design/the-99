@@ -33,12 +33,12 @@
 // a hold file left by a crashed run restores THAT first, so the account is never left
 // behind. The same rule as `scripts/lib/profile-hold.mjs`, for the same reason.
 //
-// MUTATIONS RUN AGAINST IT (each fails the run; counts after the arrow):
-//   - the proxy reading `about_v` as "shown"                              → 7 fails at 390 and 1300
-//   - `Shell` mounting the sheet only when the state is not `none`         → 1b fails at all three widths
-//   - the sheet placed from 1000px rather than `md`                        → 1 fails at 800
-//   - the proxy not stripping `x-about-sheet`                              → 8 fails at 390 and 1300
-//   - the search hiding the page's sections that hold no match             → 6 fails at 390 and 1300
+// MUTATIONS RUN AGAINST IT (each fails the run; what failed after the arrow):
+//   - the proxy reading `about_v` as "shown"                     → 4 fails, check 7 (E1) among them, at 390 and 1300
+//   - `Shell` mounting the sheet only when the state is not `none` → "survives router.refresh()" at 390, 800 and 1300
+//   - the sheet placed from 1000px rather than `md`              → check 1's placement (E8) at 800
+//   - the proxy not stripping `x-about-sheet`                    → check 8 at 390 and 1300
+//   - the search hiding the page's sections that hold no match   → check 6's ruling 4 at 390 and 1300
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

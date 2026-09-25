@@ -1,6 +1,9 @@
+// @vitest-environment node
+//
+// The repo default is jsdom, which replaces `import.meta.url` with the page
+// location — every path here would resolve against `http://localhost/`.
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error: a plain .mjs module with no types
 import { sheetCookie } from "./about-clear.mjs";
 
 describe("sheetCookie", () => {

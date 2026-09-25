@@ -318,6 +318,7 @@ export function AboutPage({
       </h1>
       <p className="mt-[10px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
         {aboutCopy.pageIntro}
+        {sheetMode && ` ${aboutCopy.pageIntroSheet}`}
       </p>
 
       {sheetMode && newEntries.length > 0 && <WhatsNewIndex entries={newEntries} />}

@@ -60,6 +60,17 @@ describe("the what's-new index (§O)", () => {
   });
 });
 
+describe("the intro", () => {
+  it("tells the reader about the note only while the sheet is what brings them", () => {
+    const { unmount } = render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    expect(screen.getByText(aboutCopy.pageIntroSheet, { exact: false })).toBeTruthy();
+    unmount();
+    render(<AboutPage seen={ABOUT_VERSION} />);
+    expect(screen.queryByText(aboutCopy.pageIntroSheet, { exact: false })).toBeNull();
+    expect(screen.getByText(aboutCopy.pageIntro, { exact: false })).toBeTruthy();
+  });
+});
+
 describe("the new-entry marks (§P0)", () => {
   it("puts the pill before the title visually, and the spoken half after it", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
