@@ -30,6 +30,7 @@ import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
+import { neverCutEnabled } from "./never-cut-flag";
 
 /**
  * Deck tuning's reads. SERVER-ONLY: it imports the database.
@@ -255,13 +256,20 @@ async function readItems(
   deckId: string,
   userId: string,
 ): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
+  // Qualified by hand: a bare `oracle_id` inside would resolve against `deck_locks` itself.
+  const cutLocked = neverCutEnabled()
+    ? sql`exists (
+        select 1 from deck_locks lk
+        join ${deckCards} dk on dk.deck_id = lk.deck_id and dk.oracle_id = lk.oracle_id
+        where lk.deck_id = ${deckId} and lk.oracle_id = i.cut_oracle_id and lk.removed_at is null)`
+    : sql`false`;
   const rows = await db.execute<{
     id: string; add_oracle_id: string; add_name: string; add_type_line: string;
     cut_oracle_id: string; cut_name: string; rationale: string; rationale_short: string;
     evidence: TuningItem["evidence"]; position: number; verdict: TuningItem["verdict"];
     bracket_after: number[] | null; owned_quantity: number; applies: boolean;
     add_image_uri: string | null; cut_image_uri: string | null; cut_in_deck: boolean;
-    add_in_deck: boolean;
+    add_in_deck: boolean; cut_locked: boolean;
   }>(sql`
     select i.id, i.add_oracle_id, a.name as add_name, a.type_line as add_type_line,
            a.image_uri as add_image_uri, c.image_uri as cut_image_uri,
@@ -275,11 +283,16 @@ async function readItems(
              as cut_in_deck,
            exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)
              as add_in_deck,
+           -- The player has LOCKED the cut (Locked, F4): the apply refuses it (planSwap), so the
+           -- row reads as no longer applying. A live lock on a card still in this deck; constant
+           -- false while NEVER_CUT_ENABLED is off (D3).
+           ${cutLocked} as cut_locked,
            -- The swap can still be made: the cut is in the deck, and the add is not (a basic
            -- may be held already; the apply adds a copy). The apply checks the same rule.
            (exists (select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.cut_oracle_id)
              and (a.type_line like '%Basic%' or not exists (
-               select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id)))
+               select 1 from ${deckCards} dc where dc.deck_id = ${deckId} and dc.oracle_id = i.add_oracle_id))
+             and not ${cutLocked})
              as applies
     from ${deckSuggestionItems} i
     join ${cards} a on a.oracle_id = i.add_oracle_id
@@ -329,6 +342,7 @@ async function readItems(
       applies: r.applies,
       cutInDeck: r.cut_in_deck,
       addInDeck: r.add_in_deck,
+      cutLocked: r.cut_locked,
     };
   });
   return { items, newestPriceAsOf: newestAsOf };

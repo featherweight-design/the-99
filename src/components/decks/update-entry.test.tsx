@@ -255,6 +255,9 @@ describe("applying", () => {
         text: "1 Sol Ring",
         source: "paste",
         keep: ["out-1"],
+        // What the preview showed locked, for the apply's re-check (Locked, never cut). This
+        // fixture's preview predates locks and carries none.
+        lockedSeen: [],
       }),
     );
   });

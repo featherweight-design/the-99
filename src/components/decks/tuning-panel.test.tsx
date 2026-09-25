@@ -32,7 +32,7 @@ const item: TuningItem = {
   id: "i1", addOracleId: "a", addName: "Rhystic Study", addTypeLine: "Enchantment", cutOracleId: "c",
   cutName: "Divination", rationale: "Why.", rationaleShort: "Why.", evidence: [{ kind: "decklist", value: "4 of 99 draw" }],
   position: 0, verdict: "pending", addImageUri: null, cutImageUri: null, owned: true, ownedQuantity: 1,
-  availability: null, price: null, bracketAfter: null, applies: true, cutInDeck: true, addInDeck: false,
+  availability: null, price: null, bracketAfter: null, applies: true, cutInDeck: true, addInDeck: false, cutLocked: false,
 };
 
 const okRun = { id: "r1", status: "ok" as const, errorClass: null, createdAt: at, droppedCount: 0 };

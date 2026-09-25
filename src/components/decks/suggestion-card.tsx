@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { cssUrl } from "../../lib/collection/browse";
@@ -205,6 +206,8 @@ export function SuggestionCard({
 function brokenLine(item: TuningItem): string {
   // `applies` is false when the cut has left the deck or the add is already in it. The cut
   // leaving is the drawn case; the add's half is the other way the rule can fail.
+  // A locked cut is still IN the deck, so it is named before the in-deck test (Locked, F4).
+  if (item.cutLocked) return lockedCardsCopy.tuning.cutLocked(item.cutName);
   return item.cutInDeck ? copy.addAlreadyIn(item.addName) : copy.cutGone(item.cutName);
 }
 

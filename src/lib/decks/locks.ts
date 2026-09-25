@@ -1,6 +1,13 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 
+/**
+ * Refusing a pull from a deck that has locked the card (L2: Pull it never takes from a deck where
+ * the card is locked). Here rather than in `actions.ts` for the reason `PULL_REFUSED_PROXIED` is
+ * in `proxies.ts`: a `"use server"` module may export functions only. New copy, for /copy-review.
+ */
+export const PULL_REFUSED_LOCKED = "That card is locked in that deck.";
+
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Anything that can run one statement: a transaction, or the db singleton (the probe's). */
@@ -26,6 +33,39 @@ export async function liveLockedIds(tx: Runner, deckId: string): Promise<Readonl
       )
   `);
   return new Set(result.rows.map((r) => r.oracle_id));
+}
+
+/**
+ * A predicate for a statement that deletes or decrements `deck_cards` rows: this row's card is NOT
+ * locked in its deck. The sweeps put it inside their own write, after the deck row lock they
+ * already take (T4), so a lock landing first is honoured and none can land between read and write.
+ *
+ * QUALIFIED BY HAND on both sides. Written the obvious way, the inner `oracle_id` resolves against
+ * `deck_locks` itself and the predicate compares each lock row to itself: always true, every
+ * locked card swept, no error (AGENTS.md, "A correlated subquery ... must alias and qualify").
+ * `locks.test.ts` renders it and asserts the qualified form.
+ */
+export const notLiveLocked = () => sql`not exists (
+  select 1 from deck_locks l
+  where l.deck_id = "deck_cards"."deck_id"
+    and l.oracle_id = "deck_cards"."oracle_id"
+    and l.removed_at is null
+)`;
+
+/**
+ * Is this one card locked in this deck right now? `liveLockedIds`'s rule for a single card, for a
+ * caller about to cut or remove exactly it (a swap's cut, an undo's add). Same transaction, after
+ * the deck row lock, and no swallowed failure.
+ */
+export async function isLiveLocked(tx: Runner, deckId: string, oracleId: string): Promise<boolean> {
+  const { rows: [row] } = await tx.execute<{ locked: boolean }>(sql`
+    select exists (
+      select 1 from deck_locks l
+      join deck_cards dc on dc.deck_id = l.deck_id and dc.oracle_id = l.oracle_id
+      where l.deck_id = ${deckId} and l.oracle_id = ${oracleId} and l.removed_at is null
+    ) as locked
+  `);
+  return row?.locked === true;
 }
 
 /**

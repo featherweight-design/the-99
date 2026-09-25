@@ -39,6 +39,13 @@ export type DeckClaim = {
    */
   commander: boolean;
   /**
+   * The deck has LOCKED this card (Locked, L2): Pull it never takes it, and the server refuses a
+   * forced one. Always false while `NEVER_CUT_ENABLED` is off. Optional because the query always
+   * carries it while a hand-built claim (every fixture, the About specimens) need not: absent is
+   * unlocked, which is how every claim read before the feature existed.
+   */
+  locked?: boolean;
+  /**
    * When this card entered this deck's committed version, as EPOCH MILLIS.
    *
    * Millis rather than the timestamp's own rendering: the column is `timestamp`

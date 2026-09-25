@@ -8,4 +8,8 @@ export const lockedCardsCopy = {
     /** Any refusal of a lock toggle: a bad id, a card no longer in the deck, the switch off. */
     refused: "That didn't save. Try again.",
   },
+  tuning: {
+    /** The no-longer-applies row's third reason, beside `cutGone` and `addAlreadyIn`. */
+    cutLocked: (card: string) => `You locked ${card}.`,
+  },
 } as const;

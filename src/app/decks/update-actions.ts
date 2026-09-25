@@ -14,7 +14,8 @@ import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../l
 import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { pruneOrphanLocks } from "../../lib/decks/locks";
+import { liveLockedIds, lockedOracleIds, pruneOrphanLocks } from "../../lib/decks/locks";
+import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
@@ -51,6 +52,12 @@ export type DeckUpdatePreview = {
   /** Rows this deck is carrying now, whose count the unnamed group's copy prints. */
   existingUnresolvedCount: number;
   out: DeckUpdateChangedRow[];
+  /**
+   * The `out` rows the player has LOCKED (Locked, never cut). The review starts them KEPT (Hugh,
+   * 2026-09-25, Q2): a locked card stays unless the player unticks it, and one they untick is
+   * removed and its lock goes dormant like any other removal. Empty while `NEVER_CUT_ENABLED` is off.
+   */
+  lockedOut: string[];
   in: DeckUpdateChangedRow[];
   unchanged: DeckUpdateRow[];
   /** The cards the list keeps but asks for a different number of, straight from
@@ -183,6 +190,12 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
 
   const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in });
   const version = await newestVersion(input.deckId);
+  // FAIL CLOSED, never the display read's empty set: this read decides what the review starts KEPT,
+  // and a locked card that silently starts unticked is deleted by an Apply nobody touched. A failed
+  // read fails the preview, which the player can retry; it never offers a destructive default.
+  const locked = neverCutEnabled() && plan.out.length > 0
+    ? await lockedOracleIds(input.deckId, userId, "throw")
+    : new Set<string>();
 
   return {
     ok: true,
@@ -192,6 +205,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     notes: parsed.notes,
     existingUnresolvedCount: existingUnresolved.length,
     out: widened.out,
+    lockedOut: widened.out.filter((r) => locked.has(r.oracleId)).map((r) => r.oracleId),
     in: widened.in,
     unchanged: plan.unchanged,
     recounted: plan.recounted,
@@ -258,6 +272,11 @@ export type ApplyDeckUpdateInput = UpdateDeckInput & {
   /** Oracle ids of removals the player chose to keep. The only thing the client
    *  contributes to the write — everything else is re-derived from `text`. */
   keep: string[];
+  /** The locked cards the preview SHOWED (its `lockedOut`). The apply re-reads the locks under the
+   *  deck row lock and refuses when a card it would remove is locked now but was not shown locked:
+   *  a card locked in another tab after the preview must not leave through an untouched Apply. A
+   *  shown-locked card the player unticked is theirs to remove. */
+  lockedSeen?: string[];
 };
 
 export type ApplyDeckUpdateResult = {
@@ -339,6 +358,17 @@ export async function updateDeckFromList(
 
     const removing = plan.out.filter((r) => !keep.has(r.oracleId));
     const kept = plan.out.length - removing.length;
+
+    // Locked (never cut), Hugh's Q2: re-checked here, under the deck row lock taken above, never
+    // trusted to the preview. A removal of a card locked NOW that the preview did not show locked
+    // is refused, and the whole update with it: the refusal leaves the deck exactly as it was.
+    if (neverCutEnabled() && removing.length > 0) {
+      const seen = new Set(input.lockedSeen ?? []);
+      const lockedNow = await liveLockedIds(tx, input.deckId);
+      if (removing.some((r) => lockedNow.has(r.oracleId) && !seen.has(r.oracleId))) {
+        throw new Error("a card was locked after the preview");
+      }
+    }
 
     if (removing.length > 0) {
       await tx.delete(deckCards).where(

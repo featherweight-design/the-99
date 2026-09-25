@@ -167,7 +167,8 @@ export function UpdateDiff({
   onCancel: () => void;
   onImportAsNew: () => void;
 }) {
-  const [kept, setKept] = useState<Set<string>>(new Set());
+  // Locked cards start KEPT (Hugh, 2026-09-25): they stay unless the player unticks them.
+  const [kept, setKept] = useState<Set<string>>(() => new Set(preview.lockedOut ?? []));
   const [live, setLive] = useState("");
 
   const removing = preview.out.length - kept.size;
