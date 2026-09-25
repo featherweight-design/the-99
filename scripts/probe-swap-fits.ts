@@ -1,0 +1,229 @@
+/**
+ * probe:swap-fits — Fits your decks in a real browser (swap tools PR 5b), at 1300x900 and 390x844.
+ *
+ * It presses what a reader presses: a card's name on a deck page opens the card, the footer's
+ * `Find a deck for it →` opens the picker OVER the card, and Add puts the card in another deck's
+ * draft. What it proves is what jsdom cannot:
+ *   - the door has layout at each width, 44px tall on the phone;
+ *   - the picker is 560 wide on desktop and starts at 96px on the phone;
+ *   - the card stays the same node under it, covered;
+ *   - a universal staple's chip reads `staple · any commander` in italics with no percentage, and
+ *     the staple note is drawn once;
+ *   - Add writes the row the database then holds, and stamps the row `in the draft`;
+ *   - the add's reply is small. The action defers its revalidation with after(), so the page it
+ *     was called from is not shipped back (the proof 5a moved here, since 5a had no caller);
+ *   - Escape closes the picker and lands focus on the door.
+ *
+ * FIXTURE. Two decks under the audit account: one led by Kenrith (every color) holding a colorless
+ * universal staple, and one led by a mono-blue legend holding nothing, which the staple fits. The
+ * staple is chosen through `loadUniversalStaples`, the one definition, never a list of our own.
+ * Both decks are deleted in a `finally`, and the About row is put back as the run found it. Needs
+ * a server with SWAP_TOOLS_ENABLED=true (PROBE_BASE). Point it at local-dev, never production.
+ */
+import { readFileSync } from "node:fs";
+import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { chromium, type Locator, type Page } from "playwright";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
+
+import { onPage } from "./lib/surface.mjs";
+import { requireEnv } from "./lib/env.mjs";
+import { loadUniversalStaples } from "../src/lib/staples/universal";
+import { swapToolsCopy } from "../src/lib/copy/swap-tools";
+
+neonConfig.webSocketConstructor = ws;
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+const ABOUT_VERSION_FILE = new URL("../src/lib/copy/about.version.json", import.meta.url);
+const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
+const pool = new Pool({ connectionString: DATABASE_URL });
+const copy = swapToolsCopy.fits;
+
+const WIDTHS = [
+  { label: 1300, viewport: { width: 1300, height: 900 } },
+  { label: 390, viewport: { width: 390, height: 844 } },
+];
+
+let failures = 0;
+let aboutPrior: { userId: string; existed: boolean; value: number | null } | null = null;
+function report(label: string, ok: boolean, detail: string) {
+  console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
+  if (!ok) failures += 1;
+  return ok;
+}
+
+async function signIn(page: Page): Promise<string> {
+  await setupClerkTestingToken({ page });
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => (window as unknown as { Clerk?: { loaded: boolean } }).Clerk?.loaded, null, { timeout: 30_000 });
+  const failure = await page.evaluate(async ([email, password]) => {
+    try {
+      const clerk = (window as unknown as { Clerk: any }).Clerk;
+      const signIn = clerk.client.signIn;
+      let attempt = email.includes("+clerk_test")
+        ? await signIn.create({ identifier: email })
+        : await signIn.create({ identifier: email, password });
+      if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
+        const factor = attempt.supportedFirstFactors?.find((f: { strategy: string }) => f.strategy === "email_code");
+        if (!factor?.emailAddressId) return `${email} offers no email_code first factor.`;
+        await signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: factor.emailAddressId });
+        attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
+      }
+      if (attempt.status !== "complete") return `sign-in status: ${attempt.status}`;
+      await clerk.setActive({ session: attempt.createdSessionId });
+      return null;
+    } catch (error) {
+      return (error as { errors?: { longMessage?: string }[] })?.errors?.[0]?.longMessage ?? String(error);
+    }
+  }, [EMAIL, PASSWORD ?? ""] as const);
+  if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  const userId = await page.evaluate(() => (window as unknown as { Clerk: { user?: { id: string } } }).Clerk.user?.id ?? null);
+  if (!userId) throw new Error("Signed in but Clerk reports no user.");
+  const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
+  const prior = await pool.query(`select about_version_seen from user_prefs where user_id = $1`, [userId]);
+  aboutPrior = { userId, existed: (prior.rowCount ?? 0) > 0, value: prior.rows[0]?.about_version_seen ?? null };
+  await pool.query(
+    `insert into user_prefs (user_id, about_version_seen) values ($1, $2)
+       on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
+    [userId, version],
+  );
+  return userId;
+}
+
+const q = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const cardDialogs = (page: Page) => page.locator('[role="dialog"][aria-labelledby^="card-modal-title"]');
+const picker = (page: Page) => page.getByRole("dialog", { name: copy.pickerTitle });
+const visibleDoor = (page: Page) => page.getByTestId("fits-door").filter({ visible: true }).first();
+
+async function openRowCard(page: Page, name: string): Promise<Locator> {
+  const target = onPage(page, "span, button").filter({ hasText: new RegExp(`^${q(name)}$`) }).filter({ visible: true }).first();
+  for (let i = 0; i < 8 && (await target.count()) === 0; i++) {
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(250);
+  }
+  await target.click();
+  const card = cardDialogs(page).first();
+  await card.waitFor({ timeout: 20_000 });
+  return card;
+}
+
+void (async () => {
+  const deckIds: string[] = [];
+  let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
+  try {
+    await clerkSetup();
+    browser = await chromium.launch();
+    const context = await browser.newContext({ viewport: WIDTHS[0].viewport });
+    const page = await context.newPage();
+    const userId = await signIn(page);
+
+    // The staple, through the one definition, and colorless so the blue deck can take it.
+    const staples = [...(await loadUniversalStaples(drizzle(pool) as never))];
+    const { rows: [staple] } = await pool.query(
+      `select oracle_id, name from cards where oracle_id = any($1::uuid[]) and cardinality(color_identity) = 0
+         and commander_legal and name not like '%//%' order by name limit 1`,
+      [staples],
+    );
+    if (!staple) throw new Error("No colorless universal staple on this database.");
+    const { rows: [kenrith] } = await pool.query(`select oracle_id from cards where name = 'Kenrith, the Returned King'`);
+    const { rows: [blue] } = await pool.query(
+      `select oracle_id from cards where commander_legal and type_line ~* 'legendary creature'
+         and color_identity = array['U']::text[] order by name limit 1`,
+    );
+    const holder = (await pool.query(
+      `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe · fits holder', $2) returning id`, [userId, kenrith.oracle_id],
+    )).rows[0].id as string;
+    deckIds.push(holder);
+    const taker = (await pool.query(
+      `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe · fits taker', $2) returning id`, [userId, blue.oracle_id],
+    )).rows[0].id as string;
+    deckIds.push(taker);
+    await pool.query(`insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)`, [holder, staple.oracle_id]);
+    console.log(`fixture: ${staple.name} held by ${holder}, taken by ${taker}`);
+
+    for (const w of WIDTHS) {
+      await page.setViewportSize(w.viewport);
+      await pool.query(`delete from deck_cards where deck_id = $1`, [taker]);
+      await page.goto(`${BASE}/decks/${holder}`, { waitUntil: "domcontentloaded" });
+      const card = await openRowCard(page, staple.name);
+      const cardNode = await card.elementHandle();
+
+      // The door.
+      const door = visibleDoor(page);
+      await door.waitFor({ timeout: 10_000 });
+      const doorBox = await door.boundingBox();
+      report(`${w.label} door`, doorBox !== null, doorBox ? `${Math.round(doorBox.width)}x${Math.round(doorBox.height)}` : "no layout");
+      if (w.label === 390) report("390 door target", (doorBox?.height ?? 0) >= 44, `${doorBox?.height ?? 0}px`);
+
+      // The picker, over the card.
+      await door.click();
+      const sheet = picker(page);
+      await sheet.waitFor({ timeout: 15_000 });
+      await sheet.getByTestId("fits-row").first().waitFor({ timeout: 20_000 });
+      const box = await sheet.boundingBox();
+      if (w.label === 1300) report("1300 picker width", Math.round(box?.width ?? 0) === 560, `${Math.round(box?.width ?? 0)}px`);
+      else report("390 picker top", Math.round(box?.y ?? 0) === 96, `${Math.round(box?.y ?? 0)}px`);
+      const sameNode = await cardNode!.evaluate((el) => el.isConnected && el.closest("[inert]") !== null);
+      report(`${w.label} card stays, covered`, sameNode, sameNode ? "same node, inert" : "replaced or live");
+
+      // The staple form on the taker's row, and the note once.
+      const row = sheet.getByTestId("fits-row").filter({ hasText: "probe · fits taker" });
+      const rowText = (await row.innerText()).replace(/\s+/g, " ");
+      report(`${w.label} staple chip`, rowText.includes(copy.cmdrStaple) && !/%/.test(rowText), rowText.slice(0, 120));
+      const italic = await row.getByText(copy.cmdrStaple).evaluate((el) => getComputedStyle(el).fontStyle);
+      report(`${w.label} staple chip italic`, italic === "italic", italic);
+      report(`${w.label} staple note once`, (await sheet.getByTestId("fits-staple-note").count()) === 1, "count");
+      const heldRow = sheet.getByTestId("fits-holds-row").filter({ hasText: "probe · fits holder" });
+      report(`${w.label} holder listed as holding`, (await heldRow.count()) === 1, (await heldRow.count()) ? (await heldRow.innerText()).replace(/\s+/g, " ") : "absent");
+
+      // Add, and the reply's size.
+      let replyBytes = -1;
+      const onResponse = async (res: { request: () => { method: () => string; headers: () => Record<string, string> }; body: () => Promise<Buffer> }) => {
+        const req = res.request();
+        if (req.method() === "POST" && req.headers()["next-action"]) {
+          const size = (await res.body().catch(() => Buffer.alloc(0))).length;
+          if (replyBytes < 0) replyBytes = size;
+        }
+      };
+      page.on("response", onResponse as never);
+      await row.getByRole("button", { name: /^Add / }).click();
+      await row.getByText(copy.added).waitFor({ timeout: 15_000 });
+      page.off("response", onResponse as never);
+      const { rows: written } = await pool.query(`select 1 from deck_cards where deck_id = $1 and oracle_id = $2`, [taker, staple.oracle_id]);
+      report(`${w.label} add written`, written.length === 1, `${written.length} row`);
+      report(`${w.label} add reply is small`, replyBytes >= 0 && replyBytes < 20_000, `${replyBytes} bytes`);
+      const open = row.getByRole("link", { name: copy.openDeck });
+      report(`${w.label} open the deck`, (await open.getAttribute("href")) === `/decks/${taker}`, (await open.getAttribute("href")) ?? "none");
+
+      // Escape closes the picker to the card, and focus lands on the door.
+      await page.keyboard.press("Escape");
+      await sheet.waitFor({ state: "detached", timeout: 5_000 });
+      await page.waitForFunction(() => {
+        const el = document.activeElement as HTMLElement | null;
+        return el?.dataset.testid === "fits-door";
+      }, null, { timeout: 3_000 }).catch(() => null);
+      const onDoor = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.testid ?? document.activeElement?.tagName ?? "");
+      report(`${w.label} focus back on the door`, onDoor === "fits-door", onDoor);
+      report(`${w.label} card still open`, (await cardDialogs(page).count()) === 1, "card");
+      await page.keyboard.press("Escape");
+    }
+  } catch (e) {
+    failures += 1;
+    console.log(` FAIL  the run threw — ${(e as Error).message}`);
+  } finally {
+    for (const id of deckIds) await pool.query(`delete from decks where id = $1`, [id]).catch(() => { failures += 1; });
+    if (aboutPrior) {
+      const a = aboutPrior as { userId: string; existed: boolean; value: number | null };
+      await (a.existed
+        ? pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`, [a.userId, a.value])
+        : pool.query(`delete from user_prefs where user_id = $1`, [a.userId])).catch(() => { failures += 1; });
+    }
+    await browser?.close();
+    await pool.end();
+  }
+  // Reported AFTER the `finally`: an exit there swallows the throw and prints a pass.
+  console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
+  process.exit(failures ? 1 : 0);
+})();
