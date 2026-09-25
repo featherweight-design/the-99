@@ -66,6 +66,20 @@ export const aboutCopy = {
   // when something was new would be blank for everyone on day one.
   entriesInChapter: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
 
+  // The contents list and its search (About R6 §Q, §R), verbatim from §R8.
+  contents: {
+    searchPlaceholder: 'Find an entry',
+    searchLabel: 'Find an entry by title',
+    count: (m: number, n: number) => `${m} of ${n}`,
+    none: (q: string) => `Nothing titled “${q}”.`,
+    noneNote: 'The search reads entry titles only. The page is unchanged.',
+    clear: 'Clear search',
+    newRow: 'new',
+    // The disclosure's name on a phone chapter row; the visible figure beside it
+    // is not a name on its own.
+    toggle: (chapter: string) => `Entries in ${chapter}`,
+  },
+
   dismiss: 'Got it',
   dismissDestination: (route: string) => `takes you to ${route}`,
   dismissDestinationHome: 'takes you home',

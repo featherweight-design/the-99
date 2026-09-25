@@ -19,6 +19,7 @@ import { safeNext } from "../../lib/about/gate";
 import { FIGURES } from "./figures";
 import { KeyNumeral } from "./numeral";
 import { ContentsList, ContentsRail } from "./contents-rail";
+import { ContentsListR6, ContentsRailR6 } from "./contents-r6";
 import { JumpMark } from "./jump-mark";
 import { RecordVisit } from "./record-visit";
 import {
@@ -271,6 +272,13 @@ export function AboutPage({
       newCount: entries.filter((e) => isNew(e, seen)).length,
     };
   });
+  // R6: the same chapters, carrying their entries for the entry-level contents.
+  const contentsChapters = railChapters.map((c) => ({
+    ...c,
+    entries: aboutEntries
+      .filter((e) => e.chapter === c.id)
+      .map((e) => ({ id: e.id, title: e.title, isNew: isNew(e, seen) })),
+  }));
   const destinationClause =
     destination === "/"
       ? aboutCopy.dismissDestinationHome
@@ -316,7 +324,11 @@ export function AboutPage({
       {sheetMode && <RecordVisit behind={behind} />}
       {sheetMode && <JumpMark />}
 
-      <ContentsList chapters={railChapters} />
+      {sheetMode ? (
+        <ContentsListR6 chapters={contentsChapters} />
+      ) : (
+        <ContentsList chapters={railChapters} />
+      )}
 
       {CHAPTERS.map((n) => (
         <section
@@ -388,14 +400,18 @@ export function AboutPage({
       )}
       </article>
 
-      <ContentsRail
-        chapters={railChapters}
-        dismiss={
-          offerDismiss
-            ? { action: dismissAbout, destination, clause: destinationClause }
-            : null
-        }
-      />
+      {sheetMode ? (
+        <ContentsRailR6 chapters={contentsChapters} />
+      ) : (
+        <ContentsRail
+          chapters={railChapters}
+          dismiss={
+            offerDismiss
+              ? { action: dismissAbout, destination, clause: destinationClause }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }
