@@ -328,6 +328,25 @@ async function main() {
           fromCache: rec.fromCache ?? false,
           status: rec.status,
         });
+        // A SOCKET-COLD SAMPLE HAS TO BE A REAL FETCH, and these three clauses
+        // say so rather than recording it and hoping. Each degenerate case — a
+        // cache hit, an error response, a zero-byte body — produces
+        // `dns reused | tls reused`, the exact output a working preconnect gives.
+        // Accepting one would let this mode agree with the change on a build that
+        // has none, which is the failure it was rebuilt to avoid.
+        if (phases.fromCache) {
+          throw new Error(
+            `run ${run} was served the first image from cache, so it measures no handshake — the context was not cold`,
+          );
+        }
+        if (phases.status !== 200) {
+          throw new Error(`run ${run} first image returned HTTP ${phases.status}, not a fetch worth timing`);
+        }
+        if (!phases.encodedBytes) {
+          throw new Error(
+            `run ${run} recorded 0 bytes for the first image — a card image is ~90KB, so nothing was transferred`,
+          );
+        }
         runs.push({ url: rec.url, imageRequestsOnPage: order.length, ...phases });
         console.log(
           `run ${run}: dns ${phases.dnsMs ?? "reused"} | tls ${phases.tlsMs ?? "reused"} | ` +
