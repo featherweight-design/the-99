@@ -20,8 +20,12 @@ import { isUuid } from "../../../../lib/uuid";
 
 /** Past any list the search can return (about 3,300 commanders); a larger offset is refused. */
 const MAX_OFFSET = 5000;
-/** Longer than any URL the form can write: 800 characters of words, encoded, plus the controls. */
-const MAX_QUERY = 8000;
+/**
+ * Longer than any URL the form writes. The words are 800 characters, and one in another script
+ * encodes to up to 12 (4 UTF-8 bytes, each `%XX`); `n` can repeat most of them; the controls add a
+ * few hundred more. 32,000 clears that with room, and still refuses a payload no page produced.
+ */
+const MAX_QUERY = 32_000;
 
 function checkQuery(queryString: unknown): string {
   if (typeof queryString !== "string" || queryString.length > MAX_QUERY) throw new Error("bad query");

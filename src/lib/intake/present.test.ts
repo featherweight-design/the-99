@@ -16,6 +16,8 @@ describe("orderLine", () => {
     expect(orderLine("fit", p({ themes: ["dinos"] }), labels).title).toBe("Ordered by Dinosaurs");
     expect(orderLine("fit", p({ themes: ["dinos"], card: "c" }), labels).title).toBe("Ordered by fit to everything you asked");
     expect(orderLine("owned", p(), labels).title).toBe("Ordered by cards you already have");
+    // A card the catalog could not name leaves nothing to cite, and never an "undefined".
+    expect(orderLine("fit", p({ card: "c" }), { ...labels, card: null })).toEqual({ title: "Ordered by fit to everything you asked", sub: "" });
   });
 });
 

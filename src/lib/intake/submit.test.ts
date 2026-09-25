@@ -47,3 +47,20 @@ describe("the submit redirect", () => {
     expect(submitTarget(emptyParams(), null)).toBe("/decks/new/choose?v=results");
   });
 });
+
+describe("submitTarget's card and Not used order", () => {
+  const OTHER = "0000aaaa-0000-4000-8000-0000000000bb";
+
+  it("keeps a card the form carried, and lists a different one the words name as not used", () => {
+    const kept = landed(target({ card: OTHER, words: "with Doubling Season" }));
+    expect(kept.card).toBe(OTHER);
+    expect(kept.notUsed).toContain("Doubling Season");
+    expect(landed(target({ card: OTHER })).card).toBe(OTHER);
+  });
+
+  it("lists the player's own phrases before a figure the controls set aside", () => {
+    const p = landed(target({ words: "big energy under $300", budgetDollars: 100 }));
+    expect(p.notUsed.indexOf("$300")).toBeGreaterThan(p.notUsed.indexOf("big energy"));
+    expect(p.notUsed.indexOf("big energy")).toBeGreaterThanOrEqual(0);
+  });
+});

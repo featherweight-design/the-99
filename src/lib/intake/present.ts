@@ -20,6 +20,8 @@ export const colorsPhrase = (colors: readonly string[]) => colorNames(colors.map
 export function orderLine(order: SearchResult["order"], p: ChooseParams, labels: Labels): { title: string; sub: string } {
   if (order === "owned") return { title: copy.results.byOwned, sub: copy.results.subOwned };
   const names = [...p.themes.map(labels.theme), ...(p.card && labels.card ? [labels.card] : [])];
+  // A card the catalog could not name (a stale link): the order is still fit, with nothing to cite.
+  if (names.length === 0) return { title: copy.results.all, sub: "" };
   if (names.length === 1) {
     return {
       title: copy.results.byOne(names[0]),
