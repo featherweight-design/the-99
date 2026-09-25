@@ -14,7 +14,7 @@ const standIn = (name: string, over: Partial<StandIn> = {}): StandIn => ({
 } as StandIn);
 const read = (over: Partial<StandInsRead>): StandInsRead => ({
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
-  free: [], cheapest: [], byCommander: [], unlisted: [],
+  free: [], cheapest: [], staples: [], byCommander: [], unlisted: [],
   original: card("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: new Date(), ...over,
 } as StandInsRead);
 
@@ -38,6 +38,36 @@ describe("the stand-ins sheet's model", () => {
     expect(m.groups[2].rows[0].facts).toEqual(["removal", copy.mv(2)]);
     expect(m.lead).toBe(copy.leadSpells("removal", 2, "Gishath"));
     expect(m.foot).toBe(true);
+  });
+
+  it("puts paid staples in their own group between free and the commander's, and says staple for the figure (H4)", () => {
+    const m = sheetModel(read({
+      free: [standIn("Arcane Signet", { free: true, isUniversal: true, inclusion: 88 })],
+      staples: [standIn("Sol Ring", { isUniversal: true, inclusion: 91 })],
+      byCommander: [standIn("Path", { inclusion: 41.6 })],
+    }));
+    expect(m.groups.map((g) => g.heading)).toEqual([
+      copy.groupFree, copy.groupStaples, copy.groupByCommander("Gishath"),
+    ]);
+    // Neither staple row quotes its figure as this commander's: a free staple keeps the clause too.
+    expect(m.groups[0].rows[0].facts).toEqual(["removal", copy.mv(2), copy.stapleFact]);
+    expect(m.groups[1].rows[0].facts).toEqual(["removal", copy.mv(2), copy.stapleFact]);
+    expect(m.groups[2].rows[0].facts).toEqual(["removal", copy.mv(2), copy.figure("42", "Gishath")]);
+    expect(m.lead).toBe(copy.leadSpellsStaples("removal", 2, "Gishath"));
+  });
+
+  it("names the staples in the lead when the index lists nothing (H4 with F14)", () => {
+    const m = sheetModel(read({ staples: [standIn("Sol Ring", { isUniversal: true })], unlisted: [standIn("Chaos Warp")] }));
+    expect(m.groups.map((g) => g.heading)).toEqual([copy.groupStaples, copy.groupUnlisted("Gishath")]);
+    expect(m.lead).toBe(copy.leadSpellsStaplesUnlisted("removal", 2));
+  });
+
+  it("keeps the plain lead when no staple is for sale, even with a free one", () => {
+    const m = sheetModel(read({
+      free: [standIn("Sol Ring", { free: true, isUniversal: true })],
+      byCommander: [standIn("Path", { inclusion: 41.6 })],
+    }));
+    expect(m.lead).toBe(copy.leadSpells("removal", 2, "Gishath"));
   });
 
   it("names a pair as A + B by short name, and drops the order clause when nothing is listed for it (F14)", () => {

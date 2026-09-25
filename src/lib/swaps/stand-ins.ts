@@ -127,6 +127,13 @@ export type StandInGroups = {
   free: StandIn[];
   /** Lands and fetches: every buyable stand-in, cheapest first. */
   cheapest: StandIn[];
+  /**
+   * H4: universal staples to buy, cheapest first, in their own group between free and the
+   * commander's ranking (addendum §1). A staple's inclusion figure describes every commander, so
+   * the paid ranking leaves it out. A FREE staple stays in `free`, by the same figure as every free
+   * row: the addendum moves only the one to buy.
+   */
+  staples: StandIn[];
   /** Spells the commander's index lists, by its inclusion figure. */
   byCommander: StandIn[];
   /** Spells it does not list, cheapest first. */
@@ -155,13 +162,14 @@ const byInclusion = (a: StandIn, b: StandIn) =>
  * - A buy must be STOCKED NOW and cost less than the original (F6). A price that is absent is never
  *   free, and a sold-out original has no price to beat, so it gets free copies only (F5).
  * - Lands and fetches order by price; spells by the commander's figure, with the cards its index
- *   does not list after them, by price (ruling 6, F14).
+ *   does not list after them, by price (ruling 6, F14). A universal staple to buy is neither: it
+ *   takes its own group, by price, ahead of the commander's ranking (H4).
  */
 export function rankStandIns(original: CardRow, candidates: readonly Candidate[], priced: Priced): StandInGroups {
   const job = jobOf(original);
   const originalPrice = stocked(original.oracleId, priced);
   const groups: StandInGroups = {
-    job, originalCents: originalPrice?.cents ?? null, free: [], cheapest: [], byCommander: [], unlisted: [],
+    job, originalCents: originalPrice?.cents ?? null, free: [], cheapest: [], staples: [], byCommander: [], unlisted: [],
   };
   if (job.kind === "none") return groups;
 
@@ -186,6 +194,7 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
     if (row.free) groups.free.push(row);
     else if (price && originalPrice && price.cents < originalPrice.cents) {
       if (isLand) groups.cheapest.push(row);
+      else if (c.isUniversal) groups.staples.push(row);
       else if (c.inclusion !== null) groups.byCommander.push(row);
       else groups.unlisted.push(row);
     }
@@ -193,9 +202,10 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
 
   groups.free.sort(job.kind === "spell" ? byInclusion : byPrice);
   groups.cheapest.sort(byPrice);
+  groups.staples.sort(byPrice);
   groups.byCommander.sort(byInclusion);
   groups.unlisted.sort(byPrice);
-  for (const k of ["free", "cheapest", "byCommander", "unlisted"] as const) {
+  for (const k of ["free", "cheapest", "staples", "byCommander", "unlisted"] as const) {
     groups[k] = groups[k].slice(0, STAND_IN_GROUP_CAP);
   }
   return groups;

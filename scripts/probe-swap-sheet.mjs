@@ -12,7 +12,10 @@
  *
  * FIXTURE. A brew led by Kenrith (all five colors, so no fixture card is off-identity) holding, for
  * each kind, the first card from a named list this account does NOT own: a dual land, a fetch and
- * two removal spells, all above $10 at the newest price run, plus one card under $10. An unowned
+ * two removal spells, all above $10 at the newest price run, plus one card under $10. Mana Vault is
+ * the staple case (H4): its stand-ins include Sol Ring, a universal staple, whose row names it as
+ * one. The fixture accounts own Sol Ring free, so the row lands in `yours, free`; the paid staples
+ * group's order is asserted whenever a sheet draws it, and pinned by `sheet-model.test.ts`. An unowned
  * card is a Shopping row. The deck is deleted in a `finally`, and the account's About row is put back as the run found it. Needs a server with
  * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
  */
@@ -43,6 +46,9 @@ const KINDS = {
   spell: ["Deadly Rollick", "Cyclonic Rift"],
   // A utility land whose stand-ins all give up the same thing: said once in the lead (Hugh, 2026-09-24).
   utility: ["Cavern of Souls"],
+  // H4 (PR 6): Sol Ring is a universal staple and a ramp stand-in for Mana Vault, so its row says
+  // `staple, any commander` where a spell's row quotes the commander's figure.
+  staple: ["Mana Vault"],
 };
 /** How each kind's lead opens, from the copy module's own templates. */
 const LEAD = {
@@ -50,7 +56,10 @@ const LEAD = {
   fetch: /^Every land here finds a /,
   spell: /^Every card here is /,
   utility: /^Every land here makes .*and each gives up /,
+  staple: /^Every card here is ramp /,
 };
+const STAPLE_FACT = "staple, any commander";
+const STAPLE_GROUP = "to buy · staples, cheapest first";
 
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
@@ -234,6 +243,8 @@ try {
             .find((s) => s.textContent.trim().startsWith("buy"))?.textContent.replace(/\s+/g, " ").trim() ?? null,
           // Every row's thumb is painted from the card's art, not left as its empty frame.
           // A row with nothing under its name draws no second line: its left cell is its name line.
+          // Each row's name and its fact line, for the staple reading (H4).
+          lines: [...sheet.querySelectorAll("li")].map((li) => li.textContent.replace(/\s+/g, " ").trim()),
           emptyRows: [...sheet.querySelectorAll("li")].filter((li) => !li.querySelector("p")).length,
           blankLines: [...sheet.querySelectorAll("li")].filter((li) => {
             if (li.querySelector("p")) return false;
@@ -265,6 +276,21 @@ try {
       if (kind === "utility") {
         report(`${tag} utility: rows left with nothing say nothing`, read.emptyRows > 0 && read.blankLines === 0,
           `${read.emptyRows} rows with no line under the name, ${read.blankLines} holding an empty one`);
+      }
+      // H4: a paid staples group sits after the free copies and before the commander's ranking. An
+      // INVARIANT, asserted on every spell sheet that draws the group; which rows are staples the DOM
+      // cannot say, so the staple clause itself is read on a named row below.
+      if (kind === "spell" || kind === "staple") {
+        const at = read.headings.indexOf(STAPLE_GROUP);
+        const byCmdr = read.headings.findIndex((h) => h.startsWith("to buy · by "));
+        report(`${tag} ${kind}: the staples group sits between free and the commander's`,
+          at === -1 || ((at === 0 || read.headings[at - 1] === "yours, free") && (byCmdr === -1 || byCmdr > at)),
+          read.headings.join(" / "));
+      }
+      if (kind === "staple") {
+        const sol = read.lines.find((l) => l.startsWith("Sol Ring"));
+        report(`${tag} staple: Sol Ring reads as a staple`, Boolean(sol?.includes(STAPLE_FACT)) && !sol.includes("%"),
+          sol?.slice(0, 90) ?? "no Sol Ring row");
       }
       report(`${tag} ${kind}: nothing wider than the sheet`, read.overflow <= 0, `${read.overflow}px`);
       if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/swap-sheet-${kind}-${w.label}.png` });

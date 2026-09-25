@@ -153,11 +153,34 @@ describe("rankStandIns", () => {
       ]),
     };
     const g = rankStandIns(VAULT, [
-      cand(a, { inclusion: 12 }), cand(b, { inclusion: 61, isUniversal: true }), cand(d), cand(c),
+      cand(a, { inclusion: 12 }), cand(b, { inclusion: 61 }), cand(d), cand(c),
     ], priced);
     expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed High", "Listed Low"]);
-    expect(g.byCommander[0].isUniversal).toBe(true);
     expect(g.unlisted.map((s) => s.card.name)).toEqual(["Unlisted Cheap", "Unlisted Dear"]);
+    expect(g.staples).toEqual([]);
+  });
+
+  it("moves a universal staple to buy into its own group, by price, and keeps a free one free (H4)", () => {
+    const dear = card("Staple Dear", "Artifact", "{T}: Add {C}.", 1);
+    const cheap = card("Staple Cheap", "Artifact", "{T}: Add {C}.", 1);
+    const owned = card("Staple Owned", "Artifact", "{T}: Add {C}.", 1);
+    const listed = card("Listed", "Artifact", "{T}: Add {C}.", 1);
+    const priced = {
+      newestAsOf: NOW,
+      prices: new Map([
+        [VAULT.oracleId, fact(3000)], [dear.oracleId, fact(400)], [cheap.oracleId, fact(90)],
+        [owned.oracleId, fact(90)], [listed.oracleId, fact(50)],
+      ]),
+    };
+    const g = rankStandIns(VAULT, [
+      // The dear staple's figure is the highest: by the commander's order it would lead.
+      cand(dear, { inclusion: 95, isUniversal: true }), cand(cheap, { inclusion: 60, isUniversal: true }),
+      cand(owned, { inclusion: 80, isUniversal: true, owned: 1, free: 1 }), cand(listed, { inclusion: 30 }),
+    ], priced);
+    expect(g.staples.map((s) => s.card.name)).toEqual(["Staple Cheap", "Staple Dear"]);
+    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed"]);
+    expect(g.free.map((s) => s.card.name)).toEqual(["Staple Owned"]);
+    expect(g.free[0].isUniversal).toBe(true);
   });
 
   it("prices a foil-only stand-in at its foil figure", () => {

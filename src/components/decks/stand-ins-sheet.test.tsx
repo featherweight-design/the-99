@@ -13,7 +13,7 @@ const standIn = (name: string, free: boolean) => ({
 });
 const READ = {
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
-  free: [{ ...standIn("Swords to Plowshares", true), soft: 1 }], cheapest: [], byCommander: [], unlisted: [standIn("Chaos Warp", false)],
+  free: [{ ...standIn("Swords to Plowshares", true), soft: 1 }], cheapest: [], staples: [], byCommander: [], unlisted: [standIn("Chaos Warp", false)],
   original: cardRow("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: asOf,
 } as unknown as StandInsRead;
 
