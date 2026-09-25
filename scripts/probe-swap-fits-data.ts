@@ -10,7 +10,7 @@
 //
 // It writes a fixture under a per-run `user_id` and deletes it in a `finally`. The pair case needs
 // a `commander_pair_support_cards` row and local-dev has none, so it writes ONE sentinel pair (an
-// `absent` header and one card) under a key checked absent first, and deletes both in the same
+// `absent` header and one card) under a key it claims atomically, and deletes both in the same
 // `finally`. Point it at `local-dev` or a scratch branch, never production.
 //
 // Four mutations fail it: the pair read keyed on the deck's columns instead of the canonical key
@@ -145,15 +145,18 @@ async function main() {
       and color_identity = array['U']::text[] and oracle_id > ${x.commander}::uuid order by oracle_id limit 1`);
   if (!blueLead) throw new Error("no blue legend sorts after the fixture's commander");
   const [a, b] = [x.commander, blueLead.oracle_id].sort();
-  const [taken] = await rows(sql`
-    select 1 from commander_pair_support where commander_oracle_id = ${a}::uuid and partner_oracle_id = ${b}::uuid`);
-  if (taken) throw new Error("the sentinel's pair key already carries a row; refusing to write over it");
-  // Set BEFORE the write it covers, so a throw part-way through still cleans up. The header is
-  // `absent`, so no reader that ranks pairs takes the sentinel for an indexed one.
-  sentinel = { a, b, card: x.oracle_id };
-  await fixture.execute(sql`
+  // OWNED, atomically: the header is inserted with `on conflict do nothing returning`, so a key some
+  // other run (or the catalog) already holds returns no row and this run refuses rather than taking
+  // it over. `sentinel` is set only once the insert proves the row is this run's, so the `finally`
+  // can never delete a row another run wrote. The header is `absent`, so no reader that ranks pairs
+  // takes it for an indexed one.
+  const [claimed] = await rows<{ commander_oracle_id: string }>(sql`
     insert into commander_pair_support (commander_oracle_id, partner_oracle_id, synergy_state, bracket_counts)
-    values (${a}::uuid, ${b}::uuid, 'absent', '{}'::jsonb)`);
+    values (${a}::uuid, ${b}::uuid, 'absent', '{}'::jsonb)
+    on conflict do nothing
+    returning commander_oracle_id`);
+  if (!claimed) throw new Error("the sentinel's pair key already carries a row; refusing to write over it");
+  sentinel = { a, b, card: x.oracle_id };
   await fixture.execute(sql`
     insert into commander_pair_support_cards (commander_oracle_id, partner_oracle_id, oracle_id, inclusion, position)
     values (${a}::uuid, ${b}::uuid, ${x.oracle_id}::uuid, 42.5, 1)`);

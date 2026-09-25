@@ -155,7 +155,8 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
 
   const [roleCounts, mixes, availability] = await Promise.all([
     card.role === "other" || open.length === 0 ? new Map<string, number>() : countRole(open.map((r) => r.id), card.role),
-    open.length === 0
+    // A card with no role draws no need, so no deck's mix is read for it.
+    card.role === "other" || open.length === 0
       ? new Map<string, RecommendedMix>()
       : loadMixesForCommanders(open.map((r) => ({ commanderOracleId: r.commander_oracle_id, partnerOracleId: r.partner_oracle_id }))),
     loadAvailability(userId, { oracleIds: [oracleId] }),
