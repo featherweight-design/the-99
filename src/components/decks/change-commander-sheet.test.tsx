@@ -121,6 +121,34 @@ describe("ChangeCommanderSheet", () => {
   });
 });
 
+describe("ChangeCommanderSheet for a pair", () => {
+  const pairOf = (a: CandidateHalf, b: CandidateHalf, n: number): Candidate => ({
+    key: `${a.oracleId}+${b.oracleId}`, halves: [a, b], fit: { n, of: 62 }, matched: [], deckCount: 500,
+  });
+  const pairData = (): ChangeCandidates => data({
+    current: [
+      { oracleId: "tymna", name: "Tymna the Weaver", cmc: 3, manaCost: "{1}{W}{B}", imageUri: null },
+      { oracleId: "thrasios", name: "Thrasios, Triton Hero", cmc: 2, manaCost: "{G}{U}", imageUri: null },
+    ],
+    yours: [pairOf(half("Kraum, Ludevic's Opus"), half("Tana, the Bloodsower"), 30)],
+    toBuy: [],
+  });
+
+  it("confirms both halves in and both out, and writes the pair", async () => {
+    readChangeCandidates.mockResolvedValue(pairData());
+    changeCommander.mockResolvedValue({ ok: true });
+    mount(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Choose Kraum and Tana" }));
+    expect(screen.getByText(
+      "Kraum and Tana take the command zone. Tymna the Weaver and Thrasios leave the deck, and the 98 stay exactly as they are.",
+    )).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Make Kraum and Tana commanders" }));
+    await waitFor(() => expect(changeCommander).toHaveBeenCalledWith(
+      "d1", { commanderOracleId: "kraum, ludevic's opus", partnerOracleId: "tana, the bloodsower" },
+    ));
+  });
+});
+
 describe("summedPrice", () => {
   const at = new Date("2026-09-22T00:00:00Z");
   const priced = (cents: number | null, asOf = at): CandidateHalf => half(`H${cents}`, {
