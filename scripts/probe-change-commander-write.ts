@@ -26,6 +26,8 @@ import { loadChangeCandidates } from "../src/lib/commander-change/candidates";
 import { MIN_CANDIDATE_DECKS } from "../src/lib/commander-change/fit";
 import { writeCommanderChange } from "../src/lib/commander-change/write";
 import { isCommanderCandidate } from "../src/lib/recs/score";
+import { partnerAbility } from "../src/lib/decks/partner";
+import { loadUniversalStaples } from "../src/lib/staples/universal";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -189,17 +191,19 @@ async function main() {
   // as it now stands: distinct non-basic cards other than staples, as `fitBody` defines it.
   const picked = all.find((x) => x.key === target.id);
   check("loader: the fixture's target is offered", picked !== undefined, true);
-  const { rows: [truth] } = await fixture.execute<{ n: number; of: number }>(sql`
-    with body as (
-      select distinct dc.oracle_id from deck_cards dc join cards k on k.oracle_id = dc.oracle_id
-      where dc.deck_id = ${deck}::uuid and k.type_line not ilike 'Basic Land%'
-        and dc.oracle_id not in (select oracle_id from format_staples)
-    )
-    select
-      (select count(*)::int from body where oracle_id in (
-        select oracle_id from commander_support_cards where commander_oracle_id = ${target.id}::uuid)) as n,
-      (select count(*)::int from body) as of
+  // The same universal-staple set `fitBody` excludes (a card in 3 of 4 conditions), never every
+  // `format_staples` row: a condition-specific staple still counts.
+  const universal = await loadUniversalStaples();
+  const { rows: bodyRows } = await fixture.execute<{ id: string }>(sql`
+    select distinct dc.oracle_id::text as id from deck_cards dc join cards k on k.oracle_id = dc.oracle_id
+    where dc.deck_id = ${deck}::uuid and k.type_line not ilike 'Basic Land%'
   `);
+  const counted = bodyRows.map((r) => r.id).filter((id) => !universal.has(id));
+  const { rows: support } = await fixture.execute<{ id: string }>(sql`
+    select oracle_id::text as id from commander_support_cards where commander_oracle_id = ${target.id}::uuid
+  `);
+  const supportIds = new Set(support.map((r) => r.id));
+  const truth = { n: counted.filter((id) => supportIds.has(id)).length, of: counted.length };
   check("loader: the figure is at least the three planted hits", (picked?.fit.n ?? 0) >= 3, true);
   check("loader: the figure matches the support list's hits in the body", picked?.fit, truth);
   // A sub-floor legend of the same identity, if the index holds one, must not appear.
@@ -210,8 +214,42 @@ async function main() {
       and c.color_identity = '{G}'::text[] and c.commander_legal
     order by cs.commander_oracle_id limit 1
   `);
+  // A FAILURE when the index holds none: without a sub-floor commander the floor's clause is
+  // untested, and removing it would pass every check here.
+  check("loader: the index holds a sub-floor {G} commander to hide", small.length > 0, true);
   if (small[0]) check("loader: a sub-floor commander is hidden", all.some((x) => x.key === small[0].id), false);
-  else console.log("note  no sub-floor {G} commander in this index: the floor's exclusion is not exercised");
+
+  // ── A pair: swap one half, trade one out of the 98, refuse an illegal pairing ──
+  const { rows: partnerRows } = await fixture.execute<Legend & { ci: string[] }>(sql`
+    select c.oracle_id, c.name, c.type_line, c.oracle_text, c.mana_cost, c.layout, c.color_identity as ci
+    from cards c
+    where c.commander_legal and c.type_line ilike 'Legendary Creature%' and c.oracle_text ilike '%Partner%'
+    order by c.oracle_id
+  `);
+  const generic = partnerRows.filter((r) => partnerAbility(r.oracle_text)?.kind === "generic"
+    && isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text, manaCost: r.mana_cost, layout: r.layout }));
+  // Two halves of one identity, so either can replace the other without moving the pair's identity.
+  const byIdentity = new Map<string, typeof generic>();
+  for (const r of generic) {
+    const key = [...r.ci].sort().join();
+    byIdentity.set(key, [...(byIdentity.get(key) ?? []), r]);
+  }
+  const twins = [...byIdentity.values()].find((list) => list.length >= 2);
+  const anchor = generic.find((r) => twins && !twins.includes(r));
+  if (!twins || !anchor) throw new Error("catalog holds no generic-partner fixture for the pair section");
+  const [p2, p3] = twins;
+  const pairDeck = await makeDeck(anchor.oracle_id, p2.oracle_id);
+  for (const f of fillers) await addCard(pairDeck, f.oracle_id);
+  check("pair swap: accepted", await write(pairDeck, anchor.oracle_id, p3.oracle_id), { ok: true });
+  check("pair swap: one half moved", await live(pairDeck), { c: anchor.oracle_id, p: p3.oracle_id });
+  await addCard(pairDeck, p2.oracle_id);
+  check("pair trade: accepted", await write(pairDeck, anchor.oracle_id, p2.oracle_id), { ok: true });
+  const pairBody = await bodyOf(pairDeck);
+  check("pair trade: the arriving half left the 98", pairBody.some((r) => r.startsWith(p2.oracle_id)), false);
+  check("pair trade: the departing half took its slot", pairBody.includes(`${p3.oracle_id}x1`), true);
+  check("pair refused: a half that cannot partner", await write(pairDeck, anchor.oracle_id, a.oracle_id),
+    { ok: false, reason: "illegal" });
+  check("pair refused: a single for a pair", await write(pairDeck, anchor.oracle_id), { ok: false, reason: "mismatch" });
 }
 
 main()
