@@ -60,6 +60,7 @@
 //   - the search hiding the page's sections that hold no match   → check 6's ruling 4 at 390 and 1300
 //   --flip:
 //   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 and F4: the cookie from before each flip hides the sheet
+//   - the version floor applied to a switched entry too          → F2, F3 and F4: a reader at 9 is never announced either
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
