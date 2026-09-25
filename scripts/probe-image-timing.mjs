@@ -1,10 +1,15 @@
-// How long from hover to a painted card preview, and from press to painted
-// card-details art — and where that time actually goes.
+// How long from hover to a painted card preview, and where that time goes.
 //
 // Hugh's question (2026-09-25): "Card images take a second to load, both for the
 // card hover preview and for card details. Could we use a CDN? Or batched
-// requests?" This answers the first half with a decomposition: our own delay,
-// the image request (DNS, TLS, TTFB, bytes), and decode.
+// requests?" This measures THE PREVIEW half, decomposed into our own delay, the
+// image request (DNS, TLS, TTFB, bytes) and decode.
+//
+// THE CARD-DETAILS HALF IS NOT HERE. Its art is requested by `card-modal.tsx`,
+// which another lane owns tonight, so the candidate that would change it is a
+// write-up rather than a build — and measuring a surface nobody is changing
+// would be a number with nothing to compare against. When that lane takes it,
+// press-to-painted belongs in this file beside the preview.
 //
 // PRODUCTION BUILD ONLY, same as probe:nav-cost — `next dev` compiles on demand
 // and would price our own work wrong. Point it at `local-dev`.
@@ -84,28 +89,49 @@ export function scryfallSize(url) {
 }
 
 /**
- * First frame whose pixels are not uniform, from a list of screenshot samples.
+ * When the box first carried a card rather than a flat colour, or null when no
+ * such transition happened.
  *
- * A blank box and a painted card differ enormously, so the test is deliberately
- * crude: a PNG of a flat colour compresses far smaller than one of card art.
- * Byte length is the signal, and it needs no image decoding in the probe.
+ * Byte length is the signal — a painted card's PNG is far larger than a flat
+ * box's — so the probe never decodes an image itself.
+ *
+ * TWO REJECTED VERSIONS, because each could only ever agree the build was fine:
+ *
+ *   Against a "blank" reference frame screenshotted once the box attached: with
+ *   the fetch moved into the open delay the box paints on its first frame, so
+ *   the reference WAS a painted card, nothing exceeded it, and it reported no
+ *   paint at all on the build where painting got faster.
+ *
+ *   Against `max * 0.6` of the run's own samples: the maximum sample always
+ *   satisfies that, so the function could not return null. Nine identical blank
+ *   frames — a 404, a wrong URL, an image that never loaded — would report the
+ *   box painting on its first frame.
+ *
+ * So the transition is demonstrated before it is located: the spread has to be
+ * wide enough that something changed, and only then is the first frame past the
+ * midpoint the answer.
  *
  * @param {{t: number, bytes: number}[]} samples
- * @param {number} blankBytes size of a known-blank frame
+ * @returns {{paintedAtMs: number|null, gapMs: number|null, reason?: string}}
  */
 export function firstPaintedSample(samples) {
-  if (samples.length === 0) return null;
-  // RELATIVE TO THE RUN'S OWN MAXIMUM, not to a "blank" reference frame.
-  //
-  // The first version screenshotted the box once it was attached and called that
-  // blank. That held only while the image arrived AFTER the box — which is
-  // exactly what this lane changes. With the fetch moved into the wait the box
-  // paints on its first frame, so the reference frame was itself a painted card,
-  // nothing ever exceeded 1.6x it, and the probe reported no paint at all on the
-  // build where painting got faster.
-  const max = Math.max(...samples.map((s) => s.bytes));
-  const hit = samples.find((s) => s.bytes >= max * 0.6);
-  return hit ? hit.t : null;
+  if (samples.length === 0) return { paintedAtMs: null, gapMs: null, reason: "no samples" };
+  const bytes = samples.map((s) => s.bytes);
+  const max = Math.max(...bytes);
+  const min = Math.min(...bytes);
+  if (max < min * 1.4) {
+    return { paintedAtMs: null, gapMs: null, reason: `no transition: bytes ${min}..${max}` };
+  }
+  const threshold = min + (max - min) * 0.6;
+  const index = samples.findIndex((s) => s.bytes >= threshold);
+  if (index < 0) return { paintedAtMs: null, gapMs: null, reason: "threshold never crossed" };
+  return {
+    paintedAtMs: samples[index].t,
+    // The bound on the figure: the gap between the last frame still blank and
+    // the first that was not. An earlier version differenced the final two
+    // samples, which sit after the transition and bound nothing about it.
+    gapMs: index > 0 ? samples[index].t - samples[index - 1].t : null,
+  };
 }
 
 async function main() {
@@ -250,7 +276,8 @@ async function main() {
           const shot = await box.screenshot();
           samples.push({ t: Date.now() - t0, bytes: shot.length });
         }
-        const paintedAt = firstPaintedSample(samples);
+        const paint = firstPaintedSample(samples);
+        const paintedAt = paint.paintedAtMs;
 
         const url = await box.evaluate((el) => {
           const bg = getComputedStyle(el).backgroundImage;
@@ -293,11 +320,8 @@ async function main() {
           openDelayMs: boxAt,
           fetchStartedBeforeBoxMs,
           observedPaintedMs: paintedAt,
-          // The real resolution, not a hopeful one: each screenshot costs
-          // 70-100ms, so the painted figure is bounded by the gap between the
-          // last blank frame and the first painted one, reported per row.
-          paintObservationGapMs:
-            samples.length > 1 ? samples[samples.length - 1].t - samples[samples.length - 2].t : null,
+          paintObservationGapMs: paint.gapMs,
+          paintUnobserved: paint.reason,
           imageUrl: url,
           scryfallSize: scryfallSize(url ?? ""),
           phases: timing && !timing.missing ? phasesOf(timing) : null,

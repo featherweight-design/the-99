@@ -131,24 +131,32 @@ flight for up to 240 ms, rather than starting one.
 Draws nothing different: same delay, same box, same image, same size, same position. The only change
 is when the bytes start moving.
 
-**Measured, three runs each way, cold cache, 1300×900** (the ~477 ms in the section above came from
-an earlier, broken paint detector and is superseded by these):
+**Measured, three runs each way, cold cache, 1300×900.** The headline is not a percentage — it is
+that the blank box stops being observable at all.
 
 | | before | after |
 | --- | --- | --- |
-| Pointer enter → painted | 441 / 445 / 434 ms — median **441** | 369 / 377 / 385 ms — median **377** |
+| **First frame the probe can sample** | **4,675 bytes — blank** | **162,019 bytes — the card, already drawn** |
+| Blank→painted transition | observed, at 441 / 445 / 434 ms | **never observed: there is no blank frame** |
 | Fetch starts, relative to box mount | 45 / 48 / 46 ms before | 240 / 256 / 261 ms before |
-| Waiting after the box appears | ~126 ms | ~47 ms |
+| Time the box sits empty | ~126 ms | below the probe's resolution |
 
-**64 ms faster, −15%**, with no overlap between the two distributions, so the effect is larger than
-run-to-run noise. The fetch leaves about 210 ms earlier. What matters more than the total is the last
-row: the image has stopped being the thing the reader waits for once the box is up, and the ~47 ms
-that remains is mostly the probe's own screenshot latency.
+Before the change the box is demonstrably empty when it appears and fills ~126 ms later. After it,
+the first screenshot the probe can take — roughly 50 ms after the box mounts, bounded by screenshot
+cost — **already contains the card, in every run.**
+
+**The exact painted time after the change is unobservable, and the doc says so rather than inventing
+one.** Paint happens between the box mounting (~318–356 ms) and the first sample (~369–385 ms), so
+the improvement is **at least 72 ms and at most ~123 ms**. An earlier draft of this plan quoted
+"377 ms, −15%" as if measured; those figures came from a lenient paint detector that fired on the
+first frame whatever it contained, so they were time-of-first-observation, not time-of-paint. The
+detector now refuses to report a transition it did not see, which is why the after column reads
+"never observed" instead of a flattering number.
 
 **Why not more.** The fetch is ~220 ms and the overlap window is 190 ms (240 ms delay minus the 50 ms
-settle), so roughly 30 ms of fetch is still exposed. Preloading at 0 ms would close that, and would
-also make a pointer brushing 99 rows request 99 images of 93 KB. The 50 ms settle buys the bound and
-costs ~30 ms of the win; that trade is deliberate.
+settle), so some fetch is still exposed on a cold connection. Preloading at 0 ms would close that and
+would also let a pointer brushing 99 rows request 99 images of 93 KB. The 50 ms settle buys the bound
+and costs part of the win; that trade is deliberate.
 
 **The 240 ms delay is now the whole cost**, and it is a design decision (`OPEN_DELAY`, "what makes an
 instant appearance calm rather than twitchy"). Shortening it would make the preview appear sooner and
