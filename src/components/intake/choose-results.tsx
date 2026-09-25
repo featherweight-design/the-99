@@ -145,13 +145,13 @@ export function ChooseResults({
       <ol className="m-0 p-0 list-none flex flex-col gap-[10px]">{rest.map((r) => row(r))}</ol>
 
       {hasMore && (
-        <div className="flex flex-col md:flex-row md:items-center gap-[8px] md:gap-[12px]">
+        <div className="flex flex-wrap items-center justify-center gap-[14px]">
           <button
             type="button"
             onClick={showMore}
             disabled={pending}
             aria-busy={pending || undefined}
-            className="w-full md:w-auto h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] text-[color:var(--fg-body)] cursor-pointer disabled:cursor-default"
+            className="h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] text-[color:var(--fg-body)] whitespace-nowrap cursor-pointer disabled:cursor-default"
           >
             {copy.results.more}
           </button>

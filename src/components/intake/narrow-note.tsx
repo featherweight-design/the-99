@@ -45,7 +45,7 @@ export function NarrowNote({
       data-testid="narrow-few"
       className="flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[22px] p-[13px_14px] md:p-[14px_16px] rounded-[11px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]"
     >
-      <div className="flex flex-col gap-[4px]">
+      <div className="flex flex-col gap-[6px]">
         <h2 className="m-0 font-display font-semibold text-[16px] md:text-[19px] text-[color:var(--fg)]">{copy.narrow.few(count)}</h2>
         <p className="m-0 max-w-[460px] text-[13px] md:text-[13.5px] leading-[1.6] text-[color:var(--fg-body)]">{copy.narrow.fewLead}</p>
       </div>
@@ -101,12 +101,13 @@ function Options({ options, column = false }: { options: readonly NarrowOption[]
                 : "bg-transparent border-[color:var(--border-strong)]",
             ].join(" ")}
           >
-            <span className="flex flex-col flex-1 min-w-0">
-              <span className="text-[13.5px] font-semibold text-[color:var(--fg)]">{o.label}</span>
+            <span className="flex flex-col gap-[2px] flex-1 min-w-0">
+              <span className="text-[13.5px] font-semibold text-[color:var(--fg)] whitespace-nowrap">{o.label}</span>
               {o.reason && <span className="text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">{o.reason}</span>}
             </span>
-            <span className="font-mono text-[11px] text-[color:var(--fg-muted)] whitespace-nowrap">{o.count}</span>
-            <span aria-hidden className="text-[color:var(--fg-muted)]">→</span>
+            {/* The first option, the one that brings back most, is lit; the rest step back. */}
+            <span className={`font-mono text-[11px] whitespace-nowrap ${i === 0 ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>{o.count}</span>
+            <span aria-hidden className={`flex-none text-[13px] ${i === 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"}`}>→</span>
           </Link>
         </li>
       ))}

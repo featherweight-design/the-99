@@ -86,7 +86,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           sub={copy.results.sub}
           subPhone={copy.results.subPhone}
         />
-        <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[14px_16px_24px] md:p-[0_40px_48px]">
+        <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[16px_18px_24px] md:p-[0_40px_48px]">
           <ReadAsBar
             chips={answerChips(p, labels)}
             card={card}
@@ -167,7 +167,7 @@ function Header({
         centered ? "md:w-[680px] md:max-w-full md:mx-auto md:p-[34px_0_26px]" : "md:p-[34px_40px_26px]",
       ].join(" ")}
     >
-      <Link href={back.href} className="hidden md:inline font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+      <Link href={back.href} className="self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
         {back.label}
       </Link>
       <h1 className="m-0 font-display font-bold text-[20px] md:text-[28px] text-[color:var(--fg)]">{title}</h1>

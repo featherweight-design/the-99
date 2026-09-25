@@ -87,7 +87,7 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
       }),
     );
 
-  const submitClass = `${PRIMARY} font-sans font-semibold cursor-pointer rounded-[10px] text-[15px] px-[24px] border-0`;
+  const submitClass = `${PRIMARY} font-sans font-semibold cursor-pointer rounded-[10px] text-[15px] px-[24px] border-0 whitespace-nowrap`;
 
   return (
     <form
@@ -205,7 +205,7 @@ function Field({
       <p
         className={[
           "m-0 text-[color:var(--fg-faint)]",
-          captionMono ? "font-mono text-[10.5px] leading-[1.5]" : "text-[12px]",
+          captionMono ? "font-mono text-[10.5px] leading-[1.5]" : "text-[12px] leading-[1.5]",
         ].join(" ")}
       >
         {caption}

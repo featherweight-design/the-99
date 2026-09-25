@@ -74,7 +74,7 @@ describe("narrowOptions", () => {
 describe("answerChips", () => {
   it("lists every answer in the form's order", () => {
     expect(answerChips(p({ colors: ["g", "r"], match: "exactly", themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels)).toEqual([
-      { kind: "colors · exactly", value: "Red · Green" },
+      { kind: "exactly", value: "Red · Green" },
       { kind: "theme", value: "Dinosaurs" },
       { kind: "card", value: "Regisaur Alpha" },
       { kind: "budget", value: "$150" },

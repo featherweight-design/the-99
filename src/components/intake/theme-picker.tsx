@@ -55,7 +55,7 @@ export function ThemePicker({
             <span
               key={slug}
               data-testid="theme-chip"
-              className="inline-flex items-center h-[26px] pl-[9px] pr-0 rounded-[6px] bg-[color:var(--elevated)] text-[12.5px] text-[color:var(--fg)]"
+              className="inline-flex items-center gap-[6px] h-[26px] pl-[9px] pr-[7px] rounded-[6px] bg-[color:var(--elevated)] text-[12.5px] text-[color:var(--fg)]"
             >
               {label}
               <button
@@ -107,7 +107,7 @@ export function ThemePicker({
               onChange(value.slice(0, -1));
             }
           }}
-          className="flex-1 min-w-[120px] h-[28px] bg-transparent border-0 outline-none text-[16px] md:text-[13.5px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]"
+          className="flex-1 min-w-[120px] h-[28px] px-[4px] bg-transparent border-0 outline-none text-[16px] md:text-[13.5px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]"
         />
       </div>
       <ul

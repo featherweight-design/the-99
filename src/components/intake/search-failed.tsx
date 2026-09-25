@@ -29,7 +29,7 @@ export function SearchFailed({ changeHref }: { changeHref: string }) {
         <button type="button" onClick={() => router.refresh()} className={`${button} ${PRIMARY} font-semibold border-0 cursor-pointer`}>
           {copy.searchFailed.retry}
         </button>
-        <Link href={changeHref} className={`${button} no-underline border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)]`}>
+        <Link href={changeHref} className={`${button} whitespace-nowrap no-underline border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)]`}>
           {copy.searchFailed.change}
         </Link>
       </div>

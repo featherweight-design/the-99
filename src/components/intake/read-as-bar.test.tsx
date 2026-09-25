@@ -35,7 +35,7 @@ describe("We read this as", () => {
     bar();
     const chips = screen.getAllByTestId("answer-chip").map((c) => c.textContent);
     expect(chips).toEqual([
-      "colors · exactlyRed · Green",
+      "exactlyRed · Green",
       "themeDinosaurs",
       expect.stringMatching(/^cardRegisaur Alpha/),
       "budget$150",
@@ -77,5 +77,11 @@ describe("We read this as", () => {
     expect(screen.getByText("No answers given")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Change answers" }).getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs");
     expect(screen.getByRole("link", { name: "Start over" }).getAttribute("href")).toBe("/decks/new/choose");
+  });
+
+  it("does not say no answers were given beside words it could not use", () => {
+    bar({ empty: true, card: null, notUsed: ["that stomp"] });
+    expect(screen.queryByText("No answers given")).toBeNull();
+    expect(screen.getByTestId("not-used")).toBeTruthy();
   });
 });

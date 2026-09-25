@@ -128,7 +128,7 @@ export type AnswerChip = { kind: string; value: string };
 export function answerChips(p: ChooseParams, labels: Labels): AnswerChip[] {
   const k = copy.readAs.kinds;
   return [
-    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? `${k.colors} · ${k.exactly}` : k.colors, value: colorsPhrase(p.colors) }] : []),
+    ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors) }] : []),
     ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s) })),
     ...(p.card && labels.card ? [{ kind: k.card, value: labels.card }] : []),
     ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}` }] : []),

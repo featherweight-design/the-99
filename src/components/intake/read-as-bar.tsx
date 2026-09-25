@@ -41,12 +41,13 @@ export function ReadAsBar({
       className="flex flex-col gap-[14px] p-[14px] md:p-[16px_18px] rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)]"
     >
       <div className="flex flex-col gap-[12px] md:flex-row md:items-start md:gap-[24px]">
-        <div className="flex flex-col gap-[10px] flex-1 min-w-0">
+        <div className="flex flex-col gap-[9px] flex-1 min-w-0">
           <h2 id="read-as-label" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]">
             {copy.readAs.label}
           </h2>
           {chips.length === 0 ? (
-            <p className="m-0 flex items-center h-[26px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.readAs.none}</p>
+            // Said only when nothing at all was read: beside a Not used line it would contradict it.
+            notUsed.length === 0 && <p className="m-0 flex items-center h-[26px] text-[13px] text-[color:var(--fg-muted)]">{copy.readAs.none}</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-wrap gap-[6px]">
               {chips.map((chip, i) => (
@@ -67,7 +68,7 @@ export function ReadAsBar({
           )}
           {notUsed.length > 0 && (
             <div data-testid="not-used" className="flex flex-wrap items-baseline gap-[4px_10px]">
-              <span className="font-mono text-[9.5px] uppercase text-[color:var(--fg-locked)]">{copy.readAs.notUsed}</span>
+              <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{copy.readAs.notUsed}</span>
               {notUsed.map((phrase) => (
                 <q
                   key={phrase}
@@ -82,13 +83,13 @@ export function ReadAsBar({
         <div className="flex gap-[8px] shrink-0">
           <Link
             href={changeHref}
-            className="flex-[1_1_0] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[14px] md:px-[16px] rounded-[8px] border border-solid border-[color:var(--accent)] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline whitespace-nowrap"
+            className="flex-[1_1_0] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[16px] rounded-[8px] border border-solid border-[color:var(--accent)] text-[13.5px] font-semibold text-[color:var(--accent)] no-underline whitespace-nowrap"
           >
             {copy.readAs.change}
           </Link>
           <Link
             href={startOverHref}
-            className="flex-[1_1_0] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[14px] md:px-[16px] rounded-[8px] border border-solid border-[color:var(--border-strong)] text-[13.5px] text-[color:var(--fg-body)] no-underline whitespace-nowrap"
+            className="flex-[1_1_0] md:flex-none inline-flex items-center justify-center h-[44px] md:h-[36px] px-[14px] rounded-[8px] border border-solid border-[color:var(--border-strong)] text-[13.5px] text-[color:var(--fg-body)] no-underline whitespace-nowrap"
           >
             {copy.readAs.startOver}
           </Link>

@@ -157,13 +157,13 @@ export function ChooseRow({
 
 function Figures({ figures, owned, best = false }: { figures: readonly Figure[]; owned: boolean; best?: boolean }) {
   return (
-    <ul className="m-0 p-0 list-none flex flex-col gap-[5px]">
+    <ul className={`m-0 p-0 list-none flex flex-col ${best ? "gap-[4px]" : "gap-[2px] md:gap-[5px]"}`}>
       {figures.map((f) => (
         <li
           key={f.text}
           data-testid="figure"
           data-sets-rank={f.setsRank || undefined}
-          className="flex items-baseline gap-[8px] font-mono md:font-sans text-[10.5px] leading-[1.45] md:leading-normal md:text-[12.5px]"
+          className={`flex items-baseline ${best ? "gap-[7px]" : "gap-[8px]"} font-mono md:font-sans text-[10.5px] leading-[1.45] md:leading-normal md:text-[12.5px]`}
         >
           <span
             className={[
@@ -178,7 +178,7 @@ function Figures({ figures, owned, best = false }: { figures: readonly Figure[];
           <span className={`min-w-0 ${best ? "md:text-[12.5px] text-[12px]" : ""} ${f.dim ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)]"}`}>
             {f.text}
             {f.setsRank && (
-              <span className="ml-[6px] font-mono text-[8.5px] md:text-[9px] tracking-[.12em] text-[color:var(--accent)] whitespace-nowrap">
+              <span className={`ml-[6px] font-mono text-[8.5px] ${best ? "" : "md:text-[9px]"} tracking-[.12em] text-[color:var(--accent)] whitespace-nowrap`}>
                 {copy.results.setsRank}
               </span>
             )}
@@ -193,14 +193,14 @@ function Mark({ mark }: { mark: CommanderMark }) {
   switch (mark.kind) {
     case "free":
       return (
-        <span data-testid="mark-free" className="inline-flex items-center gap-[5px] text-[color:var(--fg-body)]">
+        <span data-testid="mark-free" className="inline-flex items-center gap-[6px] text-[color:var(--fg-body)]">
           <OwnershipDot owned size={6} />
           {copy.results.free}
         </span>
       );
     case "held":
       return (
-        <span data-testid="mark-held" className="inline-flex items-center gap-[5px] text-[color:var(--avail-hard-fg)]">
+        <span data-testid="mark-held" className="inline-flex items-center gap-[6px] text-[color:var(--avail-hard-fg)]">
           <AvailabilityGlyph state="hard" seam="var(--surface-rail)" />
           {copy.results.held(mark.deck)}
         </span>
@@ -279,7 +279,7 @@ function OwnershipLine({
             </Segment>
           ) : (
             <Segment>
-              <span aria-busy="true" className="inline-flex items-center gap-[7px] text-[10.5px] text-[color:var(--fg-faint)]">
+              <span aria-busy="true" className="inline-flex items-center gap-[9px] text-[10.5px] text-[color:var(--fg-faint)]">
                 <span aria-hidden className={`block h-[8px] rounded-[4px] bg-[color:var(--elevated)] ${best ? "w-[90px]" : "w-[120px]"}`} />
                 {copy.results.rowPending}
               </span>
