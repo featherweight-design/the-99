@@ -266,7 +266,9 @@ async function main() {
   //    the fixture card. An empty staple set fails rather than passing, since then no card could read true.
   const staples = [...(await loadUniversalStaples())].sort();
   if (staples.length === 0) throw new Error("format_staples names no universal staple on this database");
-  check("staple: a universal staple reads as one", (await loadFits(USER, staples[0]))?.staple, true);
+  const stapleRead = await loadFits(USER, staples[0]);
+  check("staple: a universal staple reads as one", stapleRead?.staple, true);
+  check("staple: and carries no reason, which its row never draws", stapleRead?.fits.every((f) => f.reason === null), true);
   check("staple: the fixture card does not", r?.staple, false);
 
   // 8. A card that does not exist reads as nothing.

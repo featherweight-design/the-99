@@ -219,7 +219,8 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     subtypes: creatureSubtypes(c.type_line),
   };
   const reasons = new Map<string, FitReason>();
-  await Promise.all(open.map(async (r) => {
+  // A staple's row draws `staple · any commander` and never a reason, so it pays for none of this.
+  await Promise.all((staples.has(oracleId) ? [] : open).map(async (r) => {
     const cards = deckCards.filter((d) => d.deck_id === r.id);
     const commanders = r.partner_oracle_id ? [r.commander_oracle_id, r.partner_oracle_id] : [r.commander_oracle_id];
     const holdsPiece = [...cards.map((d) => d.oracle_id), ...commanders].some((id) => pieces.has(id));
