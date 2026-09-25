@@ -183,9 +183,9 @@ void (async () => {
       // The staple form on the taker's row, and the note once.
       const row = sheet.getByTestId("fits-row").filter({ hasText: "probe · fits taker" });
       const rowText = (await row.innerText()).replace(/\s+/g, " ");
-      report(`${w.label} staple chip`, rowText.includes(copy.cmdrStaple) && !/%/.test(rowText), rowText.slice(0, 120));
+      report(`${w.label} staple reason line`, rowText.includes(copy.cmdrStaple) && !/%/.test(rowText), rowText.slice(0, 120));
       const italic = await row.getByText(copy.cmdrStaple).evaluate((el) => getComputedStyle(el).fontStyle);
-      report(`${w.label} staple chip italic`, italic === "italic", italic);
+      report(`${w.label} staple reason italic`, italic === "italic", italic);
       report(`${w.label} staple note once`, (await sheet.getByTestId("fits-staple-note").count()) === 1, "count");
       const heldRow = sheet.getByTestId("fits-holds-row").filter({ hasText: "probe · fits holder" });
       report(`${w.label} holder listed as holding`, (await heldRow.count()) === 1, (await heldRow.count()) ? (await heldRow.innerText()).replace(/\s+/g, " ") : "absent");

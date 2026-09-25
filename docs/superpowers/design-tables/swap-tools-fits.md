@@ -179,7 +179,7 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Heading | Typography | mono 9.5px, `letter-spacing:0.12em`, uppercase, `var(--fg-faint)` | same |
 | | Padding | `0 0 6px` | same |
 | | Border | `border-bottom: 1px solid var(--border)` | same |
-| Order | | `could take it` first, then `already holds it`. Since v2 PR B, `could take it` rows run by each deck's commander (or pair) synergy for the card, never drawn, and the heading no longer says `by name`. A staple's rows stay by name, as the staples addendum drew them | same |
+| Order | | `could take it` first, then `already holds it`. v2 D3 (Hugh's Q7): `could take it` rows run by a combo the card completes, then a theme it joins (the most cards first), then each deck's commander (or pair) synergy, never drawn; the heading carries the order note `fits.orderReasons` at its right (mono 10px, `var(--fg-locked)`), except on a staple's list. A staple's rows stay by name, as the staples addendum drew them | same |
 | Conditional | | `could take it` renders only when at least one deck can take the card. `already holds it` renders when at least one deck holds it. No `can't play it` group (R4 removed it) | same |
 
 ### 2.10 Could-take-it row
@@ -208,19 +208,14 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Added stamp (replaces the button) | Layout | `flex:none; display:inline-flex; align-items:center; gap:6px; min-height:44px` | same, `min-height:0` |
 | | Typography | mono 9.5px, `letter-spacing:0.1em`, uppercase, `var(--success)`; text `in the draft` | same |
 | | Check box | `15×15`, radius 4, font 9px, `border:1px solid var(--success)`, `✓`, `aria-hidden` | same |
-| Chips line | Layout | `display:flex; flex-wrap:wrap; gap:6px` | same |
-| Chip (both kinds) | Layout | `display:inline-flex; align-items:baseline; gap:6px` | same |
-| | Padding | `3px 7px` | same |
-| | Radius | `5px` | same |
-| | Background / border | `var(--surface-sunken)`, `1px solid var(--border)` | same |
-| | Typography | mono 10px | same |
-| Chip label | Typography | 9px, `letter-spacing:0.1em`, uppercase, `var(--fg-locked)`; `commander` / `this deck` | same |
-| Commander chip value, ordinary | Typography | `var(--fg-muted)`, upright; `{pct}% of {commander} decks` or `not listed for {commander}` | same |
-| Commander chip value, staple (addendum) | Typography | `var(--fg-body)`, `font-style: italic`; `staple · any commander`. **No percentage is ever drawn** (the figure is still loaded, not shown) | same |
-| Need chip (`this deck`) value | Typography | `var(--fg-muted)`; `{role} {count} of {target}` | same |
-| | Conditional | Absent when the card has no role, or when the deck's targets are not measured (`rolesUsable` false). A staple with no role omits it as usual | same |
-| Pair commander | | The commander chip shows the pair's figure, in the same chip (F14) | same |
-| Chips never combine | | Two separate chips, no joining glyph, no combined figure | same |
+| Reason line (v2 D3, addendum §1c) | Layout | one `p`, mono 10.5px, `line-height:1.45`, `text-wrap:pretty`, `var(--fg-muted)`; replaces the two chips, so the row keeps its height | same |
+| | Content | `{reason}`, then ` · ` in `var(--border-strong)`, `this deck ` in `var(--fg-locked)` and `fits.need(role, count, target)` | same |
+| Reason: combo | Typography | `var(--fg)`: `fits.reasonCombo` then the other piece's name, dotted `var(--accent)`, a `CardDetailTrigger` that opens that card | same |
+| | Condition | Spellbook's two-card variant, every other piece already in the deck's draft or its commanders (Hugh's Q8), read by `loadCompletionPartners` | same |
+| Reason: theme | Typography | `var(--fg-body)`: `fits.reasonTheme(n, word)`, `word` from `fits.themeWord`, or the deck's key creature type for a creature of that type | same |
+| | Condition | the card's theme the most of the deck's other cards carry; a tie goes to the earlier theme in the approved order | same |
+| Reason: staple | Typography | `var(--fg-body)`, italic: `fits.cmdrStaple`, never a figure | same |
+| No reason | | the need alone (R2: never the two shares); with no need either, no line | same |
 | Added note (line 3) | Typography | sans 12.5px, `var(--fg-muted)`; then `Open the deck →` in `var(--accent)` with `border-bottom:1px solid var(--accent-shadow)` | same |
 | | Conditional | Only on the row just added | same |
 | Refused add (undrawn; F4) | | `MutationError` under the row, the row's shipped pattern, with `fits.addRefused`. The button stays (the deck is unchanged) | same |
@@ -258,11 +253,11 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Brew add | Adding to a brew (soft claim) | Does not spend a free copy and never flips rows to Add to buy | deck `isCommitted` / brew flag |
 | Added | An Add on a row succeeded | That row: stamp `in the draft` in place of the button, note line + `Open the deck →`. Other rows re-evaluate Add vs Add to buy; the copies line updates. No undo in the picker | added deckId, note variant (`addedUsedLast` / `addedFree` / `addedToBuy`), deck href |
 | Refused add (`addRefused`) | The add action refuses | `MutationError` under that row with `fits.addRefused`; row keeps its button (undrawn; F4) | row id, error |
-| Ordinary commander chip | Card is not a universal staple | `commander` chip, upright `var(--fg-muted)`: `{pct}% of {commander} decks`; `listed for {commander}` when the index lists the card with no inclusion figure; or `not listed for {commander}` | inclusion pct, the `listed` flag, commander (or pair) name |
-| Staple commander chip | Card is a universal staple (`loadUniversalStaples` membership, F18) | `commander` chip, italic `var(--fg-body)`: `staple · any commander`, no % | `isUniversal` |
-| Staple note, with role | Universal staple that has a counted role (Sol Ring) | Dashed note under the plate, label `staple` + sentence; rows keep the need chip | `isUniversal`, role present |
-| Staple note, no role | Universal staple with no counted role (Reliquary Tower) | Dashed note (no-role variant); rows carry the staple chip only, no need chip | `isUniversal`, role absent |
-| Need chip absent | No role, or the deck's targets unmeasured | Commander chip alone on line 2 | `rolesUsable`, role |
+| Reason line (v2 D3) | Card is not a universal staple | `Completes a combo with {card}`, else `Joins {n} other {theme} cards`, else the need alone; ` · this deck {need}` after it | inclusion pct, the `listed` flag, commander (or pair) name |
+| Staple reason | Card is a universal staple (`loadUniversalStaples` membership, F18) | italic `var(--fg-body)`: `staple · any commander`, no %, then the need | `isUniversal` |
+| Staple note, with role | Universal staple that has a counted role (Sol Ring) | Dashed note under the plate, label `staple` + sentence; rows keep the need on the reason line | `isUniversal`, role present |
+| Staple note, no role | Universal staple with no counted role (Reliquary Tower) | Dashed note (no-role variant); rows carry the staple reason only, no need | `isUniversal`, role absent |
+| Need absent | No role, or the deck's targets unmeasured | The reason alone, or no line | `rolesUsable`, role |
 | Holding deck | Deck already holds ≥1 copy | Row in `already holds it` with `holds {n}` | `deckName`, `count` |
 
 ---
@@ -287,9 +282,8 @@ the door and the back control are drawn as `span role="button"` and must be buil
 | Refused add | `addRefused` | none |
 | Holds note | `holds` | `(n)` |
 | Deck link aria | `deckLinkAria` | `(deck)` |
-| Chip labels | `cmdrLabel`, `needLabel` | none |
-| Commander chip value | `cmdrFigure`, `cmdrListedNoFigure`, `cmdrUnlisted` | `(pct, commander)`, `(commander)`, `(commander)` |
-| Need chip value | `need` | `(role, count, target)` |
+| Reason line (v2 D3) | `reasonCombo`, `reasonTheme`, `themeWord`, `needLabel`, `orderReasons` | `reasonTheme(n, word)` |
+| Need value | `need` | `(role, count, target)` |
 | All hold it | `allHold` | `(card)` |
 | Colors rule out | `noneByColorsOne`, `noneByColors` | `(card, color)`, `(card, colors)` |
 | Staple chip value, staple note label and both note sentences | `cmdrStaple`, `stapleLabel`, `stapleNote`, `stapleNoteNoRole` (addendum strings, F21) | notes name the card |
