@@ -9,9 +9,12 @@
 //        visible frame and where it sat.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
-// It WRITES, on the deck it walks: pressing Analyze stores a reading and an overview (the stub
-// answers, so nothing is spent upstream), and the About gate row in `user_prefs`. Point
-// PROBE_TARGET_URL at a scratch branch or local-dev, never staging or production.
+// It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
+// (Write one; the stub answers, so nothing is spent upstream). Both are DELETED again in a
+// `finally`, the overview's ledger units with it, so a run leaves the deck as it found it; a deck
+// that already had either keeps it untouched. The About gate row in `user_prefs` is left set, as
+// every probe that clears the gate leaves it. Point PROBE_TARGET_URL at a scratch branch or
+// local-dev, never staging or production.
 //
 //   PROBE_TARGET_URL=<scratch> PROBE_EMAIL=<+clerk_test account> PROBE_DECK="HD - Avatar Aang" \
 //     PROBE_BASE=http://localhost:3250 node scripts/probe-analysis-load-order.mjs
@@ -117,6 +120,8 @@ async function run() {
   }
   await clerkSetup();
   const browser = await chromium.launch();
+  // What this run created, deleted in the `finally`: filled BEFORE the write each one covers.
+  const created = { profiles: new Set(), synopses: new Set() };
   try {
     for (const width of [1300, 390]) {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
@@ -127,8 +132,14 @@ async function run() {
 
       // The fixture: a stored reading and a written overview. Pressed into being once, through the
       // tab itself, if the deck lacks either.
-      const [{ profiled }] = await sql`select exists(select 1 from deck_profiles where deck_id = ${deck.id}) as profiled`;
+      // What the deck had BEFORE any press: an Analyze press may write the overview as well as the
+      // reading, so both are read here, ahead of every write, and not after the one that made them.
+      const [{ profiled, overviewed }] = await sql`
+        select exists(select 1 from deck_profiles where deck_id = ${deck.id}) as profiled,
+               exists(select 1 from deck_synopses where deck_id = ${deck.id}) as overviewed`;
+      if (!overviewed) created.synopses.add(deck.id);
       if (!profiled) {
+        created.profiles.add(deck.id);
         await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "domcontentloaded" });
         await pressTab(page, "Analysis");
         await page.locator(`${PAGE} button:visible`, { hasText: /^Analyze/ }).first().click();
@@ -218,6 +229,23 @@ async function run() {
     }
   } finally {
     await browser.close();
+    // Each step on its own, so one failing cannot skip the rest.
+    for (const id of created.synopses) {
+      try {
+        const calls = (await sql`delete from deck_synopses where deck_id = ${id} returning model_call_id`).map((r) => r.model_call_id);
+        if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
+      } catch (error) {
+        console.error(`cleanup: the overview on ${id} was left behind:`, error.message);
+      }
+    }
+    for (const id of created.profiles) {
+      try {
+        await sql`delete from deck_profiles where deck_id = ${id}`;
+      } catch (error) {
+        console.error(`cleanup: the reading on ${id} was left behind:`, error.message);
+      }
+    }
+    console.log(`cleaned up ${created.profiles.size} reading(s) and ${created.synopses.size} overview(s) this run wrote`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;

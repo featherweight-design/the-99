@@ -901,7 +901,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   reproduces the overview landing above the verdict at both widths, and dropping the overview wait
   delays the credit note ~700ms. Its fixture WRITES the overview through "Write one": an Analyze press writes one only when its note said it would, and the slot draws the "write one" row otherwise, which the first version of the check read as written. Measure it on a staging-shaped deck set: `pull:staging` into a
   scratch branch, and name the account with `PROBE_EMAIL` and the deck with `PROBE_DECK`. It
-  writes one analysis and one overview on the deck it walks (stub, free), and the About row.
+  writes only what the walked deck lacked (a reading, an overview: stub, free) and deletes both again in a `finally`, reading what the deck had BEFORE any press, since an Analyze press may write the overview too; the About row is left set.
   Point `PROBE_TARGET_URL` at a scratch branch or `local-dev`, **never production**.
 
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at

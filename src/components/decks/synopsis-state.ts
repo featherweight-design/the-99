@@ -33,6 +33,16 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   // A READ THAT FAILED, by deck and key: it settles the tab's opening as an answer would, so a
   // failed overview read never holds the tab's loader up (its slot then draws nothing, as today).
   const [failedFor, setFailedFor] = useState<string | null>(null);
+  // A VISIT'S OWN READ. Each time the tab opens, the effect below reads again; until that read
+  // answers, an answer from the last visit does not settle this one's opening, since what the
+  // re-read says may differ (an overview written in another tab). Set during render on the visit
+  // opening, cleared by the read settling.
+  const [awaiting, setAwaiting] = useState(active);
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (active) setAwaiting(true);
+  }
   const generation = useRef(0);
 
   // The key a read was asked under, and the deck on screen, readable from a continuation.
@@ -53,6 +63,8 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const got = await fetchSynopsis(deckId).catch(() => null);
     if (mine !== generation.current || !got) return;
     if ("synopsis" in got) setAnswer({ state: got, key, deckId });
+    // It superseded any read still out, so it answers for the visit as well.
+    setAwaiting(false);
   }, [deckId]);
 
   useEffect(() => {
@@ -65,10 +77,13 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
         if (mine !== generation.current) return;
         if ("synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
         else setFailedFor(`${deckId}|${refreshKey}`);
+        setAwaiting(false);
       },
       // A failed read keeps what is on screen, never a stale `current`; the next key asks again.
       () => {
-        if (mine === generation.current) setFailedFor(`${deckId}|${refreshKey}`);
+        if (mine !== generation.current) return;
+        setFailedFor(`${deckId}|${refreshKey}`);
+        setAwaiting(false);
       },
     );
   }, [active, refreshKey, deckId]);
@@ -99,7 +114,7 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
      * it. An answer for an older key does not count: the reading that just landed changed the
      * key, and until the re-read answers, what a write would cost (the credit notes) is unpriced.
      */
-    settled: (view.kind === "ready" && view.current) || failedFor === `${deckId}|${refreshKey}`,
+    settled: !awaiting && ((view.kind === "ready" && view.current) || failedFor === `${deckId}|${refreshKey}`),
     write,
     retry,
   };

@@ -35,6 +35,19 @@ describe("useDeckSynopsis", () => {
     expect(failed.result.current.view.kind).toBe("idle");
   });
 
+  it("is not settled on a new visit by the last visit's answer, until the new read answers", async () => {
+    let answer!: (v: unknown) => void;
+    const { result, rerender } = renderHook(({ active }) => useDeckSynopsis("d4", active, "k"), { initialProps: { active: true } });
+    await waitFor(() => expect(result.current.settled).toBe(true));
+    rerender({ active: false });
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { answer = r; }));
+    rerender({ active: true });
+    expect(result.current.view.kind).toBe("ready");
+    expect(result.current.settled).toBe(false);
+    await act(async () => answer(synopsisState()));
+    expect(result.current.settled).toBe(true);
+  });
+
   it("is not settled by an answer for an older key, until the key on screen answers", async () => {
     let answer!: (v: unknown) => void;
     const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d3", true, key), { initialProps: { key: "a" } });
