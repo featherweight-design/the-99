@@ -298,11 +298,15 @@ try {
       // the same whether or not the catalog had a picture for the card.
       if (w.label === 1300) {
         const rowEl = dialog.locator('[data-testid="stand-in-row"]').first();
-        const rb = await rowEl.boundingBox();
-        await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
-        await page.mouse.move(rb.x + rb.width / 2 + 4, rb.y + rb.height / 2);
+        // A sheet with no row drawn (or none visible) records the check as failed rather than throwing,
+        // so the run still reaches its cleanup and its report.
+        const rb = await rowEl.boundingBox().catch(() => null);
+        if (rb) {
+          await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
+          await page.mouse.move(rb.x + rb.width / 2 + 4, rb.y + rb.height / 2);
+        }
         const box = page.locator('[data-testid="hover-preview"]');
-        const seen = await box.waitFor({ state: "visible", timeout: 3000 }).then(() => true).catch(() => false);
+        const seen = rb ? await box.waitFor({ state: "visible", timeout: 3000 }).then(() => true).catch(() => false) : false;
         const shown = seen ? await box.evaluate((el) => {
           const sheet = document.querySelector('[data-testid="stand-ins-sheet"]')?.closest(".fixed");
           return {
@@ -311,7 +315,7 @@ try {
           };
         }) : null;
         report(`${tag} ${kind}: a stand-in row previews its card, above the sheet`, Boolean(shown?.painted && shown?.above),
-          shown ? `painted ${shown.painted}, above ${shown.above}` : "no preview");
+          shown ? `painted ${shown.painted}, above ${shown.above}` : rb ? "no preview" : "no stand-in row to hover");
         await page.mouse.move(8, 8);
       }
       if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/swap-sheet-${kind}-${w.label}.png` });
