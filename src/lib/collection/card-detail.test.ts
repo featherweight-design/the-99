@@ -357,12 +357,19 @@ describe("fitsGate", () => {
   it("reads both flags off one row", async () => {
     const { fitsGate } = await import("./card-detail");
     const on = { execute: async () => ({ rows: [{ commander_legal: true, has_decks: false }] }) };
-    expect(await fitsGate("user_1", "o-1", on)).toEqual({ commanderLegal: true, hasDecks: false });
+    expect(await fitsGate("user_1", "o-1", on, true)).toEqual({ commanderLegal: true, hasDecks: false });
+  });
+
+  it("reads nothing while the swap tools are off", async () => {
+    const { fitsGate } = await import("./card-detail");
+    const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
+    expect(await fitsGate("user_1", "o-1", { execute }, false)).toEqual({});
+    expect(execute).not.toHaveBeenCalled();
   });
 
   it("is absent for a card it cannot find, and when the read fails", async () => {
     const { fitsGate } = await import("./card-detail");
-    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) })).toEqual({});
-    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } })).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) }, true)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, true)).toEqual({});
   });
 });

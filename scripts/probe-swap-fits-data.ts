@@ -32,6 +32,8 @@ import { loadFits } from "../src/lib/swaps/fits";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
 
 neonConfig.webSocketConstructor = ws;
+// The card payload's Fits gate reads only with the swap tools on, as a deployment with them on does.
+process.env.SWAP_TOOLS_ENABLED = "true";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });

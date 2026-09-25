@@ -149,7 +149,11 @@ export async function fitsGate(
   userId: string,
   oracleId: string,
   on?: GateReader,
+  enabled?: boolean,
 ): Promise<{ commanderLegal?: boolean; hasDecks?: boolean }> {
+  // Nothing reads the gate while the swap tools are off, so a deployment without them pays no
+  // round trip for it: the fields stay absent, which is also the door's closed state.
+  if (!(enabled ?? (await import("../swaps/flag")).swapToolsEnabled())) return {};
   try {
     const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
     const { sql } = await import("drizzle-orm");
