@@ -131,7 +131,50 @@ describe("the rail (§Q1–Q3, E4 fallback)", () => {
   });
 });
 
+function fakeObservers() {
+  const observers: { cb: IntersectionObserverCallback; targets: Element[] }[] = [];
+  const original = globalThis.IntersectionObserver;
+  globalThis.IntersectionObserver = class {
+    targets: Element[] = [];
+    constructor(cb: IntersectionObserverCallback) {
+      observers.push({ cb, targets: this.targets });
+    }
+    observe(t: Element) {
+      this.targets.push(t);
+    }
+    disconnect() {}
+    unobserve() {}
+    takeRecords() {
+      return [];
+    }
+  } as unknown as typeof IntersectionObserver;
+  const hit = (id: string) =>
+    ({ target: document.getElementById(id)!, isIntersecting: true }) as unknown as IntersectionObserverEntry;
+  const land = (chapter: string, ...ids: string[]) =>
+    act(() => {
+      for (const o of observers.filter((o) => o.targets.some((t) => t.id === chapter)))
+        o.cb([hit(chapter), ...ids.map(hit)], {} as IntersectionObserver);
+    });
+  return { land, restore: () => (globalThis.IntersectionObserver = original) };
+}
+
 describe("which row the rail marks (§Q3)", () => {
+  it("keeps a pressed search result marked while the query and results stay (§R4)", () => {
+    const io = fakeObservers();
+    try {
+      render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+      type(rail(), "combo");
+      const row = entryRows(rail())[0];
+      const id = row.getAttribute("href")!.slice(1);
+      const entry = aboutEntries.find((e) => e.id === id)!;
+      io.land(`chapter-${entry.chapter}`, id);
+      expect((field(rail()) as HTMLInputElement).value).toBe("combo");
+      expect(rail().querySelector("[aria-current='true']")?.getAttribute("href")).toBe(`#${id}`);
+    } finally {
+      io.restore();
+    }
+  });
+
   it("marks the later of two entries sharing the band, where a jump puts its entry", () => {
     const observers: { cb: IntersectionObserverCallback; targets: Element[] }[] = [];
     const original = globalThis.IntersectionObserver;

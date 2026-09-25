@@ -258,7 +258,9 @@ export function ContentsRailR6({ chapters }: { chapters: readonly ContentsChapte
                   {open && (
                     <ol className="list-none p-0">
                       {chapter.entries.map((entry) => {
-                        const current = !searching && entry.id === place.entry;
+                        // Not gated on the search: a pressed result keeps the
+                        // query and the results (§R4) and takes the current fill.
+                        const current = entry.id === place.entry;
                         return (
                           <li key={entry.id}>
                             <a
