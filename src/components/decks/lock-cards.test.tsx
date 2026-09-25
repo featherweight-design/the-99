@@ -650,6 +650,25 @@ describe("a lock write that settles on another deck", () => {
     expect(announce).not.toHaveBeenCalled();
   });
 
+  // In flight is per deck AND card: a write still pending on deck A holds neither deck B's bulk
+  // pair busy nor the same card's toggle there.
+  it("keeps a write in flight on one deck from blocking the same card on another", async () => {
+    const held = deferred<DeckMutationResult>();
+    setCardLocked.mockReturnValue(held.promise);
+    const { result, rerender } = renderHook(
+      ({ deckId }) => useCardLocks({ enabled: true, deckId, cards: list, serverCards: list, announce: vi.fn() }),
+      { initialProps: { deckId: "deck-a" } },
+    );
+    act(() => result.current.value!.toggle(card));
+    expect(result.current.value!.pending.has("o1")).toBe(true);
+    rerender({ deckId: "deck-b" });
+    expect(result.current.value!.pending.size).toBe(0);
+    act(() => result.current.value!.toggle(card));
+    expect(setCardLocked).toHaveBeenCalledTimes(2);
+    expect(setCardLocked).toHaveBeenLastCalledWith("deck-b", "o1", true);
+    await act(async () => held.resolve({ ok: true }));
+  });
+
   it("does not announce a lock that succeeded after the switch either", async () => {
     const held = deferred<DeckMutationResult>();
     setCardLocked.mockReturnValue(held.promise);

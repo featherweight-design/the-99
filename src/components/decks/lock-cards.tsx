@@ -84,7 +84,13 @@ export function useCardLocks({
   useEffect(() => {
     onScreen.current = deckId;
   }, [deckId]);
-  const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
+  // Keyed by DECK and card: the hook outlives a client navigation, and a write still in flight on
+  // one deck must neither block the same card on another nor hold that deck's bulk pair busy.
+  const [writing, setWriting] = useState<ReadonlySet<string>>(new Set());
+  const pending = useMemo(() => {
+    const prefix = `${deckId}\u0000`;
+    return new Set([...writing].filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)));
+  }, [writing, deckId]);
 
   if (held.deckId !== deckId) {
     setHeld({ deckId, overrides: NONE });
@@ -119,13 +125,14 @@ export function useCardLocks({
 
   const toggle = useCallback(
     (card: DeckDetailCard) => {
-      if (!enabled || inFlight.current.has(card.oracleId)) return;
+      const key = `${deckId}\u0000${card.oracleId}`;
+      if (!enabled || inFlight.current.has(key)) return;
       const id = card.oracleId;
       const next = !card.locked;
       const name = printedFaceName(card);
       const forDeck = deckId;
-      inFlight.current.add(id);
-      setPending(new Set(inFlight.current));
+      inFlight.current.add(key);
+      setWriting(new Set(inFlight.current));
       setOverride(forDeck, id, next);
       setErrors((e) => {
         if (!e.has(id)) return e;
@@ -138,8 +145,8 @@ export function useCardLocks({
           ok: false as const,
           message: lockedCardsCopy.mode.refused,
         }));
-        inFlight.current.delete(id);
-        setPending(new Set(inFlight.current));
+        inFlight.current.delete(key);
+        setWriting(new Set(inFlight.current));
         if (!result.ok) {
           // The server refuses when the card left the deck between render and press, or the switch
           // is off. The lock reverts rather than showing a state the deck does not hold.
