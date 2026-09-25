@@ -23,6 +23,9 @@ import { answerChips } from "../../../../lib/intake/present";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
+import { DeeperLook, DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
+import { loadOwnRead } from "../../../../lib/intake/run-store";
+import { readAllowance } from "../../../../lib/model/allowance";
 
 // A row's figures come from a real fill run in a Server Action posted from this page (PR 4's
 // deeper read runs from it too).
@@ -75,7 +78,14 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const themeLabels = Object.fromEntries(themes.map((t) => [t.slug, t.label]));
   // A decoration, read outside the results' own recovery: a failure here draws the page without the
   // card's chip rather than taking the whole route down before *Search failed* could offer a retry.
-  const card = p.card ? await loadCardChip(userId, p.card).catch(() => null) : null;
+  const now = new Date();
+  // Three decorations, none of which may take the page down: the card's chip, the credit standing
+  // the deeper look reads (only when there are words to look at), and the read `r` names.
+  const [card, allowance, settled] = await Promise.all([
+    p.card ? loadCardChip(userId, p.card).catch(() => null) : null,
+    p.words.trim() ? readAllowance(userId, now, "intake").catch(() => null) : null,
+    p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
+  ]);
   const labels = { theme: (slug: string) => themeLabels[slug] ?? slug, card: card?.name ?? null };
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);
@@ -93,13 +103,27 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.results.subPhone}
         />
         <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[16px_18px_24px] md:p-[0_40px_48px]">
+          <DeeperLookScope>
           <ReadAsBar
-            chips={answerChips(p, labels)}
+            chips={answerChips(p, labels, settled?.kind === "read" ? p.deeper : [])}
+            afterDeeper={settled !== null}
+            offer={allowance && (
+              <DeeperLook params={p} settled={settled?.kind ?? null} standing={{
+                used: allowance.used,
+                limit: allowance.limit,
+                nextAt: allowance.nextAt?.toISOString() ?? null,
+                reopensAt: allowance.reopensAt?.toISOString() ?? null,
+                paused: allowance.paused?.until.toISOString() ?? null,
+                ownerShare: allowance.ownerShare === true,
+                now: now.toISOString(),
+              }} />
+            )}
             card={card}
             notUsed={p.notUsed}
             changeHref={changeHref}
             startOverHref={CHOOSE_PATH}
           />
+          <DimWhileLooking>
           <Suspense key={queryString} fallback={<ResultsSkeleton by={by} />}>
             <Results
               userId={userId}
@@ -110,6 +134,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               changeHref={changeHref}
             />
           </Suspense>
+          </DimWhileLooking>
+          </DeeperLookScope>
         </div>
       </div>
     </CardDetailProvider>
