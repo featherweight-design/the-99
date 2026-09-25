@@ -52,7 +52,19 @@ export function CommanderSection({ state }: { state: DraftState }) {
   const trade = state.addChanges.some((c) => was.some((w) => w.oracleId === c.oracleId))
     || state.removes.some((c) => now.some((n) => n.oracleId === c.oracleId));
   const leaving = was.filter((w) => !now.some((n) => n.oracleId === w.oracleId));
-  const note = trade
+  // The half-trade: a new half arrived out of the 98 AND an old half is released (leaves and is
+  // not added back). An ordinary pair swap releases both and brings nothing out, so it keeps its note.
+  const arrived = now.find((n) => state.removes.some((c) => c.oracleId === n.oracleId));
+  const stayed = was.find((w) => state.addChanges.some((c) => c.oracleId === w.oracleId));
+  const released = leaving.find((w) => !state.addChanges.some((c) => c.oracleId === w.oracleId));
+  const halfTrade = pair && arrived !== undefined && stayed !== undefined && released !== undefined;
+  // One inline block per clause, so a narrow note breaks at the middot rather than inside a clause.
+  const halfNote = halfTrade
+    ? copy.review.noteHalfTrade(short(stayed.name), short(arrived.name), short(released.name)).split(" · ")
+    : null;
+  const note = halfNote
+    ? <><span className="inline-block">{halfNote[0]} ·</span> <span className="inline-block">{halfNote[1]}</span></>
+    : trade
     ? copy.review.noteTrade
     : leaving.length > 1
       ? copy.review.notePoolPair(short(leaving[0].name), short(leaving[1].name))

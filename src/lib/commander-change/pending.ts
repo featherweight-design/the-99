@@ -61,13 +61,28 @@ export function deckCommanderMovedSql(deck: string): SQL {
 }
 
 /**
- * Whether a candidate can be offered at all. A single always can. A pair with a half already in the
- * 98 cannot: the write would trade that half and release the other old commander, and the design
- * has no sentence for a half-trade (`confirm.trade` says the two trade places, which would be
- * false). The write refuses one too, so a stale sheet or a crafted request cannot reach it. Held
- * back, not given invented copy, until Design draws it (the-99-d9, 2026-09-25). It has
- * never occurred: staging indexes one usable pair.
+ * How a change moves cards between the 99 and the command zone, read off the current leader, the
+ * new one, and the body. `none`: nothing comes out of the body. `trade`: a single out of the 99
+ * trades places with the old single. `halfTrade` (the addendum): one half of a new pair comes out
+ * of the 98 while both old halves leave, so one old half takes its slot (the reader's choice) and
+ * the other leaves the deck. Null for a change no design draws, held back: a half out of the 98
+ * beside a half the pair keeps, and both new halves out of the 98.
  */
-export function offerable(ids: readonly string[], inDeck: ReadonlySet<string>): boolean {
-  return ids.length === 1 || !ids.some((id) => inDeck.has(id));
+export type TradeShape = "none" | "trade" | "halfTrade";
+
+export function tradeShape(
+  toIds: readonly string[], fromIds: readonly string[], body: ReadonlySet<string>,
+): TradeShape | null {
+  const fromBody = toIds.filter((id) => !fromIds.includes(id) && body.has(id)).length;
+  if (fromBody === 0) return "none";
+  if (toIds.length === 1) return "trade";
+  const departing = fromIds.filter((id) => !toIds.includes(id)).length;
+  return fromBody === 1 && departing === 2 ? "halfTrade" : null;
+}
+
+/** Whether a change can be offered at all: the loader and the write apply this one rule. */
+export function offerable(
+  toIds: readonly string[], fromIds: readonly string[], body: ReadonlySet<string>,
+): boolean {
+  return tradeShape(toIds, fromIds, body) !== null;
 }

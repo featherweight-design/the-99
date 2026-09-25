@@ -15,7 +15,7 @@ import { canPair, partnerAbility } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
 import { isCommanderCandidate } from "../recs/score";
-import { commanderMoved, offerable, type CommanderPair } from "./pending";
+import { commanderMoved, tradeShape, type CommanderPair } from "./pending";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -40,6 +40,8 @@ function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
  *  the user's, the new leader is legal, and it matches the deck's size and exact identity. */
 export async function writeCommanderChange(
   tx: Tx, deckId: string, userId: string, to: CommanderPair,
+  /** A half-trade's choice: the old half that takes the freed slot. Refused anywhere else. */
+  staysOracleId: string | null = null,
 ): Promise<ChangeCommanderResult> {
   const [deck] = await tx.select({
     commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
@@ -85,9 +87,13 @@ export async function writeCommanderChange(
   const body = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
     .from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
   const inBody = new Map(body.map((r) => [r.oracleId, r.quantity]));
-  // The loader's hold-back, enforced where it cannot be skipped: a pair with a half in the 98.
-  // A kept half leads already and is never a body row, so the whole new pair is what is tested.
-  if (!offerable(toIds, new Set(inBody.keys()))) {
+  // The loader's rule, enforced where it cannot be skipped: a change no design draws is refused.
+  const shape = tradeShape(toIds, fromIds, new Set(inBody.keys()));
+  if (shape === null) return { ok: false, reason: "illegal" };
+  // A half-trade names the old half that stays in the 98; nothing else takes a choice, so a stray
+  // one is refused rather than ignored (a stale sheet must not write a choice nobody made).
+  const leaving = fromIds.filter((id) => !toIds.includes(id));
+  if (shape === "halfTrade" ? staysOracleId === null || !leaving.includes(staysOracleId) : staysOracleId !== null) {
     return { ok: false, reason: "illegal" };
   }
 
@@ -95,7 +101,8 @@ export async function writeCommanderChange(
   // half takes it. A commander that arrives from outside the 99 opens no slot, so the one it
   // replaces simply leaves.
   const arrivingFromBody = toIds.filter((id) => !fromIds.includes(id) && inBody.has(id));
-  const departing = fromIds.filter((id) => !toIds.includes(id));
+  // The staying half first, so it takes the freed slot and the other leaves the deck.
+  const departing = staysOracleId ? [staysOracleId, ...leaving.filter((id) => id !== staysOracleId)] : leaving;
   const gone: string[] = [];
   for (const [i, id] of arrivingFromBody.entries()) {
     const quantity = inBody.get(id)!;

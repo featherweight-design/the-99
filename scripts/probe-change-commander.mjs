@@ -95,6 +95,46 @@ async function signIn(page) {
 /** Every fixture deck, in the order made. */
 const made = [];
 let restorePrefs = null;
+/** The pair sentinel the half-trade section plants in `commander_pair_support`, deleted only when
+ *  this run inserted it (local-dev indexes no pairs, so without it no pair is ever offered). */
+let pairSentinel = null;
+
+/**
+ * The half-trade (addendum): a pair deck led by A1 + B1 with B2 in its 98, offered A2 + B2. Four
+ * generic-partner legends, two of each identity, so the new pair keeps the deck's identity. Every
+ * deck id goes into `made` the moment it exists.
+ */
+async function buildHalfTradeFixture(userId) {
+  const rows = await sql`
+    select c.oracle_id, c.name, array_to_string(array(select x from unnest(c.color_identity) x order by x), '') as ci
+    from cards c
+    where c.commander_legal and c.type_line ilike 'Legendary Creature%'
+      and c.oracle_text like '%Partner (You can have two commanders if both have partner.)%'
+    order by c.oracle_id`;
+  const groups = new Map();
+  for (const row of rows) groups.set(row.ci, [...(groups.get(row.ci) ?? []), row]);
+  const [first, second] = [...groups.values()].filter((g) => g.length >= 2);
+  if (!first || !second) throw new Error("catalog holds no generic-partner fixture for the half-trade");
+  const [a1, a2] = first;
+  const [b1, b2] = second;
+  const [deck] = await sql`
+    insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
+    values (${userId}, 'probe:change-commander half-trade', ${a1.oracle_id}, ${b1.oracle_id}) returning id`;
+  made.push(deck.id);
+  await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${b2.oracle_id}, 1)`;
+  const [v] = await sql`
+    insert into deck_versions (deck_id, number, commander_oracle_id, partner_oracle_id)
+    values (${deck.id}, 1, ${a1.oracle_id}, ${b1.oracle_id}) returning id`;
+  await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${v.id}, ${b2.oracle_id}, 1)`;
+  // Stored in id order (the table's check), and an `ok` row carries its EDHREC total.
+  const [lo, hi] = [a2.oracle_id, b2.oracle_id].sort();
+  const planted = await sql`
+    insert into commander_pair_support (commander_oracle_id, partner_oracle_id, synergy_state, edhrec_total, deck_count, bracket_counts)
+    values (${lo}, ${hi}, 'ok', 500, 500, '{}'::jsonb)
+    on conflict do nothing returning commander_oracle_id`;
+  if (planted.length > 0) pairSentinel = { a: lo, b: hi };
+  return { deckId: deck.id, a1, b1, a2, b2 };
+}
 
 /** A committed mono-green deck holding three cards a real mono-green candidate's decks run. With
  *  `trade`, the target also sits in the 99, so choosing it trades places (STATES 21b). */
@@ -326,9 +366,102 @@ async function main() {
         coming.text === "from the command zone" && going.text === "to the command zone" && !coming.action && !going.action,
         JSON.stringify(hints));
     }
+
+    // The half-trade (addendum): B2 leaves the 98 for the command zone, A2 joins it, and the
+    // reader chooses which of A1 and B1 takes B2's slot while the other leaves the deck.
+    const ht = await buildHalfTradeFixture(userId);
+    const short = (n) => n.split(" // ")[0].split(",")[0].trim();
+    for (const width of WIDTHS) {
+      const tag = `@${width.label}`;
+      await page.setViewportSize(width.viewport);
+      await page.goto(`${BASE}/decks/${ht.deckId}`, { waitUntil: "domcontentloaded" });
+      const htDoor = onPage(page, '[data-testid="change-commander-door"]').filter({ visible: true });
+      await htDoor.first().waitFor({ state: "visible", timeout: 30_000 });
+      await htDoor.getByRole("button", { name: /Change (pair|commander)/ }).first().click();
+      const htDialog = page.getByRole("dialog", { name: "Change pair" });
+      const htRow = htDialog.locator('[data-testid="change-commander-row"]')
+        .filter({ hasText: short(ht.a2.name) }).filter({ hasText: short(ht.b2.name) }).first();
+      await htRow.waitFor({ state: "visible", timeout: 30_000 });
+      report(`half-trade offered ${tag}`, (await htRow.count()) === 1, "the pair with a half in the 98 is listed");
+      await htRow.locator("[data-choose]").click();
+      const group = htDialog.getByRole("radiogroup", { name: "Which one stays in the 98?" });
+      await group.waitFor({ state: "visible" });
+      const radios = group.getByRole("radio");
+      const first = radios.nth(0);
+      report(`half-trade default ${tag}`, (await first.getAttribute("aria-checked")) === "true" && (await first.textContent())?.includes(short(ht.a1.name)),
+        `${await first.textContent()} checked by default`);
+      // 44px options full width on a phone; 34px from md.
+      const box = await first.evaluate((el) => { const r = el.getBoundingClientRect(); return { h: r.height }; });
+      const groupBox = await group.evaluate((el) => el.getBoundingClientRect().width);
+      const dialogBox = await htDialog.evaluate((el) => el.getBoundingClientRect().width);
+      if (width.label === 390) report(`half-trade options ${tag}`, Math.round(box.h) >= 44 && groupBox > dialogBox * 0.8, `${box.h}px tall, group ${groupBox}px of ${dialogBox}px`);
+      else report(`half-trade options ${tag}`, Math.round(box.h) === 34, `${box.h}px tall`);
+      const sentence = () => htDialog.locator("p").filter({ hasText: "leaves the deck. The deck stays at 98." }).first().textContent();
+      const before = await sentence();
+      // The arrow key moves the choice and the focus, as a native radio group does.
+      await first.focus();
+      await page.keyboard.press("ArrowRight");
+      const second = radios.nth(1);
+      const flipped = (await second.getAttribute("aria-checked")) === "true" && (await second.evaluate((el) => el === document.activeElement));
+      const after = await sentence();
+      report(`half-trade choice flips ${tag}`, flipped && before !== after && after.includes(`${short(ht.b1.name)} takes`), after ?? "");
+      // The plates stay inside the sheet: a long pair's compare line once widened its column and
+      // pushed the plates past a phone's edge. Every card's fate line is read against the dialog.
+      const inside = await htDialog.evaluate((d) => {
+        const box = d.getBoundingClientRect();
+        return [...d.querySelectorAll('[data-testid="half-trade-fates"] > span')]
+          .every((el) => { const r = el.getBoundingClientRect(); return r.left >= box.left && r.right <= box.right; });
+      });
+      report(`half-trade plates inside the sheet ${tag}`, inside, "every fate line within the dialog");
+      // PROBE_SHOT=<dir> photographs the half-trade's confirm, which no contact-sheet row can reach
+      // (it needs this run's pair sentinel).
+      if (process.env.PROBE_SHOT) await page.screenshot({ path: `${process.env.PROBE_SHOT}/half-trade-confirm-${width.label}.png` });
+      if (width.label === 390) {
+        // Written once, at the phone width, with the second choice: B1 stays, A1 leaves.
+        await htDialog.getByRole("button", { name: /^Make .* commanders$/ }).click();
+        await htDialog.waitFor({ state: "hidden", timeout: 30_000 });
+        const [live] = await sql`select commander_oracle_id as c, partner_oracle_id as p from decks where id = ${ht.deckId}`;
+        const body = (await sql`select oracle_id from deck_cards where deck_id = ${ht.deckId}`).map((r) => r.oracle_id);
+        report("half-trade write: the new pair leads", [live.c, live.p].sort().join() === [ht.a2.oracle_id, ht.b2.oracle_id].sort().join(), `${live.c} + ${live.p}`);
+        report("half-trade write: the chosen half took the slot", body.includes(ht.b1.oracle_id) && !body.includes(ht.b2.oracle_id) && !body.includes(ht.a1.oracle_id),
+          `body: ${body.length} card(s)`);
+      } else {
+        await page.keyboard.press("Escape");
+        await htDialog.waitFor({ state: "hidden" });
+      }
+    }
+    // The outcome on the review page: the note names both fates, the columns' notes and rows, and
+    // the footer counts 1 back in the pool.
+    await page.goto(`${BASE}/decks/${ht.deckId}/changes`, { waitUntil: "domcontentloaded" });
+    const htSection = onPage(page, '[data-testid="review-commander"]');
+    await htSection.waitFor({ state: "visible", timeout: 30_000 });
+    const htNote = (await htSection.textContent()) ?? "";
+    if (process.env.PROBE_SHOT) await page.screenshot({ path: `${process.env.PROBE_SHOT}/half-trade-review-1300.png` });
+    report("half-trade review note", htNote.includes("trade places ·") && htNote.includes(`${short(ht.a1.name)} goes back in the pool`), htNote.slice(0, 160));
+    // `Going out` holds only B2, leaving for the command zone, so its note says that, not the pool's.
+    const htColumns = (await onPage(page, "#review").textContent()) ?? "";
+    report("half-trade going-out note", htColumns.includes("it moves to the command zone"), htColumns.slice(0, 160));
+    // The old commander moving into the 98 keeps the copy it led with: no buy tag on its row, even
+    // though the fixture's collection does not hold it.
+    // Read on the row itself (the one carrying a command-zone hint in Coming in), for any buy tag:
+    // priced, unpriced (`buy` alone) or sold out.
+    const returningRow = await onPage(page, "#review").evaluate((el) => {
+      const hint = el.querySelector('[data-zone-hint="in"]');
+      let row = hint;
+      while (row && row.parentElement && !row.parentElement.matches("ul, ol, section, #review")) row = row.parentElement;
+      return row?.textContent ?? null;
+    });
+    report("half-trade: the returning commander buys nothing", returningRow !== null && !/buy/i.test(returningRow), returningRow ?? "no row");
+    // The footer counts the one released commander back in the pool.
+    const footer = (await onPage(page, "#review").evaluate((el) => el.closest("main")?.textContent ?? "")) ?? "";
+    report("half-trade: 1 back in the pool", /1 back in the pool/.test(footer), "footer");
   } finally {
     // Each step on its own, so one failing cannot skip the next.
     for (const id of made) await sql`delete from decks where id = ${id}`.catch((e) => { failures += 1; console.error(e); });
+    if (pairSentinel) {
+      await sql`delete from commander_pair_support where commander_oracle_id = ${pairSentinel.a} and partner_oracle_id = ${pairSentinel.b}`
+        .catch((e) => { failures += 1; console.error(e); });
+    }
     if (restorePrefs) await restorePrefs().catch((e) => { failures += 1; console.error(e); });
     await browser.close();
   }

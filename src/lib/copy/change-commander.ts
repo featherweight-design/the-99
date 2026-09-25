@@ -72,6 +72,14 @@ export const changeCommanderCopy = {
     out: "Leaves the deck", outPair: "Leave the deck",
     in: "Leads the deck", inPair: "Lead the deck",
     tradeOut: "Moves into the 99", tradeIn: "Moves to the command zone",
+    // The half-trade (addendum): one new half out of the 98 while both old halves leave. Each card
+    // carries a fate line; an incoming card to buy shows the shipped buy tag instead (`sheet.free`
+    // for one that is free).
+    outHalfTrade: "Leave the command zone",
+    staysQuestion: (body: number) => `Which one stays in the ${body}?`,
+    cardStays: (body: number) => `into the ${body}`,
+    cardReleased: "leaves the deck",
+    cardFromBody: (body: number) => `from the ${body}`,
     sentence: (nu: string, old: string, body: number) =>
       `${nu} takes the command zone. ${old} leaves the deck, and the ${body} stay exactly as they are.`,
     sentencePair: (a: string, b: string, c: string, d: string, body: number) =>
@@ -81,13 +89,18 @@ export const changeCommanderCopy = {
     buy: (short: string) => `You don't own ${short} yet. It joins this draft's buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
     landsTrade: "Lands in your pending changes, not yet a version. Discard puts both back where they were.",
+    // arrive: the half leaving the body; joins: the other new half; stays / released: the old halves.
+    halfTrade: (arrive: string, joins: string, stays: string, released: string, body: number) =>
+      `${arrive} leaves the ${body} for the command zone, and ${joins} joins it there. ${stays} takes ${arrive}'s slot, and ${released} leaves the deck. The deck stays at ${body}.`,
+    // Hugh's tightening at /copy-review (2026-09-25).
+    landsHalfTrade: "Lands in your pending changes, not yet a version. Discard undoes the whole swap.",
     brew: "This deck has no version yet, so there is nothing to discard back to. Changing commander again is the only way back.",
     cta: (short: string) => `Make ${short} commander`,
     ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
     pending: "Changing…",
     failed: (oldShort: string) => `We couldn't change the commander. ${oldShort} still leads this deck.`,
-    // The pair forms a pair reaches (audit F9: two names never share a singular verb). A pair never
-    // trades (`offerable` holds a half in the 98 back), so `trade` has no pair form.
+    // The pair forms a pair reaches (audit F9: two names never share a singular verb). A pair's
+    // trade is the half-trade, which has its own sentence (`halfTrade`), so `trade` has no pair form.
     failedPair: (oldShort: string) => `We couldn't change the commanders. ${oldShort} still lead this deck.`,
     failedRetry: "Try again",
     announced: (nu: string) => `${nu} leads this deck now. The change is pending.`,
@@ -109,6 +122,12 @@ export const changeCommanderCopy = {
     notePool: (oldShort: string) => `${oldShort} goes back in the pool when you commit`,
     notePoolPair: (a: string, b: string) => `${a} and ${b} go back in the pool when you commit`,
     noteTrade: "the two trade places",
+    // `Going out`'s note when its only rows are new commanders leaving the 99 for the command zone
+    // (a trade): nothing in that column goes back in the pool.
+    outNoteToZone: "it moves to the command zone",
+    // A half-trade's two fates, one clause each; the middot is where it breaks at 390.
+    noteHalfTrade: (stays: string, arrive: string, released: string) =>
+      `${stays} and ${arrive} trade places · ${released} goes back in the pool when you commit`,
   },
 
   discard: {

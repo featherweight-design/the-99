@@ -93,10 +93,10 @@ const bodyOf = async (deckId: string) => {
   return rows.map((r) => `${r.id}x${r.q}`);
 };
 
-const write = (deckId: string, commander: string, partner: string | null = null) =>
+const write = (deckId: string, commander: string, partner: string | null = null, stays: string | null = null) =>
   db.transaction((tx) => writeCommanderChange(tx, deckId, USER, {
     commanderOracleId: commander, partnerOracleId: partner,
-  }));
+  }, stays));
 
 async function main() {
   const { rows: branch } = await fixture.execute<{ id: string | null }>(
@@ -219,7 +219,7 @@ async function main() {
   check("loader: the index holds a sub-floor {G} commander to hide", small.length > 0, true);
   if (small[0]) check("loader: a sub-floor commander is hidden", all.some((x) => x.key === small[0].id), false);
 
-  // ── A pair: swap one half, refuse a half out of the 98, refuse an illegal pairing ──
+  // ── A pair: swap one half, the half-trade either way, refuse what no design draws ──
   const { rows: partnerRows } = await fixture.execute<Legend & { ci: string[] }>(sql`
     select c.oracle_id, c.name, c.type_line, c.oracle_text, c.mana_cost, c.layout, c.color_identity as ci
     from cards c
@@ -234,25 +234,64 @@ async function main() {
     const key = [...r.ci].sort().join();
     byIdentity.set(key, [...(byIdentity.get(key) ?? []), r]);
   }
-  const twins = [...byIdentity.values()].find((list) => list.length >= 2);
-  const anchor = generic.find((r) => twins && !twins.includes(r));
-  if (!twins || !anchor) throw new Error("catalog holds no generic-partner fixture for the pair section");
+  // Two identities with two halves each: an old pair is one from each, and so is the new pair, so
+  // the half-trade keeps the deck's identity exactly.
+  const [twins, others] = [...byIdentity.values()].filter((list) => list.length >= 2);
+  if (!twins || !others) throw new Error("catalog holds no generic-partner fixture for the pair section");
   const [p2, p3] = twins;
+  const [anchor, anchor2] = others;
   const pairDeck = await makeDeck(anchor.oracle_id, p2.oracle_id);
   for (const f of fillers) await addCard(pairDeck, f.oracle_id);
   check("pair swap: accepted", await write(pairDeck, anchor.oracle_id, p3.oracle_id), { ok: true });
   check("pair swap: one half moved", await live(pairDeck), { c: anchor.oracle_id, p: p3.oracle_id });
   await addCard(pairDeck, p2.oracle_id);
-  // A half-trade is held back until Design draws it (`offerable`), and the write enforces that:
-  // a request the sheet would never send is refused, writing nothing.
+  // Still held back (`tradeShape`): a half out of the 98 beside a half the pair keeps. No design
+  // draws it, and the write refuses what the sheet would never send, writing nothing.
   const pairBefore = await bodyOf(pairDeck);
-  check("pair refused: a half from the 98", await write(pairDeck, anchor.oracle_id, p2.oracle_id),
+  // With a choice naming the departing half, so the refusal is the shape's and not the missing choice's.
+  check("pair refused: a half from the 98 beside a kept half", await write(pairDeck, anchor.oracle_id, p2.oracle_id, p3.oracle_id),
     { ok: false, reason: "illegal" });
   check("pair refused: the 98 unchanged", await bodyOf(pairDeck), pairBefore);
   check("pair refused: the pair unchanged", await live(pairDeck), { c: anchor.oracle_id, p: p3.oracle_id });
   check("pair refused: a half that cannot partner", await write(pairDeck, anchor.oracle_id, a.oracle_id),
     { ok: false, reason: "illegal" });
   check("pair refused: a single for a pair", await write(pairDeck, anchor.oracle_id), { ok: false, reason: "mismatch" });
+
+  // The half-trade (addendum): anchor + p3 lead, p2 is in the 98, and anchor2 + p2 replace them.
+  // p2 leaves the 98, one old half takes its slot (the reader's choice) and the other leaves.
+  const halfBefore = await bodyOf(pairDeck);
+  check("half-trade refused: no choice", await write(pairDeck, anchor2.oracle_id, p2.oracle_id),
+    { ok: false, reason: "illegal" });
+  check("half-trade refused: a choice that is not a departing half", await write(pairDeck, anchor2.oracle_id, p2.oracle_id, anchor2.oracle_id),
+    { ok: false, reason: "illegal" });
+  check("half-trade refused: nothing written", await bodyOf(pairDeck), halfBefore);
+  // An ordinary swap of one half (anchor2 for anchor, from outside the 98) takes no choice.
+  check("pair swap refused: a stray choice", await write(pairDeck, anchor2.oracle_id, p3.oracle_id, anchor.oracle_id),
+    { ok: false, reason: "illegal" });
+  check("half-trade, second stays: accepted", await write(pairDeck, anchor2.oracle_id, p2.oracle_id, p3.oracle_id), { ok: true });
+  check("half-trade, second stays: the new pair leads", await live(pairDeck), { c: anchor2.oracle_id, p: p2.oracle_id });
+  const afterSecond = await bodyOf(pairDeck);
+  check("half-trade, second stays: p2 left the 98", afterSecond.some((r) => r.startsWith(p2.oracle_id)), false);
+  check("half-trade, second stays: the chosen half took its slot", afterSecond.includes(`${p3.oracle_id}x1`), true);
+  check("half-trade, second stays: the other half left the deck", afterSecond.some((r) => r.startsWith(anchor.oracle_id)), false);
+  check("half-trade, second stays: the deck stays whole", afterSecond.length, halfBefore.length);
+
+  // The other choice, on its own deck: the first old half stays.
+  const halfDeck = await makeDeck(anchor.oracle_id, p3.oracle_id);
+  for (const f of fillers) await addCard(halfDeck, f.oracle_id);
+  await addCard(halfDeck, p2.oracle_id);
+  check("half-trade, first stays: accepted", await write(halfDeck, anchor2.oracle_id, p2.oracle_id, anchor.oracle_id), { ok: true });
+  const afterFirst = await bodyOf(halfDeck);
+  check("half-trade, first stays: the chosen half took its slot", afterFirst.includes(`${anchor.oracle_id}x1`), true);
+  check("half-trade, first stays: the other half left the deck", afterFirst.some((r) => r.startsWith(p3.oracle_id)), false);
+
+  // Both new halves out of the 98 is still held back.
+  const bothDeck = await makeDeck(anchor.oracle_id, p3.oracle_id);
+  for (const f of fillers) await addCard(bothDeck, f.oracle_id);
+  await addCard(bothDeck, p2.oracle_id);
+  await addCard(bothDeck, anchor2.oracle_id);
+  check("pair refused: both new halves from the 98", await write(bothDeck, anchor2.oracle_id, p2.oracle_id, anchor.oracle_id),
+    { ok: false, reason: "illegal" });
 }
 
 main()

@@ -10,6 +10,8 @@ vi.mock("./candidates", () => ({ loadChangeCandidates: (...a: unknown[]) => load
 const revalidateClaims = vi.fn();
 vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: (...a: unknown[]) => revalidateClaims(...a) }));
 
+const writeCommanderChange = vi.fn(async () => ({ ok: false, reason: "mismatch" }));
+vi.mock("./write", () => ({ writeCommanderChange: (...a: unknown[]) => writeCommanderChange(...(a as [])) }));
 const { changeCommander, readChangeCandidates } = await import("./actions");
 const DECK = "00000000-0000-4000-8000-000000000001";
 const CARD = "00000000-0000-4000-8000-000000000002";
@@ -50,6 +52,15 @@ describe("changeCommander at the request boundary", () => {
     transaction.mockResolvedValueOnce({ ok: false, reason: "mismatch" });
     await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null });
     expect(revalidateClaims).not.toHaveBeenCalled();
+  });
+
+  it("refuses a malformed half-trade choice, and passes a well-formed one to the write", async () => {
+    expect(await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null }, "z"))
+      .toEqual({ ok: false, reason: "illegal" });
+    expect(transaction).not.toHaveBeenCalled();
+    transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => fn("tx"));
+    await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null }, CARD);
+    expect(writeCommanderChange).toHaveBeenCalledWith("tx", DECK, "user_1", { commanderOracleId: CARD, partnerOracleId: null }, CARD);
   });
 
   it("refuses everything with the switch off", async () => {

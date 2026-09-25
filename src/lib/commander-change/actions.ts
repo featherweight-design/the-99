@@ -12,7 +12,9 @@ import { loadChangeCandidates, type ChangeCandidates } from "./candidates";
 import type { CommanderPair } from "./pending";
 import { writeCommanderChange, type ChangeCommanderResult } from "./write";
 
-export async function changeCommander(deckId: string, to: CommanderPair): Promise<ChangeCommanderResult> {
+export async function changeCommander(
+  deckId: string, to: CommanderPair, staysOracleId: string | null = null,
+): Promise<ChangeCommanderResult> {
   if (!changeCommanderEnabled()) return { ok: false, reason: "unavailable" };
   const userId = await requireUserId();
   // Request data: an id that is not a uuid would reach Postgres's cast and throw, where the caller
@@ -22,9 +24,11 @@ export async function changeCommander(deckId: string, to: CommanderPair): Promis
   if (!to || !isUuid(to.commanderOracleId) || (partner !== null && !isUuid(partner))) {
     return { ok: false, reason: "illegal" };
   }
+  const stays = staysOracleId ?? null;
+  if (stays !== null && !isUuid(stays)) return { ok: false, reason: "illegal" };
   const result = await db.transaction((tx) => writeCommanderChange(tx, deckId, userId, {
     commanderOracleId: to.commanderOracleId, partnerOracleId: partner,
-  }));
+  }, stays));
   if (result.ok) {
     // IN the action, not deferred into `after()`: a Server Action that revalidates the route it
     // was called from returns that route's new payload, so the deck page redraws under the new

@@ -6,7 +6,7 @@
 // body at 700; a card opened from any name or plate STACKS on it through the shared card modal,
 // whose way back reads `← Change commander`.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ModalChrome } from "./receipt-modal";
 import { BuyTag } from "./buy-tag";
 import { SwapGlyph } from "./change-commander-glyph";
@@ -20,6 +20,7 @@ import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { changeCommander, readChangeCandidates } from "../../lib/commander-change/actions";
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
 import type { PriceFact } from "../../lib/decks/price";
+import { tradeShape, type TradeShape } from "../../lib/commander-change/pending";
 import { useChangeCommander } from "./change-commander-context";
 
 /** Show more's step, and To buy's first screen (handoff §2.5). */
@@ -34,9 +35,13 @@ function joinShort(names: readonly string[]): string {
   return names.map(shortName).join(" and ");
 }
 
-/** Whether choosing this candidate trades places with a card in the 99. */
-export function isTrade(c: Candidate): boolean {
-  return c.halves.some((h) => h.inDeck);
+/** How choosing this candidate moves cards between the 99 and the command zone. */
+export function shapeOf(c: Candidate, current: readonly { oracleId: string }[]): TradeShape | null {
+  return tradeShape(
+    c.halves.map((h) => h.oracleId),
+    current.map((x) => x.oracleId),
+    new Set(c.halves.filter((h) => h.inDeck).map((h) => h.oracleId)),
+  );
 }
 
 type Phase =
@@ -56,6 +61,8 @@ export function ChangeCommanderSheet({
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [chosen, setChosen] = useState<Candidate | null>(null);
+  // A half-trade's answer to "which one stays", per candidate, so Back and Choose again keep it.
+  const [staysBy, setStaysBy] = useState<Record<string, string>>({});
   // Back to the list restores it as it was: the list stays mounted behind the confirm (its open
   // row and Show more count survive), and the scroll offset is put back by hand, because the
   // confirm's height moved it.
@@ -114,6 +121,8 @@ export function ChangeCommanderSheet({
             candidate={chosen}
             pair={pair}
             hasVersion={hasVersion}
+            stays={staysBy[chosen.key] ?? null}
+            onStays={(id) => setStaysBy((m) => ({ ...m, [chosen.key]: id }))}
             onBack={() => setChosen(null)}
             onDone={onClose}
           />
@@ -457,13 +466,15 @@ function Row({
 }
 
 function Plate({
-  cards, label, tone, compare, pair,
+  cards, label, tone, compare, pair, fates,
 }: {
   cards: { oracleId: string; name: string; imageUri: string | null; manaCost: string | null }[];
   label: string;
   tone: "out" | "in";
   compare?: string;
   pair: boolean;
+  /** A half-trade's line under each card, saying where it goes (addendum §1). */
+  fates?: ReactNode[];
 }) {
   const one = cards.length === 1;
   return (
@@ -497,7 +508,21 @@ function Plate({
           </CardDetailTrigger>
         ))}
       </div>
-      <div className="flex flex-col items-center gap-[4px]">
+      {fates ? (
+        // 6px under the name, as the tile draws it: the column's 8px gap, less 2.
+        <div className="mt-[-2px] flex gap-[6px]" data-testid="half-trade-fates">
+          {cards.map((c, i) => (
+            <span
+              key={c.oracleId}
+              className={"flex justify-center text-center font-mono text-[10px] leading-[1.35] " + (cards.length === 1 ? "w-[104px] md:w-[120px]" : "w-[68px] md:w-[84px]")}
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {fates[i]}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <div className="flex flex-col items-center gap-[4px] self-stretch">
         <span className="flex flex-wrap items-center justify-center">
           {cards.map((c, i) => (
             <span key={c.oracleId} className="inline-flex items-center">
@@ -509,7 +534,9 @@ function Plate({
           ))}
         </span>
         {compare ? (
-          <span className="text-center font-mono text-[11px] leading-[1.4]" style={{ color: "var(--fg-muted)" }}>{compare}</span>
+          // `w-0 min-w-full`: the line wraps inside the tiles' width rather than widening the column,
+          // which with a long pair's names pushed the plates past a phone's edge.
+          <span className="w-0 min-w-full text-center font-mono text-[11px] leading-[1.4]" style={{ color: "var(--fg-muted)" }}>{compare}</span>
         ) : null}
       </div>
     </div>
@@ -534,35 +561,132 @@ export function summedPrice(halves: CandidateHalf[], newestAsOf: Date | null): P
   };
 }
 
+/**
+ * "Which one stays in the 98?" (addendum §1): a radiogroup labelled by its question, one option per
+ * old half. Arrow keys move the choice and the focus together (roving tabindex), as a native radio
+ * group does. 34px options on desktop; full width with 44px options on a phone.
+ */
+function StaysChoice({
+  options, value, onChange, body,
+}: {
+  options: { oracleId: string; name: string }[];
+  value: string;
+  onChange: (id: string) => void;
+  body: number;
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (step === 0) return;
+    e.preventDefault();
+    const next = (i + step + options.length) % options.length;
+    onChange(options[next].oracleId);
+    refs.current[next]?.focus();
+  };
+  return (
+    <div data-stays="true" className="flex flex-col items-center gap-[8px]">
+      <span id="change-commander-stays" className="font-mono text-[10.5px]" style={{ color: "var(--fg-muted)" }}>
+        {copy.confirm.staysQuestion(body)}
+      </span>
+      <div
+        role="radiogroup"
+        aria-labelledby="change-commander-stays"
+        className="flex w-full gap-[4px] rounded-[10px] border border-[color:var(--border-strong)] p-[3px] md:w-auto"
+        style={{ background: "var(--bg)" }}
+      >
+        {options.map((o, i) => {
+          const on = o.oracleId === value;
+          return (
+            <button
+              key={o.oracleId}
+              ref={(el) => { refs.current[i] = el; }}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              tabIndex={on ? 0 : -1}
+              onClick={() => onChange(o.oracleId)}
+              onKeyDown={(e) => onKey(e, i)}
+              className={
+                "flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-[8px] rounded-[7px] px-[14px] text-[13px] md:min-h-[34px] md:flex-none "
+                + (on
+                  ? "bg-[color:var(--elevated)] font-semibold text-[color:var(--fg)]"
+                  : "bg-transparent font-medium text-[color:var(--fg-muted)]")
+              }
+            >
+              <span
+                aria-hidden="true"
+                className="flex-none rounded-full"
+                style={{
+                  width: 8, height: 8,
+                  border: on ? "none" : "1.5px solid var(--fg-faint)",
+                  background: on ? "var(--accent)" : "transparent",
+                }}
+              />
+              {shortName(o.name)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** An incoming half's fate line: out of the 98, to buy (the shipped tag), or free. */
+function InFate({ half, body, newestAsOf }: { half: CandidateHalf; body: number; newestAsOf: Date | null }) {
+  if (half.inDeck) return <>{copy.confirm.cardFromBody(body)}</>;
+  if (!half.owned) return <BuyTag variant="row" price={half.price} newestAsOf={newestAsOf} />;
+  // Owned but every copy held elsewhere: the list row's held marker, so the confirm still says so.
+  if (!half.availability) return null;
+  return half.availability.free > 0
+    ? <>{copy.sheet.free}</>
+    : <AvailabilityMarker availability={half.availability} density="row" />;
+}
+
 function Confirm({
-  deckId, data, candidate, pair, hasVersion, onBack, onDone,
+  deckId, data, candidate, pair, hasVersion, stays: staysChosen, onStays, onBack, onDone,
 }: {
   deckId: string;
   data: ChangeCandidates;
   candidate: Candidate;
   pair: boolean;
   hasVersion: boolean;
+  /** The half-trade's choice, held by the sheet; null until the reader picks. */
+  stays: string | null;
+  onStays: (oracleId: string) => void;
   onBack: () => void;
   onDone: () => void;
 }) {
   const door = useChangeCommander();
   const [writing, setWriting] = useState(false);
   const [failed, setFailed] = useState(false);
-  const trade = isTrade(candidate);
   const body = pair ? 98 : 99;
   const olds = data.current;
   const nus = candidate.halves;
+  const shape = shapeOf(candidate, olds);
+  const trade = shape === "trade";
+  const halfTrade = shape === "halfTrade";
+  // The half-trade's three fates. The default is the first commander (Hugh, A-H1); the write
+  // receives the choice and gives that half the freed slot.
+  const stays = staysChosen ?? olds[0].oracleId;
+  const staying = olds.find((c) => c.oracleId === stays) ?? olds[0];
+  const released = olds.find((c) => c.oracleId !== staying.oracleId) ?? olds[0];
+  const arriving = nus.find((h) => h.inDeck) ?? nus[0];
+  const joining = nus.find((h) => h.oracleId !== arriving.oracleId) ?? nus[0];
   const oldShort = joinShort(olds.map((c) => c.name));
   const nuShort = joinShort(nus.map((c) => c.name));
   const toBuy = nus.filter((h) => !h.inDeck && !h.owned);
   const summed = summedPrice(toBuy, data.newestAsOf);
 
-  const sentence = trade
+  const sentence = halfTrade
+    ? copy.confirm.halfTrade(shortName(arriving.name), shortName(joining.name), shortName(staying.name), shortName(released.name), body)
+    : trade
     ? copy.confirm.trade(nuShort, oldShort, body)
     : pair
       ? copy.confirm.sentencePair(shortName(nus[0].name), shortName(nus[1].name), shortName(olds[0].name), shortName(olds[1].name), body)
       : copy.confirm.sentence(nuShort, oldShort, body);
-  const lands = !hasVersion ? copy.confirm.brew : trade ? copy.confirm.landsTrade : copy.confirm.lands(oldShort);
+  const lands = !hasVersion
+    ? copy.confirm.brew
+    : halfTrade ? copy.confirm.landsHalfTrade : trade ? copy.confirm.landsTrade : copy.confirm.lands(oldShort);
   const mv = nus.reduce((n, h) => n + h.cmc, 0);
   const oldMv = olds.reduce((n, c) => n + c.cmc, 0);
 
@@ -571,10 +695,8 @@ function Confirm({
     setWriting(true);
     setFailed(false);
     try {
-      const result = await changeCommander(deckId, {
-        commanderOracleId: nus[0].oracleId,
-        partnerOracleId: nus[1]?.oracleId ?? null,
-      });
+      const to = { commanderOracleId: nus[0].oracleId, partnerOracleId: nus[1]?.oracleId ?? null };
+      const result = halfTrade ? await changeCommander(deckId, to, stays) : await changeCommander(deckId, to);
       if (!result.ok) {
         setFailed(true);
         return;
@@ -602,9 +724,12 @@ function Confirm({
       <div className="flex items-start justify-center gap-[14px] pt-[4px] pb-[2px]">
         <Plate
           cards={olds.map((c) => ({ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, manaCost: c.manaCost }))}
-          label={trade ? copy.confirm.tradeOut : pair ? copy.confirm.outPair : copy.confirm.out}
+          label={halfTrade ? copy.confirm.outHalfTrade : trade ? copy.confirm.tradeOut : pair ? copy.confirm.outPair : copy.confirm.out}
           tone="out"
           pair={pair}
+          fates={halfTrade
+            ? olds.map((c) => (c.oracleId === staying.oracleId ? copy.confirm.cardStays(body) : copy.confirm.cardReleased))
+            : undefined}
         />
         <span aria-hidden="true" className="mt-[-30px] flex-none self-center font-mono text-[18px]" style={{ color: "var(--fg-faint)" }}>
           {trade ? "⇄" : "→"}
@@ -615,8 +740,17 @@ function Confirm({
           tone="in"
           compare={copy.sheet.manaValueRel(mv, oldMv, oldShort)}
           pair={pair}
+          fates={halfTrade ? nus.map((h) => <InFate key={h.oracleId} half={h} body={body} newestAsOf={data.newestAsOf} />) : undefined}
         />
       </div>
+      {halfTrade ? (
+        <StaysChoice
+          options={olds.map((c) => ({ oracleId: c.oracleId, name: c.name }))}
+          value={staying.oracleId}
+          onChange={onStays}
+          body={body}
+        />
+      ) : null}
       <div className="flex flex-col gap-[9px] pt-[12px]" style={{ borderTop: "1px solid var(--border)" }}>
         <p className="text-[14px] leading-[1.6] text-pretty" style={{ color: "var(--fg)" }}>{sentence}</p>
         {toBuy.length > 0 ? (
