@@ -47,7 +47,7 @@ didn't ask to go, and, once they look, find the new things at a glance?**
 ### 1.2 The page
 
 - **Size.** Four chapters and **39 entries**: Your collection 8, Finding a commander 7, Building the 99
-  15, and Playing and tuning 9 (`src/components/about/about-page.tsx:30`). The module header still says
+  15, and Playing and tuning 9 (counted from each entry's `chapter` in `src/lib/copy/about.ts`; the chapter list is `src/components/about/about-page.tsx:30`). The module header still says
   34 (`about.ts:15`).
 - **Entries.** 7 are insets and 32 are full-width plates, each with a figure, a caption and up to four
   key lines.
@@ -255,9 +255,14 @@ behind. A search box filters that list by title. Draw:
   stale (`proxy.ts:46`). One route is for it to keep that read and hand "behind" to the shell. The
   cookie's meaning then changes from "sent to N" (`gate.ts:13`) to "sheet shown for N". The plan
   chooses, and must not add a database read to every navigation.
-- **Recording the visit** is `markAboutSeen` (`src/lib/about/read.ts:25-35`), called by the page after it
+- **Recording the visit** is `markAboutSeen` (`src/lib/about/read.ts:37-39`, over the query at `:25-35`), called by the page after it
   has built the index from the pre-visit `seen`. `dismissAbout` and the `next` handling retire
   (`src/app/about/actions.ts`, `gate.ts`'s `safeNext`).
+- **The browser probes that clear the gate** write `about_version_seen` forward before they walk a page
+  (for example `scripts/probe-verdict-block.mjs:127` and `probe-bracket-chip.mjs:97`; every
+  `scripts/probe-*.mjs` that writes `about_version_seen`). They must go on clearing the sheet once it
+  ships, since a sheet drawn over a measured page corrupts the measurement. Their header comments, and
+  AGENTS.md's `probe:verdict-block` note about the redirect, are updated in the build PR.
 - **The search** is client-side over the entries' titles, which the page already holds. It needs no new
   read.
 - **AGENTS.md** (`:1827`, `:1851`) is reworded in this PR. A bump now shows every account a one-time
