@@ -183,17 +183,26 @@ describe("the Fits door", () => {
     expect(screen.getAllByTestId("fits-door")).toHaveLength(2);
   });
 
-  it("draws nothing for a card that is not legal, a reader with no deck, or a payload without the gate", async () => {
-    await openCard({ commanderLegal: false, hasDecks: true });
+  it.each([
+    ["a card that is not legal", { commanderLegal: false, hasDecks: true }],
+    ["a reader with no deck", { commanderLegal: true, hasDecks: false }],
+    ["a payload without the gate (the swap tools off)", {}],
+  ])("draws nothing for %s", async (_, gate) => {
+    await openCard(gate);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.queryAllByTestId("fits-door")).toHaveLength(0);
   });
 
   it("stacks the picker over the card, which stays mounted and covered", async () => {
     actions.loadFitsAction.mockResolvedValue(read());
     await openCard({ commanderLegal: true, hasDecks: true });
+    const cardNode = document.querySelector('[aria-labelledby^="card-modal-title"]');
     await act(async () => { fireEvent.click(screen.getAllByTestId("fits-door")[0]); });
     await settle();
     expect(screen.getByTestId("fits-picker")).toBeInTheDocument();
-    expect(screen.getAllByTestId("fits-door")[0].closest("[inert]")).not.toBeNull();
+    // The same node, not a remount under a new key, and covered.
+    expect(cardNode?.isConnected).toBe(true);
+    expect(document.querySelector('[aria-labelledby^="card-modal-title"]')).toBe(cardNode);
+    expect(cardNode?.closest("[inert]")).not.toBeNull();
   });
 });

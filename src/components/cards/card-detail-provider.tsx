@@ -658,8 +658,9 @@ export function CardDetailProvider({
           total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
           onClose={NOOP}
           covered
-          // Where it sat live: 52 for a card a Shopping row opened (F16), full height for any other.
-          phoneTop={held.door ? 52 : undefined}
+          // Where it sat live: 52 for a card whose Shopping door drew (F16), by the same test the live
+          // card uses; full height for any other, including a Shopping card its door has nothing for.
+          phoneTop={held.door && doorRender && doorRender(held.card.oracleId, "art") !== null ? 52 : undefined}
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
           onFindDeck={fitsDoor(held.card)}
