@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const stub = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/intake/deeper-read", () => ({ runDeeperRead: stub.run }));
+const flag = vi.hoisted(() => ({ on: true }));
+vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
 import { lookDeeper } from "./actions";
 
@@ -14,10 +16,17 @@ const ID = "0000aaaa-0000-4000-8000-000000000001";
 const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: null };
 
 beforeEach(() => {
+  flag.on = true;
   stub.run.mockReset().mockResolvedValue({ kind: "read", chips: [], notUsed: [], notUnderstood: [] });
 });
 
 describe("lookDeeper", () => {
+  it("is not found with the feature off, and reserves nothing", async () => {
+    flag.on = false;
+    await expect(lookDeeper(ok)).rejects.toThrow("not found");
+    expect(stub.run).not.toHaveBeenCalled();
+  });
+
   it("refuses a forged argument before any read is reserved", async () => {
     const forged = [
       null, undefined, "words", 42,

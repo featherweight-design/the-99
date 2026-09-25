@@ -2,6 +2,7 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { runDeeperRead, type DeeperReadOutcome } from "../../../../lib/intake/deeper-read";
+import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { MAX_BUDGET_DOLLARS } from "../../../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS } from "../../../../lib/intake/limits";
 import { isUuid } from "../../../../lib/uuid";
@@ -25,6 +26,8 @@ export async function lookDeeper(input: {
   bracket: number | null;
 }): Promise<LookDeeperResult> {
   const userId = await requireUserId();
+  // An action stays callable when its page is hidden: with the feature off, nothing is reserved.
+  if (!helpMeChooseEnabled()) throw new Error("not found");
   // The argument is whatever a caller sent: shape first, before any field is read.
   if (typeof input !== "object" || input === null) return { kind: "refused" };
   const words = typeof input.words === "string" ? input.words.trim() : "";
