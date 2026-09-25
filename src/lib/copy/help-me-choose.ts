@@ -102,6 +102,8 @@ export const helpMeChooseCopy = {
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
     more: "Show 12 more",
     moreNote: "The next 12 count what you own as they load.", // canvas
+    // When the next slice itself fails to load (no count ran); the button beside it is the retry.
+    moreFailed: "Couldn’t load more commanders. Try again.",
   },
   narrow: {
     few: (n: number) => (n === 1 ? "Only one commander fits all of that" : `Only ${n} commanders fit all of that`),

@@ -680,7 +680,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | Property | Mobile | Desktop |
 |---|---|---|
 | — | as Component OwnershipLine; loading bar 90px wide | same |
-| separator `·` between mark and text | — (not drawn on cards) | — |
+| separator `·` between mark and text | drawn, as on rows (see OwnershipLine; orchestrator ruling 2026-09-25) | same |
 
 ---
 
@@ -693,7 +693,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | font | mono 10px, letter-spacing 0.14em, uppercase | same |
 | color | `--fg-faint` | `--fg-faint` |
 | margin-top | 6px | 6px |
-| copy key | `results.more` (first definition; O10) | same |
+| copy key | `results.moreCommanders` (O10: the first `more`, given its own key) | same |
 
 ### Row list
 | Property | Mobile | Desktop |
@@ -782,11 +782,11 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | display | flex | flex |
 | flex-wrap | wrap | wrap |
 | align-items | center | center |
-| gap | 3px 7px | 3px 7px |
+| gap | 3px row gap; no column gap (each segment's 14px separator slot spaces it) | same |
 | font | mono 10px | mono 11px |
 | color | `--fg-muted` | `--fg-muted` |
-| order | mark → `·` (rows only, `--border-strong`) → text | same |
-| copy key | `results.ownLine(owned, buy, cap?)`; `, inside {cap}` only when a budget was given | same |
+| order | unbreakable segments: mark, count, buy figure, each led by its own `·` (`--border-strong`) in a 14px slot, inside a clipped gutter so the separator of a segment that starts a line is never drawn (orchestrator ruling 2026-09-25: no separator first or last on a line; this supersedes the canvas's rows-only separator, on cards too) | same |
+| copy key | `results.ownCount(owned)` and `results.ownBuy(buy, cap?)`; `, inside {cap}` only when a budget was given and the figure is inside it | same |
 
 ### Mark (O7: ship the components)
 | Property | Mobile | Desktop |
@@ -845,7 +845,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | color | `--fg-body` | `--fg-body` |
 | font-size | 13.5px | 13.5px |
 | white-space | nowrap | nowrap |
-| copy key | `results.more` (second definition; O10) | same |
+| copy key | `results.more` (the second definition; O10) | same |
 
 ### Line
 | Property | Mobile | Desktop |
@@ -853,7 +853,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | font | mono 11px | mono 11px |
 | color | `--fg-faint` | `--fg-faint` |
 | content | no total (O4) | same |
-| copy key | `results.moreLine` (wording per HANDOFF §4, no count) | same |
+| copy key | `results.moreNote` (wording per HANDOFF §4, no count; O4 retired `moreLine`); `results.moreFailed` when the next slice fails to load | same |
 
 ---
 

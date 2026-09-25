@@ -32,7 +32,11 @@ export function parseBudget(raw: string): number | null {
   return n >= 1 && n <= MAX_BUDGET_DOLLARS ? n : null;
 }
 
-/** The submit's address: the form's answers, then `v=submit` for the server to resolve. */
+/**
+ * The submit's address: the form's answers, then `v=submit` for the server to resolve. The card is
+ * dropped: the form draws no card control, so its only card is one its words name, and the words
+ * go with it. A card the player deleted from the words must not come back from the address.
+ */
 export function submitHref(p: ChooseParams): string {
   const qs = serializeChooseParams({ ...p, card: null, readId: null, notUsed: [], results: false });
   return `${CHOOSE_PATH}${qs ? `${qs}&` : "?"}v=submit`;

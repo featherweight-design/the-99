@@ -2,7 +2,8 @@
 // One result (HANDOFF §4): a row, or one of the three best-fit cards. Both carry the same four
 // facts: the commander (its name opens the card), its figures with the weakest lit and tagged
 // SETS RANK, its own mark (free, held, or a buy), and the ownership line, which is a real fill run
-// for this row alone once it is on screen (`trialFillRow`).
+// for this row. The runs are the list's (`ChooseResults`), one `trialFillRows` call per slice of
+// twelve as the slice arrives, and a row draws whichever state its own run is in.
 //
 // TWO CONTROLS, NEVER NESTED. The row's press is a link to the create page (brief §8 Q7), drawn
 // as the trailing `›` and stretched over the whole row; the name is a sibling button raised above

@@ -156,7 +156,7 @@ export function ChooseResults({
             {copy.results.more}
           </button>
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-            {failed ? copy.results.rowFailed : copy.results.moreNote}
+            {failed ? copy.results.moreFailed : copy.results.moreNote}
           </span>
         </div>
       )}

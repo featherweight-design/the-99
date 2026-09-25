@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const trialFillRows = vi.fn();
@@ -53,6 +53,11 @@ describe("the results", () => {
     draw(page(3, { tooNarrow: narrow }));
     expect(screen.queryAllByTestId("best-fit")).toHaveLength(0);
     expect(screen.getByTestId("narrow-few")).toBeTruthy();
+    cleanup();
+    // Three rows and no narrow bar: the count alone withholds the best fits.
+    draw(page(3));
+    expect(screen.queryAllByTestId("best-fit")).toHaveLength(0);
+    expect(screen.getAllByTestId("result-row")).toHaveLength(3);
   });
 
   it("replaces the results with the empty state when nothing fits, with no order line", () => {
@@ -68,6 +73,15 @@ describe("the results", () => {
     expect(moreRows).toHaveBeenCalledWith("t=dinosaurs&v=results", 12);
     expect(screen.getByText("Commander 13")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Show 12 more" })).toBeNull();
+  });
+
+  it("says the next slice failed to load, not that a count failed, and keeps the button", async () => {
+    moreRows.mockRejectedValue(new Error("down"));
+    draw(page(12, { hasMore: true }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    expect(screen.getByText("Couldn’t load more commanders. Try again.")).toBeTruthy();
+    expect(screen.queryByText("Couldn’t count what you own.")).toBeNull();
+    expect(screen.getByRole("button", { name: "Show 12 more" })).toBeTruthy();
   });
 
   it("counts a slice's figures in ONE call, and each new slice in one more", async () => {
