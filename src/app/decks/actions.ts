@@ -47,9 +47,11 @@ import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import {
-  dedupeSelectionFromPool, planFill,
-  type FillPlan, type FillShortfall, type PlanFillArgs,
+  capToBody, dedupeSelectionFromPool, planFill,
+  type FillCandidate, type FillPlan, type FillShortfall, type PlanFillArgs,
 } from "../../lib/decks/fill";
+import { loadFillGate, type DeckAnswers } from "../../lib/intake/fill-facts";
+import { answerColumnsFor, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
@@ -98,6 +100,9 @@ export async function buildFillPlan(
     /** The deck being filled, so its OWN claims are not counted against it when
      *  `pool: "sleeveable"` narrows to cards with a free copy. */
     excludeDeckId?: string;
+    /** What Help me choose was asked (F1): the budget and bracket become a gate on the fill.
+     *  Absent on every other path, which then fills exactly as before. */
+    answers?: DeckAnswers;
   } = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
@@ -228,7 +233,8 @@ export async function buildFillPlan(
     excludeOracleIds,
   );
 
-  return planFill([
+  const { answers, ...fillOptions } = options;
+  const candidates: FillCandidate[] = [
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
       oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
@@ -241,7 +247,14 @@ export async function buildFillPlan(
       layout: c.layout, owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ], { hasPartner, skeleton, synergyRank, ...options });
+  ];
+  const gate = answers
+    ? await loadFillGate({
+      userId, commanderIds: commanders.map((c) => c.oracleId), answers, candidates,
+      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
+    })
+    : undefined;
+  return planFill(candidates, { hasPartner, skeleton, synergyRank, ...fillOptions, gate });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
@@ -258,8 +271,11 @@ export async function createDeck(
   name: string,
   selectedOracleIds: string[] = [],
   partnerOracleId: string | null = null,
+  /** What Help me choose was asked (F1), when the deck is started from it. */
+  answers: CreateAnswers | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
+  const asked = answers === null ? null : validateCreateAnswers(answers);
   // Shape first: a crafted request can put any string here, and a malformed uuid
   // reaching `inArray` is rejected by Postgres rather than by this action — the
   // player would see a 500 where the refusal below reads as one.
@@ -312,6 +328,8 @@ export async function createDeck(
 
   const deckName = validateDeckName(name);
   let deckId: string;
+  // Filled in once the build-around card is resolved; the empty-deck fallback writes them too.
+  let answerColumns: AnswerColumns = asked === null ? {} : answerColumnsFor(asked, null, partner ? [commander.name, partner.name] : [commander.name]);
   try {
     // A malformed id would otherwise reach Postgres as a failed uuid cast, and
     // the whole create would fall back to an empty deck. Sanitizing here rather
@@ -319,16 +337,29 @@ export async function createDeck(
     // shape filter, the dedupe, and the 99 bound all have to hold on its own
     // argument. Dedupe also keeps one repeated id from conflicting with itself
     // inside the insert's own VALUES list.
-    const requested = sanitizeSelection(selectedOracleIds);
+    // The build-around card is always placed (§3.0), so it joins the selection and passes the
+    // same legality check as any other pick.
+    const requested = sanitizeSelection([
+      ...(asked?.cardOracleId ? [asked.cardOracleId] : []), ...selectedOracleIds,
+    ]);
     const candidates = requested.length > 0
       ? await db
           .select({
             oracleId: cards.oracleId,
+            name: cards.name,
             commanderLegal: cards.commanderLegal,
             colorIdentity: cards.colorIdentity,
+            typeLine: cards.typeLine,
           })
           .from(cards)
           .where(inArray(cards.oracleId, requested))
+          // A basic land is never a build-around card (the free match leaves basics out), and
+          // `validateCardForDeck` admits one. This action is directly callable, so the rule holds
+          // here too: a basic named as the answer is dropped, neither placed nor stored.
+          .then((rows) => rows.filter((c) => !(c.oracleId === asked?.cardOracleId && isBasicLand(c.typeLine))))
+          // Back in the order asked for, since the query keeps none: the build-around card leads
+          // `requested`, so it is placed first and is never the row `capToBody` cuts.
+          .then((rows) => rows.sort((a, b) => requested.indexOf(a.oracleId) - requested.indexOf(b.oracleId)))
       : [];
     // `built: 0` asks about legality alone, exactly as restoreAutoCards does —
     // the cap is enforced by the loop inside the transaction below.
@@ -342,6 +373,11 @@ export async function createDeck(
       }))
       .map((card) => card.oracleId);
     const selectedSet = new Set(selected);
+    // A build-around card the deck cannot hold is not an answer the deck can keep.
+    const card = asked?.cardOracleId && selectedSet.has(asked.cardOracleId)
+      ? candidates.find((c) => c.oracleId === asked.cardOracleId)!
+      : null;
+    answerColumns = asked === null ? {} : answerColumnsFor(asked, card, partner ? [commander.name, partner.name] : [commander.name]);
 
     const bodySize = deckBodySize(partnerOracleId !== null);
     const plan = await buildFillPlan(
@@ -353,11 +389,12 @@ export async function createDeck(
           : []),
       ],
       selectedSet,
+      asked === null ? {} : { answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null } },
     );
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
         .values({
-          userId, name: deckName, commanderOracleId, partnerOracleId, filled: true,
+          userId, name: deckName, commanderOracleId, partnerOracleId, filled: true, ...answerColumns,
         })
         .returning({ id: decks.id });
       // The selection first, then as much of the fill as fits under the body
@@ -368,18 +405,7 @@ export async function createDeck(
         ...selected.map((oracleId) => ({ deckId: deck.id, oracleId, quantity: 1, auto: true })),
         ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       ];
-      const capped: typeof rows = [];
-      let built = 0;
-      for (const row of rows) {
-        const remaining = bodySize - built;
-        if (remaining <= 0) break;
-        // A stack that overruns the cap is truncated, not dropped. Skipping it
-        // would leave the deck short of its body with room still on the table —
-        // two slots left and a stack of four Forests next would spend neither.
-        const quantity = Math.min(row.quantity, remaining);
-        capped.push({ ...row, quantity });
-        built += quantity;
-      }
+      const capped = capToBody(rows, bodySize);
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
 
@@ -387,7 +413,8 @@ export async function createDeck(
         // placed something. The selection comes first in `capped`, so anything past it is the
         // app's; a deck of the player's own picks alone has no brief to disclose. In the
         // creating transaction, so no deck the app filled is ever read unseeded.
-        if (capped.length > selected.length) {
+        // A Help me choose deck's brief is the player's answers, already written with the insert.
+        if (capped.length > selected.length && asked === null) {
           await tx.update(decks)
             .set({ intent: seededIntent(partner ? [commander.name, partner.name] : [commander.name]), intentSeeded: true })
             .where(eq(decks.id, deck.id));
@@ -433,8 +460,9 @@ export async function createDeck(
     // and the banner offers the fill again — losing the deck too would cost
     // them the one thing they actually asked for.
     console.error("buildFillPlan failed — falling back to empty deck", err);
+    // The answers ride on the empty deck too (F1), so the retry fills to them.
     const [deck] = await db.insert(decks)
-      .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: false })
+      .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: false, ...answerColumns })
       .returning({ id: decks.id });
     deckId = deck.id;
   }
@@ -749,7 +777,27 @@ export async function fillDeck(deckId: string): Promise<void> {
     ? await db.select().from(cards).where(eq(cards.oracleId, deck.partnerOracleId))
     : [];
   const hasPartner = deck.partnerOracleId !== null;
-  const plan = await buildFillPlan(userId, partner ? [commander, partner] : [commander], new Set());
+  // THE ANSWERS A HELP ME CHOOSE CREATE STORED (F1), so a fill that failed at creation is retried
+  // to what was asked: the same budget and bracket gates, and the build-around card placed first,
+  // exactly as the create would have placed it.
+  const buildAround = deck.answerCardOracleId ?? null;
+  const budgetCents = deck.answerBudgetCents ?? null;
+  const bracket = bracketOf(deck.answerBracket ?? null);
+  const answers: DeckAnswers | null = budgetCents === null && bracket === null && buildAround === null
+    ? null
+    : { budgetCents, bracket, cardOracleId: buildAround };
+  const plan = await buildFillPlan(
+    userId,
+    partner ? [commander, partner] : [commander],
+    new Set(buildAround ? [buildAround] : []),
+    answers === null ? {} : { answers },
+  );
+  // The card first, then as much of the plan as fits: the plan fills a whole body on its own, so
+  // uncapped a stored card made 100.
+  const rows = capToBody([
+    ...(buildAround ? [{ oracleId: buildAround, quantity: 1, role: "other" as const }] : []),
+    ...plan.rows,
+  ], deckBodySize(hasPartner));
   await db.transaction(async (tx) => {
     // Lock the deck row before re-reading, the same way addCardToDeck does.
     // Without it the read sees a snapshot: a hand-add that commits between the
@@ -763,9 +811,9 @@ export async function fillDeck(deckId: string): Promise<void> {
     const existingNow = await tx.select({ oracleId: deckCards.oracleId })
       .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
     if (existingNow.length > 0) return;
-    if (plan.rows.length > 0) {
+    if (rows.length > 0) {
       await tx.insert(deckCards).values(
-        plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+        rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
       // THE SAME TWO PASSES THE CREATE RECORDS. This path runs the identical whole-body
       // `planFill`, so recording it as one seed would make the retry's residual non-undoable
@@ -776,8 +824,10 @@ export async function fillDeck(deckId: string): Promise<void> {
       const retryResidualIds = new Set(
         plan.rows.filter((r) => r.role === "other").map((r) => r.oracleId),
       );
-      const retryFoundation = plan.rows.filter((r) => !retryResidualIds.has(r.oracleId));
-      const retryResidual = plan.rows.filter((r) => retryResidualIds.has(r.oracleId));
+      // The build-around card is foundation, as the create files a selection: the player asked
+      // for it, so it is never among the suggestions a top-off undo clears.
+      const retryFoundation = rows.filter((r) => !retryResidualIds.has(r.oracleId));
+      const retryResidual = rows.filter((r) => retryResidualIds.has(r.oracleId));
       await recordFillPass(tx, {
         deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
         rows: retryFoundation.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),

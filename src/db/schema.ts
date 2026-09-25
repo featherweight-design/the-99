@@ -332,14 +332,14 @@ export const decks = pgTable("decks", {
   /**
    * What the player asked for in Help me choose, when the deck was started from it (F1): the budget
    * cap in whole dollars as cents, the bracket, and the card to build around. Stored as data, so a
-   * fill that failed at creation has them when its retry (`fillDeck`) runs. All null for a deck
-   * started any other way.
+   * fill that failed at creation has them when its retry (`fillDeck`) runs: the same budget and
+   * bracket gates, and the card placed first. All null for a deck started any other way.
    */
   answerBudgetCents: integer("answer_budget_cents"),
   answerBracket: integer("answer_bracket"),
   answerCardOracleId: uuid("answer_card_oracle_id").references(() => cards.oracleId),
-  /** True while the answers' intent sentence is owed: a deck whose fill failed at creation seeds it
-   *  when its retry succeeds, and clears this then. */
+  /** UNUSED, and dropped by Help me choose's next migration: the answers' brief is written at create
+   *  on both paths (`answerColumnsFor`), so no sentence is ever owed to a retry. */
   answerIntentPending: boolean("answer_intent_pending").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**

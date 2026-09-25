@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong, seededIntent } from "./limits";
+import { ANSWER_TOKENS_WORST_CASE, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS, TUNING_RETRY_FLOOR_MS, intentTooLong, seededAnswersIntent, seededIntent } from "./limits";
 
 // The deck page's maxDuration bounds the run's Server Action, so the model deadline must fit
 // under it with room for the reads and writes around the call. Read from the page's source:
@@ -76,5 +76,36 @@ describe("seededIntent", () => {
       expect(intent.startsWith("Built around ")).toBe(true);
     }
     expect(seededIntent([long, long]).endsWith("….")).toBe(true);
+  });
+});
+
+describe("seededAnswersIntent (F2)", () => {
+  const none = { themes: [], cardName: null, budgetDollars: null, bracket: null };
+
+  it("writes every answer as the brief", () => {
+    expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { themes: ["Dinosaurs"], cardName: "Doubling Season", budgetDollars: 150, bracket: 3 }))
+      .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, with Doubling Season, under $150, bracket 3.");
+  });
+
+  it("names several themes as a list", () => {
+    expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { ...none, themes: ["Dinosaurs", "Ramp", "Landfall"] }))
+      .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, Ramp and Landfall.");
+  });
+
+  it("falls back to the commander and its themes when the whole sentence is over the cap", () => {
+    const long = "A".repeat(80);
+    const s = seededAnswersIntent(["Gishath, Sun's Avatar"], { themes: ["Dinosaurs"], cardName: long, budgetDollars: 150, bracket: 3 });
+    expect(s).toBe("Built around Gishath, Sun's Avatar: Dinosaurs.");
+  });
+
+  it("falls back to seededIntent when even that is over, and with nothing asked", () => {
+    const names = ["Gishath, Sun's Avatar"];
+    expect(seededAnswersIntent(names, { ...none, themes: ["T".repeat(120)] })).toBe(seededIntent(names));
+    expect(seededAnswersIntent(names, none)).toBe(seededIntent(names));
+  });
+
+  it("never passes the cap, counted in code points", () => {
+    const s = seededAnswersIntent(["Æ".repeat(200)], { themes: ["Ω".repeat(50)], cardName: "x", budgetDollars: 1, bracket: 1 });
+    expect([...s].length).toBeLessThanOrEqual(120);
   });
 });

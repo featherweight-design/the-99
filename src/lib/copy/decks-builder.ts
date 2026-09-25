@@ -173,7 +173,7 @@ export const addPanelCopy = {
   },
 
   // ── Unowned suggestions ───────────────────────────────────────────────
-  // getDeckSuggestions appends up to five unowned EDHREC staples, which used
+  // getDeckSuggestions appends up to six unowned EDHREC staples, which used
   // to say so only by the absence of an aria-hidden dot. There is no tile note
   // to go with these: it would restate the tag and the shelf heading in a noun
   // this app does not have. Ownership already has three independent carriers —

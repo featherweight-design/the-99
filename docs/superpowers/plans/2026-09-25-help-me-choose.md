@@ -181,10 +181,32 @@ synopsis's.
   and filters nothing.
 - `probe:fill`-style proof, and mutations.
 
+**PR 3 as built (2026-09-25).**
+- **`planFill` takes a gate**, an optional `FillGate` with `admits` and `place`. It is checked at
+  every placement point: the floor loop, its tie-break scan, each land pass through `takeLand`,
+  and the residual. Absent, every caller fills as before; the probe checks that a bracket-4 ask
+  with no budget returns the plain plan row for row.
+- **The budget gate** (`fill-gate.ts`) is a running cap over buys, where a buy follows the
+  Shopping list's rule: a basic never; an unowned card; an owned card whose every copy is claimed.
+  A card never stocked is left out. The build-around card is charged first.
+- **The bracket gate** counts the commander and the build-around card, then every placement, through
+  `violationsFor`.
+  - At 1 and 2 it refuses the second half of any counted two-card combo.
+  - At 3 it refuses what would let the deck assemble one (`comboLandsEarly`, with the profile
+    builder's reach rules).
+- **The answers are written at create, on both paths**, the brief included. At creation nobody has
+  edited the intent yet, and it is the only moment the themes are known. `fillDeck` reads the
+  stored budget, bracket and card, places the card first and fills under the gates, but writes no
+  intent, by the rule that path already keeps (a cleared line reads like one never written). So
+  **`answer_intent_pending` is unused**; PR 4's migration drops it.
+- **The trial fill** (`trial.ts`) gives a row its figures: owned of the body, and the Shopping-list
+  buy total. A never-stocked build-around card is flagged rather than priced at $0 (F8).
+- The stale "up to five" comment in `decks-builder.ts` now says six (orchestrator's note).
+
 **PR 4: the deeper read.**
 - The model feature, moved from PR 1: `ModelFeature`, `FEATURE_CALLS` with its measured input
   ceiling, `src/lib/intake/limits.ts`, and a migration adding `'intake'` to
-  `model_calls_feature_check`.
+  `model_calls_feature_check` and dropping the unused `decks.answer_intent_pending` (see PR 3).
 - The prompt, the response schema, and the validator: vocabulary and catalog, with control beating
   words.
 - The run store and the reaper.

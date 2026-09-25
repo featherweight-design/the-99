@@ -2322,3 +2322,103 @@ describe("chooseBulkFill", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe("createDeck — Help me choose's answers (F1, F2)", () => {
+  // Bracket 4 states no limits and no budget is asked, so no gate reads the database: what is
+  // proved here is what the create WRITES, and the gates themselves are `fill-gate.test.ts`'s.
+  const answers = { themes: ["Superfriends"], cardOracleId: null, budgetDollars: null, bracket: 4 };
+  const runAsked = async (a: Parameters<typeof createDeck>[4]) => {
+    try {
+      await createDeck(COMMANDER_ORACLE, "My Deck", [], null, a);
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+  };
+
+  it("stores the answers on the deck and writes them as the brief, in the insert", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await runAsked(answers);
+
+    const insert = stub.state.insertCalls.find((c) => c.table === "decks")!;
+    expect(insert.values).toMatchObject({
+      answerBracket: 4, answerBudgetCents: null, answerCardOracleId: null,
+      intent: "Built around Atraxa, Praetors' Voice: Superfriends, bracket 4.", intentSeeded: true,
+    });
+    // The fill's own brief is not written over the answers.
+    expect(stub.state.updateCalls.some((c) => (c.values as { intent?: string }).intent?.includes("from the cards you own"))).toBe(false);
+  });
+
+  it("places the build-around card first, whatever order the catalog read returns", async () => {
+    const picked = { ...rampCard(1), oracleId: "0000aaaa-0000-4000-8000-000000000001" };
+    const around = { ...rampCard(2), oracleId: "0000bbbb-0000-4000-8000-000000000002" };
+    // The picked card comes back first from an unordered read; the build-around must still lead.
+    stub.state.cards.push(commanderCard(), picked, around);
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i + 10)));
+
+    try {
+      await createDeck(COMMANDER_ORACLE, "My Deck", [picked.oracleId], null, { ...answers, cardOracleId: around.oracleId });
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+
+    const placed = stub.state.insertCalls.filter((c) => c.table === "deck_cards")
+      .flatMap((c) => (Array.isArray(c.values) ? c.values : [c.values]) as { oracleId: string }[]);
+    expect(placed[0].oracleId).toBe(around.oracleId);
+  });
+
+  it("drops a basic land named as the build-around card: neither stored nor placed", async () => {
+    // A uuid-shaped id, so the selection's shape filter cannot be what drops it.
+    const basic = { ...forestCard(1), oracleId: "0000f0e5-0000-4000-8000-000000000001" };
+    stub.state.cards.push(commanderCard(), basic);
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await runAsked({ ...answers, cardOracleId: basic.oracleId });
+
+    const insert = stub.state.insertCalls.find((c) => c.table === "decks")!;
+    expect(insert.values).toMatchObject({ answerCardOracleId: null });
+    const placed = stub.state.insertCalls.filter((c) => c.table === "deck_cards")
+      .flatMap((c) => (Array.isArray(c.values) ? c.values : [c.values]) as { oracleId: string }[]);
+    expect(placed.some((r) => r.oracleId === basic.oracleId)).toBe(false);
+  });
+
+  it("keeps the answers on the empty deck a failed fill leaves, so the retry fills to them", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    stub.state.transactionError = new Error("transaction failed");
+
+    await runAsked(answers);
+
+    const inserts = stub.state.insertCalls.filter((c) => c.table === "decks");
+    expect(inserts[inserts.length - 1].values).toMatchObject({ filled: false, answerBracket: 4, intentSeeded: true });
+  });
+
+  it("retries a failed fill to the stored answers: the build-around card first, and the body whole", async () => {
+    stub.state.decks.push({
+      id: "deck-2", userId: "user_1", commanderOracleId: COMMANDER_ORACLE,
+      answerCardOracleId: "card-build-around", answerBracket: 4, answerBudgetCents: null,
+    });
+    stub.state.cards.push(commanderCard());
+    // Enough for the plan to fill the whole body by itself, which is what put a stored card at 100.
+    stub.state.collectionItems.push(
+      ...Array.from({ length: 120 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 40 }, (_, i) => forestCard(i, 4)),
+    );
+
+    await fillDeck("deck-2");
+
+    const inserted = stub.state.insertCalls
+      .filter((c) => c.table === "deck_cards")
+      .flatMap((c) => c.values as { oracleId: string; quantity: number }[]);
+    // The card is placed first; the cap on the body is `capToBody`'s, pinned in fill.test.ts.
+    expect(inserted[0].oracleId).toBe("card-build-around");
+    expect(inserted.reduce((n, r) => n + r.quantity, 0)).toBeLessThanOrEqual(99);
+  });
+
+  it("refuses a budget that is not whole dollars, and a bracket outside 1 to 5", async () => {
+    stub.state.cards.push(commanderCard());
+    await expect(runAsked({ ...answers, budgetDollars: 1.5 })).rejects.toThrow("budget must be whole dollars");
+    await expect(runAsked({ ...answers, bracket: 6 })).rejects.toThrow("bracket must be 1 to 5");
+  });
+});

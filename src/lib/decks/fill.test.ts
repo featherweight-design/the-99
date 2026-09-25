@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dedupeSelectionFromPool, planFill, type FillCandidate, type FillPlan } from "./fill";
+import { capToBody, dedupeSelectionFromPool, planFill, type FillCandidate, type FillPlan } from "./fill";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 
 /** The asserted baseline, which is what every case below the new block was written against. */
@@ -702,5 +702,33 @@ describe("held", () => {
     // Ten: the floor is shut, and the same card falls through to the residual.
     expect(planFill([rampSpell], { ...FLAT, slots: 1, held: held(10) }).rows[0].role)
       .toBe("other");
+  });
+});
+
+describe("a gate (Help me choose's budget and bracket)", () => {
+  it("passes over every card it refuses, in every pass, and hears each placement in order", () => {
+    const pool = [
+      ...poolOf(120),
+      ...Array.from({ length: 40 }, (_, i) => c({ oracleId: `land${i}`, typeLine: "Land", oracleText: "{T}: Add {C}." })),
+    ];
+    const refused = new Set(["p0", "p1", "p2", "p3", "p4", "land0", "land1"]);
+    const heard: string[] = [];
+    const plan = planFill(pool, { ...FLAT, gate: { admits: (x) => !refused.has(x.oracleId), place: (x) => heard.push(x.oracleId) } });
+    const placedIds = plan.rows.map((r) => r.oracleId);
+    expect(placedIds.filter((id) => refused.has(id))).toEqual([]);
+    expect(heard).toEqual(placedIds);
+    // The fill carried on past the refusals rather than stopping short.
+    expect(plan.filled).toBe(planFill(pool, FLAT).filled);
+  });
+});
+
+describe("capToBody", () => {
+  it("keeps rows in order until the body is full, truncating the stack that overruns it", () => {
+    const rows = [{ id: "card", quantity: 1 }, { id: "a", quantity: 60 }, { id: "forest", quantity: 40 }, { id: "late", quantity: 1 }];
+    expect(capToBody(rows, 99)).toEqual([{ id: "card", quantity: 1 }, { id: "a", quantity: 60 }, { id: "forest", quantity: 38 }]);
+  });
+
+  it("leaves a body that fits untouched", () => {
+    expect(capToBody([{ quantity: 98 }], 99)).toEqual([{ quantity: 98 }]);
   });
 });
