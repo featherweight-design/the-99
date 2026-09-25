@@ -296,6 +296,12 @@ and the screens instead, and every merge leaves staging whole:
   answers* and *Start over*, mutations, and feature-acceptance.
 
 **PR 6: Look deeper, the doors and the hand-off.**
+- **An early Stop is never charged (orchestrator, 2026-09-25; the follow-up from PR 4's round 10).**
+  A Stop that reaches the database before its press has even taken the ask lock finds no read,
+  because the read does not exist yet. So the panel re-sends that Stop as soon as the press
+  returns its read id, and that re-send must land before the read can settle as delivered: a Stop
+  the player pressed can never end in a spent unit. A probe case proves it, with a Stop issued
+  before the start commits and the unit read back `refunded`.
 - The panel's seven states plus owner share, derived from the paused frame (F11), and the deeper
   chips with their tag.
 - The doors:
