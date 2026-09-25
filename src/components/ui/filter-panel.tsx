@@ -26,7 +26,7 @@
 // remount the search input and it would lose focus on the first keystroke.
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { useScrollLock } from "../../lib/a11y/dialog";
+import { useBackDismiss, useScrollLock } from "../../lib/a11y/dialog";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
@@ -284,6 +284,11 @@ export function FilterPanel({
     setDragY(0);
     triggerRef.current?.focus({ preventScroll: opts?.preventScroll ?? false });
   }, []);
+
+  // Back closes the sheet rather than the route (#155), on the same terms as the
+  // lock above: the phone's sheet is a modal, the desktop popover is a dropdown.
+  const closeFromBack = useCallback(() => close(), [close]);
+  useBackDismiss(open && !isDesktop, closeFromBack);
 
   // Focus the search field on open — DOM focus then stays there for the panel's
   // whole life, which is what keeps typing uninterrupted by the arrow keys. With

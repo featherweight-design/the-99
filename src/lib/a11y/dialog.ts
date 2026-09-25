@@ -70,6 +70,213 @@ export function useScrollLock(locked: boolean) {
   }, [locked]);
 }
 
+// ── The back button ────────────────────────────────────────────────────────────
+//
+// Android's hardware back, and a browser's own Back, used to leave the ROUTE with
+// a sheet still open over it (#155). A dialog now puts one history entry under
+// itself while it is up, at the same URL, so Back lands on that entry's
+// predecessor and closes the dialog instead of navigating.
+//
+// The rules, each a way it would otherwise break:
+//
+// 1. Back does what Escape does. A dialog whose Escape steps down a rung — the card
+//    modal's zoom, then its printing region — steps down one rung per Back, and gets
+//    a fresh entry while it is still up. One that refuses Escape (a confirm whose
+//    replace is running) refuses Back and takes its entry back.
+// 2. A dialog closed any OTHER way — its ✕, Escape, the scrim — takes its own entry
+//    back off, or the next Back would do nothing visible. Only while that entry is
+//    still the current one and the route has not moved: a link inside the dialog
+//    that navigated has put a newer entry on top, and stepping back would undo it.
+//    That entry is remembered instead, and a traversal that lands on it steps past.
+// 3. The URL a sheet wrote while open survives the pop. Filter sheets and the card
+//    modal mirror their state into the query string with `replaceState`, which
+//    rewrites the dialog's entry, not its predecessor. The URL is put back after the
+//    pop: a back() this module issues knows what it left, and a hardware Back reads
+//    it off the Navigation API's `navigate` event.
+// 4. Nested dialogs close one per Back, and a pop this module caused closes nothing.
+//
+// Where there is no Navigation API (Firefox, today) an entry cannot be told apart
+// from its neighbours: rule 2 then decides on the path alone, a hardware Back cannot
+// keep a URL written while the sheet was up, and no entry is skipped.
+
+type BackEntry = {
+  close: () => void;
+  /** False while the dialog refuses to close — the same moments it refuses Escape. */
+  canClose: () => boolean;
+  /** The Navigation API key of the entry under this dialog, or null without one. */
+  key: string | null;
+  path: string;
+  /** Whether the entry is still in the session history, unpopped. */
+  onHistory: boolean;
+  /** A release waiting one task, so a remount in the same tick can reclaim the entry. */
+  release: ReturnType<typeof setTimeout> | null;
+};
+const backStack: BackEntry[] = [];
+/** Entries a dialog left under a navigation it made; a traversal onto one steps past. */
+const orphans = new Set<string>();
+let selfPops = 0;
+/**
+ * When the pops this module is still owed stop being believed. A `back()` that
+ * produces no pop — there was nothing to go back to — would otherwise leave the
+ * count standing, and it would swallow the reader's next real Back.
+ */
+let selfPopsUntil = 0;
+let pendingRestore: string | null = null;
+let hrefBeforeTraverse: string | null = null;
+let traversingBack = true;
+let listening = false;
+
+type NavigationLike = {
+  currentEntry: { key: string; index: number } | null;
+  addEventListener: (
+    type: string,
+    listener: (e: { navigationType?: string; destination?: { index: number } }) => void,
+  ) => void;
+};
+function navigationApi(): NavigationLike | null {
+  return (window as unknown as { navigation?: NavigationLike }).navigation ?? null;
+}
+const currentKey = () => navigationApi()?.currentEntry?.key ?? null;
+
+/** Put back the URL the page held before the pop, when the pop moved it. */
+function restoreHref(href: string | null) {
+  if (href && href !== window.location.href) window.history.replaceState(null, "", href);
+}
+
+/** Stand the dialog on a fresh entry at the current URL. */
+function arm(entry: BackEntry) {
+  window.history.pushState(null, "");
+  entry.key = currentKey();
+  entry.path = window.location.pathname;
+  entry.onHistory = true;
+  backStack.push(entry);
+}
+
+function onPopState() {
+  const left = hrefBeforeTraverse;
+  hrefBeforeTraverse = null;
+  if (selfPops > 0 && Date.now() > selfPopsUntil) selfPops = 0;
+  const landed = currentKey();
+  if (selfPops > 0) {
+    selfPops -= 1;
+    restoreHref(pendingRestore);
+    pendingRestore = null;
+    return;
+  }
+  // Only with no dialog up: an open dialog's own entry is what this pop belongs to,
+  // and skipping past it would strand that dialog with its entry ahead in history.
+  if (landed !== null && orphans.has(landed) && backStack.length === 0) {
+    // A dialog's entry left under a navigation it made: the same URL as its
+    // predecessor, so landing here would be a Back that did nothing. Keep going.
+    orphans.delete(landed);
+    selfPops += 1;
+    selfPopsUntil = Date.now() + 1_000;
+    if (traversingBack) window.history.back();
+    else window.history.forward();
+    return;
+  }
+  const top = backStack.pop();
+  if (!top) return;
+  top.onHistory = false;
+  restoreHref(left);
+  if (!top.canClose()) {
+    arm(top);
+    return;
+  }
+  top.close();
+  // Re-armed at once, before React has committed the close, because until then no
+  // one can tell a rung from the whole dialog: the card modal's Escape closes its
+  // zoom and stays up. Waiting to find out left a window in which a second Back
+  // found no entry and left the route with the dialog still drawn. A dialog that
+  // DID close is cleaned up moments later, sees its entry still on the history,
+  // and takes it off by the same self-pop as any other close.
+  arm(top);
+}
+
+function listen() {
+  if (listening) return;
+  listening = true;
+  window.addEventListener("popstate", onPopState);
+  navigationApi()?.addEventListener("navigate", (e) => {
+    if (e.navigationType !== "traverse") return;
+    hrefBeforeTraverse = window.location.href;
+    const from = navigationApi()?.currentEntry?.index;
+    traversingBack = e.destination == null || from == null || e.destination.index < from;
+  });
+}
+
+/**
+ * Give an open dialog a history entry, so Back closes it rather than the route.
+ *
+ * The release waits one task, and that is for React rather than for the browser:
+ * StrictMode runs every effect's cleanup and setup again straight after mounting,
+ * and a `back()` issued in that cleanup lands AFTER the setup's fresh push —
+ * leaving the dialog open over an entry that is no longer its own. A remount inside
+ * the same task reclaims the entry instead.
+ */
+export function useBackDismiss(open: boolean, onClose: () => void, canClose: () => boolean = () => true) {
+  const closeRef = useRef(onClose);
+  const canCloseRef = useRef(canClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+    canCloseRef.current = canClose;
+  }, [onClose, canClose]);
+  const held = useRef<BackEntry | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    listen();
+    const reclaimed = held.current;
+    let entry: BackEntry;
+    if (reclaimed?.release != null) {
+      clearTimeout(reclaimed.release);
+      reclaimed.release = null;
+      entry = reclaimed;
+      if (entry.onHistory) backStack.push(entry);
+    } else {
+      entry = {
+        close: () => closeRef.current(),
+        canClose: () => canCloseRef.current(),
+        key: null,
+        path: "",
+        onHistory: false,
+        release: null,
+      };
+      held.current = entry;
+      arm(entry);
+    }
+    return () => {
+      const i = backStack.indexOf(entry);
+      if (i !== -1) backStack.splice(i, 1);
+      if (!entry.onHistory) {
+        held.current = null;
+        return;
+      }
+      entry.release = setTimeout(() => {
+        entry.release = null;
+        held.current = null;
+        if (!entry.onHistory) return;
+        entry.onHistory = false;
+        const current = currentKey();
+        const ours = entry.key === null || current === entry.key;
+        if (!ours || window.location.pathname !== entry.path) {
+          // A link inside the dialog navigated. Its entry stays under the new route,
+          // and a traversal back onto it steps past (rule 2). Only when no other
+          // dialog is still up: a lower dialog closing under an open one is not
+          // reachable from the page — the one above is aria-modal over a scrim — and
+          // an orphan made there would sit under a live entry.
+          if (entry.key !== null && backStack.length === 0) orphans.add(entry.key);
+          return;
+        }
+        pendingRestore = window.location.href;
+        selfPops += 1;
+        selfPopsUntil = Date.now() + 1_000;
+        window.history.back();
+      }, 0);
+    };
+  }, [open]);
+}
+
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
@@ -162,6 +369,12 @@ export function useDialogA11y(
   }, [dialogRef, initialFocusRef, inert]);
 
   useScrollLock(lockScroll && !inert);
+
+  // Back closes the dialog rather than the route (#155). Keyed on the same flag as
+  // the lock: a consumer that stays mounted while closed passes its open flag as
+  // `lockScroll`, and one that passes a literal false is a popover rather than a
+  // modal, which Back is not for.
+  useBackDismiss(lockScroll && !inert, onClose, () => closeOnEscape);
 
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {
