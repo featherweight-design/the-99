@@ -52,6 +52,8 @@ import {
   LOCKED_ROWS,
   CHANGE_COMMANDER,
   CHOOSE,
+  FITS,
+  STAND_INS,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -106,9 +108,14 @@ import {
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
 import { KeyNumeral } from "./numeral";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { ChooseRow } from "../intake/choose-row";
+import { FitsHolds, FitsPlate, FitsRows } from "../cards/fits-picker";
+import { StandInGroup, StandInRow } from "../decks/stand-ins-sheet";
+import { StandInLimit } from "../decks/stand-in-limit";
+import { SwapToolsProvider } from "../../lib/swaps/context";
 import { figures as chooseFigures } from "../../lib/intake/present";
 import { identityGradient } from "../../lib/collection/gradients";
 import { LockCardsProvider, type LockCards } from "../decks/lock-cards";
@@ -1568,6 +1575,84 @@ export function HelpMeChooseFigureBody() {
           />
         ))}
       </ul>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `fits-your-decks` — the body of Find a deck for it, drawn by the picker's own parts: the card plate, the
+ * decks that could take it (a combo reason, then a theme reason, as `shapeFits` orders them) and the
+ * decks that already hold it. The picker itself is not mounted: it reads its decks when it opens.
+ * `onAdd` is a no-op; `Specimen` is `inert`.
+ */
+export function FitsYourDecksFigureBody() {
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <div className="flex flex-col gap-[14px]">
+        <FitsPlate
+          name={FITS.card.name}
+          imageUri={FITS.card.imageUri}
+          colorIdentity={FITS.card.colorIdentity}
+          owned={FITS.owned}
+          freeNow={FITS.free}
+          countsKnown
+        />
+        <FitsRows
+          rows={FITS.rows}
+          staple={false}
+          cardName={FITS.card.name}
+          freeNow={FITS.free}
+          busy={null}
+          refused={null}
+          noteFor={() => null}
+          onAdd={() => {}}
+        />
+        <FitsHolds holds={FITS.holds} />
+      </div>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `stand-ins` — Shopping's limit line over the one row it marks (Plateau, over the default limit),
+ * then the first group of that row's stand-ins, drawn by the sheet's own group and rows. The sheet
+ * itself is not mounted: it reads its stand-ins when it opens. Take is a no-op; `Specimen` is `inert`.
+ */
+const PLATEAU: DeckDetailCard = {
+  ...DECKLIST_MARK_ROWS[0],
+  oracleId: "about-plateau",
+  name: "Plateau",
+  typeLine: "Land \u2014 Mountain Plains",
+  cardTypeGroup: "Lands",
+  role: "other",
+  cmc: 0,
+  owned: false,
+  manaCost: null,
+  availability: null,
+  price: { cents: 29_384, foilCents: null, etchedCents: null, asOf: PRICES[0].fact.asOf },
+};
+// No Take: nothing on /about edits a deck, and a row whose Take is null draws none (as after a take).
+const NO_TAKE = { onTake: null, taking: false, busy: false, refused: null, error: null, cut: "Plateau" };
+
+export function StandInsFigureBody() {
+  const siblings = STAND_INS.group.rows.map((r) => r.oracleId);
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <SwapToolsProvider deckId="about-figure" deckName={STAND_INS.deckName} storedLimitCents={null}>
+        <div className="flex flex-col gap-[6px]">
+          <StandInLimit shoppingCount={STAND_INS.shoppingCount} overCount={STAND_INS.overCount} />
+          <div className="mt-[6px] border-t border-solid border-[color:var(--border)]">
+            <DecklistRow deckId="about-figure" card={PLATEAU} siblings={[]} inShopping newestAsOf={PRICES[0].fact.asOf} />
+          </div>
+          {/* The sheet's own group, in the box the canvas draws it in. No title: the sheet's shipped
+              one is "Cheaper stand-ins", which is this entry's own title one line up. */}
+          <div className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
+            <StandInGroup group={STAND_INS.group} keep={null}>
+              {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={siblings} />}
+            </StandInGroup>
+          </div>
+        </div>
+      </SwapToolsProvider>
     </CardDetailProvider>
   );
 }

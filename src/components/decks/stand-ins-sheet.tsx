@@ -64,7 +64,8 @@ const QUIET =
  * `STAND_IN_GROUP_SHOWN` rows, and a `Show all` text button that expands the group in place. A group no
  * longer than it shows draws no toggle. A taken row is always drawn, wherever it ranks.
  */
-function StandInGroup({ group, keep, children }: { group: SheetGroup; keep: string | null; children: (row: SheetRow) => React.ReactNode }) {
+// Exported for the About page's stand-ins figure (E3), which draws one group without the sheet's read.
+export function StandInGroup({ group, keep, children }: { group: SheetGroup; keep: string | null; children: (row: SheetRow) => React.ReactNode }) {
   const [all, setAll] = useState(false);
   const more = group.rows.length > STAND_IN_GROUP_SHOWN;
   const shown = all || !more ? group.rows : group.rows.filter((r, i) => i < STAND_IN_GROUP_SHOWN || r.oracleId === keep);
@@ -93,7 +94,7 @@ function StandInGroup({ group, keep, children }: { group: SheetGroup; keep: stri
 }
 
 /** What the sheet knows about one row's Take: the press in flight, a refusal, or a throw. */
-type RowTake = {
+export type RowTake = {
   /** Null once a take has landed on another row: Take is removed, not disabled (R2). */
   onTake: (() => void) | null;
   taking: boolean;
@@ -104,7 +105,8 @@ type RowTake = {
   cut: string;
 };
 
-function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: string[] }) {
+// Exported with StandInGroup (E3). A pure export: the sheet draws both unchanged.
+export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow; newestAsOf: Date | null; take: RowTake; siblings: string[] }) {
   const preview = usePreviewRow(row.imageUri);
   return (
     <li className="border-b border-[color:var(--border)]">

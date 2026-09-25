@@ -71,6 +71,146 @@ function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
 const deckLink =
   "flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap underline underline-offset-2 decoration-[color:var(--border-strong)]";
 
+/**
+ * The picker's card plate: the card, its identity, and its copies. Exported with `FitsRows` and
+ * `FitsHolds` for the About page's Find a deck figure (E1), which draws them without the picker's
+ * read. The picker renders all three, so they cannot drift from what it draws.
+ */
+export function FitsPlate({
+  name, imageUri, colorIdentity, owned, freeNow, countsKnown,
+}: {
+  name: string;
+  imageUri: string | null;
+  colorIdentity: string[];
+  owned: number;
+  freeNow: number;
+  countsKnown: boolean;
+}) {
+  return (
+    <section
+      data-testid="fits-plate"
+      className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[10px] border border-[color:var(--border)]"
+      style={{ background: "var(--bg)" }}
+    >
+      <span
+        aria-hidden="true"
+        className="flex-none w-[22px] h-[31px] rounded-[3px] border border-[color:var(--border-strong)] bg-cover bg-center"
+        style={imageUri ? { backgroundImage: `url(${imageUri})` } : undefined}
+      />
+      <span className="flex-1 min-w-0 flex flex-col gap-[3px]">
+        <span className="text-[14px] font-semibold truncate" style={{ color: "var(--fg)" }}>{name}</span>
+        <span className="font-mono text-[10.5px] truncate" style={{ color: "var(--fg-muted)" }}>
+          {copy.identity(colorsOf(colorIdentity))}
+        </span>
+      </span>
+      {countsKnown ? <span
+        data-testid="fits-copies"
+        className="flex-none font-mono text-[11.5px] whitespace-nowrap"
+        style={{ color: freeNow > 0 ? "var(--fg-body)" : "var(--avail-hard-fg)" }}
+      >
+        {copy.copies(owned, freeNow)}
+      </span> : null}
+    </section>
+  );
+}
+
+/** The decks that could take the card, in the order the read gave them, each with its Add. */
+export function FitsRows({
+  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd,
+}: {
+  rows: FitDeck[];
+  staple: boolean;
+  cardName: string;
+  freeNow: number;
+  /** The deck an add is in flight for: every Add waits for it. */
+  busy: string | null;
+  /** The deck whose add was refused. */
+  refused: string | null;
+  noteFor: (deckId: string) => string | null;
+  onAdd: (deck: FitDeck) => void;
+}) {
+  return (
+    <section className="flex flex-col" aria-label={copy.groupJoin}>
+      {/* Addendum §1c: the order note at the heading's right. A staple's list stays by name, so it has none. */}
+      <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
+        <h3 className="m-0 font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
+          {copy.groupJoin}
+        </h3>
+        {staple ? null : (
+          <span className="font-mono text-[10px] whitespace-nowrap text-[color:var(--fg-locked)]">{copy.orderReasons}</span>
+        )}
+      </div>
+      {rows.map((deck) => {
+        const note = noteFor(deck.id);
+        return (
+          <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[5px] py-[10px] border-b border-[color:var(--border)]">
+            <div className="flex items-center gap-[10px] min-w-0">
+              <Link href={`/decks/${deck.id}`} aria-label={copy.deckLinkAria(deck.name)} className={`${deckLink} text-[13.5px] text-[color:var(--fg-body)]`}>
+                {deck.name}
+              </Link>
+              {note ? (
+                <span className="flex-none inline-flex items-center gap-[6px] min-h-[44px] md:min-h-0 font-mono text-[9.5px] tracking-[0.1em] uppercase" style={{ color: "var(--success)" }}>
+                  <span aria-hidden="true" className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-[4px] border border-[color:var(--success)] text-[9px]">✓</span>
+                  {copy.added}
+                </span>
+              ) : freeNow > 0 ? (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => onAdd(deck)}
+                  aria-label={copy.addUsesFreeAria(cardName, deck.name)}
+                  className="flex-none inline-flex items-center justify-center h-[44px] min-w-[64px] px-[14px] rounded-[8px] text-[13px] md:h-[32px] md:min-w-0 md:px-[12px] md:rounded-[7px] md:text-[12px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent)] disabled:opacity-60"
+                >
+                  {copy.addUsesFree}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => onAdd(deck)}
+                  aria-label={copy.addToBuyAria(cardName, deck.name)}
+                  className="flex-none inline-flex items-center justify-center h-[44px] px-[12px] rounded-[8px] text-[13px] md:h-[32px] md:px-[11px] md:rounded-[7px] md:text-[12px] leading-none font-medium whitespace-nowrap bg-transparent cursor-pointer border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)] disabled:opacity-60"
+                >
+                  {copy.addToBuy}
+                </button>
+              )}
+            </div>
+            <ReasonLine deck={deck} staple={staple} />
+            {note ? (
+              <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
+                {note}{" "}
+                <Link href={`/decks/${deck.id}`} className="text-[color:var(--accent)] [border-bottom:1px_solid_var(--accent-shadow)]">
+                  {copy.openDeck}
+                </Link>
+              </p>
+            ) : null}
+            {refused === deck.id ? <MutationError message={copy.addRefused} /> : null}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+/** The decks that already hold the card. */
+export function FitsHolds({ holds }: { holds: FitsRead["holds"] }) {
+  return (
+    <section className="flex flex-col" aria-label={copy.groupHolds}>
+      <h3 className="m-0 pb-[6px] border-b border-[color:var(--border)] font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
+        {copy.groupHolds}
+      </h3>
+      {holds.map((h) => (
+        <div key={h.id} data-testid="fits-holds-row" className="flex items-center gap-[10px] min-h-[44px] md:min-h-[34px] border-b border-[color:var(--border)]">
+          <Link href={`/decks/${h.id}`} aria-label={copy.deckLinkAria(h.name)} className={`${deckLink} text-[13px] text-[color:var(--fg-body)]`}>
+            {h.name}
+          </Link>
+          <span className="flex-none font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{copy.holds(h.quantity)}</span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [added, setAdded] = useState<Added[]>([]);
@@ -159,30 +299,14 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
       overCard={{ name, backAria: swapToolsCopy.sheet.backToCardAria(name) }}
     >
       <div data-testid="fits-picker" className="flex flex-col gap-[14px] px-[16px] pt-[14px] pb-[24px] md:px-[18px] md:pt-[16px] md:pb-[20px]">
-        <section
-          data-testid="fits-plate"
-          className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[10px] border border-[color:var(--border)]"
-          style={{ background: "var(--bg)" }}
-        >
-          <span
-            aria-hidden="true"
-            className="flex-none w-[22px] h-[31px] rounded-[3px] border border-[color:var(--border-strong)] bg-cover bg-center"
-            style={card.imageUri ? { backgroundImage: `url(${card.imageUri})` } : undefined}
-          />
-          <span className="flex-1 min-w-0 flex flex-col gap-[3px]">
-            <span className="text-[14px] font-semibold truncate" style={{ color: "var(--fg)" }}>{name}</span>
-            <span className="font-mono text-[10.5px] truncate" style={{ color: "var(--fg-muted)" }}>
-              {copy.identity(colorsOf(card.colorIdentity))}
-            </span>
-          </span>
-          {countsKnown ? <span
-            data-testid="fits-copies"
-            className="flex-none font-mono text-[11.5px] whitespace-nowrap"
-            style={{ color: freeNow > 0 ? "var(--fg-body)" : "var(--avail-hard-fg)" }}
-          >
-            {copy.copies(owned, freeNow)}
-          </span> : null}
-        </section>
+        <FitsPlate
+          name={name}
+          imageUri={card.imageUri}
+          colorIdentity={card.colorIdentity}
+          owned={owned}
+          freeNow={freeNow}
+          countsKnown={countsKnown}
+        />
 
         {read?.staple ? (
           <section data-testid="fits-staple-note" className="flex flex-col gap-[6px] px-[13px] py-[11px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)]">
@@ -248,82 +372,19 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
         ) : null}
 
         {read && shown.length > 0 ? (
-          <section className="flex flex-col" aria-label={copy.groupJoin}>
-            {/* Addendum §1c: the order note at the heading's right. A staple's list stays by name, so it has none. */}
-            <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
-              <h3 className="m-0 font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
-                {copy.groupJoin}
-              </h3>
-              {read.staple ? null : (
-                <span className="font-mono text-[10px] whitespace-nowrap text-[color:var(--fg-locked)]">{copy.orderReasons}</span>
-              )}
-            </div>
-            {shown.map((deck) => {
-              const note = noteFor(deck.id);
-              return (
-                <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[5px] py-[10px] border-b border-[color:var(--border)]">
-                  <div className="flex items-center gap-[10px] min-w-0">
-                    <Link href={`/decks/${deck.id}`} aria-label={copy.deckLinkAria(deck.name)} className={`${deckLink} text-[13.5px] text-[color:var(--fg-body)]`}>
-                      {deck.name}
-                    </Link>
-                    {note ? (
-                      <span className="flex-none inline-flex items-center gap-[6px] min-h-[44px] md:min-h-0 font-mono text-[9.5px] tracking-[0.1em] uppercase" style={{ color: "var(--success)" }}>
-                        <span aria-hidden="true" className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-[4px] border border-[color:var(--success)] text-[9px]">✓</span>
-                        {copy.added}
-                      </span>
-                    ) : freeNow > 0 ? (
-                      <button
-                        type="button"
-                        disabled={busy !== null}
-                        onClick={() => void add(deck)}
-                        aria-label={copy.addUsesFreeAria(name, deck.name)}
-                        className="flex-none inline-flex items-center justify-center h-[44px] min-w-[64px] px-[14px] rounded-[8px] text-[13px] md:h-[32px] md:min-w-0 md:px-[12px] md:rounded-[7px] md:text-[12px] leading-none font-semibold bg-transparent cursor-pointer border border-solid border-[color:var(--accent)] text-[color:var(--accent)] disabled:opacity-60"
-                      >
-                        {copy.addUsesFree}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={busy !== null}
-                        onClick={() => void add(deck)}
-                        aria-label={copy.addToBuyAria(name, deck.name)}
-                        className="flex-none inline-flex items-center justify-center h-[44px] px-[12px] rounded-[8px] text-[13px] md:h-[32px] md:px-[11px] md:rounded-[7px] md:text-[12px] leading-none font-medium whitespace-nowrap bg-transparent cursor-pointer border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)] disabled:opacity-60"
-                      >
-                        {copy.addToBuy}
-                      </button>
-                    )}
-                  </div>
-                  <ReasonLine deck={deck} staple={read.staple} />
-                  {note ? (
-                    <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
-                      {note}{" "}
-                      <Link href={`/decks/${deck.id}`} className="text-[color:var(--accent)] [border-bottom:1px_solid_var(--accent-shadow)]">
-                        {copy.openDeck}
-                      </Link>
-                    </p>
-                  ) : null}
-                  {refused === deck.id ? <MutationError message={copy.addRefused} /> : null}
-                </div>
-              );
-            })}
-          </section>
+          <FitsRows
+            rows={shown}
+            staple={read.staple}
+            cardName={name}
+            freeNow={freeNow}
+            busy={busy}
+            refused={refused}
+            noteFor={noteFor}
+            onAdd={(deck) => void add(deck)}
+          />
         ) : null}
 
-        {read && holds.length > 0 ? (
-          <section className="flex flex-col" aria-label={copy.groupHolds}>
-            <h3 className="m-0 pb-[6px] border-b border-[color:var(--border)] font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
-              {copy.groupHolds}
-            </h3>
-            {holds.map((h) => (
-              <div key={h.id} data-testid="fits-holds-row" className="flex items-center gap-[10px] min-h-[44px] md:min-h-[34px] border-b border-[color:var(--border)]">
-                <Link href={`/decks/${h.id}`} aria-label={copy.deckLinkAria(h.name)} className={`${deckLink} text-[13px] text-[color:var(--fg-body)]`}>
-                  {h.name}
-                </Link>
-                <span className="flex-none font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{copy.holds(h.quantity)}</span>
-              </div>
-            ))}
-          </section>
-        ) : null}
+        {read && holds.length > 0 ? <FitsHolds holds={holds} /> : null}
       </div>
     </ModalChrome>
   );

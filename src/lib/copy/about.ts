@@ -558,6 +558,29 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'fits-your-decks',
+    chapter: '03',
+    title: 'Find a deck for it',
+    route: '/collection',
+    opens: 'opens the card detail',
+    width: 'plate',
+    switch: 'SWAP_TOOLS_ENABLED',
+    caption:
+      // r2's "the deck whose commander suits the card best comes first" is stale: the shipped order
+      // (`shapeFits`) is a combo, then a theme, then the commander's synergy, then the name.
+      "A card can belong in a deck you haven't thought of. Find a deck for it, in any card's details, lists the decks you could add it to without breaking their colors, and says why a deck fits when it can: a combo the card would complete with cards already in that deck, or the theme it would join. Decks that already hold it are listed after, and Add puts it in the chosen deck's draft.",
+    keys: [
+      "Only decks whose colors allow the card, and that don't already run it, are offered.",
+      "Decks where it completes a combo come first, then decks whose theme it joins, the most cards first, then the rest by how much their commander's decks favor it.",
+      // Audit R2-A3-1: the row never shows the two shares; with no reason it shows the need alone.
+      "Each deck gives its strongest reason: a combo the card completes with that deck's own cards, then the theme it would join. With neither, the row shows only what the deck needs, if anything. A staple every deck runs says staple instead, and its decks are listed by name.",
+      "The need is this deck's count for the card's role against its target, left out when the card has no role or the target isn't measured. Add uses a free copy if you have one. Otherwise the card joins as one to buy.",
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    since: 9,
+  },
+  {
     id: 'versions',
     chapter: '03',
     title: 'Changes, committing, and versions',
@@ -587,6 +610,28 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Every card your decks want and you cannot supply, priced and grouped, across the whole library rather than one deck at a time. A card you own can be on this list: if an older committed deck is already holding your only copy, the newer deck has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
     keys: [],
     since: 1,
+  },
+  {
+    id: 'stand-ins',
+    chapter: '03',
+    title: 'Cheaper stand-ins',
+    route: '/decks',
+    opens: 'opens the shopping roll-up',
+    width: 'plate',
+    switch: 'SWAP_TOOLS_ENABLED',
+    caption:
+      "Some cards Shopping asks you to buy cost more than the job they do. A limit per card marks those rows, and a marked row's ⇄ opens cheaper cards, or free copies you own, that do the same job. Cards of the same type come first, then other types. A land's stand-ins say what they make and whether they come in untapped, best mana first. Nothing is picked for you, and taking one is an ordinary draft change you can undo.",
+    keys: [
+      'The line under the price strip is this deck\'s limit per card. Until you set your own, it says it is the default.',
+      "A row over the limit is marked, and its ⇄ opens the stand-ins. Every card's stand-ins are also linked from its details.",
+      // Audit R2-A4-1: "each says what it gives up" is about every row, so it moves here. The order
+      // within a group is the shipped lead's: shared work, then this commander's favor, staples last.
+      "A spell's stand-ins do its job at its mana value or less. In each group, the cards that share more of its work lead, then the ones this commander's decks favor, and staples come last. Each says what it gives up, and a few show until you ask for all.",
+      // r2 said a once-only color "doesn't count as making it"; the shipped ladder (`landRung`) counts it,
+      // on the last rung.
+      "Lands are ordered by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying for it, for a narrow use, or once.",
+    ],
+    since: 9,
   },
   {
     id: 'deck-import',

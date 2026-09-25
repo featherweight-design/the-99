@@ -201,3 +201,27 @@ describe("StandInsSheet row preview", () => {
     }
   });
 });
+
+// E3 (About launch entries): the group and its rows are exported so the About figure can draw one
+// without the sheet's read. That is only honest while a standalone mount draws what the sheet draws.
+describe("StandInGroup and StandInRow, mounted alone", () => {
+  it("draw the same markup as the sheet's own group", async () => {
+    const { StandInGroup, StandInRow } = await import("./stand-ins-sheet");
+    const { sheetModel } = await import("../../lib/swaps/sheet-model");
+    loadStandInsAction.mockResolvedValue(READ);
+    await open();
+    const group = sheetModel(READ).groups[0];
+    const inSheet = screen.getByRole("region", { name: group.heading }).outerHTML;
+    document.body.innerHTML = "";
+    const siblings = group.rows.map((r) => r.oracleId);
+    const take = { onTake: () => {}, taking: false, busy: false, refused: null, error: null, cut: "Anguished Unmaking" };
+    const alone = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <StandInGroup group={group} keep={null}>
+          {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={asOf} take={take} siblings={siblings} />}
+        </StandInGroup>
+      </CardDetailProvider>,
+    );
+    expect(alone.getByRole("region", { name: group.heading }).outerHTML).toBe(inSheet);
+  });
+});
