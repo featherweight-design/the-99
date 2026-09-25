@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { PriceFact } from "../decks/price";
 import {
   freeAfterTake, jobOf, landRung, mainType, rankStandIns, sameJob, STAND_IN_GROUP_CAP, type Candidate, type CardRow,
+  type StandInGroups,
 } from "./stand-ins";
 
 const NOW = new Date("2026-09-21T09:00:00Z");
@@ -13,11 +14,12 @@ const card = (name: string, typeLine: string, oracleText: string, cmc = 0): Card
   oracleId: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`,
   name, typeLine, oracleText, keywords: [], cmc, imageUri: null,
 });
-const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => {
-  const x = { ...c, inclusion: null, synergy: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over };
-  // A support row carries a figure; `listed` states it when a test needs a row with none.
-  return { ...x, listed: over.listed ?? (x.inclusion !== null || x.synergy !== null) };
-};
+const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => ({
+  ...c, inclusion: null, synergy: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over,
+});
+/** A group's rows: the same-type group, or `other types`. */
+const rows = (g: StandInGroups, same = true) => g.groups.find((x) => x.same === same)?.rows ?? [];
+const names = (g: StandInGroups, same = true) => rows(g, same).map((s) => s.card.name);
 /** No creature types: these cases turn on roles, prices and the ladder, never on tribal. */
 const rank = (o: CardRow, c: Candidate[], p: Parameters<typeof rankStandIns>[2]) => rankStandIns(o, c, p, () => false);
 const fact = (cents: number | null, asOf = NOW, foilCents: number | null = null): PriceFact =>
@@ -103,7 +105,9 @@ describe("freeAfterTake", () => {
 });
 
 describe("rankStandIns", () => {
-  it("leads with free copies, then buys cheaper than the original, cheapest first, for a land", () => {
+  // A free copy is priced at 0, so within a rung it wins a tie on synergy and nothing more (the addendum
+  // audit's ruling 2). Command Tower is rung 1; the check land and the shock share rung 2, by price.
+  it("offers free copies and buys cheaper than the original in one lands group, on the ladder", () => {
     const priced = {
       newestAsOf: NOW,
       prices: new Map([
@@ -115,9 +119,10 @@ describe("rankStandIns", () => {
     };
     const g = rank(PLATEAU, [cand(FOUNDRY), cand(RETREAT), cand(TOWER, { owned: 1, free: 1 })], priced);
     expect(g.originalCents).toBe(29384);
-    expect(g.free.map((s) => s.card.name)).toEqual(["Command Tower"]);
-    expect(g.cheapest.map((s) => s.card.name)).toEqual(["Clifftop Retreat", "Sacred Foundry"]);
-    expect(g.cheapest[0].drawbacks).toEqual([{ kind: "entersTappedUnless", condition: "you control a mountain or a plains" }]);
+    expect(g.groups.map((x) => [x.same, x.type])).toEqual([[true, "land"]]);
+    expect(names(g)).toEqual(["Command Tower", "Clifftop Retreat", "Sacred Foundry"]);
+    expect(rows(g)[0].free).toBe(true);
+    expect(rows(g)[1].drawbacks).toEqual([{ kind: "entersTappedUnless", condition: "you control a mountain or a plains" }]);
   });
 
   it("never offers a buy that is not cheaper, not stocked now, or never stocked", () => {
@@ -130,7 +135,7 @@ describe("rankStandIns", () => {
       ]),
     };
     const g = rank(VAULT, [cand(SOL_RING), cand(ROCK_ZERO), cand(card("Unpriced Rock", "Artifact", "{T}: Add {C}.", 1))], priced);
-    expect([...g.byCommander, ...g.unlisted]).toEqual([]);
+    expect(g.groups).toEqual([]);
   });
 
   it("gives a sold-out original free copies only (F5)", () => {
@@ -140,12 +145,11 @@ describe("rankStandIns", () => {
     };
     const g = rank(VAULT, [cand(SOL_RING), cand(ROCK_ZERO, { owned: 1, free: 1 })], priced);
     expect(g.originalCents).toBeNull();
-    expect(g.free.map((s) => s.card.name)).toEqual(["Mox Amber"]);
-    expect([...g.byCommander, ...g.unlisted]).toEqual([]);
+    expect(g.groups.flatMap((x) => x.rows.map((r) => [r.card.name, r.free]))).toEqual([["Mox Amber", true]]);
   });
 
   // v2 item 8: synergy, not inclusion. The two disagree here, so the order says which one is read.
-  it("orders spells the index lists by the commander's synergy, and the rest after them by price", () => {
+  it("orders spells by the commander's synergy, and the cards it does not list after them by price", () => {
     const a = card("Listed Low", "Artifact", "{T}: Add {C}.", 1);
     const b = card("Listed High", "Artifact", "{T}: Add {C}.", 1);
     const c = card("Unlisted Cheap", "Artifact", "{T}: Add {C}.", 1);
@@ -161,19 +165,8 @@ describe("rankStandIns", () => {
     const g = rank(VAULT, [
       cand(a, { inclusion: 12, synergy: 0.4 }), cand(b, { inclusion: 61, synergy: 0.02 }), cand(d), cand(c),
     ], priced);
-    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed Low", "Listed High"]);
-    expect(g.unlisted.map((s) => s.card.name)).toEqual(["Unlisted Cheap", "Unlisted Dear"]);
-    expect(g.staples).toEqual([]);
-  });
-
-  // A support row can carry a synergy and no inclusion; the index lists it all the same.
-  it("groups a listed card by its support row, not by whether its inclusion is set", () => {
-    const a = card("No Inclusion", "Artifact", "{T}: Add {C}.", 1);
-    const b = card("No Figures", "Artifact", "{T}: Add {C}.", 1);
-    const priced = { newestAsOf: NOW, prices: new Map([[VAULT.oracleId, fact(3000)], [a.oracleId, fact(90)], [b.oracleId, fact(80)]]) };
-    const g = rank(VAULT, [cand(a, { synergy: 0.3 }), cand(b, { listed: true })], priced);
-    expect(g.byCommander.map((s) => s.card.name)).toEqual(["No Inclusion", "No Figures"]);
-    expect(g.unlisted).toEqual([]);
+    // Unlisted cards have no synergy, so they follow every listed one, by price.
+    expect(names(g)).toEqual(["Listed Low", "Listed High", "Unlisted Cheap", "Unlisted Dear"]);
   });
 
   // Q6: Runadi's case. A creature that ramps and grows counters outranks a sorcery that only ramps, whatever
@@ -181,22 +174,36 @@ describe("rankStandIns", () => {
   it("orders spells by the roles and themes they share, before synergy", () => {
     const orig = card("Counter Caller", "Creature — Elf Druid",
       "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\nPut a +1/+1 counter on each other creature you control.", 4);
-    const sorcery = card("Plain Ramp", "Sorcery", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", 3);
+    const plain = card("Plain Ramp", "Creature — Elf", "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", 3);
     const creature = card("Growing Ramp", "Creature — Elf", "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.\nPut a +1/+1 counter on target creature.", 3);
-    const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [sorcery.oracleId, fact(50)], [creature.oracleId, fact(900)]]) };
-    const g = rank(orig, [cand(sorcery, { synergy: 0.5 }), cand(creature, { synergy: 0.01 })], priced);
-    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Growing Ramp", "Plain Ramp"]);
-    expect(g.byCommander[0].sharedThemes).toContain("counters");
-    expect(g.byCommander[1].sharedThemes).toEqual([]);
+    const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [plain.oracleId, fact(50)], [creature.oracleId, fact(900)]]) };
+    // The ramp-only card is listed with a high synergy; the one that shares more is not listed at all, and
+    // still leads (d9's D1 ruling: sharing crosses what used to be the listed and unlisted groups).
+    const g = rank(orig, [cand(plain, { synergy: 0.5 }), cand(creature)], priced);
+    expect(names(g)).toEqual(["Growing Ramp", "Plain Ramp"]);
+    expect(rows(g)[0].sharedThemes).toContain("counters");
+    expect(rows(g)[1].sharedThemes).toEqual([]);
+  });
+
+  // Q4 and addendum §1b: the original's main type first, then every other type; an artifact creature is a creature.
+  it("groups spells by main type, the original's own first", () => {
+    const orig = card("Ramp Beast", "Creature — Beast", "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", 4);
+    const golem = card("Ramp Golem", "Artifact Creature — Golem", "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", 3);
+    const spell = card("Ramp Spell", "Sorcery", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", 2);
+    const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [golem.oracleId, fact(50)], [spell.oracleId, fact(40)]]) };
+    const g = rank(orig, [cand(spell, { synergy: 0.9 }), cand(golem)], priced);
+    expect(g.groups.map((x) => [x.same, x.type])).toEqual([[true, "creature"], [false, "other"]]);
+    expect(names(g)).toEqual(["Ramp Golem"]);
+    expect(names(g, false)).toEqual(["Ramp Spell"]);
   });
 
   it("reads the tribal theme only through the catalog's creature types", () => {
     const orig = card("Elf Lord", "Creature — Elf", "{T}: Add {G} for each Elf you control.\nOther Elves you control get +1/+1.", 3);
     const other = card("Elf Friend", "Creature — Elf", "{T}: Add {G}.\nElves you control have haste.", 1);
     const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [other.oracleId, fact(90)]]) };
-    const typed = rankStandIns(orig, [cand(other, { listed: true })], priced, (w) => w === "Elf");
-    expect(typed.byCommander[0].sharedThemes).toContain("tribal");
-    expect(rank(orig, [cand(other, { listed: true })], priced).byCommander[0].sharedThemes).not.toContain("tribal");
+    const typed = rankStandIns(orig, [cand(other)], priced, (w) => w === "Elf");
+    expect(rows(typed)[0].sharedThemes).toContain("tribal");
+    expect(rows(rank(orig, [cand(other)], priced))[0].sharedThemes).not.toContain("tribal");
   });
 
   // v2 item 2: lands on the ladder, never the alphabet or price alone. Plateau's stand-ins in HD - Gishath were
@@ -219,10 +226,11 @@ describe("rankStandIns", () => {
       cand(tapped, { synergy: 0.9 }), cand(check), cand(clean), cand(cleanSyn, { synergy: 0.3 }), cand(paid, { synergy: 0.95 }),
     ], priced);
     // The paid land is cheapest, first by name and highest in synergy, and still last: it is utility mana.
-    expect(g.cheapest.map((s) => s.card.name)).toEqual(["Ddd Clean Synergy", "Ccc Clean", "Bbb Check", "Aaa Tapped", "Aaa Paid"]);
+    expect(names(g)).toEqual(["Ddd Clean Synergy", "Ccc Clean", "Bbb Check", "Aaa Tapped", "Aaa Paid"]);
   });
 
-  it("moves a universal staple to buy into its own group, by price, and keeps a free one free (H4)", () => {
+  // Addendum §1b, retiring #997's staples group: a staple has no synergy of this commander's to rank on.
+  it("sorts a universal staple last in its group, free or not", () => {
     const dear = card("Staple Dear", "Artifact", "{T}: Add {C}.", 1);
     const cheap = card("Staple Cheap", "Artifact", "{T}: Add {C}.", 1);
     const owned = card("Staple Owned", "Artifact", "{T}: Add {C}.", 1);
@@ -239,10 +247,8 @@ describe("rankStandIns", () => {
       cand(dear, { inclusion: 95, isUniversal: true }), cand(cheap, { inclusion: 60, isUniversal: true }),
       cand(owned, { inclusion: 80, isUniversal: true, owned: 1, free: 1 }), cand(listed, { inclusion: 30 }),
     ], priced);
-    expect(g.staples.map((s) => s.card.name)).toEqual(["Staple Cheap", "Staple Dear"]);
-    expect(g.byCommander.map((s) => s.card.name)).toEqual(["Listed"]);
-    expect(g.free.map((s) => s.card.name)).toEqual(["Staple Owned"]);
-    expect(g.free[0].isUniversal).toBe(true);
+    // Among the staples, the free copy is priced at 0 and leads; the others by price.
+    expect(names(g)).toEqual(["Listed", "Staple Owned", "Staple Cheap", "Staple Dear"]);
   });
 
   it("prices a foil-only stand-in at its foil figure", () => {
@@ -251,26 +257,26 @@ describe("rankStandIns", () => {
       prices: new Map([[VAULT.oracleId, fact(3000)], [SOL_RING.oracleId, fact(null, NOW, 700)]]),
     };
     const g = rank(VAULT, [cand(SOL_RING)], priced);
-    expect(g.unlisted[0]).toMatchObject({ cents: 700, foilOnly: true });
+    expect(rows(g)[0]).toMatchObject({ cents: 700, foilOnly: true });
   });
 
   it("offers nothing for a card with no job", () => {
     const g = rank(GRAVE_PACT, [cand(SOL_RING, { owned: 1, free: 1 })], { newestAsOf: NOW, prices: new Map() });
     expect(g.job).toEqual({ kind: "none" });
-    expect(g.free).toEqual([]);
+    expect(g.groups).toEqual([]);
   });
 
   it("caps each group", () => {
     const many = Array.from({ length: STAND_IN_GROUP_CAP + 5 }, (_, i) => card(`Rock ${i}`, "Artifact", "{T}: Add {C}.", 1));
     const g = rank(VAULT, many.map((c) => cand(c, { owned: 1, free: 1 })), { newestAsOf: NOW, prices: new Map() });
-    expect(g.free).toHaveLength(STAND_IN_GROUP_CAP);
+    expect(rows(g)).toHaveLength(STAND_IN_GROUP_CAP);
   });
 
   it("carries what a utility land gives up onto each of its stand-ins (H3)", () => {
     const cradle = card("Gaea's Cradle", "Legendary Land", "{T}: Add {G} for each creature you control.");
     const forest = card("Forest", "Basic Land — Forest", "({T}: Add {G}.)");
     const g = rank(cradle, [cand(forest)], { newestAsOf: NOW, prices: new Map([[cradle.oracleId, fact(90000)]]) });
-    expect(g.free[0].givesUp).toEqual([{ kind: "named", label: "its extra mana" }]);
+    expect(rows(g)[0].givesUp).toEqual([{ kind: "named", label: "its extra mana" }]);
   });
 });
 

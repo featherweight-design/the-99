@@ -67,34 +67,37 @@ export const swapToolsCopy = {
     jobRole: (roles: string, mv: number) => `${roles} · mana value ${mv}`,
     jobNoRole: "no role we can name",
     givesUpNothing: "gives up nothing",
+    // v2 D1 (ranking-rebuild addendum): ownership is on the row, so no lead says free copies come first; a
+    // free copy wins only a tie (the addendum audit's ruling 2). Every lead below is owed to /copy-review.
     leadLands: (colors: string) =>
-      `Every land here makes ${colors}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each says what it gives up.`,
+      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each says what it gives up.`,
     /** Hugh, 2026-09-24: every stand-in gives up the same thing, so the lead says it once. */
     leadLandsGivesUp: (colors: string, ability: string) =>
-      `Every land here makes ${colors}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each gives up ${ability}.`,
+      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each gives up ${ability}.`,
     leadFetchGivesUp: (types: string, ability: string) =>
-      `Every land here finds ${types}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each gives up ${ability}.`,
+      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each gives up ${ability}.`,
     leadFetch: (types: string) =>
-      `Every land here finds ${types}. Free copies come first, then untapped lands, then tapped ones, then utility lands, and each says what it gives up.`,
-    leadSpells: (roles: string, mv: number, commander: string) =>
-      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the cards ${commander} decks favor most over other decks of their colors.`,
-    /** H4, addendum canvas: a paid staples group sits between the free copies and the commander's ranking. */
-    leadSpellsStaples: (roles: string, mv: number, commander: string) =>
-      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the cards ${commander} decks favor most over other decks of their colors.`,
-    /** H4 with F14: staples to buy, and nothing the index lists. Composed from the two leads above; owed to /copy-review. */
-    leadSpellsStaplesUnlisted: (roles: string, mv: number) =>
-      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then staples, then the cheapest.`,
-    /** F14: the index lists nothing for this commander or pair, so the order clause has nothing to name. Owed to /copy-review. */
-    leadSpellsUnlisted: (roles: string, mv: number) =>
-      `Every card here is ${roles} at mana value ${mv} or less. Free copies come first, then the cheapest.`,
+      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each says what it gives up.`,
+    /** The spells lead is three sentences, joined: what every card does, then the groups, then their order. */
+    leadSpellsJob: (roles: string, mv: number) => `Every card here is ${roles} at mana value ${mv} or less.`,
+    /** Drawn only when both groups are. */
+    leadSpellsTypes: (plural: string) => `${plural[0].toUpperCase()}${plural.slice(1)} come first, then other types.`,
+    leadSpellsOrder: (commander: string) =>
+      `Each group runs from the cards that share the most of its work, then the ones ${commander} decks favor most over other decks of their colors.`,
+    /** F14: the index lists nothing for this commander or pair, so the order names no commander. */
+    leadSpellsOrderUnlisted: "Each group runs from the cards that share the most of its work, then the cheapest.",
+    /** Drawn when a staple is in the list: it sorts last in its group (addendum §1b). */
+    leadSpellsStaples: "Staples every commander plays come last.",
     /** F5: a sold-out original lists free copies only. Owed to /copy-review. */
     leadSoldOut: "This card is sold out everywhere we check, so only the copies you already own are listed here.",
-    groupFree: "yours, free",
-    groupCheapest: "to buy · best mana first",
-    /** H4, addendum §1: paid universal staples, between `yours, free` and the commander's ranking. */
-    groupStaples: "to buy · staples, cheapest first",
-    groupByCommander: (commander: string) => `to buy · by ${commander} decks`,
-    groupUnlisted: (commander: string) => `not listed for ${commander} · cheapest first`,
+    /** Addendum §1b: the type groups, each with its order note on the right. */
+    groupSameType: (plural: string) => `same type · ${plural}`,
+    groupOtherTypes: "other types",
+    orderBestMana: "best mana first",
+    orderMostShared: "most in common first",
+    /** Addendum §1b: the toggle under a group longer than it shows. */
+    showAll: (n: number, noun: string) => `Show all ${n} ${noun}`,
+    showFewer: "Show fewer",
     free: "free",
     mv: (n: number) => `MV ${n}`,
     /** Addendum §1: a staple's fact line ends here. No row draws a commander figure since v2 (Q2). */
