@@ -29,14 +29,20 @@ export type TuningVariant = {
 export const TRIM_STAPLES = 15;
 
 /**
- * EVERY VARIANT HERE TRANSFORMS THE APP'S OWN PROMPT (`tuning-app.mts` applies them to
- * `buildPrompt`'s output), and since tuning v2 (#948) that prompt already carries round 4's
- * strategy and rationale rules. Rounds 1 to 4 of the report were all measured on the v1 prompt
- * before it, so none of these variants reproduces a round's messages any more: `base` is v2,
- * `trim` and the `cite-*` variants add their rules to v2's, and `strategy`, `strategy-terse` and
- * `strategy-terse-b` append v2's own rules a second time. Round 4's messages are pinned by
- * `scripts/fixtures/tuning-v2-round4.json`; reproducing any earlier round means running the
- * harness at the commit before #948. A variant measured from here on is measured against v2.
+ * EVERY VARIANT HERE STARTS FROM THE APP'S OWN PROMPT (`tuning-app.mts` builds the pack with
+ * `buildEvidencePack` and the messages with `buildPrompt`, then applies the variant), and since
+ * tuning v2 (#948) that prompt is not the v1 prompt rounds 1 to 4 were measured on. What v2 adds
+ * depends on the pack. Six lines are ALWAYS there: the 4-to-5 count, sizing to the gap and
+ * grounding in how the deck plays, and the three rationale rules. The strategy block, the Key-card
+ * rule and the universal-staple rule appear only when the pack carries an overview and staples,
+ * and the harness passes neither.
+ *
+ * So `base` is v2's always-on lines over v1. `trim` changes only the pack (fewer staples) and
+ * appends nothing, but its base moved with it. The `cite-*` variants add their rules to that base.
+ * And `strategy`, `strategy-terse` and `strategy-terse-b` bring their own overview, Key-card and
+ * staple lines, while repeating the always-on lines v2 already emits. None reproduces a round's
+ * messages any more. Round 4's are pinned by `scripts/fixtures/tuning-v2-round4.json`; any earlier
+ * round means running the harness at the commit before #948.
  */
 export const TUNING_VARIANTS: Record<string, TuningVariant> = {
   base: { id: "base", reason: "The shipped prompt, unchanged." },
