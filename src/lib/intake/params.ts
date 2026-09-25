@@ -4,6 +4,11 @@ import { isUuid } from "../uuid";
 import { MAX_BUDGET_DOLLARS } from "./answers";
 import type { Chip } from "./match";
 import type { Answers, Bracket } from "./rank";
+import { READ_WORDS_MAX_CHARS } from "./limits";
+
+// The words box's limit is the deeper read's (`limits.ts`), so the URL, the submit and the read
+// never disagree about how much of the words there is. Re-exported for the form.
+export { READ_WORDS_MAX_CHARS };
 
 /**
  * Help me choose's answers as the URL carries them (plan, PR 5a; orchestrator-approved). Pure and
@@ -49,8 +54,6 @@ export type ChooseParams = {
   results: boolean;
 };
 
-/** The words box's limit, in characters. Also the most of `w` any read will look at. */
-export const READ_WORDS_MAX_CHARS = 800;
 export const NOT_USED_MAX = 12;
 export const NOT_USED_CHARS = 120;
 /** The ASCII unit separator: a character no phrase a player types can hold. */

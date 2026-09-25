@@ -40,6 +40,21 @@ describe("trialFillRows", () => {
     expect(stub.trial.mock.calls[0][1]).toMatchObject({ oracleId: LEGAL });
   });
 
+  it("fills with a card only when the search's card rule keeps it", async () => {
+    const CARD = "0000aaaa-0000-4000-8000-0000000000cc";
+    // The card's read comes back empty: a basic, a card that is not legal, or one that is gone.
+    stub.execute
+      .mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] })
+      .mockResolvedValueOnce({ rows: [] });
+    await trialFillRows([LEGAL], `?a=${CARD}`);
+    expect(stub.trial.mock.calls[0][2]).toMatchObject({ cardOracleId: null });
+    stub.execute
+      .mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] })
+      .mockResolvedValueOnce({ rows: [{ name: "Sol Ring", game_changer: true, type_line: "Artifact", owned: true }] });
+    await trialFillRows([LEGAL], `?a=${CARD}`);
+    expect(stub.trial.mock.calls[1][2]).toMatchObject({ cardOracleId: CARD });
+  });
+
   it("refuses more than a slice, a non-uuid, or an oversized query before any read", async () => {
     const ids = Array.from({ length: 13 }, (_, i) => `0000aaaa-0000-4000-8000-${String(i).padStart(12, "0")}`);
     await expect(trialFillRows(ids, "")).rejects.toThrow();
