@@ -8,7 +8,14 @@
  *  - universal-staple cuts: a cut naming a universal staple;
  *  - one-slot double fills: two or more suggestions filling a role that is exactly one short, read
  *    off their own `mix` citations as the accept contract reads them (see `roleFilled`);
- *  - threshold-only share: suggestions whose only citations are role counts.
+ *  - threshold-only share: suggestions whose only citations are role counts;
+ * and two from his round 3 notes (round 4):
+ *  - chip restatements: kept suggestions whose rationale states an `N of M` figure one of its own
+ *    citations already shows as a chip;
+ *  - repeated openings: kept rationales that open on the same role (first four words), or the same
+ *    `N of M` count (first eight), as an earlier rationale in the same answer (the rule forbids both);
+ * with malformed answers and output tokens per answer, since S lost two answers at ~6,000 thinking
+ * tokens.
  * Reads `runs/strategy-overviews.json` for the Key cards and the universal set. Sends nothing.
  */
 import { readFileSync } from "node:fs";
@@ -25,7 +32,28 @@ if (!args.runs) throw new Error("eval:tuning-strategy needs --runs");
 const input = JSON.parse(readFileSync(new URL("runs/strategy-overviews.json", ROOT), "utf8")) as StrategyInput;
 const universal = new Set(input.universal.map((n) => n.toLowerCase()));
 type Suggestion = { cut: string; add: string; evidence: { kind: string; value: string }[] };
-type Row = { set: string; cell: string; maxTokens: number; variant: string; deckId: string; trial: number; outcome: string; keptPositions?: number[]; reply: { suggestions: Suggestion[] } | null; usdRealtime: number };
+type Suggestion2 = Suggestion & { rationale: string };
+type Row = { set: string; cell: string; maxTokens: number; variant: string; deckId: string; trial: number; outcome: string; keptPositions?: number[]; reply: { suggestions: Suggestion2[] } | null; usdRealtime: number; usage?: { output_tokens: number }[] };
+
+/** Every `N of M` figure in a text, the numerator a digit or a number word, as `N/M`. */
+function figuresOf(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const [, n, m] of text.toLowerCase().matchAll(new RegExp(`\\b(\\d+|${NUMBER_WORDS})\\s+of\\s+(?:the\\s+|your\\s+)?(\\d+)\\b`, "g"))) {
+    out.add(`${/^\d+$/.test(n) ? Number(n) : NUMBER_WORDS.split("|").indexOf(n)}/${m}`);
+  }
+  return out;
+}
+
+/**
+ * What a rationale opens on: the first pack role named in its first four words, and any `N of M`
+ * count in its first eight, since the count usually completes a few words in ("Removal sits at 2 of 3").
+ */
+function opening(rationale: string, pack: EvidencePack): string[] {
+  const words = rationale.toLowerCase().split(/\s+/);
+  const head = words.slice(0, 4).join(" ");
+  const hit = pack.targets.roles.find((c) => new RegExp(`\\b${c.role.replace(/s$/, "").toLowerCase()}`).test(head));
+  return [...(hit ? [`role:${hit.role}`] : []), ...[...figuresOf(words.slice(0, 8).join(" "))].map((f) => `count:${f}`)];
+}
 
 /**
  * The role a `mix` citation fills, resolved as the accept contract resolves it (`validate.ts`,
@@ -44,7 +72,7 @@ function roleFilled(value: string, pack: EvidencePack): { role: string; gap: num
   return cell && cell.have < cell.target ? { role: cell.role, gap: cell.target - cell.have } : null;
 }
 
-const groups = new Map<string, { answers: number; kept: number; keyCut: number; universalCut: number; doubleFill: number; thresholdOnly: number; usd: number }>();
+const groups = new Map<string, { answers: number; kept: number; keyCut: number; universalCut: number; doubleFill: number; thresholdOnly: number; usd: number; malformed: number; output: number; chip: number; repeated: number }>();
 for (const run of args.runs.split(",")) {
   // A run over `all` decks is split back into its development and held-out decks, as report.mts does.
   const packs = new Map((JSON.parse(readFileSync(new URL(`runs/${run}/prepared.json`, ROOT), "utf8")) as { deckId: string; pack: EvidencePack }[]).map((p) => [p.deckId, p.pack]));
@@ -54,10 +82,13 @@ for (const run of args.runs.split(",")) {
     if (r.set === "all") r.set = dev.has(r.deckId) ? "dev" : "heldOut";
     if (r.set !== args.set || (args.trial !== undefined && r.trial !== Number(args.trial))) continue;
     const k = `${r.cell.replace(/@max\d+$/, "")}@max${r.maxTokens} / ${r.variant}`;
-    const g = groups.get(k) ?? { answers: 0, kept: 0, keyCut: 0, universalCut: 0, doubleFill: 0, thresholdOnly: 0, usd: 0 };
+    const g = groups.get(k) ?? { answers: 0, kept: 0, keyCut: 0, universalCut: 0, doubleFill: 0, thresholdOnly: 0, usd: 0, malformed: 0, output: 0, chip: 0, repeated: 0 };
     groups.set(k, g);
     g.answers += 1;
     g.usd += r.usdRealtime;
+    if (r.outcome === "malformed") g.malformed += 1;
+    // Every attempt's output, retries included: that is what was paid for.
+    g.output += (r.usage ?? []).reduce((t, u) => t + u.output_tokens, 0);
     // Fail rather than measure nothing: a survived row without its kept positions (a run the
     // rescorer never saw), or a deck the strategy input has no overview for, would each read as
     // zero violations.
@@ -67,8 +98,14 @@ for (const run of args.runs.split(",")) {
     const kept = r.outcome === "survived" && r.reply ? r.keptPositions!.map((i) => r.reply!.suggestions[i]) : [];
     const keyCards = new Set(deckInput.keyCards.map((n) => n.toLowerCase()));
     const fills = new Map<string, { n: number; gap: number }>();
+    const opened = new Set<string>();
     for (const s of kept) {
       g.kept += 1;
+      const chips = new Set(s.evidence.flatMap((e) => [...figuresOf(e.value)]));
+      if ([...figuresOf(s.rationale)].some((f) => chips.has(f))) g.chip += 1;
+      const keys = opening(s.rationale, packs.get(r.deckId)!);
+      if (keys.some((k) => opened.has(k))) g.repeated += 1;
+      for (const k of keys) opened.add(k);
       if (keyCards.has(s.cut.toLowerCase())) g.keyCut += 1;
       if (universal.has(s.cut.toLowerCase())) g.universalCut += 1;
       if (s.evidence.every((e) => e.kind === "mix")) g.thresholdOnly += 1;
@@ -88,8 +125,8 @@ for (const run of args.runs.split(",")) {
   }
 }
 
-console.log(`| cell / variant | answers | kept per answer | Key-card cuts | universal-staple cuts | answers double-filling a one-slot gap | threshold-only share | $/answer |`);
-console.log(`|---|---|---|---|---|---|---|---|`);
+console.log(`| cell / variant | answers | malformed | output tokens / answer | kept per answer | Key-card cuts | universal-staple cuts | answers double-filling a one-slot gap | threshold-only share | chip restatements | repeated openings | $/answer |`);
+console.log(`|---|---|---|---|---|---|---|---|---|---|---|---|`);
 for (const [k, g] of [...groups].sort()) {
-  console.log(`| ${k} | ${g.answers} | ${(g.kept / g.answers).toFixed(2)} | ${g.keyCut} | ${g.universalCut} | ${g.doubleFill} | ${g.kept ? Math.round((100 * g.thresholdOnly) / g.kept) : 0}% | $${(g.usd / g.answers).toFixed(4)} |`);
+  console.log(`| ${k} | ${g.answers} | ${g.malformed} | ${Math.round(g.output / g.answers)} | ${(g.kept / g.answers).toFixed(2)} | ${g.keyCut} | ${g.universalCut} | ${g.doubleFill} | ${g.kept ? Math.round((100 * g.thresholdOnly) / g.kept) : 0}% | ${g.chip} of ${g.kept} | ${g.repeated} | $${(g.usd / g.answers).toFixed(4)} |`);
 }

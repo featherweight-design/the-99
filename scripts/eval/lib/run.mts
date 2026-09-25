@@ -29,6 +29,7 @@ export function parseCell(spec: string, appModel: string): Cell {
   const cells: Record<string, Omit<Cell, "id">> = {
     sonnet: { model: appModel },
     "sonnet-low": { model: appModel, effort: "low" },
+    "sonnet-medium": { model: appModel, effort: "medium" },
     haiku: { model: "claude-haiku-4-5" },
   };
   const m = /^([a-z-]+)(\+cache)?(?:@max(\d+))?$/.exec(spec);

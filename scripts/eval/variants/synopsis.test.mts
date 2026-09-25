@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SynopsisFacts } from "../../../src/lib/synopsis/facts";
 import { CHAR_BUDGETS } from "../../../src/lib/synopsis/limits";
 import { buildSynopsisPrompt } from "../../../src/lib/synopsis/prompt";
+import { figuresIn, rendered } from "../../../src/lib/synopsis/validate";
 import { applySynopsisVariant, stripReminders, SYNOPSIS_VARIANTS } from "./synopsis.mjs";
 
 const facts: SynopsisFacts = {
@@ -48,5 +49,29 @@ describe("synopsis variants", () => {
     const { messages } = applySynopsisVariant(SYNOPSIS_VARIANTS.budgets, facts, (f) => buildSynopsisPrompt(f));
     expect(messages.system).toContain(`at most ${CHAR_BUDGETS.job} characters`);
     expect(stripReminders("Flying (It can't be blocked.) and haste")).toBe("Flying and haste");
+  });
+});
+
+describe("primer-budget-c", () => {
+  const { system } = applySynopsisVariant(SYNOPSIS_VARIANTS["primer-budget-c"], facts, (f) => buildSynopsisPrompt(f)).messages;
+  // Only what the VARIANT appends: since contract 7 the app's own prompt carries the same rules, so
+  // a read of the whole system message would pass on the app's copy with the variant's deleted.
+  const base = buildSynopsisPrompt(facts).system;
+  const rules = system.slice(base.length);
+  const worked = [...(/Two lines sized to the budget: (.*)$/m.exec(rules)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+
+  // The first version's worked lines said "two-drop" and "three-drop", which the figures rule reads
+  // as 2 and 3, so lines copied from them were dropped on every deck without those figures.
+  it("gives two worked lines that state no figure and fit the Mulligan budget", () => {
+    expect(worked).toHaveLength(2);
+    for (const line of worked) {
+      expect(figuresIn(line)).toEqual([]);
+      expect(rendered(line).length).toBeLessThanOrEqual(CHAR_BUDGETS.mulligan - 25);
+    }
+  });
+
+  it("allows a line of play, as the app's own prompt does", () => {
+    expect(system.startsWith(base)).toBe(true);
+    expect(rules).toContain("a point on the curve, or a line of play");
   });
 });

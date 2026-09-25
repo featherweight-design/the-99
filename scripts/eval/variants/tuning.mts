@@ -168,3 +168,45 @@ TUNING_VARIANTS.strategy = {
     return { system: `${m.system}\n${STRATEGY_RULES(universal)}`, user: `${m.user}\n\n${block}` };
   },
 };
+
+/**
+ * Round 4, Hugh's ruling on round 3 (2026-09-24): ship `strategy` on S, with two rationale rules
+ * from his notes. Each suggestion is drawn with its citations as chips beneath the rationale
+ * ("mix removal: 5 of 6"), so a rationale that restates a chip's figure says it twice, and three
+ * rationales that each open on the same role count read as unpolished. Shorter rationales should
+ * also shorten S's thinking, which ran to about 6,000 tokens on the two answers it lost.
+ */
+const TERSE_RULES = [
+  "Each rationale is drawn above its citations, which the player sees as chips (a role count such as \"removal: 5 of 6\", a game count, a note's date). Never restate a chip's figure in the rationale: say \"one short on removal\", not \"Removal is 5 of 6\", and spend the words on what the added card does in this deck and why the cut card can go.",
+  "Never open two rationales the same way: no two may begin with the same role or the same count.",
+].join("\n");
+
+TUNING_VARIANTS["strategy-terse"] = {
+  id: "strategy-terse",
+  reason: "Round 4: the strategy prompt plus Hugh's two rationale rules from round 3 — never restate a figure a citation chip shows, and never open two rationales on the same role or count.",
+  prompt: (m, pack, deckId) => {
+    const base = TUNING_VARIANTS.strategy.prompt!(m, pack, deckId);
+    return { system: `${base.system}\n${TERSE_RULES}`, user: base.user };
+  },
+};
+
+/**
+ * Round 4b. On the dev decks every suggestion `strategy-terse` lost on 783df427 was a `citation`
+ * drop: the deck has a game note, the contract wants that note QUOTED in the rationale, and the
+ * first wording listed "a note's date" among the chips not to restate, which pushed the model to
+ * paraphrase it. So a note is exempt by name, and only figures are never restated.
+ */
+const TERSE_RULES_B = [
+  "Each rationale is drawn above its citations, which the player sees as chips. Never restate a chip's FIGURE in the rationale (a role count such as \"removal: 5 of 6\", or a game count): say \"one short on removal\", not \"Removal is 5 of 6\", and spend the words on what the added card does in this deck and why the cut card can go.",
+  "A note citation is the exception: its note must still be quoted, word for word and in quotation marks, in the rationale.",
+  "Never open two rationales the same way: no two may begin with the same role or the same count.",
+].join("\n");
+
+TUNING_VARIANTS["strategy-terse-b"] = {
+  id: "strategy-terse-b",
+  reason: "Round 4b: strategy-terse with a cited note exempt by name, since the first wording pushed the model to paraphrase notes it must quote.",
+  prompt: (m, pack, deckId) => {
+    const base = TUNING_VARIANTS.strategy.prompt!(m, pack, deckId);
+    return { system: `${base.system}\n${TERSE_RULES_B}`, user: base.user };
+  },
+};

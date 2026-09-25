@@ -12,10 +12,10 @@ Costs are at real-time prices per answer, with the app's one retry included, unl
 
 | feature | model and prompt | held-out result | $/accepted |
 |---|---|---|---|
-| Tuning | **Sonnet 5 as shipped (S)**: sonnet-low passed every automatic gate and failed Hugh's blind read, 5–9–1 | survived 98%, 2.80 kept per run | $0.0425 |
-| Overview | Sonnet 5 at `effort: "low"`, `budgets-plus` prompt, contract A+B (Hugh's ruling) | all four sections: 96% under A+B | $0.051 (S: $6.13) |
+| Tuning | **Sonnet 5 at `effort: "medium"` on the strategy prompt with the rationale rules**: sonnet-low failed Hugh's blind reads in rounds 1 and 3; this passed round 4, 7–0, against S-default | 8 of 8 answered, 4.00 kept per answer, ~48s | $0.0489 per answer |
+| Overview | Sonnet 5 at `effort: "low"`, the shipped v6 prompt plus the Mulligan budget's second version, with the app's repair | all four sections: 100%, 12% of Mulligan lines dropped (v6: 17%), universal staples 0, 75% specific Mulligan lines | $0.044 (S: $6.13) |
 
-The overview contract (A+B) was Hugh's ruling. The synopsis lane ships the prompt as measured, verified byte-for-byte against the 15 first writes and 37 repair calls. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
+The overview contract (A+B) was Hugh's ruling. The first Mulligan budget went to the synopsis lane as #934 and was held when its pre-open pass found it dropping lines; the second version replaces it. Hugh's absolute read of the overview (round 2) is below: Yes 6, Close 8, No 1.
 
 ## Tuning
 
@@ -111,7 +111,114 @@ cards Hugh called load-bearing. The base prompt scored 0 on the same definition,
 have caught this. What a player knows is load-bearing has to come from the player, as a stated
 intent or a "never cut" mark on a card. The model's own overview cannot supply it.
 
-Hugh's blind read of the two setups on this prompt is round 3 on the same page: ROUND3_TBD.
+### Hugh's blind read, round 3
+
+S against sonnet-low again, both on the `strategy` prompt, on the same 15 held-out decks.
+**Hugh preferred S on 8, sonnet-low on 4, and called 1 even (Mutant Menace).** Two decks went
+unanswered, Sultai Arisen and Scrappy Survivors: S's side was empty on both, because its answer
+came back malformed after two attempts, with about 6,000 thinking tokens against the 8,000 ceiling.
+The pre-registered rule fails on its first clause either way (8 is more than 5), even with both
+empty decks scored for sonnet-low (8 against 6). **Sonnet-low fails again, so S stays for tuning.**
+
+His notes, verbatim (A is the left side, B the right):
+
+- **HD - Kratos** (sonnet-low): "I like that A has more options, but several of the justifications are redundant: "Ramp remains far above", "Ramp is still above", "Ramp sits far above". This looks bad/unpolished."
+- **HD - Avatar Aang** (S): "Again, I prefer more options in A, but the text is repetitive "Removal remains under", "With removal at 2 or 3", "Removal sits at 2 of 3""
+- **HD - Gods** (S): "Much more thorough and helpful analysis here. This is the best one I've read so far."
+- **HD Tune - Counter Intelligence** (S): "Both of these are strong, but A is slightly better."
+- **HD - Soldiers** (S): "B is better, but I will say that some of these responses are a bit too verbose"
+- **HD - Tovolar** (sonnet-low): "Mostly the same, but a slight preference towards B"
+- **HD Tune - Mutant Menace** (even): "Quality of response in A is better, but number of suggestions in B is better."
+- **HD Tune - Prismari Artistry** (sonnet-low): "Both similar, but slight preference towards A"
+- No note on Wizards, Yuriko, Zombies or Elves (S), or on Eldrazi (sonnet-low).
+
+What the notes add to round 1's:
+
+1. **More options still read better** (Kratos, Avatar Aang, Mutant Menace). Unchanged from round 1.
+2. **Repeated openings read as unpolished.** Each swap that restates the same role count ("Ramp
+   remains far above", "Ramp is still above") was named on an S side and on a sonnet-low side, so it
+   is the prompt's to fix rather than the model's: the tuning lane can ask that no two rationales
+   open on the same count.
+3. **The strategy prompt is his best-rated answer yet** (Gods, S). With round 3's automatic
+   metrics above, it moves S toward his round 1 notes.
+
+**Recommendation for tuning (as of round 3; round 4 below supersedes it):** S on the `strategy` prompt, plus the repeated-opening rule. The
+tuning lane should also look at the two malformed answers before it ships, since a player would see
+each as a failed run. The cost is under Allowances.
+
+### Hugh's ruling on round 3, and the rationale rules (round 4)
+
+Hugh ruled to ship the `strategy` prompt on S, with two rules from his notes: never open two
+rationales on the same role count, and never restate a figure the card already shows as a
+citation chip ("mix removal: 5 of 6"), saying "one short on removal" instead and spending the words
+on the card. Both were measured on the 4 development decks, one trial each. This is not a blind
+read.
+
+| S, 8,000 ceiling | malformed | kept per answer | chip restatements | repeated openings | output tokens per answer | $/answer |
+|---|---|---|---|---|---|---|
+| strategy prompt | 1 of 4 | 2.50 | 5 of 10 | 2 | 7,584 | $0.088 |
+| + rationale rules, first wording | 1 of 4 | 1.75 | 0 of 7 | 0 | 8,313 | $0.096 |
+| + rationale rules, notes exempt, default effort | 1 of 4 | 2.50 | 0 of 10 | 1 | 13,404 | $0.152 |
+| + rationale rules, notes exempt, `effort: "medium"` | **0 of 4** | **3.50** | **0 of 14** | **0** | 2,545 | **$0.036** |
+
+- **The rules work.** Chip restatements fall from half of all kept rationales to none, and the
+  rationales talk about the card instead ("Rogue's Passage lets Gishath attack unblocked so its
+  cascade off combat damage actually happens").
+- **The first wording cost a deck.** It listed "a note's date" among the chips, so the model
+  paraphrased a game note the contract requires it to quote, and every suggestion on that deck was
+  dropped for its citation. The second wording exempts a note by name.
+- **S's malformed answers are its thinking, not the prompt.** On the plain strategy prompt the same
+  deck failed on both attempts with all 8,000 output tokens spent thinking, and which deck fails
+  moves from run to run. At default effort three of the last run's four first attempts reached the
+  8,000 ceiling and the fourth stopped at 7,991.
+- **That is also a latency problem the batch hides.** At about 80 output tokens a second, 8,000
+  tokens is about 100s, against the app's 110s model timeout and the page's 120s limit, so an
+  answer that needs its retry cannot finish in the app. Medium effort ran 19 to 49s.
+- A 16,000 ceiling was ruled out for the same reason: about 200s.
+
+Medium effort differs from the setting Hugh rated in round 3, so it is his call.
+
+### Hugh's blind read, round 4 (8 decks)
+
+**Registered before any answer was generated.** S at `effort: "medium"` on the strategy prompt with
+the rationale rules (notes exempt), against round 3's STORED S answers on the plain strategy prompt
+at default effort: the answers Hugh already preferred over sonnet-low. The page tab is "Suggested
+swaps, round 4 (8 decks)".
+
+- **Decks:** 8 of the 15 held-out decks, picked by a seeded shuffle (seed 20260923 + 4000) and fixed
+  before any output: Kratos, Avatar Aang, Wizards, Yuriko, Soldiers, Scrappy Survivors, Mutant
+  Menace, Eldrazi. On Scrappy Survivors the stored S answer was malformed, so medium's answer stands
+  against the app's failed state, which is what a player would have seen.
+- **Pass rule**, the round 1 rule scaled from 15 decks to 8: S-default preferred on no more than 3
+  of 8, and on no more than 2 more decks than medium.
+- **The confound, stated:** the candidate changes two things at once, the prompt (the rationale
+  rules) and the effort. A pass says the pair is at least as good as what won round 3; it cannot
+  say which change carried it. The prompt change is the one Hugh asked for, so the effort is the
+  part this round actually tests.
+
+**Result: medium passes, 7 to 0.** Hugh preferred S-medium with the rationale rules on all 7 decks
+he rated; Scrappy Survivors went unrated, as designed, since its other side was the failed state.
+Both clauses pass, and would still pass if the unrated deck were scored for S. His one note:
+
+- **HD - Avatar Aang** (medium): "I like that the first cut is aware of the second cut, this is really interesting and helps me to feel like the recommendations are holistic versus siloed"
+
+Per deck, with the time estimated at 80 output tokens a second, retries included:
+
+| deck | preferred | S-default kept / time / $ | S-medium kept / time / $ |
+|---|---|---|---|
+| Kratos | medium | 4 / ~96s / $0.086 | 4 / ~17s / $0.023 |
+| Avatar Aang | medium | 1 / ~87s / $0.078 | 2 / ~32s / $0.034 |
+| Wizards | medium | 5 / ~25s / $0.030 | 4 / ~18s / $0.024 |
+| Yuriko | medium | 4 / ~36s / $0.039 | 5 / ~46s / $0.047 |
+| Soldiers | medium | 4 / ~66s / $0.062 | 4 / ~32s / $0.036 |
+| Scrappy Survivors | (unrated) | failed / ~181s / $0.164 | 4 / ~57s / $0.055 |
+| Mutant Menace | medium | 1 / ~81s / $0.074 | 4 / ~70s / $0.065 |
+| Eldrazi | medium | 1, on its retry / ~196s / $0.175 | 5, on its retry / ~111s / $0.107 |
+| **mean** | | **2.50 / ~96s / $0.0885** | **4.00 / ~48s / $0.0489** |
+
+Medium keeps more suggestions, at about half the time and cost. One latency caveat for the build:
+an answer that needs its retry can still pass the app's 110s model timeout (Eldrazi, ~111s), so
+how that timeout applies across the retry is the tuning build's to check.
 
 ## Overview
 
@@ -199,6 +306,97 @@ Each checked against the data:
 **Trim** (reminder text stripped from the facts) saves about 3% per answer and loses on A (31%
 against 44%). Not worth it.
 
+### The overview after Hugh's fixes (contract v6) and the Mulligan budget
+
+Hugh approved every overview fix from round 2, and the synopsis lane shipped them:
+- universal staples kept off the Key cards (#926);
+- the identity by name (#926);
+- the land range as a fixed line (#930);
+- 1 to 2 specific Mulligan lines per side (#930);
+- refusals for a restated land count, the commander in hand, and a heading prefix (#930).
+
+The app also makes its own repair call now. So from here the figures are the app's own verdicts:
+the first write, then the write plus its repair, judged by `validateSynopsis` and merged by
+`mergeRetry`.
+
+Held-out, 3 trials, sonnet-low:
+
+| | v2 (A+B) | v6 as shipped | v6 + Mulligan budget |
+|---|---|---|---|
+| all four sections, after the repair | 96% (43 of 45) | 89% (40 of 45) | **98% (44 of 45)** |
+| first write alone, all four | 18% | 33% | 53% |
+| answers needing the repair | 37 | 30 | 21 |
+| $ per accepted answer | $0.051 | $0.063 | $0.051 |
+| universal staples as Key cards | 12 of 15 overviews | 0 of 333 | 0 of 328 |
+| specific Mulligan lines | 21% (round 2, tagged by hand) | 76% | 82% |
+
+After the repair, v6 as shipped rendered each section as follows: overview 96%, primer 93%, Key
+cards 100%, weaknesses 100%. With the Mulligan budget: overview 98%, primer 100%, Key cards 100%,
+weaknesses 100%. The v2 per-section figures are approximate.
+
+**Why v6 lost points: the Mulligan lines.** A specific line names cards and runs long. In the v6
+first writes the lines ran a median 75 characters against their 80, and 58 of 180 were over. The
+shipped prompt already said "aim for about 55", so the fix states the budget in other forms:
+- a word target, 8 to 12 words;
+- one card or one curve point per line, never neither;
+- the fixed land line does not count toward any line;
+- two worked lines, both naming a card or a curve point.
+
+The first version, whose second example named nothing, held the budget on the dev decks but let
+the specific share fall from 73% to 65% on the dev first writes. The version after it (`primer-budget-b`) is the one measured
+on held-out here, and it went to the synopsis lane as a patch, #934. It is verified byte for byte: with it, the app's own
+builder reproduces all 15 held-out first-write prompts and all 21 repair prompts the measurement
+sent.
+
+**The patch dropped lines no verdict showed.** The synopsis lane's pre-open pass on #934 noticed
+that its worked lines carry number words, and the figures rule reads "three" inside "three-drop".
+Under contract A a mulligan line that fails is DROPPED, and the section still passes while its
+minimum survives, so the all-four verdict never saw it: 21 held-out mulligan lines naming a figure
+the deck lacks were dropped, against none under v6. An earlier draft of this section said no run
+hit an `uncomputed_figure` refusal, which was true of sections and false of lines. From here every
+overview row reports DROPPED LINES per section, read with the validator's own reasons (the lane's
+line checks now restate all of v6's, and `eval:rescore-lines` holds them to `validateSynopsis` on
+every stored answer).
+
+Counted that way, the patch did not raise the drop rate. v6 as shipped already drops 17% of the
+mulligan lines in rendered sections, nearly all for running over budget; the patch drops 15%, most
+for a figure. It changed why lines drop, not how many. #934 was held while a second version was
+measured.
+
+**The second version (`primer-budget-c`)** keeps the budget and fixes the wording:
+- its worked lines carry no number ("[[Sol Ring]] with nothing to cast after it stalls out.");
+- it names "a line of play" again, as the shipped prompt does, instead of narrowing a line to a card
+  or a curve point;
+- its one length target is the app's own, read from `CHAR_BUDGETS`, where the first version said
+  50 beside the prompt's 55.
+
+The bar was set before the run: all four at 95% or better, dropped Mulligan lines at v6's level or
+below, and a specific share above 60%. Held-out, 3 trials, sonnet-low:
+
+| | v6 as shipped | first patch | second version |
+|---|---|---|---|
+| all four sections, after the repair | 89% (40 of 45) | 98% (44 of 45) | **100% (45 of 45)** |
+| first write alone, all four | 33% | 53% | 69% |
+| answers needing the repair | 30 | 21 | 14 |
+| $ per accepted answer | $0.063 | $0.051 | **$0.044** |
+| Mulligan lines dropped, rendered sections | 17% (28 of 168) | 15% (27 of 179) | 12% (22 of 178) |
+| ... of which for a figure the deck lacks | 0 | 21 | 0 |
+| specific Mulligan lines, as drawn | 76% | 82% | 75% |
+| Key-card lines dropped | 6% | 8% | 8% |
+| tips / weaknesses dropped | 4% / 4% | 2% / 5% | 0% / 6% |
+| universal staples as Key cards | 0 of 333 | 0 of 328 | 0 of 330 |
+
+The specific share is `mulliganSpecific` in `line-rule.mts`: a line naming a card, or a curve point
+or line of play by its words, including a mana figure in any form ("four-mana", "10-mana", "3 mana").
+Review of #946 found the first version recognised only one- to three-mana, which understated every
+share by 4 to 5 points; the figures here are the corrected rule's, and round 2's 21% is Hugh's read
+tagged by hand, not this rule.
+
+**It passes on all three**, and it is the cheapest of the three, because fewer answers need the
+repair. The dev check before it ($0.19) read the same way: 13% of Mulligan lines dropped, against
+38% on v6 and 23% on the first patch. It went to the synopsis lane to replace #934's text. The
+held-out run and its repair cost $0.98.
+
 ## Allowances
 
 **Ruling (Hugh):** keep today's daily allowance: the owner 10 units and each friend 3, with the
@@ -223,6 +421,28 @@ answer), the same use comes to $34.86 a month. Hugh accepted this knowing there 
 holds 0 rows, so every figure here is a worst case, not a forecast.
 
 **Revisit when** `model_calls` shows real monthly spend passing $10.
+
+**Tuning on the strategy prompt, at default effort, doubles its line.** Round 3's recommendation, S on the
+`strategy` prompt, costs $0.0828 per answer ($0.0956 per accepted answer, 13 of 15), against
+$0.0415 on the base prompt:
+
+| tuning, full use | per full day | per 30 days | $10 alarm | $20 stop |
+|---|---|---|---|---|
+| S, base prompt | $1.16 | $34.86 | day 9 | day 18 |
+| S, strategy prompt | $2.32 | $69.55 | day 5 | day 9 |
+| the owner alone, S, strategy prompt | $0.83 | $24.84 | | owner's $5 share on day 7 |
+
+Round 4's winner, S at medium effort with the rationale rules, costs $0.0489 per answer on its 8
+held-out decks: $1.37 a full day, $41.08 over 30 days, the $10 alarm on day 8 and the $20 stop on
+day 15; the owner alone reaches his $5 share on day 11.
+
+Still a worst case with no usage behind it; it is here so the allowance ruling is made knowing
+it.
+
+The overview's cost under v6 with the Mulligan budget's second version, as shipped in #934, is
+$0.0437 per answer and per accepted answer (45 of 45 accepted), against the $0.049 these figures
+use. That is half a cent lower, and it moves no
+whole allowance.
 
 For reference, these are the largest whole allowances the pre-registered rule
 (30 × (6F + H) × c within the cap, and H's share within $5) would have given:
@@ -271,4 +491,17 @@ For reference, these are the largest whole allowances the pre-registered rule
 
 ## Spend
 
-**$18.35 of $25**, from `ledger.jsonl`: 60 entries, none left pending. $16.94 of that was spent before the round 3 re-test, which cost $1.41. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+**$23.72 of $25**, from `ledger.jsonl`: 100 entries, none left pending. Neither the $15 stop-and-ask nor the cap was reached before the plan was past half done.
+
+| stage | $ | running total |
+|---|---|---|
+| the plan's rounds, through tuning round 1 and overview round 2 | $16.94 | $16.94 |
+| tuning round 3 re-test (the `strategy` prompt) | $1.41 | $18.35 |
+| overview under contract v6, and the first Mulligan budget | $2.94 | $21.30 |
+| overview, the Mulligan budget's second version (dev, held-out, repair) | $1.18 | $22.47 |
+| tuning round 4, the rationale rules and effort (3 dev checks) | $0.74 | $23.22 |
+| tuning round 4, the blind round (8 held-out decks, medium) | $0.20 | $23.41 |
+| tuning v2, the real-time latency measurement that sets the retry floor | $0.31 | $23.72 |
+
+Each stage is its ledger entries summed and then rounded, so the rounded stages need not sum to the
+running total.

@@ -71,3 +71,19 @@ describe("the strategy variant", () => {
     expect(() => applyVariant(TUNING_VARIANTS.strategy, pack, buildPrompt, "no-such-deck")).toThrow(/no stored overview/);
   });
 });
+
+describe("the strategy-terse-b variant", () => {
+  const { messages } = applyVariant(TUNING_VARIANTS["strategy-terse-b"], pack, buildPrompt, "deck-1");
+  const strategy = applyVariant(TUNING_VARIANTS.strategy, pack, buildPrompt, "deck-1").messages;
+
+  it("is the strategy prompt with the rationale rules appended to the system message", () => {
+    expect(messages.user).toBe(strategy.user);
+    expect(messages.system.startsWith(strategy.system)).toBe(true);
+    expect(messages.system).toContain("Never restate a chip's FIGURE in the rationale");
+    expect(messages.system).toContain("Never open two rationales the same way");
+  });
+
+  it("exempts a cited note by name, since the contract still wants it quoted", () => {
+    expect(messages.system).toContain("A note citation is the exception: its note must still be quoted, word for word");
+  });
+});
