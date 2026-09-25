@@ -91,7 +91,9 @@ export function ChangeCommanderSheet({
   return (
     <ModalChrome
       title={title}
-      aside={deckName}
+      // Desktop only: the phone's 43px header cannot hold the deck's name beside the title without
+      // cutting the title, the same call the verdict lean's qualifier made.
+      aside={<span className="hidden md:inline">{deckName}</span>}
       closeLabel={pair ? copy.sheet.close.pair : copy.sheet.close.single}
       onClose={onClose}
       width={700}
@@ -194,7 +196,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
       <div className="flex flex-col gap-[8px]">
         <h3 className="text-[15px] font-semibold" style={{ color: "var(--fg)" }}>
           {pair
-            ? copy.sheet.nonePair.head.replace("four", ["no", "one", "two", "three", "four", "five"][data.identity.length])
+            ? copy.sheet.nonePair.head(["no", "one", "two", "three", "four", "five"][data.identity.length])
             : copy.sheet.none.head(identity)}
         </h3>
         <p className="text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
