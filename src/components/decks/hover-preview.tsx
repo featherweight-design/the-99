@@ -45,6 +45,40 @@ const OPEN_DELAY = 240;
 const CLOSE_DELAY = 80;
 
 /**
+ * When the image starts downloading, which is NOT when the box appears.
+ *
+ * The box is mounted by `show()`, and `show()` is what sets the
+ * `background: url(…)` — so before this existed, the request could not begin
+ * until `OPEN_DELAY` had already elapsed, and the reader waited for the delay
+ * and then the fetch.
+ *
+ * Measured on local-dev against a production build, three runs each way at
+ * 1300x900 with a cold cache. Before, the box is demonstrably empty when it
+ * appears — the first frame a probe can sample is 4,675 bytes of flat colour —
+ * and the card arrives at a median 441ms. After, that first sample is already
+ * 162,019 bytes: the card, drawn. THE BLANK BOX IS NO LONGER OBSERVABLE.
+ *
+ * The exact painted time afterwards is unmeasurable rather than merely unknown:
+ * paint happens between the box mounting and the earliest screenshot, so the win
+ * is bounded at 72-123ms and no point figure inside that is claimed.
+ *
+ * The one unambiguous figure is where the request starts: ~210ms earlier,
+ * relative to the box mounting, from a CDP timestamp rather than from paint.
+ *
+ * Starting the fetch here puts it inside the wait instead of after it. The box
+ * still appears at the same moment, in the same place, at the same size, from
+ * the same URL — nothing drawn changes, and the bytes are simply already there.
+ *
+ * 50ms rather than 0ms because `mouseenter` fires for every row a pointer
+ * BRUSHES. A scan down a 99-row list at speed would otherwise request 99 images
+ * of ~93KB, and a lane that made the first hover faster by saturating the
+ * connection for the next one would be a poor trade. 50ms is short enough to
+ * leave ~190ms of the wait overlapped and long enough that a row crossed in
+ * passing never asks for anything.
+ */
+const PRELOAD_DELAY = 50;
+
+/**
  * The image, and where the box was when it opened.
  *
  * The POSITION after that is written straight to the node — see the move
@@ -138,6 +172,14 @@ export function HoverPreviewProvider({
 }) {
   const [target, setTarget] = useState<PreviewTarget | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The preload's own timer, separate from the box's: they fire at different
+  // moments and either can be cancelled without touching the other.
+  const preloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // URLs already asked for this mount. The browser's cache would coalesce a
+  // repeat anyway — `cache-control: public, max-age=31556952` on every card
+  // image — so this saves the `Image` object rather than the request, and keeps
+  // a pointer oscillating between two rows from allocating one per crossing.
+  const preloaded = useRef<Set<string>>(new Set());
   // Read in `open` to decide whether the 240ms has already been paid. A ref
   // rather than the state itself, because `open` is stable and would otherwise
   // close over the value it had when the row first mounted.
@@ -149,6 +191,7 @@ export function HoverPreviewProvider({
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
+    if (preloadTimer.current) clearTimeout(preloadTimer.current);
   }, []);
 
   // The box's own node, written to directly while the pointer moves. A
@@ -178,6 +221,29 @@ export function HoverPreviewProvider({
         // geometry are script either way.
         if (!window.matchMedia("(hover: hover)").matches) return;
         if (timer.current) clearTimeout(timer.current);
+        if (preloadTimer.current) clearTimeout(preloadTimer.current);
+        // Ask for the bytes during the wait rather than after it. Only while
+        // CLOSED: once the box is open `show()` runs immediately, so the
+        // background — and therefore the request — is set in the same tick and
+        // there is no wait left to hide the fetch inside.
+        if (!isOpen.current && !preloaded.current.has(imageUri)) {
+          preloadTimer.current = setTimeout(() => {
+            preloaded.current.add(imageUri);
+            // An `Image` rather than a `<link rel="preload">`: it needs no DOM
+            // node, cannot affect layout, and lands in the same HTTP cache the
+            // CSS background then reads.
+            //
+            // WHAT THIS DOES NOT DO: it does not pre-decode. `decoding` is a hint
+            // about presenting the element it is set on, and this element is never
+            // inserted or presented — the decode the reader waits on belongs to
+            // the `background-image` on the box below, which a detached Image
+            // cannot influence. Setting it here would read as if it did.
+            // Measured, the decode is 0.1ms at this size, so there is nothing to
+            // win there anyway; the bytes are the whole cost.
+            const img = new window.Image();
+            img.src = imageUri;
+          }, PRELOAD_DELAY);
+        }
         const show = () => {
           // The pointer has moved since the delay began — a reader who set off
           // down the list does not want the box where they entered the row.
@@ -204,6 +270,7 @@ export function HoverPreviewProvider({
         });
       },
       close: () => {
+        if (preloadTimer.current) clearTimeout(preloadTimer.current);
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setTarget(null), CLOSE_DELAY);
       },
