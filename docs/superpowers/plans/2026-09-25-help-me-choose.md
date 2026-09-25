@@ -217,6 +217,27 @@ synopsis's.
   - left untouched by a late answer, which writes nothing.
 - Mutations.
 
+**PR 4 as built (2026-09-25).**
+- **Migration 0063** (0062 belongs to Locked PR 3). It adds `'intake'` to `model_calls_feature_check`
+  and drops `decks.answer_intent_pending`. That column never got a reader: PR 3's retry writes no
+  intent. Every reference to it went first, the plumbing probe's included.
+- **The input ceiling is measured at 6,000.** count_tokens on the real prompt and schema gave
+  3,434 tokens with the picker's 307 labels and the worst 800 characters of words, and 3,946 with
+  all 401 tags. The plan's estimate of about 1,800 left out the output schema and dense words.
+- **The words are capped at 800 characters** (`READ_WORDS_MAX_CHARS`), and the action refuses a
+  longer press rather than trimming it. The form takes the same cap in PR 5.
+- **The deadline is 100s, with a 40s retry floor.** It fits under the choose page's
+  `maxDuration` of 120, which PR 5 sets. The reaper cutoff is 5 minutes, as for tuning and the
+  synopsis.
+- **The stub** (`INTAKE_LIVE`, `INTAKE_STUB`) is the free match's own reading, returned in the
+  model's shape. It records its model as the synopsis stub's `"stub"`, which the ledger prices at
+  nothing.
+- **A read with nothing valid is stored** as `failed` / `nothing_valid`, with what it did read, and
+  its unit is refunded.
+- `probe:help-me-choose-read` runs 20 checks, and five mutations fail it: spending regardless of
+  validity, an unguarded settle, a Stop that keeps the unit, no reap on start, and a late bill
+  dropped.
+
 **PR 5 is split in two (orchestrator-approved, 2026-09-25).** Measured against the handoff it ran
 well past 800 lines, so the boundary sits between the data the screens read and the screens:
 - **PR 5a, the data (no UI):** the URL's answers, the words' resolution, the page slices, the
