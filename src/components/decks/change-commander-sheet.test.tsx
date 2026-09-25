@@ -163,6 +163,16 @@ describe("ChangeCommanderSheet for a pair", () => {
     expect(new Set(controls).size).toBe(2);
   });
 
+  it("says who still leads in the plural when the write fails", async () => {
+    readChangeCandidates.mockResolvedValue(pairData());
+    changeCommander.mockResolvedValue({ ok: false, reason: "mismatch" });
+    mount(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Choose Kraum and Tana" }));
+    fireEvent.click(screen.getByRole("button", { name: "Make Kraum and Tana commanders" }));
+    expect(await screen.findByText("We couldn't change the commanders. Tymna the Weaver and Thrasios still lead this deck."))
+      .toBeTruthy();
+  });
+
   it("names the way back from a stacked card Change commander, not the pair's title", async () => {
     readChangeCandidates.mockResolvedValue(pairData());
     render(
