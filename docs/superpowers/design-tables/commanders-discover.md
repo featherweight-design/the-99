@@ -662,8 +662,8 @@ does not set are omitted rather than guessed.
 | text-transform | uppercase | — |
 | color | #8E8269 | — |
 | margin-bottom | 9px | — |
-| section order (owned) | Colour identity · Colour match · Build from · Order | — |
-| section order (discover) | Scope · Colour identity · Colour match · Order | — |
+| section order (owned) | Color identity · Color match · Build from · Order | — |
+| section order (discover) | Scope · Color identity · Color match · Order | — |
 
 ### Option pill
 

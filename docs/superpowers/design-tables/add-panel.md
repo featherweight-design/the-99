@@ -485,7 +485,7 @@ them / the brand sheet names them.
 | Heading font | Cinzel `600` / `17px` / `--fg`, `margin-bottom 8px` | Canvas E:567 |
 | Heading copy | `Nothing in the pile by that name` | copy.quickAddEmpty.heading |
 | Body typography | `13.5px`, `--fg-muted` (`#A89B84`), `line-height 1.6` | Canvas E:568 |
-| Body copy (owned filter **on**) | `No card you own matches "{query}" in {commanderShortName}'s colours.` — the query echo drawn in `--fg-body` | copy.quickAddEmpty.body; Canvas E:568 |
+| Body copy (owned filter **on**) | `No card you own matches “{query}” in {commanderShortName}’s colors.` — the query echo drawn in `--fg-body` | copy.quickAddEmpty.body; Canvas E:568 |
 | Body copy (owned filter **off**) | `No {identity} card matches "{query}".` — "then it really is a miss" | copy.quickAddEmpty.bodyAllCards |
 | Escape action copy | `Search all cards instead` | copy.quickAddEmpty.dropFilter |
 | Escape action style | Inline underlined brass text button — `--brass`, `13.5px`, no border, `padding 0`, `text-decoration: underline` | Canvas E:568 |

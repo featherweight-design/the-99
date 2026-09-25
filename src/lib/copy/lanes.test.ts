@@ -8,7 +8,7 @@ describe("filterCopy", () => {
   });
 
   it("collapses colours past one pip rather than naming each hue", () => {
-    expect(filterCopy.colour.collapsed(2)).toBe("2 colours");
+    expect(filterCopy.colour.collapsed(2)).toBe("2 colors");
   });
 
   it("states what Exactly costs, in rows", () => {

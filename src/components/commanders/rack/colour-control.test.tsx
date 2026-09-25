@@ -18,7 +18,7 @@ describe("ColourControl", () => {
         wide
       />,
     );
-    const group = screen.getByRole("radiogroup", { name: "Colour match" });
+    const group = screen.getByRole("radiogroup", { name: "Color match" });
     expect(group).toHaveAttribute("aria-disabled", "true");
   });
 
@@ -43,7 +43,7 @@ describe("ColourControl", () => {
     render(
       <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(screen.getByRole("radiogroup", { name: "Colour match" })).not.toHaveAttribute(
+    expect(screen.getByRole("radiogroup", { name: "Color match" })).not.toHaveAttribute(
       "aria-disabled",
     );
   });
@@ -66,6 +66,6 @@ describe("ColourControl", () => {
     render(
       <ColourControl colors={["b"]} match="contains" onColorsChange={noop} onMatchChange={noop} wide />,
     );
-    expect(screen.getAllByRole("radiogroup", { name: "Colour match" })).toHaveLength(1);
+    expect(screen.getAllByRole("radiogroup", { name: "Color match" })).toHaveLength(1);
   });
 });

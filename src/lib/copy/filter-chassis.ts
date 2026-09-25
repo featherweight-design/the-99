@@ -53,7 +53,7 @@ export const chassisCopy = {
      */
     pipAriaUnavailable: (name: string) => `${name}, no matches`,
     /** Reused on the commander lanes; stated for the two routes that had none. */
-    legend: "Colour",
+    legend: "Color",
     /** Chip label past one pip — never one chip per hue. */
     collapsed: filterCopy.colour.collapsed,
     /**
@@ -62,7 +62,7 @@ export const chassisCopy = {
      * that return very different lists.
      */
     collapsedExactly: (count: number) =>
-      `Exactly ${fmt(count)} ${count === 1 ? "colour" : "colours"}`,
+      `Exactly ${fmt(count)} ${count === 1 ? "color" : "colors"}`,
     /** The five hues, in WUBRG order, with the names the lanes already use. */
     /**
      * Keyed lowercase by `lanes.ts`; the pips look up through a lowercased

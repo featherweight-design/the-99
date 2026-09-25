@@ -1085,7 +1085,7 @@ the reported failure in one string.
 | `list.committedClause(qty)` | `×{qty} in your collection, none free.` |
 | `list.unownedClause(price)` | `Not in your collection, {price}.` |
 | `list.illegalInDeck` | `already in the deck` |
-| `list.illegalColour` | `not in these colours` |
+| `list.illegalColour` | `not in these colors` |
 | `list.illegalUntickable` | `untickable` |
 | `list.declined` | `not this one` |
 | `list.restore` | `Show it again` |

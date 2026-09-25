@@ -716,7 +716,7 @@ describe("CommandersView URL writes", () => {
 
   it("renders the colour-match control greyed with no pip lit", () => {
     view(results(3));
-    expect(screen.getByRole("radiogroup", { name: "Colour match" })).toHaveAttribute(
+    expect(screen.getByRole("radiogroup", { name: "Color match" })).toHaveAttribute(
       "aria-disabled",
       "true",
     );

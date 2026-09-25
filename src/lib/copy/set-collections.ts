@@ -49,7 +49,7 @@ export const setFilterCopy = {
     ariaLabel: (set: string) => `Search cards in ${set}`,
     clear: "Clear the search",
   },
-  colourLabel: "Colour",
+  colourLabel: "Color",
   missingOnly: setFilterCopyMissingOnly,
   sheetPrimary: (n: number) => (n === 1 ? "Show 1 card" : `Show ${n} cards`),
   // DIMENSIONS only — never missing-only, which sits on the row beside the badge where the
@@ -210,7 +210,7 @@ export const setsIndexCopy = {
   // would have spoken for a database that was simply unreachable.
   searchFailed: {
     heading: "That search did not get through",
-    body: "Something went wrong reaching the set catalogue. Try again in a moment.",
+    body: "Something went wrong reaching the set catalog. Try again in a moment.",
     action: "Try again",
   },
 

@@ -20,7 +20,7 @@ describe("FilteredEmpty", () => {
       screen.getByText(
         (_, el) =>
           el?.textContent ===
-          "Yeva, Nature's Herald is in your commanders, but Red excludes it. Drop the colour and you get 3 rows back.",
+          "Yeva, Nature's Herald is in your commanders, but Red excludes it. Drop the color and you get 3 rows back.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Drop Red" })).toBeInTheDocument();

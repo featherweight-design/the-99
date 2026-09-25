@@ -31,7 +31,7 @@ describe("collectionChips", () => {
 
   it("carries a swatch per lit hue, since the label collapses them", () => {
     const chip = collectionChips({ ...EMPTY, colors: ["W", "B"] }, options)[0];
-    expect(chip.label).toBe("2 colours");
+    expect(chip.label).toBe("2 colors");
     expect(chip.dots).toHaveLength(2);
   });
 
@@ -68,7 +68,7 @@ describe("collectionChips", () => {
     // "1 colour" with an aria-hidden swatch leaves a screen reader unable to
     // say which hue — unlike a set, which renders as its own name.
     const chip = collectionChips({ ...EMPTY, colors: ["G"] }, options)[0];
-    expect(chip.label).toBe("1 colour");
+    expect(chip.label).toBe("1 color");
     expect(chip.spoken).toBe("Green");
   });
 

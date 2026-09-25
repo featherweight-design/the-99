@@ -129,7 +129,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection',
     width: 'plate',
     caption:
-      'Search by name, narrow by colour, type, set or availability, and read the result as a grid or as rows. Every narrowing is a chip you can see and remove, and the count above the results always says how much of the collection you are looking at.',
+      'Search by name, narrow by color, type, set or availability, and read the result as a grid or as rows. Every narrowing is a chip you can see and remove, and the count above the results always says how much of the collection you are looking at.',
     keys: [
       'a chip per narrowing, each removable on its own, and one link that clears the lot. Nothing filters invisibly.',
       'By set is a grouping, not a filter: it reorders what is shown and never changes how much is shown.',
@@ -274,7 +274,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      "We score how well a commander fits your collection out of 100, from three things added together: how many of your cards are legal in its colours, whether you own enough ramp, draw, removal and wipes to build at all, and how much of its most-played list you already have. The bar shows those three in that order.",
+      "We score how well a commander fits your collection out of 100, from three things added together: how many of your cards are legal in its colors, whether you own enough ramp, draw, removal and wipes to build at all, and how much of its most-played list you already have. The bar shows those three in that order.",
     keys: [
       "the score is out of 40 instead of 100 when we could not read a commander’s most-played list. We never rescale it to look like a 100.",
       'the three parts are printed with their sum, so you can check the score yourself.',
@@ -361,7 +361,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy says nothing, because there is nothing to report.",
     keys: [
-      'the dot means you own the card and nothing else. It stays the same colour whether or not a deck is holding it.',
+      'the dot means you own the card and nothing else. It stays the same color whether or not a deck is holding it.',
       'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
       'the synergy list prices what you do not own, so a card you would have to buy says so before you plan around it.',
     ],
@@ -375,7 +375,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'inset',
     caption:
-      "Commanders that pair, and what their combined colours open up in your collection. Two commanders take two of the hundred cards, so a pair deck’s 99 is 98, and every count and progress bar in the app measures against that.",
+      "Commanders that pair, and what their combined colors open up in your collection. Two commanders take two of the hundred cards, so a pair deck’s 99 is 98, and every count and progress bar in the app measures against that.",
     keys: [],
     since: 1,
   },
@@ -392,7 +392,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'One page per deck: the commander, the status and how far along it is, then the list itself. Four tabs sit under the header: the deck, cards worth considering, the games you have played with it, and its committed versions. Everything about a deck lives on the deck.',
     keys: [
       'the badge and the bar are the same pair the library shows, so a deck reads the same from either direction.',
-      'a tab drops its count rather than printing a nought, so a deck nobody has logged a game against has no number beside Games.',
+      'a tab drops its count rather than printing a zero, so a deck nobody has logged a game against has no number beside Games.',
       'Consider is the other half of the recommendation: cards this commander wants that are not in the list yet.',
     ],
     since: 1,
@@ -680,10 +680,10 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the commander picker',
     width: 'plate',
     caption:
-      'Every deck starts with a commander you already own. The picker lists them all with the size of the pool each one opens up, meaning how many of your cards are legal in its colours, and a name is the only other thing a deck needs. Commanders that partner get a second slot, filtered to the ones they can legally pair with. Arriving from a commander’s own page skips the list: the commander is already chosen, any synergy picks you made there travel with you, and the page asks for the name.',
+      'Every deck starts with a commander you already own. The picker lists them all with the size of the pool each one opens up, meaning how many of your cards are legal in its colors, and a name is the only other thing a deck needs. Commanders that partner get a second slot, filtered to the ones they can legally pair with. Arriving from a commander’s own page skips the list: the commander is already chosen, any synergy picks you made there travel with you, and the page asks for the name.',
     keys: [
-      'only commanders you own and could legally build are listed. The picker is your collection, not a catalogue.',
-      'the figure beside each one is how many of your cards are legal in its colours, which is the Pool part of a fit score seen from the other side.',
+      'only commanders you own and could legally build are listed. The picker is your collection, not a catalog.',
+      'the figure beside each one is how many of your cards are legal in its colors, which is the Pool part of a fit score seen from the other side.',
       'a name is required and everything else has a default: the deck is created empty, and the 99 is filled in afterwards.',
     ],
     since: 7,
@@ -769,7 +769,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'About fifteen seconds after the game, on the deck you played: the result, the pod size, and the two or three things that decided it. The same eight things can be marked either way, as what worked or as what let you down, and all of it is optional: a result on its own is a game.',
     keys: [
       'pod size is on the form because a win into three opponents and a win into one are not the same evidence.',
-      'the note is quoted back verbatim in the history and never summarised, which is why it asks for one line rather than a paragraph.',
+      'the note is quoted back verbatim in the history and never summarized, which is why it asks for one line rather than a paragraph.',
       'the eight axes are the same eight on both sides, so a deck’s record can say a thing cut both ways.',
     ],
     since: 1,
@@ -838,7 +838,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'inset',
     caption:
-      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many cards are asked for more times than you own copies; and what the whole library would cost to finish. The middle figure keeps its colour at zero, because it is the row that would be red if it were not nought.',
+      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many cards are asked for more times than you own copies; and what the whole library would cost to finish. The middle figure keeps its color at zero, because it is the row that would be red if it were not zero.',
     keys: [],
     since: 1,
   },

@@ -257,7 +257,7 @@ describe("FilterRack while a ranking flip is in flight", () => {
     ).toBeInTheDocument();
     // The pips narrow a list already in memory whatever is in flight, so they
     // stay live and unmarked.
-    expect(screen.getByRole("group", { name: "Colour identity" })).not.toHaveAttribute(
+    expect(screen.getByRole("group", { name: "Color identity" })).not.toHaveAttribute(
       "aria-busy",
     );
   });

@@ -202,7 +202,7 @@ export const discoveryCopy = {
     // commanders the player does not own, and every one of them is unbuilt by
     // construction. Naming the wrong axis had the state describe a list nobody
     // is looking at.
-    filteredHeading: "No commander in those colours",
+    filteredHeading: "No commander in those colors",
     filteredBody: (colors: string, candidates: number) =>
       `${colors} together leave nothing in the ${n(candidates)} you don't own.`,
     // "cover", not "are": the count behind this clause comes from the list's own
@@ -217,7 +217,7 @@ export const discoveryCopy = {
         : `${matching === 1 ? "One" : n(matching)} of your ${n(
             total,
           )} decks ${matching === 1 ? "covers" : "cover"} ${identity}. That is where those commanders went.`,
-    filteredCta: "Clear the colour filter",
+    filteredCta: "Clear the color filter",
     // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
     // was the deleted scope control's option label, and it opened on "or", which
     // read as a trailing clause of the button beside it rather than a link.

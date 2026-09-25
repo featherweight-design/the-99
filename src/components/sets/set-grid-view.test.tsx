@@ -723,7 +723,7 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   it("collapses colour past one pip rather than drawing a chip per hue", () => {
     search = "c=W,U,B";
     view([p("1"), p("2")], []);
-    expect(chipLabels()).toContain("3 colours");
+    expect(chipLabels()).toContain("3 colors");
     expect(chipLabels()).not.toContain("White");
   });
 
@@ -1323,7 +1323,7 @@ describe("SetGridView — the collapsed colour chip names its hues", () => {
     // The count, in the half the eye reads.
     const shown = [...row.querySelectorAll('[aria-hidden="true"]')]
       .map((el) => el.textContent).filter(Boolean);
-    expect(shown).toContain("3 colours");
+    expect(shown).toContain("3 colors");
     // And the swatches beside it. §28 forbids a chip PER hue, not swatches inside one —
     // and on a phone the pips are unmounted, so this is the only thing a sighted reader
     // has to tell them which three.
@@ -1336,7 +1336,7 @@ describe("SetGridView — the collapsed colour chip names its hues", () => {
     view([p("1"), p("2")], []);
     expect(screen.getByRole("button", { name: "Remove filter: White, Blue, Black" }))
       .toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Remove filter: 3 colours" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Remove filter: 3 colors" })).toBeNull();
   });
 
   it("leaves a single-colour chip alone — its label is already the name", () => {

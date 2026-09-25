@@ -67,14 +67,14 @@ export const planeCopy = {
   join: {
     // Mobile row label only. On desktop the modifier sits inside the pip wrapper, where
     // `COLORS` is already the caption and a second one would be noise.
-    label: "Colour match",
+    label: "Color match",
     contains: "Contains",
     exactly: "Exactly",
     // The group's accessible name at both widths. The desktop caption is inside the wrapper
     // and aria-hidden, because a `display: none` label names nothing.
-    groupAria: "Colour match",
-    containsAria: "Show commanders whose colour identity contains all the selected colours",
-    exactlyAria: "Show only commanders whose colour identity is exactly the selected colours",
+    groupAria: "Color match",
+    containsAria: "Show commanders whose color identity contains all the selected colors",
+    exactlyAria: "Show only commanders whose color identity is exactly the selected colors",
 
     // Present only under `Exactly`, in `availabilityCopy.ranking.freeNoteLong`'s slot and
     // register. Says what the mode did, in the same breath as the count it produced.
@@ -165,7 +165,7 @@ export const planeCopy = {
     heldColors: (filtered: string[], own: string[]) =>
       `It matches, but the ${identity(
         filtered,
-      )} colour filter excludes it: its identity is ${identity(own)}.`,
+      )} color filter excludes it: its identity is ${identity(own)}.`,
     heldJoin: (filtered: string[], own: string[]) =>
       `It matches, but Exactly ${identity(
         filtered,
@@ -184,12 +184,12 @@ export const planeCopy = {
     colors: (name: string, filtered: string[], own: string[]) =>
       `${name} matches, but the ${identity(
         filtered,
-      )} colour filter excludes it: its identity is ${identity(own)}.`,
+      )} color filter excludes it: its identity is ${identity(own)}.`,
     colorsAlso: (name: string, filtered: string[], own: string[]) =>
       `${name} also matches, but the ${identity(
         filtered,
-      )} colour filter excludes it: its identity is ${identity(own)}.`,
-    colorsCta: "Clear the colour filter",
+      )} color filter excludes it: its identity is ${identity(own)}.`,
+    colorsCta: "Clear the color filter",
 
     // Named instead of `colors` when the row would survive under `Contains` — the mode is
     // the cause, so the mode is the correction.
@@ -227,7 +227,7 @@ export const planeCopy = {
         rule the sentences above follow. */
     control: {
       scope: "the decks you have already built",
-      colors: (colors: string[]) => `the ${identity(colors)} colour filter`,
+      colors: (colors: string[]) => `the ${identity(colors)} color filter`,
       join: (colors: string[]) => `Exactly ${identity(colors)}`,
       floor: (floorPct: number) => `the ${floorPct}% support floor`,
       unmeasured: "Something new",
@@ -246,7 +246,7 @@ export const planeCopy = {
   // player searched for a specific row and it went missing: different subject, different sentence.
   exclusion: {
     colors: (excluded: number, colors: string[]) =>
-      `${n(excluded)} excluded by the ${identity(colors)} colour filter`,
+      `${n(excluded)} excluded by the ${identity(colors)} color filter`,
     join: (excluded: number, colors: string[]) =>
       `${n(excluded)} excluded by the exact ${identity(colors)} identity`,
     floor: (excluded: number, floorPct: number) =>
