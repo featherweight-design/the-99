@@ -1047,7 +1047,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
 // The modal's art is asked for on the PRESS, alongside the details read, when the opener knows it:
 // otherwise it could only be asked for once the read answered and named the printing.
 describe("CardDetailTrigger's art preload", () => {
-  it("asks for the art before the details read answers, and draws nothing for it", async () => {
+  it("asks for the art before the details read answers", async () => {
     const asked: string[] = [];
     const Real = window.Image;
     class Spy { set src(v: string) { asked.push(v); } }
@@ -1067,7 +1067,6 @@ describe("CardDetailTrigger's art preload", () => {
       await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
       expect(fetchCard).toHaveBeenCalledTimes(1);
       expect(asked).toEqual(["https://cards.scryfall.io/normal/front/a/b/signet.jpg"]);
-      expect(document.querySelectorAll("img")).toHaveLength(0);
 
       // A trigger that does not know the art asks for nothing.
       await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));

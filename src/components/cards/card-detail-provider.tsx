@@ -141,6 +141,16 @@ export function useCardDetail(): CardDetailContextValue {
  * `disabled` while the fetch runs: disabling the focused element blurs it, and the modal's
  * focus-return would then have nothing to hand focus back to on close.
  */
+/**
+ * Ask for a card's modal art now, alongside the details read, rather than once that read has named
+ * the printing. A detached Image, as the hover preview's preload (#969): no DOM node, nothing drawn,
+ * and the bytes land in the HTTP cache the modal's background then reads. Pass only a URL the modal
+ * will draw, or the press fetches an image nothing shows.
+ */
+export function preloadCardArt(imageUri: string | null | undefined) {
+  if (imageUri) new window.Image().src = imageUri;
+}
+
 export function CardDetailTrigger({
   oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, children,
 }: {
@@ -190,9 +200,7 @@ export function CardDetailTrigger({
       type="button"
       data-testid={testId}
       onClick={() => {
-        // A detached Image, as the hover preview's preload (#969): no DOM node, nothing drawn, and
-        // the bytes land in the HTTP cache the modal's background then reads.
-        if (imageUri) new window.Image().src = imageUri;
+        preloadCardArt(imageUri);
         open(oracleId, siblings, undefined, door ? { door } : undefined);
       }}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}

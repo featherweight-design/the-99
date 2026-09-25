@@ -338,7 +338,14 @@ async function main() {
         }
       }
       const cold = runs.filter((r) => r.mode === "cold" && r.artFinishedMs != null);
-      const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : null; };
+      // A true median: an even count averages the middle two, since a press whose action end went
+      // uncaptured leaves that column one short.
+      const median = (xs) => {
+        const s = [...xs].sort((a, b) => a - b);
+        if (!s.length) return null;
+        const m = Math.floor(s.length / 2);
+        return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+      };
       const summary = {
         coldPresses: cold.length,
         medianActionEndMs: median(cold.map((r) => r.actionEndMs).filter((x) => x != null)),
