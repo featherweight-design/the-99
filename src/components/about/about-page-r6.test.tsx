@@ -65,8 +65,12 @@ describe("the new-entry marks (§P0)", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} sheetMode />);
     const entry = newSince(ABOUT_VERSION - 1)[0];
     const h3 = document.getElementById(entry.id)!.querySelector("h3")!;
-    expect(h3.firstElementChild?.textContent).toBe(aboutCopy.newBadge);
-    expect(h3.firstElementChild?.getAttribute("aria-hidden")).not.toBeNull();
+    // childNodes, not firstElementChild: the title is a TEXT node, and an
+    // element-only walk reads the pill as first wherever it sits.
+    const first = h3.childNodes[0] as HTMLElement;
+    expect(first.nodeType).toBe(Node.ELEMENT_NODE);
+    expect(first.textContent).toBe(aboutCopy.newBadge);
+    expect(first.getAttribute("aria-hidden")).not.toBeNull();
     expect(h3.lastElementChild?.className).toContain("sr-only");
     expect(h3.lastElementChild?.textContent?.trim()).toBe(aboutCopy.newBadgeSr);
   });
