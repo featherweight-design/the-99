@@ -302,7 +302,14 @@ async function main() {
           if (!rec) return;
           rec.timing = e.response.timing;
           rec.status = e.response.status;
-          rec.fromCache = Boolean(e.response.fromDiskCache);
+          // BOTH flags, matching the hover handler at line 186. A service
+          // worker can satisfy an image with a 200 and real bytes and NO
+          // handshake, which passes the byte and status assertions below while
+          // measuring no connection at all. There is no service worker in this
+          // app today — which is exactly why the inconsistency would have sat
+          // here unnoticed until one arrived. The PWA work already scoped for
+          // this repo would add one.
+          rec.fromCache = Boolean(e.response.fromDiskCache || e.response.fromServiceWorker);
         });
         ccdp.on("Network.loadingFinished", (e) => {
           const rec = byId.get(e.requestId);
