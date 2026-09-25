@@ -38,7 +38,12 @@ describe("shapeFits", () => {
     // A deck the card leads holds it too.
     expect(r.holds).toEqual([{ id: "a", name: "Atraxa", quantity: 1 }, { id: "t", name: "Tymna", quantity: 1 }]);
     expect(r.excluded).toEqual([{ id: "u", name: "Urza", commanders: ["Cmdr u"], outside: ["G"] }]);
-    expect(r).toMatchObject({ owned: 2, free: 1 });
+    expect(r).toMatchObject({ owned: 2, free: 1, staple: false });
+  });
+
+  it("carries the staple flag through, for the picker's staple form", () => {
+    const rows = [deck({ id: "g", name: "Gishath" })];
+    expect(shapeFits(birds, rows, new Map(), mixesFor(rows), { owned: 0, free: null }, true).staple).toBe(true);
   });
 
   it("names no need when the card has no role, or its role's target was not measured (F9)", () => {
