@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPhraseIndex } from "./match";
-import { emptyParams, parseChooseParams } from "./params";
+import { emptyParams, parseChooseParams, READ_WORDS_MAX_CHARS } from "./params";
 import { submitTarget } from "./submit";
 
 const DS = "0000aaaa-0000-4000-8000-000000000001";
@@ -41,6 +41,12 @@ describe("the submit redirect", () => {
     const p = landed(target({ words: "Doubling Season and Sol Ring, lots of little tokens" }));
     expect(p.card).toBe(DS);
     expect(p.notUsed).toEqual(expect.arrayContaining(["Sol Ring", "little tokens"]));
+  });
+
+  it("resolves only the words the results keep: nothing past the limit becomes an answer", () => {
+    const p = landed(target({ words: `${"x".repeat(READ_WORDS_MAX_CHARS)} dinosaurs` }));
+    expect(p.themes).toEqual([]);
+    expect(p.words.length).toBeLessThanOrEqual(READ_WORDS_MAX_CHARS);
   });
 
   it("searches a blank submit with no index read at all", () => {

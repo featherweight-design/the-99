@@ -1,5 +1,5 @@
 import { matchWords, type PhraseIndex } from "./match";
-import { resolveWords, serializeChooseParams, type ChooseParams } from "./params";
+import { READ_WORDS_MAX_CHARS, resolveWords, serializeChooseParams, type ChooseParams } from "./params";
 
 export const CHOOSE_PATH = "/decks/new/choose";
 
@@ -16,7 +16,8 @@ export const CHOOSE_PATH = "/decks/new/choose";
  * Pure over the index, so the redirect a page makes is tested without a request.
  */
 export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string {
-  const words = p.words.trim();
+  // Bounded here as the parser bounds `w`, so no answer comes from words the results would cut.
+  const words = p.words.slice(0, READ_WORDS_MAX_CHARS).trim();
   const match = words && index ? matchWords(words, index) : { chips: [], phrases: [] };
   const resolved = resolveWords(match.chips, {
     themes: p.themes,
