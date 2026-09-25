@@ -60,6 +60,8 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
+import { changeCommanderEnabled } from "../../lib/commander-change/flag";
+import { commanderMoved } from "../../lib/commander-change/pending";
 import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks, reviveDormantLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
@@ -2126,7 +2128,10 @@ export async function pullCardFromDeck(
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId)).for("update");
     const diff = draftDiff(draft, before);
-    if (diff.adds.length > 0 || diff.removes.length > 0) {
+    // A moved commander is a pending change too (change commander): the commit below copies the
+    // live commander columns into the version, so it would sweep that swap in unasked.
+    const commanderPending = changeCommanderEnabled() && commanderMoved(version, deck);
+    if (diff.adds.length > 0 || diff.removes.length > 0 || commanderPending) {
       return { ok: false, message: "That deck has pending changes. Release the card there." };
     }
     // Nothing to release. Without this the decrement and the delete both match

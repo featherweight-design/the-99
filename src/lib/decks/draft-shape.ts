@@ -11,6 +11,7 @@
 import type { Availability, DeckClaim } from "./availability";
 import type { AddBucket, BucketedAdd, DraftChange } from "./draft-diff";
 import type { DeckVersion } from "./versions";
+import type { CommanderPair } from "../commander-change/pending";
 
 /**
  * An add as every draft surface reads it.
@@ -111,14 +112,29 @@ export type DraftState = {
    * repeats the whole price read or prints a sold-out card at its last price.
    */
   newestAsOf: Date | null;
+  /**
+   * The commander the draft moved to, against the version's, or null when it did
+   * not move. A pending change like any card row: it counts once in
+   * `changeCount`, so a swap alone raises the banner and admits the review page.
+   *
+   * Optional only so a fixture built before commanders could change still types;
+   * the reader always sets it, and absent reads as null. Always null while
+   * `CHANGE_COMMANDER_ENABLED` is off, because no read compares the columns then.
+   */
+  commander?: { from: CommanderPair; to: CommanderPair } | null;
 };
 
-/** `adds.length + removes.length` — the figure every count chip is built on, and
- *  the whole test of whether the draft differs. Every card the draft moved is in
- *  one of those two lists, basics included, so there is no second question to
- *  ask; `hasChanges` is this figure against zero. */
+function pairIds(pair: CommanderPair): string[] {
+  return [pair.commanderOracleId, pair.partnerOracleId].filter((id): id is string => id !== null);
+}
+
+/** `adds.length + removes.length`, plus one when the commander moved — the
+ *  figure every count chip is built on, and the whole test of whether the draft
+ *  differs. Every card the draft moved is in one of those two lists, basics
+ *  included, and a new commander (or pair) is one change however many halves it
+ *  swapped; `hasChanges` is this figure against zero. */
 export function changeCount(state: DraftState): number {
-  return state.adds.length + state.removes.length;
+  return state.adds.length + state.removes.length + (state.commander ? 1 : 0);
 }
 
 /**
@@ -131,7 +147,18 @@ export function changeCount(state: DraftState): number {
  * makes.
  */
 export function releasedCopies(state: DraftState): number {
-  return state.removes.reduce((sum, r) => sum + (r.from - r.to), 0);
+  const cut = state.removes.reduce((sum, r) => sum + (r.from - r.to), 0);
+  if (!state.commander) return cut;
+  // A commander is one copy. One that leaves the command zone releases it,
+  // unless it traded into the 99, where the add row holds that copy; one that
+  // arrives FROM the 99 keeps the copy its remove row counted as released.
+  const from = pairIds(state.commander.from);
+  const to = pairIds(state.commander.to);
+  const added = new Set(state.addChanges.map((a) => a.oracleId));
+  const removed = new Set(state.removes.map((r) => r.oracleId));
+  const leaving = from.filter((id) => !to.includes(id) && !added.has(id)).length;
+  const arrivingFromBody = to.filter((id) => !from.includes(id) && removed.has(id)).length;
+  return cut + leaving - arrivingFromBody;
 }
 
 /** Whether the draft differs from the version at all. The app cannot price an

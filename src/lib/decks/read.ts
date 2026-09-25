@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { factsFor } from "../bracket/facts";
@@ -30,6 +30,8 @@ import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { deckBodySize } from "./deck-size";
+import { changeCommanderEnabled } from "../commander-change/flag";
+import { deckCommanderMovedSql } from "../commander-change/pending";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
@@ -762,15 +764,12 @@ export const lastCommittedSql = sql<Date | string | null>`(
  * other, over `deck_cards` against the newest version's rows. Basics included,
  * as they are in the deck page's own change list.
  *
- * **The commander columns are deliberately NOT compared**, though a version
- * snapshots them. `changeCount` in `draft-shape.ts` is `adds + removes` over
- * the CARD diff alone, so a flag that also watched the commander would draw the
- * edge on a deck whose own page counts zero changes, draws no pending banner
- * and offers nothing to commit — and in PR 2 that tile's figure reads `0
- * changes since v2` beneath the mark. Nothing writes `commander_oracle_id`
- * after a deck is created, so the state is unreachable today in any case. If a
- * commander swap ever ships, the change model in `draft-shape.ts` is where it
- * belongs, and this flag follows it for free rather than disagreeing with it.
+ * **This fragment compares the cards alone.** The commander is the other half
+ * of the draft (change commander): `changeCount` in `draft-shape.ts` adds one
+ * for a moved commander, and `deckPendingSql` below adds the same one here, so
+ * the tile and the deck page count the same draft. The deck list reads
+ * `deckPendingSql`, never this fragment on its own; with
+ * CHANGE_COMMANDER_ENABLED off the two are the same object.
  *
  * The symmetric difference is two `except`s rather than a join: a full outer
  * join over two child tables inside a grouped select is a second way to write
@@ -814,6 +813,17 @@ export const pendingChangesSql = sql<number>`(
       )
   ), 0)::int
 )`;
+
+/**
+ * `pendingChangesSql`, plus one when the deck's commander moved since its newest version (change
+ * commander, plan decision 3: a new commander or pair is one change). With
+ * CHANGE_COMMANDER_ENABLED off this IS `pendingChangesSql`, the same object, so the deck list's
+ * SQL is byte-identical to the one before commanders could move.
+ */
+export function deckPendingSql(): SQL<number> {
+  if (!changeCommanderEnabled()) return pendingChangesSql;
+  return sql<number>`(${pendingChangesSql} + (case when ${deckCommanderMovedSql("decks")} then 1 else 0 end))::int`;
+}
 
 /**
  * The newest version's number, for the figure the mark explains: `36 changes
@@ -992,7 +1002,7 @@ export async function listDecksWithStats(
       // `sql` either way, so the projection's SHAPE does not change with the
       // option: a conditional column would make the row type depend on a
       // runtime value, and every reader would have to narrow it.
-      pendingChanges: opts.includeDeckState ? pendingChangesSql : sql<number>`0::int`,
+      pendingChanges: opts.includeDeckState ? deckPendingSql() : sql<number>`0::int`,
       versionNumber: opts.includeDeckState
         ? newestVersionNumberSql
         : sql<number | null>`null::int`,

@@ -10,7 +10,7 @@
 
 import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, deckVersionCards } from "../../db/schema";
+import { cards, collectionItems, deckCards, decks, deckVersionCards } from "../../db/schema";
 import {
   bucketAdds, draftDiff,
   type AddBucket, type CardQty, type DraftChange,
@@ -25,6 +25,8 @@ import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./p
 import { newestVersion, versionCards } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
+import { changeCommanderEnabled } from "../commander-change/flag";
+import { commanderMoved, type CommanderPair } from "../commander-change/pending";
 
 // `DraftState`, `DraftAdd`, the two counts and the two claim selectors live in
 // `draft-shape.ts` — the banner and the pull control are client components and
@@ -136,19 +138,32 @@ export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
  * guarantee than re-reading the version id and retrying.
  *
  * A brew stops at the first query: with no version there is nothing to compare,
- * so the two further reads are never issued.
+ * so the further reads are never issued.
+ *
+ * The deck's live commander columns ARE the draft's commander, so they are read
+ * in the same snapshot as the draft's cards — but only with
+ * `CHANGE_COMMANDER_ENABLED` on. Off, nothing writes those columns after
+ * creation, and the deck page pays for no fourth query.
  */
 async function readSnapshot(deckId: string) {
   return db.transaction(async (tx) => {
     const version = await newestVersion(deckId, tx);
-    if (!version) return { version, before: [] as CardQty[], draft: [] as CardQty[] };
+    if (!version) {
+      return { version, before: [] as CardQty[], draft: [] as CardQty[], live: null };
+    }
     // Sequential, not `Promise.all`: a transaction is one connection, and two
     // statements racing down it buy nothing but a queue.
     const before = await versionCards(version.id, tx);
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, deckId));
-    return { version, before, draft };
+    let live: CommanderPair | null = null;
+    if (changeCommanderEnabled()) {
+      [live = null] = await tx.select({
+        commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
+      }).from(decks).where(eq(decks.id, deckId));
+    }
+    return { version, before, draft, live };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 
@@ -226,14 +241,14 @@ async function readDraft(
   userId: string,
   detailed: boolean,
 ): Promise<DraftRead> {
-  const { version, before, draft } = await readSnapshot(deckId);
+  const { version, before, draft, live } = await readSnapshot(deckId);
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [],
     names: new Map(), costs: new Map(), prices: new Map(), pullFrom: new Map(),
     claimsKnown: true,
     buyCount: 0, unfreeCount: 0, pullableCount: 0, total: null,
-    pricedCopies: 0, newestAsOf: null,
+    pricedCopies: 0, newestAsOf: null, commander: null,
   };
   const bare = (state: DraftState): DraftRead => ({
     state, availability: null, prices: null, names: new Map(), detail: new Map(),
@@ -247,7 +262,15 @@ async function readDraft(
 
   const diff = draftDiff(draft, before);
   const changedIds = [...diff.adds, ...diff.removes].map((c) => c.oracleId);
-  if (changedIds.length === 0) return bare(empty);
+  const commander = live && commanderMoved(version, live)
+    ? {
+        from: { commanderOracleId: version.commanderOracleId, partnerOracleId: version.partnerOracleId },
+        to: live,
+      }
+    : null;
+  // A commander-only draft has changes and no card row: its state is the empty
+  // one plus the move, so nothing below reads a card it does not have.
+  if (changedIds.length === 0) return bare({ ...empty, commander });
 
   // The changed cards, basics among them. A basic stays in both lists and is
   // drawn like any other row: cutting five Swamps to make room for five other
@@ -366,6 +389,7 @@ async function readDraft(
       total: summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
       pricedCopies: summary.pricedCopies,
       newestAsOf: prices?.newestAsOf ?? null,
+      commander,
     },
     availability,
     prices,
