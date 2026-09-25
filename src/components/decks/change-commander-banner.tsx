@@ -4,6 +4,7 @@
 // commander moved, which it never does with CHANGE_COMMANDER_ENABLED off.
 
 import { useEffect, useRef } from "react";
+import { twMerge } from "tailwind-merge";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -43,9 +44,9 @@ export function CommanderNameLine({ state, tileClass }: { state: DraftState; til
   if (!state.commander) return null;
   const pair = state.commander.to.partnerOracleId !== null;
   return (
-    <li ref={ref} tabIndex={-1} data-testid="banner-commander-line" className="flex items-center gap-[9px] min-h-[34px] outline-none">
+    <li ref={ref} tabIndex={-1} data-testid="banner-commander-line" data-commander-line="true" className="flex items-center gap-[9px] min-h-[34px] outline-none">
       <span aria-hidden="true" className="flex-none w-[13px] font-mono text-[12px] text-[color:var(--accent)]">⇄</span>
-      <span className="flex-1 min-w-0 text-[13px] text-[color:var(--fg)]">
+      <span className="flex-1 min-w-0 text-[13px] leading-[1.35] text-[color:var(--fg)]">
         {deckVersioningCopy.history.commanderChange(pairName(state, state.commander.from), pairName(state, state.commander.to))}
       </span>
       <span className="flex-none font-mono text-[10px] text-[color:var(--fg-locked)]">
@@ -66,8 +67,9 @@ export function CommanderSentence({ state, sentenceClass }: { state: DraftState;
     ? copy.banner.replacesPair(short(to[0]), short(to[1]), short(from[0]), short(from[1]))
     : copy.banner.replaces(short(to[0]), short(from[0]));
   return (
-    <p data-testid="banner-commander-sentence" className={sentenceClass}>
-      <span aria-hidden="true" className="font-mono text-[color:var(--accent)]">⇄ </span>
+    // The money sentence's type, on its own 6px foot (handoff §4): the money line sits directly under.
+    <p data-testid="banner-commander-sentence" data-commander-line="true" className={twMerge(sentenceClass, "mb-[6px] md:mb-[6px]")}>
+      <span aria-hidden="true" className="mr-[7px] font-mono text-[12px] text-[color:var(--accent)]">⇄</span>
       {text}
     </p>
   );
@@ -89,5 +91,6 @@ export function commanderZoneHint(state: DraftState, oracleId: string, added: bo
 export function commanderBackClause(state: DraftState): string | null {
   if (!state.commander) return null;
   const old = ids(state.commander.from).map((id) => (state.names.get(id) ?? "").split(" // ")[0].split(",")[0].trim());
-  return copy.discard.commanderBack(old.join(" and "));
+  // A pair takes the plural (audit F9): two names do not share "leads".
+  return old.length > 1 ? copy.discard.commanderBackPair(old[0], old[1]) : copy.discard.commanderBack(old[0]);
 }

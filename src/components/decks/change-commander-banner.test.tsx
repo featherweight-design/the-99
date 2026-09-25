@@ -79,3 +79,17 @@ describe("Discard on a commander-only draft", () => {
     expect(text).not.toMatch(/\.\s{2}/);
   });
 });
+
+describe("commanderBackClause for a pair", () => {
+  it("takes the plural", async () => {
+    const { commanderBackClause } = await import("./change-commander-banner");
+    const state = swapped({
+      names: new Map([["a", "Tymna the Weaver"], ["b", "Thrasios, Triton Hero"], ["c", "Kraum"], ["d", "Tana"]]),
+      commander: {
+        from: { commanderOracleId: "a", partnerOracleId: "b" },
+        to: { commanderOracleId: "c", partnerOracleId: "d" },
+      },
+    });
+    expect(commanderBackClause(state)).toBe("Tymna the Weaver and Thrasios lead it again.");
+  });
+});

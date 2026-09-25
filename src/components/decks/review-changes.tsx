@@ -27,7 +27,8 @@ import type { DraftRow, DraftRows, ShapeCard } from "../../lib/decks/draft-state
 import { groupByCardType } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
-import { CommanderSection } from "./change-commander-review";
+import { CommanderSection, ZoneHint } from "./change-commander-review";
+import { commanderZoneHint } from "./change-commander-banner";
 import { ChangedStrip } from "./changed-strip";
 import { CommitSheet } from "./commit-sheet";
 import { DiscardConfirm, DiscardTrigger, useDiscardConfirm } from "./discard-draft";
@@ -182,6 +183,7 @@ export function Column({
   columnKey,
   newestAsOf,
   claimsKnown,
+  zoneHint,
 }: {
   deckId: string;
   /** The contested cards among this column's rows. The chooser hangs under the ones that match. */
@@ -211,6 +213,8 @@ export function Column({
    *  columns can hold an `Artifacts` group, and two elements with one id is a
    *  focus target that lands on whichever came first. */
   columnKey: "in" | "out";
+  /** Change commander: a traded card's command-zone hint, or null. Absent, no row carries one. */
+  zoneHint?: (oracleId: string, added: boolean) => string | null;
   /** The newest `as_of` in the price table, so a row can tell a live price from
    *  a sold-out printing's last one. */
   newestAsOf: Date | null;
@@ -336,7 +340,11 @@ export function Column({
                   // unowned card has nothing to pull from and a free one
                   // needs nothing pulled.
                   action={
-                    pullClaim
+                    // A trade's old commander, arriving from the command zone, says so in
+                    // the slot a pull would use (handoff §4).
+                    zoneHint?.(row.oracleId, true)
+                      ? <ZoneHint text={zoneHint(row.oracleId, true)!} />
+                      : pullClaim
                       ? (
                           <PullControl
                             deckId={deckId}
@@ -360,7 +368,11 @@ export function Column({
                   // underneath the control rather than beside it — the same
                   // shape `PullControl` uses on the other side of the page.
                   action={
-                    onRestore && restorable(row)
+                    // A trade's new commander left for the command zone: no Put back, which
+                    // would re-add the card now leading the deck, and the zone named instead.
+                    zoneHint?.(row.oracleId, false)
+                      ? <ZoneHint text={zoneHint(row.oracleId, false)!} />
+                      : onRestore && restorable(row)
                       ? (
                           <div className="inline-flex flex-col items-end flex-none">
                             <PutBackControl
@@ -966,6 +978,7 @@ export function ReviewChanges({
               contradict it. */}
           {inCount > 0 && (
             <Column
+              zoneHint={(id, added) => commanderZoneHint(state, id, added)}
               deckId={deckId}
               contested={contested}
               heading={copy.groupIn(inCount)}
@@ -995,6 +1008,7 @@ export function ReviewChanges({
           )}
           {outCount > 0 && (
             <Column
+              zoneHint={(id, added) => commanderZoneHint(state, id, added)}
               deckId={deckId}
               contested={contested}
               heading={copy.groupOut(outCount)}

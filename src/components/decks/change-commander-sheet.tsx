@@ -558,7 +558,7 @@ function Confirm({
   const summed = summedPrice(toBuy, data.newestAsOf);
 
   const sentence = trade
-    ? copy.confirm.trade(nuShort, oldShort, body)
+    ? (pair ? copy.confirm.tradePair : copy.confirm.trade)(nuShort, oldShort, body)
     : pair
       ? copy.confirm.sentencePair(shortName(nus[0].name), shortName(nus[1].name), shortName(olds[0].name), shortName(olds[1].name), body)
       : copy.confirm.sentence(nuShort, oldShort, body);
@@ -580,7 +580,7 @@ function Confirm({
         return;
       }
       // Announced from the provider: this sheet is gone by the time a reader would hear it.
-      door?.announce(copy.confirm.announced(nuShort));
+      door?.announce((pair ? copy.confirm.announcedPair : copy.confirm.announced)(nuShort));
       onDone();
     } catch {
       setFailed(true);
@@ -655,7 +655,7 @@ function Confirm({
       </div>
       {failed ? (
         <p role="alert" className="font-mono text-[11px] leading-[1.55]" style={{ color: "var(--danger)" }}>
-          {copy.confirm.failed(oldShort)}
+          {(pair ? copy.confirm.failedPair : copy.confirm.failed)(oldShort)}
         </p>
       ) : null}
     </div>

@@ -78,6 +78,9 @@ export const changeCommanderCopy = {
       `${a} and ${b} take the command zone. ${c} and ${d} leave the deck, and the ${body} stay exactly as they are.`,
     trade: (nu: string, old: string, body: number) =>
       `The two trade places. ${nu} leaves the ${body} for the command zone, and ${old} takes its slot. The deck stays at ${body}.`,
+    // The pair forms of three sentences a pair reaches (audit F9: two names never share a singular verb).
+    tradePair: (nu: string, old: string, body: number) =>
+      `The pairs trade places. ${nu} leave the ${body} for the command zone, and ${old} take their slots. The deck stays at ${body}.`,
     buy: (short: string) => `You don't own ${short} yet. It joins this draft's buy list:`,
     lands: (oldShort: string) => `Lands in your pending changes, not yet a version. Discard puts ${oldShort} back.`,
     landsTrade: "Lands in your pending changes, not yet a version. Discard puts both back where they were.",
@@ -86,8 +89,10 @@ export const changeCommanderCopy = {
     ctaPair: (a: string, b: string) => `Make ${a} and ${b} commanders`,
     pending: "Changing…",
     failed: (oldShort: string) => `We couldn't change the commander. ${oldShort} still leads this deck.`,
+    failedPair: (oldShort: string) => `We couldn't change the commanders. ${oldShort} still lead this deck.`,
     failedRetry: "Try again",
     announced: (nu: string) => `${nu} leads this deck now. The change is pending.`,
+    announcedPair: (nu: string) => `${nu} lead this deck now. The change is pending.`,
   },
 
   banner: {
@@ -110,6 +115,8 @@ export const changeCommanderCopy = {
   discard: {
     // Appended to deckVersioningCopy.discard.consequence's head when the draft holds a commander change.
     commanderBack: (oldShort: string) => `${oldShort} leads it again.`,
+    // The pair form the audit owes (F9); the handoff's file carries the single only.
+    commanderBackPair: (a: string, b: string) => `${a} and ${b} lead it again.`,
     // A draft that moved ONLY its commander. deckVersioningCopy.discard.consequence names the cards
     // added and cut and would lose its subject over zero of each ("3 cards.  are not stored
     // anywhere"), so this draft takes the version clause alone; `commanderBack` follows it.
