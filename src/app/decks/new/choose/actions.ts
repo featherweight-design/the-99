@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../../../lib/auth";
-import { runDeeperRead, type DeeperReadOutcome } from "../../../../lib/intake/deeper-read";
+import { deeperStatus, runDeeperRead, type DeeperReadOutcome, type DeeperStatus } from "../../../../lib/intake/deeper-read";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { MAX_BUDGET_DOLLARS } from "../../../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS } from "../../../../lib/intake/limits";
@@ -19,6 +19,20 @@ import { isUuid } from "../../../../lib/uuid";
  */
 export type LookDeeperResult = DeeperReadOutcome | { kind: "refused" };
 
+/** The controls and words a press carries, checked; `null` for anything out of shape or range. */
+function checkedAsk(input: unknown): { words: string; controls: { budgetDollars: number | null; bracket: number | null } } | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { words: raw, budgetDollars, bracket } = input as Record<string, unknown>;
+  const words = typeof raw === "string" ? raw.trim() : "";
+  if (
+    words.length === 0
+    || words.length > READ_WORDS_MAX_CHARS
+    || !(budgetDollars === null || (Number.isInteger(budgetDollars) && (budgetDollars as number) >= 1 && (budgetDollars as number) <= MAX_BUDGET_DOLLARS))
+    || !(bracket === null || (Number.isInteger(bracket) && (bracket as number) >= 1 && (bracket as number) <= 5))
+  ) return null;
+  return { words, controls: { budgetDollars: budgetDollars as number | null, bracket: bracket as number | null } };
+}
+
 export async function lookDeeper(input: {
   readId: string;
   words: string;
@@ -29,16 +43,23 @@ export async function lookDeeper(input: {
   // An action stays callable when its page is hidden: with the feature off, nothing is reserved.
   if (!helpMeChooseEnabled()) throw new Error("not found");
   // The argument is whatever a caller sent: shape first, before any field is read.
-  if (typeof input !== "object" || input === null) return { kind: "refused" };
-  const words = typeof input.words === "string" ? input.words.trim() : "";
-  const { budgetDollars, bracket } = input;
-  if (
-    typeof input.readId !== "string"
-    || !isUuid(input.readId)
-    || words.length === 0
-    || words.length > READ_WORDS_MAX_CHARS
-    || !(budgetDollars === null || (Number.isInteger(budgetDollars) && budgetDollars >= 1 && budgetDollars <= MAX_BUDGET_DOLLARS))
-    || !(bracket === null || (Number.isInteger(bracket) && bracket >= 1 && bracket <= 5))
-  ) return { kind: "refused" };
-  return runDeeperRead(userId, { readId: input.readId, words, controls: { budgetDollars, bracket } });
+  const ask = checkedAsk(input);
+  if (!ask || typeof input.readId !== "string" || !isUuid(input.readId)) return { kind: "refused" };
+  return runDeeperRead(userId, { readId: input.readId, ...ask });
+}
+
+/**
+ * A press that found another look already running (`in_flight`, `reused`) waits on it by asking
+ * this: the ask's own settled read once there is one, `running` while a look of the player's is
+ * pending, and `idle` when neither, which spent nothing. Read only, so polling it is free.
+ */
+export async function lookStatus(input: {
+  words: string;
+  budgetDollars: number | null;
+  bracket: number | null;
+}): Promise<DeeperStatus | { kind: "refused" }> {
+  const userId = await requireUserId();
+  if (!helpMeChooseEnabled()) throw new Error("not found");
+  const ask = checkedAsk(input);
+  return ask ? deeperStatus(userId, ask) : { kind: "refused" };
 }

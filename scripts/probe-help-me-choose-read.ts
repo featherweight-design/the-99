@@ -92,7 +92,7 @@ async function main() {
   await refuseSharedDatabase();
   const extraUsers: string[] = [];
   try {
-    const { runDeeperRead } = await import("../src/lib/intake/deeper-read");
+    const { deeperStatus, runDeeperRead } = await import("../src/lib/intake/deeper-read");
     const store = await import("../src/lib/intake/run-store");
     const deps = (model: () => Promise<ModelOutcome<ReadResponse>>) => ({
       modelName: INTAKE_MODEL,
@@ -148,6 +148,9 @@ async function main() {
     await inCall;
     const before = await units(USER);
     check("while it runs, a second press is refused as in flight", (await run(randomUUID(), async () => reply(["Dinosaurs"]))).kind, "in_flight");
+    // That refused press waits on this read by asking where its own ask stands (close-out gap 6).
+    const waiting = { words: "a different ask entirely", controls };
+    check("the waiting press reads the other look as running", (await deeperStatus(USER, waiting)).kind, "running");
     // Another reader's Stop by this id is a stop for THEIR press, if they have one; this read stays.
     await store.cancelRead(stopped, OTHER);
     check("another reader's Stop cancels nothing", [(await readRow(stopped)).status, (await readRow(stopped)).unit], ["pending", "reserved"]);
@@ -160,6 +163,11 @@ async function main() {
     check("the late answer wrote no chip and moved no credit", [late.status, late.chips, late.unit], ["cancelled", null, "refunded"]);
     check("the late answer's bill landed on the ledger", (late.cost ?? 0) > 0, true);
     check("the refused second press holds no unit", await units(USER), before);
+    check("once that look is over without answering its ask, the waiting press reads idle", (await deeperStatus(USER, waiting)).kind, "idle");
+    const answered = await deeperStatus(USER, { words: `big dumb lizards ${ok}`, controls });
+    check("and an ask already read reads as that read, under its own id",
+      [answered.kind, answered.kind === "read" ? answered.readId : null], ["read", ok]);
+    check("asking reserves nothing", await units(USER), before);
 
     check("a press reusing a settled read's id is refused as a reuse, not as in flight",
       (await store.startRead(USER, "again", INTAKE_MODEL, { readId: ok })).kind, "reused");
@@ -169,6 +177,7 @@ async function main() {
     const past = new Date(Date.now() - INTAKE_REAPER_CUTOFF_MS - 60_000);
     const start = await store.startRead(USER, "stranded", INTAKE_MODEL, { readId: stranded, now: past });
     check("a read started past the cutoff is pending", [start.kind, (await readRow(stranded)).status], ["started", "pending"]);
+    check("but a waiting press does not read it as running: nothing will settle it", (await deeperStatus(USER, { words: "a stranded wait", controls })).kind, "idle");
     const next = randomUUID();
     check("the next press is not refused by it", (await run(next, async () => reply(["Dinosaurs"]))).kind, "read");
     const reaped = await readRow(stranded);

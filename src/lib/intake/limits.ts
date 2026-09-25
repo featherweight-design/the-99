@@ -31,6 +31,14 @@ export const INTAKE_DEADLINE_MS = 100_000;
 export const INTAKE_RETRY_FLOOR_MS = 40_000;
 
 /**
+ * How long a press that found another look already running waits on it, polling, before it reads
+ * as failed: the choose page's 120s `maxDuration`, which bounds the other look's own request.
+ */
+export const INTAKE_WAIT_MS = 120_000;
+/** How often that waiting press asks whether the other look has settled. */
+export const INTAKE_POLL_MS = 2_000;
+
+/**
  * A pending read older than this was abandoned: the process that owned it is gone. The reaper fails
  * it as `interrupted` and refunds its unit, so the player's one-pending slot frees. Past the
  * deadline by a wide margin, so no live read is ever reaped.

@@ -4,13 +4,13 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ run: vi.fn() }));
+const stub = vi.hoisted(() => ({ run: vi.fn(), status: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../../lib/intake/deeper-read", () => ({ runDeeperRead: stub.run }));
+vi.mock("../../../../lib/intake/deeper-read", () => ({ runDeeperRead: stub.run, deeperStatus: stub.status }));
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
-import { lookDeeper } from "./actions";
+import { lookDeeper, lookStatus } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: null };
@@ -18,6 +18,25 @@ const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: nul
 beforeEach(() => {
   flag.on = true;
   stub.run.mockReset().mockResolvedValue({ kind: "read", chips: [], notUsed: [], notUnderstood: [] });
+  stub.status.mockReset().mockResolvedValue({ kind: "running" });
+});
+
+describe("lookStatus", () => {
+  const ask = { words: "big lizards", budgetDollars: null, bracket: null };
+
+  it("asks where the checked ask stands", async () => {
+    expect(await lookStatus({ ...ask, words: "  big lizards " })).toEqual({ kind: "running" });
+    expect(stub.status).toHaveBeenCalledWith("user_1", { words: "big lizards", controls: { budgetDollars: null, bracket: null } });
+  });
+
+  it("refuses a forged argument, and is not found with the feature off", async () => {
+    for (const input of [null, { ...ask, words: "" }, { ...ask, budgetDollars: 0 }, { ...ask, bracket: 6 }]) {
+      expect(await lookStatus(input as never)).toEqual({ kind: "refused" });
+    }
+    expect(stub.status).not.toHaveBeenCalled();
+    flag.on = false;
+    await expect(lookStatus(ask)).rejects.toThrow("not found");
+  });
 });
 
 describe("lookDeeper", () => {
