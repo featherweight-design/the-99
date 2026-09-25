@@ -23,6 +23,8 @@ import {
   resolveOwnedPrintings,
   type OwnedPrinting,
 } from "../collection/owned-printings";
+import { lockedOracleIds } from "./locks";
+import { neverCutEnabled } from "./never-cut-flag";
 import { proxiedOracleIds, proxyCounts, type ProxyCount } from "./proxies";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -275,7 +277,12 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // availability rollup and the printed-name lookup beside it both degrade the
   // same way, and a transient failure here would otherwise 500 an otherwise
   // readable deck over a mark.
-  const proxiedIds = await proxiedOracleIds(deckId, userId);
+  // The lock set is the same kind of decoration and degrades the same way ("empty"): a failed read
+  // draws the deck as it read before Locked existed. Nothing is read with the switch off.
+  const [proxiedIds, lockedIds] = await Promise.all([
+    proxiedOracleIds(deckId, userId),
+    neverCutEnabled() ? lockedOracleIds(deckId, userId) : Promise.resolve(new Set<string>()),
+  ]);
 
   const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
   if (!commanderRow) return null;
@@ -395,6 +402,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     owned: row.owned,
     facts: factsFor(row.gameChanger, flags.get(row.oracleId)),
     proxied: proxiedIds.has(row.oracleId),
+    locked: lockedIds.has(row.oracleId),
     quantity: row.quantity,
     auto: row.auto,
     availability: availability?.get(row.oracleId) ?? null,

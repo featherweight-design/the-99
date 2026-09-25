@@ -113,3 +113,33 @@ export function upgradePath(profile: DeckProfile, target: 1 | 2 | 3): UpgradePat
 
   return { target, items, blocked };
 }
+
+/**
+ * Locked, F6: what the PLAYER'S locks put out of reach. Pure over one candidate list and the
+ * deck's lock set, which is a display read and never part of the stored profile (D5): a lock is
+ * a choice the player can undo, so it is decided at the view, not baked into the reading.
+ *
+ * A target is unreachable when the UNLOCKED candidates are fewer than the count that must come
+ * out. Exactly `removeCount` unlocked is still reachable; one fewer is not. A combo is the same
+ * rule at a count of one: every cuttable piece locked.
+ *
+ * `blocked` stays distinct and is not repeated here: a list already shorter than the count is
+ * short because of the commanders, which no unlock can fix, so it returns null.
+ */
+export function unreachable(
+  candidates: readonly CardRef[],
+  removeCount: number,
+  locked: ReadonlySet<string>,
+): { locked: number; total: number } | null {
+  if (candidates.length < removeCount) return null;
+  const n = candidates.filter((c) => locked.has(c.oracleId)).length;
+  return candidates.length - n < removeCount ? { locked: n, total: candidates.length } : null;
+}
+
+/** Locked candidates last, every other order kept: they are listed and still count, never hidden. */
+export function lockedLast<T extends CardRef>(candidates: readonly T[], locked: ReadonlySet<string>): T[] {
+  return [
+    ...candidates.filter((c) => !locked.has(c.oracleId)),
+    ...candidates.filter((c) => locked.has(c.oracleId)),
+  ];
+}

@@ -101,6 +101,7 @@
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
     "probe:bracket": "tsx scripts/probe-bracket.ts",
+    "probe:climb-locks": "node scripts/probe-climb-locks.mjs",
     "probe:verdict-block": "node scripts/probe-verdict-block.mjs",
     "probe:verdict-findings": "node scripts/probe-verdict-findings.mjs",
     "probe:declaration-ask": "node scripts/probe-declaration-ask.mjs",

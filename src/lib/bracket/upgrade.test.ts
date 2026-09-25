@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildDeckProfile, type ProfileCardRow, type ProfileInput } from "../profile/build";
 import type { ComboRef, DetectionCoverage, FlagSource } from "../profile/types";
-import { upgradePath, type UpgradeItem } from "./upgrade";
+import { lockedLast, unreachable, upgradePath, type UpgradeItem } from "./upgrade";
 
 const DETECTION: DetectionCoverage = {
   massLandDenial: { methods: ["m"], basis: "t" },
@@ -180,5 +180,39 @@ describe("what a removal cannot reach", () => {
     });
     const path = upgradePath(p, 2);
     expect(path.blocked).toBe(false);
+  });
+});
+
+describe("unreachable (Locked, F6)", () => {
+  const refs = (...ids: string[]) => ids.map((oracleId) => ({ oracleId, name: oracleId }));
+  const four = refs("a", "b", "c", "d");
+
+  it("holds the boundary: exactly removeCount unlocked is reachable, one fewer is not", () => {
+    expect(unreachable(four, 2, new Set(["a", "b"]))).toBeNull();
+    expect(unreachable(four, 2, new Set(["a", "b", "c"]))).toEqual({ locked: 3, total: 4 });
+  });
+
+  it("takes the Forced state out with a single lock", () => {
+    expect(unreachable(refs("a", "b"), 2, new Set())).toBeNull();
+    expect(unreachable(refs("a", "b"), 2, new Set(["b"]))).toEqual({ locked: 1, total: 2 });
+  });
+
+  it("reads a combo at a count of one: unreachable only when every cuttable piece is locked", () => {
+    expect(unreachable(refs("a", "b"), 1, new Set(["a"]))).toBeNull();
+    expect(unreachable(refs("a", "b"), 1, new Set(["a", "b"]))).toEqual({ locked: 2, total: 2 });
+  });
+
+  it("leaves a commander shortfall to `blocked`, which no unlock can fix", () => {
+    expect(unreachable(refs("a"), 2, new Set(["a"]))).toBeNull();
+    expect(unreachable([], 1, new Set())).toBeNull();
+  });
+
+  it("counts only locks among the candidates", () => {
+    expect(unreachable(four, 2, new Set(["x", "y", "z"]))).toBeNull();
+  });
+
+  it("lists locked candidates last and keeps every other order", () => {
+    expect(lockedLast(four, new Set(["b", "a"])).map((c) => c.oracleId)).toEqual(["c", "d", "a", "b"]);
+    expect(lockedLast(four, new Set()).map((c) => c.oracleId)).toEqual(["a", "b", "c", "d"]);
   });
 });

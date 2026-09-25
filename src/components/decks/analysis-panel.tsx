@@ -40,11 +40,14 @@ import { VerdictBlock } from "./verdict-block";
  * handoff offers re-analysis only from the banner a changed deck draws (2i), which holds the
  * reading whole under it; a failed re-read over that reading is 2d.
  */
+const NO_LOCKS: ReadonlySet<string> = new Set();
+
 export function AnalysisPanel({
   state,
   onRequest,
   declaration,
   art = EMPTY_ART,
+  locked = NO_LOCKS,
   legality,
   tuning,
   opening = "off",
@@ -70,6 +73,11 @@ export function AnalysisPanel({
    * rows. See `FindingArt` for why it is resolved here rather than carried on the profile.
    */
   art?: FindingArt;
+  /**
+   * The deck's locked cards, from the deck page's own rows (Locked, D5). Only the climb's sheet
+   * reads them, to list a locked candidate last; they never enter the stored profile.
+   */
+  locked?: ReadonlySet<string>;
   /**
    * Suggested changes, drawn last and only over a reading (placement addendum v2): tuning follows
    * the analysis, and a deck with no reading gets no suggestions. Handed the permits on screen,
@@ -139,6 +147,7 @@ export function AnalysisPanel({
             fresh={held.fresh}
             versionNumber={held.versionNumber}
             art={art}
+            locked={locked}
             declaration={declaration}
             overview={overview}
           />
@@ -178,6 +187,7 @@ function Verdict({
   fresh,
   versionNumber,
   art,
+  locked,
   declaration,
   overview,
 }: {
@@ -186,6 +196,7 @@ function Verdict({
   fresh: boolean;
   versionNumber: number | null;
   art: FindingArt;
+  locked: ReadonlySet<string>;
   declaration?: DeclarationControl;
   overview?: ReactNode;
 }) {
@@ -220,7 +231,7 @@ function Verdict({
           />
         </div>
         <div data-testid="climb-cell" className={`flex min-w-0 flex-col md:col-start-1 md:gap-[26px] ${overview ? "md:row-start-2" : "md:row-start-1"}`}>
-          <BracketClimb verdict={verdict} profile={profile} />
+          <BracketClimb verdict={verdict} profile={profile} locked={locked} />
         </div>
       </div>
       <FindingsBlock profile={profile} art={art} />
