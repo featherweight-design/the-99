@@ -12,13 +12,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BrowseCard } from "../../lib/collection/browse";
-import { shortName } from "../../lib/cards/short-name";
 import { colorWords } from "../../lib/copy/color-labels";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { addFromFits, loadFitsAction } from "../../lib/swaps/actions";
 import type { FitDeck, FitsRead } from "../../lib/swaps/fits";
 import { MutationError } from "../decks/mutation-error";
 import { ModalChrome } from "../decks/receipt-modal";
+import { CardDetailTrigger } from "./card-detail-provider";
 import { Crown } from "../ui/crown";
 
 const copy = swapToolsCopy.fits;
@@ -28,23 +28,43 @@ type Added = { deckId: string; note: string };
 
 const colorsOf = (ids: string[]) => (ids.length === 0 ? "colorless" : colorWords(ids));
 
-/** The commander chip's value: the staple form, the figure, listed with no figure, or not listed. */
-function commanderValue(deck: FitDeck, staple: boolean): { text: string; staple: boolean } {
-  if (staple) return { text: copy.cmdrStaple, staple: true };
-  const commander = deck.commanders.map(shortName).join(" + ");
-  if (deck.inclusion !== null) return { text: copy.cmdrFigure(String(Math.round(deck.inclusion)), commander), staple: false };
-  return { text: deck.listed ? copy.cmdrListedNoFigure(commander) : copy.cmdrUnlisted(commander), staple: false };
-}
-
-function Chip({ label, value, staple = false }: { label: string; value: string; staple?: boolean }) {
+/**
+ * The row's one reason line (addendum §1c): a combo the card completes, in --fg, the other piece dotted
+ * and opening that card; else the theme it joins, in --fg-body; a staple's own form; then ` · this deck
+ * {need}`. With no reason and no need the row draws no line (R2: never the shares).
+ */
+function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
+  const r = deck.reason;
+  const lead = staple
+    ? <span className="italic text-[color:var(--fg-body)]">{copy.cmdrStaple}</span>
+    : r?.kind === "combo"
+      ? (
+        <span className="text-[color:var(--fg)]">
+          {copy.reasonCombo}{" "}
+          <CardDetailTrigger
+            oracleId={r.with.oracleId}
+            name={r.with.name}
+            className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
+          >
+            {r.with.name}
+          </CardDetailTrigger>
+        </span>
+      )
+      : r?.kind === "theme"
+        ? <span className="text-[color:var(--fg-body)]">{copy.reasonTheme(r.n, typeof r.theme === "string" ? copy.themeWord[r.theme] : r.theme.type)}</span>
+        : null;
+  if (!lead && !deck.need) return null;
   return (
-    <span
-      className="inline-flex items-baseline gap-[6px] px-[7px] py-[3px] rounded-[5px] border border-[color:var(--border)] font-mono text-[10px]"
-      style={{ background: "var(--surface-sunken)" }}
-    >
-      <span className="text-[9px] tracking-[0.1em] uppercase" style={{ color: "var(--fg-locked)" }}>{label}</span>
-      <span className={staple ? "italic" : undefined} style={{ color: staple ? "var(--fg-body)" : "var(--fg-muted)" }}>{value}</span>
-    </span>
+    <p data-testid="fits-reason" className="m-0 font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
+      {lead}
+      {deck.need ? (
+        <>
+          {lead ? <span className="text-[color:var(--border-strong)]"> · </span> : null}
+          <span className="text-[color:var(--fg-locked)]">{copy.needLabel} </span>
+          {copy.need(deck.need.role, deck.need.have, deck.need.target)}
+        </>
+      ) : null}
+    </p>
   );
 }
 
@@ -234,7 +254,6 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
             </h3>
             {shown.map((deck) => {
               const note = noteFor(deck.id);
-              const cmdr = commanderValue(deck, read.staple);
               return (
                 <div key={deck.id} data-testid="fits-row" className="flex flex-col gap-[7px] py-[10px] border-b border-[color:var(--border)]">
                   <div className="flex items-center gap-[10px] min-w-0">
@@ -268,10 +287,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
                       </button>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-[6px]">
-                    <Chip label={copy.cmdrLabel} value={cmdr.text} staple={cmdr.staple} />
-                    {deck.need ? <Chip label={copy.needLabel} value={copy.need(deck.need.role, deck.need.have, deck.need.target)} /> : null}
-                  </div>
+                  <ReasonLine deck={deck} staple={read.staple} />
                   {note ? (
                     <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
                       {note}{" "}

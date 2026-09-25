@@ -212,14 +212,23 @@ export const swapToolsCopy = {
     addRefused: "We couldn’t add that. The deck is unchanged.",
     holds: (n: number) => `holds ${n}`,
     deckLinkAria: (deck: string) => `Open ${deck}`,
-    cmdrLabel: "commander",
-    cmdrFigure: (pct: string, commander: string) => `${pct}% of ${commander} decks`,
-    cmdrUnlisted: (commander: string) => `not listed for ${commander}`,
-    /** Listed with no inclusion figure: the index carries the card for this commander, so "not listed" is false. */
-    cmdrListedNoFigure: (commander: string) => `listed for ${commander}`,
     /** The addendum's staple form: a universal staple quotes no one commander's figure. */
     cmdrStaple: "staple · any commander",
+    // v2 D3 (ranking-rebuild addendum §1c): the row's one reason line, `{reason} · this deck {need}`.
+    /** The group's order note (Hugh's Q7). Owed to /copy-review. */
+    orderReasons: "combos first, then themes",
+    /** Followed by the other piece's name, dotted: it opens that card. */
+    reasonCombo: "Completes a combo with",
+    reasonTheme: (n: number, word: string) => `Joins ${n} other ${word} ${n === 1 ? "card" : "cards"}`,
     needLabel: "this deck",
+    /** Each theme as the reason line names it: `Joins 9 other mill cards`. Owed to /copy-review. */
+    themeWord: {
+      counters: "+1/+1 counter", pump: "pump", haste: "haste", evasion: "evasion", etbDraw: "card-draw",
+      draw: "card-draw", tokens: "token", treasure: "Treasure", protection: "protection", recursion: "recursion",
+      blink: "blink", finisher: "finisher", castFree: "free-cast", mill: "mill", sacOutlet: "sacrifice",
+      deathTrigger: "death-trigger", lifegain: "lifegain", drain: "drain", spellslinger: "spellslinger",
+      landfall: "landfall", tribal: "tribal",
+    },
     need: (role: string, count: number, target: number) => `${role} ${count} of ${target}`,
     /** "They’re listed above." is not carried: the holding decks are listed BELOW this sentence. */
     allHold: (card: string) => `Every deck that can play ${card} already holds it.`,

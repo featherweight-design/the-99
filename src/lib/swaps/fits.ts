@@ -1,10 +1,10 @@
 // FITS YOUR DECKS (swap tools PR 5a, rulings 8–10): from any card, which of the reader's decks it
-// would fit. Every figure is a fact, never a score: the commander's inclusion for the card, and the
-// deck's own need in the card's role, where the targets for that role were measured (audit F9).
+// would fit. Every figure is a fact, never a score: why the deck (a combo the card completes, or a theme
+// it joins; v2 D3) and the deck's own need in the card's role, where its targets were measured (F9).
 //
 // A deck FITS when the card is inside its colors and the deck neither holds it nor is led by it.
 // A deck that holds it says how many copies, and a deck whose colors rule the card out is named
-// with the colors that do it. The picker (PR 5b) draws these groups by name, A to Z.
+// with the colors that do it. The picker (PR 5b) draws them; `shapeFits` says in what order.
 //
 // Read on demand, when the picker opens, never shipped with a card: it is one deck query, the
 // card, the role counts of the decks that fit, their mixes (once per distinct commander pair), and
@@ -16,24 +16,33 @@ import { loadAvailability } from "../decks/availability-query";
 import { loadMixesForCommanders, mixKey } from "../decks/deck-mix";
 import type { RecommendedMix } from "../decks/mix";
 import { primaryRole } from "../decks/read";
+import { loadCompletionPartners } from "../combos/near-miss";
+import { cardThemes, creatureSubtypes, keyCreatureType, THEME_ORDER, type Theme } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
+import { loadCreatureTypes } from "./gather";
 
 export type FitRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
 export type FitDeck = {
   id: string;
   name: string;
-  /** The commander, or both names for a pair, as the inclusion chip names them. */
+  /** The commander, or both names for a pair. */
   commanders: string[];
-  /** The card's share of the commander's (or pair's) indexed decks, 0–100, or null when there is no figure. */
-  inclusion: number | null;
-  /** The index holds a support row for the card, whatever figures it carries: a row can carry a synergy
-   *  and no inclusion, and that card is listed, not unlisted. */
-  listed: boolean;
   /** This deck's count in the card's role against its target, or null when the card has no role or
    *  the target for it was not measured (F9). */
   need: { role: FitRole; have: number; target: number } | null;
+  /**
+   * Why this deck (ranking-rebuild addendum §1c, Hugh's Q7 and Q8): the combo the card completes, with
+   * every other piece already in the deck; else the theme it joins, the one with the most cards in the
+   * deck; else null, and the row shows its need alone (R2).
+   */
+  reason: FitReason | null;
 };
+
+export type FitReason =
+  | { kind: "combo"; with: { oracleId: string; name: string } }
+  /** `theme` is an approved theme, or the deck's key creature type for a card of that type (`Elf`). */
+  | { kind: "theme"; theme: Theme | { type: string }; n: number };
 
 export type FitsRead = {
   card: { oracleId: string; name: string; colorIdentity: string[]; commanderLegal: boolean; role: FitRole | "other" };
@@ -56,16 +65,17 @@ export type DeckRow = {
   commander_oracle_id: string;
   partner_oracle_id: string | null;
   commander_names: string[];
+  commander_types: string[];
   identity: string[];
   holds: number;
   leads: boolean;
-  inclusion: number | string | null;
   /** The deck's commander (or pair) synergy for the card: the order of the picker, never drawn (Q2). */
   synergy: number | string | null;
-  listed: boolean;
 };
 
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+const tier = (d: FitDeck) => (d.reason?.kind === "combo" ? 0 : d.reason?.kind === "theme" ? 1 : 2);
+const themeN = (d: FitDeck) => (d.reason?.kind === "theme" ? d.reason.n : 0);
 
 /**
  * The groups from what the reads returned. Pure, so every rule here is tested without a database:
@@ -78,6 +88,7 @@ export function shapeFits(
   mixes: ReadonlyMap<string, RecommendedMix>,
   availability: { owned: number; free: number | null },
   staple = false,
+  reasons: ReadonlyMap<string, FitReason> = new Map(),
 ): FitsRead {
   const fits: FitDeck[] = [];
   const synergyOf = new Map<string, number>();
@@ -101,11 +112,10 @@ export function shapeFits(
       id: r.id,
       name: r.name,
       commanders: r.commander_names,
-      inclusion: r.inclusion === null ? null : Number(r.inclusion),
-      listed: r.listed,
       need: role !== "other" && mix && measured
         ? { role, have: roleCounts.get(r.id) ?? 0, target: mix.cells[role].target }
         : null,
+      reason: reasons.get(r.id) ?? null,
     });
   }
   return {
@@ -113,10 +123,12 @@ export function shapeFits(
     staple,
     owned: availability.owned,
     free: availability.free,
-    // v2 item 9: by each deck's commander synergy for the card, then by name. A staple's figure is about
+    // Hugh's Q7: a deck the card completes a combo in, then one whose theme it joins (the most cards
+    // first), then each deck's commander synergy for the card, then the name. A staple's figure is about
     // every commander, so a staple's list stays by name (staples addendum; ranking addendum 1c).
     fits: fits.sort((a, b) => staple ? byName(a, b)
-      : (synergyOf.get(b.id) ?? -Infinity) - (synergyOf.get(a.id) ?? -Infinity) || byName(a, b)),
+      : tier(a) - tier(b) || themeN(b) - themeN(a)
+        || (synergyOf.get(b.id) ?? -Infinity) - (synergyOf.get(a.id) ?? -Infinity) || byName(a, b)),
     holds: holds.sort(byName),
     excluded: excluded.sort(byName),
   };
@@ -141,18 +153,10 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     db.execute<DeckRow>(sql`
       select d.id, d.name, d.commander_oracle_id, d.partner_oracle_id,
         array_remove(array[cc.name, pc.name], null) as commander_names,
+        array_remove(array[cc.type_line, pc.type_line], null) as commander_types,
         array(select distinct x from unnest(coalesce(cc.color_identity, '{}') || coalesce(pc.color_identity, '{}')) x) as identity,
         coalesce((select sum(dc.quantity) from deck_cards dc where dc.deck_id = d.id and dc.oracle_id = ${oracleId}::uuid), 0)::int as holds,
         (d.commander_oracle_id = ${oracleId}::uuid or d.partner_oracle_id is not distinct from ${oracleId}::uuid) as leads,
-        case when d.partner_oracle_id is null then
-          (select s.inclusion from commander_support_cards s
-            where s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = ${oracleId}::uuid)
-        else
-          (select s.inclusion from commander_pair_support_cards s
-            where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
-              and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
-              and s.oracle_id = ${oracleId}::uuid)
-        end as inclusion,
         case when d.partner_oracle_id is null then
           (select s.synergy from commander_support_cards s
             where s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = ${oracleId}::uuid)
@@ -161,16 +165,7 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
             where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
               and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
               and s.oracle_id = ${oracleId}::uuid)
-        end as synergy,
-        case when d.partner_oracle_id is null then
-          exists(select 1 from commander_support_cards s
-            where s.commander_oracle_id = d.commander_oracle_id and s.oracle_id = ${oracleId}::uuid)
-        else
-          exists(select 1 from commander_pair_support_cards s
-            where s.commander_oracle_id = least(d.commander_oracle_id, d.partner_oracle_id)
-              and s.partner_oracle_id = greatest(d.commander_oracle_id, d.partner_oracle_id)
-              and s.oracle_id = ${oracleId}::uuid)
-        end as listed
+        end as synergy
       from decks d
       join cards cc on cc.oracle_id = d.commander_oracle_id
       left join cards pc on pc.oracle_id = d.partner_oracle_id
@@ -190,8 +185,10 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
   // draws no need, so its cards and its mix would be read for nothing.
   const open = rows.filter((r) => r.holds === 0 && !r.leads && card.colorIdentity.every((x) => r.identity.includes(x)));
 
-  const [roleCounts, mixes, availability, staples] = await Promise.all([
-    card.role === "other" || open.length === 0 ? new Map<string, number>() : countRole(open.map((r) => r.id), card.role),
+  const [deckCards, creatureTypes, mixes, availability, staples] = await Promise.all([
+    // Read once for the role count and the theme count, and only for the decks that can take the card.
+    open.length === 0 ? [] as DeckCard[] : readDeckCards(open.map((r) => r.id)),
+    open.length === 0 ? new Set<string>() : loadCreatureTypes(),
     // A card with no role draws no need, so no deck's mix is read for it.
     card.role === "other" || open.length === 0
       ? new Map<string, RecommendedMix>()
@@ -202,23 +199,106 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     // failure fails the read and the picker shows its failed state.
     loadUniversalStaples(),
   ]);
+  const roleCounts = card.role === "other" ? new Map<string, number>() : countRole(deckCards, card.role);
+
+  // Why each open deck (addendum §1c): a combo the card completes, else the theme it joins most. The
+  // combo read is the deck page's own (`loadCompletionPartners`, §4.3b's three rules), asked about this
+  // one card: a completion means every other piece is in the deck already, commander included (Q8).
+  const isType = (w: string) => creatureTypes.has(w);
+  const themed = {
+    oracleId,
+    themes: cardThemes({ typeLine: c.type_line, oracleText: c.oracle_text }, isType),
+    subtypes: creatureSubtypes(c.type_line),
+  };
+  const reasons = new Map<string, FitReason>();
+  // Which cards share a Spellbook variant with this one: a superset of every partner, read once, so the
+  // full-rule read below runs only for a deck that holds one (it cost ~1s run for every open deck).
+  const pieces = new Set((await db.execute<{ oracle_id: string }>(sql`
+    select distinct other.oracle_id from spellbook_variant_cards me
+    join spellbook_variant_cards other on other.variant_id = me.variant_id and other.oracle_id <> me.oracle_id
+    where me.oracle_id = ${oracleId}::uuid`)).rows.map((r) => r.oracle_id));
+  await Promise.all(open.map(async (r) => {
+    const cards = deckCards.filter((d) => d.deck_id === r.id);
+    const commanders = r.partner_oracle_id ? [r.commander_oracle_id, r.partner_oracle_id] : [r.commander_oracle_id];
+    const holdsPiece = [...cards.map((d) => d.oracle_id), ...commanders].some((id) => pieces.has(id));
+    const partners = !holdsPiece ? new Map() : await loadCompletionPartners({
+      deckOracleIds: cards.map((d) => d.oracle_id),
+      commanderOracleIds: commanders,
+      candidateOracleIds: [oracleId],
+    });
+    const combo = partners.get(oracleId);
+    if (combo) return void reasons.set(r.id, { kind: "combo", with: { oracleId: combo.partnerOracleId, name: combo.partnerName } });
+    const theme = themeReason(themed, cards, r.commander_types, isType);
+    if (theme) reasons.set(r.id, { kind: "theme", ...theme });
+  }));
+
   const a = availability.get(oracleId);
-  return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId));
+  return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId), reasons);
 }
 
 /**
  * Each deck's copies in `role`, counted the way the deck page's strip counts them: its decklist
  * rows by their primary role, commanders not included.
  */
-async function countRole(deckIds: string[], role: FitRole): Promise<Map<string, number>> {
-  const { rows } = await db.execute<{ deck_id: string; quantity: number; type_line: string; oracle_text: string | null; keywords: string[] | null }>(sql`
-    select dc.deck_id, dc.quantity, c.type_line, c.oracle_text, c.keywords
+/** One decklist row, for the role count and the theme count. */
+export type DeckCard = {
+  deck_id: string;
+  oracle_id: string;
+  quantity: number;
+  type_line: string;
+  oracle_text: string | null;
+  keywords: string[] | null;
+};
+
+/** The open decks' decklist rows, read once for both counts below. */
+async function readDeckCards(deckIds: string[]): Promise<DeckCard[]> {
+  const { rows } = await db.execute<DeckCard>(sql`
+    select dc.deck_id, dc.oracle_id, dc.quantity, c.type_line, c.oracle_text, c.keywords
     from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
     where dc.deck_id = any(${sql.param(deckIds)}::uuid[])`);
+  return rows;
+}
+
+/**
+ * Each deck's copies in `role`, counted the way the deck page's strip counts them: its decklist
+ * rows by their primary role, commanders not included.
+ */
+export function countRole(cards: readonly DeckCard[], role: FitRole): Map<string, number> {
   const out = new Map<string, number>();
-  for (const r of rows) {
+  for (const r of cards) {
     if (primaryRole({ typeLine: r.type_line, oracleText: r.oracle_text, keywords: r.keywords ?? [] }) !== role) continue;
     out.set(r.deck_id, (out.get(r.deck_id) ?? 0) + Number(r.quantity));
   }
   return out;
+}
+
+/**
+ * The theme a card joins in one deck (addendum §1c): of the card's own themes, the one the most of the
+ * deck's OTHER cards carry, a tie going to the earlier theme in the approved list (d9). A creature of the
+ * deck's key type joins that type too (Hugh's Q5: tribal is also membership), counted as its creatures.
+ * Null when no other card shares any of them. Cards are counted, not copies: `Joins 9 other mill cards`.
+ */
+export function themeReason(
+  card: { oracleId: string; themes: readonly Theme[]; subtypes: readonly string[] },
+  deck: readonly DeckCard[],
+  commanderTypes: readonly string[],
+  isCreatureType: (word: string) => boolean,
+): { theme: Theme | { type: string }; n: number } | null {
+  const others = deck.filter((c) => c.oracle_id !== card.oracleId);
+  // Each deck card is read once, whatever the number of themes asked about.
+  const theirs = card.themes.length ? others.map((c) => cardThemes({ typeLine: c.type_line, oracleText: c.oracle_text }, isCreatureType)) : [];
+  let best: { theme: Theme | { type: string }; n: number; rank: number } | null = null;
+  for (const theme of card.themes) {
+    const n = theirs.filter((t) => t.includes(theme)).length;
+    const rank = THEME_ORDER.indexOf(theme);
+    if (n > 0 && (!best || n > best.n || (n === best.n && rank < best.rank))) best = { theme, n, rank };
+  }
+  const key = keyCreatureType(others.map((c) => ({ typeLine: c.type_line })), commanderTypes);
+  if (key && card.subtypes.includes(key)) {
+    const n = others.filter((c) => creatureSubtypes(c.type_line).includes(key)).length;
+    // Membership is the tribal theme's other half, so it ranks where tribal does.
+    const rank = THEME_ORDER.indexOf("tribal");
+    if (n > 0 && (!best || n > best.n || (n === best.n && rank < best.rank))) best = { theme: { type: key }, n, rank };
+  }
+  return best ? { theme: best.theme, n: best.n } : null;
 }

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -27,8 +27,9 @@ const read = (over: Partial<FitsRead> = {}): FitsRead => ({
   owned: 2,
   free: 1,
   fits: [
-    { id: "d-g", name: "Gishath", commanders: ["Gishath, Sun's Avatar"], inclusion: 58.2, listed: true, need: { role: "ramp", have: 7, target: 10 } },
-    { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], inclusion: null, listed: false, need: null },
+    { id: "d-g", name: "Gishath", commanders: ["Gishath, Sun's Avatar"], need: { role: "ramp", have: 7, target: 10 },
+      reason: { kind: "combo", with: { oracleId: "o-sanity", name: "Fraying Sanity" } } },
+    { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], need: null, reason: { kind: "theme", theme: "mill", n: 9 } },
   ],
   holds: [{ id: "d-a", name: "Atraxa", quantity: 1 }],
   excluded: [],
@@ -60,23 +61,37 @@ describe("FitsPicker", () => {
     await act(async () => resolve(read()));
     const rows = screen.getAllByTestId("fits-row");
     expect(rows.map((r) => r.querySelector("a")?.textContent)).toEqual(["Gishath", "Kinnan"]);
-    expect(rows[0]).toHaveTextContent(copy.cmdrFigure("58", "Gishath"));
-    expect(rows[0]).toHaveTextContent(copy.need("ramp", 7, 10));
-    expect(rows[1]).toHaveTextContent(copy.cmdrUnlisted("Kinnan"));
+    // Addendum §1c: one line, `{reason} · this deck {need}`, and never a percentage (R2).
+    expect(within(rows[0]).getByTestId("fits-reason")).toHaveTextContent(`${copy.reasonCombo} Fraying Sanity · ${copy.needLabel} ${copy.need("ramp", 7, 10)}`);
+    expect(within(rows[0]).getByRole("button", { name: /Fraying Sanity/ })).toBeInTheDocument();
+    expect(within(rows[1]).getByTestId("fits-reason")).toHaveTextContent(copy.reasonTheme(9, copy.themeWord.mill));
     expect(rows[1]).not.toHaveTextContent(copy.needLabel);
+    for (const row of rows) expect(row.textContent).not.toMatch(/%/);
     expect(screen.getAllByTestId("fits-holds-row")[0]).toHaveTextContent(copy.holds(1));
     expect(screen.getAllByRole("button", { name: /using your free copy/ })).toHaveLength(2);
   });
 
-  // The index can list a card with a synergy and no inclusion; that deck lists it, so "not listed" would be false.
-  it("names a deck that lists the card with no figure as listed, not unlisted", async () => {
+  // R2: with no combo and no theme, the row shows its need alone, and with neither, no line at all.
+  it("shows the need alone with no reason, and no line with neither", async () => {
     actions.loadFitsAction.mockResolvedValue(read({
-      fits: [{ id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], inclusion: null, listed: true, need: null }],
+      fits: [
+        { id: "d-n", name: "Needy", commanders: ["Needy"], need: { role: "ramp", have: 3, target: 10 }, reason: null },
+        { id: "d-z", name: "Zero", commanders: ["Zero"], need: null, reason: null },
+      ],
     }));
     draw();
-    const row = await screen.findByTestId("fits-row");
-    expect(row).toHaveTextContent(copy.cmdrListedNoFigure("Kinnan"));
-    expect(row).not.toHaveTextContent(copy.cmdrUnlisted("Kinnan"));
+    await settle();
+    const [needy, zero] = screen.getAllByTestId("fits-row");
+    expect(within(needy).getByTestId("fits-reason").textContent).toBe(`${copy.needLabel} ${copy.need("ramp", 3, 10)}`);
+    expect(within(zero).queryByTestId("fits-reason")).toBeNull();
+  });
+
+  it("names the key creature type a deck is built around", async () => {
+    actions.loadFitsAction.mockResolvedValue(read({
+      fits: [{ id: "d-e", name: "Elves", commanders: ["Lathril"], need: null, reason: { kind: "theme", theme: { type: "Elf" }, n: 31 } }],
+    }));
+    draw();
+    expect(await screen.findByTestId("fits-reason")).toHaveTextContent(copy.reasonTheme(31, "Elf"));
   });
 
   it("names a universal staple, never a percentage, with the note once (addendum)", async () => {
