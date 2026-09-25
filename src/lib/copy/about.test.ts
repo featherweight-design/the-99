@@ -14,7 +14,7 @@ import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutCopy, aboutEntries, aboutMenuCopy } from "./about";
+import { ABOUT_VERSION, aboutCopy, aboutEntries, aboutMenuCopy, aboutSheetCopy } from "./about";
 import pin from "./about.version.json";
 
 const APP_DIR = join(process.cwd(), "src", "app");
@@ -57,6 +57,7 @@ function contentHash(): string {
     visibleStrings(aboutEntries),
     visibleStrings(aboutCopy),
     visibleStrings(aboutMenuCopy),
+    visibleStrings(aboutSheetCopy),
   ];
   return createHash("sha256").update(JSON.stringify(shape)).digest("hex");
 }
