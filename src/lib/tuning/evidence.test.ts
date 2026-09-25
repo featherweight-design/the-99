@@ -145,8 +145,10 @@ describe("the overview and the universal staples (v2)", () => {
     expect(buildEvidencePack({ ...input(), overview: null }).strategy).toBeNull();
   });
 
-  it("lists the universal staples once each by name, sorted as the eval listed them", () => {
-    const universal = [{ oracleId: "z", name: "Sol Ring" }, { oracleId: "a", name: "Arcane Signet" }, { oracleId: "a2", name: "Arcane Signet" }];
-    expect(buildEvidencePack({ ...input(), universal }).universal).toEqual([{ oracleId: "a", name: "Arcane Signet" }, { oracleId: "z", name: "Sol Ring" }]);
+  it("keeps every universal staple by id, sorted by name as the eval listed them, even two sharing a name", () => {
+    const universal = [{ oracleId: "z", name: "Sol Ring" }, { oracleId: "a2", name: "Arcane Signet" }, { oracleId: "a", name: "Arcane Signet" }, { oracleId: "z", name: "Sol Ring" }];
+    expect(buildEvidencePack({ ...input(), universal }).universal).toEqual([
+      { oracleId: "a", name: "Arcane Signet" }, { oracleId: "a2", name: "Arcane Signet" }, { oracleId: "z", name: "Sol Ring" },
+    ]);
   });
 });

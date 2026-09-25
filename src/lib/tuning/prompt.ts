@@ -22,7 +22,9 @@ import { noteDate } from "./note-date";
  */
 export function buildPrompt(pack: EvidencePack): { system: string; user: string } {
   const universal = pack.universal ?? [];
-  const system = [SYSTEM, ...strategyRules(universal.map((u) => u.name), !!pack.strategy), ...RATIONALE_RULES].join("\n");
+  // One name per card the player would recognise: two oracle cards sharing a name print once.
+  const universalNames = [...new Set(universal.map((u) => u.name))];
+  const system = [SYSTEM, ...strategyRules(universalNames, !!pack.strategy), ...RATIONALE_RULES].join("\n");
   const block = pack.strategy ? strategyBlock(pack.strategy) : null;
   return { system, user: block ? `${renderPack(pack)}\n\n${block}` : renderPack(pack) };
 }

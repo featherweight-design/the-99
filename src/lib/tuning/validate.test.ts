@@ -275,6 +275,12 @@ describe("v2's cut rules: what the deck depends on", () => {
     expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
   });
 
+  it("refuses the second of two universal staples sharing a name, checked by id", () => {
+    const shared: EvidencePack = { ...withV2, universal: [{ oracleId: "other", name: "Grizzly Bears" }, { oracleId: "bear", name: "Grizzly Bears" }] };
+    const out = validateSuggestions({ response: { suggestions: [{ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }] }] }, pack: shared, resolveName });
+    expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
+  });
+
   it("keeps a universal staple cut the player's own games argue for", () => {
     expect(check(good).kept).toHaveLength(1);
   });

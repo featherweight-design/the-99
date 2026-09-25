@@ -57,8 +57,8 @@ export type EvidencePack = {
    * list. Null or absent when the deck has no overview, and the prompt then says nothing about one.
    */
   strategy?: { steps: string[]; keyCards: { oracleId: string; name: string }[] } | null;
-  /** Every universal staple (`src/lib/staples/universal.ts`) by name, sorted and deduplicated, as
-   *  round 4 of the eval named them. None is cut just to fix a role count. Absent is none. */
+  /** Every universal staple (`src/lib/staples/universal.ts`), one per oracle card, sorted by name
+   *  as round 4 of the eval named them. None is cut just to fix a role count. Absent is none. */
   universal?: { oracleId: string; name: string }[];
 };
 
@@ -163,9 +163,14 @@ function strategyOf(overview: { strategy: string[]; keyCards: string[] }, cards:
   return { steps: overview.strategy.map(unmark), keyCards: [...keyCards.values()] };
 }
 
-/** One entry per name, in the order JavaScript sorts strings, as the eval harness listed them. */
+/**
+ * Every universal staple, one entry per ORACLE card, sorted by name as JavaScript sorts strings
+ * (the eval harness's order), then by id. Catalog names are not unique (`resolve-names.ts`), so
+ * nothing is merged by name here: the validator checks a cut by id, and a deck holding the second
+ * card of a shared name must still be refused. The prompt deduplicates the names it prints.
+ */
 function universalOf(rows: readonly { oracleId: string; name: string }[]) {
-  const byName = new Map<string, { oracleId: string; name: string }>();
-  for (const r of rows) if (!byName.has(r.name)) byName.set(r.name, r);
-  return [...byName.keys()].sort().map((n) => byName.get(n)!);
+  const byId = new Map<string, { oracleId: string; name: string }>();
+  for (const r of rows) if (!byId.has(r.oracleId)) byId.set(r.oracleId, r);
+  return [...byId.values()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.oracleId < b.oracleId ? -1 : 1));
 }

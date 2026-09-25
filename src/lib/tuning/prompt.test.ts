@@ -108,6 +108,9 @@ describe("v2's strategy and rationale rules", () => {
   it("names every universal staple in the order it is given, and the Key-card rule, in the system message", () => {
     const { system } = buildPrompt(withV2);
     expect(system).toContain("Never suggest cutting Sol Ring, Arcane Signet just to fix a role count.");
+    // Two oracle cards sharing a name print once.
+    expect(buildPrompt({ ...withV2, universal: [...withV2.universal!, { oracleId: "ring2", name: "Sol Ring" }] }).system)
+      .toContain("Never suggest cutting Sol Ring, Arcane Signet just to fix a role count.");
     expect(system).toContain("Never suggest cutting a Key card listed under \"How this deck plays\".");
     expect(system).toContain("Never restate a chip's FIGURE in the rationale");
     expect(system).toContain("A note citation is the exception: its note must still be quoted, word for word");
