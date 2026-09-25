@@ -44,6 +44,9 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-hmc-read-${Date.now()}`;
 const OTHER = `${USER}-other`;
+// Its own player, with its allowance untouched: a press refused for a spent allowance also reserves
+// nothing, and would pass the early Stop's checks for the wrong reason.
+const EARLY = `${USER}-early`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -213,9 +216,35 @@ async function main() {
     } finally {
       holder.release();
     }
+
+    console.log("\n9. An early Stop is never charged (PR 6)");
+    // The panel chooses the id before its press, so its Stop can reach the database before the
+    // start has even taken the lock. It must still win: the press that follows reserves nothing.
+    const earlyId = randomUUID();
+    const unitsEarly = await units(EARLY);
+    check("a Stop for a read not yet started is taken", await store.cancelRead(earlyId, EARLY), true);
+    let earlyAsked = false;
+    const afterStop = await runDeeperRead(EARLY, { readId: earlyId, words: `big dumb lizards ${earlyId}`, controls }, deps(async () => { earlyAsked = true; return reply(["Dinosaurs"]); }));
+    check("the press that follows it stops before anything is reserved", afterStop.kind, "stopped");
+    check("and never asks", earlyAsked, false);
+    check("so no unit is reserved, let alone spent", await units(EARLY), unitsEarly);
+    const rowsFor = async (id: string) =>
+      Number(((await fixture.execute(sql`select count(*)::int as n from intake_reads where id = ${id}`)).rows[0] as { n: number }).n);
+    check("and no read is written", await rowsFor(earlyId), 0);
+    const stopsFor = async (id: string) =>
+      Number(((await fixture.execute(sql`select count(*)::int as n from intake_read_stops where read_id = ${id}`)).rows[0] as { n: number }).n);
+    check("a Stop for a read that already settled is refused, and leaves nothing behind", [await store.cancelRead(ok, USER), await stopsFor(ok)], [false, 0]);
+    // A stop is scoped to the player who left it: another player's press with that id is not
+    // stopped by it. (Whether that press then starts turns on its own allowance, not on this.)
+    const shared = randomUUID();
+    await store.cancelRead(shared, EARLY);
+    const theirs = await store.startRead(OTHER, store.wordsHash("someone else's stop", controls), INTAKE_MODEL, { readId: shared });
+    if (theirs.kind === "started") await store.cancelRead(theirs.readId, OTHER);
+    check("an early Stop names only its own player's press", theirs.kind !== "stopped", true);
   } finally {
-    await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER})`);
-    await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER})`);
+    await fixture.execute(sql`delete from intake_read_stops where user_id in (${USER}, ${OTHER}, ${EARLY})`);
+    await fixture.execute(sql`delete from intake_reads where user_id in (${USER}, ${OTHER}, ${EARLY})`);
+    await fixture.execute(sql`delete from model_calls where user_id in (${USER}, ${OTHER}, ${EARLY})`);
     await pool.end();
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { intakeReads } from "../../db/schema";
+import { intakeReadStops, intakeReads } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { ModelErrorClass } from "../model/client";
@@ -76,6 +76,11 @@ async function lockAsks(tx: Tx, userId: string): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`intake-read:${userId}`}, 0))`);
 }
 
+/** How long an early Stop is kept for its press to find: far past any start's wait for the lock. */
+const STOP_KEPT_MS = 24 * 60 * 60 * 1000;
+
+class StoppedEarly extends Error {}
+
 class StoredFound extends Error {
   constructor(readonly read: StoredRead) { super("stored"); }
 }
@@ -123,7 +128,7 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.
@@ -132,6 +137,15 @@ export async function startRead(
     const handle = await db.transaction(async (tx): Promise<ReadHandle> => {
       // An ask already read is offered once: its chips come back and no unit is reserved.
       await lockAsks(tx, userId);
+      // A Stop that beat this start to the database (`cancelRead` left its id): nothing is
+      // reserved, so nothing is spent. Older stops go in passing; a press's id is used once.
+      if (opts.readId) {
+        await tx.delete(intakeReadStops)
+          .where(and(eq(intakeReadStops.userId, userId), lt(intakeReadStops.createdAt, new Date(now.getTime() - STOP_KEPT_MS))));
+        const [early] = await tx.select({ id: intakeReadStops.readId }).from(intakeReadStops)
+          .where(and(eq(intakeReadStops.readId, opts.readId), eq(intakeReadStops.userId, userId)));
+        if (early) throw new StoppedEarly();
+      }
       const stored = await storedRead(tx, userId, hash);
       if (stored) throw new StoredFound(stored);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
@@ -145,6 +159,7 @@ export async function startRead(
     return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof StoredFound) return { kind: "stored", read: err.read };
+    if (err instanceof StoppedEarly) return { kind: "stopped" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.
     // The id is the panel's, so a press that reuses one names a read that already exists.
@@ -216,6 +231,13 @@ export async function cancelRead(readId: string, userId: string): Promise<boolea
       .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
       .returning({ callId: intakeReads.modelCallId });
     for (const r of rows) await settleModelCall(tx, r.callId, "refunded", undefined);
-    return rows.length > 0;
+    if (rows.length > 0) return true;
+    // Nothing pending by this id. A read that exists has settled and is past stopping. One that
+    // does not exist yet is a press whose start has not reached the database: the Stop is left
+    // for that start to find, so it refuses before reserving and the player is never charged.
+    const [exists] = await tx.select({ id: intakeReads.id }).from(intakeReads).where(eq(intakeReads.id, readId));
+    if (exists) return false;
+    await tx.insert(intakeReadStops).values({ readId, userId }).onConflictDoNothing();
+    return true;
   });
 }

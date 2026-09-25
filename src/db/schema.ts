@@ -1691,6 +1691,19 @@ export const intakeReads = pgTable("intake_reads", {
 ]);
 
 /**
+ * A Stop that reached the database before the read it names existed (PR 6, the early Stop). The
+ * panel chooses a read's id before its press, so a Stop can name a read whose start has not yet
+ * committed; `cancelRead` then finds no row to cancel and leaves this instead, and `startRead`,
+ * under the same per-player lock, refuses an id found here before it reserves anything. So a Stop
+ * the player pressed never ends in a spent unit, whichever of the two reaches the database first.
+ */
+export const intakeReadStops = pgTable("intake_read_stops", {
+  readId: uuid("read_id").primaryKey(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("intake_read_stops_user_created_idx").on(t.userId, t.createdAt)]);
+
+/**
  * One generation of deck-tuning suggestions (#10). Written `pending` in its own transaction
  * BEFORE the model is called, so a run exists as a fact the moment it starts and survives the
  * player navigating away. Runs are kept, never replaced: the history is the record.
