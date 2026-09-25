@@ -21,7 +21,7 @@ import { db } from "../../db";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../decks/price-query";
 import { loadUniversalStaples } from "../staples/universal";
-import { jobOf, rankStandIns, type Candidate, type CardRow, type SpellRole, type StandInGroups } from "./stand-ins";
+import { jobOf, rankStandIns, STAND_IN_GROUP_CAP, type Candidate, type CardRow, type SpellRole, type StandInGroups } from "./stand-ins";
 
 /** How many of the cheapest unlisted spells are read before roles are checked. */
 export const UNLISTED_POOL = 600;
@@ -107,7 +107,8 @@ async function readCreatureTypes(): Promise<Set<string>> {
 }
 
 /** Null when the deck is not this reader's, or the card is not in the catalog. */
-export async function loadStandIns(deckId: string, userId: string, cutOracleId: string): Promise<StandInsRead | null> {
+/** `full` reads every stand-in of every group, for `Show all` on a group the first read capped. */
+export async function loadStandIns(deckId: string, userId: string, cutOracleId: string, full: boolean): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner
     from decks where id = ${deckId} and user_id = ${userId}
@@ -169,7 +170,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   });
 
   return {
-    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w)),
+    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP),
     original,
     commanders,
     newestAsOf: priced.newestAsOf,

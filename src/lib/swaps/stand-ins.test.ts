@@ -21,7 +21,7 @@ const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => ({
 const rows = (g: StandInGroups, same = true) => g.groups.find((x) => x.same === same)?.rows ?? [];
 const names = (g: StandInGroups, same = true) => rows(g, same).map((s) => s.card.name);
 /** No creature types: these cases turn on roles, prices and the ladder, never on tribal. */
-const rank = (o: CardRow, c: Candidate[], p: Parameters<typeof rankStandIns>[2]) => rankStandIns(o, c, p, () => false);
+const rank = (o: CardRow, c: Candidate[], p: Parameters<typeof rankStandIns>[2]) => rankStandIns(o, c, p, () => false, STAND_IN_GROUP_CAP);
 const fact = (cents: number | null, asOf = NOW, foilCents: number | null = null): PriceFact =>
   ({ cents, foilCents, etchedCents: null, asOf });
 
@@ -201,7 +201,7 @@ describe("rankStandIns", () => {
     const orig = card("Elf Lord", "Creature — Elf", "{T}: Add {G} for each Elf you control.\nOther Elves you control get +1/+1.", 3);
     const other = card("Elf Friend", "Creature — Elf", "{T}: Add {G}.\nElves you control have haste.", 1);
     const priced = { newestAsOf: NOW, prices: new Map([[orig.oracleId, fact(3000)], [other.oracleId, fact(90)]]) };
-    const typed = rankStandIns(orig, [cand(other)], priced, (w) => w === "Elf");
+    const typed = rankStandIns(orig, [cand(other)], priced, (w) => w === "Elf", STAND_IN_GROUP_CAP);
     expect(rows(typed)[0].sharedThemes).toContain("tribal");
     expect(rows(rank(orig, [cand(other)], priced))[0].sharedThemes).not.toContain("tribal");
   });
@@ -285,6 +285,19 @@ describe("rankStandIns", () => {
     const withStaple = rank(VAULT, [...many, staple].map((c) => cand(c, { owned: 1, free: 1, isUniversal: c === staple })), { newestAsOf: NOW, prices: new Map() });
     expect(rows(withStaple)).toHaveLength(STAND_IN_GROUP_CAP + 1);
     expect(rows(withStaple).at(-1)!.card.name).toBe("Staple Rock");
+  });
+
+  it("says each group's true size whatever it carries, and a null cap carries the whole group", () => {
+    const many = Array.from({ length: STAND_IN_GROUP_CAP + 5 }, (_, i) => card(`Rock ${i}`, "Artifact", "{T}: Add {C}.", 1));
+    const pool = many.map((c) => cand(c, { owned: 1, free: 1 }));
+    const priced = { newestAsOf: NOW, prices: new Map() };
+    const capped = rank(VAULT, pool, priced);
+    expect(capped.groups[0].total).toBe(STAND_IN_GROUP_CAP + 5);
+    const whole = rankStandIns(VAULT, pool, priced, () => false, null);
+    expect(whole.groups[0].total).toBe(STAND_IN_GROUP_CAP + 5);
+    expect(rows(whole)).toHaveLength(STAND_IN_GROUP_CAP + 5);
+    // The capped read is the whole read's head: the fetch on Show all extends the list, never reorders it.
+    expect(rows(capped).map((r) => r.card.name)).toEqual(rows(whole).slice(0, STAND_IN_GROUP_CAP).map((r) => r.card.name));
   });
 
   it("carries what a utility land gives up onto each of its stand-ins (H3)", () => {

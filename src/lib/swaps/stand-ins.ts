@@ -17,7 +17,12 @@ import {
 
 /** How many stand-ins a group shows before `Show all` (Hugh's Q3). */
 export const STAND_IN_GROUP_SHOWN = 5;
-/** How many ranked cards a group carries at most, staples aside; `Show all` draws them. A payload cap. */
+/**
+ * How many ranked cards a group carries on the sheet's first read, staples aside. A payload cap and never
+ * a limit on what the reader can see: each group says its true `total`, and `Show all` fetches the whole
+ * group when this read was capped. Measured on Hugh's HD - Gishath: Plateau has 132 land stand-ins (93KB,
+ * the 78 on rung 4 and the 5 one-shot lands all past row 30); Runadi's two groups are 260 rows each (390KB).
+ */
 export const STAND_IN_GROUP_CAP = 30;
 
 export type SpellRole = Exclude<Role, "land">;
@@ -145,7 +150,13 @@ export type StandIn = {
  * One of the sheet's type groups (ranking-rebuild addendum §1b). A land is offered only lands, so a land
  * or fetch has the one `same` group; a spell has its own main type (Q4), then every other type.
  */
-export type StandInGroup = { same: boolean; type: MainType; rows: StandIn[] };
+export type StandInGroup = {
+  same: boolean;
+  type: MainType;
+  rows: StandIn[];
+  /** Every stand-in in the group, however many `rows` carries: what `Show all {n}` counts. */
+  total: number;
+};
 
 export type StandInGroups = {
   job: Job;
@@ -241,6 +252,8 @@ export function rankStandIns(
   priced: Priced,
   /** The catalog's creature subtypes, for the tribal theme (`cardThemes`). */
   isCreatureType: (word: string) => boolean,
+  /** `STAND_IN_GROUP_CAP` for the sheet's first read; null for the whole group, which `Show all` asks for. */
+  cap: number | null,
 ): StandInGroups {
   const job = jobOf(original);
   const originalThemes = job.kind === "spell" ? cardThemes(original, isCreatureType) : [];
@@ -292,9 +305,9 @@ export function rankStandIns(
   // every one from a long group (Sol Ring from Mana Vault's, measured). The staples a job admits are few.
   const capped = (list: StandIn[]) => {
     const sorted = list.sort(order);
-    return [...sorted.filter((s) => !s.isUniversal).slice(0, STAND_IN_GROUP_CAP), ...sorted.filter((s) => s.isUniversal)];
+    return cap === null ? sorted : [...sorted.filter((s) => !s.isUniversal).slice(0, cap), ...sorted.filter((s) => s.isUniversal)];
   };
-  if (same.length) read.groups.push({ same: true, type: ownType, rows: capped(same) });
-  if (other.length) read.groups.push({ same: false, type: "other", rows: capped(other) });
+  if (same.length) read.groups.push({ same: true, type: ownType, total: same.length, rows: capped(same) });
+  if (other.length) read.groups.push({ same: false, type: "other", total: other.length, rows: capped(other) });
   return read;
 }

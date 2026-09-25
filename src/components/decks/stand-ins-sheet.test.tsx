@@ -1,3 +1,4 @@
+import * as React from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -13,7 +14,7 @@ const standIn = (name: string, free: boolean) => ({
 });
 const READ = {
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
-  groups: [{ same: true, type: "instant", rows: [{ ...standIn("Swords to Plowshares", true), soft: 1 }, standIn("Chaos Warp", false)] }],
+  groups: [{ same: true, type: "instant", rows: [{ ...standIn("Swords to Plowshares", true), soft: 1 }, standIn("Chaos Warp", false)], total: 2 }],
   original: cardRow("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: asOf,
 } as unknown as StandInsRead;
 
@@ -22,9 +23,17 @@ const { loadStandInsAction, takeStandInAction, undoSwapAction } = vi.hoisted(() 
 }));
 vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInAction, undoSwapAction }));
 
+// The trigger reports the list its stacked card would page, so the sheet's Prev/Next set is readable here.
+vi.mock("../cards/card-detail-provider", async (actual) => ({
+  ...(await actual<typeof import("../cards/card-detail-provider")>()),
+  CardDetailTrigger: ({ siblings, children }: { siblings?: string[]; children: React.ReactNode }) => (
+    <button type="button" data-siblings={siblings?.join(",")}>{children}</button>
+  ),
+}));
+
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
-const { StandInsSheet } = await import("./stand-ins-sheet");
+const { StandInsSheet, shownRows } = await import("./stand-ins-sheet");
 
 const original = {
   oracleId: "id-Anguished Unmaking", name: "Anguished Unmaking", role: "removal", owned: false, quantity: 1, cardTypeGroup: "Instants",
@@ -83,7 +92,7 @@ describe("StandInsSheet", () => {
   // Addendum §1b with Hugh's Q3: five rows, then a text button that expands the group in place.
   it("shows five rows of a longer group, and Show all expands it in place and back", async () => {
     const seven = Array.from({ length: 7 }, (_, i) => standIn(`Removal ${i + 1}`, false));
-    loadStandInsAction.mockResolvedValue({ ...READ, groups: [{ same: true, type: "instant", rows: seven }] });
+    loadStandInsAction.mockResolvedValue({ ...READ, groups: [{ same: true, type: "instant", rows: seven, total: 7 }] });
     await open();
     const sheet = screen.getByTestId("stand-ins-sheet");
     expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
@@ -95,6 +104,60 @@ describe("StandInsSheet", () => {
     expect(toggle).toHaveTextContent(swapToolsCopy.sheet.showFewer);
     fireEvent.click(toggle);
     expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
+  });
+
+  // Close-out ruling 8: the stacked card pages only the rows the sheet is showing.
+  it("pages the stacked card over the five shown rows, and over all seven once expanded", async () => {
+    const seven = Array.from({ length: 7 }, (_, i) => standIn(`Removal ${i + 1}`, false));
+    loadStandInsAction.mockResolvedValue({ ...READ, groups: [{ same: true, type: "instant", rows: seven, total: 7 }] });
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    const paged = () => within(sheet).getByText("Removal 1").closest("button")!.getAttribute("data-siblings")!.split(",");
+    expect(paged()).toEqual(seven.slice(0, 5).map((r) => r.card.oracleId));
+    fireEvent.click(within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showAll(7, "instants") }));
+    expect(paged()).toEqual(seven.map((r) => r.card.oracleId));
+  });
+
+  // Close-out ruling 1: the first read is capped for payload size, so `Show all` counts the group's true
+  // size and fetches the rest on the press. A rung-4 land past row 30 was unreachable before this.
+  it("counts a capped group's true size, and fetches the whole group on Show all", async () => {
+    const rows = (n: number) => Array.from({ length: n }, (_, i) => standIn(`Removal ${i + 1}`, false));
+    loadStandInsAction.mockReset()
+      .mockResolvedValueOnce({ ...READ, groups: [{ same: true, type: "instant", rows: rows(7), total: 12 }] })
+      .mockResolvedValueOnce({ ...READ, groups: [{ same: true, type: "instant", rows: rows(12), total: 12 }] });
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    const toggle = within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showAll(12, "instants") });
+    expect(loadStandInsAction).toHaveBeenLastCalledWith("d1", "id-Anguished Unmaking", false);
+    await act(async () => fireEvent.click(toggle));
+    expect(loadStandInsAction).toHaveBeenLastCalledWith("d1", "id-Anguished Unmaking", true);
+    expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(12);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("leaves a capped group collapsed under its true count when the whole read fails", async () => {
+    const seven = Array.from({ length: 7 }, (_, i) => standIn(`Removal ${i + 1}`, false));
+    loadStandInsAction.mockReset()
+      .mockResolvedValueOnce({ ...READ, groups: [{ same: true, type: "instant", rows: seven, total: 12 }] })
+      .mockResolvedValueOnce(null);
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    const toggle = within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showAll(12, "instants") });
+    await act(async () => fireEvent.click(toggle));
+    expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).not.toBeDisabled();
+  });
+
+  // Close-out ruling 7: each thumb hatches as its design-table row says, the head's and a row's apart.
+  it("hatches the head's thumb and each row's with their own tokens when there is no art", async () => {
+    loadStandInsAction.mockReset().mockResolvedValue(READ);
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    const hatch = (el: Element) => el.querySelector('span[aria-hidden="true"]')!.getAttribute("style");
+    expect(hatch(within(sheet).getByText("Chaos Warp").closest('[data-testid="stand-in-row"]')!))
+      .toContain("repeating-linear-gradient(135deg, var(--elevated) 0 3px, var(--border) 3px 6px)");
+    expect(hatch(sheet)).toContain("repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)");
   });
 
   it("offers another try when the read fails, and reads again on it", async () => {
@@ -123,6 +186,44 @@ describe("StandInsSheet", () => {
       expect(screen.queryByTestId("stand-in-taken")).toBeNull();
       expect(screen.getByTestId("receipts")).toHaveTextContent(/^$/);
       expect(takeButton("Swords to Plowshares")).toBeInTheDocument();
+    });
+
+    // Close-out ruling 2: closed after a take from a Shopping row, focus lands on the receipt, not the page.
+    it.each([
+      ["a Shopping row", false, true],
+      ["the card's door, which closes back onto the card", true, false],
+    ])("from %s, closing after a take lands on the receipt (%s)", async (_, fromCard, lands) => {
+      loadStandInsAction.mockReset().mockResolvedValue(READ);
+      takeStandInAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: false, cutLeft: 0 });
+      // jsdom lays nothing out; the helper takes the visible copy of the receipt.
+      const rects = vi.spyOn(Element.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+      const { SwapReceiptRow } = await import("./swap-receipt");
+      function Host() {
+        const tools = useSwapTools();
+        const [shown, setShown] = React.useState(true);
+        return (
+          <>
+            {shown ? <StandInsSheet card={original} newestAsOf={asOf} onClose={() => setShown(false)} fromCard={fromCard} /> : null}
+            {tools?.receipts.map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
+          </>
+        );
+      }
+      try {
+        await act(async () => {
+          render(
+            <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+              <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}><Host /></SwapToolsProvider>
+            </CardDetailProvider>,
+          );
+        });
+        await act(async () => takeButton("Chaos Warp").click());
+        await act(async () => screen.getAllByRole("button", { name: fromCard ? T.backToCardAria("Anguished Unmaking") : T.closeAria })[0].click());
+        await act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
+        const undo = screen.getByRole("button", { name: swapToolsCopy.row.undoSwapAria("Anguished Unmaking", "Chaos Warp") });
+        expect(document.activeElement === undo).toBe(lands);
+      } finally {
+        rects.mockRestore();
+      }
     });
 
     it("starts one swap for two presses before the first lands, and holds every Take while it runs", async () => {
@@ -168,14 +269,29 @@ describe("StandInsSheet", () => {
 
 // Swap tools v2, item 5: a stand-in row previews its card on hover, as a decklist row does, and a
 // press puts the box away so it cannot sit over the card the press stacks.
+// Close-out ruling 8: the stacked card's Prev/Next walks these rows, and only these.
+describe("shownRows", () => {
+  const row = (i: number) => ({ oracleId: `r${i}` }) as never;
+  const group = (n: number, total = n) => ({ heading: "h", order: "", noun: "", rows: Array.from({ length: n }, (_, i) => row(i)), total });
+  const ids = (rs: { oracleId: string }[]) => rs.map((r) => r.oracleId);
+  it("is the first five of a collapsed group, the taken row kept wherever it ranks", () => {
+    expect(ids(shownRows(group(8), false, null))).toEqual(["r0", "r1", "r2", "r3", "r4"]);
+    expect(ids(shownRows(group(8), false, "r7"))).toEqual(["r0", "r1", "r2", "r3", "r4", "r7"]);
+  });
+  it("is every row of an expanded group, and of one no longer than five", () => {
+    expect(shownRows(group(8), true, null)).toHaveLength(8);
+    expect(shownRows(group(4), false, null)).toHaveLength(4);
+  });
+});
+
 describe("StandInsSheet row preview", () => {
   const ART = "https://cards.example/chaos-warp.jpg";
   const withArt = {
     ...READ,
-    groups: [{ same: true, type: "instant", rows: [{ ...standIn("Chaos Warp", false), card: { ...cardRow("Chaos Warp"), imageUri: ART } }] }],
+    groups: [{ same: true, type: "instant", rows: [{ ...standIn("Chaos Warp", false), card: { ...cardRow("Chaos Warp"), imageUri: ART } }], total: 1 }],
   } as unknown as StandInsRead;
 
-  it("opens the card's preview after the hover delay, and a press closes it", async () => {
+  it("opens the card's preview once the pointer moves, after the hover delay, and a press closes it", async () => {
     Object.defineProperty(window, "matchMedia", {
       writable: true, configurable: true,
       value: (query: string) => ({
@@ -189,7 +305,12 @@ describe("StandInsSheet row preview", () => {
     vi.useFakeTimers();
     try {
       const row = within(screen.getByTestId("stand-ins-sheet")).getByText("Chaos Warp").closest('[data-testid="stand-in-row"]')!;
+      // Close-out ruling 3: a row drawn under a resting pointer previews nothing until it moves.
       fireEvent.mouseEnter(row, { clientX: 300, clientY: 300 });
+      fireEvent.mouseMove(row, { clientX: 300, clientY: 300 });
+      act(() => void vi.advanceTimersByTime(1000));
+      expect(screen.queryByTestId("hover-preview")).toBeNull();
+      fireEvent.mouseMove(row, { clientX: 306, clientY: 300 });
       act(() => void vi.advanceTimersByTime(240));
       const box = screen.getByTestId("hover-preview");
       expect(box.getAttribute("style")).toContain(ART);

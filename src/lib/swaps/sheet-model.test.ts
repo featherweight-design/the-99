@@ -19,8 +19,8 @@ const read = (over: Partial<StandInsRead>): StandInsRead => ({
 } as StandInsRead);
 
 /** The original's own type (instant, the fixture's default), or a land's one group. */
-const same = (rows: StandIn[], type: MainType = "instant"): StandInGroup => ({ same: true, type, rows });
-const other = (rows: StandIn[]): StandInGroup => ({ same: false, type: "other", rows });
+const same = (rows: StandIn[], type: MainType = "instant"): StandInGroup => ({ same: true, type, rows, total: rows.length });
+const other = (rows: StandIn[]): StandInGroup => ({ same: false, type: "other", rows, total: rows.length });
 const lands = (rows: StandIn[]) => [same(rows, "land")];
 
 describe("the stand-ins sheet's model", () => {

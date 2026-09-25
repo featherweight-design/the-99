@@ -165,12 +165,27 @@ function clamp(value: number, min: number, max: number): number {
  */
 export function HoverPreviewProvider({
   className,
+  waitForMove = false,
   children,
 }: {
   className?: string;
+  /**
+   * Preview nothing until the pointer MOVES, for a surface that opens under a resting pointer (the
+   * stand-ins sheet, close-out ruling 3). A row drawn under a still pointer receives `mouseenter` all
+   * the same, so without this the sheet opened straight into a preview over its own prices. Intent,
+   * not position: the first position a row reports is where the pointer rested, and only a report
+   * from somewhere else arms the box. Chromium's synthetic moves after a layout repeat the resting
+   * position, so they arm nothing. Off by default: the decklist previews exactly as it always has.
+   */
+  waitForMove?: boolean;
   children: React.ReactNode;
 }) {
   const [target, setTarget] = useState<PreviewTarget | null>(null);
+  // `waitForMove`: where the pointer rested, once a row has said, and whether it has since moved.
+  const armed = useRef(!waitForMove);
+  const restAt = useRef<{ x: number; y: number } | null>(null);
+  // The row under the pointer while the box waits to be armed, so the arming move can open it.
+  const hovered = useRef<{ imageUri: string | null | undefined; overSheet: boolean } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The preload's own timer, separate from the box's: they fire at different
   // moments and either can be cancelled without touching the other.
@@ -208,9 +223,22 @@ export function HoverPreviewProvider({
     if (frame.current !== null) cancelAnimationFrame(frame.current);
   }, []);
 
-  const api = useMemo<PreviewApi>(
-    () => ({
+  const api = useMemo<PreviewApi>(() => {
+    /** Whether the pointer has shown intent: always, unless `waitForMove` and it has not left its rest. */
+    const intent = (x: number, y: number) => {
+      if (armed.current) return true;
+      if (!restAt.current) {
+        restAt.current = { x, y };
+        return false;
+      }
+      if (Math.abs(x - restAt.current.x) + Math.abs(y - restAt.current.y) < 2) return false;
+      armed.current = true;
+      return true;
+    };
+    const api: PreviewApi = {
       open: (imageUri, x, y, overSheet = false) => {
+        hovered.current = { imageUri, overSheet };
+        if (!intent(x, y)) return;
         // A row whose card has no art has nothing to preview. Silence rather
         // than a plate: the preview exists to answer "which card is this", and
         // an empty rectangle answers nothing.
@@ -255,6 +283,11 @@ export function HoverPreviewProvider({
         else timer.current = setTimeout(show, OPEN_DELAY);
       },
       move: (x, y) => {
+        if (!armed.current) {
+          // The move that arms the box opens it for the row the pointer is on, as an entry would.
+          if (intent(x, y) && hovered.current) api.open(hovered.current.imageUri, x, y, hovered.current.overSheet);
+          return;
+        }
         pending.current = { x, y };
         // Nothing to move until the box exists; the opening `show` reads
         // `pending` for itself.
@@ -270,13 +303,14 @@ export function HoverPreviewProvider({
         });
       },
       close: () => {
+        hovered.current = null;
         if (preloadTimer.current) clearTimeout(preloadTimer.current);
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setTarget(null), CLOSE_DELAY);
       },
-    }),
-    [],
-  );
+    };
+    return api;
+  }, []);
 
   return (
     <PreviewContext.Provider value={api}>
