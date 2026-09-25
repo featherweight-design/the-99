@@ -13,7 +13,7 @@
 // function the action calls.
 //
 // It writes a fixture under a per-run user_id and deletes it in a finally; versions and cards
-// cascade. It refuses to run against production or staging.
+// cascade. It refuses production, staging and any branch it cannot name.
 //
 // Run: `pnpm tsx scripts/probe-change-commander-draft.ts` (no package.json entry: that file is
 // outside this lane's fence).
@@ -39,6 +39,8 @@ const fixture = drizzle(pool);
 const USER = `probe-change-commander-${Date.now()}`;
 
 let failures = 0;
+/** Set once the branch guard has passed. The cleanup writes too, so it runs only after it. */
+let verified = false;
 const check = (label: string, actual: unknown, expected: unknown) => {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   if (!ok) failures += 1;
@@ -71,10 +73,13 @@ async function main() {
     sql`select current_setting('neon.branch_id', true) as id`,
   );
   const branchId = branch[0]?.id ?? null;
-  if (branchId === PRODUCTION || branchId === STAGING) {
-    throw new Error(`refusing to write a fixture to ${branchId}: point DATABASE_URL at local-dev`);
+  // Fail closed: an unknown branch (a primary, or a non-Neon database) is refused as well as the
+  // two named ones, and so is any production deployment's environment.
+  if (!branchId || branchId === PRODUCTION || branchId === STAGING || process.env.VERCEL_ENV === "production") {
+    throw new Error(`refusing to write a fixture to ${branchId ?? "(unknown)"}: point DATABASE_URL at local-dev`);
   }
-  console.log(`branch ${branchId ?? "(not a Neon branch)"}`);
+  verified = true;
+  console.log(`branch ${branchId}`);
 
   const [a, b] = await pick("type_line ~ 'Legendary Creature'", 2);
   const [x] = await pick("type_line = 'Artifact'", 1);
@@ -169,8 +174,10 @@ main()
   })
   .finally(async () => {
     try {
-      await fixture.execute(sql`delete from decks where user_id = ${USER}`);
-      await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+      if (verified) {
+        await fixture.execute(sql`delete from decks where user_id = ${USER}`);
+        await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+      }
     } catch (error) {
       failures += 1;
       console.error("cleanup failed", error);
