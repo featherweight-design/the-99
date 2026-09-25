@@ -1454,8 +1454,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a switch is seen by its id, so a switch left on in the server a probe runs against would still
   put a card over the page. The helper is the one place a probe marks those seen — it adds every
   catalog id to `about_seen_ids`, all of them because a probe cannot read the server's switches,
-  and does not put them back, which says no more than the version write already says. It also
-  sets the sheet's cookie and presses Later if a card is up. `about-clear.test.mts` sweeps every
+  and does not put them back, which says no more than the version write already says. That write
+  is the guarantee. The cookie it also sets is only the proxy's fast path while no switch is on:
+  the proxy keys its cookie to the switched entries it draws, which a probe cannot know. It
+  presses Later if a card is already up. `about-clear.test.mts` sweeps every
   probe that writes the column and fails one that does not call it, and pins the ids it reads
   out of `about.ts` against `aboutEntries`.
 

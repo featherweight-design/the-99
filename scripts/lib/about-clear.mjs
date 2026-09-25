@@ -10,9 +10,11 @@
 // on in the server a probe runs against would still put a card over the page. So this is
 // the ONE place a probe marks switched entries seen. It adds every entry id in the catalog to
 // `about_seen_ids`, all of them rather than only the visible ones, because a probe cannot
-// read the server's switches. The cookie still goes on as the guard it was: a probe that
-// loads a document signed in before its write would otherwise measure a page with a card
-// over it and say nothing.
+// read the server's switches. That write is the guarantee now. The cookie below is only the
+// proxy's fast path, and only while no switch is on: the proxy keys its cookie to the switched
+// entries it draws, which a probe cannot know, so with one on the cookie never matches and the
+// proxy reads the row instead, finding every entry seen. A card already drawn on the current
+// document is pressed away with Later.
 //
 // The ids it adds are NOT put back afterwards. They mark the fixture account as having seen
 // every entry, which is what its `about_version_seen` write already says about the rest.
@@ -23,7 +25,11 @@ import { requireEnv } from "./env.mjs";
 
 const VERSION_FILE = new URL("../../src/lib/copy/about.version.json", import.meta.url);
 
-/** The cookie the proxy reads as "this browser has shown the sheet for this version". */
+/**
+ * The cookie the proxy reads as "this browser has shown the sheet", for a server with no
+ * entry's switch on. With one on, the proxy's value also names the switched entries, so this
+ * one does not match and the proxy falls back to the row `markEveryEntrySeen` wrote.
+ */
 export function sheetCookie(userId, origin, version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version) {
   const { hostname, protocol } = new URL(origin);
   return {
