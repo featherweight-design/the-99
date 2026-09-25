@@ -1448,6 +1448,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   mark that entry seen and the sheet would never draw. Point it at
   `local-dev`, **never production**.
 
+  **`pnpm probe:about --flip` walks a real switch flip**, and it OWNS its server: a switch is read
+  when the server starts, so the walk starts `next dev` itself (port `PROBE_FLIP_PORT`, default
+  3297) with every switch off, restarts it with Change commander on, then with Locked cards on as
+  well, then with both off. Next 16 allows one `next dev` per project, so stop any dev server in the
+  worktree first. It proves the cookie a browser held from before a flip does not hide the sheet,
+  that the sheet names only the entry just switched on, that the visit records it by id, and that a
+  later flip names only the second entry; it also measures both figures at 390 and 1300. Keying the
+  sheet cookie on `<user>.<version>` alone fails it at F2 and F4. It needs migration 0066
+  (`about_seen_ids`), so point the worktree's `.env` at a migrated database.
+
   **Every probe that clears the About gate calls `clearAboutSheet`** (`scripts/lib/about-clear.mjs`)
   as well as writing `about_version_seen` (audit E5). Since entries follow their features'
   switches (Hugh, 2026-09-25) the version write covers only entries WITHOUT a switch: one tied to

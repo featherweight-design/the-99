@@ -57,7 +57,7 @@
 //   - the proxy not stripping `x-about-sheet`                    → check 8 at 390 and 1300
 //   - the search hiding the page's sections that hold no match   → check 6's ruling 4 at 390 and 1300
 //   --flip:
-//   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 (the old cookie hides the sheet)
+//   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 and F4: the cookie from before each flip hides the sheet
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
