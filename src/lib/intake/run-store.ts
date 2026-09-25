@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { intakeReadStops, intakeReads } from "../../db/schema";
@@ -88,7 +88,7 @@ async function purgeStops(tx: Tx, userId: string, now: Date): Promise<void> {
 class StoppedEarly extends Error {}
 
 class StoredFound extends Error {
-  constructor(readonly read: StoredRead, readonly readId: string) { super("stored"); }
+  constructor(readonly read: StoredRead, readonly readId: string, readonly useful: boolean) { super("stored"); }
 }
 
 /**
@@ -97,23 +97,31 @@ class StoredFound extends Error {
  * was refunded, and its leftovers are still worth showing. Scoped to the reader: an id from someone
  * else, or a read that failed, was stopped or is still pending, reads as none.
  */
-export async function loadOwnRead(readId: string, userId: string): Promise<{ kind: "read" | "nothing"; read: StoredRead } | null> {
-  const [row] = await db.select({ status: intakeReads.status, errorClass: intakeReads.errorClass, chips: intakeReads.chips })
+export async function loadOwnRead(readId: string, userId: string): Promise<{ kind: "read" | "nothing"; read: StoredRead; wordsHash: string } | null> {
+  const [row] = await db.select({ status: intakeReads.status, errorClass: intakeReads.errorClass, chips: intakeReads.chips, wordsHash: intakeReads.wordsHash })
     .from(intakeReads)
     .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
   if (!row?.chips) return null;
   const read = row.chips as StoredRead;
-  if (row.status === "ok") return { kind: "read", read };
-  if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", read };
+  if (row.status === "ok") return { kind: "read", read, wordsHash: row.wordsHash };
+  if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", read, wordsHash: row.wordsHash };
   return null;
 }
 
-/** The player's settled read of this ask, with its own id, when there is one. */
-async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: string; read: StoredRead } | null> {
-  const [row] = await tx.select({ id: intakeReads.id, chips: intakeReads.chips }).from(intakeReads)
-    .where(and(eq(intakeReads.userId, userId), eq(intakeReads.wordsHash, hash), eq(intakeReads.status, "ok")))
+/**
+ * The player's settled read of this ask, with its own id, when there is one: a delivered read, or
+ * one that found nothing to add. Both are the ask's answer, so neither is asked again; a repeat of
+ * a nothing read would otherwise call the model again for the same words.
+ */
+async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: string; read: StoredRead; useful: boolean } | null> {
+  const [row] = await tx.select({ id: intakeReads.id, chips: intakeReads.chips, status: intakeReads.status }).from(intakeReads)
+    .where(and(
+      eq(intakeReads.userId, userId),
+      eq(intakeReads.wordsHash, hash),
+      or(eq(intakeReads.status, "ok"), and(eq(intakeReads.status, "failed"), eq(intakeReads.errorClass, "nothing_valid"))),
+    ))
     .orderBy(desc(intakeReads.createdAt)).limit(1);
-  return row?.chips ? { id: row.id, read: row.chips as StoredRead } : null;
+  return row?.chips ? { id: row.id, read: row.chips as StoredRead, useful: row.status === "ok" } : null;
 }
 
 export function reapCutoff(now: Date): Date {
@@ -151,7 +159,7 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead; readId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead; readId: string; useful: boolean } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.
@@ -169,7 +177,7 @@ export async function startRead(
         if (early) throw new StoppedEarly();
       }
       const stored = await storedRead(tx, userId, hash);
-      if (stored) throw new StoredFound(stored.read, stored.id);
+      if (stored) throw new StoredFound(stored.read, stored.id, stored.useful);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
@@ -181,7 +189,7 @@ export async function startRead(
     return { kind: "started", ...handle };
   } catch (err) {
     // The stored read's OWN id, not the press's: the results page verifies the read by it.
-    if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId };
+    if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId, useful: err.useful };
     if (err instanceof StoppedEarly) return { kind: "stopped" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.

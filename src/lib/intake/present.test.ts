@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { emptyParams, type ChooseParams } from "./params";
-import { answerChips, verifiedDeeperMarks, figures, narrowOptions, orderLine } from "./present";
+import { answerChips, readForThisAsk, verifiedDeeperMarks, figures, narrowOptions, orderLine } from "./present";
 import type { ResultRow } from "./rows";
 
 const labels = { theme: (s: string) => ({ dinos: "Dinosaurs", tokens: "Tokens" })[s] ?? s, card: "Regisaur Alpha" };
@@ -111,5 +111,22 @@ describe("verifiedDeeperMarks", () => {
     // The same r reused under other answers: the read gave $150 and bracket 3, not these.
     const moved = p({ budgetDollars: 90, bracket: 2, deeper: ["b", "k", "t:dinos"] });
     expect(verifiedDeeperMarks(moved, { kind: "read", read })).toEqual([]);
+  });
+});
+
+describe("readForThisAsk", () => {
+  const hash = (words: string, c: { budgetDollars: number | null; bracket: number | null }) => JSON.stringify([words, c.budgetDollars, c.bracket]);
+  const read = { chips: [{ kind: "budget", dollars: 150 }] as const };
+
+  it("honors the read for the ask it answered, recovering a budget it added as unset at the press", () => {
+    const q = p({ words: "big lizards", budgetDollars: 150, deeper: ["b"] });
+    const loaded = { kind: "read" as const, read, wordsHash: hash("big lizards", { budgetDollars: null, bracket: null }) };
+    expect(readForThisAsk(q, loaded, hash)).toBe(loaded);
+  });
+
+  it("draws no finished look when r is carried onto other words or other controls", () => {
+    const loaded = { kind: "read" as const, read, wordsHash: hash("big lizards", { budgetDollars: null, bracket: null }) };
+    expect(readForThisAsk(p({ words: "tiny pirates", budgetDollars: 150, deeper: ["b"] }), loaded, hash)).toBeNull();
+    expect(readForThisAsk(p({ words: "big lizards", budgetDollars: 150, bracket: 3, deeper: ["b"] }), loaded, hash)).toBeNull();
   });
 });

@@ -147,6 +147,29 @@ export function verifiedDeeperMarks(
   });
 }
 
+/**
+ * The controls the look was pressed under, recovered from its own results: a budget or bracket the
+ * read added (a verified `b` or `k`) was unset at the press, and every other one stood as it is now.
+ * Hashed with the words, this is the ask the read answered (`readForThisAsk`).
+ */
+export function pressControls(p: ChooseParams, marks: readonly string[]): { budgetDollars: number | null; bracket: number | null } {
+  return { budgetDollars: marks.includes("b") ? null : p.budgetDollars, bracket: marks.includes("k") ? null : p.bracket };
+}
+
+/**
+ * The read `r` names, honored only for the ask it answered: its stored hash must be this address's
+ * words under the controls the look was pressed with. So `r` carried onto other answers, by hand
+ * or by a stale link, draws no finished look and relabels nothing as still unused.
+ */
+export function readForThisAsk<T extends { kind: "read" | "nothing"; read: { chips: readonly Chip[] }; wordsHash: string }>(
+  p: ChooseParams,
+  loaded: T | null,
+  hash: (words: string, controls: { budgetDollars: number | null; bracket: number | null }) => string,
+): T | null {
+  if (loaded === null) return null;
+  return loaded.wordsHash === hash(p.words, pressControls(p, verifiedDeeperMarks(p, loaded))) ? loaded : null;
+}
+
 export type AnswerChip = { kind: string; value: string; /** Added by the deeper look (`d`). */ deeper: boolean };
 
 /**

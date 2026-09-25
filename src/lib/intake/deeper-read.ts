@@ -18,7 +18,7 @@ export type DeeperReadOutcome =
   /** `readId` names the row holding it: the press's own, or a stored read's when the ask repeats. */
   | ({ kind: "read"; readId: string } & StoredRead)
   /** The read was valid in shape but nothing in it held up: refunded. */
-  | { kind: "nothing"; notUsed: string[]; notUnderstood: string[] }
+  | { kind: "nothing"; readId: string; notUsed: string[]; notUnderstood: string[] }
   /** The call failed: refunded. */
   | { kind: "failed"; errorClass: ReadErrorClass }
   /** Stopped, or reaped, before the answer came back: it wrote nothing. */
@@ -78,7 +78,11 @@ export async function runDeeperRead(
   const { labels, index } = await deps.loadIndex();
   const started = await startRead(userId, hash, deps.modelName, { readId: input.readId, now: deps.now() });
   // An ask already read is offered once: its chips come back and no unit was reserved.
-  if (started.kind === "stored") return { kind: "read", readId: started.readId, ...started.read };
+  if (started.kind === "stored") {
+    return started.useful
+      ? { kind: "read", readId: started.readId, ...started.read }
+      : { kind: "nothing", readId: started.readId, notUsed: started.read.notUsed, notUnderstood: started.read.notUnderstood };
+  }
   if (started.kind !== "started") return { kind: started.kind };
 
   const outcome = await deps.model(buildReadPrompt(input.words, labels), input.words, index);
@@ -92,5 +96,5 @@ export async function runDeeperRead(
   if (!settled) return { kind: "stopped" };
   return result.useful
     ? { kind: "read", readId: started.readId, chips: result.chips, notUsed: result.notUsed, notUnderstood: result.notUnderstood }
-    : { kind: "nothing", notUsed: result.notUsed, notUnderstood: result.notUnderstood };
+    : { kind: "nothing", readId: started.readId, notUsed: result.notUsed, notUnderstood: result.notUnderstood };
 }

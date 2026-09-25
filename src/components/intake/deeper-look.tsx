@@ -127,7 +127,7 @@ export function DeeperLook({
         router.push(deeperTarget(params, out, out.readId));
         return;
       case "nothing":
-        router.push(deeperTarget(params, { chips: [], notUsed: out.notUsed, notUnderstood: out.notUnderstood }, readId));
+        router.push(deeperTarget(params, { chips: [], notUsed: out.notUsed, notUnderstood: out.notUnderstood }, out.readId));
         return;
       case "stopped":
         enter("offer");

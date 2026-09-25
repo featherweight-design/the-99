@@ -19,12 +19,12 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
-import { answerChips, verifiedDeeperMarks } from "../../../../lib/intake/present";
+import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../lib/intake/present";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
 import { DeeperLook, DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
-import { loadOwnRead } from "../../../../lib/intake/run-store";
+import { loadOwnRead, wordsHash } from "../../../../lib/intake/run-store";
 import { readAllowance } from "../../../../lib/model/allowance";
 
 // A row's figures come from a real fill run in a Server Action posted from this page (PR 4's
@@ -81,13 +81,15 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const now = new Date();
   // Three decorations, none of which may take the page down: the card's chip, the credit standing
   // the deeper look reads (only when there are words to look at), and the read `r` names.
-  const [card, allowance, settled] = await Promise.all([
+  const [card, allowance, loaded] = await Promise.all([
     p.card ? loadCardChip(userId, p.card).catch(() => null) : null,
     p.words.trim() ? readAllowance(userId, now, "intake").catch(() => null) : null,
     p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
   ]);
+  const settled = readForThisAsk(p, loaded, wordsHash);
   const labels = { theme: (slug: string) => themeLabels[slug] ?? slug, card: card?.name ?? null };
-  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], results: false })}`;
+  // A change of answers is a new ask: it carries neither the read nor its marks.
+  const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);
   const ranking = [...p.themes.map(labels.theme), ...(card ? [card.name] : [])];
   const by =

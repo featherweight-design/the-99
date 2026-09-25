@@ -43,13 +43,13 @@ describe("runDeeperRead", () => {
 
   it("validates BEFORE it settles, so a reply with nothing valid settles as not useful (F4)", async () => {
     const out = await runDeeperRead("u", input, deps(reply({ themes: ["Pirates"], notUnderstood: ["lizards"] })));
-    expect(out).toEqual({ kind: "nothing", notUsed: [], notUnderstood: ["lizards"] });
+    expect(out).toEqual({ kind: "nothing", readId: "r", notUsed: [], notUnderstood: ["lizards"] });
     expect(store.settleRead.mock.calls[0][1]).toMatchObject({ kind: "read", result: { useful: false } });
   });
 
   it("keeps a figure the controls overrode on a read with nothing else in it", async () => {
     const out = await runDeeperRead("u", { ...input, controls: { budgetDollars: 100, bracket: null } }, deps(reply({ budgetDollars: 300 })));
-    expect(out).toEqual({ kind: "nothing", notUsed: ["$300"], notUnderstood: [] });
+    expect(out).toEqual({ kind: "nothing", readId: "r", notUsed: ["$300"], notUnderstood: [] });
   });
 
   it("settles a failed call as failed", async () => {
@@ -65,12 +65,19 @@ describe("runDeeperRead", () => {
 
   it("offers an ask once: a repeat gets the stored read back and reserves nothing", async () => {
     const chips = [{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }];
-    store.startRead.mockResolvedValue({ kind: "stored", read: { chips, notUsed: [], notUnderstood: [] }, readId: "first" });
+    store.startRead.mockResolvedValue({ kind: "stored", read: { chips, notUsed: [], notUnderstood: [] }, readId: "first", useful: true });
     const d = deps(reply({}));
     // The stored read's own id, never the repeat press's: the results page verifies the read by it.
     expect(await runDeeperRead("u", input, d)).toEqual({ kind: "read", readId: "first", chips, notUsed: [], notUnderstood: [] });
     expect(d.model).not.toHaveBeenCalled();
     expect(store.settleRead).not.toHaveBeenCalled();
+  });
+
+  it("offers a nothing-to-add read once too: its repeat gets that outcome back and asks nothing", async () => {
+    store.startRead.mockResolvedValue({ kind: "stored", read: { chips: [], notUsed: ["$300"], notUnderstood: ["lizards"] }, readId: "first", useful: false });
+    const d = deps(reply({}));
+    expect(await runDeeperRead("u", input, d)).toEqual({ kind: "nothing", readId: "first", notUsed: ["$300"], notUnderstood: ["lizards"] });
+    expect(d.model).not.toHaveBeenCalled();
   });
 
   it("calls no model when the start was refused", async () => {

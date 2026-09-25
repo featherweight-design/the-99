@@ -11,7 +11,7 @@
 //   4. Nothing moves, and the panel stays inside its bar.
 //
 // It reads the ledger, so it needs the database the server uses, and it deletes the intake rows it
-// caused, scoped to the account it signed in as and to the run's own window, in a `finally`. That database must be local-dev or a scratch branch: it refuses staging
+// made, by the read ids it saw (each Stop's body and each delivered address), in a `finally`. That database must be local-dev or a scratch branch: it refuses staging
 // and production, and a branch it cannot read.
 //
 //   PROBE_TARGET_URL=<scratch> E2E_AUDIT_USER_EMAIL=... PROBE_BASE=http://localhost:3220 \
@@ -72,6 +72,9 @@ const phase = (page) => panel(page).getAttribute("data-phase");
 // Scoped to the signed-in fixture account: another account's presses during the run neither move
 // these counts nor get deleted by the cleanup.
 const players = new Set();
+// The reads this run made, by id: each Stop's body names one, and a delivered look's address names
+// another. Cleanup deletes exactly these, so a session sharing the account keeps its own rows.
+const readIds = new Set();
 const units = async (since, userId) =>
   (await sql`select status, count(*)::int as n from model_calls where feature = 'intake' and user_id = ${userId} and created_at >= ${since} group by status`)
     .reduce((m, r) => ({ ...m, [r.status]: r.n }), {});
@@ -103,6 +106,10 @@ async function run() {
       const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
       if (!userId) throw new Error("no signed-in user id to scope the ledger to");
       players.add(userId);
+      page.on("request", (req) => {
+        if (!req.url().endsWith("/decks/new/choose/stop") || req.method() !== "POST") return;
+        try { const id = JSON.parse(req.postData() ?? "{}").readId; if (typeof id === "string") readIds.add(id.toLowerCase()); } catch {}
+      });
       const at = (s) => `${s} @ ${width}`;
 
       // 1. The offer.
@@ -150,6 +157,7 @@ async function run() {
       await page.waitForURL((u) => u.searchParams.has("r"), { timeout: 60_000 });
       await panel(page).waitFor();
       const url = new URL(page.url());
+      if (url.searchParams.get("r")) readIds.add(url.searchParams.get("r").toLowerCase());
       const deeperChip = page.locator(`${PAGE} [data-testid='answer-chip'][data-deeper]`);
       const chipStyle = (await deeperChip.count()) === 1
         ? await deeperChip.evaluate((el) => ({ style: getComputedStyle(el).borderTopStyle, text: el.textContent }))
@@ -172,11 +180,15 @@ async function run() {
     }
   } finally {
     await browser.close();
+    const ids = [...readIds];
     for (const id of players) {
-      await sql`delete from intake_read_stops where user_id = ${id} and created_at >= ${t0}`;
-      await sql`delete from intake_reads where user_id = ${id} and created_at >= ${t0}`;
-      await sql`delete from model_calls where feature = 'intake' and user_id = ${id} and created_at >= ${t0}`;
+      if (ids.length === 0) continue;
+      const calls = (await sql`select model_call_id from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`).map((r) => r.model_call_id);
+      await sql`delete from intake_read_stops where user_id = ${id} and read_id = any(${ids}::uuid[])`;
+      await sql`delete from intake_reads where user_id = ${id} and id = any(${ids}::uuid[])`;
+      if (calls.length > 0) await sql`delete from model_calls where user_id = ${id} and id = any(${calls}::uuid[])`;
     }
+    console.log(`cleaned up ${ids.length} read(s) this run made`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;

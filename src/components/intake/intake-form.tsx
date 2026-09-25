@@ -38,7 +38,7 @@ export function parseBudget(raw: string): number | null {
  * go with it. A card the player deleted from the words must not come back from the address.
  */
 export function submitHref(p: ChooseParams): string {
-  const qs = serializeChooseParams({ ...p, card: null, readId: null, notUsed: [], results: false });
+  const qs = serializeChooseParams({ ...p, card: null, readId: null, deeper: [], notUsed: [], results: false });
   return `${CHOOSE_PATH}${qs ? `${qs}&` : "?"}v=submit`;
 }
 

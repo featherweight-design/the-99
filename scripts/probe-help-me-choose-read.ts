@@ -124,6 +124,12 @@ async function main() {
     const nothingRow = await readRow(nothing);
     check("the read failed as nothing_valid, its unit refunded", [nothingRow.status, nothingRow.error_class, nothingRow.unit], ["failed", "nothing_valid", "refunded"]);
     check("a refund still records what the call burned", (nothingRow.cost ?? 0) > 0, true);
+    // Its answer stands for the ask: the same words again never call the model a second time.
+    const callsBefore = Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${USER}`)).rows[0] as { n: number }).n);
+    let askedAgain = false;
+    const repeat = await run(randomUUID(), async () => { askedAgain = true; return reply(["Dinosaurs"]); }, `big dumb lizards ${nothing}`);
+    check("the same ask again gets that outcome back, under its own id, and never asks", [repeat.kind, repeat.kind === "nothing" ? repeat.readId : null, askedAgain], ["nothing", nothing, false]);
+    check("and reserves nothing at all", Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${USER}`)).rows[0] as { n: number }).n), callsBefore);
 
     console.log("\n3. A failed call: refunded");
     const failed = randomUUID();
