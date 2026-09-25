@@ -33,7 +33,7 @@ Fixed in this PR:
 Not this PR's, recorded:
 
 - **Shipped chrome the drawing redraws:** the desktop art column (322 against 320, padding), the modal box
-  (824×625 and its shadow against 820×620 and `--modal-shadow`), the phone art header's close, the
+  (824×625 and its shadow against 820×620 and `--modal-shadow`), the phone art header's close box (its label now names the sheet when stacked, as the desktop pill's does), the
   stacked card's back pill, ModalChrome's phone head padding and title size. Each predates the swap tools
   and belongs to the card modal and ModalChrome everywhere, not to this path.
 - **The covered sheet's ground and shadow.** It takes the shipped stacking treatment (`--surface-sunken`,
@@ -43,20 +43,22 @@ Not this PR's, recorded:
 
 ## Proof
 
-`probe:swap-door` presses the whole path at 390 and 1300 against a built deck, 35 checks:
+`probe:swap-door` presses the whole path at 390, 1300 and a short 1280x720 window against a built deck, 53 checks:
 - no door from All; the door over the limit in `--warning` and under it in `--fg-faint`, a 44px strip
   and target on the phone;
 - the sheet over the card, the card the same node, inert, at 52 with the sheet at 96 on the phone, and
   the way back naming the card;
-- a stand-in at 140 on the phone and 80px below its original on desktop, with its own 60% scrim and the
-  Take footer;
+- a stand-in at 140 on the phone and 80px below its original on desktop (or as far as a short window
+  allows), with its own 60% scrim and the Take footer, and the sheet and the stand-in both ending above
+  the fold;
 - Escape to the stand-in's name, then to the same card, live, with focus on the door;
 - a Take, the door saying what came in with no control, Escape to the receipt with focus on its Undo
   swap, and the Undo putting the cut back in the draft.
 
-Eight mutations fail it: the door flag off, the covered card not inert, the third depth at 96, the door's
+Ten mutations fail it: the door flag off, the covered card not inert, the third depth at 96, the door's
 focus call removed, the sheet not lifting the card, no scrim on the stand-in layer, the Shopping card at
-full height, and no focus handoff to the receipt.
+full height, no focus handoff to the receipt, the sheet over the card left at 85vh, and the stand-in
+always dropped a full 80px.
 
-`stand-in-door.test.tsx` covers the door's three states, F17, and the held card handed back as the same
-node; removing the lift or the swapped branch fails it.
+`stand-in-door.test.tsx` covers the door's three states, F17, a flagged card the list does not hold, the
+held card handed back as the same node, and a stacked stand-in's way back named at both widths.

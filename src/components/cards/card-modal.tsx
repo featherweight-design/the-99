@@ -1485,7 +1485,8 @@ export function CardModal({
             type="button"
             ref={(el) => { closeRefs.current[0] = el; }}
             onClick={onClose}
-            aria-label="Close card details"
+            // Stacked over a sheet, the phone's × is the way back to it, named as the desktop pill is.
+            aria-label={back ? `Back to ${back}` : "Close card details"}
             // §Mobile: Art Close Button
             className="absolute rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
             style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
