@@ -1,3 +1,5 @@
+import { NON_GAME_LAYOUTS } from "../cards/game-card";
+
 // Explicit shapes (kept in sync with the printings / skipped_printings tables) rather than
 // schema imports: pure lib code stays free of DB imports, which is what keeps it unit-testable.
 export type PrintingRow = {
@@ -57,8 +59,6 @@ export type PrintingClassification =
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; classifyPrinting narrows it.
 type Raw = Record<string, any>;
 
-/** Layouts the oracle transform excludes from `cards` — a printing of one has no FK target. */
-const SKIP_LAYOUTS = new Set(["token", "double_faced_token", "emblem", "art_series"]);
 
 /**
  * Treatments that make a printing a poor default art choice. This is an explicit allowlist,
@@ -93,8 +93,11 @@ function isVariant(raw: Raw): boolean {
 export function classifyPrinting(raw: Raw): PrintingClassification {
   const layout = typeof raw.layout === "string" ? raw.layout : "";
 
-  if (SKIP_LAYOUTS.has(layout)) {
-    // Not a card, but record it so upload can say "token" instead of "unmatched".
+  // The layouts the oracle transform excludes from `cards`, so a printing of one has no FK target.
+  if (NON_GAME_LAYOUTS.has(layout)) {
+    // Not a card, but recorded. An upload row carrying one of the TOKEN_LAYOUTS says "token"
+    // instead of "unmatched"; the rest (a theme front, a plane) read as unresolved, which
+    // `loadMatchInputs` decides by filtering this table on its layout.
     return {
       kind: "skipped-layout",
       row: {

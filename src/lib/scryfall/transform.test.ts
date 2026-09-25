@@ -145,6 +145,14 @@ describe("toCardRow", () => {
     expect(toCardRow({ ...solRing, layout: "token" })).toBeNull();
     expect(toCardRow({ ...solRing, layout: "art_series" })).toBeNull();
   });
+
+  // The theme fronts, planes, schemes and avatars are not cards either; a front named "Lands"
+  // resolved a pasted section header into a deck.
+  it("skips every other layout that is not a card", () => {
+    for (const layout of ["front_card", "planar", "scheme", "vanguard", "host", "augment"]) {
+      expect(toCardRow({ ...solRing, layout })).toBeNull();
+    }
+  });
 });
 
 describe("a two-sided card's back-face cost", () => {

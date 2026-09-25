@@ -1,6 +1,18 @@
+import { isGameCard } from "../cards/game-card";
 import type { CollectionRow } from "../manabox/parse";
 
-export type CatalogCard = { oracleId: string; scryfallId: string; name: string };
+/**
+ * One oracle card. `layout` and `typeLine` ride on every read, detailed or not, because they
+ * are what says whether it is a card at all (`isGameCard`): a row that is not one is left out
+ * of every index here, so a line naming it reads as unresolved.
+ */
+export type CatalogCard = {
+  oracleId: string;
+  scryfallId: string;
+  name: string;
+  layout: string | null;
+  typeLine: string;
+};
 /**
  * The catalog plus the columns a consumer needs to reason about what it matched —
  * basic-land and commander-candidate checks both read the type line, and the deck
@@ -8,13 +20,11 @@ export type CatalogCard = { oracleId: string; scryfallId: string; name: string }
  * Loaded only on request: oracle_text across the whole catalog is megabytes.
  */
 export type DetailedCatalogCard = CatalogCard & {
-  typeLine: string;
   oracleText: string | null;
   commanderLegal: boolean;
   colorIdentity: string[];
   imageUri: string | null;
-  /** Both read by the commander-candidate check, which refuses a melded card (#712). */
-  layout: string | null;
+  /** Read with `layout` by the commander-candidate check, which refuses a melded card (#712). */
   manaCost: string | null;
 };
 /** One row of `printings` — every printing in existence, keyed by its printing-level id. */
@@ -25,7 +35,7 @@ export type FlavorNameIdentity = { flavorName: string; oracleId: string };
 export type MatchIndexes = {
   /** `printings` (§3.6). Supersedes the oracle catalog's single arbitrary printing per card. */
   printings?: PrintingIdentity[];
-  /** `skipped_printings.scryfall_id` — tokens, emblems and art series (§9.1). */
+  /** `skipped_printings.scryfall_id` for the token layouts alone — tokens, emblems and art series (§9.1). */
   skippedScryfallIds?: Iterable<string>;
   /**
    * `printings.flavor_name`, one entry per printing carrying one (#467). Every printing of a
@@ -62,12 +72,19 @@ export function matchRows(
   // ManaBox export's printing-level Scryfall ID resolves exactly. The oracle catalog's own
   // scryfall_id is kept underneath it as a fallback for when printings has not been seeded,
   // and name matching backs up both (Moxfield/Archidekt/paste carry no id at all).
-  const byScryfallId = new Map(catalog.map((c) => [c.scryfallId, c.oracleId]));
-  for (const p of indexes.printings ?? []) byScryfallId.set(p.scryfallId, p.oracleId);
+  //
+  // A catalog row that is not a card (a theme front named "Lands", a plane) is in none of the
+  // indexes, by id, by name or by flavor name, so every path through here leaves it unmatched.
+  const notCards = new Set(catalog.filter((c) => !isGameCard(c)).map((c) => c.oracleId));
+  const cards = catalog.filter((c) => !notCards.has(c.oracleId));
+  const byScryfallId = new Map(cards.map((c) => [c.scryfallId, c.oracleId]));
+  for (const p of indexes.printings ?? []) {
+    if (!notCards.has(p.oracleId)) byScryfallId.set(p.scryfallId, p.oracleId);
+  }
   const skippedIds = new Set(indexes.skippedScryfallIds ?? []);
 
   const byName = new Map<string, string>();
-  for (const c of catalog) {
+  for (const c of cards) {
     const lower = normalizeCardName(c.name);
     byName.set(lower, c.oracleId);
     const front = lower.split(" // ")[0];
@@ -80,6 +97,7 @@ export function matchRows(
   // failure than silently importing a card the player does not own.
   const flavorCandidates = new Map<string, string | null>();
   for (const { flavorName, oracleId } of indexes.flavorNames ?? []) {
+    if (notCards.has(oracleId)) continue;
     const lower = normalizeCardName(flavorName);
     for (const key of [lower, lower.split(" // ")[0]]) {
       const seen = flavorCandidates.get(key);

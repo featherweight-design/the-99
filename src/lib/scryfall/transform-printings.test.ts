@@ -133,6 +133,17 @@ describe("classifyPrinting", () => {
     }
   });
 
+  // A printing of a layout `toCardRow` skips has no FK target, so it goes to the ledger too.
+  // The ledger keeps its layout, and `loadMatchInputs` reports only the token layouts as skipped.
+  it("routes the other layouts that are not cards to the skipped ledger", () => {
+    for (const layout of ["front_card", "planar", "scheme", "vanguard", "host", "augment"]) {
+      expect(classifyPrinting({ ...plains, layout })).toEqual({
+        kind: "skipped-layout",
+        row: { scryfallId: plains.id, layout, name: "Plains" },
+      });
+    }
+  });
+
   // The shape of Scryfall's `sld/2214` — Hugh's foil, and the printing this layout used to
   // deny the catalog. Its top level carries no oracle id, no art and no flavor name; all
   // three sit on the faces, and the front face's name is the one printed on the card.

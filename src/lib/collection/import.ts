@@ -3,6 +3,7 @@ import { db } from "../../db";
 import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings,
 } from "../../db/schema";
+import { TOKEN_LAYOUTS } from "../cards/game-card";
 import type { CollectionRow } from "../manabox/parse";
 import type { CatalogCard, DetailedCatalogCard, MatchIndexes } from "./match";
 import { toCollectionItemValues, type PendingItem } from "./pending";
@@ -44,13 +45,21 @@ export async function loadMatchInputs(
   // Deck import needs the type line to tell a basic land and a legendary creature
   // apart; the collection flow does not, and oracle_text over the whole catalog is
   // large enough that reading it unconditionally would be a real regression there.
-  const columns = { oracleId: cards.oracleId, scryfallId: cards.scryfallId, name: cards.name };
+  //
+  // `layout` and `typeLine` ride on both reads: they are what tells `matchRows` a row is not a
+  // card at all (`isGameCard`), which every import path needs.
+  const columns = {
+    oracleId: cards.oracleId,
+    scryfallId: cards.scryfallId,
+    name: cards.name,
+    layout: cards.layout,
+    typeLine: cards.typeLine,
+  };
   const catalog = await db
     .select(
       opts.detailed
         ? {
             ...columns,
-            typeLine: cards.typeLine,
             oracleText: cards.oracleText,
             commanderLegal: cards.commanderLegal,
             // The commander picker's rows are built from the pipeline's own output,
@@ -58,8 +67,7 @@ export async function loadMatchInputs(
             // again per candidate. Detailed-only, for the same reason as oracle_text.
             colorIdentity: cards.colorIdentity,
             imageUri: cards.imageUri,
-            // isCommanderCandidate reads both to refuse a melded card (#712).
-            layout: cards.layout,
+            // isCommanderCandidate reads it, with `layout`, to refuse a melded card (#712).
             manaCost: cards.manaCost,
           }
         : columns,
@@ -88,7 +96,13 @@ export async function loadMatchInputs(
     db
       .select({ scryfallId: skippedPrintings.scryfallId })
       .from(skippedPrintings)
-      .where(inArray(skippedPrintings.scryfallId, chunk)));
+      // Only the token layouts are REPORTED as skipped. A theme front or a plane is recorded
+      // there too, since the ingest refuses it the same way, but a row naming one reads as
+      // unresolved: "token" would be a false account of what it is.
+      .where(and(
+        inArray(skippedPrintings.scryfallId, chunk),
+        inArray(skippedPrintings.layout, [...TOKEN_LAYOUTS]),
+      )));
 
   return {
     catalog,
