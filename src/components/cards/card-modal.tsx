@@ -403,6 +403,21 @@ function identityName(id: string[]): string {
  */
 const STACKED_SHEET =
   "max-md:!h-[calc(100%-96px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]";
+/**
+ * The swap tools' card → sheet → card path draws a third depth (audit F16): the card itself at 52
+ * once a sheet opens over it, that sheet at 96, and a stand-in over the sheet at 140. The step is
+ * 44, which leaves each layer's header showing above the one on top as the way back.
+ */
+const PHONE_TOP: Record<52 | 96 | 140, string> = {
+  52: "max-md:!h-[calc(100%-52px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]",
+  96: STACKED_SHEET,
+  140: "max-md:!h-[calc(100%-140px)] max-md:rounded-t-[14px] max-md:border-t max-md:border-[color:var(--border-strong)]",
+};
+/**
+ * The door's rows in the desktop art column, added to the stack's reservation so the art gives
+ * them room: 8 above the block, the stack's 6 gap, a 16px limit line, 8 between, and a 21px link.
+ */
+const DOOR_HEIGHT = 8 + 6 + 16 + 8 + 21;
 
 export function CardModal({
   card,
@@ -421,8 +436,28 @@ export function CardModal({
   stacked = false,
   backLabel,
   footer = null,
+  door = null,
+  phoneTop,
+  covered = false,
+  dropped = false,
 }: {
   card: BrowseCard;
+  /**
+   * The swap tools' door (addendum §2): drawn under the price tag in the desktop art column, and as
+   * a 44px strip under the phone's art header. Passed only for a card opened from a Shopping row
+   * (audit F17), and never for a stand-in stacked over the sheet.
+   */
+  door?: ((layout: "art" | "strip") => ReactNode) | null;
+  /** How far down the phone sheet starts, when this card is one layer of a stack (audit F16). */
+  phoneTop?: 52 | 96 | 140;
+  /**
+   * A sheet is open OVER this card (the door's stand-ins sheet). The card stays mounted with its
+   * scroll, under the sheet: below it in the stacking order, inert, and deaf to Escape, which peels
+   * the layer on top instead.
+   */
+  covered?: boolean;
+  /** Drawn 80px lower on desktop: a stand-in over a sheet over its original, so the original's head shows. */
+  dropped?: boolean;
   /**
    * A sheet is open UNDER this one — the Analysis tab's receipt, whose addendum ruling is that
    * a card opened from it stacks rather than replaces.
@@ -886,6 +921,7 @@ export function CardModal({
   const onEscape = useCallback(() => {
     // Zoom first, then the region, then the dialog — the printing region's shipped
     // two-stage shape with one rung added rather than a new shape to learn (§3.11).
+    if (covered) return;
     if (zoomed) {
       closeZoom();
       return;
@@ -905,7 +941,7 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, expanded, onClose, zoomed]);
+  }, [closeZoom, covered, expanded, onClose, zoomed]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef });
@@ -1313,7 +1349,7 @@ export function CardModal({
    * the reservation followed `priceTag`, the art would change width under the
    * reader at the moment the tag appeared, which is the same defect one level up.
    */
-  const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 27;
+  const underCardHeight = 10 + 15 + (twoFaced ? 38 : 0) + 27 + (door ? DOOR_HEIGHT : 0);
 
   const underCard = (phone: boolean) => (
     <>
@@ -1374,11 +1410,13 @@ export function CardModal({
     // dim tracks the theme; blurred collection behind is decorative and out-of-scope
     <div
       className={
-        "fixed inset-0 z-50 flex items-center justify-center"
-        + (stacked ? " max-md:items-end" : "")
+        "fixed inset-0 flex items-center justify-center"
+        + (covered ? " z-[49]" : " z-50")
+        + (stacked || phoneTop ? " max-md:items-end" : "")
       }
+      inert={covered}
       role="presentation"
-      onClick={onClose}
+      onClick={covered ? undefined : onClose}
       style={{
         background: stacked ? "transparent" : "color-mix(in oklab, var(--bg) 72%, transparent)",
       }}
@@ -1401,7 +1439,9 @@ export function CardModal({
         // is the fixed backdrop, so the layer would cover the viewport — a second
         // full-screen thing over a dialog over a backdrop, and clicks outside the
         // dialog would dismiss the zoom instead of reaching the backdrop.
-        className={(stacked ? STACKED_SHEET + " " : "") + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
+        className={(phoneTop ? PHONE_TOP[phoneTop] + " " : stacked ? STACKED_SHEET + " " : "")
+          + (dropped ? "md:translate-y-[80px] " : "")
+          + "relative flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"}
         style={{
           boxShadow: "var(--modal-shadow)",
         }}
@@ -1515,6 +1555,8 @@ export function CardModal({
           )}
         </div>
 
+        {door ? <div inert={zoomed} className="md:hidden flex-none">{door("strip")}</div> : null}
+
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
           inert={zoomed}
@@ -1583,6 +1625,7 @@ export function CardModal({
               className="absolute top-full left-1/2 mt-[10px] flex -translate-x-1/2 flex-col items-center gap-[6px] whitespace-nowrap"
             >
               {underCard(false)}
+              {door ? <div className="mt-[8px]">{door("art")}</div> : null}
             </div>
           </div>
         </div>

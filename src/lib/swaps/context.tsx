@@ -28,7 +28,9 @@ export type SwapTools = {
    * because a take removes the row from the list and the sheet has to outlive it to show `taken`.
    */
   standIns: DeckDetailCard | null;
-  openStandIns: (card: DeckDetailCard) => void;
+  /** The sheet was opened from the card modal's door, so it sits over that card (addendum §3). */
+  standInsFromCard: boolean;
+  openStandIns: (card: DeckDetailCard, from?: "row" | "card") => void;
   closeStandIns: () => void;
   /** Speak a sentence in the page's swap live region, which outlives the control that spoke it. */
   announce: (text: string) => void;
@@ -76,12 +78,16 @@ export function SwapToolsProvider({
   // afterwards is checked inside the state update, against the deck the list is for at that moment.
   // A ref updated after render would leave a window where a late take still passes.
   const [held, setHeld] = useState<{ deckId: string; receipts: SwapReceipt[] }>({ deckId, receipts: [] });
-  const [standIns, setStandIns] = useState<DeckDetailCard | null>(null);
+  const [standIns, setStandIns] = useState<{ card: DeckDetailCard; fromCard: boolean } | null>(null);
   if (held.deckId !== deckId) {
     setHeld({ deckId, receipts: [] });
     setStandIns(null);
   }
   const receipts = held.receipts;
+  const openStandIns = useCallback(
+    (card: DeckDetailCard, from: "row" | "card" = "row") => setStandIns({ card, fromCard: from === "card" }),
+    [],
+  );
   const closeStandIns = useCallback(() => setStandIns(null), []);
   const [announcement, setAnnouncement] = useState("");
   const addReceipt = useCallback(
@@ -96,9 +102,11 @@ export function SwapToolsProvider({
   const value = useMemo(
     () => ({
       deckId, deckName, storedLimitCents, limitCents: effectiveLimit(storedLimitCents),
-      receipts, addReceipt, dropReceipt, standIns, openStandIns: setStandIns, closeStandIns, announce: setAnnouncement,
+      receipts, addReceipt, dropReceipt,
+      standIns: standIns?.card ?? null, standInsFromCard: standIns?.fromCard ?? false,
+      openStandIns, closeStandIns, announce: setAnnouncement,
     }),
-    [deckId, deckName, storedLimitCents, receipts, addReceipt, dropReceipt, standIns, closeStandIns],
+    [deckId, deckName, storedLimitCents, receipts, addReceipt, dropReceipt, standIns, openStandIns, closeStandIns],
   );
   return (
     <SwapToolsContext.Provider value={value}>

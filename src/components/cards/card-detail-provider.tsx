@@ -55,6 +55,12 @@ type CardDetailContextValue = {
     oracleId: string,
     siblings?: string[],
     atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
+    /**
+     * `door`: the card was opened from a Shopping row, so the swap tools' door draws in it (audit F17).
+     * A deck alone does not say that, since every opener on the deck page passes one. Kept across
+     * Prev/Next, which pages the same list, and dropped on close.
+     */
+    opts?: { door?: boolean },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -96,8 +102,17 @@ type CardDetailContextValue = {
    * (Analysis tab handoff §3). The newest registration's label is the one drawn, because that
    * is the sheet a dismissal lands on.
    */
-  registerSheet: (backLabel?: string, footer?: SheetFooter) => () => void;
+  registerSheet: (backLabel?: string, footer?: SheetFooter, overCard?: boolean) => () => void;
+  /**
+   * Declare the door a card opened with `{ door: true }` draws, and get back the call that withdraws
+   * it. The deck page's Shopping list is the one caller: it knows the limit and the rows, and the
+   * modal knows neither.
+   */
+  registerDoor: (door: CardDoor) => () => void;
 };
+
+/** The swap tools' door for one card, in the desktop art column or the phone's strip, or null. */
+export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
 
 /**
  * A sheet's footer for a card stacked over it, or null for a card that is not one of the sheet's
@@ -189,6 +204,14 @@ export function CardDetailTrigger({
 
 /** Stable, so the context value's identity does not change every render. */
 const EMPTY_IDS: ReadonlySet<string> = new Set();
+const NOOP = () => {};
+
+type OpenAt = {
+  oracleId: string;
+  printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
+} | null;
+/** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
+type Held = { card: BrowseCard; siblings: string[]; openAt: OpenAt; door: boolean };
 
 export function CardDetailProvider({
   children,
@@ -241,6 +264,9 @@ export function CardDetailProvider({
 }) {
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
+  // Opened from a Shopping row: the swap tools' door draws (audit F17).
+  const [door, setDoor] = useState(false);
+  const [held, setHeld] = useState<Held | null>(null);
   // The printing the caller asked to open at, carrying the oracle id it belongs to.
   //
   // NOTHING here moves when a card is merely asked for — only when one arrives. That is the
@@ -254,10 +280,7 @@ export function CardDetailProvider({
   // it describes is on screen. The id it carries is what lets `show` tell "this arrival is
   // the one that was asked for" from "this arrival is something else, so let the old one
   // go".
-  const [openAt, setOpenAt] = useState<{
-    oracleId: string;
-    printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null };
-  } | null>(null);
+  const [openAt, setOpenAt] = useState<OpenAt>(null);
   /**
    * The printing an `open` asked for, before the card it describes has arrived. A ref, not
    * state: nothing renders from it, and `show` is memoised on nothing so it must read the
@@ -271,11 +294,6 @@ export function CardDetailProvider({
   // One entry per sheet underneath, in the order they registered. A token rather than the label
   // identifies an entry, since two sheets may carry the same label.
   const [sheets, setSheets] = useState<{ token: object; label: string | undefined; footer?: SheetFooter }[]>([]);
-  const registerSheet = useCallback((label?: string, footer?: SheetFooter) => {
-    const token = {};
-    setSheets((list) => [...list, { token, label, footer }]);
-    return () => setSheets((list) => list.filter((entry) => entry.token !== token));
-  }, []);
   const sheetsBelow = sheets.length;
   const backLabel = sheets.at(-1)?.label;
   const sheetFooter = sheets.at(-1)?.footer;
@@ -472,7 +490,9 @@ export function CardDetailProvider({
       oracleId: string,
       list?: string[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
+      opts?: { door?: boolean },
     ) => {
+      setDoor(opts?.door ?? false);
       // PENDING, not committed. A second open while the first card is still painted must
       // not take the first card's printing away from it: the read may fail, and `load`
       // deliberately leaves that card standing. The printing commits in `show`, when the
@@ -497,7 +517,59 @@ export function CardDetailProvider({
     show(null);
     setPendingOracleId(null);
     setFailed(false);
+    setDoor(false);
   }, [show]);
+
+  // The card a sheet opened OVER (the door's stand-ins sheet): lifted out of the live slot while the
+  // sheet is up, so a card opened from the sheet stacks over both instead of replacing it, and put
+  // back, with its list, printing and door, when the sheet goes.
+  const live = useRef({ card, siblings, openAt, door });
+  useEffect(() => {
+    live.current = { card, siblings, openAt, door };
+  });
+  const heldRef = useRef<Held | null>(null);
+  const registerSheet = useCallback((label?: string, footer?: SheetFooter, overCard = false) => {
+    const token = {};
+    setSheets((list) => [...list, { token, label, footer }]);
+    const lifting = overCard ? live.current : null;
+    if (lifting?.card) {
+      const held: Held = { card: lifting.card, siblings: lifting.siblings, openAt: lifting.openAt, door: lifting.door };
+      heldRef.current = held;
+      setHeld(held);
+      latest.current++;
+      inFlight.current = null;
+      owed.current = null;
+      pendingAt.current = null;
+      openRef.current = null;
+      shownRef.current = null;
+      setCard(null);
+      setPendingOracleId(null);
+      setFailed(false);
+      setDoor(false);
+    }
+    return () => {
+      setSheets((list) => list.filter((entry) => entry.token !== token));
+      const back = lifting?.card ? heldRef.current : null;
+      if (!back) return;
+      heldRef.current = null;
+      setHeld(null);
+      latest.current++;
+      inFlight.current = null;
+      pendingAt.current = null;
+      openRef.current = back.card.oracleId;
+      shownRef.current = back.card.oracleId;
+      setCard(back.card);
+      setSiblings(back.siblings);
+      setOpenAt(back.openAt);
+      setDoor(back.door);
+    };
+  }, []);
+
+  const [doorRender, setDoorRender] = useState<CardDoor | null>(null);
+  const registerDoor = useCallback((render: CardDoor) => {
+    setDoorRender(() => render);
+    return () => setDoorRender((current: CardDoor | null) => (current === render ? null : current));
+  }, []);
 
   const evict = useCallback(
     /**
@@ -535,8 +607,9 @@ export function CardDetailProvider({
       deckId,
       deckOracleIds: deckOracleIds ?? EMPTY_IDS,
       registerSheet,
+      registerDoor,
     }),
-    [open, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet],
+    [open, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;
@@ -544,6 +617,7 @@ export function CardDetailProvider({
   // the one that was asked for.
   const openAtPrinting = card && openAt?.oracleId === card.oracleId ? openAt.printing : null;
   const paging = index >= 0 && siblings.length > 1;
+  const heldIndex = held ? held.siblings.indexOf(held.card.oracleId) : -1;
 
   return (
     <CardDetailContext.Provider value={value}>
@@ -552,7 +626,26 @@ export function CardDetailProvider({
       <div aria-live="polite" className="sr-only">
         {pendingOracleId ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
       </div>
-      {card && (
+      {held ? (
+        <CardModal
+          // The same slot and key the card was open in, so lifting it under the sheet keeps it
+          // mounted: its scroll and its expanded state are where the reader left them.
+          key={held.card.oracleId}
+          card={held.card}
+          deckId={deckId}
+          deckName={deckName}
+          deckHolds={(deckOracleIds ?? EMPTY_IDS).has(held.card.oracleId)}
+          openAtPrinting={held.openAt?.oracleId === held.card.oracleId ? held.openAt.printing : null}
+          position={heldIndex >= 0 && held.siblings.length > 1 ? heldIndex + 1 : 1}
+          total={heldIndex >= 0 && held.siblings.length > 1 ? held.siblings.length : 1}
+          onClose={NOOP}
+          covered
+          phoneTop={52}
+          door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
+          onPrev={null}
+          onNext={null}
+        />
+      ) : card ? (
         <CardModal
           // Paging must not carry the previous card's expanded printing region or its
           // optimistic art pick across — same reason the collection browser remounts.
@@ -580,6 +673,7 @@ export function CardDetailProvider({
             ? (layout) => sheetFooter(card.oracleId, layout)
             : null}
           backLabel={backLabel}
+          door={door && doorRender ? (layout) => doorRender(card.oracleId, layout) : null}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from.
@@ -593,7 +687,52 @@ export function CardDetailProvider({
               : null
           }
         />
-      )}
+      ) : null}
+      {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
+      {held && card ? (
+        <CardModal
+          // Paging must not carry the previous card's expanded printing region or its
+          // optimistic art pick across — same reason the collection browser remounts.
+          key={`top:${card.oracleId}`}
+          card={card}
+          deckId={deckId}
+          deckName={deckName}
+          deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
+          onProxyWrite={() => evict(card.oracleId)}
+          openAtPrinting={openAtPrinting}
+          onArtChange={(art, settled) => {
+            // Dropped on both calls, re-read on the settled one alone: the optimistic call
+            // precedes the write, so a read started there answers with the preference the
+            // write has not replaced yet.
+            evict(card.oracleId, { reread: settled });
+            onArtChange?.(card.oracleId, art);
+          }}
+          position={paging ? index + 1 : 1}
+          total={paging ? siblings.length : 1}
+          onClose={close}
+          stacked
+          phoneTop={140}
+          dropped
+          // Only a card the sheet has a footer FOR swaps its Mana Pool link out: the original, or any
+          // card after a take, keeps the link rather than drawing nothing in its place.
+          footer={sheetFooter && sheetFooter(card.oracleId, "row") !== null
+            ? (layout) => sheetFooter(card.oracleId, layout)
+            : null}
+          backLabel={backLabel}
+          // The combo block's partner name, through the same `load` that pages Prev/Next —
+          // so a partner replaces the open card exactly as a sibling does, and the back
+          // gesture returns to the card the reader started from.
+          onSelectCard={(id) => void load(id)}
+          onPrev={paging && index > 0
+            ? () => void load(siblings[index - 1])
+            : null}
+          onNext={
+            paging && index < siblings.length - 1
+              ? () => void load(siblings[index + 1])
+              : null
+          }
+        />
+      ) : null}
     </CardDetailContext.Provider>
   );
 }
