@@ -200,7 +200,7 @@ Swap Tools :217).
 |---|---|---|
 | Wrapper border-bottom | `1px solid var(--border)` | same |
 | Grid display | `grid` | `grid` |
-| grid-template-columns | `minmax(0,1fr) 96px 64px` | `minmax(0,1fr) 72px` |
+| grid-template-columns | `minmax(0,1fr) 96px` in 4a; `minmax(0,1fr) 96px 64px` once 4b adds Take | `minmax(0,1fr)` in 4a; `minmax(0,1fr) 72px` once 4b adds Take |
 | column-gap | `12px` | `10px` |
 | row-gap | not set | `6px` |
 | align-items | `center` | `center` |

@@ -674,7 +674,11 @@ export function DecklistRow({
           )
         ) : null}
         {standInsOpen ? (
-          <StandInsSheet card={card} newestAsOf={newestAsOf} onClose={() => setStandInsOpen(false)} />
+          // The sheet sits inside the row's click target, and React bubbles a portal's events through
+          // it: a press on the backdrop or on the sheet's text would otherwise open the row's card too.
+          <div className="contents" onClick={(event) => event.stopPropagation()}>
+            <StandInsSheet card={card} newestAsOf={newestAsOf} onClose={() => setStandInsOpen(false)} />
+          </div>
         ) : null}
 
         {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the

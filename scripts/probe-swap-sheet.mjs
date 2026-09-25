@@ -13,7 +13,7 @@
  * FIXTURE. A brew led by Kenrith (all five colors, so no fixture card is off-identity) holding, for
  * each kind, the first card from a named list this account does NOT own: a dual land, a fetch and
  * two removal spells, all above $10 at the newest price run, plus one card under $10. An unowned
- * card is a Shopping row. The deck is deleted in a `finally`. Needs a server with
+ * card is a Shopping row. The deck is deleted in a `finally`, and the account's About row is put back as the run found it. Needs a server with
  * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
  */
 import { readFileSync } from "node:fs";
@@ -57,6 +57,8 @@ const WIDTHS = [
 ];
 
 let failures = 0;
+/** The About row as the run found it, so the `finally` can put it back. */
+let aboutPrior = null;
 function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   if (!ok) failures += 1;
@@ -93,7 +95,10 @@ async function signIn(page) {
   const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
   if (!userId) throw new Error("Signed in but Clerk reports no user.");
   // Clear the About gate: below the current version `proxy.ts` redirects every route to /about.
+  // What was there is captured first and put back in the `finally`.
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
+  const prior = await pool.query(`select about_version_seen from user_prefs where user_id = $1`, [userId]);
+  aboutPrior = { userId, existed: prior.rowCount > 0, value: prior.rows[0]?.about_version_seen ?? null };
   await pool.query(
     `insert into user_prefs (user_id, about_version_seen) values ($1, $2)
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
@@ -259,8 +264,19 @@ try {
       }
       report(`${tag} ${kind}: nothing wider than the sheet`, read.overflow <= 0, `${read.overflow}px`);
       if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/swap-sheet-${kind}-${w.label}.png` });
-      await dialog.getByRole("button", { name: "Close cheaper stand-ins" }).click();
-      await dialog.waitFor({ state: "detached", timeout: 5_000 });
+      // The sheet mounts inside the row's click target, and React bubbles a portal's events through it:
+      // closing it from the backdrop must not open the row's card as well. The panel stops its own clicks,
+      // so the backdrop is the press that reaches the row.
+      await page.mouse.click(8, 8);
+      const closed = await dialog.waitFor({ state: "detached", timeout: 5_000 }).then(() => true, () => false);
+      await page.waitForTimeout(500);
+      const dialogs = await page.getByRole("dialog").count();
+      report(`${tag} ${kind}: the backdrop closes the sheet and opens nothing behind it`, closed && dialogs === 0,
+        `sheet ${closed ? "closed" : "still open"}, ${dialogs} dialogs open`);
+      for (let i = 0; i < 3 && (await page.getByRole("dialog").count()) > 0; i++) {
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(400);
+      }
     }
   }
 } catch (error) {
@@ -275,6 +291,22 @@ try {
   } catch (error) {
     failures += 1;
     console.error(` FAIL  could not delete fixture deck ${deckId}; remove it by hand (${error?.message ?? error})`);
+  }
+  try {
+    if (aboutPrior) {
+      if (aboutPrior.existed) {
+        await pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`, [
+          aboutPrior.userId,
+          aboutPrior.value,
+        ]);
+      } else {
+        await pool.query(`delete from user_prefs where user_id = $1`, [aboutPrior.userId]);
+      }
+      console.log("About row restored");
+    }
+  } catch (error) {
+    failures += 1;
+    console.error(` FAIL  could not restore the About row (${error?.message ?? error})`);
   } finally {
     try {
       if (browser) await browser.close();
