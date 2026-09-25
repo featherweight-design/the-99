@@ -67,6 +67,7 @@ describe("FitsPicker", () => {
     expect(within(rows[1]).getByTestId("fits-reason")).toHaveTextContent(copy.reasonTheme(9, copy.themeWord.mill));
     expect(rows[1]).not.toHaveTextContent(copy.needLabel);
     for (const row of rows) expect(row.textContent).not.toMatch(/%/);
+    expect(screen.getByText(copy.orderReasons)).toBeInTheDocument();
     expect(screen.getAllByTestId("fits-holds-row")[0]).toHaveTextContent(copy.holds(1));
     expect(screen.getAllByRole("button", { name: /using your free copy/ })).toHaveLength(2);
   });
@@ -103,6 +104,8 @@ describe("FitsPicker", () => {
       expect(row.textContent).not.toMatch(/%/);
     }
     expect(screen.getAllByTestId("fits-staple-note")).toHaveLength(1);
+    // A staple's list stays by name, so it carries no order note.
+    expect(screen.queryByText(copy.orderReasons)).toBeNull();
     expect(screen.getByTestId("fits-staple-note")).toHaveTextContent(copy.stapleNote("Birds of Paradise"));
   });
 

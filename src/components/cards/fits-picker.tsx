@@ -249,9 +249,15 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
 
         {read && shown.length > 0 ? (
           <section className="flex flex-col" aria-label={copy.groupJoin}>
-            <h3 className="m-0 pb-[6px] border-b border-[color:var(--border)] font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
-              {copy.groupJoin}
-            </h3>
+            {/* Addendum §1c: the order note at the heading's right. A staple's list stays by name, so it has none. */}
+            <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
+              <h3 className="m-0 font-mono text-[9.5px] font-normal tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
+                {copy.groupJoin}
+              </h3>
+              {read.staple ? null : (
+                <span className="font-mono text-[10px] whitespace-nowrap text-[color:var(--fg-locked)]">{copy.orderReasons}</span>
+              )}
+            </div>
             {shown.map((deck) => {
               const note = noteFor(deck.id);
               return (
