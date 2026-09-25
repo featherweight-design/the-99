@@ -198,6 +198,13 @@ describe("catalogCard", () => {
       expect(c.printings[0].collectorNumber).toBe("326");
     });
 
+    it("passes over a live oracle printing drawn only in fallback art", () => {
+      const r = rows();
+      r[2] = { ...r[2], imageUri: null };
+      const c = catalogCard(card({ scryfallId: "s-dear" }), r, prices({ "s-cheap": fact(32), "s-dear": fact(20) }));
+      expect(c.printings[0].collectorNumber).toBe("77");
+    });
+
     it("keeps today's order when no printing is live", () => {
       const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({}));
       expect(c.printings.map((p) => p.collectorNumber)).toEqual(["135", "77", "326"]);

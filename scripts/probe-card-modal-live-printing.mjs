@@ -78,10 +78,15 @@ async function signIn(page) {
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
   // Captured BEFORE the write and put back in the run's finally: the About gate is the account's own
   // state, and a probe that only raises it leaves the real audit account changed.
-  const [prior] = await sql`select about_version_seen from user_prefs where user_id = ${userId}`;
+  // Both columns: `clearAboutSheet` below adds every catalog id to `about_seen_ids` as well.
+  const [prior] = await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`;
   restorePrefs = async () => {
-    if (prior) await sql`update user_prefs set about_version_seen = ${prior.about_version_seen} where user_id = ${userId}`;
-    else await sql`delete from user_prefs where user_id = ${userId}`;
+    if (prior) {
+      await sql`update user_prefs set about_version_seen = ${prior.about_version_seen}, about_seen_ids = ${prior.about_seen_ids}
+        where user_id = ${userId}`;
+    } else {
+      await sql`delete from user_prefs where user_id = ${userId}`;
+    }
   };
   await sql`
     insert into user_prefs (user_id, about_version_seen) values (${userId}, ${version})
