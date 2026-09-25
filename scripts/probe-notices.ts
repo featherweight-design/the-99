@@ -205,6 +205,13 @@ async function run() {
   const n9r = await loadDeckNotices(deck.id, USER);
   check("9 · reading quiets it and keeps it listed", n9r && [n9r.violationCount, n9r.violationsUnread], [1, false]);
   await agree("notLegalRead");
+  // Both kinds at once (the tile marker addendum, F20): the summary keeps the legality kind and
+  // carries the unread data count beside it, which the tile's tooltip and spoken name both use.
+  const both = await plant("gameChanger", [body[0]]);
+  const n9b = await loadDeckNotices(deck.id, USER);
+  check("9 · with data pending too, the sheet reads both", n9b && [n9b.violationCount > 0, n9b.dataUnread > 0], [true, true]);
+  await agree("notLegalRead, with data");
+  await db.execute(sql`delete from deck_data_changes where seq = ${both}`);
   await db.execute(sql`delete from deck_cards where deck_id = ${deck.id}::uuid and oracle_id = ${banned.oracle_id}::uuid`);
   check("9 · the card leaving clears it", (await loadDeckNotices(deck.id, USER))?.violationCount, 0);
   await agree("none");
@@ -355,7 +362,7 @@ async function agree(state: string) {
   const [row] = await db.select({ n: noticeSummarySql() }).from(decks).where(eq(decks.id, fixtureDeck));
   const d = await loadDeckNotices(fixtureDeck, USER);
   const expected = !d ? null : d.violationCount > 0
-    ? { kind: d.violationsUnread ? "notLegalUnread" : "notLegalRead", count: d.readMarks.violations.length }
+    ? { kind: d.violationsUnread ? "notLegalUnread" : "notLegalRead", count: d.readMarks.violations.length, dataUnread: d.dataUnread }
     : d.dataUnread > 0 ? { kind: "unread", count: d.dataUnread } : null;
   check(`summary · the tile agrees with the sheet (${state})`, row?.n ?? null, expected);
 }

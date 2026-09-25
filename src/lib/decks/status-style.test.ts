@@ -165,6 +165,14 @@ describe("H5 contrast, over all six themes", () => {
     expect(minimum(ratios)).toBeGreaterThanOrEqual(4.5);
   });
 
+  // The tile's `!` mark (tile marker addendum, F23): a 12px GRAPHIC, not text, so its bar is 3:1.
+  // Each ink on its own 14% tint of the tile's ground, which is what `NoticeMark` paints.
+  it.each(["--danger", "--fact"])("the tile mark's %s glyph clears 3:1 on its own tint", (ink) => {
+    // The tile's ground, and `--bg` for the key's sample on the page.
+    const ratios = [...THEMES.values()].flatMap((t) => ["--surface-inset", "--bg"].map((g) => contrast(hex(t, ink), mixOklab(hex(t, ink), hex(t, g), 0.14))));
+    expect(minimum(ratios)).toBeGreaterThanOrEqual(3);
+  });
+
   // The counterfactual H5 replaces: the red as TEXT fails on both grounds, which is why it moved.
   it("would not with --danger as the label", () => {
     const ratios = [...THEMES.values()].map((t) => contrast(hex(t, "--danger"), hex(t, "--surface-inset")));

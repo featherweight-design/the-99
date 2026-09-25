@@ -73,6 +73,7 @@ import {
 import { ImportDeckButton } from "./import-deck-button";
 import { NewDeckButton } from "./new-deck-button";
 import { SearchIcon } from "./search-icon";
+import { DecksMarkKey } from "./decks-mark-key";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -1051,6 +1052,7 @@ export function DecksView({
             </div>
           ) : (
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
+              <DecksMarkKey decks={shown} />
               {shown.map((deck) => (
                 // `sm:h-full` so the tile fills the GRID row rather than
                 // sitting at its own content height: a tile with no detail line

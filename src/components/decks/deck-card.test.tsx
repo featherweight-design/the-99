@@ -708,63 +708,81 @@ describe("the tile's proxy line yields where the slot is deliberately empty", ()
   });
 });
 
-describe("DeckCard — the notice (deck notices HANDOFF §1a)", () => {
+describe("DeckCard — the notice mark (tile marker addendum)", () => {
   const card = (over: Partial<DeckListItem>) =>
     render(<DeckCard folders={[]} onCreateFolder={() => {}} say={() => {}} onMoved={() => {}} keepsFocus closeAfterCreate={null} deck={deck(over)} shopping={undefined} now={now} />);
+  const mark = (c: HTMLElement) => c.querySelector<HTMLElement>("[data-notice-mark]");
 
-  it("draws no tag for a deck with no notice", () => {
+  it("draws no mark for a deck with no notice", () => {
     const { container } = card({ notice: null });
-    expect(container.querySelector("[data-notice-tag]")).toBeNull();
+    expect(mark(container)).toBeNull();
+    expect(container.querySelector("[data-notice-link]")).toBeNull();
   });
 
-  it("condenses unread data to a dot and the count, after the chip, and names it in the link", () => {
+  it("draws unread data as one --fact mark after the chip, and names it in the link", () => {
     const { container } = card({ bracket: { permits: [3], answered: null }, notice: { kind: "unread", count: 3 } });
     const row = container.querySelector("[data-deck-chips]")!;
-    const tag = row.querySelector<HTMLElement>("[data-notice-tag='unread']")!;
-    expect(tag.textContent).toBe("3");
-    expect(tag.querySelector("[data-notice-dot]")).not.toBeNull();
-    expect(row.lastElementChild).toBe(tag);
+    const m = mark(container)!;
+    expect(m.dataset.noticeMark).toBe("unread");
+    expect(m.textContent).toBe("!");
+    expect(m.style.color).toBe("var(--fact)");
+    expect(row.lastElementChild!.contains(m)).toBe(true);
     expect(screen.getByRole("link", { name: /, bracket \w+, 3 notices since this deck was analyzed,/ })).toBeTruthy();
   });
 
-  it("draws legality in the chip's slot with no chip, and keeps it without the dot once read", () => {
-    const { container, unmount } = card({ bracket: null, notice: { kind: "notLegalUnread", count: 2 } });
-    const tag = container.querySelector<HTMLElement>("[data-notice-tag='notLegalUnread']")!;
-    expect(tag.textContent).toBe("Not legal");
-    expect(tag.querySelector("[data-notice-dot]")).not.toBeNull();
+  // H7 and H8: legality is red, read or unread, and there is no read look on the tile.
+  it("draws legality as one --danger mark in the chip's slot, read or unread alike", () => {
+    const unread = card({ bracket: null, notice: { kind: "notLegalUnread", count: 2, dataUnread: 0 } });
+    const a = mark(unread.container)!;
+    expect(a.dataset.noticeMark).toBe("notLegal");
+    expect(a.style.color).toBe("var(--danger)");
+    expect(a.style.border).toContain("var(--danger) 70%");
+    expect(a.style.background).toBe("color-mix(in oklab, var(--danger) 14%, var(--surface-inset))");
     expect(screen.getByRole("link", { name: /To buy, 2 cards not legal in this deck,/ })).toBeTruthy();
-    unmount();
-    const read = card({ bracket: null, notice: { kind: "notLegalRead", count: 2 } });
-    const quiet = read.container.querySelector<HTMLElement>("[data-notice-tag='notLegalRead']")!;
-    expect(quiet.textContent).toBe("Not legal");
-    expect(quiet.querySelector("[data-notice-dot]")).toBeNull();
+    const drawn = a.outerHTML;
+    unread.unmount();
+    const read = card({ bracket: null, notice: { kind: "notLegalRead", count: 2, dataUnread: 0 } });
+    expect(mark(read.container)!.outerHTML).toBe(drawn);
   });
 
-  // H5: the red is on the hairline and the dot, never the words.
-  it("inks Not legal's words in --fg and its edge in --danger", () => {
-    const { container } = card({ notice: { kind: "notLegalUnread", count: 1 } });
-    const tag = container.querySelector<HTMLElement>("[data-notice-tag]")!;
-    expect(tag.style.color).toBe("var(--fg)");
-    expect(tag.style.border).toContain("var(--danger) 70%");
-    expect(tag.style.background).toBe("color-mix(in oklab, var(--danger) 14%, var(--surface-inset))");
+  // F20: both kinds are ONE red mark, and the link names both.
+  it("draws both kinds as one red mark, and the link names both counts", () => {
+    const { container } = card({ bracket: null, notice: { kind: "notLegalUnread", count: 1, dataUnread: 3 } });
+    expect(container.querySelectorAll("[data-notice-mark]")).toHaveLength(1);
+    expect(mark(container)!.style.color).toBe("var(--danger)");
+    expect(screen.getByRole("link", { name: /1 card not legal in this deck, 3 notices since this deck was analyzed/ })).toBeTruthy();
   });
 
-  // The one yield: only a RANGE beside a notice draws its marks-only twin, by container width.
-  it("mounts the marks-only twin for a range beside a notice, and for nothing else", () => {
+  // F19: a second link over the cover link, not a forwarded click, out of the tab order and the tree.
+  it("lifts the mark as a second link to the deck, out of the tab order and the accessibility tree", () => {
+    const { container } = card({ notice: { kind: "unread", count: 1 } });
+    const link = container.querySelector<HTMLAnchorElement>("[data-notice-link]")!;
+    expect(link.tagName).toBe("A");
+    expect(link.getAttribute("href")).toBe(`/decks/${deck({}).id}`);
+    expect(link.getAttribute("tabindex")).toBe("-1");
+    expect(link.getAttribute("aria-hidden")).toBe("true");
+    expect(link.className).toMatch(/\brelative\b/);
+    expect(link.className).toMatch(/\bz-10\b/);
+    expect(link.contains(mark(container))).toBe(true);
+    // The cover link is still the tile's one named target.
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+
+  // The one yield: only a RANGE beside a mark draws its marks-only twin, in one window for both kinds.
+  it("mounts the marks-only twin for a range beside a mark, and for nothing else", () => {
     const faces = (c: HTMLElement) => c.querySelectorAll("[data-testid='bracket-chip']").length;
-    const range = card({ bracket: { permits: [1, 2], answered: null }, notice: { kind: "notLegalUnread", count: 1 } });
+    const range = card({ bracket: { permits: [1, 2], answered: null }, notice: { kind: "notLegalUnread", count: 1, dataUnread: 0 } });
     expect(faces(range.container)).toBe(2);
-    expect(range.container.innerHTML).toContain("@min-[330px]:@max-[408px]:hidden");
+    const window = range.container.innerHTML.match(/@min-\[330px\]:@max-\[(\d+)px\]:hidden/)?.[1];
+    expect(window).toBeTruthy();
     range.unmount();
-    const single = card({ bracket: { permits: [3], answered: null }, notice: { kind: "notLegalUnread", count: 1 } });
+    const data = card({ bracket: { permits: [1, 2], answered: null }, notice: { kind: "unread", count: 99 } });
+    expect(data.container.innerHTML).toContain(`@min-[330px]:@max-[${window}px]:hidden`);
+    data.unmount();
+    const single = card({ bracket: { permits: [3], answered: null }, notice: { kind: "notLegalUnread", count: 1, dataUnread: 0 } });
     expect(faces(single.container)).toBe(1);
     single.unmount();
     const quiet = card({ bracket: { permits: [1, 2], answered: null }, notice: null });
     expect(faces(quiet.container)).toBe(1);
-    quiet.unmount();
-    // A data tag reaches the yield in its own, narrower window (measured: 354.3px from `md`).
-    const data = card({ bracket: { permits: [1, 2], answered: null }, notice: { kind: "unread", count: 99 } });
-    expect(data.container.innerHTML).toContain("@min-[330px]:@max-[358px]:hidden");
-    expect(data.container.innerHTML).not.toContain("@max-[408px]");
   });
 });
