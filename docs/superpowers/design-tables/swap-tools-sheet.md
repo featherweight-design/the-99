@@ -485,7 +485,7 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Land, unnamed drawback | classifier returns "unnamed" for a stand-in | row facts `drawback.unnamed`, italic | `unnamed: true` |
 | Land, utility original (H3) | the original's text does more than make its colors | as Lands; each stand-in's facts add what it gives up | the original's named non-mana ability (new key) |
 | Fetch | original is a fetch land; stand-ins found by land types | head `jobFinds` + drawback, `leadFetch`, `groupSameType("lands")`, rows with `basicOnly` + drawback | types, `basicOnly`, entered-tapped / life drawbacks |
-| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with MV and no figure (v2 D1) | roles, mv, commander short name |
+| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with role · MV and no figure, an other-types row leading with its type (v2 D1) | roles, mv, commander short name |
 | Partner deck | spells kind, deck led by a pair | as Spells, `commander` = `A + B`, ordered by the pair's synergy from pair support | pair name |
 | Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | `leadSpellsOrderUnlisted` in the lead, the type groups as Spells | pair name |
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |

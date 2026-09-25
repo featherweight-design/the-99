@@ -143,7 +143,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
     if (job.kind === "spell") {
       const out = [rolesText(s.shared), copy.mv(s.card.cmc)];
       // Addendum §1: a staple's figure is about every commander, so the row says so rather than
-      // quoting it as this one's. A free staple keeps the clause in `yours, free` too.
+      // quoting it as this one's. A free staple keeps the clause too, last in its type group.
       // Hugh's Q2: no % on a stand-in row. The list is ordered by synergy, which a printed inclusion
       // figure would contradict (a 12% row above a 61% one). A staple still says it is one.
       if (s.isUniversal) out.push(copy.stapleFact);

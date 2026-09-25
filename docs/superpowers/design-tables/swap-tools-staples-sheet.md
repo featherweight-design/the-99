@@ -15,7 +15,7 @@ staples group is retired. A staple now sorts LAST in its type group, free or not
 |---|---|---|
 | A paid universal staple's group | *retired (v2 D1)*: last in its type group, never cut by the group cap | — |
 | Where the group sits | *retired (v2 D1)* | — |
-| A staple's fact line | `MV {n} · staple, any commander`, never `in N% of {cmdr} decks` | `sheet.stapleFact` |
+| A staple's fact line | `{role} · MV {n} · staple, any commander` (an other-types staple leads with its type), never `in N% of {cmdr} decks` | `sheet.stapleFact` |
 | A free staple | last in its type group like any staple, with the same clause | `sheet.stapleFact` |
 | The lead, when a staple is listed | its last sentence: `Staples every commander plays come last.` (v2 D1) | `sheet.leadSpellsStaples` |
 | Which staples | the one definition, `loadUniversalStaples` (F18); no names hard-coded | — |
