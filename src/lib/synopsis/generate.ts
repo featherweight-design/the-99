@@ -5,7 +5,8 @@ import { cards, deckProfiles, deckSynopses, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall } from "../model/allowance";
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
-import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
+import { readProfileHead } from "../profile/load";
+import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_REPAIR_MIN_MS } from "./limits";
@@ -53,7 +54,8 @@ export type WriteResult =
   | { kind: "written"; outcome: SynopsisOutcome; synopsis: SynopsisRow | null }
   /** The list already has a synopsis: nothing was called or charged. */
   | { kind: "reused"; synopsis: SynopsisRow }
-  /** No reading, or a stale one: a write needs a fresh analysis of the list it describes. */
+  /** No reading, or a stale one: a write needs a fresh analysis of the list it describes. Also what
+   *  a write gets when the list moved on its way to the reservation: nothing was called or charged. */
   | { kind: "no_reading" }
   /** Refused at the reservation: the player's allowance (`allowance`), the app-wide spend cap
    *  (`paused`) or the owner's testing share (`ownerShare`). Nothing was called or charged. */
@@ -245,8 +247,9 @@ export async function catalogFor(reply: SynopsisResponse, facts: SynopsisFacts):
 // ---------------------------------------------------------------------------------------------
 // Writes.
 
-/** Reap, reserve a unit, insert the pending run: one transaction, before any network call. */
-async function startRun(
+/** Reap, reserve a unit, insert the pending run: one transaction, before any network call.
+ *  Exported for its unit test, which proves a refusal under the lock reserves nothing. */
+export async function startRun(
   deckId: string,
   userId: string,
   list: string,
@@ -263,27 +266,41 @@ async function startRun(
    * concurrent press would have written; the moved one it replaces does not stop it.
    */
   replacing = false,
-): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" }> {
+): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
   try {
     const handle = await db.transaction(async (tx) => {
-      // THE LEGALITY CHECK, AGAIN, UNDER THE DECK ROW'S LOCK and before the reservation (deck
-      // notices HANDOFF §6). `run` checks first so a withheld write reads nothing, but a card added
-      // between that check and here would otherwise get a charged overview for an illegal list. The
-      // deck row is locked first, the order every card edit takes, so an edit waits for this
-      // reservation or this waits for the edit, and the list checked is the list reserved for.
-      if (noticesEnabled()) {
-        const [deck] = await tx
-          .select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
-          .from(decks)
-          .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
-          .for("update");
-        if (deck && (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0) {
-          throw new IllegalDeckError();
-        }
+      // THE DECK ROW'S LOCK, FIRST, on every write: the order every card edit takes, so an edit
+      // waits for this reservation or this waits for the edit. Everything checked below is then
+      // the list the reservation is for.
+      const [deck] = await tx
+        .select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+        .from(decks)
+        .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+        .for("update");
+      if (!deck) throw new ListMovedError();
+      // THE LEGALITY CHECK, AGAIN, under the same lock (deck notices HANDOFF §6), and before the
+      // list's: a card that makes the deck illegal also moves its list, and `illegal` is the answer
+      // that says why. `run` checks first so a withheld write reads nothing.
+      if (noticesEnabled()
+        && (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0) {
+        throw new IllegalDeckError();
+      }
+      // THE LIST, AGAIN. `run` read the reading before it got here, and an edit committing in
+      // between would otherwise be charged for, and written, as the list it replaced. The reading
+      // must still be clean, still be the one `run` read (`list`), and still describe the live
+      // list by the stored reading's own rule (`sameList`, which reads a pre-0054 row correctly).
+      const [head, [reading]] = await Promise.all([
+        readProfileHead(tx, deckId, userId),
+        tx.select({ fingerprint: deckProfiles.fingerprint, profileVersion: deckProfiles.profileVersion, dirty: deckProfiles.dirty })
+          .from(deckProfiles)
+          .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))),
+      ]);
+      if (!head || !reading || reading.dirty || reading.fingerprint !== list || !sameList(reading, head)) {
+        throw new ListMovedError();
       }
       const unit = await reserveModelCall(tx, userId, "synopsis", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
@@ -310,6 +327,7 @@ async function startRun(
     return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof IllegalDeckError) return { kind: "illegal" };
+    if (err instanceof ListMovedError) return { kind: "no_reading" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
       const synopsis = await readShownSynopsis(deckId, userId, list);
@@ -322,6 +340,7 @@ async function startRun(
 
 class AlreadyWrittenError extends Error {}
 class IllegalDeckError extends Error {}
+class ListMovedError extends Error {}
 
 /**
  * The outcome and the unit, together. Guarded on `pending`, so a run the reaper already failed
