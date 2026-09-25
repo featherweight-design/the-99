@@ -267,6 +267,14 @@ async function main() {
     check("a Stop is taken though another player's read has that id", await store.cancelRead(theirRead, EARLY), true);
     const mineToo = await store.startRead(EARLY, store.wordsHash(`their read, mine ${theirRead}`, controls), INTAKE_MODEL, { readId: theirRead });
     check("and this player's press with it is refused", mineToo.kind, "stopped");
+    // Bounded per player: the route takes any id a signed-in caller sends, so a caller minting ids
+    // stops at the cap rather than growing the table.
+    const CAPPED = `probe-cap-${randomUUID()}`;
+    await fixture.execute(sql`insert into intake_read_stops (read_id, user_id)
+      select gen_random_uuid(), ${CAPPED} from generate_series(1, ${store.EARLY_STOPS_MAX})`);
+    const overCap = randomUUID();
+    check("a Stop past the per-player cap is not taken, and records nothing", [await store.cancelRead(overCap, CAPPED), await stopsFor(overCap)], [false, 0]);
+    await fixture.execute(sql`delete from intake_read_stops where user_id = ${CAPPED}`);
     // Purged at the Stop as well: a player who never starts another look leaves none behind.
     const stale = randomUUID();
     await fixture.execute(sql`insert into intake_read_stops (read_id, user_id, created_at) values (${stale}, ${EARLY}, now() - interval '25 hours')`);

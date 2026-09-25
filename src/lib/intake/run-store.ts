@@ -79,6 +79,14 @@ async function lockAsks(tx: Tx, userId: string): Promise<void> {
 /** How long an early Stop is kept for its press to find: far past any start's wait for the lock. */
 const STOP_KEPT_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * The most early stops one player may hold at once. One is left only when a Stop outruns its own
+ * press, so a real player holds a handful at most; the cap is what bounds the table, since the
+ * Stop route takes any id a signed-in caller sends. With every older stop purged first, the table
+ * holds at most this many rows per player, whether or not that player ever comes back.
+ */
+export const EARLY_STOPS_MAX = 20;
+
 /** This player's early stops past keeping: no start still waiting could be looking for them. */
 async function purgeStops(tx: Tx, userId: string, now: Date): Promise<void> {
   await tx.delete(intakeReadStops)
@@ -274,6 +282,10 @@ export async function cancelRead(readId: string, userId: string): Promise<boolea
     // Purged here as well as at a start: a player who presses Stop early and never starts another
     // look would otherwise leave every such stop behind for good.
     await purgeStops(tx, userId, new Date());
+    const [{ held }] = await tx.select({ held: sql<number>`count(*)::int` }).from(intakeReadStops)
+      .where(eq(intakeReadStops.userId, userId));
+    // Past the cap the Stop is not taken: the panel puts Stop back, and the press answers as usual.
+    if (held >= EARLY_STOPS_MAX) return false;
     // Keyed by player and id, so a conflict is this player's own earlier stop, which still stands.
     await tx.insert(intakeReadStops).values({ readId, userId }).onConflictDoNothing();
     return true;
