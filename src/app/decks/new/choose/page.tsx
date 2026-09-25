@@ -19,7 +19,7 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
-import { answerChips } from "../../../../lib/intake/present";
+import { answerChips, verifiedDeeperMarks } from "../../../../lib/intake/present";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
@@ -105,7 +105,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
         <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[16px_18px_24px] md:p-[0_40px_48px]">
           <DeeperLookScope>
           <ReadAsBar
-            chips={answerChips(p, labels, settled?.kind === "read" ? p.deeper : [])}
+            chips={answerChips(p, labels, verifiedDeeperMarks(p, settled))}
             afterDeeper={settled !== null}
             offer={allowance && (
               // Keyed on the read: the look's own results are a new panel, drawn from what the page found.

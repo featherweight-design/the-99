@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { emptyParams, type ChooseParams } from "./params";
-import { answerChips, figures, narrowOptions, orderLine } from "./present";
+import { answerChips, verifiedDeeperMarks, figures, narrowOptions, orderLine } from "./present";
 import type { ResultRow } from "./rows";
 
 const labels = { theme: (s: string) => ({ dinos: "Dinosaurs", tokens: "Tokens" })[s] ?? s, card: "Regisaur Alpha" };
@@ -85,5 +85,14 @@ describe("answerChips", () => {
   it("marks the answers a deeper look added, and nothing else", () => {
     const chips = answerChips(p({ themes: ["dinos"], card: "c", budgetDollars: 150, bracket: 2 }), labels, ["a", "k"]);
     expect(chips.map((c) => [c.kind, c.deeper])).toEqual([["theme", false], ["card", true], ["budget", false], ["bracket", true]]);
+  });
+});
+
+describe("verifiedDeeperMarks", () => {
+  it("honors d only when r named the reader's own delivered read", () => {
+    const q = p({ deeper: ["t:dinos", "a"] });
+    expect(verifiedDeeperMarks(q, { kind: "read" })).toEqual(["t:dinos", "a"]);
+    expect(verifiedDeeperMarks(q, null)).toEqual([]);
+    expect(verifiedDeeperMarks(q, { kind: "nothing" })).toEqual([]);
   });
 });

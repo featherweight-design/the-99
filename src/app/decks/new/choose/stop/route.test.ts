@@ -13,8 +13,12 @@ vi.mock("../../../../../lib/intake/run-store", () => ({ cancelRead: stub.cancel 
 import { POST } from "./route";
 
 const ID = "0000AAAA-0000-4000-8000-000000000001";
-const post = (body: unknown, type = "application/json") =>
-  POST(new Request("http://x/decks/new/choose/stop", { method: "POST", headers: { "content-type": type }, body: typeof body === "string" ? body : JSON.stringify(body) }));
+const post = (body: unknown, type = "application/json", headers: Record<string, string> = { origin: "http://x", host: "x" }) =>
+  POST(new Request("http://x/decks/new/choose/stop", {
+    method: "POST",
+    headers: { "content-type": type, ...headers },
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  }));
 
 beforeEach(() => {
   stub.cancel.mockReset().mockResolvedValue(true);
@@ -41,5 +45,18 @@ describe("the Stop route", () => {
       expect((await post(body)).status).toBe(400);
     }
     expect(stub.cancel).not.toHaveBeenCalled();
+  });
+
+  it("refuses a cross-site POST, whatever it carries, before any read is touched", async () => {
+    for (const headers of <Record<string, string>[]>[
+      { origin: "https://evil.example", host: "x" },
+      { host: "x" },
+      { origin: "http://x", host: "x", "sec-fetch-site": "cross-site" },
+      { origin: "not a url", host: "x" },
+    ]) {
+      expect((await post({ readId: ID }, "application/json", headers)).status).toBe(403);
+    }
+    expect(stub.cancel).not.toHaveBeenCalled();
+    expect((await post({ readId: ID }, "application/json", { origin: "http://x", host: "x", "sec-fetch-site": "same-origin" })).status).toBe(200);
   });
 });

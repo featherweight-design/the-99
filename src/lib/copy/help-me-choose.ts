@@ -85,8 +85,9 @@ export const helpMeChooseCopy = {
     retry: "Try again",
     emptyLead: "It found nothing to add to what we’d already matched, so your credit came back. These results stand.",
     aria: "1 credit. Look deeper.",
-    /** Announced when a Stop took: the credit is back. */
-    stopped: "Stopped. Your credit came back.",
+    /** Announced when a Stop took. True either way a Stop lands: before the read existed nothing
+     *  was reserved, and after, the reservation is refunded (orchestrator, 2026-09-25). */
+    stopped: "Stopped. No credit was used.",
   },
   results: {
     back: "‹ Your answers", // canvas

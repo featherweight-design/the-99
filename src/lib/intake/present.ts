@@ -122,6 +122,14 @@ export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
   }
 }
 
+/**
+ * The deeper marks the page may draw: `d` is cosmetic, and honored only when `r` named the reader's
+ * own delivered read (`loadOwnRead`). Any other address, forged or stale, marks nothing.
+ */
+export function verifiedDeeperMarks(p: ChooseParams, settled: { kind: "read" | "nothing" } | null): string[] {
+  return settled?.kind === "read" ? p.deeper : [];
+}
+
 export type AnswerChip = { kind: string; value: string; /** Added by the deeper look (`d`). */ deeper: boolean };
 
 /**
