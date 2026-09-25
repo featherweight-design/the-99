@@ -41,7 +41,7 @@ export const TRIM_STAPLES = 15;
  * appends nothing, but its base moved with it. The `cite-*` variants add their rules to that base.
  * And the three strategy variants bring their own overview, Key-card and staple lines, each
  * repeating part of what v2 already emits: all three repeat the count, gap and grounding lines;
- * `strategy-terse` adds its own chip and opening rules, which say what v2's say in other words; and
+ * `strategy-terse` adds a chip rule worded differently from v2's and repeats its opening rule; and
  * `strategy-terse-b` repeats v2's three rationale rules word for word. None reproduces a round's
  * messages any more. Round 4's are pinned by `scripts/fixtures/tuning-v2-round4.json`; any earlier
  * round means running the harness at the commit before #948.
