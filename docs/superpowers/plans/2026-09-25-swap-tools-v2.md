@@ -15,10 +15,11 @@ rules plus data we already store, with no per-use model calls and no hand-writte
   from `{T}: Add {G}`. "Pump" and "haste" are Hugh's words and are in no stored vocabulary. Neither is "mill", so
   "Joins 9 other mill cards" has nothing to count today. Themes are stored per COMMANDER (`commander_support.tags`),
   never per card. **Items 7 and 11 need a wider card vocabulary from text rules first** (question 5).
-- **Bug 1 is 16 lands**, found by reading each mana ability's COST on staging rather than grepping for "sacrifice":
+- **Bug 1 is 17 lands**, found by reading each mana ability's COST on staging rather than grepping for "sacrifice":
   - six make "any color" once by sacrificing themselves: Abandoned Outpost, Archaeological Dig, Bog Wreckage,
     Ravaged Highlands, Seafloor Debris and Timberland Ruins;
-  - ten make fixed colors that way, such as Ancient Spring's {W}{B} and Sulfur Vent's {U}{R}.
+  - eleven make fixed mana that way, such as Ancient Spring's {W}{B}, Sulfur Vent's {U}{R} and Crystal Vein's
+    {C}{C}.
 
   An earlier count of eight named Lazotep Quarry and Heap Gate wrongly. The Quarry sacrifices a CREATURE, and Heap
   Gate pays {1}; both are repeatable and still count.
@@ -53,11 +54,14 @@ Each PR stays under ~20 files and ~800 lines. None depends on another open PR (n
 
 - **A** ships first, on approval of this plan.
   - `landColors` counts only REPEATABLE mana: an ability that sacrifices its own source adds nothing, so none of
-    the eight lands stands in for a two-color original.
+    the 17 lands stands in on the strength of a color it makes only once.
   - Stand-in rows in the sheet borrow the shared `HoverPreviewProvider` via `usePreviewRow`, exactly as the
     decklist does.
-  - Proof: unit tests on the eight lands; `probe:hover-preview` extended to the stand-ins sheet at 1300 (the preview
-    is desktop only by design).
+  - Proof:
+    - `land.test.ts` asserts every one of the 17 staging lands, plus two counter-cases that still count (Lazotep
+      Quarry, Heap Gate);
+    - `probe:swap-sheet` reads a painted preview above the sheet at 1300, on every sheet kind (the preview is
+      desktop only by design).
 - **B**: the ladder and synergy, all from text and stored figures.
   - Lands sort by rung, then synergy, then price:
     1. untapped, no drawback;

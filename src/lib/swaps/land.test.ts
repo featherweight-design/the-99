@@ -74,6 +74,35 @@ describe("landColors", () => {
   });
 });
 
+// All 17 lands on staging (2026-09-25) whose own sacrifice pays for mana: the sacrifice line adds no color.
+// Expected = the same land with that line removed, so the assertion is exactly "the one-shot counts for nothing".
+const SELF_SACRIFICE: [string, string, string, string][] = [
+  ["Abandoned Outpost", "Land", "This land enters tapped.\n{T}: Add {W}.\n{T}, Sacrifice this land: Add one mana of any color.", "This land enters tapped.\n{T}: Add {W}."],
+  ["Ancient Spring", "Land", "This land enters tapped.\n{T}: Add {U}.\n{T}, Sacrifice this land: Add {W}{B}.", "This land enters tapped.\n{T}: Add {U}."],
+  ["Archaeological Dig", "Land", "{T}: Add {C}.\n{T}, Sacrifice this land: Add one mana of any color.", "{T}: Add {C}."],
+  ["Bog Wreckage", "Land", "This land enters tapped.\n{T}: Add {B}.\n{T}, Sacrifice this land: Add one mana of any color.", "This land enters tapped.\n{T}: Add {B}."],
+  ["Crystal Vein", "Land", "{T}: Add {C}.\n{T}, Sacrifice this land: Add {C}{C}.", "{T}: Add {C}."],
+  ["Dwarven Ruins", "Land", "This land enters tapped.\n{T}: Add {R}.\n{T}, Sacrifice this land: Add {R}{R}.", "This land enters tapped.\n{T}: Add {R}."],
+  ["Ebon Stronghold", "Land", "This land enters tapped.\n{T}: Add {B}.\n{T}, Sacrifice this land: Add {B}{B}.", "This land enters tapped.\n{T}: Add {B}."],
+  ["Geothermal Crevice", "Land", "This land enters tapped.\n{T}: Add {R}.\n{T}, Sacrifice this land: Add {B}{G}.", "This land enters tapped.\n{T}: Add {R}."],
+  ["Havenwood Battleground", "Land", "This land enters tapped.\n{T}: Add {G}.\n{T}, Sacrifice this land: Add {G}{G}.", "This land enters tapped.\n{T}: Add {G}."],
+  ["Irrigation Ditch", "Land", "This land enters tapped.\n{T}: Add {W}.\n{T}, Sacrifice this land: Add {G}{U}.", "This land enters tapped.\n{T}: Add {W}."],
+  ["Ravaged Highlands", "Land", "This land enters tapped.\n{T}: Add {R}.\n{T}, Sacrifice this land: Add one mana of any color.", "This land enters tapped.\n{T}: Add {R}."],
+  ["Ruins of Trokair", "Land", "This land enters tapped.\n{T}: Add {W}.\n{T}, Sacrifice this land: Add {W}{W}.", "This land enters tapped.\n{T}: Add {W}."],
+  ["Seafloor Debris", "Land", "This land enters tapped.\n{T}: Add {U}.\n{T}, Sacrifice this land: Add one mana of any color.", "This land enters tapped.\n{T}: Add {U}."],
+  ["Sulfur Vent", "Land", "This land enters tapped.\n{T}: Add {B}.\n{T}, Sacrifice this land: Add {U}{R}.", "This land enters tapped.\n{T}: Add {B}."],
+  ["Svyelunite Temple", "Land", "This land enters tapped.\n{T}: Add {U}.\n{T}, Sacrifice this land: Add {U}{U}.", "This land enters tapped.\n{T}: Add {U}."],
+  ["Timberland Ruins", "Land", "This land enters tapped.\n{T}: Add {G}.\n{T}, Sacrifice this land: Add one mana of any color.", "This land enters tapped.\n{T}: Add {G}."],
+  ["Tinder Farm", "Land", "This land enters tapped.\n{T}: Add {G}.\n{T}, Sacrifice this land: Add {R}{W}.", "This land enters tapped.\n{T}: Add {G}."],
+];
+
+describe("landColors over every self-sacrificing land", () => {
+  it("has the 17 staging lands", () => expect(SELF_SACRIFICE).toHaveLength(17));
+  it.each(SELF_SACRIFICE)("%s counts only what it makes without sacrificing itself", (name, typeLine, text, without) => {
+    expect(sorted(landColors(L(name, typeLine, text)))).toEqual(sorted(landColors(L(name, typeLine, without))));
+  });
+});
+
 describe("fetchFinds", () => {
   it("reads the types a fetch finds, and a basic-land fetch as every type, basics only", () => {
     expect(fetchFinds(FOOTHILLS)).toEqual({ types: new Set(["mountain", "forest"]), basicOnly: false });

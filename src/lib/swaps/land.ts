@@ -44,9 +44,9 @@ const CONDITIONAL_GRANT = /\bcould produce\b|\bamong lands\b/;
  * A mana ability whose COST sacrifices the land itself makes its mana once, and then the land is
  * gone. Abandoned Outpost taps for {W}; its `{T}, Sacrifice this land: Add one mana of any color`
  * is a single red, not a red source, and counting it put the Outpost first on Plateau's sheet.
- * Measured on staging, 16 lands carry one: six for any color (Abandoned Outpost, Archaeological Dig,
- * Bog Wreckage, Ravaged Highlands, Seafloor Debris, Timberland Ruins) and ten for fixed pairs
- * (Ancient Spring's {W}{B}, Sulfur Vent's {U}{R}…). A cost that sacrifices ANOTHER permanent
+ * Measured on staging, 17 lands carry one: six for any color (Abandoned Outpost, Archaeological Dig,
+ * Bog Wreckage, Ravaged Highlands, Seafloor Debris, Timberland Ruins) and eleven for fixed mana
+ * (Ancient Spring's {W}{B}, Sulfur Vent's {U}{R}, Crystal Vein's {C}{C}…), all in `land.test.ts`. A cost that sacrifices ANOTHER permanent
  * (Lazotep Quarry's creature, Lake of the Dead's Swamp) is repeatable and still counts.
  */
 export function sacrificesItself(ability: string, cardName: string): boolean {
