@@ -350,6 +350,8 @@ Caption: r2.ts as drawn. The audit makes no caption correction for A3.
 
 ### 4. Fixture data (as drawn)
 
+> **Historical: r2 as drawn, not what ships.** The figure uses Ashnod's Altar with HD - Chainer (a combo with Nim Deathmantle, ramp 9 of 10) and HD - Korvold (Joins 11 other sacrifice cards, ramp 7 of 10), per `FITS` in `src/lib/about/fixtures.ts`. The reason is under Deviations below.
+
 - **Card:** Basalt Monolith.
   - Rarity C.
   - Plate sub: `colorless · legal in Commander`.
@@ -445,6 +447,8 @@ Also from the audit:
   - Show all is a 44px row.
 
 ### 4. Fixture data (as drawn)
+
+> **Historical: r2 as drawn, not what ships.** The figure's group holds six lands in the order `rankStandIns` gives them (Battlefield Forge, Sacred Foundry, Sunbaked Canyon, Clifftop Retreat, Wind-Scarred Crag, Needle Spires), shows five, and draws `Show all 6 lands`, per `STAND_INS` in `src/lib/about/fixtures.ts`.
 
 - **Provider:** deck `HD - Gishath`, `storedLimitCents null`.
 - **Limit:** `shoppingCount 6`, `overCount 1`. Drawn as "Marking cards over $10", a `default` pill, and "· 1 over".
