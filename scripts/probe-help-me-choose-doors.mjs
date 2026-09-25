@@ -10,9 +10,9 @@
 //      answer, every way back names the results, and Create writes the answers onto the deck
 //      (budget, bracket and the seeded intent). The deck is deleted in a `finally`.
 //
-// It writes: one deck per width under the account it signs in as, deleted in the `finally`, and
-// that account's `user_prefs` About row (the gate every signed-in probe clears). It refuses staging
-// and production.
+// It writes: one deck per width under the account it signs in as, and that account's `user_prefs`
+// About row (the gate every signed-in probe clears), both put back in the `finally`: the decks
+// deleted, and the About row restored to what it read first. It refuses staging and production.
 //
 //   PROBE_TARGET_URL=<scratch> E2E_AUDIT_USER_EMAIL=... PROBE_BASE=http://localhost:3230 \
 //     node scripts/probe-help-me-choose-doors.mjs
@@ -80,6 +80,9 @@ async function run() {
   const browser = await chromium.launch();
   const decks = [];
   let userId = null;
+  // The account's About row as it was before this run raised it, restored in the `finally`:
+  // undefined until read, null when there was no row.
+  let aboutBefore;
   try {
     for (const width of [1300, 390]) {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
@@ -87,6 +90,10 @@ async function run() {
       await signIn(page);
       userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
       if (!userId) throw new Error("no signed-in user id");
+      if (aboutBefore === undefined) {
+        const [prior] = await sql`select about_version_seen from user_prefs where user_id = ${userId}`;
+        aboutBefore = prior ? prior.about_version_seen : null;
+      }
       await sql`insert into user_prefs (user_id, about_version_seen) values (${userId}, ${ABOUT_VERSION})
         on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, ${ABOUT_VERSION})`;
       await clearAboutSheet(page, userId);
@@ -160,6 +167,10 @@ async function run() {
   } finally {
     await browser.close();
     for (const id of decks) await sql`delete from decks where id = ${id} and user_id = ${userId}`;
+    if (userId && aboutBefore !== undefined) {
+      if (aboutBefore === null) await sql`delete from user_prefs where user_id = ${userId}`;
+      else await sql`update user_prefs set about_version_seen = ${aboutBefore} where user_id = ${userId}`;
+    }
     if (decks.length) console.log(`deleted ${decks.length} deck(s) this run made`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
