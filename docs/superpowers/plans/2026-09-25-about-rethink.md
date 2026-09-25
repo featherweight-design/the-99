@@ -43,7 +43,9 @@ These are the failure modes most likely to bite a real reader. Each has a pinnin
 4. **A shared browser, two accounts.** The cookie is bound to the userId, so the second account still gets its sheet (Task 1.1).
 5. **A forged `x-about-sheet` header from the client.** The proxy strips it on every request it sees, so a reader cannot summon or suppress the sheet (Task 1.2).
 6. **A failed `seen` read.** No sheet and no redirect, and the app works (Task 1.2).
-7. **A search query with regex characters** (`+`, `(`, `?`). The match is a plain case-insensitive `includes`, so nothing throws (Task 4.2).
+7. **The root layout re-renders while the sheet is open.** `router.refresh()` (in the consider panel, the review page, discard, the decks view, the commit sheet and others) and every Server Action that revalidates re-render `Shell` on an RSC request, which carries no `x-about-sheet`. A sheet mounted conditionally on that header would vanish unread while its cookie already says "shown". So the sheet is **always mounted** and latches its first state (Task 2.2 and Task 2.3).
+8. **Show me, and the sheet on `/about`.** The sheet lives in the persistent `Shell`, so a soft navigation to `/about` would leave it drawn over the index. Show me closes it before navigating, and the sheet never draws on `/about` (N9) (Task 2.2).
+9. **A search query with regex characters** (`+`, `(`, `?`). The match is a plain case-insensitive `includes`, so nothing throws (Task 4.2).
 
 ## PR boundaries
 
@@ -197,7 +199,7 @@ git commit -m "About sheet: switch, new cookie and pure sheet decision"
 - Consumes everything from Task 1.1.
 - Produces the request header `x-about-sheet: <seen>` on `NextResponse.next({ request: { headers } })`, and the `about_sheet` cookie.
 
-- [ ] **Step 1: Write the failing tests** (in `src/proxy.test.ts`; the helpers `request`, `auth` and `aboutVersionSeen` already exist at `:10-44`)
+- [ ] **Step 1: Write the failing tests** (in `src/proxy.test.ts`; the helpers `request`, `auth` and `aboutVersionSeen` already exist at `:10-44`). Add `afterEach` to the file's `vitest` import: globals are not enabled.
 
 ```ts
 describe("with the sheet switch on", () => {
@@ -426,14 +428,15 @@ export const aboutSheetCopy = {
 
 **Interfaces:**
 - Consumes `SheetState` (Task 1.3) and `aboutSheetCopy` (Task 2.1).
-- Produces `AboutSheet({ state }: { state: Exclude<SheetState, { kind: "none" }> })` and the pure `sheetTitles(n: number): { shown: number; more: number }`.
+- Produces `AboutSheet({ state }: { state: SheetState })` and the pure `sheetTitles(n: number): { shown: number; more: number }`. **It takes `none` too, and is always mounted** (Review Focus 7): it latches the state it was FIRST rendered with (`useState(state)`), so a later RSC re-render of `Shell` that hands it `none` changes nothing. Only a document load mounts a fresh one, and only a document load carries the header.
 
 Behavior, from STATES-r6 §N and corrected by E8:
 - N1 lists up to four titles. N2: at five or more, it lists three and then `and N more`.
 - N4 and N5 place the card; the breakpoint is **`md`**, not 1000 (E8).
 - N6: Show me calls `router.push("/about")` with no hash.
 - N7: Later, or Escape while focus is inside, closes the card and writes nothing.
-- N8: it stays mounted through client navigation. It lives in the root layout's `Shell`, which does not unmount on a transition.
+- N8: it stays through client navigation and through re-renders of the root layout. It is mounted unconditionally at a fixed position in `Shell`'s tree, so React keeps its state, and it ignores every `state` after the first.
+- N9: it draws nothing while `usePathname()` is `/about`, and Show me closes it before it navigates (Review Focus 8).
 - N10: it is a `role="region"` with the label from copy, a polite live region announcing the heading once, placed last in DOM order, and it does not move focus.
 - N11: `anim-sheet-in`, with no animation under reduced motion (`globals.css:747`).
 - N5: while it is open on a phone, the page reserves its height at the foot, by setting `--about-sheet-h` on `document.documentElement` and reading it in `main`'s bottom padding. **That touches `shell.tsx`; see Task 2.3.**
@@ -444,7 +447,8 @@ Behavior, from STATES-r6 §N and corrected by E8:
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+let pathname = "/decks";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => pathname }));
 import { AboutSheet, sheetTitles } from "./about-sheet";
 
 const entries = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `e${i}`, title: `Entry ${i}` }));
@@ -463,10 +467,26 @@ describe("AboutSheet", () => {
     expect(screen.getByText("2 new in About")).toBeTruthy();
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
-  it("Show me goes to /about with no hash (N6)", () => {
+  it("Show me closes the sheet and goes to /about with no hash (N6)", () => {
     render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
     fireEvent.click(screen.getByRole("button", { name: "Show me" }));
     expect(push).toHaveBeenCalledWith("/about");
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+  it("survives a re-render that hands it none (Review Focus 7)", () => {
+    const { rerender } = render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
+    rerender(<AboutSheet state={{ kind: "none" }} />);
+    expect(screen.getByRole("region", { name: "New in About" })).toBeTruthy();
+  });
+  it("draws nothing when first mounted with none", () => {
+    render(<AboutSheet state={{ kind: "none" }} />);
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+  it("draws nothing on /about (N9)", () => {
+    pathname = "/about";
+    render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
+    expect(screen.queryByRole("region")).toBeNull();
+    pathname = "/decks";
   });
   it("Later closes it and calls nothing on the server (N7)", () => {
     render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
@@ -503,7 +523,7 @@ describe("AboutSheet", () => {
 ```tsx
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { SheetState } from "../../lib/about/sheet-state";
 import { aboutSheetCopy as copy } from "../../lib/copy/about";
 
@@ -511,14 +531,19 @@ export function sheetTitles(n: number): { shown: number; more: number } {
   return n <= 4 ? { shown: n, more: 0 } : { shown: 3, more: n - 3 };
 }
 
-export function AboutSheet({ state }: { state: Exclude<SheetState, { kind: "none" }> }) {
-  const [open, setOpen] = useState(true);
+export function AboutSheet({ state }: { state: SheetState }) {
+  // Latched: only a document load mounts this, and only a document load carries
+  // the proxy's header. A later re-render of the root layout hands it `none`.
+  const [shown] = useState(state);
+  const [open, setOpen] = useState(shown.kind !== "none");
   const router = useRouter();
+  const onAbout = usePathname() === "/about";
   // N5: reserve the card's height at the page foot on a phone while open.
   // A ResizeObserver on the card sets --about-sheet-h on <html>; cleared on close.
   useEffect(() => { /* observe card height → document.documentElement.style.setProperty(...) */ }, [open]);
-  if (!open) return null;
-  const firstRun = state.kind === "firstRun";
+  if (!open || onAbout || shown.kind === "none") return null;
+  const firstRun = shown.kind === "firstRun";
+  // Show me: setOpen(false), then router.push("/about").
   // ...region, heading, list (sheetTitles), buttons, foot, per the measurements above
 }
 ```
@@ -538,7 +563,7 @@ export function AboutSheet({ state }: { state: Exclude<SheetState, { kind: "none
   const sheet = aboutSheetEnabled() ? readSheetState(await headers()) : { kind: "none" as const };
 ```
 
-  Add `{sheet.kind !== "none" && <AboutSheet state={sheet} />}` as the root `div`'s last child, after `<TabBar />` (N10: last in tab order). Change `main`'s class to `pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0`. The fallback keeps `check:tokens` quiet, since a read with a fallback is a parameter (AGENTS.md).
+  Add `{aboutSheetEnabled() && <AboutSheet state={sheet} />}` as the root `div`'s last child, **unconditionally on the state** (Review Focus 7: the latch only works if the element stays mounted across RSC re-renders), after `<TabBar />` (N10: last in tab order). Change `main`'s class to `pb-[calc(var(--tabbar-h)+var(--about-sheet-h,0px))] md:pb-0`. The fallback keeps `check:tokens` quiet, since a read with a fallback is a parameter (AGENTS.md).
 - [ ] **Step 2: Verify** with `pnpm typecheck && pnpm lint && pnpm test && pnpm check:tokens`, then the stub build.
 - [ ] **Step 3: Walk it in a browser** at 390, 800 and 1300 on local-dev, with `ABOUT_SHEET_ENABLED=true` and the probe account set behind. The sheet draws on the first document load, survives a client navigation, and is gone after a reload. At 800 it sits beside the nav rail, not over it (E8).
 - [ ] **Step 4:** Commit, then open PR 2 (pre-open pass, pr-review, the design-review property table for §N, and a contact sheet at 390 and 1300).
@@ -555,7 +580,7 @@ export function AboutSheet({ state }: { state: Exclude<SheetState, { kind: "none
 - Test: `src/components/about/about-page.test.tsx` (append; the file is 1,640 lines, so read only the helpers at its top)
 
 **Interfaces:**
-- `AboutPage` props become `{ seen: number; next?: string; sheetMode: boolean }`. With `sheetMode` false, the render is today's exactly.
+- `AboutPage` props become `{ seen: number; next?: string; sheetMode?: boolean }`, **optional and defaulting to false**, so the 49 existing `<AboutPage …>` call sites in the tests compile unchanged. With `sheetMode` false, the render is today's exactly.
 
 With `sheetMode` true:
 - **O1: the index** renders after the lede, and on a phone before the contents list. It is a `nav` labelled by its `h2` (`aboutCopy.newSinceEyebrow(n)`, moved rather than rewritten). It has one row per new entry, in page order. Each row is one link to `#${entry.id}`, holding the title (14.5/500) and the route (mono 11.5 accent, as plain text, never a nested link).
@@ -592,7 +617,7 @@ With `sheetMode` true:
   - `RecordVisit` calls the action once after mount when `behind`, never when not behind, and not twice under StrictMode's double effect. Guard with a ref.
   - **Review Focus 3:** rendering `AboutPage` to a string (`renderToString`) calls the action zero times. A render, which is what a prefetch produces, never writes.
 - [ ] **Step 2:** Run. Expected: FAIL.
-- [ ] **Step 3:** Implement. Mount `<RecordVisit behind={seen > 0 && newCount > 0} />` in `AboutPage` when `sheetMode`. A first-run reader at `seen` 0 also records, so their sheet stops. Use `behind = seen < ABOUT_VERSION`, which covers both.
+- [ ] **Step 3:** Implement. Mount `<RecordVisit behind={seen < ABOUT_VERSION} />` in `AboutPage` when `sheetMode`. That covers a first-run reader at `seen` 0 too, so their sheet stops once they have opened the page.
 - [ ] **Step 4:** Run. Expected: PASS.
 - [ ] **Step 5:** Commit.
 
@@ -681,7 +706,7 @@ Behavior, with `sheetMode` true (STATES-r6 §Q, §R):
 
 - [ ] **Step 1: Write the failing test.** Given a fake `context.addCookies`, `clearAbout` adds a cookie named `about_sheet` with the value `${userId}.${version}`, read from `about.version.json`.
 - [ ] **Step 2:** Run `pnpm vitest run scripts/lib/about-clear.test.mts`. Expected: FAIL.
-- [ ] **Step 3:** Implement, then swap all 12 call sites. Grep afterwards: `grep -ln "about_version_seen" scripts/probe-*.mjs` must list only files that import `clearAbout`.
+- [ ] **Step 3:** Implement, then swap all 12 call sites. Grep afterwards: `grep -ln "about_version_seen" scripts/probe-*.mjs` must list only files that import `clearAbout`, plus `probe-about.mjs` (Task 5.2), which sets the account behind on purpose.
 - [ ] **Step 4:** Run the whole suite, including `scripts/lib/surface.test.mts`, which sweeps probe string literals.
 - [ ] **Step 5:** Commit.
 
@@ -693,9 +718,10 @@ Behavior, with `sheetMode` true (STATES-r6 §Q, §R):
 
 It walks 390×844, 800×900 and 1300×820 on local-dev with `ABOUT_SHEET_ENABLED=true`. It captures the account's `about_version_seen` first and restores it in a `finally`, holding it on disk as `scripts/lib/profile-hold.mjs` does, so a crash cannot leave the account behind. It **presses** every control; it never counts one. Each check:
 1. **The sheet draws.** Set `seen = ABOUT_VERSION - 1`, clear the `about_sheet` cookie, and load `/decks`. The region `New in About` is visible, and the card's rect does not overlap the nav rail at 800 (E8) or the tab bar at 390 (N5).
+1b. **A layout re-render keeps it.** With the card open, call `window.next.router.refresh()` from the page (the app router exposes it; this writes nothing, where filing a deck would). That re-renders `Shell` on an RSC request that carries no header. The card is still drawn (Review Focus 7).
 2. **Later.** Press it, and the card is gone. The database still reads `seen = version - 1`. A reload shows no card, because the cookie is set.
 3. **Show me.** Reset. Pressing it lands on `/about` (no hash) with the index present. After the effect, the database reads `seen = version`. **A reload of `/about` shows no index** (ruling 3).
-4. **A prefetch does not write.** Reset. Hover the account menu's About link, wait 1s, and read the database: still behind (E2).
+4. **Nothing writes before the page is open.** Reset. Load `/decks`, open the account menu and leave it open 2s without pressing About, then read the database: still behind. A dev server does not prefetch `<Link>`, and a prefetch never runs `RecordVisit`, so a prefetch check here would pass on any build. The render-never-writes rule (E2) is pinned in Task 3.2's `renderToString` test instead, which is where the mutation below fails.
 5. **The index row.** Reset, then open `/about` and press an index row. The hash changes, the entry's title line carries the `--elevated` fill, and focus sits on its `h3`. Back returns to the index.
 6. **Search.** Type `combo`. The contents rows filter and the count reads `n of 39`. **Every `#chapter-NN` section is still visible** (ruling 4). Press a match: it jumps and the query stays. Type `mulligan`: the empty state shows. Escape clears.
 7. **The legacy cookie.** Set `about_v=<userId>.9` and `seen = 8`, clear `about_sheet`, and load: the sheet draws (E1).
@@ -704,7 +730,8 @@ A run where any subject is missing fails. For example, if there are no new entri
 
 **Mutations to run before believing it, each of which must fail:**
 - read `about_v` in `sheetCookieIsCurrent`;
-- call `recordAboutVisit` during render instead of the effect;
+- call `recordAboutVisit` during render instead of the effect (fails Task 3.2's `renderToString` test; probe check 3 still passes, which is expected);
+- mount the sheet only when `state` is not `none` (fails the re-render test in Task 2.2; in the probe, press a control that calls `router.refresh()` with the sheet open, and assert it is still drawn: check 1b);
 - hide `#chapter-NN` sections on search;
 - use the 1000px breakpoint for the sheet;
 - drop the header strip in the proxy.
