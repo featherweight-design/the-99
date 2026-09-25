@@ -1,5 +1,7 @@
 import "./lib/env.mjs";
-import { alreadyComputedSince, buildCommanderIndex } from "../src/lib/edhrec/seed-index";
+import {
+  alreadyComputedPairsSince, alreadyComputedSince, buildCommanderIndex, loadPairs, pairRunProblem,
+} from "../src/lib/edhrec/seed-index";
 import { stampCatalogRefresh } from "../src/lib/cache/stamp-catalog";
 
 // RESUME_SINCE is an ISO timestamp set by a re-dispatched workflow run so the
@@ -18,7 +20,10 @@ if (process.env.RESUME_SINCE) {
 }
 
 buildCommanderIndex({
+  // The one caller that sweeps for real: every legal pair plus every built one.
+  loadPairs: () => loadPairs(),
   loadAlreadyComputed: resumeSince ? () => alreadyComputedSince(resumeSince) : undefined,
+  loadAlreadyComputedPairs: resumeSince ? () => alreadyComputedPairsSince(resumeSince) : undefined,
 })
   .then(async (r) => {
     console.log(
@@ -31,7 +36,8 @@ buildCommanderIndex({
     // indistinguishable from one that stored them all.
     console.log(
       `Pairs: ${r.pairs} stored (${r.pairCardRows} support cards); ` +
-      `${r.pairsDegraded} degraded, ${r.pairsFailed} failed, ` +
+      `${r.pairsDegraded} degraded, ${r.pairsFailed} failed, ${r.pairsSkipped} skipped, ` +
+      `${r.legalPairs ?? "?"} legal, ` +
       `${r.pairsUnresolved} unresolved names.`,
     );
     // A run that wrote nothing while degrading everything is a broken run
@@ -70,15 +76,13 @@ buildCommanderIndex({
     // stamp is: this workflow never runs `db:migrate`, so a database without the table costs
     // one refresh's staleness and a warning rather than a red job after a good ingest.
     await stampCatalogRefresh();
-    // A pair pass that failed EVERY pair it attempted is a broken run wearing a green tick,
-    // the same shape as the all-degraded commander guard above. Its own counters, so a
-    // commander run is never failed by a pair and vice versa.
-    const pairsAttempted = r.pairs + r.pairsDegraded + r.pairsFailed;
-    if (pairsAttempted > 0 && r.pairs === 0) {
-      console.error(
-        `commander-index: all ${pairsAttempted} pair(s) degraded or failed — no pair page was ` +
-        `stored. The commander index above is unaffected and stands.`,
-      );
+    // The pair pass fails the job three ways, all in `pairRunProblem` and none of them read
+    // off the commander counters, so a commander run is never failed by a pair and the
+    // reverse: a refused legal sweep, a pass that stored no pair it attempted, and more than
+    // 5% of attempted pairs degraded or failed.
+    const pairProblem = pairRunProblem(r);
+    if (pairProblem) {
+      console.error(`commander-index: ${pairProblem}`);
       process.exit(1);
     }
     process.exit(0);
