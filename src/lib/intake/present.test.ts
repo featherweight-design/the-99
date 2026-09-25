@@ -56,6 +56,15 @@ describe("narrowOptions", () => {
     cardOverBracket: "gameChanger" as const,
   };
 
+  it("drops a deeper read and its marks from every option, since a new set of answers is a new ask", () => {
+    const READ = "0000aaaa-0000-4000-8000-0000000000aa";
+    // The look added the budget; dropping it must not hash back to the look's own ask.
+    const after = p({ ...ask, budgetDollars: 150, readId: READ, deeper: ["b"] });
+    for (const o of narrowOptions({ ...narrow, without: [...narrow.without, { answer: { kind: "budget" as const }, count: 30 }] }, after, labels)) {
+      expect([o.params.readId, o.params.deeper]).toEqual([null, []]);
+    }
+  });
+
   it("offers at most three, most restoring first, and none that brings nothing back", () => {
     expect(narrowOptions(narrow, ask, labels).map((o) => o.label)).toEqual([
       "Drop Regisaur Alpha", "Any Red · Green, not exactly", "Drop Dinosaurs",

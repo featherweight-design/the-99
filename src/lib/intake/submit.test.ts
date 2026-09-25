@@ -17,6 +17,12 @@ const landed = (url: string) => {
 };
 
 describe("the submit redirect", () => {
+  it("is a new ask whatever address it came from: an earlier read and its marks never ride along", () => {
+    const READ = "0000aaaa-0000-4000-8000-0000000000aa";
+    const p = landed(target({ words: "dinosaurs", readId: READ, deeper: ["t:dinosaurs"] }));
+    expect([p.readId, p.deeper]).toEqual([null, []]);
+  });
+
   it("lands on the results with the words resolved into answers and the words kept", () => {
     const p = landed(target({ words: "dinosaurs with Doubling Season under $150 bracket 2", colors: ["r", "g"] }));
     expect(p).toMatchObject({

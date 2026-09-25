@@ -91,7 +91,8 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
       label: copy.narrow.widenColors(colorsPhrase(p.colors)),
       reason: null,
       count: copy.narrow.count(narrow.widen.count),
-      params: { ...p, match: "contains" },
+      // Widening is a change of answers too, so it carries no read either (`without`).
+      params: { ...p, match: "contains", readId: null, deeper: [] },
       n: narrow.widen.count,
     });
   }
@@ -112,14 +113,20 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
   }
 }
 
-/** The answers with one removed: a drop on the results, and what a chip's own drop does. */
+/**
+ * The answers with one removed: a drop on the results, and what a chip's own drop does. A new set of
+ * answers is a new ask, so it carries neither a deeper read (`r`) nor its marks (`d`): a read is
+ * bound to the ask it answered, and removing the very answer it added would otherwise hash back
+ * to that ask and draw its look as done over results it never produced.
+ */
 export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
+  const q = { ...p, readId: null, deeper: [] };
   switch (a.kind) {
-    case "colors": return { ...p, colors: [], match: "contains" };
-    case "theme": return { ...p, themes: p.themes.filter((s) => s !== a.slug) };
-    case "card": return { ...p, card: null };
-    case "budget": return { ...p, budgetDollars: null };
-    case "bracket": return { ...p, bracket: null };
+    case "colors": return { ...q, colors: [], match: "contains" };
+    case "theme": return { ...q, themes: p.themes.filter((s) => s !== a.slug) };
+    case "card": return { ...q, card: null };
+    case "budget": return { ...q, budgetDollars: null };
+    case "bracket": return { ...q, bracket: null };
   }
 }
 

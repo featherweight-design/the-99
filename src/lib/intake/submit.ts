@@ -44,6 +44,9 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,
     notUsed: [...match.phrases, ...displaced, ...resolved.notUsed],
+    // A submit is a new ask: whatever address it came from, it carries no earlier read or marks.
+    readId: null,
+    deeper: [],
     results: true,
   })}`;
 }
