@@ -132,6 +132,19 @@ describe("AboutSheet", () => {
     await waitFor(() => expect(live?.textContent).toBe("3 new in About"));
   });
 
+  it("still draws, and still reserves, where ResizeObserver does not exist", () => {
+    const saved = globalThis.ResizeObserver;
+    // @ts-expect-error: removing the API is the case under test
+    delete globalThis.ResizeObserver;
+    try {
+      render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
+      expect(screen.getByRole("region", { name: "New in About" })).toBeTruthy();
+      expect(document.documentElement.style.getPropertyValue("--about-sheet-h")).toMatch(/px$/);
+    } finally {
+      globalThis.ResizeObserver = saved;
+    }
+  });
+
   it("reserves its height at the page foot while open, and releases it on close (N5)", () => {
     render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
     expect(document.documentElement.style.getPropertyValue("--about-sheet-h")).toMatch(/px$/);

@@ -66,10 +66,14 @@ export function AboutSheet({ state }: { state: SheetState }) {
     if (!drawn || !el) return;
     const write = () => root.style.setProperty(RESERVE, `${el.offsetHeight + 10}px`);
     write();
-    const observer = new ResizeObserver(write);
-    observer.observe(el);
+    // Guarded, as `card-modal.tsx` guards it: a runtime without the API still
+    // draws the card, and re-measures on a window resize instead.
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(write);
+    observer?.observe(el);
+    if (!observer) window.addEventListener("resize", write);
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
+      window.removeEventListener("resize", write);
       root.style.removeProperty(RESERVE);
     };
   }, [drawn]);
