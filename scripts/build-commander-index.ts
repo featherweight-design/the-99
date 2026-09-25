@@ -1,6 +1,6 @@
 import "./lib/env.mjs";
 import {
-  alreadyComputedPairsSince, alreadyComputedSince, buildCommanderIndex, pairRunProblem,
+  alreadyComputedPairsSince, alreadyComputedSince, buildCommanderIndex, loadPairs, pairRunProblem,
 } from "../src/lib/edhrec/seed-index";
 import { stampCatalogRefresh } from "../src/lib/cache/stamp-catalog";
 
@@ -20,6 +20,8 @@ if (process.env.RESUME_SINCE) {
 }
 
 buildCommanderIndex({
+  // The one caller that sweeps for real: every legal pair plus every built one.
+  loadPairs: () => loadPairs(),
   loadAlreadyComputed: resumeSince ? () => alreadyComputedSince(resumeSince) : undefined,
   loadAlreadyComputedPairs: resumeSince ? () => alreadyComputedPairsSince(resumeSince) : undefined,
 })

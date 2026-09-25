@@ -97,6 +97,9 @@ async function run(): Promise<void> {
   const resumedKey = pairKey(loaded.pairs[0]);
   let fetched = 0;
   const base = {
+    // The REAL loader, named: it is the thing under test. The fetch and the write below are
+    // what keep this run off EDHREC and out of the database.
+    loadPairs: () => loadPairs(),
     loadCommanders: async () => [],
     clearScores: async () => {},
     deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0 }),

@@ -42,7 +42,13 @@ export type BuildIndexOptions = {
    * one of those tests hit a real Postgres. `loadPairs` defaulting to a real query is what
    * broke them the first time.
    */
-  loadPairs?: () => Promise<IndexPair[] | LoadedPairs>;
+  /**
+   * REQUIRED, with no default, and deliberately. The real loader sweeps every legal partner
+   * pair — about 1,700 — so a caller that forgot to inject it sent each one to live EDHREC and
+   * wrote it: `probe:score-lock` did exactly that the day the sweep widened. Typecheck now
+   * makes every caller choose, and the job passes `loadPairs` itself.
+   */
+  loadPairs: () => Promise<IndexPair[] | LoadedPairs>;
   /** Canonical `a|b` keys of pairs already recomputed since a resume point — the pair twin of
       `loadAlreadyComputed`. Without it a resumed run refetches every legal pair. */
   loadAlreadyComputedPairs?: () => Promise<Set<string>>;
@@ -335,7 +341,7 @@ async function clearPersistedScores(): Promise<void> {
  * never complete, and each commander's write is independent of the others.
  */
 export async function buildCommanderIndex(
-  opts: BuildIndexOptions = {},
+  opts: BuildIndexOptions,
 ): Promise<BuildIndexResult> {
   const load = opts.loadCommanders ?? loadCommandersFromDb;
   // loadNameIndex default returns a Drizzle query builder, which is PromiseLike
@@ -347,7 +353,7 @@ export async function buildCommanderIndex(
   const fetchOne = opts.fetch ?? fetchEdhrecUncached;
   const write = opts.write ?? writeToDb;
   const clearScores = opts.clearScores ?? clearPersistedScores;
-  const loadPairsFn = opts.loadPairs ?? (() => loadPairs());
+  const loadPairsFn = opts.loadPairs;
   const fetchPairFn = opts.fetchPair ?? fetchPairPage;
   const writePairFn = opts.writePair ?? writePair;
   const sleep = opts.sleep ?? defaultSleep;
