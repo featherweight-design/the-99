@@ -58,7 +58,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
+import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks, reviveDormantLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
   PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
@@ -484,8 +484,14 @@ async function deckValidationContext(
   };
 }
 
-export async function addCardToDeck(deckId: string, oracleId: string): Promise<DeckMutationResult> {
+export async function addCardToDeck(
+  deckId: string,
+  oracleId: string,
+  opts: { relock?: boolean } = {},
+): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  // The literal `true` only: this is a public endpoint, and `{ relock: "false" }` must not revive.
+  const relock = typeof opts === "object" && opts !== null && opts.relock === true && neverCutEnabled();
   const deck = await requireDeck(deckId, userId);
 
   // Fetch the deck's colour identity in the same round-trip as the card lookup.
@@ -521,6 +527,13 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
       { ...identity, built },
     );
     if (error) return error;
+
+    // L1 (D2): the review screen's Put back returns a removed card LOCKED (the deck page's two Undos
+    // will pass `relock` with Locked 4a; until then they return it unlocked). The
+    // dormant row is woken BEFORE the insert, whose own trigger would otherwise delete it; a card
+    // that was never locked has no dormant row, so this wakes nothing and the card comes back as it
+    // left. Every other add passes nothing and returns the card unlocked.
+    if (relock) await reviveDormantLocks(tx, deckId, [oracleId]);
 
     // Commander is singleton apart from the multi-copy exception (see
     // isBasicLand), so a repeat add increments quantity there and stays a

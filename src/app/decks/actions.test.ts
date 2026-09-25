@@ -897,6 +897,51 @@ describe("addCardToDeck — the touch stamp follows the insert", () => {
   });
 });
 
+// L1 (D2): Put back passes `relock`, which wakes the card's dormant lock inside the add's own
+// transaction. The ORDER against the insert, and what the trigger does, are facts about Postgres,
+// and `probe:review-locks` reads them back; this pins who may wake one.
+describe("addCardToDeck — relock wakes a dormant lock, and only on request", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CARD = "11111111-1111-1111-1111-111111111111";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+  const was = process.env.NEVER_CUT_ENABLED;
+  const revived = () => stub.state.executeTexts.join(" ").includes("update deck_locks");
+
+  beforeEach(() => {
+    stub.state.decks.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+    stub.state.cards.push(
+      { oracleId: CARD, commanderLegal: true, colorIdentity: [], typeLine: "Artifact" },
+      { oracleId: CMDR, commanderLegal: true, colorIdentity: ["G"], typeLine: "Legendary Creature" },
+    );
+    process.env.NEVER_CUT_ENABLED = "true";
+  });
+  afterEach(() => {
+    if (was === undefined) delete process.env.NEVER_CUT_ENABLED;
+    else process.env.NEVER_CUT_ENABLED = was;
+  });
+
+  it("wakes it when asked, with the switch on", async () => {
+    const { addCardToDeck } = await import("./actions");
+    expect(await addCardToDeck(DECK, CARD, { relock: true })).toEqual({ ok: true });
+    expect(revived()).toBe(true);
+  });
+
+  it("wakes nothing for a plain add: every other return comes back unlocked", async () => {
+    const { addCardToDeck } = await import("./actions");
+    await addCardToDeck(DECK, CARD);
+    expect(revived()).toBe(false);
+  });
+
+  it("wakes nothing with the switch off, or for anything but the literal true", async () => {
+    const { addCardToDeck } = await import("./actions");
+    await addCardToDeck(DECK, CARD, { relock: "true" } as never);
+    expect(revived()).toBe(false);
+    delete process.env.NEVER_CUT_ENABLED;
+    await addCardToDeck(DECK, CARD, { relock: true });
+    expect(revived()).toBe(false);
+  });
+});
+
 // The removal's stamp. The add's two cases are above; this is the other half of
 // the pair a player reaches by hand, and the one whose guard is a read of the
 // row rather than a conflict clause.

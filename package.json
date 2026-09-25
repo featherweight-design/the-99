@@ -65,6 +65,7 @@
     "probe:touched": "tsx scripts/probe-touched.ts",
     "probe:pending": "node scripts/probe-pending-banner.mjs",
     "probe:review": "node scripts/probe-review-changes.mjs",
+    "probe:review-locks": "node scripts/probe-review-locks.mjs",
     "probe:versions": "node scripts/probe-version-history.mjs",
     "probe:games-empty": "node scripts/probe-games-empty.mjs",
     "probe:home": "node scripts/probe-refresh-home.mjs",

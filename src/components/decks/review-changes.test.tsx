@@ -4,6 +4,7 @@
 // write is the pull, and `pull-control.test.tsx` owns what that control does —
 // asserted here is only which rows are given one.
 
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -28,7 +29,7 @@ const refresh = vi.fn();
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
 
-const addCardToDeck = vi.fn<(deckId: string, oracleId: string) => Promise<{ ok: boolean; message?: string }>>(
+const addCardToDeck = vi.fn<(deckId: string, oracleId: string, opts?: { relock?: boolean }) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
 );
 // The other two writes to the same draft, held rather than stubbed: the latch
@@ -41,7 +42,7 @@ const discardDeckDraft = vi.fn<(deckId: string, versionId: string) => Promise<un
   async () => ({ ok: true }),
 );
 vi.mock("../../app/decks/actions", () => ({
-  addCardToDeck: (deckId: string, oracleId: string) => addCardToDeck(deckId, oracleId),
+  addCardToDeck: (deckId: string, oracleId: string, opts?: { relock?: boolean }) => addCardToDeck(deckId, oracleId, opts),
   commitDeckVersion: (deckId: string, note: string) => commitDeckVersion(deckId, note),
   discardDeckDraft: (deckId: string, versionId: string) => discardDeckDraft(deckId, versionId),
   pullCardFromDeck: vi.fn(async () => ({ ok: true, buy: 0, total: null })),
@@ -350,6 +351,24 @@ describe("ReviewChanges", () => {
       deckVersioningCopy.review.commanderGuardA11y("Kykar", "Sol Ring"),
     );
     expect(screen.queryByText(deckVersioningCopy.review.chipPullable)).toBeNull();
+  });
+
+  // L2: a copy locked in the holding deck draws the locked guard, and the row's description says
+  // why, as the commander guard's does.
+  it("draws the locked guard on a copy locked in its deck, and says why from the row", () => {
+    render(
+      <ReviewChanges mix={TEST_MIX}
+        deckId="d"
+        deckName="Korvold"
+        rows={{ in: [row({ bucket: "claimed", availability: claimed({ locked: true }) })], out: [] }}
+        {...SHAPE} state={STATE} cardCount={CARD_COUNT}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: PULL_NAME })).toBeNull();
+    expect(screen.getByText(lockedCardsCopy.pull.tag)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toHaveAccessibleDescription(lockedCardsCopy.pull.a11y("Kykar", "Sol Ring"));
   });
 
   // Every other figure on the page stands down when the claim read failed — the
@@ -1169,7 +1188,8 @@ describe("ReviewChanges", () => {
         fireEvent.click(putBack("Chrome Mox"));
       });
       expect(addCardToDeck).toHaveBeenCalledTimes(1);
-      expect(addCardToDeck).toHaveBeenCalledWith("d", "o2");
+      // `relock` (L1): a card that left locked comes back locked.
+      expect(addCardToDeck).toHaveBeenCalledWith("d", "o2", { relock: true });
       await held.release();
     });
 

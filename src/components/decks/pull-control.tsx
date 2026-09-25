@@ -17,6 +17,7 @@ import { pullCardFromDeck, type PullResult } from "../../app/decks/actions";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { cardDetailCopy } from "../cards/card-detail-provider";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
@@ -101,6 +102,20 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
           style={{ color: "var(--fg-muted)" }}
         >
           {copy.commanderGuardTag}
+        </span>
+      </span>
+    );
+  }
+
+  // The player locked the card in the source deck (L2). The server refuses that pull too
+  // (`PULL_REFUSED_LOCKED`), so no control is drawn: the tag sits beside the holding deck's name,
+  // which the row already prints, and the sentence is the row's description, as for the two
+  // guards either side of it. Ahead of pending because a commit would not free the copy.
+  if (claim.locked) {
+    return (
+      <span className="inline-flex items-center flex-none">
+        <span aria-hidden="true" className={GUARD_TAG} style={{ color: "var(--fg-muted)" }}>
+          {lockedCardsCopy.pull.tag}
         </span>
       </span>
     );
