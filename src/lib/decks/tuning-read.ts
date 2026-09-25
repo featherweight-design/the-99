@@ -207,7 +207,7 @@ export async function readTuningState(
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
     db.select({ count: sql<number>`count(*)::int` }).from(deckGames)
       .where(and(eq(deckGames.deckId, deckId), eq(deckGames.userId, userId))),
-    readAllowance(userId, now),
+    readAllowance(userId, now, "tuning"),
   ]);
 
   const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;

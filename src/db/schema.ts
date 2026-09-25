@@ -329,6 +329,18 @@ export const decks = pgTable("decks", {
    * what the field accepts.
    */
   shoppingLimitCents: integer("shopping_limit_cents"),
+  /**
+   * What the player asked for in Help me choose, when the deck was started from it (F1): the budget
+   * cap in whole dollars as cents, the bracket, and the card to build around. Stored as data, so a
+   * fill that failed at creation has them when its retry (`fillDeck`) runs. All null for a deck
+   * started any other way.
+   */
+  answerBudgetCents: integer("answer_budget_cents"),
+  answerBracket: integer("answer_bracket"),
+  answerCardOracleId: uuid("answer_card_oracle_id").references(() => cards.oracleId),
+  /** True while the answers' intent sentence is owed: a deck whose fill failed at creation seeds it
+   *  when its retry succeeds, and clears this then. */
+  answerIntentPending: boolean("answer_intent_pending").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
@@ -363,6 +375,8 @@ export const decks = pgTable("decks", {
     ),
     // Code points, as Postgres's char_length counts them — the app's cap counts the same way.
     check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 120`),
+    check("decks_answer_budget_check", sql`${t.answerBudgetCents} is null or (${t.answerBudgetCents} >= 100 and ${t.answerBudgetCents} % 100 = 0)`),
+    check("decks_answer_bracket_range", sql`${t.answerBracket} is null or ${t.answerBracket} between 1 and 5`),
     check(
       "decks_shopping_limit_check",
       sql`${t.shoppingLimitCents} is null or (${t.shoppingLimitCents} >= 100 and ${t.shoppingLimitCents} % 100 = 0)`,
@@ -1608,10 +1622,39 @@ export const modelCalls = pgTable("model_calls", {
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
+]);
+
+/**
+ * One Look deeper read in Help me choose (sub-project 8). It happens before any deck exists, so it
+ * cannot hang off a deck's row the way tuning's run and the overview do, and it needs a row of its
+ * own because a Stop must refund (F4): written `pending` with its allowance unit BEFORE the model is
+ * called, and settled with that unit in one transaction. A Stop cancels it and refunds, and a late
+ * answer finds it no longer pending and writes nothing. `words_hash` is the words it was asked to
+ * read, so a read is offered once per set of words. `chips` holds only what passed validation.
+ */
+export const intakeReads = pgTable("intake_reads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  wordsHash: text("words_hash").notNull(),
+  model: text("model").notNull(),
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  status: text("status").notNull().default("pending"),
+  errorClass: text("error_class"),
+  chips: jsonb("chips"),
+}, (t) => [
+  check("intake_reads_status_check", sql`${t.status} in ('pending', 'ok', 'failed', 'cancelled')`),
+  check(
+    "intake_reads_error_class_check",
+    sql`${t.errorClass} is null or ${t.errorClass} in ('upstream_busy', 'timeout', 'malformed', 'nothing_valid', 'interrupted')`,
+  ),
+  // One read in flight per player: a second press while one is pending is refused, not queued.
+  uniqueIndex("intake_reads_one_pending_idx").on(t.userId).where(sql`${t.status} = 'pending'`),
+  index("intake_reads_user_created_idx").on(t.userId, t.createdAt),
 ]);
 
 /**

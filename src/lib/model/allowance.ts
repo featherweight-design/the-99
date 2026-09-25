@@ -101,8 +101,16 @@ async function monthSpend(q: Tx | typeof db, userId: string, now: Date): Promise
   };
 }
 
-/** The cheapest call any feature can make: what "one more call would not fit" is measured against. */
-function smallestCallMicro(): number {
+/**
+ * What "one more call would not fit" is measured against: the named feature's own worst-case call,
+ * or with none named, the cheapest call any feature can make.
+ *
+ * A panel names its feature. Measured against the cheapest instead, a cheap feature (Help me
+ * choose's read) would leave a panel whose own call is larger saying it is available while its
+ * reservation is refused (Help me choose plan, 2026-09-25).
+ */
+export function callMicroFor(feature?: ModelFeature): number {
+  if (feature) return featureWorstCaseMicroUsd(feature);
   return Math.min(...(Object.keys(FEATURE_CALLS) as ModelFeature[]).map((f) => featureWorstCaseMicroUsd(f)));
 }
 
@@ -122,16 +130,17 @@ async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise
 
 /**
  * The player's allowance, with the spend cap's two states when they apply. Both are measured
- * against the SMALLEST call any feature can make, so a panel says "paused" only when no call at
- * all would be let through.
+ * against `feature`'s own call when a panel names it, so the panel says "paused" exactly when its
+ * own press would be refused. With none named, against the smallest call any feature can make: no
+ * call at all would be let through.
  */
-export async function readAllowance(userId: string, now: Date = new Date()): Promise<Allowance> {
+export async function readAllowance(userId: string, now: Date = new Date(), feature?: ModelFeature): Promise<Allowance> {
   const [rows, spend] = await Promise.all([ledgerRows(db, userId, now), monthSpend(db, userId, now)]);
   const allowance = allowanceFrom(rows, now, dailyLimitFor(userId));
   const refusal = spendRefusal({
     appMonthMicro: spend.app,
     ownerMonthMicro: isOwner(userId) ? spend.user : null,
-    callMicro: smallestCallMicro(),
+    callMicro: callMicroFor(feature),
   });
   if (refusal === "paused") return { ...allowance, paused: { until: nextMonthStartUtc(now) } };
   if (refusal === "ownerShare") return { ...allowance, ownerShare: true };

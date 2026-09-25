@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // The limit reads the environment and nothing else; the database is never reached.
 vi.mock("../../db", () => ({ db: {} }));
 
-import { dailyLimitFor } from "./allowance";
+import { callMicroFor, dailyLimitFor } from "./allowance";
+import type { ModelFeature } from "./allowance-rule";
+import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "./allowance-rule";
 
 describe("dailyLimitFor", () => {
@@ -27,5 +29,17 @@ describe("dailyLimitFor", () => {
     process.env.MODEL_OWNER_USER_ID = "   ";
     expect(dailyLimitFor("")).toBe(3);
     expect(dailyLimitFor("   ")).toBe(3);
+  });
+});
+
+describe("callMicroFor", () => {
+  it("measures a named feature against its own call, and an unnamed one against the cheapest", () => {
+    const features = Object.keys(FEATURE_CALLS) as ModelFeature[];
+    const cheapest = Math.min(...features.map((f) => featureWorstCaseMicroUsd(f)));
+    expect(callMicroFor()).toBe(cheapest);
+    for (const f of features) expect(callMicroFor(f)).toBe(featureWorstCaseMicroUsd(f));
+    // The case the named form exists for: a feature dearer than the cheapest is judged by its own.
+    const dearest = features.reduce((a, b) => (featureWorstCaseMicroUsd(a) >= featureWorstCaseMicroUsd(b) ? a : b));
+    expect(callMicroFor(dearest)).toBeGreaterThan(callMicroFor());
   });
 });
