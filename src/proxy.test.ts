@@ -204,8 +204,12 @@ describe("with the sheet switch on", () => {
     expect(res?.cookies.get("about_sheet")).toBeUndefined();
   });
 
-  it("leaves a signed-out reader to Clerk", async () => {
+  it("strips a forged header from a signed-out request too, and reads nothing", async () => {
     session.mockResolvedValue({ userId: null });
-    expect(await proxy(auth, request("/"))).toBeUndefined();
+    const res = await proxy(auth, request("/", { "x-about-sheet": "0" }));
+    expect(sheetHeader(res)).toBeNull();
+    expect(overridden(res)).not.toContain("x-about-sheet");
+    expect(res?.cookies.get("about_sheet")).toBeUndefined();
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
   });
 });

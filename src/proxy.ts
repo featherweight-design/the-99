@@ -36,9 +36,8 @@ export default clerkMiddleware(async (auth, req) => {
   // page most needs to appear. So: protect what is not public, read the session
   // on what is, and let the gate below judge both.
   const { userId } = isPublic(req) ? await auth() : await auth.protect();
-  if (!userId) return;
-
   if (aboutSheetEnabled()) return sheet(req, userId);
+  if (!userId) return;
 
   const path = req.nextUrl.pathname;
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return;
@@ -79,17 +78,19 @@ const COOKIE_OPTIONS = {
 /**
  * About R6: the one-time sheet in place of the redirect. Never redirects. It
  * decides on a document load whether the root layout draws the sheet and says so
- * on a request header, which `Shell` reads back through `headers()`.
+ * on a request header, for the root layout to read back through `headers()`.
  *
- * The header is stripped from EVERY request first, including the ones this
- * ignores: a client that sends its own could otherwise summon the sheet, or
- * forge the `seen` it lists entries from.
+ * With the switch on, the header is stripped from every request this proxy
+ * sees, signed in or not, including the ones it otherwise ignores. A client that
+ * sends its own could otherwise summon the sheet, or forge the `seen` it lists
+ * entries from. With the switch off nothing reads the header, so nothing strips it.
  */
-async function sheet(req: NextRequest, userId: string) {
+async function sheet(req: NextRequest, userId: string | null) {
   const headers = new Headers(req.headers);
   headers.delete(SHEET_HEADER);
   const pass = () => NextResponse.next({ request: { headers } });
 
+  if (!userId) return pass();
   if (!gateApplies(req.nextUrl.pathname) || !isDocumentLoad(req.method, req.headers)) return pass();
   if (sheetCookieIsCurrent(req.cookies.get(SHEET_COOKIE)?.value, userId)) return pass();
 
