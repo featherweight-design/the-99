@@ -64,6 +64,12 @@ describe("submitTarget's card and Not used order", () => {
     expect(landed(target({ card: OTHER })).card).toBe(OTHER);
   });
 
+  it("never lists the carried card as not used, wherever the words name it", () => {
+    const p = landed(target({ card: DS, words: "Sol Ring and Doubling Season" }));
+    expect(p.card).toBe(DS);
+    expect(p.notUsed).toEqual(["Sol Ring"]);
+  });
+
   it("lists the player's own phrases before a figure the controls set aside", () => {
     const p = landed(target({ words: "big energy under $300", budgetDollars: 100 }));
     expect(p.notUsed.indexOf("$300")).toBeGreaterThan(p.notUsed.indexOf("big energy"));

@@ -1,4 +1,4 @@
-import { matchWords, type PhraseIndex } from "./match";
+import { matchWords, type Chip, type MatchResult, type PhraseIndex } from "./match";
 import { READ_WORDS_MAX_CHARS, resolveWords, serializeChooseParams, type ChooseParams } from "./params";
 
 export const CHOOSE_PATH = "/decks/new/choose";
@@ -18,14 +18,18 @@ export const CHOOSE_PATH = "/decks/new/choose";
 export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string {
   // Bounded here as the parser bounds `w`, so no answer comes from words the results would cut.
   const words = p.words.slice(0, READ_WORDS_MAX_CHARS).trim();
-  const match = words && index ? matchWords(words, index) : { chips: [], phrases: [] };
-  const resolved = resolveWords(match.chips, {
+  const match: Pick<MatchResult, "chips" | "phrases"> = words && index ? matchWords(words, index) : { chips: [], phrases: [] };
+  // A carried card is the card: the words' card chips are then all set aside, except the carried
+  // card itself, which is simply the answer already given. Without one, `resolveWords` keeps the first.
+  const cardChips = match.chips.filter((c): c is Extract<Chip, { kind: "card" }> => c.kind === "card");
+  const displaced = p.card === null
+    ? []
+    : [...new Set(cardChips.filter((c) => c.oracleId !== p.card).map((c) => c.name))];
+  const resolved = resolveWords(p.card === null ? match.chips : match.chips.filter((c) => c.kind !== "card"), {
     themes: p.themes,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   });
-  const wordsCard = match.chips.find((c) => c.kind === "card" && c.oracleId === resolved.card);
-  const displaced = p.card !== null && wordsCard?.kind === "card" && wordsCard.oracleId !== p.card ? [wordsCard.name] : [];
   return `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
     words,

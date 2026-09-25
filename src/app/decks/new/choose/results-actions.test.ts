@@ -7,13 +7,14 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn() }));
+const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => true }));
 vi.mock("../../../../db", () => ({ db: { execute: stub.execute } }));
 vi.mock("../../../../lib/intake/trial", () => ({ trialFill: stub.trial }));
+vi.mock("../../../../lib/intake/rows", () => ({ loadResultsPage: stub.page }));
 
-import { trialFillRows } from "./results-actions";
+import { moreRows, trialFillRows } from "./results-actions";
 
 const LEGAL = "0000aaaa-0000-4000-8000-000000000001";
 const FORGED = "0000aaaa-0000-4000-8000-000000000002";
@@ -21,6 +22,7 @@ const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
 
 beforeEach(() => {
   stub.execute.mockReset().mockResolvedValue({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
+  stub.page.mockReset().mockResolvedValue({ rows: [] });
   stub.trial.mockReset().mockResolvedValue({ owned: 60, buyCents: 1000, unpricedCard: null });
 });
 
@@ -61,5 +63,21 @@ describe("trialFillRows", () => {
     await expect(trialFillRows(["nope"], "")).rejects.toThrow();
     await expect(trialFillRows([LEGAL], "x".repeat(32_001))).rejects.toThrow();
     expect(stub.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe("moreRows", () => {
+  it("hands the parsed answers and the offset to the page loader", async () => {
+    await moreRows("?t=dinosaurs&b=150", 12);
+    expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12);
+  });
+
+  it("refuses a forged offset or query before any read", async () => {
+    for (const offset of [-1, 1.5, 5001, Number.NaN, "12" as never]) {
+      await expect(moreRows("", offset)).rejects.toThrow();
+    }
+    await expect(moreRows("x".repeat(32_001), 0)).rejects.toThrow();
+    await expect(moreRows(42 as never, 0)).rejects.toThrow();
+    expect(stub.page).not.toHaveBeenCalled();
   });
 });
