@@ -173,13 +173,19 @@ export function ChooseResults({
 
 const SKELETON_NAME = ["58%", "53%", "48%", "43%", "38%"];
 
-/** Searching (5c): the order line's heading and five still rows. No shimmer (STATES invariant). */
-export function ResultsSkeleton({ by }: { by: string }) {
+/**
+ * Searching (5c): the order line's heading and five still rows. No shimmer (STATES invariant).
+ * `by` names what orders the results; the route's loading screen has no labels to name it with
+ * (they come from the database), so it passes none and the line arrives with the page.
+ */
+export function ResultsSkeleton({ by }: { by?: string }) {
   return (
     <div aria-busy="true" data-testid="results-searching" className="flex flex-col gap-[14px] md:gap-[18px]">
       <div className="flex flex-col gap-[5px] max-w-[640px]">
         <h2 className="m-0 font-display font-semibold text-[15px] md:text-[18px] text-[color:var(--fg)]">{copy.results.loadingHead}</h2>
-        <p className="m-0 text-[12px] md:text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.results.loadingSub(by)}</p>
+        {by !== undefined && (
+          <p className="m-0 text-[12px] md:text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.results.loadingSub(by)}</p>
+        )}
       </div>
       <ol aria-hidden className="m-0 p-0 list-none flex flex-col gap-[10px]">
         {SKELETON_NAME.map((w, i) => (

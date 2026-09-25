@@ -6,12 +6,12 @@
 //  - `v=results`: the results. The bar is drawn at once, and the search streams in under it.
 //
 // Behind `HELP_ME_CHOOSE_ENABLED` (F3): off, the route is not found, before any read.
-import Link from "next/link";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 
 import { CardDetailProvider } from "../../../../components/cards/card-detail-provider";
 import { ChooseResults, ResultsSkeleton } from "../../../../components/intake/choose-results";
+import { ChooseHeader } from "../../../../components/intake/choose-header";
 import { IntakeForm } from "../../../../components/intake/intake-form";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
 import { SearchFailed } from "../../../../components/intake/search-failed";
@@ -63,7 +63,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   if (!p.results) {
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
-        <Header
+        <ChooseHeader
           back={{ href: "/decks/new", label: copy.intake.back }}
           title={copy.intake.title}
           sub={copy.intake.sub}
@@ -102,7 +102,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   return (
     <CardDetailProvider>
       <div className="flex flex-col">
-        <Header
+        <ChooseHeader
           back={{ href: changeHref, label: copy.results.back }}
           title={copy.results.title}
           sub={copy.results.sub}
@@ -189,35 +189,5 @@ async function Results({
       queryString={queryString}
       changeHref={changeHref}
     />
-  );
-}
-
-function Header({
-  back,
-  title,
-  sub,
-  subPhone,
-  centered = false,
-}: {
-  back: { href: string; label: string };
-  title: string;
-  sub: string;
-  subPhone: string;
-  centered?: boolean;
-}) {
-  return (
-    <header
-      className={[
-        "flex flex-col gap-[3px] md:gap-[6px] p-[20px_18px_14px] border-0 border-b border-solid border-[color:var(--border)] md:border-b-0",
-        centered ? "md:w-[680px] md:max-w-full md:mx-auto md:p-[34px_0_26px]" : "md:p-[34px_40px_26px]",
-      ].join(" ")}
-    >
-      <Link href={back.href} className="self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
-        {back.label}
-      </Link>
-      <h1 className="m-0 font-display font-bold text-[20px] md:text-[28px] text-[color:var(--fg)]">{title}</h1>
-      <p className="m-0 md:hidden font-mono text-[10px] text-[color:var(--fg-faint)]">{subPhone}</p>
-      <p className="m-0 hidden md:block max-w-[640px] text-[14px] text-[color:var(--fg-muted)]">{sub}</p>
-    </header>
   );
 }
