@@ -24,6 +24,11 @@
 //   9  only an answer spends a unit
 //  10  saving the intent clears the seeded flag; an over-cap save writes nothing
 //  12  a commit since the run retires the set and reopens the gate; a moved cut no longer applies
+//  13  v2's context (2026-09-24): the run reads the overview written for the LIVE list over a newer
+//      one for another list, keeps its Key cards, names the universal staples through the catalog,
+//      and the prompt and validator built from that pack carry and enforce them. The model's
+//      effort and retry floor are `tuning-actions.test.ts`'s and `client.test.ts`'s, and a
+//      failure's refund is case 9's; no model is called here either.
 // Case 11, the seeding in `createDeck` (and `fillDeck` declining to seed), needs a session and
 // an EDHREC fetch, so it lives in `src/app/decks/actions.test.ts` against the stubbed driver.
 //
@@ -41,11 +46,19 @@ import { sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import { dailyLimitFor, readAllowance } from "../src/lib/model/allowance";
-import { readTuningState, tuningInputs } from "../src/lib/decks/tuning-read";
+import { readTuningContext, readTuningState, tuningInputs } from "../src/lib/decks/tuning-read";
+import { buildPlayGroup } from "../src/lib/profile/play";
+import { listFingerprint } from "../src/lib/profile/fingerprint";
+import { loadDeckProfileFromHead } from "../src/lib/profile/load";
+import { loadUniversalStaples } from "../src/lib/staples/universal";
+import { buildEvidencePack } from "../src/lib/tuning/evidence";
+import { buildPrompt } from "../src/lib/tuning/prompt";
+import { validateSuggestions } from "../src/lib/tuning/validate";
 import { gateReason } from "../src/lib/tuning/gate";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../src/lib/tuning/run-store";
 import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import type { ValidatedSuggestion } from "../src/lib/tuning/validate";
+import type { TuningResponse } from "../src/lib/tuning/response-schema";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 
@@ -441,6 +454,52 @@ async function run() {
     await answered(u, deck, c, "fp-race", undefined, read!.readVersion);
     check("12 · a commit between the read and the start retires the set",
       (await readTuningState(deck, u, "fp-race")).retired, { from: 1, to: 2 });
+  }
+
+  // 13 · v2's context, read from the database a run reads.
+  {
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    const head = (await tuningInputs(deck, u))!.head;
+    const names = new Map((await rows<{ oracle_id: string; name: string }>(sql`
+      select oracle_id, name from cards where oracle_id in (${sql.join([c.body[0], c.body[1], c.add].map((id) => sql`${id}::uuid`), sql`, `)})`)).map((r) => [r.oracle_id, r.name]));
+    const [key, other, add] = [names.get(c.body[0])!, names.get(c.body[1])!, names.get(c.add)!];
+    // An overview for THIS list naming one Key card, and a NEWER one for another list naming a
+    // different card: the run must read the live list's own, as `readShownSynopsis` promises.
+    const overview = (card: string, step: string) => ({
+      verdicts: [{ section: "primer", status: "ok", failed: 0, total: 1 }, { section: "keyCards", status: "ok", failed: 0, total: 1 }],
+      overview: null, weaknesses: null, cards: {},
+      primer: { strategy: [step], mulligan: { keep: [], sendBack: [] }, tips: [] },
+      keyCards: [{ card, claims: [], job: "Holds the plan together." }],
+    });
+    for (const [fingerprint, card, step] of [[listFingerprint(head), key, `Win with [[${key}]].`], ["another-list", other, "Something else."]] as const) {
+      const [call] = await rows<{ id: string }>(sql`insert into model_calls (user_id, feature, status) values (${u}, 'synopsis', 'spent') returning id`);
+      await fixture.execute(sql`insert into deck_synopses (deck_id, user_id, fingerprint, contract_version, model, model_call_id, status, outcome, content)
+        values (${deck}::uuid, ${u}, ${fingerprint}, 7, 'probe', ${call.id}::uuid, 'done', 'survived', ${JSON.stringify(overview(card, step))}::jsonb)`);
+    }
+
+    const context = await readTuningContext(head);
+    check("13 · the run reads the live list's own overview, not the newer one", context.overview, { strategy: [`Win with [[${key}]].`], keyCards: [key] });
+    const universalIds = await loadUniversalStaples();
+    // An empty set would pass every staple check here while measuring nothing: a database whose
+    // staple index was never built is a failure of this case, not a pass.
+    if (universalIds.size === 0) fail("13 · universal staples", "format_staples names none on this database; build the staple index first");
+    // By id, not count: a read returning as many unrelated catalog cards would match a count.
+    check("13 · every universal staple is named through the catalog",
+      context.universal.map((u2) => u2.oracleId).sort(), [...universalIds].sort());
+
+    const profile = await loadDeckProfileFromHead(head);
+    const pack = buildEvidencePack({ profile, play: buildPlayGroup([]), intent: null, owned: new Set(), ...context });
+    check("13 · the pack keeps the Key card the deck holds", pack.strategy?.keyCards.map((k) => k.oracleId), [c.body[0]]);
+    const { system, user } = buildPrompt(pack);
+    check("13 · the prompt carries the strategy and the Key card",
+      [user.includes(`How this deck plays (from its own overview):\n- Win with ${key}.`), user.includes(`Key cards, never to be cut: ${key}.`)], [true, true]);
+    check("13 · and names the universal staples", universalIds.size > 0 && context.universal.every((u2) => system.includes(u2.name)), true);
+
+    const resolved = new Map([[key, c.body[0]], [other, c.body[1]], [add, c.add]]);
+    const response = { suggestions: [{ add, cut: key, rationale: "r", rationaleShort: "r", evidence: [{ kind: "decklist", value: key }] }] } as TuningResponse;
+    const { drops } = validateSuggestions({ response, pack, resolveName: (n) => resolved.has(n) ? { oracleId: resolved.get(n)!, colorIdentity: [], commanderLegal: true } : null });
+    check("13 · the validator drops a cut of that Key card", drops.map((d) => d.rule), ["keyCard"]);
   }
 
   // 10 · The intent.
