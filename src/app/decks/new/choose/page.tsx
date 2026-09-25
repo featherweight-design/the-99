@@ -52,7 +52,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   }
 
   // The labels only: the card-name index is built for a submit, never for a page that just draws.
-  const themes = await loadIntakeThemes();
+  // The form needs the vocabulary to draw its picker, and fails without it. The results only name
+  // themes with it: a failed read there draws each theme by its slug rather than taking the page
+  // down above the results' own recovery (*Search failed*, with Retry).
+  const themes = p.results ? await loadIntakeThemes().catch(() => []) : await loadIntakeThemes();
 
   if (!p.results) {
     return (
