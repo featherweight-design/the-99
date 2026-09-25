@@ -14,7 +14,8 @@ import type { TuningResponse, TuningSuggestion } from "./response-schema";
  *  1. schema — already enforced by the structured output and the SDK's parse;
  *  2. the cards exist — both names resolve in the catalog;
  *  3. the cut is real — in this deck, and not a commander; and it is not one the deck depends on:
- *     never a Key card of its overview, and never a universal staple cut on role counts alone
+ *     never a Key card of its overview, and never a universal staple cut without a game, a note or
+ *     the intent behind it
  *     (tuning v2, Hugh's ruling 2026-09-24; the prompt asks for both, and this holds it to them);
  *  4. the add is legal — `validateCardForDeck`, the add path's own rule (commander-legal, inside
  *     the colour identity, not a commander), and not already in the deck;
@@ -103,9 +104,11 @@ export function validateSuggestions(args: {
     const cutRow = inDeck.get(cut.oracleId);
     if (!cutRow || cutRow.commander) return "cutInDeck";
     if (keyCards.has(cut.oracleId)) return "keyCard";
-    // "Just to fix a role count": a universal staple may still go for a reason the deck gives,
-    // a game, a note or the decklist, but never on role counts alone.
-    if (universal.has(cut.oracleId) && s.evidence.every((c) => c.kind === "mix")) return "universalStaple";
+    // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
+    // game, a note or their stated intent, each checked against what they wrote below. A role
+    // count is not that, and neither is a decklist citation, which `citationHolds` cannot check
+    // and which would otherwise let a count-only cut through by adding one.
+    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent")) return "universalStaple";
 
     const rejection = validateCardForDeck(add, deck);
     if (rejection === "off-color-identity") return "colourIdentity";

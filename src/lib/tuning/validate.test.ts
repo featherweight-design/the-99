@@ -270,7 +270,12 @@ describe("v2's cut rules: what the deck depends on", () => {
     expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
   });
 
-  it("keeps a universal staple cut the deck's own evidence argues for", () => {
+  it("drops a universal staple cut whose only other citation is the decklist, which nothing checks", () => {
+    const out = check({ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }, { kind: "decklist", value: "Grizzly Bears is a vanilla creature" }] });
+    expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
+  });
+
+  it("keeps a universal staple cut the player's own games argue for", () => {
     expect(check(good).kept).toHaveLength(1);
   });
 

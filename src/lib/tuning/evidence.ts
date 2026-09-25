@@ -1,3 +1,4 @@
+import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import { currentYear } from "./note-date";
 import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import type { ProfilePlay } from "../profile/play";
@@ -147,15 +148,16 @@ export function buildEvidencePack(input: {
 /** A `[[Name]]` mark unwrapped to its name, as the prompt shows cards unmarked. */
 const unmark = (text: string) => text.replace(/\[\[([^\]]+)\]\]/g, "$1");
 
-/** The overview's strategy and the Key cards it names that this deck still holds, by any face. */
+/**
+ * The overview's strategy and the Key cards it names that this deck still holds, resolved as the
+ * overview's own validator resolves them (`deckNameIndex`, `normalizeName`): curly quotes, spacing
+ * and case folded, and a face answering for its card unless two deck cards share it.
+ */
 function strategyOf(overview: { strategy: string[]; keyCards: string[] }, cards: DeckProfile["cards"]) {
-  const byName = new Map<string, { oracleId: string; name: string }>();
-  for (const c of cards) {
-    for (const face of [c.name, ...c.name.split(" // ")]) byName.set(face.toLowerCase(), { oracleId: c.oracleId, name: c.name });
-  }
+  const byName = deckNameIndex(cards);
   const keyCards = new Map<string, { oracleId: string; name: string }>();
   for (const written of overview.keyCards) {
-    const card = byName.get(unmark(written).trim().toLowerCase());
+    const card = byName.get(normalizeName(unmark(written)));
     if (card) keyCards.set(card.oracleId, card);
   }
   return { steps: overview.strategy.map(unmark), keyCards: [...keyCards.values()] };
