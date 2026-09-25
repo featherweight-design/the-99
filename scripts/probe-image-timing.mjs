@@ -355,7 +355,16 @@ async function main() {
         rowUrlMatchesModal: runs.filter((r) => r.rowUrlMatchesModal !== undefined).map((r) => r.rowUrlMatchesModal),
       };
       console.log(`cold median: action ${summary.medianActionEndMs}ms, art asked ${summary.medianArtRequestedMs}ms, art in ${summary.medianArtFinishedMs}ms; asked before the action answered on ${summary.artAskedBeforeActionEnd} of ${cold.length}`);
-      // A run with no cold press that fetched its art has measured nothing.
+      // The preload's safety condition: the row's URL IS the modal's. A mismatch, or a desktop press
+      // whose preview could not be read, fails the run rather than publishing a timing that rests on it.
+      if (WIDTH >= 768) {
+        const bad = runs.filter((r) => r.rowUrlMatchesModal !== true);
+        if (bad.length > 0) {
+          console.error(`FAIL  the row's URL is not the modal's on ${bad.length} of ${runs.length} presses: ${bad.map((r) => `row ${r.row} (${r.rowPreviewUrl ?? "no preview"})`).join(", ")}`);
+          process.exitCode = 1;
+        }
+      }
+            // A run with no cold press that fetched its art has measured nothing.
       if (cold.length === 0) {
         console.error("FAIL  no cold press requested its art; the run measured nothing");
         process.exitCode = 1;

@@ -26,7 +26,7 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger, preloadCardArt, useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { TwoFacedMark } from "../cards/two-faced-mark";
@@ -382,9 +382,8 @@ export function DecklistRow({
       && (event.currentTarget.contains(selection.anchorNode)
         || event.currentTarget.contains(selection.focusNode));
     if (selectedHere) return;
-    // The row body opens the same modal as the name, so it asks for the art on the press too.
-    preloadCardArt(card.imageUri);
-    open(card.oracleId, siblings, undefined, { door: opensDoor });
+    // The row body opens the same modal as the name, so it hands over the art the same way.
+    open(card.oracleId, siblings, undefined, { door: opensDoor, art: card.imageUri });
   }
 
   return (

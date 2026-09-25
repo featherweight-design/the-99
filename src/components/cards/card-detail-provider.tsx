@@ -60,8 +60,14 @@ type CardDetailContextValue = {
      * `door`: the card was opened from a Shopping row, so the swap tools' door draws in it (audit F17).
      * A deck alone does not say that, since every opener on the deck page passes one. Kept across
      * Prev/Next, which pages the same list, and dropped on close.
+     *
+     * `art`: the URL the modal will draw, when the opener knows it. Asked for on a cache MISS only,
+     * before the details read starts, so the bytes arrive alongside it. A hit needs nothing: the
+     * card was drawn when it was cached. That is also what keeps a stale opener safe: after a
+     * printing pick the provider re-reads and re-caches the card, so the next press is a hit and the
+     * opener's old URL is never fetched.
      */
-    opts?: { door?: boolean },
+    opts?: { door?: boolean; art?: string | null },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -144,11 +150,11 @@ export function useCardDetail(): CardDetailContextValue {
 /**
  * Ask for a card's modal art now, alongside the details read, rather than once that read has named
  * the printing. A detached Image, as the hover preview's preload (#969): no DOM node, nothing drawn,
- * and the bytes land in the HTTP cache the modal's background then reads. Pass only a URL the modal
- * will draw, or the press fetches an image nothing shows.
+ * and the bytes land in the HTTP cache the modal's background then reads. Called by `open` for an
+ * `art` hint on a cache miss.
  */
-export function preloadCardArt(imageUri: string | null | undefined) {
-  if (imageUri) new window.Image().src = imageUri;
+function preloadCardArt(imageUri: string) {
+  new window.Image().src = imageUri;
 }
 
 export function CardDetailTrigger({
@@ -199,10 +205,7 @@ export function CardDetailTrigger({
     <button
       type="button"
       data-testid={testId}
-      onClick={() => {
-        preloadCardArt(imageUri);
-        open(oracleId, siblings, undefined, door ? { door } : undefined);
-      }}
+      onClick={() => open(oracleId, siblings, undefined, door || imageUri ? { door, art: imageUri } : undefined)}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
@@ -521,8 +524,9 @@ export function CardDetailProvider({
       oracleId: string,
       list?: string[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean },
+      opts?: { door?: boolean; art?: string | null },
     ) => {
+      if (opts?.art && !cache.current.has(oracleId)) preloadCardArt(opts.art);
       // PENDING, not committed, and the door with it: the door belongs to the card the open asked
       // for, so it moves when that card arrives and a failed read leaves the card on screen as it was.
       // PENDING, not committed. A second open while the first card is still painted must

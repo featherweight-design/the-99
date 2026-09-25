@@ -1047,6 +1047,32 @@ describe("CardDetailProvider open-at-printing scope", () => {
 // The modal's art is asked for on the PRESS, alongside the details read, when the opener knows it:
 // otherwise it could only be asked for once the read answered and named the printing.
 describe("CardDetailTrigger's art preload", () => {
+  // A cached card was drawn when it was cached, and after a printing pick the provider re-reads and
+  // re-caches it: so a hit asks for nothing, and an opener's stale URL is never fetched.
+  it("asks for nothing when the card is already cached", async () => {
+    const asked: string[] = [];
+    const Real = window.Image;
+    window.Image = class { set src(v: string) { asked.push(v); } } as unknown as typeof Image;
+    try {
+      const fetchCard = vi.fn(async () => card("o-signet", "Arcane Signet"));
+      render(
+        <CardDetailProvider fetchCard={fetchCard}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" imageUri="https://cards.scryfall.io/old.jpg">
+            Arcane Signet
+          </CardDetailTrigger>
+        </CardDetailProvider>,
+      );
+      const trigger = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") });
+      await click(trigger);
+      expect(asked).toHaveLength(1);
+      await act(async () => { fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" }); });
+      await click(trigger);
+      expect(asked).toHaveLength(1);
+    } finally {
+      window.Image = Real;
+    }
+  });
+
   it("asks for the art before the details read answers", async () => {
     const asked: string[] = [];
     const Real = window.Image;
@@ -1054,8 +1080,13 @@ describe("CardDetailTrigger's art preload", () => {
     vi.stubGlobal("Image", Spy);
     window.Image = Spy as unknown as typeof Image;
     try {
-      // A read that never answers: whatever was asked for, the press asked for it.
-      const fetchCard = vi.fn(() => new Promise<BrowseCard | null>(() => {}));
+      // The ORDER: when the details read starts, the art has already been asked for. A read that
+      // never answers, so whatever was asked for, the press asked for it.
+      const askedWhenReadStarted: number[] = [];
+      const fetchCard = vi.fn(() => {
+        askedWhenReadStarted.push(asked.length);
+        return new Promise<BrowseCard | null>(() => {});
+      });
       render(
         <CardDetailProvider fetchCard={fetchCard}>
           <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" imageUri="https://cards.scryfall.io/normal/front/a/b/signet.jpg">
@@ -1067,6 +1098,7 @@ describe("CardDetailTrigger's art preload", () => {
       await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
       expect(fetchCard).toHaveBeenCalledTimes(1);
       expect(asked).toEqual(["https://cards.scryfall.io/normal/front/a/b/signet.jpg"]);
+      expect(askedWhenReadStarted).toEqual([1]);
 
       // A trigger that does not know the art asks for nothing.
       await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }));
