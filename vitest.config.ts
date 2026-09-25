@@ -8,7 +8,9 @@ export default defineConfig({
     // typechecked alongside the rest of the repo — tsconfig includes `**/*.mts`.
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mts"],
     environment: "jsdom",
-    setupFiles: ["./vitest.setup.ts"],
+    // `clock-shift.mjs` is a no-op unless CLOCK_SHIFT_DAYS is set, and runs
+    // FIRST so the shifted Date is in place before any other setup reads a date.
+    setupFiles: ["./scripts/clock-shift.mjs", "./vitest.setup.ts"],
   },
   resolve: {
     // Mirrors the `@/*` path in tsconfig.json. Components mix relative and aliased imports,

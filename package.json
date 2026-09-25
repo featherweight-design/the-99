@@ -143,7 +143,8 @@
     "eval:tuning-strategy": "tsx scripts/eval/tuning-strategy-metrics.mts",
     "probe:image-timing": "node scripts/probe-image-timing.mjs",
     "fetch:fonts": "tsx scripts/fetch-fonts.mts",
-    "probe:font-parity": "node scripts/probe-font-parity.mjs"
+    "probe:font-parity": "node scripts/probe-font-parity.mjs",
+    "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
