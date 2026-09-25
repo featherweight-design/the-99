@@ -1454,7 +1454,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   well, then Help me choose, then with all three off. Next 16 allows one `next dev` per project, so stop any dev server in the
   worktree first. It proves the cookie a browser held from before a flip does not hide the sheet,
   that the sheet names only the entry just switched on, that the visit records it by id, and that a
-  later flip names only the second entry; it also measures both figures at 390 and 1300. Keying the
+  later flip names only the second entry and a third only the third; it also measures all three
+  figures at 390 and 1300. Keying the
   sheet cookie on `<user>.<version>` alone fails it at F2 and F4. It needs migration 0066
   (`about_seen_ids`), so point the worktree's `.env` at a migrated database.
 
