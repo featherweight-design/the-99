@@ -19,7 +19,10 @@ export function placeReceipts(
 ): Placed[] {
   const placed: Placed[] = cards.map((card) => ({ card }));
   for (const receipt of receipts) {
-    const at = sortKey === "name" ? placed.findIndex((p) => "card" in p && compare(receipt.cutCard, p.card) < 0) : -1;
+    // Against the receipts already placed too, so two cuts that left one section keep name order.
+    const at = sortKey === "name"
+      ? placed.findIndex((p) => compare(receipt.cutCard, "card" in p ? p.card : p.receipt.cutCard) < 0)
+      : -1;
     placed.splice(at === -1 ? placed.length : at, 0, { receipt });
   }
   return placed;

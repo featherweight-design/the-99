@@ -185,7 +185,7 @@ The row itself stays live with Take.
 | Dot spacer | element | empty `span`, aria-hidden, `flex: none`, `8px × 8px` (holds the dot's column; no dot drawn) | same (`8px`, though the phone's row dot is `7px`) |
 | Text | key, bought | `row.receipt(cut, add)` | same |
 | Text | key, free | `row.receiptFree(cut, add)` | same |
-| Text | key, one copy fewer | `row.receiptOneCopy(add)` | not drawn at 390 (desktop column only) |
+| Text | key, one copy fewer | `row.receiptOneCopy(add)` | same. The canvas draws it at desktop only and calls it unreachable at 390, but a basic or a card held in several copies reaches it (gap report) |
 | Text | accessible name key | `row.receiptAria(cut, add)`: **not drawn**; the element it labels is not specified | same |
 | Text | flex / min-width | `1` / `0` | same |
 | Text | overflow / text-overflow / white-space | `hidden` / `ellipsis` / `nowrap` | same |

@@ -23,6 +23,12 @@ describe("placeReceipts", () => {
       .toEqual(["Sol Ring", "Mind Stone", "[Fellwar Stone]", "Arcane Signet"]);
   });
 
+  it("keeps two receipts in name order between themselves, whatever order they were added in", () => {
+    const one = [card("Arcane Signet")];
+    expect(names(placeReceipts(one, [receipt("Sol Ring"), receipt("Mind Stone")], "name", deckCardComparator("name", "asc", null))))
+      .toEqual(["Arcane Signet", "[Mind Stone]", "[Sol Ring]"]);
+  });
+
   it("never reorders the rows it was given, receipt or none", () => {
     // Deliberately out of name order: the list's own comparator decides row order, not this.
     const given = [card("Sol Ring"), card("Arcane Signet")];
