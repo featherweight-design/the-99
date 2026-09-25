@@ -127,3 +127,28 @@ describe("buildEvidencePack", () => {
   });
 });
 
+
+describe("the overview and the universal staples (v2)", () => {
+  it("unmarks the strategy and keeps only the Key cards this deck still holds", () => {
+    const pack = buildEvidencePack({ ...input(), overview: { strategy: ["Ramp with [[r0]], then win."], keyCards: ["[[r1]]", "  BEAR ", "Gone Card"] } });
+    expect(pack.strategy).toEqual({ steps: ["Ramp with r0, then win."], keyCards: [{ oracleId: "r1", name: "r1" }, { oracleId: "bear", name: "bear" }] });
+  });
+
+  it("resolves a Key card written with a curly apostrophe, as the overview's validator does", () => {
+    const withSaga = profile({ cards: [...cards, row({ oracleId: "saga", name: "Urza's Saga" })] });
+    const pack = buildEvidencePack({ ...input(), profile: withSaga, overview: { strategy: ["Assemble."], keyCards: ["Urza\u2019s Saga"] } });
+    expect(pack.strategy?.keyCards).toEqual([{ oracleId: "saga", name: "Urza's Saga" }]);
+  });
+
+  it("has no strategy for a deck with no overview", () => {
+    expect(buildEvidencePack(input()).strategy).toBeNull();
+    expect(buildEvidencePack({ ...input(), overview: null }).strategy).toBeNull();
+  });
+
+  it("keeps every universal staple by id, sorted by name as the eval listed them, even two sharing a name", () => {
+    const universal = [{ oracleId: "z", name: "Sol Ring" }, { oracleId: "a2", name: "Arcane Signet" }, { oracleId: "a", name: "Arcane Signet" }, { oracleId: "z", name: "Sol Ring" }];
+    expect(buildEvidencePack({ ...input(), universal }).universal).toEqual([
+      { oracleId: "a", name: "Arcane Signet" }, { oracleId: "a2", name: "Arcane Signet" }, { oracleId: "z", name: "Sol Ring" },
+    ]);
+  });
+});

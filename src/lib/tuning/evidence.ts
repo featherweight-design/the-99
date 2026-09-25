@@ -1,3 +1,4 @@
+import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import { currentYear } from "./note-date";
 import { recommendedMix, ROLE_ORDER, type MixRole } from "../decks/mix";
 import type { ProfilePlay } from "../profile/play";
@@ -49,6 +50,16 @@ export type EvidencePack = {
   /** The year note dates are judged against (`noteDate`), taken ONCE, when the pack is built, so
    *  the prompt and the validator format a date alike even if the model call crosses a New Year. */
   year: number;
+  /**
+   * How the deck plays, from its own stored overview (tuning v2, Hugh's ruling 2026-09-24): its
+   * strategy steps with their card marks unwrapped, and its Key cards, which are never cut. Only
+   * Key cards still in this deck are kept, since the overview may have been written for an older
+   * list. Null or absent when the deck has no overview, and the prompt then says nothing about one.
+   */
+  strategy?: { steps: string[]; keyCards: { oracleId: string; name: string }[] } | null;
+  /** Every universal staple (`src/lib/staples/universal.ts`), one per oracle card, sorted by name
+   *  as round 4 of the eval named them. None is cut just to fix a role count. Absent is none. */
+  universal?: { oracleId: string; name: string }[];
 };
 
 export function buildEvidencePack(input: {
@@ -57,6 +68,10 @@ export function buildEvidencePack(input: {
   intent: string | null;
   owned: ReadonlySet<string>;
   now?: Date;
+  /** The deck's shown overview: its strategy steps and its Key cards' names, as written. */
+  overview?: { strategy: string[]; keyCards: string[] } | null;
+  /** The universal staples, resolved to names. */
+  universal?: readonly { oracleId: string; name: string }[];
 }): EvidencePack {
   const { profile, play, intent, owned } = input;
   const commanderIds = new Set(profile.commanderOracleIds);
@@ -125,5 +140,37 @@ export function buildEvidencePack(input: {
     play,
     intent,
     year: currentYear(input.now),
+    strategy: input.overview ? strategyOf(input.overview, profile.cards) : null,
+    universal: universalOf(input.universal ?? []),
   };
+}
+
+/** A `[[Name]]` mark unwrapped to its name, as the prompt shows cards unmarked. */
+const unmark = (text: string) => text.replace(/\[\[([^\]]+)\]\]/g, "$1");
+
+/**
+ * The overview's strategy and the Key cards it names that this deck still holds, resolved as the
+ * overview's own validator resolves them (`deckNameIndex`, `normalizeName`): curly quotes, spacing
+ * and case folded, and a face answering for its card unless two deck cards share it.
+ */
+function strategyOf(overview: { strategy: string[]; keyCards: string[] }, cards: DeckProfile["cards"]) {
+  const byName = deckNameIndex(cards);
+  const keyCards = new Map<string, { oracleId: string; name: string }>();
+  for (const written of overview.keyCards) {
+    const card = byName.get(normalizeName(unmark(written)));
+    if (card) keyCards.set(card.oracleId, card);
+  }
+  return { steps: overview.strategy.map(unmark), keyCards: [...keyCards.values()] };
+}
+
+/**
+ * Every universal staple, one entry per ORACLE card, sorted by name as JavaScript sorts strings
+ * (the eval harness's order), then by id. Catalog names are not unique (`resolve-names.ts`), so
+ * nothing is merged by name here: the validator checks a cut by id, and a deck holding the second
+ * card of a shared name must still be refused. The prompt deduplicates the names it prints.
+ */
+function universalOf(rows: readonly { oracleId: string; name: string }[]) {
+  const byId = new Map<string, { oracleId: string; name: string }>();
+  for (const r of rows) if (!byId.has(r.oracleId)) byId.set(r.oracleId, r);
+  return [...byId.values()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.oracleId < b.oracleId ? -1 : 1));
 }

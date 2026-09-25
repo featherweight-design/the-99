@@ -250,3 +250,43 @@ describe("validateSuggestions", () => {
     ] }).drops[0].rule).toBe("citation");
   });
 });
+
+describe("v2's cut rules: what the deck depends on", () => {
+  const withV2: EvidencePack = {
+    ...pack,
+    strategy: { steps: ["Attack with the Oxen."], keyCards: [{ oracleId: "ox", name: "Oxen" }] },
+    universal: [{ oracleId: "bear", name: "Grizzly Bears" }],
+  };
+  const check = (s: TuningSuggestion) => validateSuggestions({ response: { suggestions: [s] }, pack: withV2, resolveName });
+
+  it("drops a suggestion that cuts a Key card of the deck's overview", () => {
+    const out = check({ ...good, cut: "Oxen" });
+    expect(out.kept).toHaveLength(0);
+    expect(out.drops).toEqual([{ position: 0, rule: "keyCard" }]);
+  });
+
+  it("drops a universal staple cut on role counts alone", () => {
+    const out = check({ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }] });
+    expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
+  });
+
+  it("drops a universal staple cut whose only other citation is the decklist, which nothing checks", () => {
+    const out = check({ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }, { kind: "decklist", value: "Grizzly Bears is a vanilla creature" }] });
+    expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
+  });
+
+  it("refuses the second of two universal staples sharing a name, checked by id", () => {
+    const shared: EvidencePack = { ...withV2, universal: [{ oracleId: "other", name: "Grizzly Bears" }, { oracleId: "bear", name: "Grizzly Bears" }] };
+    const out = validateSuggestions({ response: { suggestions: [{ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }] }] }, pack: shared, resolveName });
+    expect(out.drops).toEqual([{ position: 0, rule: "universalStaple" }]);
+  });
+
+  it("keeps a universal staple cut the player's own games argue for", () => {
+    expect(check(good).kept).toHaveLength(1);
+  });
+
+  it("holds neither rule on a pack with no overview or staples, as before v2", () => {
+    expect(run({ ...good, cut: "Oxen" }).kept).toHaveLength(1);
+    expect(run({ ...good, evidence: [{ kind: "mix", value: "ramp 4 of 10" }] }).drops.map((d) => d.rule)).not.toContain("universalStaple");
+  });
+});

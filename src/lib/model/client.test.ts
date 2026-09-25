@@ -265,4 +265,40 @@ describe("callModel", () => {
     expect(await callModel(req, { messages: slow, now: () => clock, log: quiet })).toEqual({ ok: false, errorClass: "upstream_busy" });
     expect(calls).toHaveLength(1);
   });
+
+  /** A first attempt that takes `firstMs` of the deadline and fails the schema, then a retry that would succeed. */
+  function afterFirst(firstMs: number) {
+    let clock = 0;
+    const { messages, calls } = scripted([badShapeReply(), reply({ answer: "x" })]);
+    const timed = {
+      create: async (body: Call["body"], opts: Call["opts"]) => {
+        const out = messages!.create(body as never, opts as never);
+        if (calls.length === 1) clock += firstMs;
+        return out;
+      },
+    } as unknown as ModelDeps["messages"];
+    return { calls, deps: { messages: timed, now: () => clock, log: quiet } };
+  }
+
+  it("refuses a retry with less than its floor left, failing as the first attempt did and keeping its usage", async () => {
+    // Eldrazi on round 4: the first attempt failed at ~43s of 110, leaving ~67s against a 70s floor.
+    const { calls, deps } = afterFirst(43_000);
+    const outcome = await callModel({ ...req, deadlineMs: 110_000, retryFloorMs: 70_000 }, deps);
+    expect(outcome).toEqual({ ok: false, errorClass: "malformed", usage: { inputTokens: 10, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 } });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("starts the retry when its floor is left", async () => {
+    const { calls, deps } = afterFirst(40_000);
+    const outcome = await callModel({ ...req, deadlineMs: 110_000, retryFloorMs: 70_000 }, deps);
+    expect(outcome.ok).toBe(true);
+    expect(calls).toHaveLength(2);
+    expect(calls[1].opts.timeout).toBe(70_000);
+  });
+
+  it("with no floor, a retry takes whatever is left, as before", async () => {
+    const { calls, deps } = afterFirst(43_000);
+    expect((await callModel({ ...req, deadlineMs: 110_000 }, deps)).ok).toBe(true);
+    expect(calls[1].opts.timeout).toBe(67_000);
+  });
 });

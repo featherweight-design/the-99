@@ -1,0 +1,1096 @@
+{
+  "source": "eval round 4 (2026-09-24), deck 0b49cb44-8ae2-4c19-b558-633344a2f4ed: the pack as sent, with the overview and universal staples the strategy-terse-b variant added, and the system and user messages it sent",
+  "pack": {
+    "commanders": [
+      {
+        "oracleId": "ec726c54-987b-48ed-8ffa-ec73a5e35333",
+        "name": "Zhulodok, Void Gorger"
+      }
+    ],
+    "colorIdentity": [],
+    "cards": [
+      {
+        "oracleId": "0727dc95-03df-4a2c-aed5-73fb840f3db7",
+        "name": "Abstruse Archaic",
+        "typeLine": "Creature — Avatar",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "14693689-d087-43b6-9c3f-63ab0648fc20",
+        "name": "All Is Dust",
+        "typeLine": "Kindred Sorcery — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "5f981cca-5cd9-49e4-ab1a-bbbf6fc7e737",
+        "name": "Ancient Stone Idol",
+        "typeLine": "Artifact Creature — Golem",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "30ac68e6-160a-41f9-9f0f-0e0eef383150",
+        "name": "Arcane Lighthouse",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "3bb518ff-399b-4ce7-b9ad-a1d563dd7792",
+        "name": "Arch of Orazca",
+        "typeLine": "Land",
+        "roles": [
+          "draw",
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "19409704-09c4-4a4b-a5a7-f95120b425db",
+        "name": "Artisan of Kozilek",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "6b8cf2a0-b045-4d91-9d91-c602d40c6237",
+        "name": "Basalt Monolith",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "393a254f-be31-431a-9341-a51286f8cbce",
+        "name": "Blast Zone",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "f33ce38a-34ec-4b65-a0fc-160484a02007",
+        "name": "Bonders' Enclave",
+        "typeLine": "Land",
+        "roles": [
+          "draw",
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "4bb3edc5-2616-4d0d-b9dc-32ed79f38f67",
+        "name": "Calamity of the Titans",
+        "typeLine": "Sorcery",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "f705c0eb-9c6c-4315-a860-208ed0c5d93e",
+        "name": "Cloudpost",
+        "typeLine": "Land — Locus",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "fdd3482d-7bce-411b-80c4-956a12fc143d",
+        "name": "Darksteel Monolith",
+        "typeLine": "Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "c9cd57f6-1f69-4ea1-9672-ca944759c7e8",
+        "name": "Desecrate Reality",
+        "typeLine": "Instant",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "0e2575be-c596-4c8c-bf07-7941ca065721",
+        "name": "Dreamstone Hedron",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp",
+          "draw"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "ea86abfa-6cab-4ef0-8463-34136fc25b59",
+        "name": "Duplicant",
+        "typeLine": "Artifact Creature — Shapeshifter",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "2a2f2d6c-3937-4e4b-9e4a-3480e0c787d0",
+        "name": "Ebony Fly",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7fab8d65-af51-47d3-8f10-2676bf6e8ba3",
+        "name": "Eldrazi Temple",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "db1ea6e0-4076-49dd-92f7-7e6d7eb65a27",
+        "name": "Endbringer",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [
+          "draw",
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "0a79237e-0811-4a8a-bd4d-db3ca91bff22",
+        "name": "Everflowing Chalice",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "8fcf50cd-e6d0-4516-850f-d42ee75dcc3a",
+        "name": "Expedition Map",
+        "typeLine": "Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "10d13ff6-c4d0-4753-8939-a8a90f0e92bb",
+        "name": "Eye of Ugin",
+        "typeLine": "Legendary Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "1e9053b5-5cca-486c-9dd8-b198a7b666bf",
+        "name": "Flayer of Loyalties",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "77807103-bcd5-479f-bedd-f5d97aa6d3d2",
+        "name": "Forge of Heroes",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7777fab1-df3f-467f-b9e2-46dd2bd2166e",
+        "name": "Forsaken Monument",
+        "typeLine": "Legendary Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7b9fafe7-d26a-4ed5-b4c4-ce13763770b5",
+        "name": "Geier Reach Sanitarium",
+        "typeLine": "Legendary Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "92c9aad6-35ec-425d-be7d-393328992820",
+        "name": "Glimmerpost",
+        "typeLine": "Land — Locus",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "ee723c7c-ec9f-4ffb-8f36-cd7637eb1fae",
+        "name": "Guildless Commons",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "dde55256-5259-44e7-a267-fca45a7f0d04",
+        "name": "Hangarback Walker",
+        "typeLine": "Artifact Creature — Construct",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "32263baa-d3f0-463f-92b3-4e9938476add",
+        "name": "Hedron Archive",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp",
+          "draw"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "22e0e822-c4aa-4ec1-b7e4-0c1c869ef71b",
+        "name": "Investigator's Journal",
+        "typeLine": "Artifact — Book Clue",
+        "roles": [
+          "draw"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "b11187ab-f8a8-422b-b550-4495f96de0f2",
+        "name": "It That Betrays",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7359e82b-db79-488d-a1d4-75a00f12a4cf",
+        "name": "Kaldra Compleat",
+        "typeLine": "Legendary Artifact — Equipment",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "060209fa-4b7d-4e08-bf8b-8759bba5641b",
+        "name": "Karn, Scion of Urza",
+        "typeLine": "Legendary Planeswalker — Karn",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "4c1c1537-e519-4e2f-9bc2-d34b289d4487",
+        "name": "Kozilek, the Great Distortion",
+        "typeLine": "Legendary Creature — Eldrazi",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "ca204b66-8d0c-431a-8d34-282f7c2d17da",
+        "name": "Lightning Greaves",
+        "typeLine": "Artifact — Equipment",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "136596a0-b179-40be-b42d-c0b992621c95",
+        "name": "Mage-Ring Network",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "370c37f7-2484-40e8-8fd9-c10cf6f5d5f2",
+        "name": "Manifold Key",
+        "typeLine": "Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "38538aff-b6f9-4c30-992e-7fd78da3c44a",
+        "name": "Matter Reshaper",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "800fb917-8898-4eba-9f94-aec6e9d75236",
+        "name": "Mazemind Tome",
+        "typeLine": "Artifact — Book",
+        "roles": [
+          "draw"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "64ffe529-ba53-48ec-8af1-b046fbd1f0cc",
+        "name": "Metalwork Colossus",
+        "typeLine": "Artifact Creature — Construct",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "d9f11aa1-9219-42a8-85a9-a8f204160706",
+        "name": "Meteor Golem",
+        "typeLine": "Artifact Creature — Golem",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "c97361b5-af16-4a7b-af85-a429dbaf4ad2",
+        "name": "Mind Stone",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp",
+          "draw"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "6a84eda1-7e72-4b5a-849f-b6e177565aeb",
+        "name": "Mirage Mirror",
+        "typeLine": "Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "57b86d5c-3269-44bc-a838-3c5439d820d9",
+        "name": "Mirrorpool",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "994bc16d-fdc6-475c-96df-beeb4d5aa03e",
+        "name": "Mystic Forge",
+        "typeLine": "Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "5da5d8a3-009e-4d8a-977e-6ebc73ba2682",
+        "name": "Not of This World",
+        "typeLine": "Kindred Instant — Eldrazi",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "d39b9f64-dc9b-413f-8d05-e21ef46d6756",
+        "name": "Oblivion Sower",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "50676eba-a55a-4749-bb07-74a30e015781",
+        "name": "Omarthis, Ghostfire Initiate",
+        "typeLine": "Legendary Creature — Spirit Snake",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
+        "name": "Ornithopter of Paradise",
+        "typeLine": "Artifact Creature — Thopter",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7b0767b8-b504-456e-93bd-218502f73b3d",
+        "name": "Palladium Myr",
+        "typeLine": "Artifact Creature — Myr",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7acd7ef5-0e26-436d-962a-1a391f81c2e8",
+        "name": "Perilous Vault",
+        "typeLine": "Artifact",
+        "roles": [
+          "wipes"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "f8526a36-eb8f-457d-b532-e12b47622cfa",
+        "name": "Phyrexian Triniform",
+        "typeLine": "Artifact Creature — Phyrexian Golem",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "4f14bf38-13ec-461d-8a1b-340843b5d95d",
+        "name": "Planar Atlas",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "301d1d8e-d3fc-4010-8b29-4724fa0b31cd",
+        "name": "Portal to Phyrexia",
+        "typeLine": "Artifact",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "c23e5b80-08d2-4e24-9908-fe2aa4f30f6f",
+        "name": "Reliquary Tower",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "982f70af-077f-40df-b2fe-7c80ebcc7712",
+        "name": "Rise of the Eldrazi",
+        "typeLine": "Sorcery",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "f29dc596-2121-4421-8463-15f6c2e8b9b3",
+        "name": "Rogue's Passage",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7140f396-1bfa-4b28-ba28-fa15eba74652",
+        "name": "Ruins of Oran-Rief",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "850e2dbd-b904-41b9-8ffe-0aa562837bde",
+        "name": "Sandstone Oracle",
+        "typeLine": "Artifact Creature — Sphinx",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "5ece7d03-9ee7-4953-a06e-9d8e41874903",
+        "name": "Scavenger Grounds",
+        "typeLine": "Land — Desert",
+        "roles": [
+          "wipes",
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "91f34686-cb96-49c0-b4a7-49dd1fd076e2",
+        "name": "Sea Gate Wreckage",
+        "typeLine": "Land",
+        "roles": [
+          "draw",
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "8ea46945-d5ab-4209-b473-4769e7b8b962",
+        "name": "Shrine of the Forsaken Gods",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "ac141679-6ada-49a8-b225-d1a20c3838db",
+        "name": "Skittering Cicada",
+        "typeLine": "Creature — Insect",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+        "name": "Sol Ring",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
+        "name": "Solemn Simulacrum",
+        "typeLine": "Artifact Creature — Golem",
+        "roles": [
+          "ramp",
+          "draw"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "7346337e-ac12-4dd2-826d-77ec0013e74f",
+        "name": "Spatial Contortion",
+        "typeLine": "Instant",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "02f062f5-8012-4440-ac12-49fc49822106",
+        "name": "Spine of Ish Sah",
+        "typeLine": "Artifact",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "6e64f1e0-ddd6-4ee7-8797-086e234b02e8",
+        "name": "Steel Hellkite",
+        "typeLine": "Artifact Creature — Dragon",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "78124cd1-2658-43f3-a339-0755d84154d2",
+        "name": "Stonecoil Serpent",
+        "typeLine": "Artifact Creature — Snake",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "cfdd5dc6-593e-495a-8cfe-3a56b3c4c7df",
+        "name": "Temple of the False God",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "b01e698b-608a-4fc7-8073-b01d044743ec",
+        "name": "Thespian's Stage",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "9965d9c5-2ebf-4a6c-930e-55c5890979be",
+        "name": "Thought Vessel",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "cef7396d-2168-4282-bf38-670ca9eebd91",
+        "name": "Thought-Knot Seer",
+        "typeLine": "Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "a699c663-8131-4045-9265-a83e86609374",
+        "name": "Thran Dynamo",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "b011d6b2-8930-4192-aa94-82869faa991b",
+        "name": "Titan's Presence",
+        "typeLine": "Instant",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "22f6391e-2634-440f-af1b-9581d1bff818",
+        "name": "Tomb of the Spirit Dragon",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "921345ce-2eaf-4b95-b65d-1c27204665ed",
+        "name": "Transmogrifying Wand",
+        "typeLine": "Artifact",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "0b55eac6-a745-4bf4-8926-5ce83bc38d7d",
+        "name": "Treasure Map // Treasure Cove",
+        "typeLine": "Artifact // Land",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "38c83332-2d21-450c-ae97-34109b565f59",
+        "name": "Tyrite Sanctum",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "d6158860-ada8-4e39-8156-23dee2f68f79",
+        "name": "Ugin's Mastery",
+        "typeLine": "Enchantment",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "18bdc181-9592-4147-81fb-7f83ce137f70",
+        "name": "Ugin, the Ineffable",
+        "typeLine": "Legendary Planeswalker — Ugin",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "eecb3047-a563-441a-9175-200421981ac3",
+        "name": "Ugin, the Spirit Dragon",
+        "typeLine": "Legendary Planeswalker — Ugin",
+        "roles": [
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "33e85a8a-86df-4cdc-a9cc-8cbabe92c3c0",
+        "name": "Urza's Mine",
+        "typeLine": "Land — Urza's Mine",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "e11966cd-2ee3-4df4-b099-abf42dcdf0db",
+        "name": "Urza's Power Plant",
+        "typeLine": "Land — Urza's Power-Plant",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "32fbb638-ab14-4e8b-a07a-d4c44e3496f2",
+        "name": "Urza's Tower",
+        "typeLine": "Land — Urza's Tower",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "71099427-e110-488f-ab29-7867241fc7f0",
+        "name": "Urza's Workshop",
+        "typeLine": "Land — Urza's",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "4001b868-ada1-43f4-92e2-27ab0e80c913",
+        "name": "Vesuva",
+        "typeLine": "Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "71c52bf5-2a5d-488e-8b15-7ef290e4b77d",
+        "name": "War Room",
+        "typeLine": "Land",
+        "roles": [
+          "draw",
+          "land"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "c8b9fa02-0a0c-4a87-9a00-3c1c7e2f4bfd",
+        "name": "Warping Wail",
+        "typeLine": "Instant",
+        "roles": [
+          "ramp",
+          "removal"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "05d24b0c-904a-46b6-b42a-96a4d91a0dd4",
+        "name": "Wastes",
+        "typeLine": "Basic Land",
+        "roles": [
+          "land"
+        ],
+        "quantity": 9,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "b166b670-febc-4821-855e-f8d465644c03",
+        "name": "Worn Powerstone",
+        "typeLine": "Artifact",
+        "roles": [
+          "ramp"
+        ],
+        "quantity": 1,
+        "owned": true,
+        "commander": false
+      },
+      {
+        "oracleId": "ec726c54-987b-48ed-8ffa-ec73a5e35333",
+        "name": "Zhulodok, Void Gorger",
+        "typeLine": "Legendary Creature — Eldrazi",
+        "roles": [],
+        "quantity": 1,
+        "owned": true,
+        "commander": true
+      }
+    ],
+    "targets": {
+      "roles": [
+        {
+          "role": "ramp",
+          "have": 16,
+          "target": 17,
+          "advisory": false,
+          "measured": true
+        },
+        {
+          "role": "draw",
+          "have": 11,
+          "target": 10,
+          "advisory": false,
+          "measured": true
+        },
+        {
+          "role": "removal",
+          "have": 12,
+          "target": 10,
+          "advisory": false,
+          "measured": true
+        },
+        {
+          "role": "wipes",
+          "have": 2,
+          "target": 1,
+          "advisory": false,
+          "measured": true
+        },
+        {
+          "role": "land",
+          "have": 38,
+          "target": 36,
+          "advisory": true,
+          "measured": true
+        }
+      ],
+      "thin": true
+    },
+    "staples": [],
+    "play": {
+      "games": [],
+      "summary": {
+        "count": 0,
+        "marked": 0,
+        "record": {
+          "wins": 0,
+          "losses": 0,
+          "draws": 0
+        },
+        "axes": []
+      }
+    },
+    "intent": null,
+    "year": 2026,
+    "strategy": {
+      "steps": [
+        "Ramp hard early using rocks and Urza lands to reach seven or more mana quickly.",
+        "Deploy Zhulodok, Void Gorger to enable double cascade off big colorless spells.",
+        "Cast large Eldrazi and artifacts to snowball card advantage and board control.",
+        "Use wipes like All Is Dust or Ugin, the Spirit Dragon to reset an unfavorable board.",
+        "Close games with annihilator creatures or Eldrazi beaters backed by ramp."
+      ],
+      "keyCards": [
+        {
+          "oracleId": "ec726c54-987b-48ed-8ffa-ec73a5e35333",
+          "name": "Zhulodok, Void Gorger"
+        },
+        {
+          "oracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+          "name": "Sol Ring"
+        },
+        {
+          "oracleId": "eecb3047-a563-441a-9175-200421981ac3",
+          "name": "Ugin, the Spirit Dragon"
+        },
+        {
+          "oracleId": "cef7396d-2168-4282-bf38-670ca9eebd91",
+          "name": "Thought-Knot Seer"
+        },
+        {
+          "oracleId": "4c1c1537-e519-4e2f-9bc2-d34b289d4487",
+          "name": "Kozilek, the Great Distortion"
+        },
+        {
+          "oracleId": "7acd7ef5-0e26-436d-962a-1a391f81c2e8",
+          "name": "Perilous Vault"
+        },
+        {
+          "oracleId": "00c0543c-2a1f-4425-8283-4062d74a1637",
+          "name": "Solemn Simulacrum"
+        },
+        {
+          "oracleId": "02f062f5-8012-4440-ac12-49fc49822106",
+          "name": "Spine of Ish Sah"
+        }
+      ]
+    },
+    "universal": [
+      {
+        "oracleId": "universal:Arcane Signet",
+        "name": "Arcane Signet"
+      },
+      {
+        "oracleId": "universal:Reliquary Tower",
+        "name": "Reliquary Tower"
+      },
+      {
+        "oracleId": "universal:Rogue's Passage",
+        "name": "Rogue's Passage"
+      },
+      {
+        "oracleId": "universal:Sol Ring",
+        "name": "Sol Ring"
+      },
+      {
+        "oracleId": "universal:Swiftfoot Boots",
+        "name": "Swiftfoot Boots"
+      }
+    ]
+  },
+  "system": "You suggest changes to a Magic: The Gathering Commander deck, for the player who built it.\nPropose at most 5 swaps. Each swap cuts exactly one card from the deck and adds exactly one card. Fewer is better than padding: one swap you can back beats three you cannot, and an empty list is an acceptable answer.\nGround every swap in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.\nCite with one of five kinds: games, note, decklist, intent, mix. One figure per citation. A figure with no name, or one the evidence does not give, is discarded.\nA games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".\nA note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.\nAn intent citation quotes the player's own words, whole or a part of them.\nA mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".\nName cards exactly as the decklist and the staples list spell them. Never suggest cutting a card marked as a commander.\nRules. A suggestion that breaks any of these is discarded before the player sees it:\n- No rationale or citation may contain a percentage.\n- No rationale or citation may contain a signed integer or the word \"net\".\n- Every count in a rationale or citation must appear with its denominator in the same element: \"7 of 9\", not \"7 games\".\n- Every suggestion must carry at least one citation naming what it read: the games, a note, the decklist, the intent, or the mix.\n- A quoted note must be byte-identical to what the player typed, in quotation marks, with its date.\n- The added card must be legal in the commander’s colour identity.\n- The cut card must currently be in the deck.\n- Every suggestion is exactly one cut and one add: the deck count never changes.\n- Ownership and price may not affect which cards are suggested or their order.\n- No rationale or citation may name a bracket. The app says when a swap moves one.\n- No rationale or citation may promise a result: not that a swap will win, lose, or make the deck stronger.\nWrite the rationale in plain words for the player. rationaleShort is the same point in at most 80 characters.\nMake 4 or 5 suggestions when the deck supports that many.\nSize suggestions to the gap. A role that is one short of its target gets one suggestion; if you offer two for it, say in each rationale that they are alternatives to each other.\nPrefer swaps grounded in how this deck plays, its strategy and its cards' interactions, over swaps that only move a role count toward its target.\nNever suggest cutting a Key card listed under \"How this deck plays\".\nNever suggest cutting Arcane Signet, Reliquary Tower, Rogue's Passage, Sol Ring, Swiftfoot Boots just to fix a role count.\nEach rationale is drawn above its citations, which the player sees as chips. Never restate a chip's FIGURE in the rationale (a role count such as \"removal: 5 of 6\", or a game count): say \"one short on removal\", not \"Removal is 5 of 6\", and spend the words on what the added card does in this deck and why the cut card can go.\nA note citation is the exception: its note must still be quoted, word for word and in quotation marks, in the rationale.\nNever open two rationales the same way: no two may begin with the same role or the same count.",
+  "user": "Commander: Zhulodok, Void Gorger\nColour identity: colourless\n\nWhat the deck is for: no stated intent.\n\nGames:\nNo games logged yet. There is no play evidence: suggest from the decklist and its targets alone, and cite no games.\n\nTargets for this commander (have / target):\n- ramp: 16 of 17 (measured from decklists)\n- draw: 11 of 10 (measured from decklists)\n- removal: 12 of 10 (measured from decklists)\n- wipes: 2 of 1 (measured from decklists)\n- land: 38 of 36, a range rather than a finish line (measured from decklists)\nThese targets come from few decks; treat them as a guide.\n\nDecklist (100 cards):\n- Abstruse Archaic (Creature — Avatar)\n- All Is Dust (Kindred Sorcery — Eldrazi)\n- Ancient Stone Idol (Artifact Creature — Golem)\n- Arcane Lighthouse (Land) [land]\n- Arch of Orazca (Land) [draw, land]\n- Artisan of Kozilek (Creature — Eldrazi)\n- Basalt Monolith (Artifact) [ramp]\n- Blast Zone (Land) [land]\n- Bonders' Enclave (Land) [draw, land]\n- Calamity of the Titans (Sorcery)\n- Cloudpost (Land — Locus) [land]\n- Darksteel Monolith (Artifact)\n- Desecrate Reality (Instant)\n- Dreamstone Hedron (Artifact) [ramp, draw]\n- Duplicant (Artifact Creature — Shapeshifter) [removal]\n- Ebony Fly (Artifact) [ramp]\n- Eldrazi Temple (Land) [land]\n- Endbringer (Creature — Eldrazi) [draw, removal]\n- Everflowing Chalice (Artifact) [ramp]\n- Expedition Map (Artifact)\n- Eye of Ugin (Legendary Land) [land]\n- Flayer of Loyalties (Creature — Eldrazi)\n- Forge of Heroes (Land) [land]\n- Forsaken Monument (Legendary Artifact)\n- Geier Reach Sanitarium (Legendary Land) [land]\n- Glimmerpost (Land — Locus) [land]\n- Guildless Commons (Land) [land]\n- Hangarback Walker (Artifact Creature — Construct)\n- Hedron Archive (Artifact) [ramp, draw]\n- Investigator's Journal (Artifact — Book Clue) [draw]\n- It That Betrays (Creature — Eldrazi)\n- Kaldra Compleat (Legendary Artifact — Equipment)\n- Karn, Scion of Urza (Legendary Planeswalker — Karn)\n- Kozilek, the Great Distortion (Legendary Creature — Eldrazi) [removal]\n- Lightning Greaves (Artifact — Equipment)\n- Mage-Ring Network (Land) [land]\n- Manifold Key (Artifact)\n- Matter Reshaper (Creature — Eldrazi)\n- Mazemind Tome (Artifact — Book) [draw]\n- Metalwork Colossus (Artifact Creature — Construct)\n- Meteor Golem (Artifact Creature — Golem) [removal]\n- Mind Stone (Artifact) [ramp, draw]\n- Mirage Mirror (Artifact)\n- Mirrorpool (Land) [land]\n- Mystic Forge (Artifact)\n- Not of This World (Kindred Instant — Eldrazi) [removal]\n- Oblivion Sower (Creature — Eldrazi)\n- Omarthis, Ghostfire Initiate (Legendary Creature — Spirit Snake)\n- Ornithopter of Paradise (Artifact Creature — Thopter) [ramp]\n- Palladium Myr (Artifact Creature — Myr) [ramp]\n- Perilous Vault (Artifact) [wipes]\n- Phyrexian Triniform (Artifact Creature — Phyrexian Golem)\n- Planar Atlas (Artifact) [ramp]\n- Portal to Phyrexia (Artifact)\n- Reliquary Tower (Land) [land]\n- Rise of the Eldrazi (Sorcery) [removal]\n- Rogue's Passage (Land) [land]\n- Ruins of Oran-Rief (Land) [land]\n- Sandstone Oracle (Artifact Creature — Sphinx)\n- Scavenger Grounds (Land — Desert) [wipes, land]\n- Sea Gate Wreckage (Land) [draw, land]\n- Shrine of the Forsaken Gods (Land) [land]\n- Skittering Cicada (Creature — Insect)\n- Sol Ring (Artifact) [ramp]\n- Solemn Simulacrum (Artifact Creature — Golem) [ramp, draw]\n- Spatial Contortion (Instant)\n- Spine of Ish Sah (Artifact) [removal]\n- Steel Hellkite (Artifact Creature — Dragon)\n- Stonecoil Serpent (Artifact Creature — Snake)\n- Temple of the False God (Land) [land]\n- Thespian's Stage (Land) [land]\n- Thought Vessel (Artifact) [ramp]\n- Thought-Knot Seer (Creature — Eldrazi)\n- Thran Dynamo (Artifact) [ramp]\n- Titan's Presence (Instant) [removal]\n- Tomb of the Spirit Dragon (Land) [land]\n- Transmogrifying Wand (Artifact) [removal]\n- Treasure Map // Treasure Cove (Artifact // Land) [ramp]\n- Tyrite Sanctum (Land) [land]\n- Ugin's Mastery (Enchantment)\n- Ugin, the Ineffable (Legendary Planeswalker — Ugin) [removal]\n- Ugin, the Spirit Dragon (Legendary Planeswalker — Ugin) [removal]\n- Urza's Mine (Land — Urza's Mine) [land]\n- Urza's Power Plant (Land — Urza's Power-Plant) [land]\n- Urza's Tower (Land — Urza's Tower) [land]\n- Urza's Workshop (Land — Urza's) [land]\n- Vesuva (Land) [land]\n- War Room (Land) [draw, land]\n- Warping Wail (Instant) [ramp, removal]\n- 9x Wastes (Basic Land) [land]\n- Worn Powerstone (Artifact) [ramp]\n- Zhulodok, Void Gorger (Legendary Creature — Eldrazi) [commander]\n\nStaples other decks with this commander run, not in this deck (context, not a menu):\n- none recorded\n\nHow this deck plays (from its own overview):\n- Ramp hard early using rocks and Urza lands to reach seven or more mana quickly.\n- Deploy Zhulodok, Void Gorger to enable double cascade off big colorless spells.\n- Cast large Eldrazi and artifacts to snowball card advantage and board control.\n- Use wipes like All Is Dust or Ugin, the Spirit Dragon to reset an unfavorable board.\n- Close games with annihilator creatures or Eldrazi beaters backed by ramp.\nKey cards, never to be cut: Zhulodok, Void Gorger, Sol Ring, Ugin, the Spirit Dragon, Thought-Knot Seer, Kozilek, the Great Distortion, Perilous Vault, Solemn Simulacrum, Spine of Ish Sah."
+}

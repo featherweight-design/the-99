@@ -16,6 +16,7 @@ import {
   profileOfHead,
   readEvidenceStep,
   readOwnedOracleIds,
+  readTuningContext,
   readTuningState,
   tuningInputs,
   withBracketAfter,
@@ -26,7 +27,7 @@ import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { gateReason } from "../../lib/tuning/gate";
-import { MODEL_TIMEOUT_MS, TUNING_MAX_TOKENS, TUNING_MODEL } from "../../lib/tuning/limits";
+import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
@@ -117,15 +118,19 @@ export async function runTuning(
 
   try {
     const profile = await profileOfHead(head);
-    const owned = await readOwnedOracleIds(userId, [
-      ...profile.cards.map((c) => c.oracleId),
-      ...profile.skeleton.staples.map((s) => s.oracleId),
+    const [owned, { overview, universal }] = await Promise.all([
+      readOwnedOracleIds(userId, [
+        ...profile.cards.map((c) => c.oracleId),
+        ...profile.skeleton.staples.map((s) => s.oracleId),
+      ]),
+      readTuningContext(head),
     ]);
-    const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned });
+    const pack = buildEvidencePack({ profile, play: buildPlayGroup(games), intent, owned, overview, universal });
     const { system, user } = buildPrompt(pack);
     const outcome = await callModel({
       model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
       schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
+      effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
     });
     if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage };
     if (!outcome.ok) return await fail(outcome.errorClass);

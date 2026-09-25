@@ -31,7 +31,7 @@ import { readFileSync } from "node:fs";
 import { requireEnv } from "./lib/env.mjs";
 import { callModel } from "../src/lib/model/client";
 import type { EvidencePack } from "../src/lib/tuning/evidence";
-import { MODEL_TIMEOUT_MS, TUNING_MAX_TOKENS, TUNING_MODEL } from "../src/lib/tuning/limits";
+import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../src/lib/tuning/limits";
 import { axisLabel, buildPrompt } from "../src/lib/tuning/prompt";
 import { tuningResponseSchema } from "../src/lib/tuning/response-schema";
 import { validateSuggestions, type ResolvedCard } from "../src/lib/tuning/validate";
@@ -76,6 +76,7 @@ async function main() {
   const outcome = await callModel({
     model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
     schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
+    effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
   });
 
   // 1 · It parsed. `callModel` never throws; a failed parse is `malformed`.

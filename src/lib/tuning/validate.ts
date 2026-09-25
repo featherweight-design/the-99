@@ -13,7 +13,10 @@ import type { TuningResponse, TuningSuggestion } from "./response-schema";
  * Six rules, in order, and a suggestion is kept only if it survives all six:
  *  1. schema — already enforced by the structured output and the SDK's parse;
  *  2. the cards exist — both names resolve in the catalog;
- *  3. the cut is real — in this deck, and not a commander;
+ *  3. the cut is real — in this deck, and not a commander; and it is not one the deck depends on:
+ *     never a Key card of its overview, and never a universal staple cut without a game, a note or
+ *     the intent behind it
+ *     (tuning v2, Hugh's ruling 2026-09-24; the prompt asks for both, and this holds it to them);
  *  4. the add is legal — `validateCardForDeck`, the add path's own rule (commander-legal, inside
  *     the colour identity, not a commander), and not already in the deck;
  *  5. the evidence exists — a cited game count matches the games read, a cited note is one the
@@ -37,7 +40,7 @@ export type ValidatedSuggestion = {
 
 /** Why a suggestion was dropped: a rule key the model was instructed with, or one of the
  *  structural checks no instruction covers. */
-export type Drop = { position: number; rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" };
+export type Drop = { position: number; rule: RuleKey | "cardExists" | "addNotLegal" | "duplicate" | "keyCard" | "universalStaple" };
 
 export function validateSuggestions(args: {
   response: TuningResponse;
@@ -46,6 +49,8 @@ export function validateSuggestions(args: {
 }): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[] } {
   const { response, pack, resolveName } = args;
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
+  const keyCards = new Set((pack.strategy?.keyCards ?? []).map((k) => k.oracleId));
+  const universal = new Set((pack.universal ?? []).map((u) => u.oracleId));
   // Everything the player wrote that a suggestion may quote: each note with its game's date, as
   // the prompt renders it, and the intent, which has none. In the one-line form the prompt showed.
   const year = pack.year;
@@ -98,6 +103,12 @@ export function validateSuggestions(args: {
 
     const cutRow = inDeck.get(cut.oracleId);
     if (!cutRow || cutRow.commander) return "cutInDeck";
+    if (keyCards.has(cut.oracleId)) return "keyCard";
+    // "Just to fix a role count": a universal staple may still go for a reason the PLAYER gave, a
+    // game, a note or their stated intent, each checked against what they wrote below. A role
+    // count is not that, and neither is a decklist citation, which `citationHolds` cannot check
+    // and which would otherwise let a count-only cut through by adding one.
+    if (universal.has(cut.oracleId) && !s.evidence.some((c) => c.kind === "games" || c.kind === "note" || c.kind === "intent")) return "universalStaple";
 
     const rejection = validateCardForDeck(add, deck);
     if (rejection === "off-color-identity") return "colourIdentity";

@@ -68,10 +68,28 @@ export const ANSWER_TOKENS_WORST_CASE = 2_300;
  * saw 2 of 4 decks hit the ceiling on the first try AND the retry: a mean output of 2,691 tokens
  * against about 450 visible, one reply all thinking, and the player got nothing.
  *
- * 8,000 is a STOPGAP, the harness's baseline cell `sonnet@max8000`. Whether to cap thinking with
- * an effort setting instead is the harness's call and is not made here.
+ * 8,000 held at default effort too rarely: S used most or all of it thinking, and lost 2 of 15
+ * held-out answers that way. v2 keeps the ceiling and caps the thinking instead (`TUNING_EFFORT`).
  */
 export const TUNING_MAX_TOKENS = 8_000;
+
+/**
+ * The reasoning effort a run asks for (Hugh's ruling, 2026-09-24). Round 4 of the eval, a blind
+ * read on 8 held-out decks, preferred S at "medium" over S at its default on 7 of 7 rated, at about
+ * half the time and cost: 4.00 suggestions kept per answer against 2.50, and no answer lost to a
+ * ceiling. Default effort spent 6,000 to 8,000 tokens thinking, about 100s an attempt.
+ */
+export const TUNING_EFFORT = "medium";
+
+/**
+ * The least of `MODEL_TIMEOUT_MS` a retry needs to START (Hugh's ruling, 2026-09-24: fail fast
+ * and refund). A retry that cannot finish still bills its tokens and keeps the player waiting the
+ * whole deadline for a certain failure. 70s is the p95 of one S-medium attempt, read from the
+ * output tokens of all 21 attempts the eval measured at the slowest real-time rate it saw, 79
+ * tokens a second (p95 69.0s), rounded up to 5s. So a retry starts only after a first attempt that
+ * ended within 40s.
+ */
+export const TUNING_RETRY_FLOOR_MS = 70_000;
 
 /** The room the ceiling must leave over the answer for thinking: the longest reply measured was
  *  all thinking at the old 3,000, so at least that again. */
