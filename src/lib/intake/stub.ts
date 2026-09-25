@@ -54,7 +54,8 @@ export function stubReply(words: string, index: PhraseIndex, mode: StubMode): Mo
     if (c.kind === "budget") value.budgetDollars = c.dollars;
     if (c.kind === "bracket") value.bracket = c.bracket;
   }
-  if (mode === "wider" && !value.themes.includes("Tokens")) value.themes.push("Tokens");
+  // Inside the reply's own contract: at most six themes, as the real schema enforces.
+  if (mode === "wider" && !value.themes.includes("Tokens") && value.themes.length < 6) value.themes.push("Tokens");
   // The player's own phrases, verbatim, as the model is asked to copy them.
   value.notUnderstood.push(...phrases.slice(0, 10).map((p) => p.slice(0, 120)));
   return { ok: true, value, usage: USAGE };

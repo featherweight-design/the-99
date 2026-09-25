@@ -267,6 +267,19 @@ async function main() {
     check("a Stop is taken though another player's read has that id", await store.cancelRead(theirRead, EARLY), true);
     const mineToo = await store.startRead(EARLY, store.wordsHash(`their read, mine ${theirRead}`, controls), INTAKE_MODEL, { readId: theirRead });
     check("and this player's press with it is refused", mineToo.kind, "stopped");
+    // A stop its press claimed is consumed, so the cap counts only stops no press ever claimed:
+    // a player who Stops early more times than the cap in a day is still never charged.
+    check("the stop its press claimed is consumed", await stopsFor(earlyId), 0);
+    const CYCLER = `probe-cycle-${randomUUID()}`;
+    let cyclesTaken = 0;
+    for (let i = 0; i <= store.EARLY_STOPS_MAX; i += 1) {
+      const id = randomUUID();
+      const took = await store.cancelRead(id, CYCLER);
+      const press = await store.startRead(CYCLER, store.wordsHash(`cycle ${id}`, controls), INTAKE_MODEL, { readId: id });
+      if (took && press.kind === "stopped") cyclesTaken += 1;
+    }
+    check("more early Stops than the cap, each claimed by its press, all take", cyclesTaken, store.EARLY_STOPS_MAX + 1);
+    await fixture.execute(sql`delete from intake_read_stops where user_id = ${CYCLER}`);
     // Bounded per player: the route takes any id a signed-in caller sends, so a caller minting ids
     // stops at the cap rather than growing the table.
     const CAPPED = `probe-cap-${randomUUID()}`;

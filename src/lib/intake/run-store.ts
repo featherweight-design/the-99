@@ -93,8 +93,6 @@ async function purgeStops(tx: Tx, userId: string, now: Date): Promise<void> {
     .where(and(eq(intakeReadStops.userId, userId), lt(intakeReadStops.createdAt, new Date(now.getTime() - STOP_KEPT_MS))));
 }
 
-class StoppedEarly extends Error {}
-
 class StoredFound extends Error {
   constructor(readonly read: StoredRead, readonly readId: string, readonly useful: boolean) { super("stored"); }
 }
@@ -173,16 +171,19 @@ export async function startRead(
   // it back and leave the stranded read holding the one-pending slot.
   await db.transaction((tx) => reapReads(tx, userId, now));
   try {
-    const handle = await db.transaction(async (tx): Promise<ReadHandle> => {
+    const handle = await db.transaction(async (tx): Promise<ReadHandle | "stopped"> => {
       // An ask already read is offered once: its chips come back and no unit is reserved.
       await lockAsks(tx, userId);
       // A Stop that beat this start to the database (`cancelRead` left its id): nothing is
-      // reserved, so nothing is spent. Older stops go in passing; a press's id is used once.
+      // reserved, so nothing is spent. The stop has done its work and is consumed, in this
+      // transaction (returned, not thrown, so the delete commits): the per-player cap then counts
+      // only stops no press ever claimed. Older stops go in passing; a press's id is used once.
       if (opts.readId) {
         await purgeStops(tx, userId, now);
-        const [early] = await tx.select({ id: intakeReadStops.readId }).from(intakeReadStops)
-          .where(and(eq(intakeReadStops.readId, opts.readId), eq(intakeReadStops.userId, userId)));
-        if (early) throw new StoppedEarly();
+        const consumed = await tx.delete(intakeReadStops)
+          .where(and(eq(intakeReadStops.readId, opts.readId), eq(intakeReadStops.userId, userId)))
+          .returning({ id: intakeReadStops.readId });
+        if (consumed.length > 0) return "stopped";
       }
       const stored = await storedRead(tx, userId, hash);
       if (stored) throw new StoredFound(stored.read, stored.id, stored.useful);
@@ -194,11 +195,11 @@ export async function startRead(
       }).returning({ id: intakeReads.id });
       return { readId: row.id, callId: unit.id };
     });
+    if (handle === "stopped") return { kind: "stopped" };
     return { kind: "started", ...handle };
   } catch (err) {
     // The stored read's OWN id, not the press's: the results page verifies the read by it.
     if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId, useful: err.useful };
-    if (err instanceof StoppedEarly) return { kind: "stopped" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.
     // The id is the panel's, so a press that reuses one names a read that already exists.

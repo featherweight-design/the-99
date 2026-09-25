@@ -17,6 +17,18 @@ describe("the deeper read's stub", () => {
     expect(intakeLive({ NODE_ENV: "production" })).toBe(true);
   });
 
+  it("adds Tokens in the wider mode, never past the reply's six-theme contract", () => {
+    const six = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"];
+    const many = buildPhraseIndex(six.map((w) => ({ slug: w, label: w[0].toUpperCase() + w.slice(1) })), []);
+    const full = stubReply(six.join(" "), many, "wider");
+    if (!full.ok) throw new Error("expected a reply");
+    expect(full.value.themes).toHaveLength(6);
+    expect(full.value.themes).not.toContain("Tokens");
+    const room = stubReply("dinosaurs", index, "wider");
+    if (!room.ok) throw new Error("expected a reply");
+    expect(room.value.themes).toEqual(["Dinosaurs", "Tokens"]);
+  });
+
   it("reads the words as the free match does, in a shape the validator keeps", () => {
     const out = stubReply("dinosaurs with Doubling Season and big energy", index, "mapped");
     if (!out.ok) throw new Error("expected a reply");
