@@ -252,11 +252,17 @@ behind. A search box filters that list by title. Draw:
   (`src/proxy.test.ts:46-111`) are rewritten for the sheet.
 - **The shell must know two things** before it can show the sheet: that the reader is behind, and that
   this browser has not shown it for this version. The proxy already reads `seen` when its cookie is
-  stale (`proxy.ts:46`). One route is for it to keep that read and hand "behind" to the shell. The
-  cookie's meaning then changes from "sent to N" (`gate.ts:13`) to "sheet shown for N". The plan
-  chooses, and must not add a database read to every navigation.
-- **Recording the visit** is `markAboutSeen` (`src/lib/about/read.ts:37-39`, over the query at `:25-35`), called by the page after it
-  has built the index from the pre-visit `seen`. `dismissAbout` and the `next` handling retire
+  stale (`proxy.ts:46`). One route is for it to keep that read and hand "behind" to the shell. The "sheet
+  shown for N" marker must be a **new cookie name** (or an explicit version marker), never the old
+  `about_v`. Browsers that were redirected but never pressed Got it already hold `about_v =
+  <userId>.9` (`gate.ts:13`), and reading that as "sheet shown" would suppress the sheet for accounts
+  that are still behind. The plan chooses the route, and must not add a database read to every
+  navigation.
+- **Recording the visit** is `markAboutSeen` (`src/lib/about/read.ts:37-39`, over the query at `:25-35`).
+  It is called on an **actual open**, from a client effect or an action after the page has mounted with
+  the index built from the pre-visit `seen`. **Never at render**: `/about` is a normal `<Link>` in the
+  account menu (`account-menu.tsx:108-110`), so a render-time write could record a prefetch, hide the
+  index on the real visit and break ruling 3. `dismissAbout` and the `next` handling retire
   (`src/app/about/actions.ts`, `gate.ts`'s `safeNext`).
 - **The browser probes that clear the gate** write `about_version_seen` forward before they walk a page
   (for example `scripts/probe-verdict-block.mjs:127` and `probe-bracket-chip.mjs:97`; every

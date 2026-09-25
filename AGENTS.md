@@ -1824,8 +1824,9 @@ in one payload when the set of parameters is small enough to precompute.
 - Pipeline state lives in `docs/superpowers/design-pipeline-status.md`; plans in `docs/superpowers/plans/`; gap reports in `docs/superpowers/gap-report-*.md`.
 - **A MULTI-ROUND FEATURE LINE BATCHES ITS ABOUT ENTRIES AT THE END OF THE LAUNCH.** Ruled
   2026-09-21. A line like deck analysis ships five rounds, each a piece of one capability — and
-  an `ABOUT_VERSION` bump puts a one-time sheet in front of every account, naming the new entries
-  and offering the page. Until the About rethink ships
+  an `ABOUT_VERSION` bump puts a one-time sheet in front of every account. For a returning account
+  it names the new entries and offers the page; a brand-new account's sheet introduces the page in
+  one line instead. Until the About rethink ships
   (`docs/superpowers/design-briefs/2026-09-25-about-rethink.md`, Hugh 2026-09-25), a bump still
   redirects every account to `/about` instead. Either way, bumping once per round spends that
   attention five times to announce fragments, and the early
@@ -1851,8 +1852,9 @@ in one payload when the set of parameters is small enough to precompute.
   - **The close-out** — `feature-acceptance` does not pass until the entry exists on the page and
     the version moved. A copy edit is not a bump; a new entry always is.
 
-  The version is what makes this matter: a bump shows every account a one-time sheet naming the
-  new entries, over whatever page they opened. Until the About rethink ships, a bump redirects to
+  The version is what makes this matter: a bump shows every account a one-time sheet over whatever
+  page they opened, naming the new entries for a returning account (a brand-new account's sheet
+  introduces the page in one line). Until the About rethink ships, a bump redirects to
   `/about` instead. Either way, a feature with no entry reaches nobody who is not already
   exploring. The `about.test.ts` content hash does the mechanical half — touching the copy forces
   either a deliberate bump or a deliberate re-pin — but nothing can detect an entry that was never
