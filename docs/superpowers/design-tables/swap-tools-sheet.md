@@ -183,9 +183,9 @@ Swap Tools :217).
 | Heading | border-bottom | `1px solid var(--border)` |
 | Group | condition | a group renders only when it has rows (partner draws no unlisted group; sold-out draws `groupFree` only) |
 | Rows | rank number | none: the heading carries the order |
-| Row order | within `groupFree` | not stated by the design |
-| Row order | cheapest first | ascending by drawn price |
-| Row order | by commander | descending by the commander (or pair) inclusion figure |
+| Row order | within `groupFree` | v2 PR B: lands and fetches on the ladder (rung, then synergy, then price); spells by the commander's synergy, then price |
+| Row order | `groupCheapest` (`best mana first`) | v2 PR B: the ladder (`landRung`: untapped, untapped with a condition or catch, tapped, utility), then synergy, then price |
+| Row order | by commander | v2 PR B: descending by the commander (or pair) synergy, never drawn; a card is listed when the index holds its support row |
 | Row order | unlisted | ascending by drawn price |
 
 ---
@@ -256,7 +256,7 @@ Clauses are joined by ` · ` in the component; no clause is a score and no figur
 | Land, unnamed drawback | `sheet.drawback.unnamed` (italic) | none |
 | Land, what it gives up (H3) | the stand-in's give-up clause for a utility original (e.g. Cavern of Souls: uncounterable creatures). **No key exists; owed to /copy-review.** Never `sheet.givesUpNothing` unless true | the original's non-mana ability, named |
 | Fetch | `sheet.drawback.basicOnly` · then `entersTapped` / `entersTappedUnless(cond)` / `lifeFetch(n)` | |
-| Spell, listed | role · `sheet.mv(n)` · `sheet.figure(pct, commander)` | `pct` = commander (or pair, `commander_pair_support_cards`) inclusion; `commander` = short name or `A + B` |
+| Spell, listed | role · `sheet.mv(n)`; no figure since v2 PR B (Hugh's Q2: the % is dropped and synergy orders silently) | |
 | Spell, unlisted | role · `sheet.mv(n)` (no figure) | |
 | Foil-only stand-in (F6) | as its kind; the price cell draws BuyTag's foil figure | |
 

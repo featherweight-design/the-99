@@ -13,9 +13,9 @@ in `docs/superpowers/design-tables/swap-tools-sheet.md`.
 | Where the group sits | after `yours, free`, before `to buy · by {cmdr} decks` | — |
 | A staple's fact line | `{role} · MV {n} · staple, any commander`, never `in N% of {cmdr} decks` | `sheet.stapleFact` |
 | A free staple | stays in `yours, free`, with the same clause | `sheet.stapleFact` |
-| The lead, when a staples group is drawn | `… Free copies come first, then staples, then the rest by how often {cmdr} decks run them.` | `sheet.leadSpellsStaples` |
+| The lead, when a staples group is drawn | `… Free copies come first, then staples, then the cards {cmdr} decks favor most over other decks of their colors.` (v2 PR B: the order is the commander's synergy) | `sheet.leadSpellsStaples` |
 | Which staples | the one definition, `loadUniversalStaples` (F18); no names hard-coded | — |
-| Lands and fetches | unchanged: `to buy · cheapest first` | — |
+| Lands and fetches | `to buy · best mana first`, on the ladder (v2 PR B): rung, then synergy, then price | `sheet.groupCheapest` |
 
 ## State coverage
 
