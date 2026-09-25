@@ -235,8 +235,10 @@ try {
           emptyRows: [...sheet.querySelectorAll("li")].filter((li) => !li.querySelector("p")).length,
           blankLines: [...sheet.querySelectorAll("li")].filter((li) => {
             if (li.querySelector("p")) return false;
-            const cell = li.querySelector(":scope > div");
-            const line = cell?.firstElementChild;
+            // The name line is the thumb's parent, and the left cell is the name line's parent, however deep
+            // the row wraps them (4b puts a grid between the <li> and the cell).
+            const line = li.querySelector('span[aria-hidden="true"]')?.parentElement;
+            const cell = line?.parentElement;
             return cell && line && cell.getBoundingClientRect().height > line.getBoundingClientRect().height + 1;
           }).length,
           bareThumbs: [...sheet.querySelectorAll("li")].filter((li) => {
@@ -314,7 +316,9 @@ try {
     const toBuy = sheet.locator("li").filter({ has: page.locator("text=/^buy/") }).first();
     const addName = (await toBuy.locator("button").first().textContent())?.trim();
     await toBuy.getByRole("button", { name: /^Take / }).click();
-    await sheet.locator('[data-testid="stand-in-taken"]').waitFor({ timeout: 20_000 });
+    const landed = await sheet.locator('[data-testid="stand-in-taken"]').waitFor({ timeout: 20_000 }).then(() => null, async () =>
+      (await sheet.locator('[role="alert"], [data-testid="stand-in-refused"]').allTextContents()).join(" | ") || "nothing drawn");
+    if (landed !== null) throw new Error(`Take on ${addName} landed no taken row: ${landed}`);
     report(`${tag} take: the taken row, and Take put away on the others`, (await takes.count()) === 0 && before > 1,
       `${before} Take buttons before, ${await takes.count()} after`);
     report(`${tag} take: the note under the head`, await sheet.getByText(/has left the draft/).isVisible(), "takenNote drawn");
