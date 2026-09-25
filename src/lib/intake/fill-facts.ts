@@ -5,6 +5,7 @@ import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { classifySearches, tutorReaches } from "../bracket/tutor-targets";
 import { loadAvailability } from "../decks/availability-query";
+import { isBasicLand } from "../decks/grouping";
 import type { FillCandidate, FillGate } from "../decks/fill";
 import { loadPrices } from "../discovery/price";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
@@ -46,14 +47,26 @@ export async function loadFillGate(args: {
       loadPrices(ids),
       loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.excludeDeckId }),
     ]);
-    const freeCopy = (id: string) => (availability.get(id)?.free ?? 0) > 0;
+    const owned = new Set(args.candidates.filter((c) => c.owned).map((c) => c.oracleId));
+    const basics = new Set(args.candidates.filter((c) => isBasicLand(c.typeLine)).map((c) => c.oracleId));
+    /** The Shopping list's rule (`loadDeckBuyRows`): a basic is never bought; an unowned card is;
+     *  an owned card is when every copy is claimed. No availability row means nothing claims it. */
+    const buys = (id: string) => {
+      if (basics.has(id)) return false;
+      if (!owned.has(id)) return true;
+      const a = availability.get(id);
+      return a !== undefined && a.free <= 0;
+    };
     const priceOf = (id: string) => prices.get(id)?.liveCents ?? null;
-    // The build-around card is placed before the fill, so it is charged first. One never stocked
-    // cannot be charged and is placed anyway (§3.0): the cap then covers the rest, as usual.
-    const cardCost = card !== null && !freeCopy(card) ? priceOf(card) ?? 0 : 0;
+    // The build-around card is placed before the fill, so it is charged first. It is not in the
+    // pool (it was placed), so its ownership is read off availability: an absent row there is a
+    // card the player does not own. One never stocked cannot be charged and is placed anyway
+    // (§3.0): the cap then covers the rest, as usual.
+    const cardBuys = card !== null && !((availability.get(card)?.free ?? 0) > 0);
+    const cardCost = cardBuys ? priceOf(card!) ?? 0 : 0;
     gates.push(budgetGate({
       remainingCents: answers.budgetCents - cardCost,
-      buys: (c) => !c.owned || !freeCopy(c.oracleId),
+      buys: (c) => buys(c.oracleId),
       priceOf,
     }));
   }
