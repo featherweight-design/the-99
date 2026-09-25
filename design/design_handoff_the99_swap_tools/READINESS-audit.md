@@ -320,15 +320,16 @@ Hugh approved the addendum's audit on 2026-09-24, including the three parent fil
 - **The About entries** (A3, A4): the README points to `design_handoff_the99_about/addendum-launch-entries/`, and
   that folder is not in this checkout. They are batched at launch in any case; the folder is owed with the entries.
 
-### For Hugh (product calls, no Design needed)
+### Ruled (orchestrator, 2026-09-25, from Hugh's own rulings; not reopened)
 
-1. **How many per group before "Show all": 3 (as drawn) or 5 (your Q3)?** Design drew 3 after your Q3 answer of 5.
-   The canvas's rows fit either. My recommendation is 3: the rows now carry a mana line and gives-up segment, and
-   three keep the first screen of a phone sheet whole.
-2. **Within a land rung, does a free copy lead, or does synergy?** The README says both ("synergy first, then price.
-   Free copies count as price 0, so they lead"), and those can disagree. The drawn lead sentence says "free copies
-   and the cheapest lead". My recommendation: rung, then free first, then synergy, then price. It is what the lead
-   says, and what you own is the cheapest swap there is.
-3. **Should "artifacts" be a theme?** Find a deck's example reason, `Joins 11 other artifact cards` (Basalt
-   Monolith), names a theme outside your approved list. Adding "artifacts matter" (cards that count or care about
-   artifacts) is one more text rule. Without it, that row falls to the need-only line (R2).
+1. **5 per group before "Show all".** This is Hugh's Q3 ruling from his plan approval. Design drew 3 without it.
+2. **Within a land rung, synergy first, then price, with a free copy counted as price 0.** This is the approved
+   plan's item 2 word for word ("within a rung, the commander's synergy, then price"). A free copy therefore wins
+   only a tie. Any lead that says free copies come first is false under this order, so its wording goes through
+   /copy-review when D retires the `yours, free` group. The green dot and the `free` tag still show ownership on
+   the row.
+3. **No artifacts theme now.** Hugh approved the theme list as it is. A theme is added later only with a catalog
+   count and test cards. Design's `Joins 11 other artifact cards` is an example of the reason line, and D builds it
+   with an approved theme instead (mill, landfall, tribal and the rest).
+
+**The About folder note is resolved:** #1004 carries `addendum-launch-entries`, with the entries switch-gated.
