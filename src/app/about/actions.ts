@@ -23,3 +23,19 @@ export async function dismissAbout(formData: FormData) {
   await markAboutSeen(userId, ABOUT_VERSION);
   redirect(safeNext(formData.get("next")?.toString()));
 }
+
+/**
+ * About R6: the visit, recorded when `/about` is ACTUALLY OPEN (audit E2).
+ *
+ * Called from `RecordVisit`'s effect after the page has mounted in a browser,
+ * never during render: `/about` is a `<Link>` in the account menu, and a write
+ * at render would record a prefetch the reader never opened. The page has
+ * already built its index from the pre-visit `seen`, so this changes nothing
+ * on screen, which is why it neither redirects nor revalidates. A revalidation
+ * would re-render the route inside this action's reply and take the index away
+ * while the reader is reading it.
+ */
+export async function recordAboutVisit() {
+  const userId = await requireUserId();
+  await markAboutSeen(userId, ABOUT_VERSION);
+}

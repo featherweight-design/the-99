@@ -25,6 +25,14 @@ export type RailChapter = {
   newCount: number;
 };
 
+/**
+ * The upper 30% of the viewport, which is what "here" means on this page. The
+ * rail's current chapter and the jump mark (R6 §P4) both read it, so an entry
+ * the reader jumped to is marked for exactly as long as it is where the rail
+ * says they are.
+ */
+export const CURRENT_BAND: IntersectionObserverInit = { rootMargin: "0px 0px -70% 0px", threshold: 0 };
+
 /** Which chapter the reader is in, or the first before anything has scrolled. */
 function useCurrentChapter(chapters: readonly RailChapter[]): AboutChapter | null {
   const [current, setCurrent] = useState<AboutChapter | null>(chapters[0]?.id ?? null);
@@ -63,7 +71,7 @@ function useCurrentChapter(chapters: readonly RailChapter[]): AboutChapter | nul
       // chapters two are on screen for most of the page, and a full-viewport
       // root makes the first-in-order answer stick on chapter 01 far past the
       // point a reader has left it.
-      { rootMargin: "0px 0px -70% 0px", threshold: 0 },
+      CURRENT_BAND,
     );
     for (const section of sections) observer.observe(section);
     return () => observer.disconnect();

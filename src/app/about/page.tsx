@@ -4,6 +4,7 @@
 import { requireUserId } from "../../lib/auth";
 import { aboutVersionSeen } from "../../lib/about/read";
 import { AboutPage } from "../../components/about/about-page";
+import { aboutSheetEnabled } from "../../lib/about/flag";
 
 /**
  * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
@@ -25,5 +26,5 @@ export default async function AboutRoute({
 }) {
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
   const seen = await aboutVersionSeen(userId);
-  return <AboutPage seen={seen} next={soleNext(params.next)} />;
+  return <AboutPage seen={seen} next={soleNext(params.next)} sheetMode={aboutSheetEnabled()} />;
 }

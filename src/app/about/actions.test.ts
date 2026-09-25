@@ -10,7 +10,7 @@ vi.mock("../../lib/auth", () => ({ requireUserId }));
 vi.mock("../../lib/about/read", () => ({ markAboutSeen }));
 vi.mock("next/navigation", () => ({ redirect }));
 
-const { dismissAbout } = await import("./actions");
+const { dismissAbout, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
 
 /** `redirect` throws by design, so every call here is expected to. */
@@ -51,5 +51,18 @@ describe("dismissAbout", () => {
   it("records the acknowledgement even when the destination is refused", async () => {
     await dismiss("//evil.example");
     expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+  });
+});
+
+describe("recordAboutVisit (R6)", () => {
+  it("records the current version for the signed-in reader", async () => {
+    await recordAboutVisit();
+    expect(requireUserId).toHaveBeenCalledOnce();
+    expect(markAboutSeen).toHaveBeenCalledWith("user_1", ABOUT_VERSION);
+  });
+
+  it("never redirects, so the index stays where the reader is reading it", async () => {
+    await recordAboutVisit();
+    expect(redirect).not.toHaveBeenCalled();
   });
 });
