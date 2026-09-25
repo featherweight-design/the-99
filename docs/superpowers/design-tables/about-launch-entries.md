@@ -277,3 +277,251 @@ Agent 3 (confirm): both read correctly after the fix. 0 gaps remain.
 - **The figures are computed by the shipped `figures()`**, not written down, so SETS RANK is lit by
   the rule the results screen uses.
 
+---
+
+# PR C: Find a deck for it (A3) and Cheaper stand-ins (A4), r2
+
+## Entry: fits-your-decks
+
+### 1. Entry slots
+
+| Slot | Value | Source |
+|---|---|---|
+| id | `fits-your-decks` | r2.ts |
+| chapter | `'03'` (03 · Building the 99) | r2.ts, canvas `chapterShort` |
+| title | `Find a deck for it` | r2.ts |
+| route | `/collection` | r2.ts |
+| opens | `opens the card detail` | r2.ts |
+| width | `plate` ("plate: several parts need naming") | r2.ts, canvas slot |
+| since | `10` | r2.ts. Under G1 this is kept, but nothing is batched into a version and "seen" is recorded per entry id |
+| switch | `SWAP_TOOLS_ENABLED`. The entry renders only while the switch is on | audit G1. G1 names four switches for five entries, so assigning this one to A3 is an inference from "swap tools v2 … combos and themes in Find a deck" |
+| insert position | Chapter 03, after `add-cards` ("after 'Adding cards'"). Page order is help-me-choose, locked-cards, fits-your-decks, stand-ins, change-commander | README table, audit Structure, r2.ts comment |
+| NEW badge | Drawn on the h3 in both views | canvas |
+| Strings from | `copy/swap-tools.ts (fits.*)` | canvas |
+
+### 2. Key lines
+
+4 of 4 (the limit is 4).
+
+| Key | r2 drawn | Audit correction |
+|---|---|---|
+| 1 | Colors-allow / not-already-run gate | None |
+| 2 | Synergy order, no figure quoted | KEEP (matches the ruling: synergy orders the list and is never shown) |
+| 3 | Strongest reason: combo, then theme, then staple | **R2-A3-1 (STALE by ruling).** Replace the clause "With neither, the deck shows the two shares" with "With neither, the deck shows only what it needs." The audit gives the replacement wording |
+| 4 | The need, then Add's copy source | **R2-A3-1.** Reworded so it reads true with or without a reason: it opens "The need is this deck's count…" instead of "After the reason comes…" |
+
+Open for the build: what a row shows with no combo, no theme and no role. The entry must not promise a line the row doesn't draw.
+
+Caption: r2.ts as drawn. The audit makes no caption correction for A3.
+
+### 3. Specimen composition
+
+- **Components:** the picker's body, via **E1**. Export `FitsPlate` and `FitsRows` unchanged, and have `FitsPicker` render them. `FitsPicker` itself is not mounted, because it loads on open (`loadFitsAction`) inside `ModalChrome`.
+  - E1 status: the README says engineering accepts or declines it. The audit's A3/A4 section says "not ruled on; re-read with the revision". The r2 section says "E3 accepted … as E1 and E2 were".
+- **Providers:** per §6 "mounts as shipped", every specimen sits in `CardDetailProvider fetchCard={async () => null}`, as `ch01-figures.tsx` does. No other provider is named for A3.
+- **Order:**
+  1. Card plate.
+  2. The "could take it" group heading, with a right-aligned note "by each commander's synergy".
+  3. Two rows: the combo row, then the theme row.
+  4. The "already holds it" group heading.
+  5. One holds row.
+- **Wrappers:**
+  - Entry frame:
+
+    | Width | Frame width | Padding |
+    |---|---|---|
+    | desktop | 760 | `22px 24px 26px` |
+    | phone | 390 | `18px 16px 22px` |
+
+    Both: `border:1px solid var(--border-strong)`, radius 12, `bg var(--bg)`, IBM Plex Sans.
+  - Entry head: `border-top:2px solid var(--accent)`, `padding-top:13px`.
+  - Caption `<p>`: `margin:6px 0 0`.
+  - Figure: `margin:10px 0 0`, radius 8, `1px solid var(--border)`, `bg var(--surface-sunken)`, `padding:14px 16px`, `overflow:hidden`.
+  - Specimen stack: flex column, `gap:14px`.
+- **Size values by view:**
+
+  | Value | 760 | 390 |
+  |---|---|---|
+  | `addH` (Add height) | 32px | 44px |
+  | `addW` (Add min-width) | 0px | 64px |
+  | `holdH` (holds row min-height) | 34px | 44px |
+
+- **Phone reduction:** the picker is a sheet over the card, from 96px. The deck name and Add share a line, with Add at 44px. The reason line wraps underneath, between its segments.
+
+### 4. Fixture data (as drawn)
+
+- **Card:** Basalt Monolith.
+  - Rarity C.
+  - Plate sub: `colorless · legal in Commander`.
+  - Plate count: `×1 · 1 free` (owned 1, 1 free).
+  - `staple false`.
+  - Art: Scryfall `art_crop` for Basalt Monolith, 22×31.
+- **Fits rows:**
+  1. `deck: "HD - Kinnan"`, `combo: "Kinnan, Bonder Prodigy"`, `theme: null`, `need: "ramp 11 of 10"`, `hasNeed: true`. Drawn as "Completes a combo with Kinnan, Bonder Prodigy · this deck ramp 11 of 10".
+  2. `deck: "HD - Gishath"`, `combo: null`, `theme: "Joins 11 other artifact cards"`, `need: "ramp 7 of 10"`, `hasNeed: true`.
+- **Holds:** `HD - Tymna + Thrasios`, `holds 1`.
+
+### 5. State coverage
+
+| State | Drawn | Note |
+|---|---|---|
+| Combo reason row | Yes (Kinnan) | |
+| Theme reason row | Yes (Gishath) | |
+| Need segment present | Yes (both rows) | |
+| Need absent (no role) | No | Key 4 covers it |
+| No combo, no theme ("only what it needs") | No | Open for the build (R2-A3-1) |
+| Staple reason | No | `staple false` |
+| Already-holds group | Yes (1 row) | |
+| Add with a free copy | Implied (1 free) | |
+| Add as buy | No | |
+| 760 / 390 | Both | |
+
+---
+
+## Entry: stand-ins
+
+### 1. Entry slots
+
+| Slot | Value | Source |
+|---|---|---|
+| id | `stand-ins` | r2.ts |
+| chapter | `'03'` (03 · Building the 99) | r2.ts |
+| title | `Cheaper stand-ins` | r2.ts |
+| route | `/decks` | r2.ts |
+| opens | `opens the shopping roll-up` | r2.ts |
+| width | `plate` | r2.ts |
+| since | `10` (same G1 caveat as above) | r2.ts |
+| switch | `SWAP_TOOLS_ENABLED` | audit G1 |
+| insert position | Chapter 03, after `shopping` ("after 'What you would need to buy'"). 4th of the five new entries | README, r2.ts comment |
+| Strings from | `copy/swap-tools.ts (limit.*, row.over, sheet.group.*, sheet.mana.*)` | canvas |
+
+### 2. Key lines
+
+4 of 4.
+
+| Key | r2 drawn | Audit correction |
+|---|---|---|
+| 1 | The limit line, with the default note | None |
+| 2 | The over-limit mark and ⇄, plus the link from card details | None |
+| 3 | Every job, type groups, commander-favored lead, a few shown | **R2-A4-1 (TIGHTEN).** Gains "each says what it gives up". Proposed: "…led by the cards this commander's decks favor, each says what it gives up, and a few show until you ask for all." |
+| 4 | Land mana line and the ladder: untapped, then tapped, then once-only | KEEP the order. **R2-A4-1:** remove "Each says what it gives up." so the line ends at the ladder |
+
+Also from the audit:
+- Do not restore "your free copies first" unless the built ranking does it.
+- No row shows a percentage.
+- The locked-card rule stays in A2.
+- Caption: r2.ts as drawn. The audit makes no caption correction.
+
+### 3. Specimen composition
+
+- **Components, in order:**
+  1. `StandInLimit`. Mounts as shipped.
+  2. One Shopping `DecklistRow` (Plateau), over the limit, with ⇄ and ✕. Mounts as shipped.
+  3. One `StandInGroup` from the sheet, via **E3 (accepted)**. Export it unchanged (heading, order note, rows, Show all), and have the sheet render it. The sheet itself is not mounted, because it reads its list on open. Take is not drawn.
+- **Providers:** `SwapToolsProvider` (fixture props) and `CardDetailProvider fetchCard={async () => null}`.
+- **Layout:**
+  - Entry frame, head, caption margin and figure box are identical to A3.
+  - Specimen stack: flex column, `gap:6px`.
+  - Limit line: flex wrap, `gap:8px`, `min-height:30px`. The ⇄ hint `<p>` comes under it.
+  - Shopping row list: `margin-top:6px`, `border-top:1px solid var(--border)`. Row: `gap:9px`, `min-height: rowH`, `border-bottom`.
+  - Group box: `margin-top:10px`, radius 8, `1px solid var(--border-strong)`, `bg var(--bg)`, `padding:10px 12px 0`.
+    - Title "⇄ Plateau's stand-ins", `margin-bottom:8px`.
+    - Heading row: `same type · lands` on the left, `best mana first` on the right. `padding-bottom:6px`, `border-bottom`.
+    - Rows: `gap:9px`, `min-height: rowH`, `padding:6px 0`, `border-bottom`.
+    - "Show all 8 lands ▾": `min-height: holdH`, `padding-left:16px`, `gap:8px`.
+- **Size values by view:**
+
+  | Value | 760 | 390 |
+  |---|---|---|
+  | `rowH` | 36px | 48px |
+  | `hit` (⇄ and ✕ box) | 22px | 44px |
+  | `holdH` | 34px | 44px |
+
+- **Phone reduction:**
+  - Shopping rows are one column.
+  - The limit line wraps before its count, never inside it.
+  - ⇄ and ✕ keep 44px, and the name truncates first.
+  - Stand-in rows wrap the mana line between segments.
+  - Show all is a 44px row.
+
+### 4. Fixture data (as drawn)
+
+- **Provider:** deck `HD - Gishath`, `storedLimitCents null`.
+- **Limit:** `shoppingCount 6`, `overCount 1`. Drawn as "Marking cards over $10", a `default` pill, and "· 1 over".
+- **Hint:** "⇄ on a marked row opens its cheaper stand-ins. Any card's stand-ins are also in its details."
+- **Shopping row:** Plateau, a land.
+  - Sub-line: `over $10`.
+  - Tag: `buy · $293.84`.
+  - Dot: dashed (not owned).
+  - Over-limit, with ⇄ and ✕.
+- **Group:** lands, 8 total, 3 shown.
+
+| # | name | mana | facts | free | price |
+|---|---|---|---|---|---|
+| 1 | Sacred Foundry | makes white and red, untapped if you pay 2 life | "" | true | "" |
+| 2 | Battlefield Forge | makes white and red, untapped | 1 damage for either | true | "" |
+| 3 | Sunbaked Canyon | makes white and red, untapped | 1 life for either | false | $1.12 |
+
+- Row dots: a free row gets a 7×7 solid `var(--success)` dot. A buy row gets a 7×7 dashed `var(--fg-faint)` dot.
+- Show all label: `Show all 8 lands`.
+
+### 5. State coverage
+
+| State | Drawn | Note |
+|---|---|---|
+| Limit at default (`storedLimitCents null`) | Yes | |
+| Limit set by the user | No | |
+| Over-limit Shopping row | Yes (Plateau) | |
+| Under-limit row | No | |
+| Same-type group | Yes (lands) | |
+| Other-types group | No | |
+| Free stand-in | Yes (×2) | |
+| Buy stand-in | Yes (×1) | |
+| Untapped conditionally (pay life) | Yes (Sacred Foundry) | |
+| Tapped land | No | |
+| Makes a color only once | No | |
+| Gives-up facts present / empty | Yes / Yes | |
+| Show all (collapsed) | Yes | |
+| Group expanded | No | |
+| Take / Undo | No | By design: nothing on /about edits a deck |
+| 760 / 390 | Both | |
+
+## Verification (Agent 2 and Agent 3), 2026-09-25
+
+Checked against `FitsYourDecksFigureBody` and `StandInsFigureBody` (`src/components/about/ch01-figures.tsx`),
+`FITS` and `STAND_INS` (`src/lib/about/fixtures.ts`), the two entries in `src/lib/copy/about.ts`, and in a
+browser by `pnpm probe:about --flip` (F4c, F5) and the contact sheet at 390 and 1300. Both entries are
+gated on `SWAP_TOOLS_ENABLED` (confirmed by the orchestrator, not inferred).
+
+### Gaps found, all fixed
+
+1. The stand-ins figure drew Take on every row. Now none: nothing on /about edits a deck.
+2. The Shopping row had no rule above it. Now `margin-top 6px` and a top border in `--border`.
+3. The sheet's group sat loose. Now in the canvas's box: `margin-top 10px`, radius 8, `1px --border-strong`,
+   `--bg`, padding `10px 12px 0`.
+4. The specimen stack's gap was 14px. Now 6px.
+
+Agent 3 (confirm): all four read correctly after the fix. 0 gaps remain.
+
+### Deviations, by the shipped build rather than by gap
+
+The r2 drop was drawn before the ranking rebuild existed. The audit asked for both entries to be re-checked
+against the built ranking, and where the two disagree the SURFACE wins.
+
+- **Find a deck's order is not "by synergy".** `shapeFits` orders a combo first, then a theme (most cards
+  first), then the commander's synergy, then the name, and the picker's order note reads
+  `combos first, then themes`, not the canvas's "by each commander's synergy". Key 2 and the caption say
+  what ships.
+- **Not Design's card.** Basalt Monolith joins no shipped theme, and "artifacts" is not one
+  (`src/lib/recs/themes.ts`). The figure uses Ashnod's Altar: a combo with Nim Deathmantle, and the
+  sacrifice theme, so both reasons are real.
+- **Five stand-ins show, not three.** `STAND_IN_GROUP_SHOWN` is 5. The group holds six lands in ladder
+  order, so `Show all 6 lands` is drawn.
+- **Key 4's ladder follows `landRung`.** r2 said a once-only color "doesn't count as making it"; the shipped
+  ladder counts it, on the last rung, and it has four rungs, not three.
+- **No "⇄ Plateau's stand-ins" title over the group.** It is not a shipped string; the sheet's own title is
+  "Cheaper stand-ins", the entry's title one line up.
+- **`since` is 9, as for the other launch entries** (G1: an entry tied to a switch is announced by the switch).
+- **The open question (a row with no combo, theme or role)** is answered in key 3: the row shows only what the
+  deck needs, if anything. `ReasonLine` returns null with neither.
+

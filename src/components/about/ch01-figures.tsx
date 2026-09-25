@@ -1631,21 +1631,26 @@ const PLATEAU: DeckDetailCard = {
   availability: null,
   price: { cents: 29_384, foilCents: null, etchedCents: null, asOf: PRICES[0].fact.asOf },
 };
-const NO_TAKE = { onTake: () => {}, taking: false, busy: false, refused: null, error: null, cut: "Plateau" };
+// No Take: nothing on /about edits a deck, and a row whose Take is null draws none (as after a take).
+const NO_TAKE = { onTake: null, taking: false, busy: false, refused: null, error: null, cut: "Plateau" };
 
 export function StandInsFigureBody() {
   const siblings = STAND_INS.group.rows.map((r) => r.oracleId);
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <SwapToolsProvider deckId="about-figure" deckName={STAND_INS.deckName} storedLimitCents={null}>
-        <div className="flex flex-col gap-[14px]">
-          <div className="flex flex-col">
-            <StandInLimit shoppingCount={STAND_INS.shoppingCount} overCount={STAND_INS.overCount} />
+        <div className="flex flex-col gap-[6px]">
+          <StandInLimit shoppingCount={STAND_INS.shoppingCount} overCount={STAND_INS.overCount} />
+          <div className="mt-[6px] border-t border-solid border-[color:var(--border)]">
             <DecklistRow deckId="about-figure" card={PLATEAU} siblings={[]} inShopping newestAsOf={PRICES[0].fact.asOf} />
           </div>
-          <StandInGroup group={STAND_INS.group} keep={null}>
-            {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={siblings} />}
-          </StandInGroup>
+          {/* The sheet's own group, in the box the canvas draws it in. No title: the sheet's shipped
+              one is "Cheaper stand-ins", which is this entry's own title one line up. */}
+          <div className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
+            <StandInGroup group={STAND_INS.group} keep={null}>
+              {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={siblings} />}
+            </StandInGroup>
+          </div>
         </div>
       </SwapToolsProvider>
     </CardDetailProvider>
