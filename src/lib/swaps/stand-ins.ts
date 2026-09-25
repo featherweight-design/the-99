@@ -15,8 +15,10 @@ import {
   colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
 
-/** How many stand-ins a group shows. A presentation cap, stated once: the design draws no count. */
-export const STAND_IN_GROUP_CAP = 12;
+/** How many stand-ins a group shows before `Show all` (Hugh's Q3). */
+export const STAND_IN_GROUP_SHOWN = 5;
+/** How many ranked cards a group carries at most, staples aside; `Show all` draws them. A payload cap. */
+export const STAND_IN_GROUP_CAP = 30;
 
 export type SpellRole = Exclude<Role, "land">;
 
@@ -104,8 +106,6 @@ export type Candidate = CardRow & {
    * decks of its colors do, -1..1. Null when the index does not list it. Orders, never drawn (Q2).
    */
   synergy: number | null;
-  /** The index holds a support row for this card, whatever figures that row carries. */
-  listed: boolean;
   isUniversal: boolean;
   owned: number;
   /** Copies free from this deck's vantage, from `loadAvailability`. Null when it owns none. */
@@ -133,24 +133,18 @@ export type StandIn = {
   givesUp: GivenUp[];
 };
 
+/**
+ * One of the sheet's type groups (ranking-rebuild addendum §1b). A land is offered only lands, so a land
+ * or fetch has the one `same` group; a spell has its own main type (Q4), then every other type.
+ */
+export type StandInGroup = { same: boolean; type: MainType; rows: StandIn[] };
+
 export type StandInGroups = {
   job: Job;
-  /** The original's own price, when it is stocked now. Null means every group but `free` is empty (F5). */
+  /** The original's own price, when it is stocked now. Null means only free copies are offered (F5). */
   originalCents: number | null;
-  free: StandIn[];
-  /** Lands and fetches: every buyable stand-in, cheapest first. */
-  cheapest: StandIn[];
-  /**
-   * H4: universal staples to buy, cheapest first, in their own group between free and the
-   * commander's ranking (addendum §1). A staple's inclusion figure describes every commander, so
-   * the paid ranking leaves it out. A FREE staple stays in `free`, by the same figure as every free
-   * row: the addendum moves only the one to buy.
-   */
-  staples: StandIn[];
-  /** Spells the commander's index lists, by its inclusion figure. */
-  byCommander: StandIn[];
-  /** Spells it does not list, cheapest first. */
-  unlisted: StandIn[];
+  /** `same` first, then `other`; a group with no rows is left out. */
+  groups: StandInGroup[];
 };
 
 type Priced = { prices: Map<string, PriceFact>; newestAsOf: Date | null };
@@ -201,33 +195,37 @@ export function mainType(typeLine: string): MainType {
 }
 
 const byName = (a: StandIn, b: StandIn) => a.card.name.localeCompare(b.card.name);
-const byPrice = (a: StandIn, b: StandIn) => (a.cents ?? Infinity) - (b.cents ?? Infinity) || byName(a, b);
+/** Price with a free copy counted as 0 (the addendum's ruling 2): free wins a tie, and only a tie. */
+const byPrice = (a: StandIn, b: StandIn) =>
+  (a.free ? 0 : a.cents ?? Infinity) - (b.free ? 0 : b.cents ?? Infinity) || byName(a, b);
 /**
  * By the commander's synergy (v2 items 8 and 9): how much MORE its decks run a card than decks of its
- * colors do, rather than raw inclusion, which ranks every commander's staples first. Never drawn (Q2).
+ * colors do, rather than raw inclusion, which ranks every commander's staples first. A card the index
+ * does not list has none, so it follows every listed card. Never drawn (Q2).
  */
 const bySynergy = (a: StandIn, b: StandIn) =>
   (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || byPrice(a, b);
+const sharing = (s: StandIn) => s.shared.length + s.sharedThemes.length;
+/** A staple's figure describes every commander, so it has no synergy here to rank on: it goes last. */
+const staplesLast = (a: StandIn, b: StandIn) => Number(a.isUniversal) - Number(b.isUniversal);
 /**
- * Spells by how much of the original's work they share (Q6): its roles and its themes together, so a
- * creature that ramps and counts +1/+1 counters outranks a sorcery that only ramps. Then synergy.
+ * Spells (d9's D1 ruling): how much of the original's work they share, its roles and its themes together
+ * (Q6), so a creature that ramps and grows counters outranks a sorcery that only ramps; then synergy;
+ * then price.
  */
-const bySharing = (a: StandIn, b: StandIn) =>
-  (b.shared.length + b.sharedThemes.length) - (a.shared.length + a.sharedThemes.length) || bySynergy(a, b);
+const bySharing = (a: StandIn, b: StandIn) => staplesLast(a, b) || sharing(b) - sharing(a) || bySynergy(a, b);
 /** Lands on the ladder (item 2): the rung first, then synergy, then price, never the alphabet. */
-const byLadder = (a: StandIn, b: StandIn) => (a.rung ?? 1) - (b.rung ?? 1) || bySynergy(a, b);
+const byLadder = (a: StandIn, b: StandIn) => staplesLast(a, b) || (a.rung ?? 1) - (b.rung ?? 1) || bySynergy(a, b);
 
 /**
- * The stand-ins for one original, grouped and ordered as the sheet draws them.
+ * The stand-ins for one original, in the type groups the sheet draws (ranking-rebuild addendum §1b).
  *
- * - A free copy leads, whatever it costs, and never needs to be cheaper (brief §5).
+ * - A free copy is offered whatever it costs (brief §5); ownership is drawn on the row, not as a group.
  * - A buy must be STOCKED NOW and cost less than the original (F6). A price that is absent is never
  *   free, and a sold-out original has no price to beat, so it gets free copies only (F5).
- * - Lands and fetches order by the ladder (`landRung`), then the commander's synergy, then price (v2
- *   item 2); spells by how many of the original's roles and themes they share, then the commander's
- *   synergy (Q6, v2 item 8), with the cards its index does not list after them, by sharing then
- *   price (ruling 6, F14; v2 item 8). A universal staple to buy is neither: it
- *   takes its own group, by price, ahead of the commander's ranking (H4).
+ * - A land or fetch is offered lands, on the ladder (`landRung`), then synergy, then price. A spell is
+ *   offered its own main type first, then every other type, each by sharing, then synergy, then price.
+ *   A universal staple goes last in its group (addendum §1b, retiring the staples group of #997).
  */
 export function rankStandIns(
   original: CardRow,
@@ -239,20 +237,23 @@ export function rankStandIns(
   const job = jobOf(original);
   const originalThemes = job.kind === "spell" ? cardThemes(original, isCreatureType) : [];
   const originalPrice = stocked(original.oracleId, priced);
-  const groups: StandInGroups = {
-    job, originalCents: originalPrice?.cents ?? null, free: [], cheapest: [], staples: [], byCommander: [], unlisted: [],
-  };
-  if (job.kind === "none") return groups;
+  const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [] };
+  if (job.kind === "none") return read;
 
+  const isLand = job.kind !== "spell";
+  const ownType = isLand ? "land" : mainType(original.typeLine);
+  const same: StandIn[] = [];
+  const other: StandIn[] = [];
   for (const c of candidates) {
     if (c.oracleId === original.oracleId) continue;
     const match = sameJob(job, c);
     if (!match) continue;
     const price = stocked(c.oracleId, priced);
-    const isLand = job.kind !== "spell";
+    const free = freeAfterTake(c, c.owned, c.free);
+    if (!free && !(price && originalPrice && price.cents < originalPrice.cents)) continue;
     const row: StandIn = {
       card: c,
-      free: freeAfterTake(c, c.owned, c.free),
+      free,
       soft: c.soft,
       cents: price?.cents ?? null,
       foilOnly: price?.foilOnly ?? false,
@@ -266,22 +267,17 @@ export function rankStandIns(
       rung: isLand ? landRung(drawbacks(c), sourceFor(c, job), landCatch(c)) : null,
       givesUp: isLand ? givesUp(original, c) : [],
     };
-    if (row.free) groups.free.push(row);
-    else if (price && originalPrice && price.cents < originalPrice.cents) {
-      if (isLand) groups.cheapest.push(row);
-      else if (c.isUniversal) groups.staples.push(row);
-      else if (c.listed) groups.byCommander.push(row);
-      else groups.unlisted.push(row);
-    }
+    (isLand || mainType(c.typeLine) === ownType ? same : other).push(row);
   }
 
-  groups.free.sort(job.kind === "spell" ? bySharing : byLadder);
-  groups.cheapest.sort(byLadder);
-  groups.staples.sort(byPrice);
-  groups.byCommander.sort(bySharing);
-  groups.unlisted.sort((a, b) => (b.shared.length + b.sharedThemes.length) - (a.shared.length + a.sharedThemes.length) || byPrice(a, b));
-  for (const k of ["free", "cheapest", "staples", "byCommander", "unlisted"] as const) {
-    groups[k] = groups[k].slice(0, STAND_IN_GROUP_CAP);
-  }
-  return groups;
+  const order = isLand ? byLadder : bySharing;
+  // The cap trims the ranked cards, never a staple: a staple sorts last, so capping after the sort would cut
+  // every one from a long group (Sol Ring from Mana Vault's, measured). The staples a job admits are few.
+  const capped = (list: StandIn[]) => {
+    const sorted = list.sort(order);
+    return [...sorted.filter((s) => !s.isUniversal).slice(0, STAND_IN_GROUP_CAP), ...sorted.filter((s) => s.isUniversal)];
+  };
+  if (same.length) read.groups.push({ same: true, type: ownType, rows: capped(same) });
+  if (other.length) read.groups.push({ same: false, type: "other", rows: capped(other) });
+  return read;
 }

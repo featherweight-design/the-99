@@ -14,8 +14,8 @@
  * each kind, the first card from a named list this account does NOT own: a dual land, a fetch and
  * two removal spells, all above $10 at the newest price run, plus one card under $10. Mana Vault is
  * the staple case (H4): its stand-ins include Sol Ring, a universal staple, whose row names it as
- * one. The fixture accounts own Sol Ring free, so the row lands in `yours, free`; the paid staples
- * group's order is asserted whenever a sheet draws it, and pinned by `sheet-model.test.ts`. An unowned
+ * one, and sorts last in its type group (v2 D1). Each group shows five rows; every `Show all` is
+ * PRESSED and read back for the count it names, `aria-expanded` and its height. An unowned
  * card is a Shopping row. The deck is deleted in a `finally`, and the account's About row is put back as the run found it. Needs a server with
  * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
  */
@@ -59,7 +59,10 @@ const LEAD = {
   staple: /^Every card here is ramp /,
 };
 const STAPLE_FACT = "staple, any commander";
-const STAPLE_GROUP = "to buy · staples, cheapest first";
+/** v2 D1 (addendum §1b): type groups only, and a land is offered only lands. */
+const SAME_TYPE = /^same type · [a-z]+$/;
+const LAND_GROUP = "same type · lands";
+const SHOWN = 5;
 
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
@@ -277,20 +280,51 @@ try {
         report(`${tag} utility: rows left with nothing say nothing`, read.emptyRows > 0 && read.blankLines === 0,
           `${read.emptyRows} rows with no line under the name, ${read.blankLines} holding an empty one`);
       }
-      // H4: a paid staples group sits after the free copies and before the commander's ranking. An
-      // INVARIANT, asserted on every spell sheet that draws the group; which rows are staples the DOM
-      // cannot say, so the staple clause itself is read on a named row below.
-      if (kind === "spell" || kind === "staple") {
-        const at = read.headings.indexOf(STAPLE_GROUP);
-        const byCmdr = read.headings.findIndex((h) => h.startsWith("to buy · by "));
-        report(`${tag} ${kind}: the staples group sits between free and the commander's`,
-          at === -1 || ((at === 0 || read.headings[at - 1] === "yours, free") && (byCmdr === -1 || byCmdr > at)),
-          read.headings.join(" / "));
+      // D1: the groups are types. A land or fetch draws the one lands group; a spell draws its own type
+      // first and `other types` second, when it draws both.
+      const landish = kind === "land" || kind === "fetch" || kind === "utility";
+      report(`${tag} ${kind}: type groups, its own type first`,
+        // The whole shape, not the first heading: one same-type group at most and first, then one `other
+        // types` at most. A collapse into one group, or a second same-type group, fails here.
+        landish ? read.headings.length === 1 && read.headings[0] === LAND_GROUP
+          : (read.headings.length === 1 && (SAME_TYPE.test(read.headings[0]) || read.headings[0] === "other types"))
+            || (read.headings.length === 2 && SAME_TYPE.test(read.headings[0]) && read.headings[1] === "other types"),
+        read.headings.join(" / "));
+      // D1 with Hugh's Q3: five rows, then a text button that expands the group in place. PRESSED, on every
+      // group long enough to carry one, and read back: the count it names, aria-expanded, its height.
+      const toggles = await dialog.locator("section").evaluateAll((secs) => secs.map((sec) => ({
+        rows: sec.querySelectorAll("li").length,
+        label: sec.querySelector("button[aria-expanded]")?.textContent.replace(/[▾▴]/g, "").trim() ?? null,
+      })));
+      const long = toggles.filter((t) => t.label);
+      report(`${tag} ${kind}: a group shows ${SHOWN}, and only a longer one carries Show all`,
+        toggles.every((t) => (t.label ? t.rows === SHOWN : t.rows <= SHOWN)), toggles.map((t) => `${t.rows}${t.label ? `+${t.label}` : ""}`).join(", "));
+      for (const [i, t] of toggles.entries()) {
+        if (!t.label) continue;
+        const section = dialog.locator("section").nth(i);
+        const button = section.locator("button[aria-expanded]");
+        const n = Number(/Show all (\d+)/.exec(t.label)?.[1]);
+        const height = await button.evaluate((b) => b.getBoundingClientRect().height);
+        await button.click();
+        const opened = await section.evaluate((sec) => ({
+          rows: sec.querySelectorAll("li").length,
+          expanded: sec.querySelector("button[aria-expanded]").getAttribute("aria-expanded"),
+        }));
+        report(`${tag} ${kind}: Show all draws the ${n} it names, in place, ${w.label === 390 ? 44 : 34}px tall`,
+          opened.rows === n && opened.expanded === "true" && Math.round(height) === (w.label === 390 ? 44 : 34),
+          `${opened.rows} rows, expanded ${opened.expanded}, ${height}px`);
       }
+      if (long.length === 0 && kind === "land") report(`${tag} land: a group long enough to carry Show all`, false, "none drawn");
       if (kind === "staple") {
-        const sol = read.lines.find((l) => l.startsWith("Sol Ring"));
+        // Every group is open now, so a staple ranked past the first five is on the page. Staples sort last.
+        const lines = await dialog.locator("section").evaluateAll((secs) => secs.map((sec) =>
+          [...sec.querySelectorAll("li")].map((li) => li.textContent.replace(/\s+/g, " ").trim())));
+        const sol = lines.flat().find((l) => l.startsWith("Sol Ring"));
         report(`${tag} staple: Sol Ring reads as a staple`, Boolean(sol?.includes(STAPLE_FACT)) && !sol.includes("%"),
           sol?.slice(0, 90) ?? "no Sol Ring row");
+        report(`${tag} staple: staples sort last in their group`,
+          lines.every((g) => g.every((l, j) => j === 0 || !g[j - 1].includes(STAPLE_FACT) || l.includes(STAPLE_FACT))),
+          lines.map((g) => g.slice(-3).map((l) => l.slice(0, 18)).join(" / ")).join(" | "));
       }
       report(`${tag} ${kind}: nothing wider than the sheet`, read.overflow <= 0, `${read.overflow}px`);
       // v2, item 5: a stand-in row previews its card, desktop only by design, and the box draws ABOVE the
@@ -300,6 +334,8 @@ try {
         const rowEl = dialog.locator('[data-testid="stand-in-row"]').first();
         // A sheet with no row drawn (or none visible) records the check as failed rather than throwing,
         // so the run still reaches its cleanup and its report.
+        // Show all was pressed above, which scrolls the sheet to its foot: bring the first row back first.
+        await rowEl.scrollIntoViewIfNeeded().catch(() => {});
         const rb = await rowEl.boundingBox().catch(() => null);
         if (rb) {
           await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);

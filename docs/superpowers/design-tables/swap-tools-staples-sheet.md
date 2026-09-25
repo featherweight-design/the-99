@@ -7,21 +7,24 @@ in `docs/superpowers/design-tables/swap-tools-sheet.md`.
 
 ## Structure
 
+**Superseded in part by v2 D1** (the ranking-rebuild addendum §1b, audited in `READINESS-audit.md`): the
+staples group is retired. A staple now sorts LAST in its type group, free or not, and keeps its
+`staple, any commander` clause. The rows below marked *retired* describe #997's shipped form.
+
 | Element | Design | Copy key |
 |---|---|---|
-| A paid universal staple's group | its own group, `to buy · staples, cheapest first`, ordered by price | `sheet.groupStaples` |
-| Where the group sits | after `yours, free`, before `to buy · by {cmdr} decks` | — |
-| A staple's fact line | `{role} · MV {n} · staple, any commander`, never `in N% of {cmdr} decks` | `sheet.stapleFact` |
-| A free staple | stays in `yours, free`, with the same clause | `sheet.stapleFact` |
-| The lead, when a staples group is drawn | `… Free copies come first, then staples, then the cards {cmdr} decks favor most over other decks of their colors.` (v2 PR B: the order is the commander's synergy) | `sheet.leadSpellsStaples` |
+| A paid universal staple's group | *retired (v2 D1)*: last in its type group, never cut by the group cap | — |
+| Where the group sits | *retired (v2 D1)* | — |
+| A staple's fact line | `{role} · MV {n} · staple, any commander` (an other-types staple leads with its type), never `in N% of {cmdr} decks` | `sheet.stapleFact` |
+| A free staple | last in its type group like any staple, with the same clause | `sheet.stapleFact` |
+| The lead, when a staple is listed | its last sentence: `Staples every commander plays come last.` (v2 D1) | `sheet.leadSpellsStaples` |
 | Which staples | the one definition, `loadUniversalStaples` (F18); no names hard-coded | — |
-| Lands and fetches | `to buy · best mana first`, on the ladder (v2 PR B): rung, then synergy, then price | `sheet.groupCheapest` |
+| Lands and fetches | `same type · lands`, `best mana first`: on the ladder, then synergy, then price (v2 D1) | `sheet.groupSameType`, `sheet.orderBestMana` |
 
 ## State coverage
 
 | State | Trigger | Rendered |
 |---|---|---|
-| Staples to buy, and listed spells | a stocked universal staple under the original's price, not free | free / staples / by commander / unlisted; the staples lead |
-| Staples to buy, nothing listed (F14) | as above, with `byCommander` empty | free / staples / unlisted; `leadSpellsStaplesUnlisted` |
-| Free staple only | the staple has a free copy | free / by commander / unlisted; the plain lead; the row's staple clause |
+| A staple listed (v2 D1) | a universal staple, free or stocked under the original's price | the type groups, the staple last in its own; the lead ends `leadSpellsStaples` |
+| Nothing listed (F14) | as above, no card the index lists | `leadSpellsOrderUnlisted(card)`, then `leadSpellsStaples` |
 | No staple | no universal stand-in | unchanged |

@@ -11,7 +11,7 @@ import { shortName } from "../cards/short-name";
 import { formatCents } from "../decks/price";
 import type { StandInsRead } from "./gather";
 import { drawbacks, nonManaAbilities, type BasicType, type Color, type Drawback, type GivenUp } from "./land";
-import type { SpellRole, StandIn } from "./stand-ins";
+import { mainType, type MainType, type SpellRole, type StandIn } from "./stand-ins";
 
 const copy = swapToolsCopy.sheet;
 
@@ -61,7 +61,19 @@ export type SheetRow = {
   facts: string[];
 };
 
-export type SheetGroup = { heading: string; rows: SheetRow[] };
+export type SheetGroup = {
+  heading: string;
+  /** The order note drawn at the heading's right (addendum §1b). */
+  order: string;
+  /** What `Show all {n} {noun}` counts: `lands`, `creatures`, `other types`. */
+  noun: string;
+  rows: SheetRow[];
+};
+
+const PLURAL: Record<MainType, string> = {
+  creature: "creatures", planeswalker: "planeswalkers", battle: "battles", instant: "instants", sorcery: "sorceries",
+  artifact: "artifacts", enchantment: "enchantments", land: "lands", other: "cards",
+};
 
 export type SheetModel = {
   /** The job line under the original's name. */
@@ -118,7 +130,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
 
   // Hugh, 2026-09-24: when every stand-in gives up the SAME thing, the lead says it once and the rows
   // show only what differs. Mixed, each row keeps its own clause.
-  const everyRow = [...read.free, ...read.cheapest];
+  const everyRow = read.groups.flatMap((g) => g.rows);
   const givenUpKey = (s: StandIn) => s.givesUp.map(abilityText).join("|");
   // A sold-out lead names no give-up, so a sold-out sheet keeps every row's own clause.
   const shared =
@@ -131,7 +143,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
     if (job.kind === "spell") {
       const out = [rolesText(s.shared), copy.mv(s.card.cmc)];
       // Addendum §1: a staple's figure is about every commander, so the row says so rather than
-      // quoting it as this one's. A free staple keeps the clause in `yours, free` too.
+      // quoting it as this one's. A free staple keeps the clause too, last in its type group.
       // Hugh's Q2: no % on a stand-in row. The list is ordered by synergy, which a printed inclusion
       // figure would contradict (a 12% row above a 61% one). A staple still says it is one.
       if (s.isUniversal) out.push(copy.stapleFact);
@@ -145,18 +157,17 @@ export function sheetModel(read: StandInsRead): SheetModel {
     return clauses.length ? clauses : [copy.givesUpNothing];
   };
 
-  const groups: SheetGroup[] = [];
-  const push = (heading: string, list: StandIn[]) => {
-    if (list.length) groups.push({ heading, rows: list.map((s) => row(s, facts(s))) });
-  };
-  push(copy.groupFree, read.free);
-  if (job.kind === "spell") {
-    push(copy.groupStaples, read.staples);
-    push(copy.groupByCommander(commander), read.byCommander);
-    push(copy.groupUnlisted(commander), read.unlisted);
-  } else {
-    push(copy.groupCheapest, read.cheapest);
-  }
+  const order = job.kind === "spell" ? copy.orderMostShared : copy.orderBestMana;
+  const groups: SheetGroup[] = read.groups.map((g) => {
+    const noun = g.same ? PLURAL[g.type] : copy.groupOtherTypes;
+    return {
+      heading: g.same ? copy.groupSameType(PLURAL[g.type]) : copy.groupOtherTypes,
+      order,
+      noun,
+      // An other-types row names its type first (addendum §1b): the heading cannot say it for the row.
+      rows: g.rows.map((s) => row(s, g.same ? facts(s) : [mainType(s.card.typeLine), ...facts(s)])),
+    };
+  });
 
   if (groups.length === 0) {
     const sentence =
@@ -166,18 +177,20 @@ export function sheetModel(read: StandInsRead): SheetModel {
     return { job: jobLine, lead: null, groups: [], sentence, foot: false };
   }
 
+  const sameGroup = read.groups.find((g) => g.same);
   const lead =
     soldOut ? copy.leadSoldOut
     : job.kind === "land"
       ? shared !== null ? copy.leadLandsGivesUp(colorsText(job.colors), shared) : copy.leadLands(colorsText(job.colors))
     : job.kind === "fetch"
       ? shared !== null ? copy.leadFetchGivesUp(typesText(job.types, true), shared) : copy.leadFetch(typesText(job.types, true))
-    // F14: nothing listed for this commander or pair, so the order clause has nothing to name.
-    // H4: a staples group gets its own place in the order clause.
-    : read.byCommander.length === 0
-      ? read.staples.length ? copy.leadSpellsStaplesUnlisted(rolesText(job.roles), job.mv) : copy.leadSpellsUnlisted(rolesText(job.roles), job.mv)
-    : read.staples.length ? copy.leadSpellsStaples(rolesText(job.roles), job.mv, commander)
-    : copy.leadSpells(rolesText(job.roles), job.mv, commander);
+    : [
+        copy.leadSpellsJob(rolesText(job.roles), job.mv),
+        ...(sameGroup && read.groups.length > 1 ? [copy.leadSpellsTypes(PLURAL[sameGroup.type])] : []),
+        // F14: nothing listed for this commander or pair, so the order clause names no commander.
+        everyRow.some((s) => s.synergy !== null) ? copy.leadSpellsOrder(original.name, commander) : copy.leadSpellsOrderUnlisted(original.name),
+        ...(everyRow.some((s) => s.isUniversal) ? [copy.leadSpellsStaples] : []),
+      ].join(" ");
 
   return { job: jobLine, lead, groups, sentence: null, foot: true };
 }

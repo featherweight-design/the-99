@@ -9,11 +9,11 @@ const asOf = new Date("2026-09-20T00:00:00Z");
 const cardRow = (name: string) => ({ oracleId: `id-${name}`, name, typeLine: "Instant", oracleText: "", keywords: [], cmc: 2, imageUri: null });
 const standIn = (name: string, free: boolean) => ({
   card: cardRow(name), free, soft: 0, owned: free ? 1 : 0, cents: free ? null : 300, foilOnly: false,
-  inclusion: null, isUniversal: false, shared: ["removal"], drawbacks: [], givesUp: [],
+  inclusion: null, synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], rung: null, drawbacks: [], givesUp: [],
 });
 const READ = {
   job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
-  free: [{ ...standIn("Swords to Plowshares", true), soft: 1 }], cheapest: [], staples: [], byCommander: [], unlisted: [standIn("Chaos Warp", false)],
+  groups: [{ same: true, type: "instant", rows: [{ ...standIn("Swords to Plowshares", true), soft: 1 }, standIn("Chaos Warp", false)] }],
   original: cardRow("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: asOf,
 } as unknown as StandInsRead;
 
@@ -61,20 +61,40 @@ describe("StandInsSheet", () => {
     expect(screen.getByRole("status")).toHaveTextContent(swapToolsCopy.sheet.loadingSpells("removal"));
   });
 
-  it("draws the list in its groups once read, free copies first, with the foot", async () => {
+  it("draws the list in its type group once read, ownership on the row, with the foot", async () => {
     loadStandInsAction.mockResolvedValue(READ);
     await open();
     const sheet = screen.getByTestId("stand-ins-sheet");
     const headings = within(sheet).getAllByRole("heading", { level: 4 }).map((h) => h.textContent);
-    expect(headings).toEqual([swapToolsCopy.sheet.groupFree, swapToolsCopy.sheet.groupUnlisted("Gishath")]);
+    expect(headings).toEqual([swapToolsCopy.sheet.groupSameType("instants")]);
+    expect(within(sheet).getByText(swapToolsCopy.sheet.orderMostShared)).toBeInTheDocument();
+    // Two rows, under the five a group shows: no toggle.
+    expect(within(sheet).queryByRole("button", { name: /Show all/ })).toBeNull();
     expect(within(sheet).getByText(swapToolsCopy.sheet.free)).toBeInTheDocument();
     // The free copy a draft holds carries the shipped marker; the row to buy carries none.
     const swords = within(sheet).getByText("Swords to Plowshares").closest("li")!;
     expect(swords.textContent).toMatch(/1 in a draft/);
     expect(within(sheet).getByText("Chaos Warp").closest("li")!.textContent).not.toMatch(/in a draft/);
-    expect(within(sheet).getByText(swapToolsCopy.sheet.leadSpellsUnlisted("removal", 2))).toBeInTheDocument();
+    expect(within(sheet).getByText([swapToolsCopy.sheet.leadSpellsJob("removal", 2), swapToolsCopy.sheet.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "))).toBeInTheDocument();
     expect(within(sheet).getByText(/Cheapest printing of each, from ManaPool/)).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  // Addendum §1b with Hugh's Q3: five rows, then a text button that expands the group in place.
+  it("shows five rows of a longer group, and Show all expands it in place and back", async () => {
+    const seven = Array.from({ length: 7 }, (_, i) => standIn(`Removal ${i + 1}`, false));
+    loadStandInsAction.mockResolvedValue({ ...READ, groups: [{ same: true, type: "instant", rows: seven }] });
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
+    const toggle = within(sheet).getByRole("button", { name: swapToolsCopy.sheet.showAll(7, "instants") });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(7);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveTextContent(swapToolsCopy.sheet.showFewer);
+    fireEvent.click(toggle);
+    expect(within(sheet).getAllByTestId("stand-in-row")).toHaveLength(5);
   });
 
   it("offers another try when the read fails, and reads again on it", async () => {
@@ -152,7 +172,7 @@ describe("StandInsSheet row preview", () => {
   const ART = "https://cards.example/chaos-warp.jpg";
   const withArt = {
     ...READ,
-    unlisted: [{ ...standIn("Chaos Warp", false), card: { ...cardRow("Chaos Warp"), imageUri: ART } }],
+    groups: [{ same: true, type: "instant", rows: [{ ...standIn("Chaos Warp", false), card: { ...cardRow("Chaos Warp"), imageUri: ART } }] }],
   } as unknown as StandInsRead;
 
   it("opens the card's preview after the hover delay, and a press closes it", async () => {

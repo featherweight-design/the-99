@@ -22,7 +22,7 @@ import { isLandFace } from "../src/lib/cards/facet";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 import { loadCreatureTypes, loadStandIns, type StandInsRead } from "../src/lib/swaps/gather";
 import { fetchFinds, landColors } from "../src/lib/swaps/land";
-import { jobOf, type StandIn } from "../src/lib/swaps/stand-ins";
+import { jobOf, mainType, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
 
 neonConfig.webSocketConstructor = ws;
@@ -39,9 +39,18 @@ const check = (label: string, ok: boolean, detail: string) => {
 };
 const rows = async <T>(text: ReturnType<typeof sql>): Promise<T[]> => (await fixture.execute(text)).rows as T[];
 
-const all = (r: StandInsRead): StandIn[] => [...r.free, ...r.cheapest, ...r.staples, ...r.byCommander, ...r.unlisted];
+const all = (r: StandInsRead): StandIn[] => r.groups.flatMap((g) => g.rows);
+const freeRows = (r: StandInsRead): StandIn[] => all(r).filter((s) => s.free);
+/** The D1 order, restated so the probe can check each adjacent pair (d9's ruling, 2026-09-25). */
+const priceKey = (s: StandIn) => (s.free ? 0 : s.cents ?? Infinity);
+const staplesLast = (a: StandIn, b: StandIn) => Number(a.isUniversal) - Number(b.isUniversal);
+const tail = (a: StandIn, b: StandIn) => (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || priceKey(a) - priceKey(b);
+const ladder = (a: StandIn, b: StandIn) => staplesLast(a, b) || (a.rung ?? 1) - (b.rung ?? 1) || tail(a, b);
+const sharing = (a: StandIn, b: StandIn) =>
+  staplesLast(a, b) || (b.shared.length + b.sharedThemes.length) - (a.shared.length + a.sharedThemes.length) || tail(a, b);
+const inOrder = (r: StandInsRead, cmp: (a: StandIn, b: StandIn) => number) =>
+  r.groups.every((g) => g.rows.every((s, i) => i === 0 || cmp(g.rows[i - 1], s) <= 0));
 const names = (list: StandIn[]) => list.map((s) => s.card.name);
-const ascending = (xs: number[]) => xs.every((x, i) => i === 0 || xs[i - 1] <= x);
 
 async function card(name: string): Promise<{ oracle_id: string; color_identity: string[] }> {
   const [c] = await rows<{ oracle_id: string; color_identity: string[] }>(sql`
@@ -122,14 +131,13 @@ async function main() {
     const c = landColors(s.card);
     return c.has("R") && c.has("W");
   }), `${landList.length}: ${names(landList).slice(0, 6).join(", ")}…`);
-  check("land: the owned Command Tower leads, free", names(lands.free).includes("Command Tower"), names(lands.free).join(", "));
-  // v2: the ladder, then the commander's synergy, then price. Each adjacent pair must be in that order.
-  const ladder = (a: StandIn, b: StandIn) =>
-    (a.rung ?? 1) - (b.rung ?? 1) || (b.synergy ?? -Infinity) - (a.synergy ?? -Infinity) || (a.cents ?? Infinity) - (b.cents ?? Infinity);
-  check("land: a buy is cheaper than the original, by rung, then synergy, then price",
-    lands.originalCents === null || (lands.cheapest.every((s) => (s.cents ?? Infinity) < lands.originalCents!)
-      && lands.cheapest.every((s, i) => i === 0 || ladder(lands.cheapest[i - 1], s) <= 0)),
-    `original ${lands.originalCents}, ${lands.cheapest.map((s) => `${s.card.name} r${s.rung} ${s.synergy} ${s.cents}`).slice(0, 6).join(", ")}`);
+  check("land: the owned Command Tower is offered, free", names(freeRows(lands)).includes("Command Tower"), names(freeRows(lands)).join(", "));
+  check("land: one group, `same type · lands`", lands.groups.length === 1 && lands.groups[0].same && lands.groups[0].type === "land",
+    lands.groups.map((g) => `${g.same}/${g.type}`).join(", "));
+  // v2: the ladder, then the commander's synergy, then price with a free copy at 0.
+  check("land: every buy is cheaper than the original, and the group runs by rung, synergy, then price",
+    (lands.originalCents === null || landList.every((s) => s.free || (s.cents ?? Infinity) < lands.originalCents!)) && inOrder(lands, ladder),
+    `original ${lands.originalCents}, ${landList.map((s) => `${s.card.name} r${s.rung} ${s.synergy} ${s.free ? "free" : s.cents}`).slice(0, 6).join(", ")}`);
   guards("land", lands);
 
   // 2. A fetch: every stand-in finds both Mountain and Forest.
@@ -152,22 +160,24 @@ async function main() {
     select oracle_id, color_identity from cards where oracle_id = any(${sql.param(spellList.map((s) => s.card.oracleId))}::uuid[])`);
   check("spell: every identity inside the commander's", identities.every((r) => r.color_identity.every((c) => identity.has(c))),
     `${identities.length} read back`);
-  check("spell: listed cards by the commander's synergy",
-    ascending(spells!.byCommander.map((s) => -(s.synergy ?? -Infinity))),
-    spells!.byCommander.map((s) => `${s.card.name} ${s.synergy}`).slice(0, 6).join(", "));
-  check("spell: unlisted cards carry no figure, cheapest first",
-    spells!.unlisted.every((s) => s.inclusion === null) && ascending(spells!.unlisted.map((s) => s.cents!)),
-    spells!.unlisted.map((s) => `${s.card.name} ${s.cents}`).slice(0, 6).join(", "));
+  const [{ type_line: vaultTypeLine }] = await rows<{ type_line: string }>(sql`select type_line from cards where oracle_id = ${vault.oracle_id}::uuid`);
+  const vaultType = mainType(vaultTypeLine);
+  check("spell: the original's own type first, then other types, each row in the right one",
+    spells!.groups.every((g) => g.rows.every((s) => (mainType(s.card.typeLine) === vaultType) === g.same))
+      && spells!.groups.every((g, i) => i === 0 || !g.same),
+    spells!.groups.map((g) => `${g.same ? g.type : "other"} ${g.rows.length}`).join(", "));
+  check("spell: each group runs by what it shares, then synergy, then price",
+    inOrder(spells!, sharing),
+    all(spells!).map((s) => `${s.card.name} ${s.shared.length + s.sharedThemes.length}/${s.synergy}`).slice(0, 6).join(", "));
   const staples = await loadUniversalStaples();
   check("spell: the staple flag is the shared definition's",
     spellList.every((s) => s.isUniversal === staples.has(s.card.oracleId)),
     `${spellList.filter((s) => s.isUniversal).map((s) => s.card.name).join(", ") || "no staple among them"}`);
-  // H4: a paid staple leaves the commander's ranking for its own group, by price.
-  check("spell: staples to buy are all staples, cheapest first, and neither ranking holds one",
-    // Non-empty: `every` holds over nothing, and a run with no paid staple has measured nothing.
-    spells!.staples.length > 0 && spells!.staples.every((s) => s.isUniversal) && ascending(spells!.staples.map((s) => s.cents!))
-      && [...spells!.byCommander, ...spells!.unlisted].every((s) => !s.isUniversal),
-    `${spells!.staples.map((s) => `${s.card.name} ${s.cents}`).join(", ") || "no paid staple"}`);
+  // Addendum §1b: a staple sorts last in its type group. Non-empty: a run with no staple has measured nothing.
+  check("spell: staples sort last in their group",
+    spellList.some((s) => s.isUniversal)
+      && spells!.groups.every((g) => g.rows.every((s, i) => i === 0 || !g.rows[i - 1].isUniversal || s.isUniversal)),
+    spells!.groups.map((g) => g.rows.map((s) => `${s.card.name}${s.isUniversal ? "*" : ""}`).slice(-4).join(" ")).join(" | "));
   guards("spell", spells!);
 
   // 4. A utility land: every stand-in names what Cavern does that it does not (H3).
@@ -183,10 +193,10 @@ async function main() {
   const forest = await card("Forest");
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${forest.oracle_id}::uuid, 5), (${deckId}::uuid, ${cradle.oracle_id}::uuid, 1)`);
   const cradles = await loadStandIns(deckId, USER, cradle.oracle_id);
-  const forestRow = cradles!.free.find((s) => s.card.oracleId === forest.oracle_id);
+  const forestRow = freeRows(cradles!).find((s) => s.card.oracleId === forest.oracle_id);
   check("basics: a Forest already in the draft is offered for Gaea's Cradle, free, giving up its extra mana",
     !!forestRow && forestRow.givesUp.some((g) => g.kind === "named" && g.label === "its extra mana"),
-    `free: ${names(cradles!.free).slice(0, 6).join(", ")}`);
+    `free: ${names(freeRows(cradles!)).slice(0, 6).join(", ")}`);
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}::uuid and oracle_id in (${forest.oracle_id}::uuid, ${cradle.oracle_id}::uuid)`);
 
   // 4c. The tribal theme's vocabulary, by the app's own query. Its regex escapes are the kind a template
@@ -204,7 +214,7 @@ async function main() {
   check("another reader's deck reads as nothing", (await loadStandIns(deckId, "someone-else", plateau.oracle_id)) === null, "null");
 
   // 7. The draft guard, both sides: a stand-in staged into the draft leaves the list.
-  const staged = lands.cheapest[0] ?? lands.free[0];
+  const staged = landList.find((s) => !s.free) ?? landList[0];
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${staged.card.oracleId}::uuid, 1)`);
   const after = await loadStandIns(deckId, USER, plateau.oracle_id);
   check(`draft guard: ${staged.card.name} leaves once it is in the draft`,
@@ -217,15 +227,15 @@ async function main() {
   await commitVersion(holder, null);
   const claimed = await loadStandIns(deckId, USER, plateau.oracle_id);
   check("free after the take: a copy a committed deck holds is no longer free",
-    !names(claimed!.free).includes("Command Tower") && names(lands.free).includes("Command Tower"),
-    `free before: ${names(lands.free).join(", ")}; after: ${names(claimed!.free).join(", ")}`);
+    !names(freeRows(claimed!)).includes("Command Tower") && names(freeRows(lands)).includes("Command Tower"),
+    `free before: ${names(freeRows(lands)).join(", ")}; after: ${names(freeRows(claimed!)).join(", ")}`);
 
   // 9. A partner deck reads the PAIR's own figure, never either commander's.
   const [partner] = await rows<{ oracle_id: string }>(sql`
     select oracle_id from cards where commander_legal and type_line ~* 'legendary creature'
       and color_identity <@ array['R','G','W'] and oracle_id <> ${commander.oracle_id}::uuid
     order by name limit 1`);
-  const ramp = spells!.byCommander[0] ?? spells!.unlisted[0];
+  const ramp = spellList.find((s) => s.inclusion !== null && !s.isUniversal) ?? spellList.find((s) => !s.isUniversal)!;
   const a = commander.oracle_id < partner.oracle_id ? commander.oracle_id : partner.oracle_id;
   const b = a === commander.oracle_id ? partner.oracle_id : commander.oracle_id;
   const [made] = await rows<{ commander_oracle_id: string }>(sql`
@@ -242,8 +252,8 @@ async function main() {
     const pairRead = await loadStandIns(pairDeck, USER, vault.oracle_id);
     const pairRow = all(pairRead!).find((s) => s.card.oracleId === ramp.card.oracleId);
     check("pair: the pair's own figure, and nothing from either commander's list",
-      pairRow?.inclusion === 77.5 && pairRead!.byCommander.every((s) => s.card.oracleId === ramp.card.oracleId),
-      `${ramp.card.name} at ${pairRow?.inclusion}; listed ${pairRead!.byCommander.length}`);
+      pairRow?.inclusion === 77.5 && all(pairRead!).filter((s) => s.inclusion !== null).every((s) => s.card.oracleId === ramp.card.oracleId),
+      `${ramp.card.name} at ${pairRow?.inclusion}; listed ${all(pairRead!).filter((s) => s.inclusion !== null).length}`);
   }
 }
 

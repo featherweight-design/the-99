@@ -21,7 +21,8 @@ import { loadStandInsAction, takeStandInAction, undoSwapAction } from "../../lib
 import { useSwapTools } from "../../lib/swaps/context";
 import type { StandInsRead } from "../../lib/swaps/gather";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
-import { loadingStatus, sheetModel, type SheetRow } from "../../lib/swaps/sheet-model";
+import { loadingStatus, sheetModel, type SheetGroup, type SheetRow } from "../../lib/swaps/sheet-model";
+import { STAND_IN_GROUP_SHOWN } from "../../lib/swaps/stand-ins";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
@@ -57,6 +58,39 @@ const APPLY =
   "inline-flex items-center justify-center h-[44px] w-[72px] rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] leading-none bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]";
 const QUIET =
   "ml-auto min-h-[44px] rounded-[8px] px-[14px] text-[13px] md:min-h-[32px] md:rounded-[7px] md:px-[11px] md:py-[6px] md:text-[12px] leading-none font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]";
+
+/**
+ * One type group (addendum §1b): its heading with the order note at the right, the first
+ * `STAND_IN_GROUP_SHOWN` rows, and a `Show all` text button that expands the group in place. A group no
+ * longer than it shows draws no toggle. A taken row is always drawn, wherever it ranks.
+ */
+function StandInGroup({ group, keep, children }: { group: SheetGroup; keep: string | null; children: (row: SheetRow) => React.ReactNode }) {
+  const [all, setAll] = useState(false);
+  const more = group.rows.length > STAND_IN_GROUP_SHOWN;
+  const shown = all || !more ? group.rows : group.rows.filter((r, i) => i < STAND_IN_GROUP_SHOWN || r.oracleId === keep);
+  return (
+    <section className="flex flex-col" aria-label={group.heading}>
+      <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
+        <h4 className="m-0 font-mono font-normal text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
+          {group.heading}
+        </h4>
+        <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--fg-locked)" }}>{group.order}</span>
+      </div>
+      <ul className="m-0 p-0 list-none">{shown.map(children)}</ul>
+      {more ? (
+        <button
+          type="button"
+          aria-expanded={all}
+          onClick={() => setAll((v) => !v)}
+          className="flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent border-0 border-b border-[color:var(--border)] text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer"
+        >
+          <span>{all ? copy.showFewer : copy.showAll(group.rows.length, group.noun)}</span>
+          <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{all ? "▴" : "▾"}</span>
+        </button>
+      ) : null}
+    </section>
+  );
+}
 
 /** What the sheet knows about one row's Take: the press in flight, a refusal, or a throw. */
 type RowTake = {
@@ -485,26 +519,21 @@ export function StandInsSheet({
         ) : null}
 
         {model?.groups.map((group) => (
-          <section key={group.heading} className="flex flex-col">
-            <h4 className="m-0 pb-[6px] font-mono font-normal text-[9.5px] tracking-[0.12em] uppercase border-b border-[color:var(--border)]" style={{ color: "var(--fg-faint)" }}>
-              {group.heading}
-            </h4>
-            <ul className="m-0 p-0 list-none">
-              {group.rows.map((row) => (
-                taken?.addId === row.oracleId ? (
-                  <TakenRow key={row.oracleId} cut={name} add={row.name} busy={undoing} error={undoFailed ? copy.undoRefused : null} onUndo={() => void undo()} />
-                ) : (
-                  <StandInRow
-                    key={row.oracleId}
-                    row={row}
-                    newestAsOf={load.state === "ready" ? load.read.newestAsOf : null}
-                    take={rowTake(row)}
-                    siblings={siblings}
-                  />
-                )
-              ))}
-            </ul>
-          </section>
+          <StandInGroup key={group.heading} group={group} keep={taken?.addId ?? null}>
+            {(row) => (
+              taken?.addId === row.oracleId ? (
+                <TakenRow key={row.oracleId} cut={name} add={row.name} busy={undoing} error={undoFailed ? copy.undoRefused : null} onUndo={() => void undo()} />
+              ) : (
+                <StandInRow
+                  key={row.oracleId}
+                  row={row}
+                  newestAsOf={load.state === "ready" ? load.read.newestAsOf : null}
+                  take={rowTake(row)}
+                  siblings={siblings}
+                />
+              )
+            )}
+          </StandInGroup>
         ))}
 
         {model?.foot && provenance ? (
