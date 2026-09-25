@@ -124,7 +124,14 @@ if (!process.env.ANTHROPIC_API_KEY) {
   console.error("ANTHROPIC_API_KEY is not set (it comes from the repo .env via scripts/lib/env.mjs).");
   process.exit(1);
 }
-const client = new Anthropic();   // reads ANTHROPIC_API_KEY; never printed
+// BATCHES GO DIRECT TO ANTHROPIC, deliberately. `ANTHROPIC_BASE_URL` in this
+// repo's .env points at a local proxy (127.0.0.1:8787) that forwards
+// /v1/messages but has no /v1/messages/batches route -- it answers
+// `cave_route_not_found`. The batch endpoint is what carries the 50% discount
+// this sample's budget assumes, so the batch client names the real API host and
+// nothing else changes. The key still comes from the .env convention and is
+// never printed.
+const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 mkdirSync("out", { recursive: true });
 
 const submitted = {};
