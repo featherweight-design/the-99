@@ -1,6 +1,6 @@
 import type { DeckProfile } from "../profile/types";
 import { producesInfiniteTurns } from "../spellbook/combo-features";
-import { comboLandsEarly, GAME_CHANGER_LIMIT, permitsFor } from "./rules";
+import { comboLandsEarly, GAME_CHANGER_LIMIT, permitsFor, violationsFor } from "./rules";
 import { slotDeck } from "./slot";
 import type { Bracket, CardRef, ComboRef, Violation } from "./types";
 
@@ -114,9 +114,7 @@ export function bracketDelta(profile: DeckProfile, candidate: CandidateFacts): B
   const loops = combos.filter((c) => producesInfiniteTurns(c.produces));
 
   const to = permitsFor({
-    violatesB1: gc > 0 || mld > 0 || turns > 0 || combos.length > 0,
-    violatesB2: gc > 0 || mld > 0 || combos.length > 0,
-    violatesB3: gc > GAME_CHANGER_LIMIT[3] || mld > 0 || loops.length > 0,
+    ...violationsFor({ gameChangers: gc, massLandDenial: mld, extraTurns: turns, combos: combos.length, loops: loops.length }),
     // The candidate's own combo has no computed reach — nothing has asked which tutors find
     // a card that is not in the deck yet — so coverage is read from the tutors already here.
     // That errs toward "you would have to draw it", which is the direction this feature is

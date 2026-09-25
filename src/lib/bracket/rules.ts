@@ -88,6 +88,30 @@ export function bracketOf(value: number | null): Bracket | null {
   return value !== null && value >= 1 && value <= 5 ? (value as Bracket) : null;
 }
 
+/**
+ * Which brackets' limits a deck's counts break. The ONE statement of the rules above as
+ * arithmetic, which `slotDeck`, `bracketDelta` and Help me choose's filter all call; it was
+ * written out twice before the third caller arrived, and a third copy is how two of them drift.
+ *
+ * `loops` are the combos Spellbook records as producing infinite turns, the one extra-turns clause
+ * that matters above bracket 1. A plain extra-turn card breaks bracket 1 only.
+ */
+export function violationsFor(counts: {
+  gameChangers: number;
+  massLandDenial: number;
+  extraTurns: number;
+  combos: number;
+  loops: number;
+}): { violatesB1: boolean; violatesB2: boolean; violatesB3: boolean } {
+  const { gameChangers, massLandDenial, extraTurns, combos, loops } = counts;
+  return {
+    violatesB1: gameChangers > GAME_CHANGER_LIMIT[1] || massLandDenial > MASS_LAND_DENIAL_LIMIT
+      || extraTurns > EXTRA_TURN_LIMIT_BRACKET_1 || combos > 0,
+    violatesB2: gameChangers > GAME_CHANGER_LIMIT[2] || massLandDenial > MASS_LAND_DENIAL_LIMIT || combos > 0,
+    violatesB3: gameChangers > GAME_CHANGER_LIMIT[3] || massLandDenial > MASS_LAND_DENIAL_LIMIT || loops > 0,
+  };
+}
+
 export function permitsFor(input: {
   violatesB1: boolean;
   violatesB2: boolean;

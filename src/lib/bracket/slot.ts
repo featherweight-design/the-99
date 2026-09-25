@@ -6,6 +6,7 @@ import {
   MASS_LAND_DENIAL_LIMIT,
   comboLandsEarly,
   permitsFor,
+  violationsFor,
 } from "./rules";
 import type {
   Bracket,
@@ -54,11 +55,10 @@ export function slotDeck(
   // extra-turns clause that violates above bracket 1, and the combo is the receipt.
   const loops = combos.filter((c) => producesInfiniteTurns(c.produces));
 
-  const violatesB1 =
-    gc.length > 0 || mld.length > 0 || turns.length > 0 || combos.length > 0;
-  const violatesB2 = gc.length > 0 || mld.length > 0 || combos.length > 0;
-  const violatesB3 =
-    gc.length > GAME_CHANGER_LIMIT[3] || mld.length > 0 || loops.length > 0;
+  const { violatesB1, violatesB2, violatesB3 } = violationsFor({
+    gameChangers: gc.length, massLandDenial: mld.length, extraTurns: turns.length,
+    combos: combos.length, loops: loops.length,
+  });
 
   // The 3-vs-4 boundary resolves on whether the deck can ASSEMBLE a combo rather than draw
   // into it. A commander piece counts as covered without a tutor — it is available every
