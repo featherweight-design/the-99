@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ s.root }}" data-screen-label="{{ label }}">
+
+  <sc-if value="{{ isNew }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;">
+      <div style="{{ s.header }}">
+        <h1 style="{{ s.h1 }}">{{ newTitle }}</h1>
+        <p style="{{ s.sub }}">{{ newSub }}</p>
+      </div>
+      <div style="{{ s.newBody }}">
+        <div style="{{ s.newList }}">
+          <div style="{{ s.door }}">
+            <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
+              <span style="{{ s.doorHead }}">Not sure what to build?</span>
+              <span style="{{ s.doorBody }}">Say what you want, and we’ll rank commanders by how well they fit it, owned or not.</span>
+            </div>
+            <span role="button" style="{{ s.doorBtn }}">Help me choose →</span>
+          </div>
+          <div style="{{ s.search }}"><span style="color:var(--fg-faint);font-size:14px;">⌕</span><span style="flex:1;color:var(--fg-faint);">Search commanders…</span><sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">48 results</span></sc-if></div>
+          <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:11px 13px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);font-size:16px;color:var(--fg-faint);">Deck name…</div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ owned }}" as="o" hint-placeholder-count="4">
+              <div style="{{ s.pRow }}">
+                <span style="{{ o.thumb }}"></span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                  <span style="{{ s.pName }}">{{ o.name }}</span>
+                  <span style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);"><sc-for list="{{ o.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for>{{ o.meta }}</span>
+                </span>
+                <span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border-dashed);flex:none;"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <div style="width:300px;flex:none;margin:24px 40px 24px 0;border-radius:12px;background:var(--surface-rail);border:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Selected</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">No commander selected.</span>
+            <span style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:9px;background:var(--accent);color:var(--bg);opacity:0.4;font-size:15px;font-weight:600;">Create deck →</span>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:auto;padding:10px 16px 12px;border-top:1px solid var(--border);background:var(--bg);display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Pick a commander to start</span>
+          <span style="height:48px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--accent);color:var(--bg);opacity:0.5;font-size:15px;font-weight:600;">Create deck →</span>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;">
+      <div style="{{ s.header }}">
+        <h1 style="{{ s.h1 }}">Discover</h1>
+        <p style="{{ s.sub }}">Commanders you don’t own yet, ordered by how much of their list you already hold.</p>
+      </div>
+      <div style="{{ s.rack }}">
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">Best fit <span style="color:var(--fg-faint);">▾</span></span>
+            <span style="height:34px;flex:1;min-width:200px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);font-size:13.5px;color:var(--fg-faint);">⌕ Search commanders</span>
+            <span style="height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:8px;border:1px solid var(--accent);"><sc-for list="{{ rackPips }}" as="p" hint-placeholder-count="5"><span style="{{ p }}"></span></sc-for></span>
+            <span style="height:34px;display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:8px;border:1px solid var(--border-strong);"><span style="height:28px;display:flex;align-items:center;padding:0 10px;border-radius:6px;background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);">Any</span><span style="height:28px;display:flex;align-items:center;padding:0 10px;font-size:12.5px;color:var(--fg-muted);">Exactly</span></span>
+            <span style="height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-body);">Popularity <span style="color:var(--fg-faint);">▾</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;height:22px;">
+            <span style="height:22px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:6px;border:1px solid var(--border-strong);font-size:11.5px;color:var(--fg-body);"><span style="width:8px;height:8px;border-radius:2px;background:var(--r);"></span><span style="width:8px;height:8px;border-radius:2px;background:var(--g);"></span>Red · Green <span style="color:var(--fg-faint);">✕</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);padding:0 4px;">Clear</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:8px;">
+            <span style="height:44px;flex:1;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:9px;background:var(--surface-sunken);border:1px solid var(--border-strong);font-size:15px;color:var(--fg-faint);">⌕ Search</span>
+            <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--border-strong);color:var(--fg-muted);">⇅</span>
+            <span style="height:44px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:9px;border:1px solid var(--accent);font-size:13.5px;color:var(--fg);">Filters <span style="min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">1</span></span>
+          </div>
+        </sc-if>
+        <div style="{{ s.resultLine }}">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">412 of 3,301 commanders match</span>
+          <span style="{{ s.link }}">Not sure what you want? <span style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 50%, transparent);">Help me choose →</span></span>
+        </div>
+      </div>
+      <div style="{{ s.dList }}">
+        <sc-for list="{{ discover }}" as="o" hint-placeholder-count="3">
+          <div style="{{ s.dRow }}">
+            <span style="{{ o.thumb }}"></span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+              <span style="{{ s.pName }}">{{ o.name }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ o.meta }}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:720},&quot;door&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;decksnew&quot;,&quot;discover&quot;],&quot;default&quot;:&quot;decksnew&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const P = !!this.props.phone;
+    const door = this.props.door ?? "decksnew";
+    const theme = this.props.theme ?? "amonkhet";
+    const mono = "'IBM Plex Mono',monospace";
+    const PIP = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const thumb = (ci) => ({ flex: "none", width: 40, height: 56, borderRadius: 5, background: `linear-gradient(160deg, ${ci.map((c) => `color-mix(in oklab, ${PIP[c]} 55%, var(--bg))`).join(", ")}${ci.length === 1 ? ", " + `color-mix(in oklab, ${PIP[ci[0]]} 55%, var(--bg))` : ""})`, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" });
+    const pip = (c) => ({ width: P ? 9 : 11, height: P ? 9 : 11, borderRadius: "50%", background: PIP[c] });
+    const mk = (name, ci, meta) => ({ name, meta, thumb: thumb(ci), pips: ci.map(pip) });
+    const owned = [mk("Etali, Primal Conqueror", ["R", "G"], "Gruul · 212 cards"), mk("Omnath, Locus of Rage", ["R", "G"], "Gruul · 198 cards"), mk("Kykar, Wind’s Fury", ["U", "R", "W"], "Jeskai · 176 cards"), mk("Meren of Clan Nel Toth", ["B", "G"], "Golgari · 161 cards")];
+    const discover = [mk("Xenagos, God of Revels", ["R", "G"], "you hold 149 of its 302 · 4,812 decks"), mk("Klothys, God of Destiny", ["R", "G"], "you hold 141 of its 298 · 3,020 decks"), mk("Rosheen Meanderer", ["R", "G"], "you hold 132 of its 281 · 2,410 decks")];
+    const rackPips = ["W", "U", "B", "R", "G"].map((c) => ({ width: 18, height: 18, borderRadius: "50%", background: PIP[c], opacity: c === "R" || c === "G" ? 1 : 0.34 }));
+    const s = {
+      root: { width: P ? 390 : 1300, minHeight: P ? 760 : 700, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      header: P ? { padding: "20px 18px 14px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 3 } : { padding: "34px 40px 26px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 6 },
+      h1: { margin: 0, fontFamily: "var(--display)", fontWeight: 700, fontSize: P ? 20 : 28 },
+      sub: P ? { margin: 0, fontFamily: mono, fontSize: 10, color: "var(--fg-faint)" } : { margin: 0, fontSize: 14, color: "var(--fg-muted)" },
+      newBody: P ? { display: "flex", flexDirection: "column" } : { display: "flex", alignItems: "flex-start" },
+      newList: P ? { display: "flex", flexDirection: "column", gap: 14, padding: "16px 18px" } : { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16, padding: "24px 40px" },
+      door: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "center", gap: P ? 10 : 18, padding: P ? "13px 14px" : "15px 18px", borderRadius: P ? 10 : 11, background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" },
+      doorHead: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14.5 : 16, color: "var(--fg)" },
+      doorBody: { fontSize: P ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-body)" },
+      doorBtn: { flex: "none", height: P ? 44 : 38, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", borderRadius: 8, border: "1px solid var(--accent)", color: "var(--accent)", fontSize: 13.5, fontWeight: 600 },
+      search: { display: "flex", alignItems: "center", gap: P ? 8 : 10, padding: P ? "9px 12px" : "12px 15px", borderRadius: 9, background: "var(--surface-sunken)", border: `1px solid ${P ? "var(--border-strong)" : "var(--accent)"}`, fontSize: P ? 14 : 15 },
+      pRow: { display: "flex", alignItems: "center", gap: P ? 11 : 14, padding: P ? "10px 12px" : "12px 15px", borderRadius: P ? 10 : 11, background: "var(--surface-rail)", border: "1px solid var(--border)", minHeight: 44 },
+      pName: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14 : 16, color: "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+      rack: { display: "flex", flexDirection: "column", gap: 10, padding: P ? "12px 16px 0" : "18px 40px 0" },
+      resultLine: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "flex-start" : "baseline", gap: P ? 8 : 16, paddingBottom: 12, borderBottom: "1px solid var(--border)" },
+      link: { marginLeft: P ? 0 : "auto", fontSize: 12.5, color: "var(--fg-muted)", minHeight: P ? 44 : "auto", display: "flex", alignItems: "center", gap: 5 },
+      dList: { display: "flex", flexDirection: "column", gap: 10, padding: P ? "12px 16px" : "16px 40px" },
+      dRow: { display: "flex", alignItems: "center", gap: 14, padding: P ? "10px 12px" : "12px 15px", borderRadius: 11, background: "var(--surface-rail)", border: "1px solid var(--border)" },
+    };
+    return {
+      theme, phone: P, desktop: !P, s, label: `${P ? "390" : "1300"} · door · ${door}`,
+      isNew: door === "decksnew", isDiscover: door === "discover",
+      newTitle: P ? "Pick a commander" : "New deck", newSub: P ? "From your collection." : "Pick a commander from your collection, or let us help.",
+      owned, discover, rackPips,
+    };
+  }
+}
+</script>
+</body>
+</html>
