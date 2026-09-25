@@ -32,6 +32,7 @@ import { loadCompletionPartners, pairsWithOnePiece, type PairRow } from "../src/
 import { db as appDb } from "../src/db";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { loadFits } from "../src/lib/swaps/fits";
+import { cardThemes } from "../src/lib/recs/themes";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 
@@ -268,7 +269,32 @@ async function main() {
   if (staples.length === 0) throw new Error("format_staples names no universal staple on this database");
   const stapleRead = await loadFits(USER, staples[0]);
   check("staple: a universal staple reads as one", stapleRead?.staple, true);
-  check("staple: and carries no reason, which its row never draws", stapleRead?.fits.every((f) => f.reason === null), true);
+
+  // A staple's row draws `staple · any commander`, never a reason, so loadFits computes none. The case has
+  // to be one a reason COULD be found for, or the check holds on any build: a colorless staple with a theme,
+  // and an open five-color deck holding another colorless card with that theme.
+  const texts = await rows<{ oracle_id: string; type_line: string; oracle_text: string | null; color_identity: string[] }>(sql`
+    select oracle_id, type_line, oracle_text, color_identity from cards
+    where oracle_id = any(${sql.param(staples)}::uuid[]) order by oracle_id`);
+  const themedStaple = texts.map((t) => ({ ...t, themes: cardThemes({ typeLine: t.type_line, oracleText: t.oracle_text }, () => false) }))
+    .find((t) => t.color_identity.length === 0 && t.themes.length > 0);
+  if (!themedStaple) {
+    check("staple: a colorless staple with a theme, to test the skip against", false, true);
+  } else {
+    const mates = await rows<{ oracle_id: string; type_line: string; oracle_text: string | null }>(sql`
+      select oracle_id, type_line, oracle_text from cards
+      where commander_legal and cardinality(color_identity) = 0 and oracle_id <> ${themedStaple.oracle_id}::uuid
+        and not (oracle_id = any(${sql.param(staples)}::uuid[])) and type_line !~* 'land'
+      order by name limit 400`);
+    const mate = mates.find((m) => cardThemes({ typeLine: m.type_line, oracleText: m.oracle_text }, () => false).includes(themedStaple.themes[0]));
+    if (!mate) {
+      check(`staple: a colorless card sharing ${themedStaple.themes[0]}`, false, true);
+    } else {
+      const themeDeck = await makeDeck(USER, "F staple theme", legend.oracle_id, null, [mate.oracle_id]);
+      const read = await loadFits(USER, themedStaple.oracle_id);
+      check("staple: no reason on any row, even where a theme is shared", read?.fits.find((f) => f.id === themeDeck)?.reason, null);
+    }
+  }
   check("staple: the fixture card does not", r?.staple, false);
 
   // 8. A card that does not exist reads as nothing.
