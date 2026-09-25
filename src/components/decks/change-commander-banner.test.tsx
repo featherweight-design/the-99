@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import type { DraftState } from "../../lib/decks/draft-shape";
@@ -8,6 +9,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { PendingBanner } = await import("./pending-banner");
 const { commanderZoneHint } = await import("./change-commander-banner");
+const { ChangeCommanderProvider, useChangeCommander } = await import("./change-commander-context");
 
 const single = (id: string) => ({ commanderOracleId: id, partnerOracleId: null });
 const names = new Map([["korvold", "Korvold, Fae-Cursed King"], ["prosper", "Prosper, Tome-Bound"]]);
@@ -46,8 +48,51 @@ describe("the pending banner's commander line", () => {
         versionCards={99}
       />,
     );
-    expect(screen.getByTestId("banner-commander-sentence").textContent).toContain("Prosper replaces Korvold as commander.");
+    const sentence = screen.getByTestId("banner-commander-sentence");
+    expect(sentence.textContent).toContain("Prosper replaces Korvold as commander.");
     expect(screen.queryByTestId("banner-commander-line")).toBeNull();
+    // Above the money line, which this draft draws (every add has a spare copy).
+    const money = screen.getByText(/spare cop/);
+    expect(sentence.compareDocumentPosition(money) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("focus after a change lands", () => {
+  const long = () => {
+    const many = Array.from({ length: 8 }, (_, i) => ({ oracleId: `c${i}`, from: 0, to: 1 }));
+    return swapped({
+      addChanges: many,
+      adds: many.map((c) => ({ ...c, bucket: "free" as const, shortfall: 0, needed: 1, heldBy: [] })),
+    });
+  };
+  /** What the sheet does after a write: announce, which raises the focus flag. */
+  function Announce() {
+    const door = useChangeCommander();
+    useEffect(() => { door?.announce("done"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return null;
+  }
+  const mount = (state: DraftState) => (
+    <ChangeCommanderProvider deckId="d1" deckName="Jund" pair={false} hasVersion>
+      <Announce />
+      <PendingBanner state={state} deckId="d1" versionCards={99} />
+    </ChangeCommanderProvider>
+  );
+
+  it("lands on the counts sentence when the banner draws counts", () => {
+    render(mount(long()));
+    expect(document.activeElement).toBe(screen.getByTestId("banner-commander-sentence"));
+  });
+
+  it("lands on the line when the refreshed state draws it after the announcement", () => {
+    // A card change already on the draft, so the banner (and the line's slot in it) is mounted
+    // before the swap: the line's hook runs with nothing to focus, then must run again.
+    const card = { oracleId: "c1", from: 0, to: 1 };
+    const cards = { addChanges: [card], adds: [{ ...card, bucket: "free" as const, shortfall: 0, needed: 1, heldBy: [] }] };
+    const { rerender } = render(mount({ ...swapped(cards), commander: null, commanderRows: null }));
+    expect(screen.getByText(/pending changes/i)).toBeTruthy();
+    expect(screen.queryByTestId("banner-commander-line")).toBeNull();
+    rerender(mount(swapped(cards)));
+    expect(document.activeElement).toBe(screen.getByTestId("banner-commander-line"));
   });
 });
 

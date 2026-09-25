@@ -287,9 +287,10 @@ async function main() {
     const whyText = (await why.first().textContent().catch(() => "")) ?? "";
     report("discard has no empty card clause", !/not stored anywhere|\.\s{2}/.test(whyText), whyText);
 
-    // A trade (STATES 21b): the chosen commander was in the 99, so on the review page its row in
-    // `Coming in` reads where it goes to, the old commander's row in `Going out` reads where it
-    // comes from, and neither offers its usual action (Pull it, Put back).
+    // A trade (STATES 21b): the chosen commander was in the 99. On the review page the old
+    // commander's row in `Coming in` reads that it came `from the command zone`, the new one's row
+    // in `Going out` reads that it went `to the command zone`, and each hint stands where the row's
+    // usual action (Pull it, Put back) would be.
     const traded = await buildFixture(userId, { trade: true });
     await page.setViewportSize(WIDTHS[0].viewport);
     await page.goto(`${BASE}/decks/${traded.deckId}`, { waitUntil: "domcontentloaded" });
@@ -309,10 +310,16 @@ async function main() {
       await onPage(page, '[data-testid="review-commander"]').waitFor({ state: "visible", timeout: 30_000 });
       const columns = onPage(page, "#review");
       // The phone draws one column at a time behind a segmented pair; read what the document holds.
-      const texts = await columns.evaluate((el) => el.textContent ?? "");
-      const hasTo = texts.includes("to the command zone");
-      const hasFrom = texts.includes("from the command zone");
-      report(`trade zone hints @${width.label}`, hasTo && hasFrom, `to: ${hasTo}, from: ${hasFrom}`);
+      const hints = await columns.evaluate((el) => ["in", "out"].map((side) => {
+        const hint = el.querySelector(`[data-zone-hint="${side}"]`);
+        const slot = hint?.parentElement;
+        const action = [...(slot?.querySelectorAll("button") ?? [])].some((b) => /Pull it|Put back/.test(b.textContent ?? ""));
+        return { side, text: hint?.textContent ?? null, action };
+      }));
+      const [coming, going] = hints;
+      report(`trade zone hints @${width.label}`,
+        coming.text === "from the command zone" && going.text === "to the command zone" && !coming.action && !going.action,
+        JSON.stringify(hints));
     }
   } finally {
     // Each step on its own, so one failing cannot skip the next.

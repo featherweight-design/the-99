@@ -74,6 +74,6 @@ export function CommanderSection({ state }: { state: DraftState }) {
 }
 
 /** A traded card's command-zone hint in a review column's action slot (handoff §4). */
-export function ZoneHint({ text }: { text: string }) {
-  return <span className="flex-none font-mono text-[10px] text-[color:var(--fg-locked)]">{text}</span>;
+export function ZoneHint({ text, side }: { text: string; side: "in" | "out" }) {
+  return <span data-zone-hint={side} className="flex-none font-mono text-[10px] text-[color:var(--fg-locked)]">{text}</span>;
 }

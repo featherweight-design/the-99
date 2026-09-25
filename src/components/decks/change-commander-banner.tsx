@@ -30,17 +30,26 @@ function buyFigures(state: DraftState): string[] {
     .filter((f): f is string => f !== null);
 }
 
-/** The names density's commander line, first in the list. */
-export function CommanderNameLine({ state, tileClass }: { state: DraftState; tileClass: string }) {
+/**
+ * After a change lands, focus goes to whichever commander line the banner draws (the names
+ * density's line or the counts density's sentence). Re-run when the line appears as well as when
+ * the flag is raised: the announcement can arrive before the refreshed state draws the line.
+ */
+function useTakesFocus<T extends HTMLElement>(shown: boolean) {
   const door = useChangeCommander();
-  const ref = useRef<HTMLLIElement>(null);
-  // After a change lands the page refreshes under the new commander; this line is where focus goes.
+  const ref = useRef<T>(null);
   useEffect(() => {
     if (door?.focusPending && ref.current) {
       ref.current.focus();
       door.focusTaken();
     }
-  }, [door]);
+  }, [door, shown]);
+  return ref;
+}
+
+/** The names density's commander line, first in the list. */
+export function CommanderNameLine({ state, tileClass }: { state: DraftState; tileClass: string }) {
+  const ref = useTakesFocus<HTMLLIElement>(state.commander !== null);
   if (!state.commander) return null;
   const pair = state.commander.to.partnerOracleId !== null;
   return (
@@ -59,6 +68,7 @@ export function CommanderNameLine({ state, tileClass }: { state: DraftState; til
 
 /** The counts density's sentence, above the money line. */
 export function CommanderSentence({ state, sentenceClass }: { state: DraftState; sentenceClass: string }) {
+  const ref = useTakesFocus<HTMLParagraphElement>(state.commander !== null);
   if (!state.commander) return null;
   const from = ids(state.commander.from).map((id) => state.names.get(id) ?? "");
   const to = ids(state.commander.to).map((id) => state.names.get(id) ?? "");
@@ -68,7 +78,7 @@ export function CommanderSentence({ state, sentenceClass }: { state: DraftState;
     : copy.banner.replaces(short(to[0]), short(from[0]));
   return (
     // The money sentence's type, on its own 6px foot (handoff §4): the money line sits directly under.
-    <p data-testid="banner-commander-sentence" data-commander-line="true" className={twMerge(sentenceClass, "mb-[6px] md:mb-[6px]")}>
+    <p ref={ref} tabIndex={-1} data-testid="banner-commander-sentence" data-commander-line="true" className={twMerge(sentenceClass, "mb-[6px] md:mb-[6px] outline-none")}>
       <span aria-hidden="true" className="mr-[7px] font-mono text-[12px] text-[color:var(--accent)]">⇄</span>
       {text}
     </p>

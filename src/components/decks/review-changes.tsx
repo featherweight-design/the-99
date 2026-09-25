@@ -343,7 +343,7 @@ export function Column({
                     // A trade's old commander, arriving from the command zone, says so in
                     // the slot a pull would use (handoff §4).
                     zoneHint?.(row.oracleId, true)
-                      ? <ZoneHint text={zoneHint(row.oracleId, true)!} />
+                      ? <ZoneHint side="in" text={zoneHint(row.oracleId, true)!} />
                       : pullClaim
                       ? (
                           <PullControl
@@ -371,7 +371,7 @@ export function Column({
                     // A trade's new commander left for the command zone: no Put back, which
                     // would re-add the card now leading the deck, and the zone named instead.
                     zoneHint?.(row.oracleId, false)
-                      ? <ZoneHint text={zoneHint(row.oracleId, false)!} />
+                      ? <ZoneHint side="out" text={zoneHint(row.oracleId, false)!} />
                       : onRestore && restorable(row)
                       ? (
                           <div className="inline-flex flex-col items-end flex-none">
@@ -779,7 +779,8 @@ export function ReviewChanges({
         // route's own `admitsReview` asks it the same way. The pair used to be
         // two questions and two flags, because a moved basic could empty both
         // columns while the draft still differed.
-        const redirecting = outAfter === 0 && inCount === 0;
+        // A moved commander is a change the columns do not list, so the route stays.
+        const redirecting = outAfter === 0 && inCount === 0 && !state.commander;
         draftAnnouncer().textContent =
           redirecting
             ? restoreCopy.announcedLastChange(card.name, state.version?.number ?? 1)
