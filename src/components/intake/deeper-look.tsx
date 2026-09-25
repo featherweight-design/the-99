@@ -46,14 +46,15 @@ export function DeeperLookScope({ children }: { children: ReactNode }) {
   return <Looking.Provider value={{ looking, setLooking }}>{children}</Looking.Provider>;
 }
 
-/** The first results, dimmed while a look runs: they stay until the new ones are ready. */
+/** Whether a deeper look is running: the results dim their rows (never their labels) while it is. */
+export function useDeeperLooking(): boolean {
+  return useContext(Looking).looking;
+}
+
+/** Marks the results while a look runs; what dims is the rows themselves (`useDeeperLooking`). */
 export function DimWhileLooking({ children }: { children: ReactNode }) {
   const { looking } = useContext(Looking);
-  return (
-    <div data-testid="results-dim" data-looking={looking || undefined} className={looking ? "opacity-[0.45]" : undefined}>
-      {children}
-    </div>
-  );
+  return <div data-testid="results-dim" data-looking={looking || undefined}>{children}</div>;
 }
 
 export function closedBy(s: Standing): Closed {
@@ -72,6 +73,8 @@ export function standingLine(s: Standing): string {
     default: return creditsCopy.first(s.limit - s.used, s.limit, next);
   }
 }
+
+const bare = (s: Standing) => creditsCopy.standing(s.limit - s.used, s.limit, s.nextAt ? new Date(s.nextAt) : null);
 
 export function DeeperLook({
   params,
@@ -170,38 +173,56 @@ export function DeeperLook({
   const tag = phase === "done" ? copy.deeper.doneTag : phase === "failed" ? copy.deeper.failTag : null;
   const line =
     looking ? copy.deeper.pendingLine
-    : phase === "done" ? copy.deeper.doneLine(creditsCopy.standing(standing.limit - standing.used, standing.limit, standing.nextAt ? new Date(standing.nextAt) : null))
+    : phase === "done" ? copy.deeper.doneLine(bare(standing))
+    // Nothing to add: no press follows, so the bare count, not "Uses a credit".
+    : phase === "nothing" ? bare(standing)
     : standingLine(standing);
   // Offered once per set of words: after a look delivered or found nothing, there is no press.
   const offered = phase === "offer" || phase === "failed";
   const pill = closed === "spent" ? copy.deeper.costSpent : closed ? copy.deeper.costPaused : copy.deeper.cost;
 
+  const label = phase === "failed" ? copy.deeper.retry : copy.deeper.action;
+  const buttonBase =
+    "inline-flex items-center justify-center md:justify-start gap-[9px] h-[44px] md:h-[38px] pl-[6px] pr-[14px] rounded-full text-[13.5px] font-semibold whitespace-nowrap";
+  const pillBase = "inline-flex items-center h-[30px] md:h-[26px] px-[10px] rounded-full font-mono text-[10.5px]";
+
   return (
     <div
       data-testid="deeper-look"
       data-phase={phase}
-      className="flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[20px] p-[12px_14px] md:p-[14px_16px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_28%,transparent)] bg-[color:color-mix(in_oklab,var(--accent)_6%,var(--surface-sunken))]"
+      className="flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[24px] p-[13px_14px] md:p-[14px_16px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_28%,var(--border))] bg-[color:color-mix(in_oklab,var(--accent)_6%,var(--surface-sunken))]"
     >
       <div className="flex flex-col gap-[4px] flex-1 min-w-0">
-        <h3 className="m-0 flex items-center gap-[8px] font-display font-semibold text-[15.5px] text-[color:var(--fg)]">
+        <h3 className="m-0 flex flex-wrap items-center gap-[8px] font-display font-semibold text-[14.5px] md:text-[15.5px] text-[color:var(--fg)]">
           {title}
           {tag && (
-            <span className="font-mono text-[9px] font-normal tracking-[.12em] uppercase text-[color:var(--accent)]">{tag}</span>
+            <span
+              className={[
+                "rounded-full px-[8px] py-[2px] font-mono text-[9.5px] font-normal tracking-[.12em] uppercase",
+                phase === "failed"
+                  ? "text-[color:var(--danger)] bg-[color:color-mix(in_oklab,var(--danger)_12%,transparent)]"
+                  : "text-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_12%,transparent)]",
+              ].join(" ")}
+            >
+              {tag}
+            </span>
           )}
         </h3>
-        <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{lead}</p>
+        <p className="m-0 max-w-[520px] text-[12.5px] md:text-[13px] leading-[1.55] [text-wrap:pretty] text-[color:var(--fg-body)]">{lead}</p>
       </div>
       <div className="flex flex-col gap-[6px] md:items-end shrink-0">
         {looking ? (
-          <div className="flex items-center gap-[10px]">
-            <span className="inline-flex items-center h-[44px] md:h-[38px] px-[16px] rounded-full border border-solid border-[color:var(--border-strong)] text-[13.5px] text-[color:var(--fg-muted)]">
+          <div className="flex items-center gap-[8px]">
+            {/* The press, hairlined while it runs: the stub stays, first, as it was pressed. */}
+            <button type="button" disabled className={`${buttonBase} bg-transparent border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)] font-normal cursor-default`}>
+              <span className={`${pillBase} font-medium bg-[color:var(--surface)] text-[color:var(--fg-muted)]`}>{copy.deeper.cost}</span>
               {copy.deeper.actionPending}
-            </span>
+            </button>
             <button
               type="button"
               onClick={stop}
               disabled={stopping}
-              className="h-[44px] md:h-[38px] px-[14px] rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent text-[13.5px] text-[color:var(--fg-body)] cursor-pointer disabled:cursor-default"
+              className="inline-flex items-center h-[44px] md:h-[36px] px-[12px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13px] text-[color:var(--fg-muted)] cursor-pointer disabled:cursor-default"
             >
               {copy.deeper.stop}
             </button>
@@ -211,16 +232,26 @@ export function DeeperLook({
             type="button"
             onClick={press}
             disabled={closed !== null}
-            aria-label={closed === null ? (phase === "failed" ? `${copy.deeper.cost}. ${copy.deeper.retry}.` : copy.deeper.aria) : undefined}
-            className="inline-flex items-center justify-center gap-[8px] h-[44px] md:h-[38px] px-[6px] pr-[16px] rounded-full border-0 bg-[color:var(--accent)] text-[color:var(--bg)] text-[13.5px] font-semibold cursor-pointer disabled:cursor-default disabled:opacity-[0.45]"
+            aria-label={`${pill}. ${label}.`}
+            className={
+              closed === null
+                ? `${buttonBase} border-0 bg-[color:var(--accent)] text-[color:var(--bg)] cursor-pointer`
+                : `${buttonBase} border border-solid border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-disabled)] cursor-default`
+            }
           >
-            <span className="inline-flex items-center h-[26px] px-[9px] rounded-full font-mono text-[10.5px] font-semibold bg-[color:color-mix(in_oklab,var(--bg)_22%,transparent)]">
+            <span
+              className={
+                closed === null
+                  ? `${pillBase} font-semibold bg-[color:color-mix(in_oklab,var(--bg)_22%,transparent)]`
+                  : `${pillBase} font-medium bg-[color:var(--surface)] text-[color:var(--fg-disabled)]`
+              }
+            >
               {pill}
             </span>
-            {phase === "failed" ? copy.deeper.retry : copy.deeper.action}
+            {label}
           </button>
         ) : null}
-        <p data-testid="deeper-line" className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:text-right md:max-w-[360px]">
+        <p data-testid="deeper-line" className="m-0 font-mono text-[10px] md:text-[10.5px] leading-[1.5] [text-wrap:pretty] text-center md:text-right text-[color:var(--fg-faint)] md:max-w-[360px]">
           {line}
         </p>
       </div>

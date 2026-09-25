@@ -16,6 +16,7 @@ import { figures, narrowOptions, orderLine, type Labels } from "../../lib/intake
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
 import { TOO_NARROW_BELOW } from "../../lib/intake/vocabulary";
 import { ChooseRow, type Trial } from "./choose-row";
+import { useDeeperLooking } from "./deeper-look";
 import { NarrowNote } from "./narrow-note";
 
 const BEST_FITS = 3;
@@ -44,6 +45,8 @@ export function ChooseResults({
   const [rows, setRows] = useState<ResultRow[]>(page.rows);
   const [hasMore, setHasMore] = useState(page.hasMore);
   const [failed, setFailed] = useState(false);
+  // While a deeper look runs, the first results stay, dimmed: the rows only, never the labels.
+  const dim = useDeeperLooking();
   const [pending, startTransition] = useTransition();
 
   // THE ROWS' OWNERSHIP FIGURES, counted a slice at a time in ONE action per slice: Next runs a
@@ -133,7 +136,7 @@ export function ChooseResults({
           <h3 id="best-fits" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--accent)]">
             {copy.results.bestFits}
           </h3>
-          <ol className="m-0 p-0 list-none grid grid-cols-1 gap-[10px] md:grid-cols-[repeat(3,minmax(0,1fr))] md:gap-[14px]">
+          <ol data-dim={dim || undefined} className={`m-0 p-0 list-none grid grid-cols-1 gap-[10px] md:grid-cols-[repeat(3,minmax(0,1fr))] md:gap-[14px] ${dim ? "opacity-[0.45]" : ""}`}>
             {best.map((r, i) => row(r, i + 1))}
           </ol>
           <h3 className="m-0 mt-[6px] font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]">
@@ -142,7 +145,7 @@ export function ChooseResults({
         </section>
       )}
 
-      <ol className="m-0 p-0 list-none flex flex-col gap-[10px]">{rest.map((r) => row(r))}</ol>
+      <ol data-dim={dim || undefined} className={`m-0 p-0 list-none flex flex-col gap-[10px] ${dim ? "opacity-[0.45]" : ""}`}>{rest.map((r) => row(r))}</ol>
 
       {hasMore && (
         <div className="flex flex-wrap items-center justify-center gap-[14px]">

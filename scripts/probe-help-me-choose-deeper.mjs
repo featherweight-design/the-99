@@ -80,6 +80,8 @@ async function toResults(page, width) {
   await page.locator(`${PAGE} textarea`).fill(`${WORDS} ${width} ${Date.now()}`);
   await page.locator(`${PAGE} button:visible`, { hasText: "Find commanders" }).first().click();
   await panel(page).waitFor({ timeout: 90_000 });
+  // The bar draws before the results stream in: wait for the rows, or the look dims a skeleton.
+  await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 90_000 });
 }
 
 async function run() {
@@ -117,6 +119,13 @@ async function run() {
       await button.click();
       await page.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "looking", PAGE);
       const dimmed = await page.locator(`${PAGE} [data-testid='results-dim']`).getAttribute("data-looking");
+      // The rows dim and the labels do not: read as resolved opacity, which a class cannot prove.
+      const dimRead = await page.evaluate((scope) => {
+        const root = document.querySelector(scope);
+        const rows = [...root.querySelectorAll("ol[data-dim]")].map((el) => getComputedStyle(el).opacity);
+        const heads = [...root.querySelectorAll("[data-testid='order-line'], #best-fits")].map((el) => getComputedStyle(el).opacity);
+        return { rows, heads };
+      }, PAGE);
       await page.locator(`${PAGE} button`, { hasText: "Stop" }).click();
       await page.waitForFunction((scope) => document.querySelector(`${scope} [data-testid='deeper-look']`)?.dataset.phase === "offer", PAGE, { timeout: 30_000 });
       await page.waitForTimeout(6_000); // let the held reply land and settle, so the ledger is final
@@ -124,6 +133,9 @@ async function run() {
       report(at("a Stop while it runs returns the offer and un-dims the results"),
         dimmed === "true" && (await page.locator(`${PAGE} [data-testid='results-dim']`).getAttribute("data-looking")) === null,
         `dimmed while looking: ${dimmed}`);
+      report(at("while it looks the rows dim to 0.45, and the order line and labels do not"),
+        dimRead.rows.length > 0 && dimRead.rows.every((o) => o === "0.45") && dimRead.heads.length > 0 && dimRead.heads.every((o) => o === "1"),
+        JSON.stringify(dimRead));
       report(at("and spends nothing"), (afterStop.spent ?? 0) === (beforeStop.spent ?? 0) && !afterStop.reserved,
         `before ${JSON.stringify(beforeStop)}, after ${JSON.stringify(afterStop)}`);
 
