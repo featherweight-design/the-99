@@ -120,8 +120,15 @@ the curve so a changed index cannot silently move it.
    `changeCommander` action, and the copy module `src/lib/copy/change-commander.ts`, transcribed from Design's
    copy file for `/copy-review`. A probe, `probe:change-commander-write`, runs against local-dev: a swap, a trade,
    a pair swap and a refused cross-identity write, then the floor's curve re-read from the index.
-   **Shared file:** `actions.ts`, for the action's export only, or a new `src/lib/commander-change/actions.ts`
-   if d9 prefers the fence.
+   **No shared file:** the action is `src/lib/commander-change/actions.ts`, a thin Server Action over
+   `write.ts`'s transaction, which the probe calls because an action needs a signed-in user.
+   As built, three facts the design did not know:
+   - **A candidate with no deck data is hidden, not drawn** (state 10). H2 hides every sample under the floor,
+     and no data is the smallest sample, so `sheet.noData` is left out of the copy module.
+   - **Pairs are data-limited.** Staging indexes 1 pair (`commander_pair_support`, ok, at least 20 decks)
+     against 3,380 singles, so a pair deck will almost always draw `copy.sheet.nonePair`. The loader reads
+     pairs exactly as the plan says. Widening the pair index is the index job's business, not this line's.
+   - **A lock on a card that becomes commander is pruned** with the card's slot, as any removal prunes one.
 3. **The door and the sheet.** The joined plate on the art (R3-E). `change-commander-sheet.tsx` on `ModalChrome`
    at 700: the list, figure-opens-its-cards, Show more, the confirm with mana value, the trade, the pair,
    errors, and `CardModal` stacked with `← Change commander`. **Shared files:** `spine-desktop.tsx` and
