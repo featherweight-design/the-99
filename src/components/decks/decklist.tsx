@@ -64,11 +64,6 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
 };
 
 /**
- * The Shopping section a cut's row sat in, by the rules the list sections its rows with: its type group
- * under `By type`; under `By role` the pinned spoken-for group, else its targeted role, else `Other`.
- * A swap receipt draws there (swap tools, PR 4b).
- */
-/**
  * The Lock cards mode's line, drawn where the mark key sits while the mode runs. Exported for the
  * About page's Locked cards figure, which draws it above the rows in the mode.
  */
@@ -81,6 +76,11 @@ export function LockModeLine({ count }: { count: number }) {
   );
 }
 
+/**
+ * The Shopping section a cut's row sat in, by the rules the list sections its rows with: its type group
+ * under `By type`; under `By role` the pinned spoken-for group, else its targeted role, else `Other`.
+ * A swap receipt draws there (swap tools, PR 4b).
+ */
 export function receiptHome(card: DeckDetailCard, grouping: "role" | "type"): { key: string; label: string } {
   if (grouping === "type") return { key: card.cardTypeGroup, label: card.cardTypeGroup };
   if (isSpokenFor(card)) return { key: "spoken-for", label: recommendationsCopy.shopping.spokenForGroupLabel };
