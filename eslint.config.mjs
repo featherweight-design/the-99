@@ -16,8 +16,12 @@ const eslintConfig = defineConfig([
     "design/**",
     // Feature worktrees live inside the repo. The ".next/**" pattern above is
     // anchored to the root, so without this, linting the main checkout also
-    // lints every worktree's src/ and its .next/ build output.
+    // lints every worktree's src/ and its .next/ build output. Both places
+    // worktrees are made: `.worktrees/` by hand, `.claude/worktrees/` by Claude
+    // Code's own worktree tool — whose Turbopack chunks put 1,265 errors on the
+    // main checkout's lint before this second line existed.
     ".worktrees/**",
+    ".claude/worktrees/**",
   ]),
   {
     files: ["src/**/*.tsx"],
