@@ -1,3 +1,4 @@
+import { INTAKE_MAX_TOKENS, INTAKE_MODEL } from "../intake/limits";
 import { SYNOPSIS_MAX_TOKENS } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
@@ -70,6 +71,10 @@ export function worstCaseMicroUsd(model: string, inputCeilingTokens: number, max
  * staging decks: the tuning prompt ran 3,748 to 5,116 tokens; the synopsis prompt 6,551 to 10,342,
  * and a synopsis section retry adds the kept synopsis on top, up to its 3,000-token output. The
  * ceilings are those maxima with room to grow: tuning 12,000, synopsis 24,000.
+ *
+ * The deeper read (intake), measured the same way 2026-09-25 against staging's tags: 3,434 tokens
+ * with the picker's 307 labels and the worst 800 characters of words (`READ_WORDS_MAX_CHARS`,
+ * dense names and digits), and 3,946 were every one of the 401 tags offered. Its ceiling is 6,000.
  */
 export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   model: string;
@@ -81,6 +86,7 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
 }>> = {
   tuning: { model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
   synopsis: { model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS, callsPerWrite: 2 },
+  intake: { model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1 },
 };
 
 /**

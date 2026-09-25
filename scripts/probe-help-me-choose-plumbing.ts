@@ -4,9 +4,9 @@
 // WHAT ONLY A DATABASE CAN ANSWER HERE.
 //   THE MIGRATION'S RULES. A budget answer is whole dollars of at least $1 (stored as cents, a
 //   multiple of 100), a bracket answer is 1 to 5, a build-around card must be a card the catalog
-//   holds, and a player holds at most ONE pending deeper read. `model_calls` does NOT yet accept an
-//   `intake` feature, and that is asserted too: the ledger may hold only features the code can
-//   price, so the constraint moves with the feature's `FEATURE_CALLS` entry (PR 4). Each is a constraint or a partial index, which no
+//   holds, and a player holds at most ONE pending deeper read. `model_calls` accepts the `intake`
+//   feature since PR 4 registered its `FEATURE_CALLS` entry, and refuses a feature the code cannot
+//   price. Each is a constraint or a partial index, which no
 //   unit test here can reach.
 //   "PAUSED" IS JUDGED PER FEATURE. `readAllowance` compares the month's app-wide spend plus one
 //   call against the hard stop, and the call it adds is now the named feature's own worst case. A
@@ -78,9 +78,9 @@ async function migration() {
   const [deck] = await rows<{ id: string }>(sql`
     insert into decks (user_id, name, commander_oracle_id) values (${USER}, 'probe', ${card.oracle_id}::uuid) returning id`);
 
-  check("a fresh deck carries no answers and no pending intent", await rows(sql`
-    select answer_budget_cents, answer_bracket, answer_card_oracle_id, answer_intent_pending
-    from decks where id = ${deck.id}`), [{ answer_budget_cents: null, answer_bracket: null, answer_card_oracle_id: null, answer_intent_pending: false }]);
+  check("a fresh deck carries no answers", await rows(sql`
+    select answer_budget_cents, answer_bracket, answer_card_oracle_id
+    from decks where id = ${deck.id}`), [{ answer_budget_cents: null, answer_bracket: null, answer_card_oracle_id: null }]);
   check("a whole-dollar budget is stored", await refusal(sql`update decks set answer_budget_cents = 20000 where id = ${deck.id}`), null);
   check("a budget of cents is refused", await refusal(sql`update decks set answer_budget_cents = 150 where id = ${deck.id}`), "23514");
   check("a budget under $1 is refused", await refusal(sql`update decks set answer_budget_cents = 0 where id = ${deck.id}`), "23514");
@@ -90,8 +90,10 @@ async function migration() {
   check("a card the catalog does not hold is refused", await refusal(sql`
     update decks set answer_card_oracle_id = '00000000-0000-0000-0000-000000000000'::uuid where id = ${deck.id}`), "23503");
 
-  check("model_calls refuses intake until the code can price it", await refusal(sql`
-    insert into model_calls (user_id, feature, status) values (${USER}, 'intake', 'refunded')`), "23514");
+  check("model_calls accepts intake, which the code prices", await refusal(sql`
+    insert into model_calls (user_id, feature, status) values (${USER}, 'intake', 'refunded')`), null);
+  check("model_calls refuses a feature the code cannot price", await refusal(sql`
+    insert into model_calls (user_id, feature, status) values (${USER}, 'unpriced', 'refunded')`), "23514");
 
   const [call] = await rows<{ id: string }>(sql`
     insert into model_calls (user_id, feature, status) values (${USER}, 'tuning', 'refunded') returning id`);

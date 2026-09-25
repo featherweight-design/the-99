@@ -338,9 +338,6 @@ export const decks = pgTable("decks", {
   answerBudgetCents: integer("answer_budget_cents"),
   answerBracket: integer("answer_bracket"),
   answerCardOracleId: uuid("answer_card_oracle_id").references(() => cards.oracleId),
-  /** UNUSED, and dropped by Help me choose's next migration: the answers' brief is written at create
-   *  on both paths (`answerColumnsFor`), so no sentence is ever owed to a retry. */
-  answerIntentPending: boolean("answer_intent_pending").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
@@ -1656,7 +1653,7 @@ export const modelCalls = pgTable("model_calls", {
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
@@ -1667,8 +1664,10 @@ export const modelCalls = pgTable("model_calls", {
  * cannot hang off a deck's row the way tuning's run and the overview do, and it needs a row of its
  * own because a Stop must refund (F4): written `pending` with its allowance unit BEFORE the model is
  * called, and settled with that unit in one transaction. A Stop cancels it and refunds, and a late
- * answer finds it no longer pending and writes nothing. `words_hash` is the words it was asked to
- * read, so a read is offered once per set of words. `chips` holds only what passed validation.
+ * answer finds it no longer pending and writes nothing. `words_hash` is what it was asked: the
+ * words and the budget and bracket controls they were read against (`wordsHash`). A repeat of an
+ * ask already read gets that read back uncharged, so a read is offered once per ask. `chips` holds
+ * only what passed validation.
  */
 export const intakeReads = pgTable("intake_reads", {
   id: uuid("id").primaryKey().defaultRandom(),

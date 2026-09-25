@@ -198,7 +198,8 @@ synopsis's.
   edited the intent yet, and it is the only moment the themes are known. `fillDeck` reads the
   stored budget, bracket and card, places the card first and fills under the gates, but writes no
   intent, by the rule that path already keeps (a cleared line reads like one never written). So
-  **`answer_intent_pending` is unused**; PR 4's migration drops it.
+  **`answer_intent_pending` is unused**. PR 4 removes it from the schema, and a later migration
+  drops it one deploy on (see PR 4 as built).
 - **The trial fill** (`trial.ts`) gives a row its figures: owned of the body, and the Shopping-list
   buy total. A never-stocked build-around card is flagged rather than priced at $0 (F8).
 - The stale "up to five" comment in `decks-builder.ts` now says six (orchestrator's note).
@@ -206,7 +207,8 @@ synopsis's.
 **PR 4: the deeper read.**
 - The model feature, moved from PR 1: `ModelFeature`, `FEATURE_CALLS` with its measured input
   ceiling, `src/lib/intake/limits.ts`, and a migration adding `'intake'` to
-  `model_calls_feature_check` and dropping the unused `decks.answer_intent_pending` (see PR 3).
+  `model_calls_feature_check`. The unused `decks.answer_intent_pending` (see PR 3) leaves the
+  schema here, and its column is dropped a deploy later (see PR 4 as built).
 - The prompt, the response schema, and the validator: vocabulary and catalog, with control beating
   words.
 - The run store and the reaper.
@@ -216,6 +218,33 @@ synopsis's.
   - refunded on failure, on Stop, and when nothing valid came back;
   - left untouched by a late answer, which writes nothing.
 - Mutations.
+
+**PR 4 as built (2026-09-25).**
+- **Migration 0063** (0062 is Locked PR 3's, on main as #967). It adds `'intake'` to
+  `model_calls_feature_check`. `decks.answer_intent_pending` never got a reader, since PR 3's retry
+  writes no intent, so it leaves the schema and every reference to it went, the plumbing probe's
+  included. **The column is NOT dropped in this deploy.** Migrations run before a build is
+  promoted, and the build still serving names the column in every deck read, so a drop here fails
+  those reads with 42703 until the cutover. 0063 carries no drop, and PR 5 drops it with a custom
+  migration (`DROP COLUMN IF EXISTS`), one deploy later.
+- **The input ceiling is measured at 6,000.** count_tokens on the real prompt and schema gave
+  3,434 tokens with the picker's 307 labels and the worst 800 characters of words, and 3,946 with
+  all 401 tags. The plan's estimate of about 1,800 left out the output schema and dense words.
+- **The words are capped at 800 characters** (`READ_WORDS_MAX_CHARS`), and the action refuses a
+  longer press rather than trimming it. The orchestrator accepted the cap on one condition: PR 5's
+  field carries `maxLength={READ_WORDS_MAX_CHARS}`, so a player cannot type past it and only a
+  forged request ever reaches the refusal.
+- **The deadline is 100s, with a 40s retry floor.** It fits under the choose page's
+  `maxDuration` of 120, which PR 5 sets. The reaper cutoff is 5 minutes, as for tuning and the
+  synopsis.
+- **The stub** (`INTAKE_LIVE`, `INTAKE_STUB`) is the free match's own reading, returned in the
+  model's shape. It records its model as the synopsis stub's `"stub"`, which the ledger prices at
+  nothing.
+- **A read with nothing valid is stored** as `failed` / `nothing_valid`, with what it did read, and
+  its unit is refunded.
+- `probe:help-me-choose-read` runs 20 checks, and five mutations fail it: spending regardless of
+  validity, an unguarded settle, a Stop that keeps the unit, no reap on start, and a late bill
+  dropped.
 
 **PR 5 is split in two (orchestrator-approved, 2026-09-25).** Measured against the handoff it ran
 well past 800 lines, so the boundary sits between the data the screens read and the screens:
@@ -243,6 +272,8 @@ well past 800 lines, so the boundary sits between the data the screens read and 
   2 MB entry limit.
 
 **PR 5: the intake and results screens.**
+- The contract half of PR 4's column removal: a custom migration dropping
+  `decks.answer_intent_pending` (`IF EXISTS`), now that no serving build selects it.
 - The flag reader, `.env.example` and `docs/deployment.md`, moved from PR 1.
 - `/decks/new/choose`:
   - the form (2a, 2b);
