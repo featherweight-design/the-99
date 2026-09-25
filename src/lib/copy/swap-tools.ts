@@ -155,6 +155,61 @@ export const swapToolsCopy = {
       `${name} is sold out everywhere we check, and you have no free copy of anything that does its job.`,
   },
 
+  /**
+   * FITS YOUR DECKS (R2–R4, the addendum): the card modal's door and the stacked picker. Taken from
+   * the handoff's copy file, which is the source where the canvas drifts (audit F13). The R1-only
+   * keys (`heading`, `order`, `excludedOne`, `excludedMany`, `notLegal`, `noDecks`, `hardStop`,
+   * `add`) are not carried: the door is hidden in those states, and H1 ruled no hard stop.
+   */
+  fits: {
+    callout: "Find a deck for it",
+    calloutAria: (card: string) => `Find a deck for ${card}`,
+    pickerTitle: "Find a deck for it",
+    backLabel: (card: string) => card,
+    /** The plate's identity line, as the canvas draws it. */
+    identity: (colors: string) => `${colors} · legal in Commander`,
+    loadingHeading: "Checking your decks",
+    loadingStatus: "reading each commander’s colors…",
+    groupJoin: "could take it · by name",
+    groupHolds: "already holds it",
+    copies: (owned: number, free: number) => (free > 0 ? `×${owned} · ${free} free` : `×${owned} · none free`),
+    addUsesFree: "Add",
+    addUsesFreeAria: (card: string, deck: string) => `Add ${card} to the ${deck} draft, using your free copy`,
+    addToBuy: "Add to buy",
+    addToBuyAria: (card: string, deck: string) => `Add ${card} to the ${deck} draft as a card to buy`,
+    added: "in the draft",
+    addedUsedLast: "It uses your free copy, so none are left.",
+    addedFree: "It joins from your free copy.",
+    addedToBuy: "It joins as a card to buy.",
+    openDeck: "Open the deck →",
+    addRefused: "We couldn’t add that. The deck is unchanged.",
+    holds: (n: number) => `holds ${n}`,
+    deckLinkAria: (deck: string) => `Open ${deck}`,
+    cmdrLabel: "commander",
+    cmdrFigure: (pct: string, commander: string) => `${pct}% of ${commander} decks`,
+    cmdrUnlisted: (commander: string) => `not listed for ${commander}`,
+    /** The addendum's staple form: a universal staple quotes no one commander's figure. */
+    cmdrStaple: "staple · any commander",
+    needLabel: "this deck",
+    need: (role: string, count: number, target: number) => `${role} ${count} of ${target}`,
+    /** "They’re listed above." is not carried: the holding decks are listed BELOW this sentence. */
+    allHold: (card: string) => `Every deck that can play ${card} already holds it.`,
+    noneByColors: (card: string, colors: string, n: number) =>
+      `None of your decks can play ${card}. It’s ${colors}, and none of your commanders has ${n === 2 ? "both" : "all of them"}.`,
+    noneByColorsOne: (card: string, color: string) =>
+      `None of your decks can play ${card}. It’s ${color}, and none of your commanders is.`,
+    stapleLabel: "staple",
+    stapleNote: (card: string) =>
+      `${card} is on the shared staples list: nearly every Commander deck runs it, whatever the commander. So no deck here shows how often its commander runs it. That figure would only say “staple”.`,
+    stapleNoteNoRole: (card: string) =>
+      `${card} is on the shared staples list: nearly every Commander deck runs it, whatever the commander. It has no role we count, so there’s no need figure either. What’s left is which decks can take it.`,
+    /** F4: the stand-ins sheet's failed shape and tag, its two sentences about decks instead of prices. */
+    failed: {
+      heading: "Your decks didn’t come back",
+      body: "We couldn’t read your decks just now. It isn’t something you did, and it usually clears in a moment.",
+    },
+  },
+
   announce: {
     taken: (cut: string, add: string) => `Taken. ${add} is in the draft and ${cut} is out.`,
     undone: (cut: string, add: string) => `Swap undone. ${cut} is back and ${add} is out.`,
