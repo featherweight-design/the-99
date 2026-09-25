@@ -95,8 +95,11 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
         return;
       }
       const after = await loadFitsAction(card.oracleId).catch(() => null);
-      const freeAfter = Math.max(0, after?.free ?? 0);
-      const note = freeBefore === 0 ? copy.addedToBuy : freeAfter === 0 ? copy.addedUsedLast : copy.addedFree;
+      // A re-read that failed says nothing about the copies left, so the note makes no claim that
+      // the last one went: it names only what the add itself used.
+      const note = freeBefore === 0
+        ? copy.addedToBuy
+        : after && Math.max(0, after.free ?? 0) === 0 ? copy.addedUsedLast : copy.addedFree;
       setAdded((a) => [...a, { deckId: deck.id, note }]);
       if (after) setLoad({ state: "ready", read: after });
     } catch {
@@ -118,6 +121,8 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
       closeLabel={swapToolsCopy.sheet.backToCardAria(name)}
       onClose={onClose}
       width={560}
+      // 16px at both widths, line-height 1.2 (the picker's head, §2.2), where the chrome's default is 15px on a phone.
+      titleClassName="truncate text-[16px] leading-[1.2]"
       overCard={{ name, backAria: swapToolsCopy.sheet.backToCardAria(name) }}
     >
       <div data-testid="fits-picker" className="flex flex-col gap-[14px] px-[16px] pt-[14px] pb-[24px] md:px-[18px] md:pt-[16px] md:pb-[20px]">

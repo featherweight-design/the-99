@@ -111,6 +111,18 @@ describe("FitsPicker", () => {
     expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(2, 0));
   });
 
+  it("claims no last copy when the re-read after an add fails", async () => {
+    actions.loadFitsAction.mockResolvedValueOnce(read()).mockRejectedValueOnce(new Error("down"));
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    draw();
+    await settle();
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: /using your free copy/ })[0]); });
+    await settle();
+    const [gishath] = screen.getAllByTestId("fits-row");
+    expect(gishath).toHaveTextContent(copy.addedFree);
+    expect(gishath).not.toHaveTextContent(copy.addedUsedLast);
+  });
+
   it("keeps the button and says the deck is unchanged when an add is refused", async () => {
     actions.loadFitsAction.mockResolvedValue(read());
     actions.addFromFits.mockResolvedValue({ ok: false, message: "full" });
