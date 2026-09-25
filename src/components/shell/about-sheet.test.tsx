@@ -92,6 +92,17 @@ describe("AboutSheet", () => {
     expect(screen.queryByRole("region")).toBeNull();
   });
 
+  it("stays closed after the reader reaches /about another way and leaves", () => {
+    // The account menu is a client navigation: the sheet stays mounted, so being
+    // on /about has to close it, not merely hide it for as long as they are there.
+    const { rerender } = render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
+    pathname = "/about";
+    rerender(<AboutSheet state={{ kind: "none" }} />);
+    pathname = "/decks";
+    rerender(<AboutSheet state={{ kind: "none" }} />);
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+
   it("draws nothing on /about (N9)", () => {
     pathname = "/about";
     render(<AboutSheet state={{ kind: "behind", entries: entries(1) }} />);
@@ -100,8 +111,8 @@ describe("AboutSheet", () => {
 
   it("introduces the page on a first run, listing nothing (N3)", () => {
     render(<AboutSheet state={{ kind: "firstRun" }} />);
-    const region = screen.getByRole("region", { name: "About The 99" });
-    expect(region.textContent).toContain("What The 99 does");
+    const region = screen.getByRole("region", { name: /^About The\s99$/ });
+    expect(region.textContent).toContain("What The\u00a099 does");
     expect(region.textContent).not.toMatch(/new in About/);
     expect(screen.queryAllByRole("listitem")).toHaveLength(0);
   });
@@ -128,5 +139,15 @@ describe("AboutSheet", () => {
       fireEvent.click(screen.getByRole("button", { name: "Later" }));
     });
     expect(document.documentElement.style.getPropertyValue("--about-sheet-h")).toBe("");
+  });
+});
+
+describe("the sheet's copy binds The 99 (copy review, 2026-09-25)", () => {
+  it("never lets a line break orphan '99'", async () => {
+    const { aboutSheetCopy } = await import("../../lib/copy/about");
+    for (const s of [aboutSheetCopy.where, aboutSheetCopy.firstRunHeading, aboutSheetCopy.regionLabelFirstRun]) {
+      expect(s).toContain("The\u00a099");
+      expect(s).not.toMatch(/The 99/);
+    }
   });
 });

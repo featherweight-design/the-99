@@ -29,7 +29,8 @@ const RESERVE = "--about-sheet-h";
  * "shown". A fresh document load mounts a fresh one.
  *
  * Later and Escape close it and write nothing (§N7). Show me closes it and goes
- * to `/about`, whose own effect records the visit.
+ * to `/about`, whose own effect records the visit. Reaching `/about` any other
+ * way closes it too.
  */
 export function AboutSheet({ state }: { state: SheetState }) {
   const [shown] = useState(state);
@@ -37,6 +38,11 @@ export function AboutSheet({ state }: { state: SheetState }) {
   const [announce, setAnnounce] = useState("");
   const router = useRouter();
   const onAbout = usePathname() === "/about";
+  // Reaching /about by ANY route answers the sheet, not only by Show me: a
+  // reader who opens About The 99 from the account menu has read what it points
+  // to, and the page records the visit. Latched closed here, during render
+  // rather than in an effect, so the card cannot flash back onto the next page.
+  if (onAbout && open) setOpen(false);
   const card = useRef<HTMLDivElement>(null);
   const drawn = open && !onAbout && shown.kind !== "none";
 
