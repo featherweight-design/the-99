@@ -17,7 +17,7 @@ import {
 
 /** How many stand-ins a group shows before `Show all` (Hugh's Q3). */
 export const STAND_IN_GROUP_SHOWN = 5;
-/** How many a group carries at most, which is what `Show all` draws. A payload cap, stated once. */
+/** How many ranked cards a group carries at most, staples aside; `Show all` draws them. A payload cap. */
 export const STAND_IN_GROUP_CAP = 30;
 
 export type SpellRole = Exclude<Role, "land">;
@@ -271,7 +271,13 @@ export function rankStandIns(
   }
 
   const order = isLand ? byLadder : bySharing;
-  if (same.length) read.groups.push({ same: true, type: ownType, rows: same.sort(order).slice(0, STAND_IN_GROUP_CAP) });
-  if (other.length) read.groups.push({ same: false, type: "other", rows: other.sort(order).slice(0, STAND_IN_GROUP_CAP) });
+  // The cap trims the ranked cards, never a staple: a staple sorts last, so capping after the sort would cut
+  // every one from a long group (Sol Ring from Mana Vault's, measured). The staples a job admits are few.
+  const capped = (list: StandIn[]) => {
+    const sorted = list.sort(order);
+    return [...sorted.filter((s) => !s.isUniversal).slice(0, STAND_IN_GROUP_CAP), ...sorted.filter((s) => s.isUniversal)];
+  };
+  if (same.length) read.groups.push({ same: true, type: ownType, rows: capped(same) });
+  if (other.length) read.groups.push({ same: false, type: "other", rows: capped(other) });
   return read;
 }

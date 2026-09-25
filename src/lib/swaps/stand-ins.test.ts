@@ -266,10 +266,14 @@ describe("rankStandIns", () => {
     expect(g.groups).toEqual([]);
   });
 
-  it("caps each group", () => {
+  it("caps each group's ranked cards, and never cuts a staple, which sorts last", () => {
     const many = Array.from({ length: STAND_IN_GROUP_CAP + 5 }, (_, i) => card(`Rock ${i}`, "Artifact", "{T}: Add {C}.", 1));
     const g = rank(VAULT, many.map((c) => cand(c, { owned: 1, free: 1 })), { newestAsOf: NOW, prices: new Map() });
     expect(rows(g)).toHaveLength(STAND_IN_GROUP_CAP);
+    const staple = card("Staple Rock", "Artifact", "{T}: Add {C}.", 1);
+    const withStaple = rank(VAULT, [...many, staple].map((c) => cand(c, { owned: 1, free: 1, isUniversal: c === staple })), { newestAsOf: NOW, prices: new Map() });
+    expect(rows(withStaple)).toHaveLength(STAND_IN_GROUP_CAP + 1);
+    expect(rows(withStaple).at(-1)!.card.name).toBe("Staple Rock");
   });
 
   it("carries what a utility land gives up onto each of its stand-ins (H3)", () => {
