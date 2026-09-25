@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { admitsReview, type ReviewAdmission } from "./admits-review";
+import { changeCount } from "../../../../lib/decks/draft-shape";
+import { COMMITTED } from "../../../../components/decks/__fixtures__/draft-state";
 
 // A committed deck mid-edit with one card moved: the ordinary visit.
 const REVIEWING: ReviewAdmission = {
@@ -57,5 +59,19 @@ describe("admitsReview", () => {
         wantsCommit: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("admitsReview on a commander-only draft", () => {
+  it("admits the visit, because the moved commander is one change", () => {
+    const changes = changeCount({
+      ...COMMITTED,
+      commander: {
+        from: { commanderOracleId: "korvold", partnerOracleId: null },
+        to: { commanderOracleId: "prosper", partnerOracleId: null },
+      },
+    });
+    expect(admitsReview({ changes, hasVersion: true, firstCommitReady: false, wantsCommit: false }))
+      .toBe(true);
   });
 });

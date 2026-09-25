@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { Availability, DeckClaim } from "./availability";
 import { neverCutEnabled } from "./never-cut-flag";
+import { changeCommanderEnabled } from "../commander-change/flag";
+import { deckCommanderMovedSql } from "../commander-change/pending";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -43,6 +45,15 @@ type Row = {
  * Self-exclusion is applied downstream, because the seniority ordering below has
  * to be able to see the excluded deck's own place in the queue.
  */
+// A deck whose live commander differs from its newest version's is pending too (change commander,
+// plan decision 2). With CHANGE_COMMANDER_ENABLED off the clause is ABSENT and the CTE is
+// byte-identical to the one before commanders could move (availability-query.test.ts pins that).
+const commanderPending = () => changeCommanderEnabled()
+  ? sql` or exists (
+      select 1 from decks lvd where lvd.id = nv.deck_id and ${deckCommanderMovedSql("lvd")}
+    )`
+  : sql``;
+
 const claimModel = (userId: string) => sql`
   -- The version each deck is currently sleeved as. number orders it, not
   -- committed_at: the unique key makes number strictly increasing per deck,
@@ -146,7 +157,7 @@ const claimModel = (userId: string) => sql`
       except
       select vc.oracle_id, vc.quantity
       from deck_version_cards vc where vc.version_id = nv.version_id
-    )
+    )${commanderPending()}
   ),
   -- One row per (oracle, claiming deck), carrying that deck's whole ask.
   -- Grouping rather than select distinct is what folds a deck whose commander is

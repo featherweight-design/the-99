@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { factsFor } from "../bracket/facts";
@@ -30,6 +30,8 @@ import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { deckBodySize } from "./deck-size";
+import { changeCommanderEnabled } from "../commander-change/flag";
+import { deckCommanderMovedSql } from "../commander-change/pending";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
@@ -816,6 +818,17 @@ export const pendingChangesSql = sql<number>`(
 )`;
 
 /**
+ * `pendingChangesSql`, plus one when the deck's commander moved since its newest version (change
+ * commander, plan decision 3: a new commander or pair is one change). With
+ * CHANGE_COMMANDER_ENABLED off this IS `pendingChangesSql`, the same object, so the deck list's
+ * SQL is byte-identical to the one before commanders could move.
+ */
+export function deckPendingSql(): SQL<number> {
+  if (!changeCommanderEnabled()) return pendingChangesSql;
+  return sql<number>`(${pendingChangesSql} + (case when ${deckCommanderMovedSql("decks")} then 1 else 0 end))::int`;
+}
+
+/**
  * The newest version's number, for the figure the mark explains: `36 changes
  * since v2` needs the 2 as well as the 36.
  *
@@ -992,7 +1005,7 @@ export async function listDecksWithStats(
       // `sql` either way, so the projection's SHAPE does not change with the
       // option: a conditional column would make the row type depend on a
       // runtime value, and every reader would have to narrow it.
-      pendingChanges: opts.includeDeckState ? pendingChangesSql : sql<number>`0::int`,
+      pendingChanges: opts.includeDeckState ? deckPendingSql() : sql<number>`0::int`,
       versionNumber: opts.includeDeckState
         ? newestVersionNumberSql
         : sql<number | null>`null::int`,

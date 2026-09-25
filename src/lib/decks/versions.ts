@@ -17,6 +17,7 @@ import { averageManaValue } from "./mana-value";
 import { pruneOrphanProxies } from "./prune-proxies";
 import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks";
 import { pruneOrphanAssignments } from "./prune-assignments";
+import { commanderMoved } from "../commander-change/pending";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -307,6 +308,15 @@ export async function restoreDraftFromVersion(
     // row in the insert's own statement and there is nothing left to wake.
     await reviveDormantLocks(tx, deckId, rows.map((r) => r.oracleId));
     await tx.delete(deckCards).where(eq(deckCards.deckId, deckId));
+    // The live commander columns are the draft's commander (change commander), so a discard puts
+    // the version's back. Compared first, so a deck whose commander never moved issues no write.
+    // Before the prunes below: commander proxies and locks key on these columns.
+    if (commanderMoved(newest, deck)) {
+      await tx.update(decks).set({
+        commanderOracleId: newest.commanderOracleId,
+        partnerOracleId: newest.partnerOracleId,
+      }).where(eq(decks.id, deckId));
+    }
     // Unresolved paste lines go with the draft. They are not `deck_cards` rows,
     // so the delete above does not reach them, and no version stores them — a
     // commit refuses to cut v1 while any exist. Left behind, a discard would

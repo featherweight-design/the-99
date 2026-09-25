@@ -42,3 +42,20 @@ export function commanderMovedSql(v: string, d: string): SQL {
   );
   return sql`(${side(v)} is distinct from ${side(d)})`;
 }
+
+/**
+ * The rule against the deck's NEWEST version, for a query that holds only the deck row: true
+ * when `deck`'s live pair differs from its newest version's, false for a brew (no version, so
+ * nothing to be pending against). `deck` is the alias or table name of a `decks` row in scope.
+ *
+ * Newest by `number`, the same definition `newestVersion` and both pending queries use.
+ */
+export function deckCommanderMovedSql(deck: string): SQL {
+  return sql`coalesce((
+    select ${commanderMovedSql("pcv", deck)}
+    from deck_versions pcv
+    where pcv.deck_id = ${sql.raw(deck)}.id
+    order by pcv.number desc
+    limit 1
+  ), false)`;
+}
