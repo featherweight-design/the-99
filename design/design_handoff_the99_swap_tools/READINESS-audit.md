@@ -219,7 +219,9 @@ changes no drawing.
 - **Added:** the addendum folder, seven files.
 - **Changed in the parent, by Design:** `Fits Your Decks.dc.html` and `Stand-ins Sheet.dc.html` turn every control
   drawn as a `<span>` (*Add*, *Add to buy*, *Take*, *Undo swap*, *Try again*, *Read the list again*, *Close*) into
-  a real `<button type="button">`, with the default button styling reset so nothing moves on screen.
+  a real `<button type="button">`, with the default button styling reset. The reset also sets `lineHeight: 1`, so
+  the padded desktop buttons (*Add*, *Add to buy*, *Take*) draw about 3 to 4px shorter than the old spans. The
+  fixed-height phone buttons and the refusal row's do not move.
   `READINESS.md` records the change (*Buttons are real `<button>`s*) and adds a pointer to the addendum. No
   other parent file changed, and this audit is kept.
 
@@ -227,8 +229,8 @@ changes no drawing.
 
 | Asked | Answered | Checked against |
 |---|---|---|
-| F1: the staple read in Fits your decks, at 560 and 390 | Yes. The commander chip keeps its slot and reads `staple · any commander`, and no percentage is drawn. A dashed note under the plate explains it once. Rows stay by name | `loadUniversalStaples`, `src/lib/staples/universal.ts:40` (F18) |
-| F1: does a stand-in carry the same read | Yes. The fact line ends `staple, any commander`. A staple to buy gets its own group, `to buy · staples, cheapest first`, between the free group and the commander ranking (H4) | `StandInGroups`, `src/lib/swaps/stand-ins.ts:123-134` (F19) |
+| F1: the staple read in Fits your decks, at 560 and 390 | Yes. The commander chip keeps its slot and reads `staple · any commander`, and no percentage is drawn. A dashed note under the plate explains it once. Rows stay by name | `loadUniversalStaples`, `src/lib/staples/universal.ts:40`; not yet on the Fits payload (F18) |
+| F1: does a stand-in carry the same read | Yes. The fact line ends `staple, any commander`. A staple to buy gets its own group, `to buy · staples, cheapest first`, between the free group and the commander ranking (H4) | `StandIn.isUniversal`, `stand-ins.ts:117`; `StandInGroups`, `:123-134` (F19) |
 | The door on the shipped modal, 1300 and 390 | Yes. Desktop: in the art column under the price tag, a limit line, then `⇄ See cheaper stand-ins →`. Phone: a 44px strip under the art header | the tag's mounts, `src/components/cards/card-modal.tsx:1346`, `:1356` |
 | Its over-limit color | The limit line carries it: `--warning` when over, `--fg-faint` when under. The tag is not recolored | F20 on the reason given |
 | Card → sheet → card, and Escape | Yes. The card stays under the sheet, dimmed. The sheet's close becomes `← {card}` on desktop and `Back to {card}` on the phone. Escape and the scrim peel one layer at a time, with focus placed at each step. After *Take* the card's door becomes `swapped out · {stand-in} is in` | `Back to ${back}`, `card-modal.tsx:1595`; F16, F17 |
@@ -238,9 +240,9 @@ changes no drawing.
 | # | Sev | Evidence (origin/main) | Finding and correction | Owner |
 |---|---|---|---|---|
 | F16 | Medium | `src/components/decks/receipt-modal.tsx:159`; `card-modal.tsx:396-405`, `:1370` | **The phone stack needs a third depth.** Today a `ModalChrome` sheet sits at 52, the card modal is full height, and a stacked card sits at 96, one level only (`STACKED_SHEET`). The addendum draws this path at 52 (the card), 96 (the sheet) and 140 (the stand-in). A sheet at 96 and a card at 140 do not exist yet, and the card at 52 is new on this path. **Correction:** give both components a depth, drawn as 52 + 44 per level, and keep today's full-height card for every other opener | eng |
-| F17 | Medium | `card-modal.tsx` (no opener prop) | **The modal does not know where it was opened from.** The door shows only for a card opened from a Shopping row, and nothing tells the modal that today. **Correction:** the Shopping row's opener passes the deck and its limit, and the door renders only when they are present | eng |
-| F18 | Low | `src/lib/staples/universal.ts:24`, `:40` | **There is no `isUniversalStaple`.** The shared definition is a set (`universalStaples`, `loadUniversalStaples`). **Correction:** test membership in that set, loaded once per request, for both the picker and the stand-ins | eng |
-| F19 | Medium | `stand-ins.ts:123-134` | **The staples group is new.** `StandInGroups` has `free`, `cheapest`, `byCommander` and `unlisted`. A staple to buy leaves `byCommander` or `unlisted` for a new `staples` group ranked cheapest first; a free staple stays in `free`. **Correction:** add the group after H4 is ruled | eng |
+| F17 | Medium | `card-modal.tsx:446-447` | **The modal cannot tell a Shopping row from any other opener.** It takes `deckId` and `deckName`, but every opener on the deck page passes those (Consider, search and the decklist too), so a deck alone does not mean Shopping. **Correction:** the Shopping row's opener passes the limit, or an explicit flag, and the door renders only when that is present | eng |
+| F18 | Low | `src/lib/staples/universal.ts:40`; `src/lib/swaps/stand-ins.ts:101`, `:117`; `src/lib/swaps/gather.ts:113`, `:121` | **There is no `isUniversalStaple`, and the stand-ins already have the read.** The shared definition is a set (`loadUniversalStaples`). The stand-ins gather loads it and stamps each row `isUniversal`, so the new group (F19) and the fact line read that flag. Only the Fits picker lacks it. **Correction:** give the Fits payload the same membership test. Build no second lookup | eng |
+| F19 | Medium | `stand-ins.ts:123-134` | **The staples group is new.** `StandInGroups` has `free`, `cheapest`, `byCommander` and `unlisted`. A staple to buy leaves `byCommander` or `unlisted` for a new `staples` group ranked cheapest first; a free staple stays in `free`. **Correction:** add the group, selected by `isUniversal`, after H4 is ruled | eng |
 | F20 | Low | `src/components/cards/price-tag.tsx:99`, `:121` | **The addendum's reason for the limit line's color is wrong; its answer is right.** It says the tag is already `--warning`-outlined for every card. The shipped tag is `--accent` on an `--accent-dim` edge, and dashed `--fg-locked` when unpriced. The limit line carrying the color still stands, since recoloring the tag would change it on every surface that draws it. **Correction:** build the limit line as drawn, and leave the tag alone | eng |
 | F21 | Low | ADDENDUM-README "Copy" | **Six strings go to `/copy-review`:** `staple · any commander`, `staple, any commander`, `to buy · staples, cheapest first`, the staple note's two variants, `swapped out · {card} is in`, and `Back to {card}` | `/copy-review` |
 
