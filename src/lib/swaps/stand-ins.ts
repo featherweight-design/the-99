@@ -98,6 +98,11 @@ export function freeAfterTake(card: { typeLine: string }, owned: number, free: n
 export type Candidate = CardRow & {
   /** This commander's inclusion figure, or the pair's. Null when the index does not list it. */
   inclusion: number | null;
+  /**
+   * EDHREC's synergy for this card under this commander (or pair): how much MORE its decks run it than
+   * decks of its colors do, -1..1. Null when the index does not list it. Orders, never drawn (Q2).
+   */
+  synergy: number | null;
   isUniversal: boolean;
   owned: number;
   /** Copies free from this deck's vantage, from `loadAvailability`. Null when it owns none. */
@@ -114,6 +119,7 @@ export type StandIn = {
   cents: number | null;
   foilOnly: boolean;
   inclusion: number | null;
+  synergy: number | null;
   isUniversal: boolean;
   shared: SpellRole[];
   drawbacks: Drawback[];
@@ -148,6 +154,31 @@ function stocked(id: string, priced: Priced): { cents: number; foilOnly: boolean
   if (!fact || (state !== "priced" && state !== "foilOnly")) return null;
   const cents = priceOf(fact, state);
   return cents === null ? null : { cents, foilOnly: state === "foilOnly" };
+}
+
+/**
+ * Where a land sits on the quality ladder (v2 item 2, Hugh's Q1), read from the drawbacks the row
+ * already parses and never from a name list: 1 untapped with no cost; 2 untapped with a condition or a
+ * price in life (check, fast, slow, shock, pain, pay life); 3 enters tapped. A one-shot never reaches
+ * here, since `landColors` gives it no color to match (Q9). `basicOnly` is a limit on what a fetch
+ * finds rather than a cost of playing it, so it moves nothing.
+ */
+export function landRung(list: readonly Drawback[]): 1 | 2 | 3 {
+  if (list.some((d) => d.kind === "entersTapped")) return 3;
+  if (list.some((d) => d.kind !== "basicOnly")) return 2;
+  return 1;
+}
+
+const MAIN_TYPES = ["creature", "planeswalker", "battle", "instant", "sorcery", "artifact", "enchantment", "land"] as const;
+export type MainType = (typeof MAIN_TYPES)[number] | "other";
+
+/**
+ * A card's main type, off the front face (Q4): the first of MAIN_TYPES its type line carries, so an
+ * artifact creature is a creature, which is what a deck counting its creatures counts.
+ */
+export function mainType(typeLine: string): MainType {
+  const front = typeLine.split(" // ")[0].toLowerCase();
+  return MAIN_TYPES.find((t) => new RegExp(`\\b${t}\\b`).test(front)) ?? "other";
 }
 
 const byName = (a: StandIn, b: StandIn) => a.card.name.localeCompare(b.card.name);
@@ -186,6 +217,7 @@ export function rankStandIns(original: CardRow, candidates: readonly Candidate[]
       cents: price?.cents ?? null,
       foilOnly: price?.foilOnly ?? false,
       inclusion: c.inclusion,
+      synergy: c.synergy,
       isUniversal: c.isUniversal,
       shared: match.shared,
       drawbacks: isLand ? drawbacks(c) : [],

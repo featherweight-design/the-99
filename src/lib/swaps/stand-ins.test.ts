@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PriceFact } from "../decks/price";
 import {
-  freeAfterTake, jobOf, rankStandIns, sameJob, STAND_IN_GROUP_CAP, type Candidate, type CardRow,
+  freeAfterTake, jobOf, landRung, mainType, rankStandIns, sameJob, STAND_IN_GROUP_CAP, type Candidate, type CardRow,
 } from "./stand-ins";
 
 const NOW = new Date("2026-09-21T09:00:00Z");
@@ -14,7 +14,7 @@ const card = (name: string, typeLine: string, oracleText: string, cmc = 0): Card
   name, typeLine, oracleText, keywords: [], cmc, imageUri: null,
 });
 const cand = (c: CardRow, over: Partial<Candidate> = {}): Candidate => ({
-  ...c, inclusion: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over,
+  ...c, inclusion: null, synergy: null, isUniversal: false, owned: 0, free: null, soft: 0, ...over,
 });
 const fact = (cents: number | null, asOf = NOW, foilCents: number | null = null): PriceFact =>
   ({ cents, foilCents, etchedCents: null, asOf });
@@ -210,4 +210,35 @@ describe("rankStandIns", () => {
     const g = rankStandIns(cradle, [cand(forest)], { newestAsOf: NOW, prices: new Map([[cradle.oracleId, fact(90000)]]) });
     expect(g.free[0].givesUp).toEqual([{ kind: "named", label: "its extra mana" }]);
   });
+});
+
+// v2 item 2 and Hugh's Q1: the ladder is read from the parsed drawbacks, never from a name.
+describe("landRung", () => {
+  it("puts a land with no cost first", () => expect(landRung([])).toBe(1));
+  it("puts a condition or a life price second: check, fast, shock, pain, pay life", () => {
+    expect(landRung([{ kind: "entersTappedUnless", condition: "you control a Mountain" }])).toBe(2);
+    expect(landRung([{ kind: "damage", amount: 1, colors: ["R", "W"] }])).toBe(2);
+    expect(landRung([{ kind: "life", amount: 1, colors: ["R"] }])).toBe(2);
+    expect(landRung([{ kind: "lifeFetch", amount: 1 }])).toBe(2);
+  });
+  it("puts entering tapped third, whatever else it costs", () => {
+    expect(landRung([{ kind: "entersTapped" }])).toBe(3);
+    expect(landRung([{ kind: "entersTapped" }, { kind: "basicOnly" }])).toBe(3);
+  });
+  it("moves nothing for finding only basics", () => expect(landRung([{ kind: "basicOnly" }])).toBe(1));
+});
+
+// Hugh's Q4: the front face's main type, an artifact creature counting as a creature.
+describe("mainType", () => {
+  it.each([
+    ["Artifact Creature — Golem", "creature"],
+    ["Enchantment Creature — God", "creature"],
+    ["Legendary Planeswalker — Ajani", "planeswalker"],
+    ["Instant", "instant"],
+    ["Sorcery // Sorcery", "sorcery"],
+    ["Artifact — Equipment", "artifact"],
+    ["Legendary Enchantment", "enchantment"],
+    ["Creature — Human // Land", "creature"],
+    ["Kindred Instant — Elf", "instant"],
+  ])("%s is %s", (typeLine, want) => expect(mainType(typeLine)).toBe(want));
 });
