@@ -7,7 +7,7 @@
 // §Decklist Group Toggle (design table) — ClearAutoButton lives right of the spacer,
 // left of the Group label.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 
@@ -23,6 +23,13 @@ interface ClearAutoButtonProps {
   pending: boolean;
   onKeepAll: () => void;
   keepAllPending: boolean;
+  /** Locked (L3): the auto COPIES a sweep leaves because their card is locked (T3). Keep all
+      still counts them; Clear does not. 0 with the switch off. */
+  lockedCount?: number;
+  /** The Lock cards mode is on: both bulk controls stay in place, disabled (addendum F3). */
+  lockMode?: boolean;
+  /** Told when Keep all's question opens and closes, so Lock cards can stand down with the pair. */
+  onConfirmingChange?: (confirming: boolean) => void;
 }
 
 /** Identical treatment for both bulk controls: these are two answers to the
@@ -30,8 +37,11 @@ interface ClearAutoButtonProps {
  *  which is right. A filled or accent plate on either would make the app
  *  recommend an answer it cannot know. `min-h-[44px]` only below md, where the
  *  pair wraps to a line of its own and becomes a phone target. */
-const BULK_BUTTON_CLASS =
-  "font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] min-h-[44px] md:min-h-0 py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default";
+export const BULK_BUTTON_BASE =
+  "font-mono text-[12px] bg-transparent border rounded-[8px] px-[12px] min-h-[44px] md:min-h-0 py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default";
+/** The base in its resting ink. Split so Lock cards can take the same box in `--accent` as
+ *  `Done` without two text colours on one element fighting over the cascade. */
+export const BULK_BUTTON_CLASS = `${BULK_BUTTON_BASE} text-fg-body border-border-strong`;
 
 /** The confirm's two answers, taking `game-history-row.tsx`'s inline confirm
  *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
@@ -57,6 +67,9 @@ export function ClearAutoButton({
   pending,
   onKeepAll,
   keepAllPending,
+  lockedCount = 0,
+  lockMode = false,
+  onConfirmingChange,
 }: ClearAutoButtonProps) {
   // The keep asks first because it cannot be undone: its inverse would write
   // `auto = true` back across forty rows, the app re-claiming as its own the
@@ -87,6 +100,14 @@ export function ClearAutoButton({
     if (count === 0) setConfirming(false);
   }
 
+  // A layout effect, so Lock cards leaves in the same paint the question arrives in rather than one
+  // frame after it. Reports `false` on unmount too, or a question torn down with the cluster would
+  // hold Lock cards off for good.
+  useLayoutEffect(() => {
+    onConfirmingChange?.(confirming);
+  }, [confirming, onConfirmingChange]);
+  useLayoutEffect(() => () => onConfirmingChange?.(false), [onConfirmingChange]);
+
   useEffect(() => {
     if (confirming) {
       yesRef.current?.focus();
@@ -101,7 +122,11 @@ export function ClearAutoButton({
   // Either write in flight disables both. They read the same count and act on
   // the same rows, so the second one clicked would be deciding the fate of
   // cards the first has already spoken for.
-  const busy = pending || keepAllPending;
+  // The Lock cards mode disables them too, in place (addendum F3): the row's ✕ is a lock while it
+  // is on, and a bulk removal beside a list of locks would be a second answer to one question.
+  const busy = pending || keepAllPending || lockMode;
+  // What a sweep can actually take (L3): a locked auto card can be kept but never cleared.
+  const clearable = Math.max(0, count - lockedCount);
 
   return (
     /* At a count of 0 the only thing left to render is the kept note, which is
@@ -183,8 +208,11 @@ export function ClearAutoButton({
           <>
             {/* Keep leads, so the cluster reads from the safe answer to the
                 destructive one and the sweep is not the first bulk control the
-                eye lands on. Both key on `count` alone: a toolbar showing one
-                and not the other would say that count means two things. */}
+                eye lands on. They count DIFFERENT SETS on purpose since Locked
+                (L3, audit T5): Keep counts every auto card, and Clear only the
+                copies it can take, auto less locked auto. A locked auto card can
+                be kept and cannot be cleared, so when every one left is locked
+                Clear is absent and Keep stays. */}
             <button
               ref={triggerRef}
               type="button"
@@ -200,22 +228,28 @@ export function ClearAutoButton({
                 {recommendationsCopy.auto.keepAllMobile(String(count))}
               </span>
             </button>
-            <button
-              type="button"
-              onClick={onClear}
-              disabled={busy}
-              aria-label={recommendationsCopy.auto.clearAllAria(String(count))}
-              className={BULK_BUTTON_CLASS}
-            >
-              {/* Responsive label: desktop shows the full string, mobile shows the short form.
-                  Both live in one button element to keep a single interactive control. */}
-              <span className="hidden md:inline">
-                {recommendationsCopy.auto.clearAll(String(count))}
-              </span>
-              <span className="md:hidden">
-                {recommendationsCopy.auto.clearAllMobile(String(count))}
-              </span>
-            </button>
+            {clearable > 0 && (
+              <button
+                type="button"
+                onClick={onClear}
+                disabled={busy}
+                aria-label={
+                  lockedCount > 0
+                    ? recommendationsCopy.auto.clearAllAriaLocked(String(clearable), String(lockedCount))
+                    : recommendationsCopy.auto.clearAllAria(String(clearable))
+                }
+                className={BULK_BUTTON_CLASS}
+              >
+                {/* Responsive label: desktop shows the full string, mobile shows the short form.
+                    Both live in one button element to keep a single interactive control. */}
+                <span className="hidden md:inline">
+                  {recommendationsCopy.auto.clearAll(String(clearable))}
+                </span>
+                <span className="md:hidden">
+                  {recommendationsCopy.auto.clearAllMobile(String(clearable))}
+                </span>
+              </button>
+            )}
           </>
         ))}
     </span>
@@ -228,15 +262,29 @@ interface SweepReceiptProps {
   /** Cards removed, counted in copies rather than rows — a swept basic-land
    *  stack contributes 37. The receipt reads "{n} auto cards removed". */
   removed: number;
+  /** Locked auto copies the sweep left (L3, T3). A second clause at 1 or more; none at 0. */
+  stayed?: number;
   onUndo: () => void;
 }
 
 /** One strip, not one per row. Lifetime is decklist state, matching PR #204. */
-export function SweepReceipt({ removed, onUndo }: SweepReceiptProps) {
+export function SweepReceipt({ removed, stayed = 0, onUndo }: SweepReceiptProps) {
   return (
     <div className="flex items-center gap-[10px] px-[13px] py-[10px] mb-[16px] bg-surface-sunken border border-dashed border-border-strong rounded-[8px]">
       <span className="flex-1 font-mono text-[11px] md:text-[12px] text-fg-locked">
-        {recommendationsCopy.auto.swept(String(removed))}
+        {/* Each clause `whitespace-nowrap`, the separator INSIDE the second (audit T2): at 390 with
+            two-digit counts the pair is wider than the slot, and the line must break at the middot
+            rather than inside `stayed`, with no separator stranded at a line's end. */}
+        <span className="whitespace-nowrap">{recommendationsCopy.auto.swept(String(removed))}</span>
+        {stayed > 0 && (
+          <>
+            {" "}
+            <span className="whitespace-nowrap" data-testid="sweep-receipt-locked">
+              {"· "}
+              {recommendationsCopy.auto.sweptLeftLocked(String(stayed))}
+            </span>
+          </>
+        )}
       </span>
       {/* Undo — matches decklist-row.tsx Undo treatment: sans 12.5px semibold,
           accent coloured, border-bottom underline in accent-shadow. */}

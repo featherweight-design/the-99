@@ -72,6 +72,7 @@ import { VersionRail } from "./version-history";
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionSummary } from "../../lib/decks/versions";
 import { PendingChangeProvider } from "./pending-change";
+import { LockCardsProvider, useCardLocks } from "./lock-cards";
 // `draft-shape`, not `draft-state`: the latter holds the reads and imports `db`.
 import { hasChanges, type DraftState } from "../../lib/decks/draft-shape";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
@@ -186,6 +187,9 @@ interface BuilderShellProps {
   noticesEnabled?: boolean;
   /** The stored analysis's permitted range, for the header's bracket chip; null when unread. */
   storedPermits?: Bracket[] | null;
+  /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
+   *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
+  neverCut?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -225,6 +229,7 @@ export function BuilderShell({
   analysisEnabled = false,
   noticesEnabled = false,
   storedPermits = null,
+  neverCut = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -299,7 +304,7 @@ export function BuilderShell({
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
   const {
-    cards,
+    cards: optimisticCards,
     unresolvedRows,
     unresolvedCount,
     addOptimisticCard,
@@ -310,6 +315,33 @@ export function BuilderShell({
     sweepOptimisticAuto,
     keepAllOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
+  // The page's live region. Declared this high because the lock state below speaks into it.
+  const [announcement, setAnnouncement] = useState("");
+  // Locked (PR 4a): every lock pressed on this visit, drawn over the optimistic list, so the rows,
+  // the key, the auto counts and the climb all read one answer. `lockCards` is the rows' context,
+  // null with the switch off. The MODE lives here rather than in the list, so List ↔ Card (the
+  // list's own state) keeps it, and a switch to Shopping (the shell's) can end it.
+  const {
+    cards,
+    value: lockCards,
+    mode: lockMode,
+    setMode: setLockMode,
+  } = useCardLocks({
+    enabled: neverCut,
+    deckId: deck.id,
+    cards: optimisticCards,
+    serverCards: deck.cards,
+    announce: setAnnouncement,
+  });
+  // Every filter change goes through here. Shopping ends the mode (toolbar addendum F3): the
+  // button is absent there, and a shopping list is not where a deck is locked.
+  const changeFilter = useCallback(
+    (next: "all" | "shopping") => {
+      if (next === "shopping") setLockMode(false);
+      setFilter(next);
+    },
+    [setLockMode],
+  );
   // Keyed on the list the page DRAWS, the optimistic one, so an edit made in this visit retires the
   // reading on screen the moment the edit is drawn rather than when the server answers.
   const listKey = useMemo(
@@ -660,8 +692,8 @@ export function BuilderShell({
   // a role cell — and a screen reader sees none of them, because all three are
   // ordinary text elsewhere in the tree. The live region is the only place the
   // add is narrated, so every add path goes through this wrapper rather than
-  // calling addOptimisticCard directly.
-  const [announcement, setAnnouncement] = useState("");
+  // calling addOptimisticCard directly. (`announcement` itself is declared above,
+  // beside the lock state that also speaks into it.)
 
   // The mark hides nothing and moves nothing, so it is the one act on this
   // surface a screen reader would otherwise get nothing at all from.
@@ -780,6 +812,13 @@ export function BuilderShell({
   // a single row of roughly 37, so a row count would offer to sweep "1 card".
   const autoCount = cards.filter((c) => c.auto).reduce((n, c) => n + c.quantity, 0);
   const keptCount = cards.filter((c) => !c.auto).reduce((n, c) => n + c.quantity, 0);
+  // Locked (L3): a sweep leaves a locked auto card where it is, so Clear counts auto LESS these,
+  // while Keep all still counts every auto card. COPIES, like `autoCount`, so the subtraction is
+  // like from like (audit T3). Zero with the switch off, where no card reads locked.
+  const lockedAutoCards = cards.filter((c) => c.auto && c.locked);
+  const lockedAutoCount = lockedAutoCards.reduce((n, c) => n + c.quantity, 0);
+  // The receipt's `N locked cards stayed`, fixed at the sweep that left them.
+  const [sweptLockedCount, setSweptLockedCount] = useState(0);
 
   const handleClearAuto = useCallback(() => {
     if (sweepPending) return;
@@ -788,17 +827,28 @@ export function BuilderShell({
       // One edit, not a loop of removals: the server deletes each auto row
       // whole, while `removeOptimisticCard` takes off a single copy — which
       // would leave 36 of the fill's 37 basics on screen until revalidation.
-      sweepOptimisticAuto();
+      //
+      // A LOCKED auto card stays (L3): the server's delete skips it, so the prediction keeps it too,
+      // or the card vanishes until revalidation and the announced total is short by its copies.
+      const keep = new Set(lockedAutoCards.map((c) => c.oracleId));
+      sweepOptimisticAuto(keep);
       try {
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
-        const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
+        setSweptLockedCount(lockedAutoCount);
+        const remaining = deckCounts(cards.filter((c) => !c.auto || keep.has(c.oracleId))).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
-          recommendationsCopy.auto.sweptAnnounce(
-            String(removedCount),
-            builtFragment(remaining, bodySize),
-          ),
+          lockedAutoCount > 0
+            ? recommendationsCopy.auto.sweptAnnounceLocked(
+                String(removedCount),
+                String(lockedAutoCount),
+                builtFragment(remaining, bodySize),
+              )
+            : recommendationsCopy.auto.sweptAnnounce(
+                String(removedCount),
+                builtFragment(remaining, bodySize),
+              ),
         );
       } catch {
         // No explicit rollback: the transition ends here and React drops the
@@ -806,7 +856,7 @@ export function BuilderShell({
         setAutoError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, bodySize]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, bodySize, lockedAutoCards, lockedAutoCount]);
 
   // No receipt strip and no undo: a keep takes nothing, so there is nothing for
   // a receipt to hold open, and an undo would have to write `auto = true` back
@@ -1055,7 +1105,7 @@ export function BuilderShell({
                   ? undefined
                   : () => {
                       setView("deck");
-                      setFilter("shopping");
+                      changeFilter("shopping");
                     }
               }
             />
@@ -1507,6 +1557,7 @@ export function BuilderShell({
                  inside it: `Decklist` returns three different trees, and mounted
                  within it the provider would have to be repeated in each. */
               <PendingChangeProvider value={pendingChange}>
+              <LockCardsProvider value={lockCards}>
               <Decklist
               mix={mix}
                 deckId={deck.id}
@@ -1520,7 +1571,7 @@ export function BuilderShell({
                 filled={deck.filled}
                 filter={filter}
                 grouping={grouping}
-                onFilterChange={setFilter}
+                onFilterChange={changeFilter}
                 onGroupingChange={setGrouping}
                 onUnresolvedExpandedChange={setUnresolvedExpanded}
                 autoCount={autoCount}
@@ -1541,7 +1592,12 @@ export function BuilderShell({
                 // the only thing that says the list moved, since nothing scrolls
                 // and no row changes.
                 onAnnounce={setAnnouncement}
+                lockMode={lockMode && filter === "all"}
+                onLockModeChange={neverCut ? setLockMode : undefined}
+                lockedAutoCount={lockedAutoCount}
+                sweptLockedCount={sweptLockedCount}
               />
+              </LockCardsProvider>
               </PendingChangeProvider>
             )}
             </div>

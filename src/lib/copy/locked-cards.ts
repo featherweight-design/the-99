@@ -1,12 +1,42 @@
 /**
  * Locked (never cut), sub-project 5.1: every string the lock draws, transcribed from the handoff's
- * `never-cut · copy strings.ts`. This module grows with the feature. PR 1 ships the one string its
- * action returns; the mode, the marks and the tuning lines land with the PRs that draw them.
+ * `never-cut · copy strings.ts`. This module grows with the feature. The mode, the row's
+ * marks and the key line arrived with PR 4a.
  */
 export const lockedCardsCopy = {
+  /**
+   * The Lock cards mode (PR 4a): the toolbar button, the line that stands in the key's place, and
+   * the per-card toggle every row's ✕ becomes. No `buttonAria` (audit T6, overriding F11(c)): the
+   * button's name is its visible label, `Lock cards` or `Done`, and carries no `aria-pressed`, so
+   * entering and leaving the mode are said in the builder's live region instead.
+   */
   mode: {
-    /** Any refusal of a lock toggle: a bad id, a card no longer in the deck, the switch off. */
-    refused: "That didn't save. Try again.",
+    button: "Lock cards",
+    done: "Done",
+    /** Stands in the key line's place while the mode is on, followed by `count`. */
+    line: "Locked cards are never suggested as cuts.",
+    /** Counts locked CARDS, one per oracle id (T3), never copies. */
+    count: (n: number) => (n === 1 ? "1 locked" : `${n} locked`),
+    /** The per-card toggle's name. `aria-pressed` carries the state; the label names the card. */
+    toggleAria: (card: string) => `Lock ${card}`,
+    announceLocked: (card: string) => `${card} is locked.`,
+    announceUnlocked: (card: string) => `${card} is unlocked. Suggestions can offer to cut it again.`,
+    /**
+     * T6: entering and leaving the mode, in the builder's live region. Not in the handoff's copy
+     * file (T6 postdates it), so new copy, for /copy-review.
+     */
+    announceEnter: "Lock cards is on. Each remove button is now a lock.",
+    announceLeave: "Lock cards is off. The remove buttons are back.",
+    /**
+     * Any refusal of a lock toggle: a bad id, a card no longer in the deck, the switch off. The
+     * house apostrophe (audit F11(b)), not the handoff's straight one.
+     */
+    refused: "That didn\u2019t save. Try again.",
+  },
+  /** The desktop row's hover shortcut: a pointer title only (`tabIndex -1`, `aria-hidden`). */
+  row: {
+    titleOff: "Lock",
+    titleOn: "Locked · press to unlock",
   },
   /** The review screen's Pull it guard (L2), in the commander and pending guards' shape. */
   pull: {
@@ -35,6 +65,8 @@ export const lockedCardsCopy = {
     key: "locked",
     /** Pointer title on the at-rest mark. */
     title: "Locked",
+    /** Rides the row's trigger `aria-describedby`, after the availability word. */
+    a11y: "Locked. Suggestions will not offer to cut it.",
   },
   /** The climb's *What would have to go* sheet: a locked candidate is listed last and still counts. */
   climb: {

@@ -17,7 +17,7 @@ import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
+import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls, type DeckView } from "./group-toggle";
 import { deckCardComparator } from "../../lib/decks/sort-cards";
 import {
   DECK_SORT_STORAGE_KEY,
@@ -41,6 +41,8 @@ import { BuyTag } from "./buy-tag";
 import { ProxyTag } from "./proxy-tag";
 import { cardTileCopy } from "../../lib/copy/card-surfaces";
 import { MarkKey, type MarkKeyEntry } from "./mark-key";
+import { LockMark } from "./lock-mark";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
@@ -154,6 +156,14 @@ type DecklistProps = {
   /** The surface's live region. A reorder is the one change on this list that
    *  moves nothing a reader can see happening. */
   onAnnounce?: (message: string) => void;
+  /** The Lock cards mode (Locked, PR 4a), owned by the shell so List ↔ Card keeps it. Its
+   *  handler is absent with `NEVER_CUT_ENABLED` off, and so is every control it draws. */
+  lockMode?: boolean;
+  onLockModeChange?: (on: boolean) => void;
+  /** Auto copies whose card is locked (T3), for Clear's label. */
+  lockedAutoCount?: number;
+  /** Locked auto copies the last sweep left, for the receipt's second clause. */
+  sweptLockedCount?: number;
 };
 
 /**
@@ -186,6 +196,12 @@ export function buildMarkKeyEntries({
     }
     if (shown.some((c) => c.proxied)) {
       entries.push({ id: "proxy", sample: <ProxyTag variant="row" />, word: proxyCopy.key.proxy });
+    }
+    // Locked, conditional like `buy` and `proxy`: it describes the rows below. Rows only for now,
+    // because the card view's tile draws no lock until Locked PR 4b gives it one, and a key never
+    // glosses a mark the reader cannot find on the screen beneath it.
+    if (!inCardView && shown.some((c) => c.locked)) {
+      entries.push({ id: "locked", sample: <LockMark />, word: lockedCardsCopy.mark.key });
     }
     // THE FACT ENTRIES FOLLOW THE CARDS, exactly as `buy` and `proxy` do.
     //
@@ -253,6 +269,10 @@ export function Decklist({
   pendingVersion = null,
   onAnnounce,
   mix,
+  lockMode = false,
+  onLockModeChange,
+  lockedAutoCount = 0,
+  sweptLockedCount = 0,
 }: DecklistProps) {
   // The view persists and does not touch the URL. It is a reading preference,
   // not a description of what is on screen — `/collection`'s `?view=` answers
@@ -322,6 +342,33 @@ export function Decklist({
   const markKeyRegion = inCardView
     ? proxyCopy.key.regionAriaCards
     : proxyCopy.key.regionAria;
+
+  // The key line holds EITHER the key OR the mode's line, never both (toolbar addendum F3): the
+  // same position, above the sweep receipt and the groups. The count is locked CARDS, one per
+  // oracle id (T3), over the whole deck: the mode only runs under `All`, where that is the view.
+  const lockedCardCount = cards.filter((c) => c.locked).length;
+  // THE LIST VIEW ONLY, until Locked 4b gives the card view's tiles a lock: in the card view the
+  // button is absent, and switching to it ends the mode, as Shopping does. A mode there would turn
+  // the button to Done and disable the bulk pair while every tile's ✕ still removes its card.
+  const lockHere = view === "list";
+  const pickView = (next: DeckView) => {
+    if (next !== "list" && lockMode) onLockModeChange?.(false);
+    chooseView(next);
+  };
+  const keyLine = lockMode && lockHere ? (
+    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
+      {lockedCardsCopy.mode.line}{" "}
+      <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(lockedCardCount)}</span>
+    </p>
+  ) : (
+    <MarkKey marks={markKey} regionAria={markKeyRegion} />
+  );
+  // The toolbar's lock props, identical on all three of its mounts.
+  const lockProps = {
+    lockMode: lockMode && lockHere,
+    onLockModeChange: lockHere ? onLockModeChange : undefined,
+    lockedAutoCount,
+  };
 
   // ONE SORT PER FILTER, both remembered together. `All` keeps its own order
   // while `Shopping` keeps `Price · Highest`, so switching lanes swaps which is
@@ -591,7 +638,7 @@ export function Decklist({
           </p>
         )}
         {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
-          <SweepReceipt removed={sweptCount} onUndo={onRestoreAuto} />
+          <SweepReceipt removed={sweptCount} stayed={sweptLockedCount} onUndo={onRestoreAuto} />
         )}
       </>
     );
@@ -617,7 +664,7 @@ export function Decklist({
             onFilterChange={onFilterChange}
             onGroupingChange={onGroupingChange}
             view={view}
-            onViewChange={chooseView}
+            onViewChange={pickView}
             autoCount={autoCount}
             keptCount={keptCount}
             sweepPending={sweepPending}
@@ -629,9 +676,10 @@ export function Decklist({
             onSortChange={setSort}
             onSortAnnounce={onAnnounce}
             draftNote={draftNote}
+            {...lockProps}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-            <MarkKey marks={markKey} regionAria={markKeyRegion} />
+            {keyLine}
           </div>
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
@@ -702,7 +750,7 @@ export function Decklist({
           onFilterChange={onFilterChange}
           onGroupingChange={onGroupingChange}
           view={view}
-          onViewChange={chooseView}
+          onViewChange={pickView}
           autoCount={autoCount}
           keptCount={keptCount}
           sweepPending={sweepPending}
@@ -716,10 +764,11 @@ export function Decklist({
           onSortChange={setSort}
           onSortAnnounce={onAnnounce}
           draftNote={draftNote}
+          {...lockProps}
         />
 
         <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-          <MarkKey marks={markKey} regionAria={markKeyRegion} />
+          {keyLine}
         </div>
 
         <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
@@ -854,7 +903,7 @@ export function Decklist({
         onFilterChange={onFilterChange}
         onGroupingChange={onGroupingChange}
         view={view}
-        onViewChange={chooseView}
+        onViewChange={pickView}
         autoCount={autoCount}
         keptCount={keptCount}
         sweepPending={sweepPending}
@@ -868,13 +917,14 @@ export function Decklist({
         onSortChange={setSort}
         onSortAnnounce={onAnnounce}
         draftNote={draftNote}
+        {...lockProps}
       />
 
       {/* The decoder, on the PRIMARY view. It was in the Shopping branch alone,
           which is the one view a printed card is never in — so the surface that
           actually draws `P` had nothing to decode it. */}
       <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-        <MarkKey marks={markKey} regionAria={markKeyRegion} />
+        {keyLine}
       </div>
 
       {/* Grouped card rows */}
@@ -893,6 +943,7 @@ export function Decklist({
         {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
           <SweepReceipt
             removed={sweptCount}
+            stayed={sweptLockedCount}
             onUndo={onRestoreAuto}
           />
         )}

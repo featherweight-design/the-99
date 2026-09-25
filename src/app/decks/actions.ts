@@ -558,8 +558,7 @@ export async function addCardToDeck(
     );
     if (error) return error;
 
-    // L1 (D2): the review screen's Put back returns a removed card LOCKED (the deck page's two Undos
-    // will pass `relock` with Locked 4a; until then they return it unlocked). The
+    // L1 (D2): Put back and the deck page's two Undos return a removed card LOCKED. The
     // dormant row is woken BEFORE the insert, whose own trigger would otherwise delete it; a card
     // that was never locked has no dormant row, so this wakes nothing and the card comes back as it
     // left. Every other add passes nothing and returns the card unlocked.

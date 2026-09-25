@@ -106,8 +106,8 @@ export async function lockedOracleIds(
  * Beside every `pruneOrphanProxies`, and a reconcile for the same reason that one is: several
  * callers replace the whole list, so "which lock has no membership NOW" is the only question that
  * is always right. Dormant rather than deleted, because the lock ends only if the removal STAYS
- * (L1): a discard and the review screen's Put back revive it (the deck page's two Undos will, with
- * Locked 4a), and a commit deletes it
+ * (L1): a discard, the review screen's Put back and the deck page's two Undos revive it, and a
+ * commit deletes it
  * (`clearDormantLocks`).
  * Every other way back arrives unlocked, through the `deck_cards` insert trigger.
  *
@@ -139,7 +139,7 @@ export async function clearDormantLocks(tx: Runner, deckId: string): Promise<voi
  * "Revive a dormant row if there is one", never "lock": the caller cannot assert a lock the server
  * does not hold. A discard passes every card its version holds (Hugh, 2026-09-25: a discard brings
  * a removed locked card back locked). `addCardToDeck`'s `relock` passes the one card: the review
- * screen's Put back does, and the deck page's two Undos will with Locked 4a.
+ * screen's Put back does, and so do the deck page's two Undos (the row's and the card view's).
  */
 export async function reviveDormantLocks(tx: Runner, deckId: string, oracleIds: readonly string[]): Promise<void> {
   if (oracleIds.length === 0) return;

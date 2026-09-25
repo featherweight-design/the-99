@@ -3,7 +3,10 @@
 // Group Toggle — All/Shopping filter pills + By type / By role grouping pills.
 // §Decklist Group Toggle (design table).
 
-import { ClearAutoButton } from "./clear-auto";
+import { useState } from "react";
+import { BULK_BUTTON_BASE, ClearAutoButton } from "./clear-auto";
+import { LockMark } from "./lock-mark";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { FilterPanel } from "../ui/filter-panel";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import {
@@ -88,6 +91,14 @@ type GroupToggleProps = {
    * questions. The bulk controls themselves are untouched.
    */
   draftNote?: string | null;
+  /**
+   * The Lock cards mode (Locked, PR 4a; toolbar addendum F3). `onLockModeChange` is present only
+   * with `NEVER_CUT_ENABLED` on, and its absence is what keeps this toolbar exactly as it was.
+   */
+  lockMode?: boolean;
+  onLockModeChange?: (on: boolean) => void;
+  /** Auto COPIES whose card is locked (T3): Clear's label counts `autoCount` less these. */
+  lockedAutoCount?: number;
 };
 
 export function GroupToggle({
@@ -112,10 +123,23 @@ export function GroupToggle({
   onSortChange,
   onSortAnnounce,
   draftNote = null,
+  lockMode = false,
+  onLockModeChange,
+  lockedAutoCount = 0,
 }: GroupToggleProps) {
   // `md:` is the only breakpoint this row has ever used, and the panel's form
   // follows it: a labelled 44px pill at phone, the desktop popover above.
   const wide = useIsDesktop();
+  // Keep all's question replaces the bulk pair, and Lock cards stands down with it (addendum F3):
+  // a mode that changes every row's ✕ has no business beside an unanswered question about them.
+  const [keepAsking, setKeepAsking] = useState(false);
+  // Absent under Shopping rather than disabled, for the view well's reason: a shopping list is a
+  // list of things to buy, and there is nothing on it to lock from here. At-rest marks and the
+  // desktop hover shortcut still work on its rows.
+  const lockAvailable = onLockModeChange !== undefined && filter === "all";
+  // Cluster 2 and the hairline share this gate (addendum F3, delta 1). Lock cards alone is reason
+  // enough for both; with the switch off it reduces to the gate they had before.
+  const actCluster = lockAvailable || Boolean(draftNote) || autoCount > 0 || keptCount > 0;
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px.
        The strip sits INSIDE this container, above the bottom border, so the
@@ -186,7 +210,7 @@ export function GroupToggle({
             had measured, and spent a 10px gap the desktop line could not afford
             at 2px of margin. The wrapper is absent entirely when there is
             neither a note nor an auto cluster, rather than collecting a gap. */}
-        {(draftNote || autoCount > 0 || keptCount > 0) && (
+        {actCluster && (
           <span
             /* Gated on VISIBLE CONTENT, not on `autoControls` — `BuilderShell`
                passes that object whether or not there is anything to act on, so
@@ -201,7 +225,8 @@ export function GroupToggle({
                nobody can see. `empty:hidden` covers the remaining case — a
                wrapper whose children all declined to render at this width. */
             className={`flex-none flex-wrap items-center gap-[8px] empty:hidden ${
-              autoCount > 0 ? "flex" : "hidden md:flex"
+              // `flex` whenever Lock cards renders: it is a phone control too.
+              autoCount > 0 || lockAvailable ? "flex" : "hidden md:flex"
             }`}
           >
         {draftNote && (
@@ -221,7 +246,28 @@ export function GroupToggle({
             pending={sweepPending}
             onKeepAll={autoControls.onKeepAll}
             keepAllPending={keepAllPending}
+            lockedCount={lockedAutoCount}
+            lockMode={lockMode}
+            onConfirmingChange={setKeepAsking}
           />
+        )}
+
+        {/* Lock cards: the LAST child of cluster 2, so the row still wraps between clusters and
+            never inside one. The bulk pair's box plus the icon's gap, and a minimum width so
+            `Done` keeps the box `Lock cards` drew. No `aria-label` and no `aria-pressed`
+            (audit T6): the name is the visible label, and entering and leaving the mode are
+            said in the builder's live region. */}
+        {lockAvailable && !keepAsking && (
+          <button
+            type="button"
+            onClick={() => onLockModeChange(!lockMode)}
+            className={`${BULK_BUTTON_BASE} inline-flex items-center gap-[7px] min-w-[116px] justify-center ${
+              lockMode ? "text-accent border-accent" : "text-fg-body border-border-strong"
+            }`}
+          >
+            <LockMark ink={lockMode ? "var(--accent)" : "var(--fg-muted)"} />
+            {lockMode ? lockedCardsCopy.mode.done : lockedCardsCopy.mode.button}
+          </button>
         )}
           </span>
         )}
@@ -242,7 +288,7 @@ export function GroupToggle({
             an empty wrapper at zero — a rule dividing nothing from something is
             just a stray mark and a 10px gap. And nothing at phone either, where
             there is no room for it. */}
-        {(draftNote || autoCount > 0 || keptCount > 0) && (
+        {actCluster && (
           <span
             aria-hidden
             className="hidden md:block h-[22px] w-px flex-none bg-[color:var(--border-strong)]"

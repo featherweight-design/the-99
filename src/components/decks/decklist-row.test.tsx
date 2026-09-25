@@ -214,7 +214,7 @@ describe("DecklistRow undo row (#185)", () => {
       screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }).click();
     });
 
-    expect(addCardToDeck).toHaveBeenCalledWith("d1", "sol-ring");
+    expect(addCardToDeck).toHaveBeenCalledWith("d1", "sol-ring", { relock: true });
     expect(removeCardFromDeck).not.toHaveBeenCalled();
 
     await act(async () => {

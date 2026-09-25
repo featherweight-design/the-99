@@ -29,7 +29,8 @@ export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCar
 
   function handleUndo() {
     announceUndo(card);
-    run(() => addCardToDeck(deckId, card.oracleId));
+    // `relock` (Locked L1, D2): the card comes back locked if it left locked.
+    run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
   }
 
   return (
