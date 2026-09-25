@@ -17,8 +17,8 @@ import { THIN_DECK_COUNT } from "../profile/fit";
  *    deletes accidental tags from the commander row (`gap-slot.ts`).
  *  - The picker offers a tag only when at least `TOO_NARROW_BELOW` commanders back it. Fewer, and
  *    choosing it can only ever produce the too-narrow state (F7), so the floor is derived from that
- *    line rather than chosen: 22 slugs back one commander, 16 two and 49 three or four, and 286 of
- *    the 401 clear it.
+ *    line rather than chosen. Of the 401 slugs, 370 back at least one commander and 307 clear it
+ *    (formats excluded).
  *  - Format labels (`cEDH`, `Premodern`, …) are never themes; cEDH is a bracket.
  */
 export const TOO_NARROW_BELOW = 4;

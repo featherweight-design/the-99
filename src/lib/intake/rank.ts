@@ -60,7 +60,8 @@ export type Candidate = ThemeRow & BracketFacts & {
   cardInclusion: number | null;
   /** Two-card combos this commander completes with the build-around card, and how many loop turns. */
   combosWithCard: { combos: number; loops: number };
-  /** How many of the commander's support cards the player owns (`overlapOwned`). */
+  /** How many of the commander's support cards the player owns inside its identity, not counting
+   *  itself: `supportOverlap` over `commanderPool`, the /commanders scorer's `overlapOwned`. */
   ownedSupport: number;
 };
 
@@ -90,9 +91,12 @@ export function passes(c: Candidate, a: Answers, card: CardFacts | null, skip?: 
     skip?.kind === k && (k !== "theme" || (skip.kind === "theme" && skip.slug === slug));
   if (!skipping("colors") && filterByColors([c], a.colors, a.match).length === 0) return false;
   for (const slug of a.themes) if (!skipping("theme", slug) && themeShare(c, slug) === null) return false;
-  if (a.card !== null && !skipping("card") && !(c.cardInclusion !== null && c.cardInclusion > 0)) return false;
-  if (a.bracket !== null && !skipping("bracket") && !withinBracket(c, a.card === null ? null : card, a.bracket)) return false;
-  if (a.budgetDollars !== null && !skipping("budget") && !withinBudget(c, a.card === null ? null : card, a.budgetDollars)) return false;
+  // With the card answer removed the card is gone from every test, not only its own: its flags
+  // and its price no longer count against the bracket or the budget either.
+  const withCard = a.card !== null && !skipping("card") ? card : null;
+  if (withCard !== null && !(c.cardInclusion !== null && c.cardInclusion > 0)) return false;
+  if (a.bracket !== null && !skipping("bracket") && !withinBracket(c, withCard, a.bracket)) return false;
+  if (a.budgetDollars !== null && !skipping("budget") && !withinBudget(c, withCard, a.budgetDollars)) return false;
   return true;
 }
 

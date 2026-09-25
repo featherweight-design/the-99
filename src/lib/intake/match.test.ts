@@ -14,6 +14,7 @@ const cards = [
   { oracleId: "sol", name: "Sol Ring" },
   { oracleId: "fi", name: "Fire // Ice" },
   { oracleId: "lf", name: "Landfall" },
+  { oracleId: "lfl", name: "Landfall Lotus" },
   { oracleId: "aether", name: "Æther Vial" },
   { oracleId: "kenrith", name: "Kenrith, the Returned King" },
 ];
@@ -26,12 +27,14 @@ describe("the free match", () => {
     expect(match("DINOSAURS please").chips).toEqual([{ kind: "theme", slug: "dinosaurs", label: "Dinosaurs" }]);
   });
 
-  it("takes the longest phrase, so a card name beats a theme inside it", () => {
-    expect(match("something with Doubling Season").chips).toEqual([{ kind: "card", oracleId: "ds", name: "Doubling Season" }]);
+  it("takes the longest phrase, so a card name beats a theme at its start", () => {
+    // `landfall` alone is a theme, so a shortest-first scan would stop there.
+    expect(match("something with landfall lotus").chips).toEqual([{ kind: "card", oracleId: "lfl", name: "Landfall Lotus" }]);
   });
 
   it("gives a phrase that names both a theme and a card to the theme", () => {
-    expect(match("landfall").chips).toEqual([{ kind: "theme", slug: "landfall", label: "Landfall" }]);
+    // Capitalised, so the one-word card is eligible and only the theme-first rule decides.
+    expect(match("Landfall").chips).toEqual([{ kind: "theme", slug: "landfall", label: "Landfall" }]);
   });
 
   it("matches a one-word card name only when typed with a capital", () => {
@@ -60,6 +63,7 @@ describe("the free match", () => {
 
   it("refuses a budget under a dollar, and leaves it for the player to see", () => {
     expect(match("$0").chips).toEqual([]);
+    expect(match("$0.60").chips).toEqual([]);
     expect(match("$0").leftover).toEqual(["0"]);
   });
 

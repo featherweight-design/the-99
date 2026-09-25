@@ -142,8 +142,10 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
     blank(m.index, m.index + m[0].length);
   }
   for (const m of rest.matchAll(DOLLARS)) {
-    const dollars = Math.round(Number((m[1] ?? m[2]).replace(/,/g, "")));
-    if (!Number.isFinite(dollars) || dollars < 1) continue;
+    const figure = Number((m[1] ?? m[2]).replace(/,/g, ""));
+    // Tested before rounding: $0.60 is not a dollar, and rounding first would make it one.
+    if (!Number.isFinite(figure) || figure < 1) continue;
+    const dollars = Math.round(figure);
     found.push({ at: m.index, chip: { kind: "budget", dollars } });
     blank(m.index, m.index + m[0].length);
   }

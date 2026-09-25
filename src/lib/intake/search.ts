@@ -59,7 +59,10 @@ export async function searchCommanders(userId: string, answers: Answers): Promis
         where csc.commander_oracle_id = cs.commander_oracle_id and csc.oracle_id = ${card}::uuid)`} as card_inclusion,
       ${needOwnedSupport ? sql`(
         select count(*) from commander_support_cards csc
+        join cards sc on sc.oracle_id = csc.oracle_id
         where csc.commander_oracle_id = cs.commander_oracle_id
+          -- commanderPool's two rules: inside the commander's identity, and not the commander.
+          and sc.color_identity <@ c.color_identity and csc.oracle_id <> cs.commander_oracle_id
           and exists (select 1 from collection_items ci
                       where ci.user_id = ${userId} and ci.oracle_id = csc.oracle_id))::int` : sql`0`} as owned_support
     from commander_support cs

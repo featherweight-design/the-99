@@ -127,6 +127,15 @@ describe("too narrow (ruling 8)", () => {
     expect(r2.tooNarrow?.without[0]).toEqual({ answer: { kind: "theme", slug: "dinos" }, count: 6 });
   });
 
+  it("drops the card from every test when the card is the answer removed", () => {
+    // A Game Changer card at bracket 2 fails every commander on the card's own flag, and a price
+    // over the budget fails them all again. Without the card, all pass.
+    const r = rankCandidates(pool, { ...none, card: "gc", bracket: 2, budgetDollars: 10 },
+      card({ oracleId: "gc", gameChanger: true, priceCents: 9_999 }));
+    expect(r.rows).toEqual([]);
+    expect(r.tooNarrow?.without.find((w) => w.answer.kind === "card")?.count).toBe(pool.length);
+  });
+
   it("is not raised when enough pass, or when nothing was asked", () => {
     expect(rankCandidates(pool, { ...none, themes: ["elves"] }, null).tooNarrow).toBeNull();
     expect(rankCandidates(pool.slice(0, 2), none, null).tooNarrow).toBeNull();

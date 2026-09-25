@@ -151,7 +151,7 @@ synopsis's.
   - A tag counts on a commander only at `themeFloorFor`'s 0.5%.
   - The picker's vocabulary is tags that at least `TOO_NARROW_BELOW` (4) commanders back, with
     formats excluded. Fewer, and choosing the tag can only produce the too-narrow state. That keeps
-    286 of staging's 401 tags; 22 back one commander, 16 two and 49 three or four.
+    307 of staging's 401 tags; 370 back at least one commander.
 - **The free match's rules** are engineering's:
   - the longest phrase wins, and a theme beats a card on the same phrase;
   - a theme answers to its singular forms;

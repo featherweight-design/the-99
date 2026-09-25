@@ -41,6 +41,7 @@ async function main() {
   const { TOO_NARROW_BELOW } = await import("../src/lib/intake/vocabulary");
   const { loadSupportLists } = await import("../src/lib/edhrec/support-read");
   const { supportOverlap } = await import("../src/lib/edhrec/support-overlap");
+  const { commanderPool } = await import("../src/lib/recs/score");
   const none = { colors: [], match: "contains" as const, themes: [], card: null, budgetDollars: null, bracket: null };
   const rows = async <T>(q: ReturnType<typeof sql>) => (await db.execute(q)).rows as T[];
 
@@ -61,19 +62,28 @@ async function main() {
   const listed = new Set(all.rows.map((r) => r.candidate.oracleId));
   check("a commander this player has built is not listed", built.length > 0 && built.every((b) => !listed.has(b.id)),
     `${built.length} built, ${built.filter((b) => listed.has(b.id)).length} listed`);
-  const owned = all.rows.filter((r) => r.candidate.owned).length;
-  check("owned and unowned commanders are listed together", owned > 0 && owned < all.rows.length, `${owned} owned of ${all.rows.length}`);
+  const ownedRows = all.rows.filter((r) => r.candidate.owned).length;
+  check("owned and unowned commanders are listed together", ownedRows > 0 && ownedRows < all.rows.length, `${ownedRows} owned of ${all.rows.length}`);
   check("with no theme and no card the order is owned support", all.order === "owned"
     && all.rows.every((r, i) => i === 0 || all.rows[i - 1].candidate.ownedSupport >= r.candidate.ownedSupport), `order ${all.order}`);
 
-  const top = all.rows[0].candidate;
-  const [support] = [...(await loadSupportLists([top.oracleId])).values()];
-  const pool = await rows<{ oracle_id: string; name: string }>(sql`
-    select distinct c.oracle_id, c.name from collection_items ci join cards c on c.oracle_id = ci.oracle_id
-    where ci.user_id = ${USER} and c.oracle_id <> ${top.oracleId}::uuid`);
-  const overlap = supportOverlap(support, pool.map((p) => ({ oracleId: p.oracle_id, name: p.name }))).oracleIds.length;
-  check("owned support equals the scorer's supportOverlap for the top commander", overlap === top.ownedSupport,
-    `${top.name}: search ${top.ownedSupport}, supportOverlap ${overlap}`);
+  // Through the scorer's own `commanderPool`, so its identity rule is read rather than restated,
+  // over the top 25 and every colorless commander listed, since a colorless commander is the one
+  // whose support list most carries cards outside its identity.
+  const collection = await rows<{ oracle_id: string; name: string; color_identity: string[] }>(sql`
+    select distinct c.oracle_id, c.name, c.color_identity from collection_items ci join cards c on c.oracle_id = ci.oracle_id
+    where ci.user_id = ${USER}`);
+  const owned = collection.map((c) => ({ oracleId: c.oracle_id, name: c.name, colorIdentity: c.color_identity }));
+  const sample = [...all.rows.slice(0, 25), ...all.rows.filter((r) => r.candidate.colorIdentity.length === 0).slice(0, 5)]
+    .map((r) => r.candidate);
+  const lists = await loadSupportLists(sample.map((c) => c.oracleId));
+  const drift = sample.flatMap((c) => {
+    const list = lists.get(c.oracleId);
+    const overlap = list ? supportOverlap(list, commanderPool(c, owned as never)).oracleIds.length : 0;
+    return overlap === c.ownedSupport ? [] : [`${c.name}: search ${c.ownedSupport}, scorer ${overlap}`];
+  });
+  check("owned support equals the scorer's supportOverlap over commanderPool", drift.length === 0 && sample.some((c) => c.colorIdentity.length === 0),
+    drift.length === 0 ? `${sample.length} commanders agree, ${sample.filter((c) => c.colorIdentity.length === 0).length} colorless` : drift.join("; "));
 
   console.log("\n3. A theme and a card");
   const byTheme = await searchCommanders(USER, { ...none, themes: [theme.slug] });
