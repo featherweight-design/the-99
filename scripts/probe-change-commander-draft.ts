@@ -107,6 +107,7 @@ async function main() {
     const claim = claims.get(x)?.claims.find((c) => c.id === deckId);
     return {
       moved: state.commander ?? null,
+      namesBoth: state.names.has(a) && state.names.has(b),
       changes: changeCount(state),
       released: releasedCopies(state),
       listed: list.find((d) => d.id === deckId)?.pendingChanges ?? null,
@@ -135,6 +136,7 @@ async function main() {
     to: { commanderOracleId: b, partnerOracleId: null },
   });
   check("swapped (on): one change", on.changes, 1);
+  check("swapped (on): both commanders are named", on.namesBoth, true);
   check("swapped (on): the departing commander's copy is released", on.released, 1);
   check("swapped (on): the list's pending count agrees", on.listed, 1);
   check("swapped (on): the deck's claims read pending", on.claimPending, true);

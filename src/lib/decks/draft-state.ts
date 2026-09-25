@@ -145,6 +145,12 @@ export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
  * `CHANGE_COMMANDER_ENABLED` on. Off, nothing writes those columns after
  * creation, and the deck page pays for no fourth query.
  */
+/** Every id either pair names, once. */
+function pairMembers(...pairs: CommanderPair[]): string[] {
+  return [...new Set(pairs.flatMap((p) => [p.commanderOracleId, p.partnerOracleId]))]
+    .filter((id): id is string => id !== null);
+}
+
 async function readSnapshot(deckId: string) {
   return db.transaction(async (tx) => {
     const version = await newestVersion(deckId, tx);
@@ -268,9 +274,15 @@ async function readDraft(
         to: live,
       }
     : null;
+  // The moved commanders' names, for the banner's and the review page's commander line. Their
+  // own read, merged into `names` only: a commander is not a card row, so it must not reach the
+  // cost track, the basics set or the row facts.
+  const commanderNames = commander
+    ? new Map((await loadNameFacts(pairMembers(commander.from, commander.to))).map((f) => [f.oracleId, f.name]))
+    : new Map<string, string>();
   // A commander-only draft has changes and no card row: its state is the empty
-  // one plus the move, so nothing below reads a card it does not have.
-  if (changedIds.length === 0) return bare({ ...empty, commander });
+  // one plus the move and its names, so nothing below reads a card it does not have.
+  if (changedIds.length === 0) return bare({ ...empty, commander, names: commanderNames });
 
   // The changed cards, basics among them. A basic stays in both lists and is
   // drawn like any other row: cutting five Swamps to make room for five other
@@ -283,7 +295,7 @@ async function readDraft(
   const removes = diff.removes;
 
   const changed = changedIds;
-  const names = new Map(facts.map((f) => [f.oracleId, f.name]));
+  const names = new Map([...commanderNames, ...facts.map((f) => [f.oracleId, f.name] as const)]);
   // Same scope as `names`, and the cost track is drawn beside a changed name and
   // nowhere else. A card the catalog gives no cost stays out of the map rather
   // than entering it as a null, so its track draws nothing.
