@@ -349,9 +349,16 @@ async function main() {
         if (phases.status !== 200) {
           throw new Error(`run ${run} first image returned HTTP ${phases.status}, not a fetch worth timing`);
         }
-        if (!phases.encodedBytes) {
+        // A FLOOR, not merely non-zero. Round 1 of review caught that a 0-byte
+        // body was accepted; round 3 caught that the fix was the instance rather
+        // than the class — the host filter admits any 200 from
+        // cards.scryfall.io, so a truncated body, an error page served as 200, or
+        // a stray non-card asset would still pass. A `normal` card JPEG measures
+        // 90-96KB, so anything under 40KB is not the thing this claims to time.
+        if (phases.encodedBytes < 40_000) {
           throw new Error(
-            `run ${run} recorded 0 bytes for the first image — a card image is ~90KB, so nothing was transferred`,
+            `run ${run} recorded ${phases.encodedBytes} bytes for the first image — a card image at ` +
+              `\`normal\` size is ~90KB, so this is a truncated body or not a card image at all`,
           );
         }
         runs.push({ url: rec.url, imageRequestsOnPage: order.length, ...phases });
