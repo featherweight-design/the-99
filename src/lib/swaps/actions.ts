@@ -1,12 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { requireUserId } from "../auth";
+import { addCardToDeckFor, revalidateAdd } from "../decks/add-card";
+import { DECK_ADD_FALLBACK_MESSAGE, type DeckMutationResult } from "../decks/mutation-result";
 import { deckSurfaces } from "../decks/revalidate";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { swapToolsEnabled } from "./flag";
+import { loadFits, type FitsRead } from "./fits";
 import { loadStandIns, type StandInsRead } from "./gather";
 import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take";
 
@@ -59,4 +63,29 @@ export async function loadStandInsAction(deckId: string, cutOracleId: string): P
   if (!swapToolsEnabled() || !isUuid(deckId) || !isUuid(cutOracleId)) return null;
   const userId = await requireUserId();
   return loadStandIns(deckId, userId, cutOracleId);
+}
+
+/**
+ * Fits your decks, read when the picker opens: which of the reader's decks the card would fit, and
+ * which already hold it or rule it out. Null for every refusal alike, as the stand-ins read is.
+ */
+export async function loadFitsAction(oracleId: string): Promise<FitsRead | null> {
+  if (!swapToolsEnabled() || !isUuid(oracleId)) return null;
+  const userId = await requireUserId();
+  return loadFits(userId, oracleId);
+}
+
+/**
+ * Add from Fits: the same add as the deck page's, with its validation and the 99-card cap, called
+ * from a card opened ANYWHERE. That is why its revalidation is deferred with `after()`, unlike the
+ * actions above: the caller is whatever route the card was opened on (the collection, a commander
+ * page), which does not need redrawing, and revalidating inside the action would ship that route's
+ * whole page back as the reply. The deck it added to is refreshed for its next visit either way.
+ */
+export async function addFromFits(deckId: string, oracleId: string): Promise<DeckMutationResult> {
+  if (!swapToolsEnabled() || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: DECK_ADD_FALLBACK_MESSAGE };
+  const userId = await requireUserId();
+  const outcome = await addCardToDeckFor(userId, deckId, oracleId, { relock: false });
+  after(() => revalidateAdd(deckId, userId, outcome));
+  return outcome.result;
 }

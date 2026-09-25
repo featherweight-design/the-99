@@ -40,9 +40,8 @@ import { isCommanderCandidate } from "../../lib/recs/score";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import {
   validateCardForDeck,
-  type DeckContextForValidation,
 } from "../../lib/decks/add-validation";
-import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
+import { type DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
@@ -62,7 +61,7 @@ import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { changeCommanderEnabled } from "../../lib/commander-change/flag";
 import { commanderMoved } from "../../lib/commander-change/pending";
-import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks, reviveDormantLocks } from "../../lib/decks/locks";
+import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
   PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
@@ -70,6 +69,7 @@ import {
 import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
+import { addCardToDeckFor, deckValidationContext, revalidateAdd } from "../../lib/decks/add-card";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -481,38 +481,6 @@ export async function createDeck(
 }
 
 
-/**
- * The deck context every add path validates against: both commanders' ids and
- * both their colour identities, in one read.
- *
- * A pair is legal in the union of its two identities, so a single read of the
- * primary commander is not enough to say what the deck may hold. Throws when the
- * primary is missing, as each of these call sites did before; a missing partner
- * row is not fatal, because `partnerOracleId` being set with no card behind it
- * would refuse every card in the deck rather than fail loudly.
- */
-async function deckValidationContext(
-  deck: { commanderOracleId: string; partnerOracleId: string | null },
-): Promise<Omit<DeckContextForValidation, "built">> {
-  const ids = [
-    deck.commanderOracleId,
-    ...(deck.partnerOracleId ? [deck.partnerOracleId] : []),
-  ];
-  const rows = await db
-    .select({ oracleId: cards.oracleId, colorIdentity: cards.colorIdentity })
-    .from(cards)
-    .where(inArray(cards.oracleId, ids));
-  const commander = rows.find((r) => r.oracleId === deck.commanderOracleId);
-  if (!commander) throw new Error("commander not found");
-  return {
-    commanderOracleId: deck.commanderOracleId,
-    commanderColorIdentity: commander.colorIdentity,
-    partnerOracleId: deck.partnerOracleId,
-    partnerColorIdentity: deck.partnerOracleId
-      ? (rows.find((r) => r.oracleId === deck.partnerOracleId)?.colorIdentity ?? null)
-      : null,
-  };
-}
 
 export async function addCardToDeck(
   deckId: string,
@@ -522,76 +490,11 @@ export async function addCardToDeck(
   const userId = await requireUserId();
   // The literal `true` only: this is a public endpoint, and `{ relock: "false" }` must not revive.
   const relock = typeof opts === "object" && opts !== null && opts.relock === true && neverCutEnabled();
-  const deck = await requireDeck(deckId, userId);
-
-  // Fetch the deck's colour identity in the same round-trip as the card lookup.
-  const [identity, [card], [existingRow]] = await Promise.all([
-    deckValidationContext(deck),
-    db.select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
-      .from(cards).where(eq(cards.oracleId, oracleId)),
-    db.select({ oracleId: deckCards.oracleId })
-      .from(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId))),
-  ]);
-
-  if (!card) throw new Error("card not found");
-
-  // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
-  // return before validation so a full deck doesn't spuriously reject it.
-  // Still revalidate: the click means this page's HTML disagreed with the row
-  // that exists, and without a fresh render the optimistic "✓ In deck" would
-  // flash back to "Add" when the transition ends.
-  if (existingRow && !isBasicLand(card.typeLine)) {
-    for (const path of deckSurfaces(deckId)) revalidatePath(path);
-    return { ok: true };
-  }
-
-  // Lock the deck row so the 99-card cap check and the write are atomic —
-  // concurrent adds serialize here instead of both passing the cap at 98.
-  const rejection = await db.transaction(async (tx) => {
-    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-    const [builtRow] = await tx.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
-      .from(deckCards).where(eq(deckCards.deckId, deckId));
-    const built = builtRow?.total ?? 0;
-    const error = validateCardForDeck(
-      { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
-      { ...identity, built },
-    );
-    if (error) return error;
-
-    // L1 (D2): Put back and the deck page's two Undos return a removed card LOCKED. The
-    // dormant row is woken BEFORE the insert, whose own trigger would otherwise delete it; a card
-    // that was never locked has no dormant row, so this wakes nothing and the card comes back as it
-    // left. Every other add passes nothing and returns the card unlocked.
-    if (relock) await reviveDormantLocks(tx, deckId, [oracleId]);
-
-    // Commander is singleton apart from the multi-copy exception (see
-    // isBasicLand), so a repeat add increments quantity there and stays a
-    // no-op otherwise.
-    if (isBasicLand(card.typeLine)) {
-      await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
-        target: [deckCards.deckId, deckCards.oracleId],
-        set: { quantity: sql`${deckCards.quantity} + 1` },
-      });
-      // The upsert always writes: either a new row or one more copy.
-      await touchDeck(tx, deckId);
-    } else {
-      // The conflict clause is what decides here, so the stamp reads its
-      // result rather than assuming the statement wrote. A repeat add of a
-      // singleton the deck already holds is a no-op, and a deck nothing was
-      // added to was not edited.
-      const inserted = await tx.insert(deckCards).values({ deckId, oracleId })
-        .onConflictDoNothing()
-        .returning({ oracleId: deckCards.oracleId });
-      if (inserted.length > 0) await touchDeck(tx, deckId);
-    }
-    return null;
-  });
-  if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
-  // /decks shows derived stats (built / to-buy) — keep the index fresh too, and
-  // the two surfaces that draw availability off deck rows with it.
-  revalidateClaims(deckId, userId);
-  return { ok: true };
+  const outcome = await addCardToDeckFor(userId, deckId, oracleId, { relock });
+  revalidateAdd(deckId, userId, outcome);
+  return outcome.result;
 }
+
 
 /**
  * Mark or unmark one card in one deck as printed.
