@@ -246,7 +246,15 @@ changes no drawing.
 | F20 | Low | `src/components/cards/price-tag.tsx:99`, `:121` | **The addendum's reason for the limit line's color is wrong; its answer is right.** It says the tag is already `--warning`-outlined for every card. The shipped tag is `--accent` on an `--accent-dim` edge, and dashed `--fg-locked` when unpriced. The limit line carrying the color still stands, since recoloring the tag would change it on every surface that draws it. **Correction:** build the limit line as drawn, and leave the tag alone | eng |
 | F21 | Low | ADDENDUM-README "Copy" | **Six strings go to `/copy-review`:** `staple · any commander`, `staple, any commander`, `to buy · staples, cheapest first`, the staple note's two variants, `swapped out · {card} is in`, and `Back to {card}` | `/copy-review` |
 
-### For Hugh
+### Hugh's rulings (2026-09-24)
+
+Hugh approved the addendum's audit on 2026-09-24, including the three parent files.
+
+- **H4 ruled as recommended:** a staple the player would buy sits in its OWN group, `to buy · staples, cheapest
+  first`, between the free copies and the commander ranking. It is never placed by its share of decks, a figure
+  its row does not show. Build F19 as written.
+
+### For Hugh (as asked)
 
 - **H4 (Design's reading).** When a stand-in list offers a staple you'd have to buy (Sol Ring in place of Mana
   Vault), should it come first among the cards to buy, cheapest first, in a group of its own? The alternative is
