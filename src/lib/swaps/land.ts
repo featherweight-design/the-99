@@ -41,8 +41,26 @@ function stripReminders(text: string): string {
 const CONDITIONAL_GRANT = /\bcould produce\b|\bamong lands\b/;
 
 /**
- * The colors a land can make on its own. Basic land types count (a Plateau is a Mountain Plains),
- * as does every symbol inside an "add" clause and an unconditional any-color grant.
+ * A mana ability whose COST sacrifices the land itself makes its mana once, and then the land is
+ * gone. Abandoned Outpost taps for {W}; its `{T}, Sacrifice this land: Add one mana of any color`
+ * is a single red, not a red source, and counting it put the Outpost first on Plateau's sheet.
+ * Measured on staging, 16 lands carry one: six for any color (Abandoned Outpost, Archaeological Dig,
+ * Bog Wreckage, Ravaged Highlands, Seafloor Debris, Timberland Ruins) and ten for fixed pairs
+ * (Ancient Spring's {W}{B}, Sulfur Vent's {U}{R}…). A cost that sacrifices ANOTHER permanent
+ * (Lazotep Quarry's creature, Lake of the Dead's Swamp) is repeatable and still counts.
+ */
+export function sacrificesItself(ability: string, cardName: string): boolean {
+  const colon = ability.indexOf(":");
+  if (colon < 0) return false;
+  const cost = ability.slice(0, colon).toLowerCase();
+  const name = cardName.split(" // ")[0].toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\bsacrifice (this land|this|it|${name})\\b`).test(cost);
+}
+
+/**
+ * The colors a land can make on its own, again and again. Basic land types count (a Plateau is a
+ * Mountain Plains), as does every symbol inside an "add" clause and an unconditional any-color
+ * grant, except an ability that sacrifices the land to pay for itself (`sacrificesItself`).
  */
 export function landColors(card: LandText): Set<Color> {
   const colors = new Set<Color>();
@@ -51,6 +69,7 @@ export function landColors(card: LandText): Set<Color> {
 
   const text = stripReminders(frontText(card));
   for (const sentence of text.split(/(?<=\.)\s+|\n/)) {
+    if (sacrificesItself(sentence, card.name)) continue;
     if (ANY_COLOR.test(sentence) && !CONDITIONAL_GRANT.test(sentence)) {
       for (const c of COLORS) colors.add(c);
       continue;

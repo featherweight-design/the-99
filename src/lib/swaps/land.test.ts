@@ -27,6 +27,13 @@ const FACTORY = L("Mishra's Factory", "Land", "{T}: Add {C}.\n{1}: This land bec
 const RETREAT = L("Clifftop Retreat", "Land", "This land enters tapped unless you control a Mountain or a Plains.\n{T}: Add {R} or {W}.");
 const BRASS = L("City of Brass", "Land", "Whenever this land becomes tapped, it deals 1 damage to you.\n{T}: Add one mana of any color.");
 const MOUNTAIN = L("Mountain", "Basic Land — Mountain", "({T}: Add {R}.)");
+// Staging's text, 2026-09-25: a mana ability that sacrifices the land itself, and two that sacrifice something else.
+const OUTPOST = L("Abandoned Outpost", "Land", "This land enters tapped.\n{T}: Add {W}.\n{T}, Sacrifice this land: Add one mana of any color.");
+const SPRING = L("Ancient Spring", "Land", "This land enters tapped.\n{T}: Add {U}.\n{T}, Sacrifice this land: Add {W}{B}.");
+const QUARRY = L("Lazotep Quarry", "Land — Desert", "{T}: Add {C}.\n{T}, Sacrifice a creature: Add one mana of any color.\n{X}{2}, {T}, Sacrifice a Desert: Exile target creature card with mana value X from your graveyard. Create a token that's a copy of it, except it's a 4/4 black Zombie. Activate only as a sorcery.");
+const HEAP = L("Heap Gate", "Land — Gate", "{T}: Add {C}.\n{1}, {T}: Add one mana of any color.\n{1}, {T}, Tap an untapped Gate you control: Create a Treasure token. (It's an artifact with \"{T}, Sacrifice this token: Add one mana of any color.\")");
+// The same one-shot in older templating, naming the card rather than "this land".
+const OUTPOST_NAMED = L("Abandoned Outpost", "Land", "Abandoned Outpost enters the battlefield tapped.\n{T}: Add {W}.\n{T}, Sacrifice Abandoned Outpost: Add one mana of any color.");
 
 const sorted = (s: Set<string>) => [...s].sort();
 
@@ -47,6 +54,18 @@ describe("landColors", () => {
   it("counts a grant that depends on other lands as nothing (brief §3.0)", () => {
     expect(landColors(ORCHARD).size).toBe(0);
     expect(landColors(POOL).size).toBe(0);
+  });
+
+  // v2 bug 1: a one-shot is a single mana, not a source. Plateau's sheet led with the Outpost.
+  it("counts no color that only a self-sacrifice makes", () => {
+    expect(sorted(landColors(OUTPOST))).toEqual(["W"]);
+    expect(sorted(landColors(OUTPOST_NAMED))).toEqual(["W"]);
+    expect(sorted(landColors(SPRING))).toEqual(["U"]);
+  });
+
+  it("still counts mana paid for by sacrificing something else, or by mana", () => {
+    expect(landColors(QUARRY).size).toBe(5);
+    expect(landColors(HEAP).size).toBe(5);
   });
 
   it("gives a fetch and a colorless utility land no colors", () => {
