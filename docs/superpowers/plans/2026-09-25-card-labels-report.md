@@ -176,6 +176,16 @@ that does not, but it is the number to watch if false matches persist.
 - `scripts/label-cards-score.mts` — precision, recall, the non-default split
 - `scripts/label-cards-agree.mjs` — Haiku against Sonnet on the random 400
 - `scripts/label-cards-blindsheet.mjs` — the blind sheet below
-- `out/` — raw labels, scores, disagreements, blind sheet (not committed)
+### Committed evidence
 
-See `out/blind-sheet.md` for 15 telling disagreements, columns unlabelled.
+- `docs/superpowers/plans/2026-09-25-card-labels-blind-sheet.md` — **15 telling
+  disagreements, columns unlabelled**, gold in a key beneath them
+- `docs/superpowers/benchmarks/2026-09-25-card-labels-score.json` — every figure in
+  the tables above, per model, per job kind and per limit
+- `docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json` — the
+  Haiku-against-Sonnet figures on the random 400
+
+The raw labels (296KB across both models) and the 711-row disagreement list stay in
+`out/` and are NOT committed: they are reproducible from the committed scripts for
+about 85 cents, and the figures derived from them are committed above. Re-run
+`label-cards-run` then `-collect`, `-score`, `-agree` to regenerate.

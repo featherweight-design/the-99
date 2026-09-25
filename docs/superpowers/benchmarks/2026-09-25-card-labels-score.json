@@ -1,0 +1,408 @@
+{
+ "scoredAt": "2026-09-25T23:50:31.421Z",
+ "goldCards": 108,
+ "models": {
+  "haiku": {
+   "notReturned": 0,
+   "jobs": {
+    "precision": 0.781,
+    "recall": 0.732,
+    "tp": 150,
+    "fp": 42,
+    "fn": 55
+   },
+   "limits": {
+    "rampKind": {
+     "accuracy": 0.955,
+     "informativeAccuracy": 0.955,
+     "right": 21,
+     "wrong": 1,
+     "infRight": 21,
+     "infWrong": 1
+    },
+    "restrictedTo": {
+     "accuracy": 0.7,
+     "informativeAccuracy": 0.493,
+     "right": 105,
+     "wrong": 45,
+     "infRight": 36,
+     "infWrong": 37
+    },
+    "trigger": {
+     "accuracy": 0.94,
+     "informativeAccuracy": 0.938,
+     "right": 141,
+     "wrong": 9,
+     "infRight": 90,
+     "infWrong": 6
+    },
+    "recurrence": {
+     "accuracy": 0.907,
+     "informativeAccuracy": 0.781,
+     "right": 136,
+     "wrong": 14,
+     "infRight": 50,
+     "infWrong": 14
+    },
+    "threshold": {
+     "accuracy": 0.987,
+     "informativeAccuracy": 1,
+     "right": 148,
+     "wrong": 2,
+     "infRight": 9,
+     "infWrong": 0
+    },
+    "modal": {
+     "accuracy": 0.987,
+     "informativeAccuracy": 1,
+     "right": 148,
+     "wrong": 2,
+     "infRight": 23,
+     "infWrong": 0
+    },
+    "restrictedTo(gating)": {
+     "accuracy": 0.725,
+     "informativeAccuracy": 0.725,
+     "right": 29,
+     "wrong": 11,
+     "infRight": 29,
+     "infWrong": 11
+    }
+   },
+   "worstKinds": [
+    {
+     "kind": "theme:evasion",
+     "precision": 0.909,
+     "recall": 0.385,
+     "tp": 10,
+     "fp": 1,
+     "fn": 16
+    },
+    {
+     "kind": "role:draw",
+     "precision": 0.545,
+     "recall": 0.5,
+     "tp": 6,
+     "fp": 5,
+     "fn": 6
+    },
+    {
+     "kind": "role:ramp",
+     "precision": 0.759,
+     "recall": 0.88,
+     "tp": 22,
+     "fp": 7,
+     "fn": 3
+    },
+    {
+     "kind": "theme:draw",
+     "precision": 0.778,
+     "recall": 0.467,
+     "tp": 7,
+     "fp": 2,
+     "fn": 8
+    },
+    {
+     "kind": "role:removal",
+     "precision": 0.7,
+     "recall": 1,
+     "tp": 14,
+     "fp": 6,
+     "fn": 0
+    },
+    {
+     "kind": "theme:pump",
+     "precision": 0.833,
+     "recall": 0.833,
+     "tp": 15,
+     "fp": 3,
+     "fn": 3
+    },
+    {
+     "kind": "theme:castFree",
+     "precision": 0.333,
+     "recall": 0.667,
+     "tp": 2,
+     "fp": 4,
+     "fn": 1
+    },
+    {
+     "kind": "theme:haste",
+     "precision": 0.667,
+     "recall": 0.857,
+     "tp": 6,
+     "fp": 3,
+     "fn": 1
+    }
+   ]
+  },
+  "sonnet": {
+   "notReturned": 0,
+   "jobs": {
+    "precision": 0.76,
+    "recall": 0.82,
+    "tp": 168,
+    "fp": 53,
+    "fn": 37
+   },
+   "limits": {
+    "rampKind": {
+     "accuracy": 0.875,
+     "informativeAccuracy": 0.875,
+     "right": 21,
+     "wrong": 3,
+     "infRight": 21,
+     "infWrong": 3
+    },
+    "restrictedTo": {
+     "accuracy": 0.78,
+     "informativeAccuracy": 0.636,
+     "right": 131,
+     "wrong": 37,
+     "infRight": 56,
+     "infWrong": 32
+    },
+    "trigger": {
+     "accuracy": 0.929,
+     "informativeAccuracy": 0.921,
+     "right": 156,
+     "wrong": 12,
+     "infRight": 93,
+     "infWrong": 8
+    },
+    "recurrence": {
+     "accuracy": 0.935,
+     "informativeAccuracy": 0.853,
+     "right": 157,
+     "wrong": 11,
+     "infRight": 58,
+     "infWrong": 10
+    },
+    "threshold": {
+     "accuracy": 0.994,
+     "informativeAccuracy": 1,
+     "right": 167,
+     "wrong": 1,
+     "infRight": 9,
+     "infWrong": 0
+    },
+    "modal": {
+     "accuracy": 0.988,
+     "informativeAccuracy": 1,
+     "right": 166,
+     "wrong": 2,
+     "infRight": 23,
+     "infWrong": 0
+    },
+    "restrictedTo(gating)": {
+     "accuracy": 0.857,
+     "informativeAccuracy": 0.857,
+     "right": 36,
+     "wrong": 6,
+     "infRight": 36,
+     "infWrong": 6
+    }
+   },
+   "worstKinds": [
+    {
+     "kind": "theme:draw",
+     "precision": 1,
+     "recall": 0.067,
+     "tp": 1,
+     "fp": 0,
+     "fn": 14
+    },
+    {
+     "kind": "role:ramp",
+     "precision": 0.727,
+     "recall": 0.96,
+     "tp": 24,
+     "fp": 9,
+     "fn": 1
+    },
+    {
+     "kind": "role:draw",
+     "precision": 0.55,
+     "recall": 0.917,
+     "tp": 11,
+     "fp": 9,
+     "fn": 1
+    },
+    {
+     "kind": "theme:pump",
+     "precision": 0.714,
+     "recall": 0.833,
+     "tp": 15,
+     "fp": 6,
+     "fn": 3
+    },
+    {
+     "kind": "theme:evasion",
+     "precision": 0.88,
+     "recall": 0.846,
+     "tp": 22,
+     "fp": 3,
+     "fn": 4
+    },
+    {
+     "kind": "role:removal",
+     "precision": 0.706,
+     "recall": 0.857,
+     "tp": 12,
+     "fp": 5,
+     "fn": 2
+    },
+    {
+     "kind": "theme:recursion",
+     "precision": 0.167,
+     "recall": 1,
+     "tp": 1,
+     "fp": 5,
+     "fn": 0
+    },
+    {
+     "kind": "role:land",
+     "precision": 0.833,
+     "recall": 0.833,
+     "tp": 10,
+     "fp": 2,
+     "fn": 2
+    }
+   ]
+  },
+  "textRules": {
+   "notReturned": 0,
+   "jobs": {
+    "precision": 0.736,
+    "recall": 0.722,
+    "tp": 148,
+    "fp": 53,
+    "fn": 57
+   },
+   "limits": {
+    "rampKind": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 21,
+     "infRight": 0,
+     "infWrong": 21
+    },
+    "restrictedTo": {
+     "accuracy": 0.622,
+     "informativeAccuracy": 0,
+     "right": 92,
+     "wrong": 56,
+     "infRight": 0,
+     "infWrong": 56
+    },
+    "trigger": {
+     "accuracy": 0.304,
+     "informativeAccuracy": 0,
+     "right": 45,
+     "wrong": 103,
+     "infRight": 0,
+     "infWrong": 103
+    },
+    "recurrence": {
+     "accuracy": 0.568,
+     "informativeAccuracy": 0,
+     "right": 84,
+     "wrong": 64,
+     "infRight": 0,
+     "infWrong": 64
+    },
+    "threshold": {
+     "accuracy": 0.932,
+     "informativeAccuracy": 0,
+     "right": 138,
+     "wrong": 10,
+     "infRight": 0,
+     "infWrong": 10
+    },
+    "modal": {
+     "accuracy": 0.858,
+     "informativeAccuracy": 0,
+     "right": 127,
+     "wrong": 21,
+     "infRight": 0,
+     "infWrong": 21
+    },
+    "restrictedTo(gating)": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 35,
+     "infRight": 0,
+     "infWrong": 35
+    }
+   },
+   "worstKinds": [
+    {
+     "kind": "theme:tribal",
+     "precision": 0,
+     "recall": null,
+     "tp": 0,
+     "fp": 29,
+     "fn": 0
+    },
+    {
+     "kind": "theme:evasion",
+     "precision": 0.714,
+     "recall": 0.192,
+     "tp": 5,
+     "fp": 2,
+     "fn": 21
+    },
+    {
+     "kind": "theme:pump",
+     "precision": 1,
+     "recall": 0.389,
+     "tp": 7,
+     "fp": 0,
+     "fn": 11
+    },
+    {
+     "kind": "role:ramp",
+     "precision": 0.875,
+     "recall": 0.84,
+     "tp": 21,
+     "fp": 3,
+     "fn": 4
+    },
+    {
+     "kind": "theme:tokens",
+     "precision": 0.737,
+     "recall": 0.875,
+     "tp": 14,
+     "fp": 5,
+     "fn": 2
+    },
+    {
+     "kind": "role:removal",
+     "precision": 0.889,
+     "recall": 0.571,
+     "tp": 8,
+     "fp": 1,
+     "fn": 6
+    },
+    {
+     "kind": "role:draw",
+     "precision": 0.733,
+     "recall": 0.917,
+     "tp": 11,
+     "fp": 4,
+     "fn": 1
+    },
+    {
+     "kind": "theme:draw",
+     "precision": 0.867,
+     "recall": 0.867,
+     "tp": 13,
+     "fp": 2,
+     "fn": 2
+    }
+   ]
+  }
+ }
+}
