@@ -1452,8 +1452,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   as well as writing `about_version_seen` (audit E5). Since entries follow their features'
   switches (Hugh, 2026-09-25) the version write covers only entries WITHOUT a switch: one tied to
   a switch is seen by its id, so a switch left on in the server a probe runs against would still
-  put a card over the page. The helper is the one place a probe marks those seen — it adds every
-  catalog id to `about_seen_ids`, all of them because a probe cannot read the server's switches,
+  put a card over the page. The helper is the one place a probe marks those seen — it raises the
+  version floor (never lowering it) and adds every catalog id to `about_seen_ids`, all of them because a probe cannot read the server's switches,
   and does not put them back, which says no more than the version write already says. That write
   is the guarantee. The cookie it also sets is only the proxy's fast path while no switch is on:
   the proxy keys its cookie to the switched entries it draws, which a probe cannot know. It

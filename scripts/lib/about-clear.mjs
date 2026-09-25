@@ -54,12 +54,22 @@ export function catalogIds(source = readFileSync(CATALOG_FILE, "utf8")) {
   return [...source.matchAll(/^ {4}id: '([^']+)',$/gm)].map((m) => m[1]);
 }
 
-/** Adds every catalog id to the account's seen ids, as a union: nothing it held is dropped. */
-export async function markEveryEntrySeen(userId, sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)) {
+/**
+ * Marks the account as having seen everything: the version floor raised to the current version
+ * (never lowered), and every catalog id added to the seen ids as a union. Both halves, because a
+ * probe may call this before writing any row of its own, and a row holding the ids at version 0
+ * would still leave every entry WITHOUT a switch unseen.
+ */
+export async function markEveryEntrySeen(
+  userId,
+  sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL),
+  version = JSON.parse(readFileSync(VERSION_FILE, "utf8")).version,
+) {
   const ids = catalogIds();
-  await sql`insert into user_prefs (user_id, about_seen_ids) values (${userId}, ${ids})
-    on conflict (user_id) do update set about_seen_ids =
-      array(select distinct unnest(user_prefs.about_seen_ids || ${ids}::text[]) order by 1)`;
+  await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids) values (${userId}, ${version}, ${ids})
+    on conflict (user_id) do update set
+      about_version_seen = greatest(user_prefs.about_version_seen, ${version}),
+      about_seen_ids = array(select distinct unnest(user_prefs.about_seen_ids || ${ids}::text[]) order by 1)`;
 }
 
 /**
