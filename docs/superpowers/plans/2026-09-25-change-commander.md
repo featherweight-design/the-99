@@ -141,6 +141,20 @@ the curve so a changed index cannot silently move it.
 `probe:change-commander` at 390 and 1300, which PRESSES the door, a candidate, the confirm, and Discard from the
 banner, with mutations run against it, and `feature-acceptance` with a contact sheet.
 
+## Route inventory (feature-acceptance)
+
+The contact sheet reads `docs/superpowers/inventories/change-commander.json` (`CC_DECK`, a server
+with `CHANGE_COMMANDER_ENABLED=true`). Every cell is ticked against the running app, not a diff.
+
+| Surface | 390px | 1300px | PR |
+|---|---|---|---|
+| `/decks/[id]` header: the door (joined plate / vertical pair; ⇄ alone with no crop) | ☑ | ☑ | 3 |
+| `/decks/[id]` sheet: Yours, To buy, Show more | ☑ | ☑ | 3 |
+| `/decks/[id]` sheet: a figure opened on its cards | ☑ | ☑ | 3 |
+| `/decks/[id]` sheet: the confirm (swap, trade, pair, buy line, brew line) | ☑ | ☑ | 3 |
+| `/decks/[id]` pending banner: the commander line, both densities | ☐ | ☐ | 4 |
+| `/decks/[id]/changes`: the Commander section first; Discard names the old commander | ☐ | ☐ | 4 |
+
 ## The About entry
 
 **Batched with the deck-analysis line at launch** (brief §7; AGENTS.md, *a multi-round feature line batches its

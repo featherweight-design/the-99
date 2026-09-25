@@ -24,8 +24,9 @@ const PLATE =
 
 type Width = "desktop" | "mobile";
 
-/** The sheet, from the door that opened it. Portalled to the body: the other spine is
- *  `display: none`, and a fixed sheet inside it would never draw. */
+/** The sheet, from the door that opened it. Portalled out of the spine, because the other spine
+ *  is `display: none` and a fixed sheet inside it would never draw; into `<main>` rather than the
+ *  body, because that is where every other sheet on the page lives (and what `onPage` scopes). */
 function Sheet({ width }: { width: Width }) {
   const door = useChangeCommander();
   if (!door || door.openFrom !== width) return null;
@@ -37,7 +38,7 @@ function Sheet({ width }: { width: Width }) {
       hasVersion={door.hasVersion}
       onClose={door.closeSheet}
     />,
-    document.body,
+    document.querySelector("main") ?? document.body,
   );
 }
 
