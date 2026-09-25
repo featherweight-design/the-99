@@ -12,6 +12,7 @@ import type { Availability, DeckClaim } from "./availability";
 import type { AddBucket, BucketedAdd, DraftChange } from "./draft-diff";
 import type { DeckVersion } from "./versions";
 import type { CommanderPair } from "../commander-change/pending";
+import type { CommanderRows } from "../commander-change/draft-rows";
 
 /**
  * An add as every draft surface reads it.
@@ -122,6 +123,8 @@ export type DraftState = {
    * `CHANGE_COMMANDER_ENABLED` is off, because no read compares the columns then.
    */
   commander?: { from: CommanderPair; to: CommanderPair } | null;
+  /** The moved commanders as the banner and the review page draw them; set with `commander`. */
+  commanderRows?: CommanderRows | null;
 };
 
 function pairIds(pair: CommanderPair): string[] {
