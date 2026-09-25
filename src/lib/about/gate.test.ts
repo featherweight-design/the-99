@@ -161,7 +161,8 @@ describe("gateDecision", () => {
 });
 
 describe("the sheet (R6)", () => {
-  const all = aboutEntries;
+  // The page with every feature switch off: an entry tied to one is not drawn.
+  const all = aboutEntries.filter((e) => !e.switch);
   const seen = (version: number, ids: string[] = []) => ({ version, ids });
 
   it("shows the sheet to a reader who is behind, naming what they have not seen", () => {

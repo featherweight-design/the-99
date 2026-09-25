@@ -1,23 +1,16 @@
-// /about with an entry tied to a feature switch (Hugh, 2026-09-25). No shipped entry has one
-// yet, so the catalog is mocked: its last entry is tied to NEVER_CUT_ENABLED. Everything
-// between that and the page — which entries draw, which are new, what the index lists — is
-// the code that ships.
+// /about with an entry tied to a feature switch (Hugh, 2026-09-25): Locked cards, which follows
+// NEVER_CUT_ENABLED. Everything between that and the page — which entries draw, which are new,
+// what the index lists — is the code that ships.
 
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVisit: vi.fn(async () => {}) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
-vi.mock("../../lib/copy/about", async (importOriginal) => {
-  const real = await importOriginal<typeof import("../../lib/copy/about")>();
-  const entries = [...real.aboutEntries];
-  entries[entries.length - 1] = { ...entries[entries.length - 1], switch: "NEVER_CUT_ENABLED" };
-  return { ...real, aboutEntries: entries };
-});
 
 const { AboutPage } = await import("./about-page");
 const { ABOUT_VERSION, aboutEntries } = await import("../../lib/copy/about");
-const switched = aboutEntries[aboutEntries.length - 1];
+const switched = aboutEntries.find((e) => e.id === "locked-cards")!;
 
 const index = () => screen.queryByRole("navigation", { name: /new since you were last here/ });
 const drawn = () => document.getElementById(switched.id);

@@ -9,7 +9,10 @@ vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVi
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const { AboutPage } = await import("./about-page");
-const { ABOUT_VERSION, aboutCopy, aboutEntries } = await import("../../lib/copy/about");
+const { ABOUT_VERSION, aboutCopy, aboutEntries: catalog } = await import("../../lib/copy/about");
+// What the page draws with every feature switch off, which is this file's environment: an entry
+// tied to a switch is left out. `about-page-switch.test.tsx` covers those.
+const aboutEntries = catalog.filter((e) => !e.switch);
 
 const newSince = (seen: number) => aboutEntries.filter((e) => seen > 0 && e.since > seen);
 const index = () => screen.queryByRole("navigation", { name: /new since you were last here/ });

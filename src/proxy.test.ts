@@ -145,7 +145,8 @@ describe("with the sheet switch on", () => {
   // What the header names for a reader at `seen`: the entries newer than it, in page order.
   const unseenAfter = async (seen: number) => {
     const { aboutEntries } = await import("./lib/copy/about");
-    return aboutEntries.filter((e) => e.since > seen).map((e) => e.id).join(",");
+    // Every feature switch is off here, so an entry tied to one is neither drawn nor named.
+    return aboutEntries.filter((e) => !e.switch && e.since > seen).map((e) => e.id).join(",");
   };
 
   it("never redirects a reader who is behind, and names what they have not seen", async () => {

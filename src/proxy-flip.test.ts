@@ -1,12 +1,12 @@
-// A feature switch flipping on, walked through the REAL proxy with a catalog that ties two
-// entries to switches (Hugh, 2026-09-25). No shipped entry has a switch yet, so the catalog
-// is mocked; everything between it and the response — `visibleEntries`, the cookie, the
-// decision, the header — is the code that ships.
+// A feature switch flipping on, walked through the REAL proxy and the real catalog, whose
+// Locked cards and Change commander entries follow their features' switches (Hugh,
+// 2026-09-25). Everything between the catalog and the response — `visibleEntries`, the
+// cookie, the decision, the header — is the code that ships.
 //
 // What it proves that the pure tests cannot: a browser holding the cookie from BEFORE a flip
 // is decided again after it, and the reader who met the first entry is shown only the second.
-// The same walk in a browser, against a server restarted with the switch on, is PR B's
-// `probe:about`, the first PR with a real switched entry to flip.
+// The same walk in a browser, against a server restarted with the switch on, is
+// `probe:about`'s flip walk.
 
 import { NextRequest, NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,18 +22,6 @@ vi.mock("./lib/about/read", () => ({
   aboutVersionSeen: async () => stored.version,
   aboutSeen: async () => ({ version: stored.version, ids: [...stored.ids] }),
 }));
-vi.mock("./lib/copy/about", async (importOriginal) => {
-  const real = await importOriginal<typeof import("./lib/copy/about")>();
-  const base = real.aboutEntries[0];
-  return {
-    ...real,
-    aboutEntries: [
-      ...real.aboutEntries,
-      { ...base, id: "locked-cards", since: 10, switch: "NEVER_CUT_ENABLED" },
-      { ...base, id: "change-commander", since: 10, switch: "CHANGE_COMMANDER_ENABLED" },
-    ],
-  };
-});
 
 const proxy = (await import("./proxy")).default as unknown as (
   auth: unknown,
