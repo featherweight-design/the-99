@@ -65,6 +65,17 @@ export type ChangeCandidates = {
   newestAsOf: Date | null;
 };
 
+/**
+ * Whether a candidate can be offered at all. A single always can. A pair with a half already in the
+ * 98 cannot: the write would trade that half and release the other old commander, and the design
+ * has no sentence for a half-trade (`confirm.trade` says the two trade places, which would be
+ * false). Held back, not given invented copy, until Design draws it (the-99-d9, 2026-09-25). It has
+ * never occurred: staging indexes one usable pair.
+ */
+export function offerable(ids: readonly string[], inDeck: ReadonlySet<string>): boolean {
+  return ids.length === 1 || !ids.some((id) => inDeck.has(id));
+}
+
 /** Yours when every half is owned or already in the 99; To buy otherwise. */
 export function isYours(c: Pick<Candidate, "halves">): boolean {
   return c.halves.every((h) => h.inDeck || h.owned);
@@ -221,11 +232,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
   }))
-    // A pair with a half already in the 98 is left out. The write would trade that half and release
-    // the other old commander, and the design has no sentence for a half-trade: `confirm.trade` says
-    // the two trade places, which would be false. Staging indexes one usable pair, so this hides a
-    // state that has not yet occurred; it goes to the next design round rather than into new copy.
-    .filter((k) => k.ids.length === 1 || !k.ids.some((id) => inDeck.has(id)));
+    .filter((k) => offerable(k.ids, inDeck));
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));
