@@ -329,7 +329,7 @@ describe("assembleDiscovery", () => {
 // commander the player had already built with as a partner.
 describe("discoveryKey", () => {
   it("files a payload under its sort and its version", () => {
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v7"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v8"]);
   });
 
   it("keeps two sorts apart", () => {
