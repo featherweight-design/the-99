@@ -74,11 +74,23 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
   const userId = await page.evaluate(() => window.Clerk.user.id);
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
+  // Captured BEFORE the write and put back in the run's finally: the About gate is the account's own
+  // state, and a probe that only raises it leaves the real audit account changed.
+  const [prior] = await sql`select about_version_seen from user_prefs where user_id = ${userId}`;
+  restorePrefs = async () => {
+    if (prior) await sql`update user_prefs set about_version_seen = ${prior.about_version_seen} where user_id = ${userId}`;
+    else await sql`delete from user_prefs where user_id = ${userId}`;
+  };
   await sql`
     insert into user_prefs (user_id, about_version_seen) values (${userId}, ${version})
     on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
   return userId;
 }
+
+/** Cleanup handles, each set BEFORE the write it undoes, so a throw part-way through strands
+ *  nothing. */
+let fixtureDeckId = null;
+let restorePrefs = null;
 
 /** A committed mono-green deck holding three cards a real mono-green candidate's decks run. */
 async function buildFixture(userId) {
@@ -101,6 +113,7 @@ async function buildFixture(userId) {
   const [deck] = await sql`
     insert into decks (user_id, name, commander_oracle_id)
     values (${userId}, 'probe:change-commander', ${lead.oracle_id}) returning id`;
+  fixtureDeckId = deck.id;
   for (const h of hits) {
     await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${h.oracle_id}, 1)`;
   }
@@ -221,7 +234,9 @@ async function main() {
     const [v] = await sql`select commander_oracle_id as c from deck_versions where deck_id = ${fixture.deckId}`;
     report("write is a draft change", v.c === fixture.lead, "the version still holds the old commander");
   } finally {
-    if (fixture) await sql`delete from decks where id = ${fixture.deckId}`;
+    // Each step on its own, so one failing cannot skip the next.
+    if (fixtureDeckId) await sql`delete from decks where id = ${fixtureDeckId}`.catch((e) => { failures += 1; console.error(e); });
+    if (restorePrefs) await restorePrefs().catch((e) => { failures += 1; console.error(e); });
     await browser.close();
   }
 }

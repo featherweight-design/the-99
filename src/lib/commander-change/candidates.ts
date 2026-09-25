@@ -220,7 +220,12 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
   const legal = keys.filter((k) => k.ids.every((id) => {
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
-  }));
+  }))
+    // A pair with a half already in the 98 is left out. The write would trade that half and release
+    // the other old commander, and the design has no sentence for a half-trade: `confirm.trade` says
+    // the two trade places, which would be false. Staging indexes one usable pair, so this hides a
+    // state that has not yet occurred; it goes to the next design round rather than into new copy.
+    .filter((k) => k.ids.length === 1 || !k.ids.some((id) => inDeck.has(id)));
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id));

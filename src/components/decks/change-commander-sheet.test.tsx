@@ -89,8 +89,9 @@ describe("ChangeCommanderSheet", () => {
     expect(screen.getByText("Prosper takes the command zone. Korvold leaves the deck, and the 99 stay exactly as they are.")).toBeTruthy();
     expect(screen.getByText("Lands in your pending changes, not yet a version. Discard puts Korvold back.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Make Prosper commander" }));
-    await waitFor(() => expect(refresh).toHaveBeenCalled());
-    expect(changeCommander).toHaveBeenCalledWith("d1", { commanderOracleId: "prosper", partnerOracleId: null });
+    await waitFor(() => expect(changeCommander).toHaveBeenCalledWith("d1", { commanderOracleId: "prosper", partnerOracleId: null }));
+    // No client refresh: the action revalidates, so its reply already carries the new page.
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("describes a trade when the candidate is in the 99", async () => {

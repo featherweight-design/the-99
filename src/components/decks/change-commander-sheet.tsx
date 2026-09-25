@@ -7,7 +7,6 @@
 // whose way back reads `← Change commander`.
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ModalChrome } from "./receipt-modal";
 import { BuyTag } from "./buy-tag";
 import { SwapGlyph } from "./change-commander-glyph";
@@ -544,7 +543,6 @@ function Confirm({
   onBack: () => void;
   onDone: () => void;
 }) {
-  const router = useRouter();
   const door = useChangeCommander();
   const [writing, setWriting] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -581,7 +579,6 @@ function Confirm({
       }
       // Announced from the provider: this sheet is gone by the time a reader would hear it.
       door?.announce(copy.confirm.announced(nuShort));
-      router.refresh();
       onDone();
     } catch {
       setFailed(true);
