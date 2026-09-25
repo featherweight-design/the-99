@@ -159,21 +159,13 @@ function onPopState() {
   const landed = currentKey();
   if (selfPops > 0) {
     selfPops -= 1;
-    if (landed !== null && orphans.has(landed)) {
-      // This module's own pop landed on another dialog's orphan — a dialog lower in
-      // the stack that closed first, while this one still held the top entry. Stopping
-      // here would leave the reader's next Back to spend itself on it.
-      orphans.delete(landed);
-      selfPops += 1;
-      selfPopsUntil = Date.now() + 1_000;
-      window.history.back();
-      return;
-    }
     restoreHref(pendingRestore);
     pendingRestore = null;
     return;
   }
-  if (landed !== null && orphans.has(landed)) {
+  // Only with no dialog up: an open dialog's own entry is what this pop belongs to,
+  // and skipping past it would strand that dialog with its entry ahead in history.
+  if (landed !== null && orphans.has(landed) && backStack.length === 0) {
     // A dialog's entry left under a navigation it made: the same URL as its
     // predecessor, so landing here would be a Back that did nothing. Keep going.
     orphans.delete(landed);
@@ -269,8 +261,11 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
         const ours = entry.key === null || current === entry.key;
         if (!ours || window.location.pathname !== entry.path) {
           // A link inside the dialog navigated. Its entry stays under the new route,
-          // and a traversal back onto it steps past (rule 2).
-          if (entry.key !== null) orphans.add(entry.key);
+          // and a traversal back onto it steps past (rule 2). Only when no other
+          // dialog is still up: a lower dialog closing under an open one is not
+          // reachable from the page — the one above is aria-modal over a scrim — and
+          // an orphan made there would sit under a live entry.
+          if (entry.key !== null && backStack.length === 0) orphans.add(entry.key);
           return;
         }
         pendingRestore = window.location.href;
