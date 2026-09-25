@@ -86,14 +86,20 @@ class StoredFound extends Error {
 }
 
 /**
- * A delivered read by its id, for the results page that the read sent the player to (`r`): its
- * chips mark the answers that came from it. Scoped to the reader, and only a read that delivered
- * (`ok`): an id from someone else, or one that failed or was stopped, reads as none.
+ * A settled read by its id, for the results page the panel sent the player to (`r`). `read` is a
+ * delivered one, whose chips mark the answers that came from it; `nothing` found nothing to add and
+ * was refunded, and its leftovers are still worth showing. Scoped to the reader: an id from someone
+ * else, or a read that failed, was stopped or is still pending, reads as none.
  */
-export async function loadOwnRead(readId: string, userId: string): Promise<StoredRead | null> {
-  const [row] = await db.select({ chips: intakeReads.chips }).from(intakeReads)
-    .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "ok")));
-  return (row?.chips as StoredRead | undefined) ?? null;
+export async function loadOwnRead(readId: string, userId: string): Promise<{ kind: "read" | "nothing"; read: StoredRead } | null> {
+  const [row] = await db.select({ status: intakeReads.status, errorClass: intakeReads.errorClass, chips: intakeReads.chips })
+    .from(intakeReads)
+    .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
+  if (!row?.chips) return null;
+  const read = row.chips as StoredRead;
+  if (row.status === "ok") return { kind: "read", read };
+  if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", read };
+  return null;
 }
 
 /** The player's settled read of this ask, when there is one. */
