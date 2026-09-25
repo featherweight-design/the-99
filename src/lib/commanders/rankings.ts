@@ -130,13 +130,18 @@ export type CommanderRankings = {
  * oracle-level `imageUri`, `artCropUri` and no `printedName`, and would go on being
  * served to a reader who writes nothing for up to the hour ceiling.
  *
+ * 11 — a melded card is no longer a commander candidate (#712). The rows behind a
+ * warm v10 entry are refused by `SCORE_WRITER_CURRENT` 6, and a cache hit never
+ * reaches that check, so without this a reader who writes nothing goes on seeing
+ * Brisela or Hanweir ranked for up to the hour ceiling.
+ *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
  * reader whose entry was written by #702 being served a payload with no
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 10;
+const PAYLOAD_VERSION = 11;
 
 /** The cache key this payload is filed under, version included. */
 export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];

@@ -17,6 +17,8 @@ const card = (name: string, over: Partial<ImportCatalogCard> = {}): ImportCatalo
   commanderLegal: true,
   colorIdentity: [],
   imageUri: null,
+  layout: "normal",
+  manaCost: null,
   ...over,
 });
 const catalog = [

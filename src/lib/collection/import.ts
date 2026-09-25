@@ -58,6 +58,9 @@ export async function loadMatchInputs(
             // again per candidate. Detailed-only, for the same reason as oracle_text.
             colorIdentity: cards.colorIdentity,
             imageUri: cards.imageUri,
+            // isCommanderCandidate reads both to refuse a melded card (#712).
+            layout: cards.layout,
+            manaCost: cards.manaCost,
           }
         : columns,
     )

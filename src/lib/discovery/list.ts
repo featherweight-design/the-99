@@ -325,6 +325,11 @@ export function assembleDiscovery(input: {
  * warm v6 entry has neither, so every row in that state would draw a sentence
  * with no mechanic in it.
  *
+ * 8 — moves with rankings' v11 for the meld rule (#712), for version 3's reason
+ * and no stronger one: a melded card never had a `commander_support` row, so no
+ * warm entry here holds one. The pair is bumped together because it is dropped
+ * independently, and a pair bumped half-way is the state nobody thinks to check.
+ *
  * 6 — Fit's three components come BACK, for the row's segmented bar (Hugh's
  * ruling, 2026-09-17). A warm version-5 entry has no `fitPool`, `fitRoles` or
  * `fitSynergy`, so every row would draw a bar with no segments in it.
@@ -351,7 +356,7 @@ export function assembleDiscovery(input: {
  * is the strongest kind of bump rather than the weakest: the old entry cannot
  * render the new row at all.
  */
-const PAYLOAD_VERSION = 7;
+const PAYLOAD_VERSION = 8;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */

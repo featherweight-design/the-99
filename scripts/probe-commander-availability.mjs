@@ -212,7 +212,7 @@ async function resolveOwnedCard(userId, name) {
  */
 async function anyOwnedLegend(userId, excludeOracleId, excludeName, needsIdentity) {
   const { rows } = await pool.query(
-    `select c.oracle_id, c.type_line, c.oracle_text, c.color_identity
+    `select c.oracle_id, c.type_line, c.oracle_text, c.color_identity, c.layout, c.mana_cost
        from cards c
        join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = $1
       where c.commander_legal = true
@@ -230,7 +230,9 @@ async function anyOwnedLegend(userId, excludeOracleId, excludeName, needsIdentit
   // loose prefilter costs a row of JavaScript, a loose final test ships a deck
   // the app would not have made.
   const ok = rows.find((r) =>
-    isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text }),
+    isCommanderCandidate({
+      typeLine: r.type_line, oracleText: r.oracle_text, layout: r.layout, manaCost: r.mana_cost,
+    }),
   );
   return ok?.oracle_id ?? null;
 }
