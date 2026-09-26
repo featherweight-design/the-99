@@ -22,6 +22,8 @@ export type HandOffAnswers = {
   themeJoin: "all" | "any";
   /** The sets asked, each with its name: one row, the codes as the chip draws them. */
   sets: { code: string; name: string }[];
+  /** The 99 from the player's own cards (three answers §3). */
+  pool: "any" | "own";
   /** Null when none was asked, or when it is not one the search would have applied. */
   card: (CardChip & { pct: number | null }) | null;
   /** The card's read FAILED, which says nothing about the card: the block draws no row it cannot
@@ -65,6 +67,7 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
     card: card ? { ...card, pct: row?.card_inclusion == null ? null : Math.round(row.card_inclusion) } : null,
     cardUnread: card === undefined,
     themeJoin: isAnyOf(p) ? "any" : "all",
+    pool: p.pool,
     sets: p.sets.map((code) => ({ code, name: setNames.get(code) ?? code.toUpperCase() })),
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
@@ -89,5 +92,5 @@ export function handOffThemes(
 
 /** Whether the block has a row to draw: colors and the words are never rows. */
 export function hasAnswerRows(a: HandOffAnswers): boolean {
-  return a.themes.length > 0 || a.sets.length > 0 || a.card !== null || a.budgetDollars !== null || a.bracket !== null;
+  return a.themes.length > 0 || a.sets.length > 0 || a.pool === "own" || a.card !== null || a.budgetDollars !== null || a.bracket !== null;
 }

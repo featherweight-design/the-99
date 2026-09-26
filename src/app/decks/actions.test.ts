@@ -2516,6 +2516,31 @@ describe("createDeck — Help me choose's answers (F1, F2)", () => {
     expect(inserted.reduce((n, r) => n + r.quantity, 0)).toBeLessThanOrEqual(99);
   });
 
+  it("retries an own-only deck from free copies alone, and fails closed when the claim read does", async () => {
+    stub.state.decks.push({ id: "deck-3", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerOwnedOnly: true });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    const held = rampCard(0).oracleId as string;
+    vi.mocked(loadAvailability).mockResolvedValueOnce(
+      new Map([[held, { owned: 1, hard: 1, soft: 0, free: 0, claims: [] }]]) as unknown as Awaited<ReturnType<typeof loadAvailability>>,
+    );
+
+    await fillDeck("deck-3");
+
+    const inserted = stub.state.insertCalls
+      .filter((c) => c.table === "deck_cards")
+      .flatMap((c) => c.values as { oracleId: string }[]);
+    expect(inserted.length).toBeGreaterThan(0);
+    expect(inserted.some((r) => r.oracleId === held)).toBe(false);
+    expect(loadAvailability).toHaveBeenCalledWith("user_1", expect.objectContaining({ excludeDeckId: "deck-3" }));
+
+    // A claim read that fails would widen the pool to copies another deck holds: refuse instead.
+    stub.state.insertCalls.length = 0;
+    vi.mocked(loadAvailability).mockRejectedValueOnce(new Error("claim read"));
+    await expect(fillDeck("deck-3")).rejects.toThrow("claim read");
+    expect(stub.state.insertCalls.some((c) => c.table === "deck_cards")).toBe(false);
+  });
+
   it("refuses a budget that is not whole dollars, and a bracket outside 1 to 5", async () => {
     stub.state.cards.push(commanderCard());
     await expect(runAsked({ ...answers, budgetDollars: 1.5 })).rejects.toThrow("budget must be whole dollars");

@@ -18,7 +18,7 @@ import { colorNames } from "../../lib/copy/color-labels";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS, serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
-import type { Bracket } from "../../lib/intake/rank";
+import type { Bracket, Pool } from "../../lib/intake/rank";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { SetsField } from "./sets-field";
@@ -65,6 +65,7 @@ export function IntakeForm({
   const [picked, setPicked] = useState<string[]>(initial.themes);
   const [themeJoin, setThemeJoin] = useState(initial.themeJoin);
   const [pickedSets, setPickedSets] = useState<string[]>(initial.sets);
+  const [pool, setPool] = useState<Pool>(initial.pool);
   const [budget, setBudget] = useState(initial.budgetDollars === null ? "" : String(initial.budgetDollars));
   const [bracket, setBracket] = useState<Bracket | null>(initial.bracket);
   const themeLabelId = useId();
@@ -109,6 +110,7 @@ export function IntakeForm({
         themes: picked,
         themeJoin,
         sets: pickedSets,
+        pool,
         budgetDollars: parseBudget(budget),
         bracket,
       }),
@@ -167,7 +169,19 @@ export function IntakeForm({
           <SetsField sets={sets} value={pickedSets} onChange={setPickedSets} wide={wide} />
         </Field>
 
-        <Field label={copy.intake.budget} htmlFor={budgetId} caption={copy.intake.budgetCaption}>
+        <Field
+          label={copy.intake.pool}
+          labelId={`${themeLabelId}-pool`}
+          caption={pool === "own" ? copy.intake.poolCaptionOwn : copy.intake.poolCaptionAny}
+        >
+          <PoolRadios value={pool} onChange={setPool} labelId={`${themeLabelId}-pool`} />
+        </Field>
+
+        <Field
+          label={copy.intake.budget}
+          htmlFor={budgetId}
+          caption={pool === "own" ? copy.intake.budgetCaptionOwn : copy.intake.budgetCaption}
+        >
           <div className="flex items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]">
             <span aria-hidden className="font-mono text-[14px] text-[color:var(--fg-faint)]">$</span>
             <input
@@ -252,6 +266,49 @@ function Field({
       >
         {caption}
       </p>
+    </div>
+  );
+}
+
+/** Cards for the 99 (three answers §3): two segments, drawn as Bracket's are. */
+function PoolRadios({ value, onChange, labelId }: { value: Pool; onChange: (p: Pool) => void; labelId: string }) {
+  const options: readonly Pool[] = ["any", "own"];
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const current = options.indexOf(value);
+  return (
+    <div role="radiogroup" aria-labelledby={labelId} className="flex gap-[6px]">
+      {options.map((o, i) => {
+        const selected = o === value;
+        return (
+          <button
+            key={o}
+            ref={(node) => {
+              refs.current[i] = node;
+            }}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(o)}
+            onKeyDown={(e) => {
+              const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+              if (dir === 0) return;
+              e.preventDefault();
+              const next = (current + dir + options.length) % options.length;
+              refs.current[next]?.focus();
+              onChange(options[next]);
+            }}
+            className={[
+              "flex flex-[1_1_0] items-center justify-center min-w-0 h-[44px] md:h-[34px] rounded-[7px] border border-solid text-[13px] cursor-pointer",
+              selected
+                ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)]"
+                : "text-[color:var(--fg-muted)] bg-[color:var(--surface-sunken)] border-[color:var(--border)]",
+            ].join(" ")}
+          >
+            {o === "own" ? copy.intake.poolOwn : copy.intake.poolAny}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -107,7 +107,7 @@ const { submitTarget } = await import("../src/lib/intake/submit");
 const { emptyParams, parseChooseParams } = await import("../src/lib/intake/params");
 const HUGH = "I want a deck from the HOB or HOC sets using cards I own. The commander can be one I have to buy. Tribal options are Orcs, Elves, Dwarves, or Wizards.";
 const read = parseChooseParams(new URLSearchParams(submitTarget({ ...emptyParams(), words: HUGH }, (await loadIntakeCatalog()).index).split("?")[1]));
-console.log(`  his words read as: themes ${read.themes.join(",")} · join ${read.themeJoin} · sets ${read.sets.join(",")} · not used: ${read.notUsed.join(" | ")}`);
+console.log(`  his words read as: themes ${read.themes.join(",")} · join ${read.themeJoin} · sets ${read.sets.join(",")} · pool ${read.pool} · not used: ${read.notUsed.join(" | ")}`);
 const printedAll = hugh.candidates.filter((c) => c.inSets).length;
 console.log(`  (commanders printed in HOB or HOC, any theme: ${printedAll})`);
 

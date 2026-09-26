@@ -13,6 +13,7 @@ const all: HandOffAnswers = {
   cardUnread: false,
   themeJoin: "all",
   sets: [],
+  pool: "any",
   budgetDollars: 150,
   bracket: 2,
 };
@@ -53,8 +54,16 @@ describe("Built from your answers", () => {
     expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual(["Printed inThe Hobbit or The Hobbit Commander"]);
   });
 
+  it("draws own-only as a row, and says the budget buys nothing for the 99", () => {
+    render(<HandOffAnswersBlock answers={{ ...all, card: null, themes: [], bracket: null, pool: "own" }} changeHref="/x" />);
+    expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual([
+      "The 99From cards you ownIt takes only cards with a copy free, and finishes with basics.",
+      "Budget$150The fill buys nothing for the 99.",
+    ]);
+  });
+
   it("draws no row for an answer not given", () => {
-    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", sets: [], card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
+    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", sets: [], pool: "any", card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
     expect(screen.getAllByTestId("hand-off-row")).toHaveLength(1);
   });
 
@@ -66,5 +75,10 @@ describe("Built from your answers", () => {
     expect(budgetLine(null)).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
     // The card's read failed: the create still pays for it first, so no line is true yet.
     expect(budgetLine(null, true)).toBeNull();
+    // Own-only: nothing is bought for the 99, unless the card is the one buy.
+    expect(budgetLine(null, false, true)).toBe("The fill buys nothing for the 99.");
+    expect(budgetLine(card({ owned: true }), false, true)).toBe("The fill buys nothing for the 99.");
+    expect(budgetLine(card(), false, true)).toBe("Regisaur Alpha takes $1.10 of it. The fill buys nothing else for the 99.");
+    expect(budgetLine(card({ price: { kind: "absent" } }), false, true)).toMatch(/^Regisaur Alpha has no price on record.*nothing else/);
   });
 });

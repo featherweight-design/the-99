@@ -8,7 +8,7 @@ const UUID = "6ad8011d-3471-4369-9d68-b264cc027487";
 describe("validateCreateAnswers", () => {
   it("passes a well-formed set, trimming theme labels", () => {
     expect(validateCreateAnswers({ ...ok, themes: [" Dinosaurs "], cardOracleId: UUID }))
-      .toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], cardOracleId: UUID, budgetDollars: 150, bracket: 3 });
+      .toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], pool: "any", cardOracleId: UUID, budgetDollars: 150, bracket: 3 });
     expect(validateCreateAnswers({ ...ok, sets: ["hob", "hoc"] }).sets).toEqual(["hob", "hoc"]);
     expect(() => validateCreateAnswers({ ...ok, sets: ["HOB"] })).toThrow("sets");
     expect(validateCreateAnswers({ ...ok, themes: ["Orcs", "Elves"], themeJoin: "any" }).themeJoin).toBe("any");
@@ -30,10 +30,17 @@ describe("validateCreateAnswers", () => {
 describe("answerColumnsFor", () => {
   it("stores the budget in cents and writes the answers as a seeded brief", () => {
     expect(answerColumnsFor(validateCreateAnswers(ok), { oracleId: UUID, name: "Doubling Season" }, ["Gishath, Sun's Avatar"])).toEqual({
-      answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID,
+      answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false,
       intent: "Built around Gishath, Sun's Avatar: Dinosaurs, with Doubling Season, under $150, bracket 3.",
       intentSeeded: true,
     });
+  });
+
+  it("stores own-only, and the brief says where the 99 comes from", () => {
+    const cols = answerColumnsFor(validateCreateAnswers({ ...ok, cardOracleId: null, pool: "own" }), null, ["Thorin"]);
+    expect(cols.answerOwnedOnly).toBe(true);
+    expect(cols.intent).toBe("Built around Thorin: Dinosaurs, the 99 from cards you own, under $150, bracket 3.");
+    expect(() => validateCreateAnswers({ ...ok, pool: "mine" as unknown as "own" })).toThrow("pool");
   });
 
   it("records no card when the create refused it", () => {

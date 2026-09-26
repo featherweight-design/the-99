@@ -182,3 +182,28 @@ describe("sets (three-answers addendum §2)", () => {
     expect(matchWords("Dinosaurs", clash).chips.map((c) => c.kind)).toEqual(["theme"]);
   });
 });
+
+describe("the 99 from cards you own (three-answers addendum §3)", () => {
+  const own = (text: string) => match(text).chips.filter((c) => c.kind === "pool").length;
+
+  it("reads the fixed phrasings as own-only, once", () => {
+    expect(own("a deck using cards I own")).toBe(1);
+    expect(own("only cards i already have")).toBe(1);
+    expect(own("build it from my collection")).toBe(1);
+    expect(own("whatever, just what I have")).toBe(1);
+    expect(own("dinosaurs")).toBe(0);
+  });
+
+  it("never reads a buying clause as own-only", () => {
+    expect(own("cards I have to buy")).toBe(0);
+    expect(own("what I have to purchase first")).toBe(0);
+    expect(own("the cards I own to buy around")).toBe(0);
+  });
+
+  it("absorbs the commander-may-be-bought line, leaving nothing under Not used", () => {
+    const r = match("Using cards I own. The commander can be one I have to buy.");
+    expect(r.chips).toEqual([{ kind: "pool" }]);
+    expect(r.phrases).toEqual([]);
+    expect(r.leftover).toEqual([]);
+  });
+});

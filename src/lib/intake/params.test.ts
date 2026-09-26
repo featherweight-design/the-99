@@ -12,7 +12,7 @@ describe("the choose URL", () => {
 
   it("round-trips every answer", () => {
     const p: ChooseParams = {
-      words: "big lizards", colors: ["r", "g"], match: "exactly", themes: ["dinosaurs", "landfall"], themeJoin: "any", sets: ["hob", "hoc"],
+      words: "big lizards", colors: ["r", "g"], match: "exactly", themes: ["dinosaurs", "landfall"], themeJoin: "any", sets: ["hob", "hoc"], pool: "own",
       card: CARD, budgetDollars: 150, bracket: 3, readId: null, notUsed: ["that stomp", "$200"], deeper: ["t:landfall", "b"], results: true,
     };
     expect(parse(serializeChooseParams(p).slice(1))).toEqual(p);
@@ -96,5 +96,17 @@ describe("the themes' join", () => {
     expect(resolveWords([], { ...base, themes: ["orcs", "elves"], themeJoin: "any" }, "all").themeJoin).toBe("any");
     // One theme picked cannot be joined: the words decide, for every theme.
     expect(resolveWords([orcs, elves], { ...base, themes: ["wizards"], themeJoin: "all" }, "any").themeJoin).toBe("any");
+  });
+});
+
+describe("pool", () => {
+  it("writes pool=own only when own, and the words or the control can turn it on", () => {
+    expect(serializeChooseParams({ ...emptyParams(), pool: "own" })).toContain("pool=own");
+    expect(serializeChooseParams(emptyParams())).not.toContain("pool");
+    expect(parseChooseParams(new URLSearchParams("pool=everything")).pool).toBe("any");
+    const base = { themes: [], budgetDollars: null, bracket: null };
+    expect(resolveWords([{ kind: "pool" }], base).pool).toBe("own");
+    expect(resolveWords([], { ...base, pool: "own" }).pool).toBe("own");
+    expect(resolveWords([], base).pool).toBe("any");
   });
 });

@@ -24,7 +24,7 @@ const props = async (sp: Record<string, string>) => ((await NewDeckPage({ search
 
 beforeEach(() => {
   stub.on = true;
-  stub.answers.mockReset().mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], card: null, budgetDollars: 150, bracket: null });
+  stub.answers.mockReset().mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: null });
 });
 
 describe("/decks/new", () => {
@@ -32,19 +32,19 @@ describe("/decks/new", () => {
     const p = await props({ commander: COMMANDER, t: "dinosaurs", b: "150", v: "results" });
     expect(p.handOff?.resultsHref).toBe("/decks/new/choose?t=dinosaurs&b=150&v=results");
     expect(p.handOff?.drawBlock).toBe(true);
-    expect(p.handOff?.create).toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], cardOracleId: null, budgetDollars: 150, bracket: null });
+    expect(p.handOff?.create).toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], pool: "any", cardOracleId: null, budgetDollars: 150, bracket: null });
   });
 
   it("hands the create no more themes than it takes, so a wide ask still makes its deck", async () => {
     const nine = Array.from({ length: 9 }, (_, i) => ({ slug: `t${i}`, label: `Theme ${i}`, pct: null }));
-    stub.answers.mockResolvedValue({ themes: nine, themeJoin: "all", sets: [], card: null, budgetDollars: null, bracket: null });
+    stub.answers.mockResolvedValue({ themes: nine, themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: null, bracket: null });
     const p = await props({ commander: COMMANDER, t: nine.map((t) => t.slug).join(","), v: "results" });
     expect((p.handOff?.create as { themes: string[] }).themes).toHaveLength(8);
   });
 
   it("still hands the create the card when only the card's read failed", async () => {
     const CARD = "0000aaaa-0000-4000-8000-000000000001";
-    stub.answers.mockResolvedValue({ themes: [], themeJoin: "all", sets: [], card: null, cardUnread: true, budgetDollars: 150, bracket: null });
+    stub.answers.mockResolvedValue({ themes: [], themeJoin: "all", sets: [], pool: "any", card: null, cardUnread: true, budgetDollars: 150, bracket: null });
     const p = await props({ commander: COMMANDER, a: CARD, b: "150", v: "results" });
     expect((p.handOff?.create as { cardOracleId: string | null }).cardOracleId).toBe(CARD);
   });

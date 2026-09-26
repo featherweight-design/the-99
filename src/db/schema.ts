@@ -342,6 +342,9 @@ export const decks = pgTable("decks", {
   answerBudgetCents: integer("answer_budget_cents"),
   answerBracket: integer("answer_bracket"),
   answerCardOracleId: uuid("answer_card_oracle_id").references(() => cards.oracleId),
+  /** Help me choose's *Only cards I own* (three answers §3): the 99 is filled from the player's
+   *  own cards, at the create and again by a retry. False for every other deck. */
+  answerOwnedOnly: boolean("answer_owned_only").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics

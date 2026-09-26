@@ -16,6 +16,8 @@ export type CreateAnswers = {
   themeJoin?: "all" | "any";
   /** Set codes, for the brief's wording alone. */
   sets?: string[];
+  /** `own`: the 99 from the player's own cards. Absent is any cards. */
+  pool?: "any" | "own";
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: number | null;
@@ -25,6 +27,7 @@ export type ValidAnswers = {
   themes: string[];
   themeJoin: "all" | "any";
   sets: string[];
+  pool: "any" | "own";
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -58,10 +61,12 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
     || raw.sets.some((c) => typeof c !== "string" || !/^[a-z0-9]{2,8}$/.test(c)))) {
     throw new Error("sets are not valid");
   }
+  if (raw.pool !== undefined && raw.pool !== "any" && raw.pool !== "own") throw new Error("pool is not valid");
   return {
     themes: raw.themes.map((t) => t.trim()),
     themeJoin: raw.themeJoin ?? "all",
     sets: raw.sets ?? [],
+    pool: raw.pool ?? "any",
     cardOracleId,
     budgetDollars,
     bracket: bracket as Bracket | null,
@@ -72,6 +77,7 @@ export type AnswerColumns = {
   answerBudgetCents?: number | null;
   answerBracket?: number | null;
   answerCardOracleId?: string | null;
+  answerOwnedOnly?: boolean;
   intent?: string;
   intentSeeded?: boolean;
 };
@@ -96,8 +102,9 @@ export function answerColumnsFor(
     answerBudgetCents: asked.budgetDollars === null ? null : asked.budgetDollars * 100,
     answerBracket: asked.bracket,
     answerCardOracleId: card?.oracleId ?? null,
+    answerOwnedOnly: asked.pool === "own",
     intent: seededAnswersIntent(commanderNames, {
-      themes: asked.themes, themeJoin: asked.themeJoin, sets: asked.sets, cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
+      themes: asked.themes, themeJoin: asked.themeJoin, sets: asked.sets, ownOnly: asked.pool === "own", cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
     }),
     intentSeeded: true,
   };

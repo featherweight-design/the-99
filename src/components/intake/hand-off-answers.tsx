@@ -18,15 +18,20 @@ const copy = helpMeChooseCopy.handOff;
  * What the budget does, which turns on the card the fill pays for first. Null when that card's read
  * failed: the create still places and pays for it, so no line is true until the card can be named.
  */
-export function budgetLine(card: HandOffAnswers["card"], cardUnread = false): string | null {
+export function budgetLine(card: HandOffAnswers["card"], cardUnread = false, ownOnly = false): string | null {
   if (cardUnread) return null;
+  // Own-only: the fill buys nothing. An unowned card is the one purchase, and the budget charges it (audit 8).
+  if (ownOnly) {
+    if (card === null || card.owned) return copy.budgetOwn;
+    return copy.budgetOwnCard(card.name, card.price.kind === "priced" ? formatCents(card.price.cents) : null);
+  }
   // An owned card costs the budget nothing, so it is not paid for first.
   if (card === null || card.owned) return copy.budgetAlone;
   return card.price.kind === "priced" ? copy.budgetFirst(card.name, formatCents(card.price.cents)) : copy.budgetUnknown(card.name);
 }
 
 export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffAnswers; changeHref: string }) {
-  const { themes, themeJoin, sets, card, cardUnread, budgetDollars, bracket } = answers;
+  const { themes, themeJoin, sets, pool, card, cardUnread, budgetDollars, bracket } = answers;
   // Any of is one row, its line the figure of the theme the results row ranked by.
   const best = themes.find((t) => t.best) ?? null;
   return (
@@ -67,6 +72,11 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
             <span>{sets.map((s) => s.name).join(" or ")}</span>
           </Row>
         )}
+        {pool === "own" && (
+          <Row k={copy.keys.pool} line={copy.poolLine}>
+            <span>{copy.poolValue}</span>
+          </Row>
+        )}
         {card && (
           <Row k={copy.keys.card} line={card.pct === null ? copy.placed : `${copy.placed} ${copy.cardFig(card.pct)}`}>
             <span className="flex min-w-0 items-center gap-[8px]">
@@ -75,7 +85,7 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
           </Row>
         )}
         {budgetDollars !== null && (
-          <Row k={copy.keys.budget} line={budgetLine(card, cardUnread)}>
+          <Row k={copy.keys.budget} line={budgetLine(card, cardUnread, pool === "own")}>
             <span className="tabular-nums">${budgetDollars.toLocaleString("en-US")}</span>
           </Row>
         )}

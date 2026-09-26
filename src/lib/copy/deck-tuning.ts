@@ -65,6 +65,8 @@ export const deckTuningCopy = {
       `any of ${labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} or ${labels[labels.length - 1]}`}`,
     /** The sets asked, by code as their chip names them: *from HOB or HOC*. */
     answerSets: (codes: readonly string[]) => `from ${codes.join(" or ")}`,
+    /** Own-only, as the addendum's seeded line reads it. */
+    answerOwn: "the 99 from cards you own",
     answerCard: (name: string) => `with ${name}`,
     answerBudget: (dollars: number) => `under $${dollars}`,
     answerBracket: (bracket: number) => `bracket ${bracket}`,

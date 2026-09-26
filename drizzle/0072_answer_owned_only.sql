@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "answer_owned_only" boolean DEFAULT false NOT NULL;

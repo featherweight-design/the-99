@@ -227,6 +227,56 @@
           "settle": 800
         }
       ]
+    },
+    {
+      "id": "form-own",
+      "label": "/decks/new/choose: Cards for the 99 set to Only cards I own, the budget caption switched (three answers §3)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?pool=own&b=150",
+          "wait": "textarea",
+          "settle": 1500
+        },
+        {
+          "clickRole": "radio",
+          "name": "Only cards I own"
+        },
+        {
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "results-own",
+      "label": "results: own-only, the ownership line split into the commander and the 99 (§3)",
+      "view": "src/components/intake/choose-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=orcs,elves,dwarves,wizards&tj=any&p=hob,hoc&pool=own&v=results",
+          "wait": "[data-testid='order-line']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "hand-off-own",
+      "label": "/decks/new: pre-filled with own-only, The 99 row and its budget line (§3)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=dinosaurs&b=150&pool=own&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-answers']",
+          "settle": 2000
+        }
+      ]
     }
   ]
 }
