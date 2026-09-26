@@ -20,7 +20,9 @@ export const CHOOSE_PATH = "/decks/new/choose";
 export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string {
   // Bounded here as the parser bounds `w`, so no answer comes from words the results would cut.
   const words = p.words.slice(0, READ_WORDS_MAX_CHARS).trim();
-  const match: Pick<MatchResult, "chips" | "phrases"> = words && index ? matchWords(words, index) : { chips: [], phrases: [] };
+  const match: Pick<MatchResult, "chips" | "phrases" | "themeJoin"> = words && index
+    ? matchWords(words, index)
+    : { chips: [], phrases: [], themeJoin: "all" };
   // A carried card is the card, when it is still one the intake could offer (the index is built
   // from exactly those, the search's own card rule). One that is not, from an old or hand-edited
   // address, is no answer: the words may then supply the card, as if none were carried.
@@ -33,13 +35,15 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     : [...new Set(cardChips.filter((c) => c.oracleId !== carried).map((c) => c.name))];
   const resolved = resolveWords(carried === null ? match.chips : match.chips.filter((c) => c.kind !== "card"), {
     themes: p.themes,
+    themeJoin: p.themeJoin,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
-  });
+  }, match.themeJoin);
   return `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
     words,
     themes: resolved.themes,
+    themeJoin: resolved.themeJoin,
     card: carried ?? resolved.card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,
@@ -59,11 +63,13 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
  */
 export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string): string {
   const cards = read.chips.filter((c): c is Extract<Chip, { kind: "card" }> => c.kind === "card");
+  // The read joins nothing: the themes keep the join the answers already had.
   const resolved = resolveWords(p.card === null ? read.chips : read.chips.filter((c) => c.kind !== "card"), {
     themes: p.themes,
+    themeJoin: p.themeJoin,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
-  });
+  }, p.themeJoin);
   const displaced = p.card === null ? [] : [...new Set(cards.filter((c) => c.oracleId !== p.card).map((c) => c.name))];
   const card = p.card ?? resolved.card;
   const deeper = [
@@ -75,6 +81,7 @@ export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string):
   return `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
     themes: resolved.themes,
+    themeJoin: resolved.themeJoin,
     card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,

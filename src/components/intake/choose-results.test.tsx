@@ -18,7 +18,7 @@ const row = (i: number): ResultRow => ({
 const page = (n: number, over: Partial<ResultsPage> = {}): ResultsPage => ({
   order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, ...over,
 });
-const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, cardOverBracket: null };
+const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null };
 
 function draw(p: ResultsPage) {
   return render(

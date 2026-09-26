@@ -87,6 +87,12 @@ describe("seededAnswersIntent (F2)", () => {
       .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, with Doubling Season, under $150, bracket 3.");
   });
 
+  it("names themes asked as any of with or, and a single one plainly", () => {
+    expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Orcs", "Elves", "Dwarves", "Wizards"], themeJoin: "any" }))
+      .toBe("Built around Thorin: any of Orcs, Elves, Dwarves or Wizards.");
+    expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Dwarves"], themeJoin: "any" })).toBe("Built around Thorin: Dwarves.");
+  });
+
   it("names several themes as a list", () => {
     expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { ...none, themes: ["Dinosaurs", "Ramp", "Landfall"] }))
       .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, Ramp and Landfall.");

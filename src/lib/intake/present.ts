@@ -1,9 +1,9 @@
 import { colorNames } from "../copy/color-labels";
 import { BRACKET_NAMES } from "../copy/deck-analysis";
-import { helpMeChooseCopy as copy } from "../copy/help-me-choose";
+import { helpMeChooseCopy as copy, orList } from "../copy/help-me-choose";
 import type { Chip } from "./match";
 import { answersOf, type ChooseParams } from "./params";
-import { answerKeys, type AnswerKey, type SearchResult } from "./rank";
+import { answerKeys, isAnyOf, type AnswerKey, type SearchResult } from "./rank";
 import type { ResultRow } from "./rows";
 
 /**
@@ -24,6 +24,13 @@ export function orderLine(order: SearchResult["order"], p: ChooseParams, labels:
       ? copy.results.subOwnedColors(copy.intake.colorsJoin(colorNames(p.colors.map((c) => c.toUpperCase()))))
       : copy.results.subOwned;
     return { title: copy.results.byOwned, sub };
+  }
+  // Any of: the group's best figure ranks each row, or the card where it is lower.
+  if (isAnyOf(p)) {
+    const names = orList(p.themes.map(labels.theme));
+    return p.card && labels.card
+      ? { title: copy.results.all, sub: copy.results.subAnyCard(names, labels.card) }
+      : { title: copy.results.byBestTheme, sub: copy.results.subAny(names) };
   }
   const names = [...p.themes.map(labels.theme), ...(p.card && labels.card ? [labels.card] : [])];
   // A card the catalog could not name (a stale link): the order is still fit, with nothing to cite.
@@ -47,20 +54,24 @@ export type Figure = {
   dim: boolean;
 };
 
-/** A row's figures, in the order the answers were given. Ties on the weakest each set the rank. */
+/**
+ * A row's figures, in the order the answers were given. Ties on the weakest each set the rank. Asked
+ * as any of, only the group's best figure can set it; the group's other fits are drawn dimmed.
+ */
 export function figures(row: ResultRow, order: SearchResult["order"], labels: Labels): Figure[] {
   if (order === "owned") {
     return [{ pct: row.ownedSupport, text: copy.results.figOwnedTail(row.supportTotal), setsRank: false, dim: false }];
   }
+  const grouped = row.themeFits.some((t) => t.best);
   const raw = [
-    ...row.themeFits.map((t) => ({ share: t.share, text: copy.results.figThemeTail(labels.theme(t.slug)) })),
-    ...(row.cardFit !== null && labels.card ? [{ share: row.cardFit, text: copy.results.figCardTail(labels.card) }] : []),
+    ...row.themeFits.map((t) => ({ share: t.share, text: copy.results.figThemeTail(labels.theme(t.slug)), ranks: !grouped || t.best === true })),
+    ...(row.cardFit !== null && labels.card ? [{ share: row.cardFit, text: copy.results.figCardTail(labels.card), ranks: true }] : []),
   ];
-  const low = Math.min(...raw.map((f) => f.share));
+  const low = Math.min(...raw.filter((f) => f.ranks).map((f) => f.share));
   const several = raw.length > 1;
   return raw.map((f) => {
     const pct = Math.round(f.share * 100);
-    const sets = several && f.share === low;
+    const sets = several && f.ranks && f.share === low;
     return { pct, text: f.text, setsRank: sets, dim: several && !sets };
   });
 }
@@ -95,6 +106,20 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
       n: count,
     };
   });
+  if (narrow.anyOf) {
+    const names = p.themes.map(labels.theme);
+    options.push({
+      label: copy.narrow.widenThemes(p.themes.length),
+      // Said only when it explains the zero: at 1 it says nothing a reader could act on, and when
+      // some commander fits every one of them the few who do are why the note is up, not this.
+      reason: narrow.anyOf.most >= 2 && narrow.anyOf.most < p.themes.length
+        ? copy.narrow.widenThemesWhy(narrow.anyOf.most, names)
+        : null,
+      count: copy.narrow.count(narrow.anyOf.count),
+      params: { ...p, themeJoin: "any", readId: null, deeper: [] },
+      n: narrow.anyOf.count,
+    });
+  }
   if (narrow.widen) {
     options.push({
       label: copy.narrow.widenColors(colorsPhrase(p.colors)),
@@ -112,7 +137,7 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
     .map((o) => ({ label: o.label, reason: o.reason, count: o.count, params: o.params }));
 }
 
-function sameAnswer(x: AnswerKey, y: AnswerKey): boolean {
+export function sameAnswer(x: AnswerKey, y: AnswerKey): boolean {
   return x.kind === y.kind && (x.kind !== "theme" || (y.kind === "theme" && x.slug === y.slug));
 }
 
@@ -120,6 +145,7 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
   switch (a.kind) {
     case "colors": return colorsPhrase(p.colors);
     case "theme": return labels.theme(a.slug);
+    case "themes": return copy.narrow.anyOfName(p.themes.map(labels.theme));
     case "card": return labels.card ?? copy.readAs.kinds.card;
     case "budget": return `$${p.budgetDollars}`;
     case "bracket": return `bracket ${p.bracket}`;
@@ -137,6 +163,7 @@ export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
   switch (a.kind) {
     case "colors": return { ...q, colors: [], match: "contains" };
     case "theme": return { ...q, themes: p.themes.filter((s) => s !== a.slug) };
+    case "themes": return { ...q, themes: [], themeJoin: "all" };
     case "card": return { ...q, card: null };
     case "budget": return { ...q, budgetDollars: null };
     case "bracket": return { ...q, bracket: null };
@@ -190,7 +217,14 @@ export function readForThisAsk<T extends { kind: "read" | "nothing"; read: { chi
   return loaded.wordsHash === hash(p.words, pressControls(p, verifiedDeeperMarks(p, loaded))) ? loaded : null;
 }
 
-export type AnswerChip = { kind: string; value: string; /** Added by the deeper look (`d`). */ deeper: boolean };
+export type AnswerChip = {
+  kind: string;
+  value: string;
+  /** Added by the deeper look (`d`). */
+  deeper: boolean;
+  /** An any-of chip's names, drawn with the joiner between them; `value` is then its spoken name. */
+  names?: string[];
+};
 
 /**
  * The *We read this as* bar's chips, in the form's order. `deeper` holds the marks the page has
@@ -201,7 +235,16 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
   const marked = (m: string) => deeper.includes(m);
   return [
     ...(p.colors.length > 0 ? [{ kind: p.match === "exactly" ? k.exactly : k.colors, value: colorsPhrase(p.colors), deeper: false }] : []),
-    ...p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s), deeper: marked(`t:${s}`) })),
+    ...(isAnyOf(p)
+      ? [{
+        kind: k.anyOf,
+        // The chip's kind, `any of`, is read before it, so the value is the names alone: with the
+        // full name here the group was spoken as "any of Any of Orcs, …".
+        value: orList(p.themes.map(labels.theme)),
+        names: p.themes.map(labels.theme),
+        deeper: p.themes.some((s) => marked(`t:${s}`)),
+      }]
+      : p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s), deeper: marked(`t:${s}`) }))),
     ...(p.card && labels.card ? [{ kind: k.card, value: labels.card, deeper: marked("a") }] : []),
     ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}`, deeper: marked("b") }] : []),
     ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}`, deeper: marked("k") }] : []),

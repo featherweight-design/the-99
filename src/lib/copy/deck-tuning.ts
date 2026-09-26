@@ -60,6 +60,9 @@ export const deckTuningCopy = {
     seededAnswers: (commanders: string, parts: readonly string[]) => `Built around ${commanders}: ${parts.join(", ")}.`,
     answerThemes: (labels: readonly string[]) =>
       labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`,
+    /** Themes asked as any of (Help me choose's three-answers addendum): *any of Orcs, Elves or Wizards*. */
+    answerThemesAny: (labels: readonly string[]) =>
+      `any of ${labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} or ${labels[labels.length - 1]}`}`,
     answerCard: (name: string) => `with ${name}`,
     answerBudget: (dollars: number) => `under $${dollars}`,
     answerBracket: (bracket: number) => `bracket ${bracket}`,

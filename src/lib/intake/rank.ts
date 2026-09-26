@@ -39,14 +39,26 @@ import { TOO_NARROW_BELOW, carriesSubtype, rawShare, themeShare, type ThemeRow }
  * they do have. The row shows that share, so a type-line match is admitted only when it rounds to
  * 1% or more: the row has no way to draw a figure that is not a percentage, and "0% Dwarves"
  * beside a Dwarf would contradict the very match it was admitted for.
+ *
+ * THEMES AS ANY OF (the three-answers addendum §1). With `themeJoin: "any"` and two or more themes,
+ * the themes are ONE answer: a commander passes when it backs any of them, and its value for the
+ * group is the HIGHEST of the themes it backs. Across answers the rank is still the lowest figure,
+ * so it is min(max of the group, the card). A row lists only the themes it backs. The group is also
+ * one answer to the too-narrow note: it is dropped whole, never one theme at a time, since dropping a
+ * theme from an any-of can only bring fewer commanders back. Asked as all of, the note offers the
+ * join itself (`anyOf`), counted by the same `passes`, so it never reads 0.
  */
 export type Bracket = 1 | 2 | 3 | 4 | 5;
+
+export type ThemeJoin = "all" | "any";
 
 export type Answers = {
   colors: string[];
   match: JoinMode;
   /** Theme tag slugs. */
   themes: string[];
+  /** How the themes join; absent is all of, and any of applies only from two themes (`isAnyOf`). */
+  themeJoin?: ThemeJoin;
   /** The build-around card's oracle id. */
   card: string | null;
   budgetDollars: number | null;
@@ -85,14 +97,19 @@ export type Candidate = ThemeRow & BracketFacts & {
 export type AnswerKey =
   | { kind: "colors" }
   | { kind: "theme"; slug: string }
+  /** The themes asked as any of: one answer, dropped whole. */
+  | { kind: "themes" }
   | { kind: "card" }
   | { kind: "budget" }
   | { kind: "bracket" };
 
 export type Ranked = {
   candidate: Candidate;
-  /** Each theme's share, in the order asked. `typeLine`: backed by the type line alone. */
-  themeFits: { slug: string; share: number; typeLine?: boolean }[];
+  /**
+   * Each theme's share, in the order asked. `typeLine`: backed by the type line alone. Asked as any
+   * of, only the themes the commander backs, and `best` marks the one that is the group's value.
+   */
+  themeFits: { slug: string; share: number; typeLine?: boolean; best?: boolean }[];
   cardFit: number | null;
 };
 
@@ -109,6 +126,12 @@ export type SearchResult = {
      * as with all five colors, where the two modes mean the same.
      */
     widen: { count: number } | null;
+    /**
+     * Two or more themes asked as ALL of, and how many pass as any of instead. `most` is the most
+     * of those themes any commander passing the other answers backs at once, the fact the note's
+     * reason states. Null when any of admits no more.
+     */
+    anyOf: { count: number; most: number } | null;
     /**
      * The build-around card alone puts every deck over the bracket asked for: a Game Changer at
      * 1 or 2, which allow none. The row that drops the card says so.
@@ -135,13 +158,20 @@ export function backing(c: ThemeRow & { typeLine: string | null }, slug: string,
   return Math.round(share * 100) >= 1 ? { share, typeLine: true } : null;
 }
 
+/** Two or more themes asked as any of: one answer rather than one per theme. */
+export const isAnyOf = (a: Pick<Answers, "themes" | "themeJoin">): boolean => a.themeJoin === "any" && a.themes.length >= 2;
+
 export function passes(
   c: Candidate, a: Answers, card: CardFacts | null, skip: readonly AnswerKey[] = [], tribes: Tribes = NO_TRIBES,
 ): boolean {
   const skipping = (k: AnswerKey["kind"], slug?: string) =>
     skip.some((s) => s.kind === k && (k !== "theme" || (s.kind === "theme" && s.slug === slug)));
   if (!skipping("colors") && filterByColors([c], a.colors, a.match).length === 0) return false;
-  for (const slug of a.themes) if (!skipping("theme", slug) && backing(c, slug, tribes) === null) return false;
+  if (isAnyOf(a)) {
+    if (!skipping("themes") && !a.themes.some((slug) => backing(c, slug, tribes) !== null)) return false;
+  } else {
+    for (const slug of a.themes) if (!skipping("theme", slug) && backing(c, slug, tribes) === null) return false;
+  }
   // With the card answer removed the card is gone from every test, not only its own: its flags
   // and its price no longer count against the bracket or the budget either.
   const withCard = a.card !== null && !skipping("card") ? card : null;
@@ -180,29 +210,66 @@ export function rankCandidates(
   const order: SearchResult["order"] = a.themes.length > 0 || a.card !== null ? "fit" : "owned";
   const rows = candidates
     .filter((c) => passes(c, a, card, [], tribes))
-    .map((c): Ranked => ({
-      candidate: c,
-      themeFits: a.themes.map((slug) => {
-        const b = backing(c, slug, tribes);
-        return { slug, share: b?.share ?? 0, typeLine: b?.typeLine ?? false };
-      }),
-      cardFit: a.card === null ? null : c.cardInclusion,
-    }))
+    .map((c): Ranked => ({ candidate: c, themeFits: themeFits(c, a, tribes), cardFit: a.card === null ? null : c.cardInclusion }))
     .sort((x, y) => (order === "fit" ? measuredFirst(x) - measuredFirst(y) || fitKey(y) - fitKey(x) : y.candidate.ownedSupport - x.candidate.ownedSupport)
       || (y.candidate.deckCount ?? 0) - (x.candidate.deckCount ?? 0)
       || x.candidate.name.localeCompare(y.candidate.name));
 
   const answers = answerKeys(a);
+  const anyOf = rows.length < TOO_NARROW_BELOW ? anyOfCount(candidates, a, card, rows.length, tribes) : null;
   const tooNarrow = rows.length < TOO_NARROW_BELOW && answers.length > 0
     ? {
-      without: removals(candidates, a, card, answers, tribes),
+      // When every answer is a theme, the join passes a superset of what any removal does (keeping
+      // some themes all of is narrower than any of all of them), so once it reaches the floor the
+      // deeper removal sets can never outrank it and are not searched. With another answer asked,
+      // dropping that answer can bring back more than the join, so the search runs as usual.
+      without: removals(candidates, a, card, answers, tribes,
+        anyOf !== null && anyOf.count >= TOO_NARROW_BELOW && answers.every((k) => k.kind === "theme")),
       widen: widenCount(candidates, a, card, rows.length, tribes),
+      anyOf,
       cardOverBracket: a.card !== null && card?.gameChanger === true && a.bracket !== null && a.bracket <= 2
         ? "gameChanger" as const
         : null,
     }
     : null;
   return { order, rows, tooNarrow };
+}
+
+/** A row's theme figures: every theme asked, or, as any of, the ones it backs with the best marked. */
+function themeFits(c: Candidate, a: Answers, tribes: Tribes): Ranked["themeFits"] {
+  const fits = a.themes.flatMap((slug) => {
+    const b = backing(c, slug, tribes);
+    // As all of every theme is a figure, 0 where unbacked; as any of only a backed one is.
+    if (b === null && isAnyOf(a)) return [];
+    return [{ slug, share: b?.share ?? 0, typeLine: b?.typeLine ?? false }];
+  });
+  if (!isAnyOf(a)) return fits;
+  const best = bestFit(fits);
+  return fits.map((f) => (f === best ? { ...f, best: true } : f));
+}
+
+/**
+ * An any-of group's value: its highest figure, a measured one ahead of a type-line one as in the
+ * order, the first asked on a tie. Exported so the hand-off names the same theme the row ranked by.
+ */
+export function bestFit<T extends { share: number; typeLine?: boolean }>(fits: readonly T[]): T | null {
+  if (fits.length === 0) return null;
+  return fits.reduce((x, y) => (Number(x.typeLine ?? false) - Number(y.typeLine ?? false) || y.share - x.share) > 0 ? y : x);
+}
+
+function anyOfCount(
+  candidates: readonly Candidate[], a: Answers, card: CardFacts | null, exact: number, tribes: Tribes,
+): { count: number; most: number } | null {
+  if (a.themes.length < 2 || isAnyOf(a)) return null;
+  const any: Answers = { ...a, themeJoin: "any" };
+  const count = candidates.filter((c) => passes(c, any, card, [], tribes)).length;
+  if (count <= exact) return null;
+  let most = 0;
+  for (const c of candidates) {
+    if (!passes(c, any, card, [{ kind: "themes" }], tribes)) continue;
+    most = Math.max(most, a.themes.filter((slug) => backing(c, slug, tribes) !== null).length);
+  }
+  return { count, most };
 }
 
 function widenCount(
@@ -221,6 +288,7 @@ function widenCount(
  */
 function removals(
   candidates: readonly Candidate[], a: Answers, card: CardFacts | null, answers: readonly AnswerKey[], tribes: Tribes,
+  singlesOnly = false,
 ): { answers: AnswerKey[]; count: number }[] {
   const found: { answers: AnswerKey[]; count: number }[] = [];
   const count = (set: AnswerKey[]) => ({ answers: set, count: candidates.filter((c) => passes(c, a, card, set, tribes)).length });
@@ -237,7 +305,7 @@ function removals(
     }
     const atSize = subsets(answers, size).map(count).filter((r) => r.count > 0);
     found.push(...atSize);
-    if (atSize.some((r) => r.count >= TOO_NARROW_BELOW)) break;
+    if (singlesOnly || atSize.some((r) => r.count >= TOO_NARROW_BELOW)) break;
   }
   return found.sort((x, y) => y.count - x.count || x.answers.length - y.answers.length);
 }
@@ -262,21 +330,24 @@ function subsets<T>(items: readonly T[], size: number): T[][] {
   return out;
 }
 
+/** The theme figures a row ranks by: every one, or, as any of, the group's best alone. */
+const rankingFits = (r: Ranked) => (r.themeFits.some((t) => t.best) ? r.themeFits.filter((t) => t.best) : r.themeFits);
+
 /** 0 when every theme is backed by a measure, 1 when any is backed by the type line alone. */
 function measuredFirst(r: Ranked): number {
-  return r.themeFits.some((t) => t.typeLine) ? 1 : 0;
+  return rankingFits(r).some((t) => t.typeLine) ? 1 : 0;
 }
 
 /** The weakest of a row's figures: it fits only as well as its worst answer. */
 function fitKey(r: Ranked): number {
-  return Math.min(...r.themeFits.map((t) => t.share), ...(r.cardFit === null ? [] : [r.cardFit]));
+  return Math.min(...rankingFits(r).map((t) => t.share), ...(r.cardFit === null ? [] : [r.cardFit]));
 }
 
 /** The answers given, in the order the form asks them. */
 export function answerKeys(a: Answers): AnswerKey[] {
   return [
     ...(a.colors.length > 0 ? [{ kind: "colors" } as const] : []),
-    ...a.themes.map((slug) => ({ kind: "theme", slug }) as const),
+    ...(isAnyOf(a) ? [{ kind: "themes" } as const] : a.themes.map((slug) => ({ kind: "theme", slug }) as const)),
     ...(a.card !== null ? [{ kind: "card" } as const] : []),
     ...(a.budgetDollars !== null ? [{ kind: "budget" } as const] : []),
     ...(a.bracket !== null ? [{ kind: "bracket" } as const] : []),

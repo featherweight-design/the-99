@@ -44,7 +44,7 @@ describe("/decks/new", () => {
 
   it("still hands the create the card when only the card's read failed", async () => {
     const CARD = "0000aaaa-0000-4000-8000-000000000001";
-    stub.answers.mockResolvedValue({ themes: [], card: null, cardUnread: true, budgetDollars: 150, bracket: null });
+    stub.answers.mockResolvedValue({ themes: [], themeJoin: "all", card: null, cardUnread: true, budgetDollars: 150, bracket: null });
     const p = await props({ commander: COMMANDER, a: CARD, b: "150", v: "results" });
     expect((p.handOff?.create as { cardOracleId: string | null }).cardOracleId).toBe(CARD);
   });

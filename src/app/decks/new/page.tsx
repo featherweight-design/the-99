@@ -40,6 +40,7 @@ export default async function NewDeckPage({
           // The first eight: themes only write the brief, which `createDeck` bounds at that; the
           // block still lists every theme the player asked for.
           themes: answers.themes.slice(0, MAX_THEMES).map((t) => t.label),
+          themeJoin: answers.themeJoin,
           // A card whose read failed is still the answer: `createDeck` checks it against the catalog.
           cardOracleId: answers.card?.oracleId ?? (answers.cardUnread ? asked.card : null),
           budgetDollars: answers.budgetDollars,

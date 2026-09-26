@@ -8,7 +8,7 @@ vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: stub.rows
 vi.mock("./search", () => ({ loadIntakeThemes: stub.themes }));
 vi.mock("./rows", () => ({ loadCardChip: stub.chip }));
 
-const { loadHandOffAnswers } = await import("./hand-off-load");
+const { handOffThemes, loadHandOffAnswers } = await import("./hand-off-load");
 const { emptyParams } = await import("./params");
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
@@ -76,5 +76,25 @@ describe("loadHandOffAnswers when a read fails", () => {
     // A card whose read failed is unread, never "no card": the create still carries it.
     expect([a.card, a.cardUnread]).toEqual([null, true]);
     expect([a.budgetDollars, a.bracket]).toEqual([150, 2]);
+  });
+});
+
+describe("handOffThemes", () => {
+  it("marks the theme the results row ranked by, on the exact share and not the rounded figure", () => {
+    const shares: Record<string, number> = { elves: 0.252, wizards: 0.254 };
+    const t = handOffThemes(
+      { themes: ["elves", "wizards"], themeJoin: "any" },
+      (slug) => ({ share: shares[slug], typeLine: false }),
+      new Map([["elves", "Elves"], ["wizards", "Wizards"]]),
+    );
+    expect(t).toEqual([
+      { slug: "elves", label: "Elves", pct: 25 },
+      { slug: "wizards", label: "Wizards", pct: 25, best: true },
+    ]);
+  });
+
+  it("marks nothing asked as all of", () => {
+    const t = handOffThemes({ themes: ["elves", "wizards"], themeJoin: "all" }, () => ({ share: 0.3, typeLine: false }), new Map());
+    expect(t.some((x) => x.best)).toBe(false);
   });
 });

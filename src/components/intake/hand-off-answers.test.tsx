@@ -11,6 +11,7 @@ const all: HandOffAnswers = {
   themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }],
   card: card(),
   cardUnread: false,
+  themeJoin: "all",
   budgetDollars: 150,
   bracket: 2,
 };
@@ -29,8 +30,25 @@ describe("Built from your answers", () => {
       .toBe("/decks/new/choose?t=dinosaurs");
   });
 
+  it("draws themes asked as any of as one row, its line the best figure", () => {
+    const any: HandOffAnswers = {
+      ...all,
+      card: null,
+      budgetDollars: null,
+      bracket: null,
+      themeJoin: "any",
+      themes: [
+        { slug: "orcs", label: "Orcs", pct: null },
+        { slug: "elves", label: "Elves", pct: 11 },
+        { slug: "wizards", label: "Wizards", pct: 44, best: true },
+      ],
+    };
+    render(<HandOffAnswersBlock answers={any} changeHref="/x" />);
+    expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual(["Any ofOrcs, Elves or Wizards44% of its decks are Wizards."]);
+  });
+
   it("draws no row for an answer not given", () => {
-    render(<HandOffAnswersBlock answers={{ themes: [], card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
+    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
     expect(screen.getAllByTestId("hand-off-row")).toHaveLength(1);
   });
 

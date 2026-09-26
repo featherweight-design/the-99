@@ -64,11 +64,19 @@ export function seededIntent(commanderNames: readonly string[]): string {
  */
 export function seededAnswersIntent(
   commanderNames: readonly string[],
-  answers: { themes: readonly string[]; cardName: string | null; budgetDollars: number | null; bracket: number | null },
+  answers: {
+    themes: readonly string[];
+    /** Any of joins two or more themes by "or"; absent, or below two themes, they are all of. */
+    themeJoin?: "all" | "any";
+    cardName: string | null;
+    budgetDollars: number | null;
+    bracket: number | null;
+  },
 ): string {
   const names = commanderNames.join(" and ");
-  const { seededAnswers, answerThemes, answerCard, answerBudget, answerBracket, maxLength } = deckTuningCopy.intent;
-  const themes = answers.themes.length > 0 ? [answerThemes(answers.themes)] : [];
+  const { seededAnswers, answerThemes, answerThemesAny, answerCard, answerBudget, answerBracket, maxLength } = deckTuningCopy.intent;
+  const anyOf = answers.themeJoin === "any" && answers.themes.length >= 2;
+  const themes = answers.themes.length > 0 ? [(anyOf ? answerThemesAny : answerThemes)(answers.themes)] : [];
   const full = [
     ...themes,
     ...(answers.cardName !== null ? [answerCard(answers.cardName)] : []),

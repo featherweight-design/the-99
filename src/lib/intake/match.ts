@@ -17,6 +17,11 @@ import { singularForms } from "../edhrec/tag-kinds";
  * `Seasons`-anything. When one phrase names both a theme and a card, the theme wins: the intake asks
  * what the deck is about, and a card chip can still be added by name.
  *
+ * THEMES JOINED BY "OR" ARE ANY OF (three-answers addendum §1). Two themes in one phrase with an
+ * "or" between them, *Orcs, Elves, Dwarves, or Wizards*, read as any of; commas and "and" read as
+ * all of. There is one join for every theme, so a single "or" between any two makes it any. A clause
+ * mark other than a comma, or any word that is not a stop word, ends the phrase.
+ *
  * A ONE-WORD CARD NAME MATCHES ONLY WHEN TYPED WITH A CAPITAL. The catalog holds `Fog`, `Opt`,
  * `Shock` and `Island`, and "a fog of a deck" is not a request for a build-around card. A name of two
  * or more words is specific enough on its own. The loader leaves basic lands out entirely.
@@ -38,6 +43,8 @@ export type MatchResult = {
    * trimmed from its two ends. A run of stop words alone is no phrase.
    */
   phrases: string[];
+  /** How the words join their themes: "any" only for themes an "or" joins in one phrase. */
+  themeJoin: "all" | "any";
 };
 
 type Target = { kind: "theme"; slug: string; label: string } | { kind: "card"; oracleId: string; name: string };
@@ -163,12 +170,15 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
     phraseWords(m[0]).map((w) => ({ word: w, raw: m[0], at: m.index })),
   );
   const consumed = new Array<boolean>(words.length).fill(false);
+  // Word indexes where each theme match starts and ends, for the join between them.
+  const themeSpans: [number, number][] = [];
   for (let i = 0; i < words.length; i++) {
     for (let n = Math.min(index.maxWords, words.length - i); n >= 1; n--) {
       const key = words.slice(i, i + n).map((w) => w.word).join(" ");
       const target = (index.targets.get(key) ?? []).find((t) => t.kind === "theme" || n > 1 || /^\p{Lu}/u.test(words[i].raw.replace(/^[^\p{L}\p{N}]+/u, "")));
       if (!target) continue;
       found.push({ at: words[i].at, chip: target });
+      if (target.kind === "theme") themeSpans.push([i, i + n - 1]);
       for (let k = i; k < i + n; k++) consumed[k] = true;
       i += n - 1;
       break;
@@ -177,7 +187,28 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
 
   for (const f of found.sort((a, b) => a.at - b.at)) push(f.chip);
   const leftover = words.filter((w, k) => !consumed[k] && !STOP_WORDS.has(w.word)).map((w) => w.word);
-  return { chips, leftover, phrases: leftoverPhrases(text, rest, words, consumed) };
+  return { chips, leftover, phrases: leftoverPhrases(text, rest, words, consumed), themeJoin: themeJoin(text, rest, words, themeSpans) };
+}
+
+/** "any" when some "or" joins two theme matches in one phrase (see the header). */
+function themeJoin(
+  text: string, rest: string, words: readonly { word: string; raw: string; at: number }[], spans: readonly [number, number][],
+): "all" | "any" {
+  for (let s = 1; s < spans.length; s++) {
+    const [, end] = spans[s - 1];
+    const [start] = spans[s];
+    const between = words.slice(end + 1, start);
+    // From the first theme's last token to the second's: marks sit inside a token (`Orcs.`) as
+    // often as between them.
+    const from = words[end].at;
+    const gap = text.slice(from, words[start].at);
+    // A figure blanked out of the scan, a clause mark past a comma, or a word that says something
+    // ends the phrase: the two themes were not asked in one breath.
+    if (gap !== rest.slice(from, words[start].at) || /[.;:!?()]/.test(gap)) continue;
+    if (between.some((w) => !STOP_WORDS.has(w.word))) continue;
+    if (between.some((w) => w.word === "or")) return "any";
+  }
+  return "all";
 }
 
 /** A clause mark ends a phrase, after a token or inside one: *lizards, and tokens* is two. */

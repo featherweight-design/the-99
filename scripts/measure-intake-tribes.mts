@@ -49,7 +49,7 @@ const slugs = TRIBES.map((label) => {
   return t.slug;
 });
 const label = (slug: string) => themes.find((t) => t.slug === slug)?.label ?? slug;
-const asked = { colors: [], match: "contains" as const, themes: slugs, card: null, budgetDollars: null, bracket: null };
+const asked = { colors: [], match: "contains" as const, themes: slugs, themeJoin: "all" as const, card: null, budgetDollars: null, bracket: null };
 
 const facts = await loadSearchFacts(userId, asked);
 const name = (k: { kind: string; slug?: string }) => (k.kind === "theme" ? label(k.slug!) : k.kind);
@@ -80,6 +80,16 @@ for (const o of after.tooNarrow?.without.slice(0, 6) ?? []) {
   const same = (x: { kind: string; slug?: string }, y: { kind: string; slug?: string }) => x.kind === y.kind && x.slug === y.slug;
   const kept = answerKeys(facts.answers).filter((k) => !o.answers.some((d) => same(d, k))).map(name);
   console.log(`  ${kept.length === 1 && dropped.length > 1 ? `keep only ${kept[0]}` : `drop ${dropped.join(" + ")}`}: ${o.count}`);
+}
+
+// Three-answers PR 1: the four asked as any of. The note's join first (asked as all of), then the
+// results the join produces, each row ranked by the tribe it fits best.
+console.log(`\nANY OF  offered by the note: ${after.tooNarrow?.anyOf ? `${after.tooNarrow.anyOf.count} commanders, most backed at once ${after.tooNarrow.anyOf.most}` : "no"}`);
+const anyOf = rankCandidates(facts.candidates, { ...facts.answers, themeJoin: "any" }, facts.card, facts.tribes);
+console.log(`ANY OF  results: ${anyOf.rows.length}`);
+for (const r of anyOf.rows.slice(0, 12)) {
+  const fits = r.themeFits.map((t) => `${t.best ? "*" : ""}${label(t.slug)} ${Math.round(t.share * 100)}%${t.typeLine ? " (type line)" : ""}`).join(", ");
+  console.log(`  ${r.candidate.name}: ${fits}`);
 }
 
 // The HOB commanders the type line brings in, by the tribe they now back.

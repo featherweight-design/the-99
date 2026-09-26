@@ -12,6 +12,8 @@ import type { Bracket } from "./rank";
 export type CreateAnswers = {
   /** Theme labels, for the brief only: they chose the commander and steer nothing after. */
   themes: string[];
+  /** How the themes were joined, for the brief's wording alone. Absent is all of. */
+  themeJoin?: "all" | "any";
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: number | null;
@@ -19,6 +21,7 @@ export type CreateAnswers = {
 
 export type ValidAnswers = {
   themes: string[];
+  themeJoin: "all" | "any";
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -45,7 +48,14 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
     || raw.themes.some((t) => typeof t !== "string" || t.trim().length === 0 || t.length > MAX_THEME_LABEL || /[\r\n]/.test(t))) {
     throw new Error("themes are not valid");
   }
-  return { themes: raw.themes.map((t) => t.trim()), cardOracleId, budgetDollars, bracket: bracket as Bracket | null };
+  if (raw.themeJoin !== undefined && raw.themeJoin !== "all" && raw.themeJoin !== "any") throw new Error("themes are not valid");
+  return {
+    themes: raw.themes.map((t) => t.trim()),
+    themeJoin: raw.themeJoin ?? "all",
+    cardOracleId,
+    budgetDollars,
+    bracket: bracket as Bracket | null,
+  };
 }
 
 export type AnswerColumns = {
@@ -77,7 +87,7 @@ export function answerColumnsFor(
     answerBracket: asked.bracket,
     answerCardOracleId: card?.oracleId ?? null,
     intent: seededAnswersIntent(commanderNames, {
-      themes: asked.themes, cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
+      themes: asked.themes, themeJoin: asked.themeJoin, cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
     }),
     intentSeeded: true,
   };

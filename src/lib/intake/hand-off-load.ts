@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { ChooseParams } from "./params";
-import { backing, type Bracket } from "./rank";
+import { backing, bestFit, isAnyOf, type Bracket } from "./rank";
 import { loadCardChip, type CardChip } from "./rows";
 import { loadIntakeThemes } from "./search";
 import { tribesFor, type ThemeRow } from "./vocabulary";
@@ -12,8 +12,13 @@ import { tribesFor, type ThemeRow } from "./vocabulary";
  * the same way (`backing`, the card's inclusion), so the two screens never disagree about it.
  */
 export type HandOffAnswers = {
-  /** In the order asked. `pct` is null where the results would print no figure either. */
-  themes: { slug: string; label: string; pct: number | null }[];
+  /**
+   * In the order asked. `pct` is null where the results would print no figure either. `best`,
+   * asked as any of, marks the theme the results row ranked by (`bestFit`, on the exact share).
+   */
+  themes: { slug: string; label: string; pct: number | null; best?: boolean }[];
+  /** Any of: one row for the group, its line the best figure, as the results row ranked it. */
+  themeJoin: "all" | "any";
   /** Null when none was asked, or when it is not one the search would have applied. */
   card: (CardChip & { pct: number | null }) | null;
   /** The card's read FAILED, which says nothing about the card: the block draws no row it cannot
@@ -46,17 +51,33 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
   // The results' own backing, a tribal theme's type line included, so a row admitted that way
   // shows the same figure here as it did there.
   const tribes = tribesFor(p.themes, vocabulary);
-  const pct = (share: number | null) => (share === null ? null : Math.round(share * 100));
   return {
     // Every theme asked is a row. One the vocabulary no longer offers is labeled by its slug,
     // exactly as the results page labels it, so no answer is lost between the two screens.
-    themes: p.themes.map((slug) => ({ slug, label: labels.get(slug) ?? slug, pct: pct(themeRow ? backing(themeRow, slug, tribes)?.share ?? null : null) })),
+    themes: handOffThemes(p, themeRow ? (slug) => backing(themeRow, slug, tribes) : () => null, labels),
     // `inclusion` is stored as EDHREC publishes it, a percentage (`search.ts`).
     card: card ? { ...card, pct: row?.card_inclusion == null ? null : Math.round(row.card_inclusion) } : null,
     cardUnread: card === undefined,
+    themeJoin: isAnyOf(p) ? "any" : "all",
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   };
+}
+
+/** Each theme asked, its figure, and as any of the best-fitting one marked, as the row chose it. */
+export function handOffThemes(
+  p: Pick<ChooseParams, "themes" | "themeJoin">,
+  backed: (slug: string) => { share: number; typeLine: boolean } | null,
+  labels: ReadonlyMap<string, string>,
+): HandOffAnswers["themes"] {
+  const rows = p.themes.map((slug) => ({ slug, b: backed(slug) }));
+  const best = isAnyOf(p) ? bestFit(rows.flatMap((r) => (r.b ? [{ slug: r.slug, ...r.b }] : []))) : null;
+  return rows.map(({ slug, b }) => ({
+    slug,
+    label: labels.get(slug) ?? slug,
+    pct: b === null ? null : Math.round(b.share * 100),
+    ...(best?.slug === slug ? { best: true } : {}),
+  }));
 }
 
 /** Whether the block has a row to draw: colors and the words are never rows. */

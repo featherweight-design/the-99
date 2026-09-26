@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { rankCandidates, withinBracket, withinBudget, type Answers, type Candidate, type CardFacts } from "./rank";
+import { answerKeys, passes, rankCandidates, withinBracket, withinBudget, type Answers, type Candidate, type CardFacts } from "./rank";
 
 const none: Answers = { colors: [], match: "contains", themes: [], card: null, budgetDollars: null, bracket: null };
 const cmd = (over: Partial<Candidate> & { name: string }): Candidate => ({
@@ -171,19 +171,26 @@ describe("the too-narrow note never offers a dead end (Hugh, 2026-09-27)", () =>
   ];
   const r = rankCandidates(pool, { ...none, themes: tribes }, null);
 
-  it("finds nothing for all four, and offers no removal that brings nothing back", () => {
+  it("finds nothing for all four, and offers them as any of, which brings every backer back", () => {
     expect(r.rows).toEqual([]);
-    expect(r.tooNarrow!.without.length).toBeGreaterThan(0);
-    expect(r.tooNarrow!.without.every((w) => w.count > 0)).toBe(true);
+    // One commander backs two of the four and none backs more: the reason the note gives.
+    expect(r.tooNarrow!.anyOf).toEqual({ count: pool.length, most: 2 });
+    // The join alone reaches the floor, so the search stops at single drops, which all read 0.
+    expect(r.tooNarrow!.without).toEqual([]);
   });
 
   it("searches past single drops until a removal reaches enough, keeping the best first", () => {
-    const [best] = r.tooNarrow!.without;
-    // Dropping three and keeping Elves brings back the five Elves.
+    // Too few backers for the join to reach the floor, so the removal search goes on past singles.
+    const thin = [backer("Elf A", "elves"), backer("Elf B", "elves"), backer("Orc Dwarf", "orcs", "dwarves")];
+    const t = rankCandidates(thin, { ...none, themes: tribes }, null);
+    expect(t.tooNarrow!.anyOf).toEqual({ count: 3, most: 2 });
+    const [best] = t.tooNarrow!.without;
+    // Dropping three and keeping Elves brings back the two Elves.
     expect(best.answers.map((a) => (a.kind === "theme" ? a.slug : a.kind))).toEqual(["orcs", "dwarves", "wizards"]);
-    expect(best.count).toBe(5);
+    expect(best.count).toBe(2);
     // The pair that leaves Orcs and Dwarves finds the one commander backing both.
-    expect(r.tooNarrow!.without.some((w) => w.answers.length === 2 && w.count === 1)).toBe(true);
+    expect(t.tooNarrow!.without.some((w) => w.answers.length === 2 && w.count === 1)).toBe(true);
+    expect(t.tooNarrow!.without.every((w) => w.count > 0)).toBe(true);
   });
 
   it("stops at the first size that reaches the floor, never dropping every answer", () => {
@@ -240,13 +247,14 @@ describe("the removal search is bounded", () => {
     // Twelve themes nobody backs together: 66 pairs is over the limit, so no pair is searched.
     const slugs = Array.from({ length: 12 }, (_, i) => `t${i}`);
     // One commander backs ten of them, so an unbounded search would offer the pair drop that
-    // reaches it; the bounded one never searches pairs here.
+    // reaches it; the bounded one never searches pairs here. Three backers in all, so the join
+    // stays under the floor and the removal search runs past single drops.
     const wide = cmd({ name: "Wide", tags: slugs.slice(0, 10).map((s) => tag(s, 400)) });
-    const pool = [wide, ...slugs.flatMap((s) => [1, 2, 3, 4].map((i) => cmd({ name: `${s}-${i}`, tags: [tag(s, 400)] })))];
+    const pool = [wide, cmd({ name: "t10", tags: [tag("t10", 400)] }), cmd({ name: "t11", tags: [tag("t11", 400)] })];
     const r = rankCandidates(pool, { ...none, themes: slugs }, null);
     expect(r.rows).toEqual([]);
     expect(new Set(r.tooNarrow!.without.map((w) => w.answers.length))).toEqual(new Set([11]));
-    expect(r.tooNarrow!.without[0].count).toBe(5);
+    expect(r.tooNarrow!.without[0].count).toBe(1);
   });
 
   it("still offers keeping one answer when there are too many to search in between", () => {
@@ -254,5 +262,76 @@ describe("the removal search is bounded", () => {
     const pool = [cmd({ name: "One", tags: [tag("t0", 400)] })];
     const r = rankCandidates(pool, { ...none, themes: slugs }, null);
     expect(r.tooNarrow!.without).toEqual([{ answers: slugs.slice(1).map((slug) => ({ kind: "theme", slug })), count: 1 }]);
+  });
+});
+
+describe("themes asked as any of (three-answers addendum §1)", () => {
+  const backer = (name: string, shares: Record<string, number>) =>
+    cmd({ name, tags: Object.entries(shares).map(([s, n]) => tag(s, n)) });
+  const pool = [
+    backer("Elf lord", { elves: 800 }),
+    backer("Wizard sage", { wizards: 500, elves: 100 }),
+    backer("Orc chief", { orcs: 300 }),
+    backer("Nothing", { goblins: 900 }),
+  ];
+  const any: Answers = { ...none, themes: ["orcs", "elves", "wizards"], themeJoin: "any" };
+
+  it("passes a commander that fits one, and ranks by the one it fits best", () => {
+    const r = rankCandidates(pool, any, null);
+    expect(names(r)).toEqual(["Elf lord", "Wizard sage", "Orc chief"]);
+    // Only the themes it fits are returned, and the best is marked.
+    expect(r.rows[1].themeFits).toEqual([
+      { slug: "elves", share: 0.1, typeLine: false },
+      { slug: "wizards", share: 0.5, typeLine: false, best: true },
+    ]);
+  });
+
+  it("takes the lowest across answers: the group's best, then the card", () => {
+    const withCard = pool.map((c) => ({ ...c, cardInclusion: c.name === "Elf lord" ? 0.2 : 0.4 }));
+    const r = rankCandidates(withCard, { ...any, card: "ds" }, card());
+    // Elf lord: min(0.8, 0.2) = 0.2; Wizard sage: min(0.5, 0.4) = 0.4; Orc chief: min(0.3, 0.4) = 0.3.
+    expect(names(r)).toEqual(["Wizard sage", "Orc chief", "Elf lord"]);
+  });
+
+  it("is all of below two themes, whatever the join says", () => {
+    const one = rankCandidates(pool, { ...none, themes: ["elves"], themeJoin: "any" }, null);
+    expect(names(one)).toEqual(["Elf lord", "Wizard sage"]);
+    expect(answerKeys({ ...none, themes: ["elves"], themeJoin: "any" })).toEqual([{ kind: "theme", slug: "elves" }]);
+  });
+
+  it("is one answer to the note, dropped whole and never theme by theme", () => {
+    expect(answerKeys(any)).toEqual([{ kind: "themes" }]);
+    expect(passes(pool[3], any, null)).toBe(false);
+    expect(passes(pool[3], any, null, [{ kind: "themes" }])).toBe(true);
+  });
+
+  it("offers no join when the themes already are any of, or are fewer than two", () => {
+    const thin = [backer("Orc chief", { orcs: 300 })];
+    expect(rankCandidates(thin, any, null).tooNarrow!.anyOf).toBeNull();
+    expect(rankCandidates(thin, { ...none, themes: ["elves"] }, null).tooNarrow!.anyOf).toBeNull();
+  });
+
+  it("counts the join over the other answers, so it never offers a count the join cannot reach", () => {
+    // All three backers are green; asking for blue leaves the join nothing to bring back.
+    const r = rankCandidates(pool, { ...none, themes: ["orcs", "elves"], colors: ["U"], match: "exactly" }, null);
+    expect(r.tooNarrow!.anyOf).toBeNull();
+  });
+});
+
+describe("the join and the other answers", () => {
+  it("with a join reaching the floor and another answer asked, still searches removals that include it", () => {
+    // Themes x and y asked with blue, exactly. Two blue commanders back each, so the join finds
+    // four and reaches the floor while no single drop does. Dropping blue and a theme finds the ten
+    // green y commanders: more than the join, so the search must not stop at single drops.
+    const pool = [
+      ...[1, 2].map((i) => cmd({ name: `x${i}`, colorIdentity: ["U"], tags: [tag("x", 400)] })),
+      ...[1, 2].map((i) => cmd({ name: `yu${i}`, colorIdentity: ["U"], tags: [tag("y", 400)] })),
+      ...Array.from({ length: 10 }, (_, i) => cmd({ name: `yg${i}`, colorIdentity: ["G"], tags: [tag("y", 400)] })),
+    ];
+    const r = rankCandidates(pool, { ...none, themes: ["x", "y"], colors: ["U"], match: "exactly" }, null);
+    expect(r.tooNarrow!.anyOf).toEqual({ count: 4, most: 1 });
+    const [best] = r.tooNarrow!.without;
+    expect(best.answers.map((k) => (k.kind === "theme" ? k.slug : k.kind)).sort()).toEqual(["colors", "x"]);
+    expect(best.count).toBe(12);
   });
 });

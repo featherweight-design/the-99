@@ -3,7 +3,7 @@ import { parseColors } from "../color-param";
 import { isUuid } from "../uuid";
 import { MAX_BUDGET_DOLLARS } from "./answers";
 import type { Chip } from "./match";
-import type { Answers, Bracket } from "./rank";
+import type { Answers, Bracket, ThemeJoin } from "./rank";
 import { READ_WORDS_MAX_CHARS } from "./limits";
 
 // The words box's limit is the deeper read's (`limits.ts`), so the URL, the submit and the read
@@ -22,6 +22,7 @@ export { READ_WORDS_MAX_CHARS };
  * | `w` | the words, kept for *Change answers* and the Not used line; never matched again here |
  * | `c`, `m` | colors and their mode, in the lanes' own encoding, so Discover's link parses as-is |
  * | `t` | theme slugs, comma-separated |
+ * | `tj=any` | the themes as any of; absent, all of. Written only with two or more themes |
  * | `a` | the build-around card's oracle id |
  * | `b` | the budget, whole dollars |
  * | `k` | the bracket, 1 to 5 |
@@ -41,6 +42,7 @@ export type ChooseParams = {
   colors: string[];
   match: JoinMode;
   themes: string[];
+  themeJoin: ThemeJoin;
   card: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -69,7 +71,7 @@ export const NOT_USED_CHARS = 120;
 export const NOT_USED_SEPARATOR = "\u001f";
 
 export const emptyParams = (): ChooseParams => ({
-  words: "", colors: [], match: "contains", themes: [], card: null,
+  words: "", colors: [], match: "contains", themes: [], themeJoin: "all", card: null,
   budgetDollars: null, bracket: null, readId: null, notUsed: [], deeper: [], results: false,
 });
 
@@ -90,6 +92,7 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
     colors: WUBRG.filter((c) => raw.includes(c.toUpperCase())),
     match: sp.get("m") === "exact" ? "exactly" : "contains",
     themes: [...new Set((sp.get("t") ?? "").split(",").filter((s) => SLUG.test(s)))],
+    themeJoin: sp.get("tj") === "any" ? "any" : "all",
     // Lowercased: Postgres prints uuids lower, and every id this is compared with (the index, a
     // candidate, a row) comes from there. An address typed or pasted in upper case is the same card.
     card: card !== null && isUuid(card) ? card.toLowerCase() : null,
@@ -108,6 +111,7 @@ export function serializeChooseParams(p: ChooseParams): string {
   if (p.colors.length > 0) sp.set("c", p.colors.join(","));
   if (p.colors.length > 0 && p.match === "exactly") sp.set("m", "exact");
   if (p.themes.length > 0) sp.set("t", p.themes.join(","));
+  if (p.themes.length >= 2 && p.themeJoin === "any") sp.set("tj", "any");
   if (p.card) sp.set("a", p.card);
   if (p.budgetDollars !== null) sp.set("b", String(p.budgetDollars));
   if (p.bracket !== null) sp.set("k", String(p.bracket));
@@ -137,6 +141,7 @@ export function answersOf(p: ChooseParams): Answers {
     colors: p.colors.map((c) => c.toUpperCase()),
     match: p.match,
     themes: p.themes,
+    themeJoin: p.themeJoin,
     card: p.card,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
@@ -145,6 +150,7 @@ export function answersOf(p: ChooseParams): Answers {
 
 export type ResolvedWords = {
   themes: string[];
+  themeJoin: ThemeJoin;
   card: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -160,10 +166,14 @@ export type ResolvedWords = {
  * The form's submit: the words' chips folded into the controls the player set. Themes are the
  * union, picked first. For the card, the budget and the bracket the FIRST of each kind in the
  * words counts, and a set control beats any of them.
+ *
+ * ONE JOIN FOR ALL THEMES (addendum §1). The control's wins once it holds two or more themes, as a
+ * control beats the words everywhere; below that it cannot be set, and the words' join stands.
  */
 export function resolveWords(
   chips: readonly Chip[],
-  controls: { themes: readonly string[]; budgetDollars: number | null; bracket: Bracket | null },
+  controls: { themes: readonly string[]; themeJoin?: ThemeJoin; budgetDollars: number | null; bracket: Bracket | null },
+  wordsJoin: ThemeJoin = "all",
 ): ResolvedWords {
   const themes = [...controls.themes];
   let card: string | null = null;
@@ -195,6 +205,7 @@ export function resolveWords(
   }
   return {
     themes,
+    themeJoin: controls.themes.length >= 2 ? controls.themeJoin ?? "all" : wordsJoin,
     card,
     budgetDollars: controls.budgetDollars ?? budget,
     bracket: controls.bracket ?? bracket,

@@ -15,6 +15,13 @@
 import { availabilityCopy } from "./availability";
 import { BRACKET_NAMES, nameList } from "./deck-analysis";
 
+/** Names joined by "or", with no serial comma, as `nameList` joins by "and": *Orcs, Elves or Wizards*. */
+export const orList = (names: readonly string[]) =>
+  names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
+
+const SMALL_NUMBERS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+const spelled = (n: number) => SMALL_NUMBERS[n] ?? n.toLocaleString("en-US");
+
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
 export const helpMeChooseCopy = {
@@ -44,6 +51,14 @@ export const helpMeChooseCopy = {
     themeAnother: "Add another…", // canvas
     themeCount: (n: number) => plural(n, "commander", "commanders"), // canvas
     removeTheme: (label: string) => `Remove ${label}`, // eng: the chip's ✕, spoken
+    // Three-answers addendum §1: how two or more themes join.
+    themeJoin: {
+      all: "All",
+      any: "Any",
+      aria: "Themes: all or any",
+      captionAll: "All of these: a commander has to fit every one.",
+      captionAny: "Any of these: a commander has to fit one, and ranks by the one it fits best.",
+    },
     budget: "Budget", // canvas
     budgetPlaceholder: "No cap",
     budgetCaption: "The most you would spend on cards you don’t own. It caps the fill and never ranks.",
@@ -61,7 +76,9 @@ export const helpMeChooseCopy = {
     startOver: "Start over", // canvas
     noPrice: "buy · no price", // canvas
     noPriceTail: "no price", // canvas: the tail of `noPrice`, drawn in --fg-faint
-    kinds: { colors: "colors", exactly: "exactly", theme: "theme", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    /** Between the names on an any-of chip, drawn apart from them. */
+    joiner: "or",
     /** After a deeper look: what even it could not place. */
     stillNotUsed: "Still not used",
     /** The tag on a chip the deeper look added. */
@@ -104,6 +121,11 @@ export const helpMeChooseCopy = {
     all: "Ordered by fit to everything you asked",
     byOne: (label: string) => `Ordered by ${label}`, // canvas
     byOwned: "Ordered by cards you already have",
+    byBestTheme: "Ordered by the theme each fits best",
+    subAny: (names: string) =>
+      `You asked for any of ${names}, so each commander ranks by the one it fits best. Every one it fits is shown.`,
+    subAnyCard: (names: string, card: string) =>
+      `Each commander ranks by the theme of ${names} it fits best, or by ${card} where that figure is lower.`,
     subTheme: (t: string) => `Each figure is the share of that commander’s decks on EDHREC tagged ${t}.`,
     subCard: (c: string) => `Each figure is how often that commander’s decks on EDHREC run ${c}. It goes in the deck whichever you pick.`,
     subSeveral: (lead: string, other: string) =>
@@ -138,7 +160,7 @@ export const helpMeChooseCopy = {
     loadingHead: "Finding commanders…",
     loadingSub: (by: string) => `Ordered by ${by} once they arrive.`,
     // eng: the `by` for the two orders that name no one answer.
-    loadingBy: { owned: "cards you already have", all: "fit to everything you asked" },
+    loadingBy: { owned: "cards you already have", all: "fit to everything you asked", bestTheme: "the theme each fits best" },
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
     more: "Show 12 more",
     moreNote: "The next 12 count what you own as they load.", // canvas
@@ -147,11 +169,8 @@ export const helpMeChooseCopy = {
   },
   narrow: {
     few: (n: number) => (n === 1 ? "Only one commander fits all of that" : `Only ${n} commanders fit all of that`),
-    /**
-     * Quoted verbatim in the merged handoff, so kept. Since 2026-09-27 an offer can drop two answers
-     * or keep only one, where "one answer" no longer holds: owed to the Design addendum.
-     */
-    fewLead: "Loosen one answer to see more:",
+    /** Diverges from R1's "Loosen one answer": an offer can drop two answers or keep only one (audit 9). */
+    fewLead: "Loosen your answers to see more:",
     none: "No commander fits all of that",
     noneLead: "Each of these would bring some back. Pick one and we’ll search again.",
     count: (n: number) => plural(n, "commander", "commanders"),
@@ -160,6 +179,13 @@ export const helpMeChooseCopy = {
     /** Every answer but one dropped: said as the one that stays. */
     keepOnly: (answer: string) => `Keep only ${answer}`,
     widenColors: (names: string) => `Any ${names}, not exactly`,
+    /** The themes asked as all of, offered as any of (addendum §1). */
+    widenThemes: (n: number) => `Any of the ${spelled(n)} themes, not all`,
+    /** Its reason: the most of those themes any one commander backs at once, measured. */
+    widenThemesWhy: (most: number, names: readonly string[]) =>
+      `No commander fits more than ${spelled(most)} of ${nameList(names)} at once.`,
+    /** The any-of group, named as its chip names it. */
+    anyOfName: (names: readonly string[]) => `any of ${orList(names)}`,
     gameChanger: (card: string, bracket: number) => `${card} is a Game Changer, and bracket ${bracket} allows none.`,
     yourself: "Or change your answers yourself.",
     yourselfLink: "change your answers", // canvas
@@ -174,7 +200,7 @@ export const helpMeChooseCopy = {
     block: "Built from your answers",
     change: "Change",
     changeAria: "Change your answers",
-    keys: { theme: "Theme", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
+    keys: { theme: "Theme", anyOf: "Any of", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
     themeFig: (pct: number, t: string) => `${pct}% of its decks are ${t}.`, // canvas
     placed: "Placed in the deck because you asked for it.",
     cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas

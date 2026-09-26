@@ -54,6 +54,7 @@ describe("narrowOptions", () => {
         { answers: [t("elves"), t("wizards")], count: 1 },
       ],
       widen: null,
+      anyOf: null,
       cardOverBracket: null,
     }, four, tribal);
     expect(opts.map((o) => [o.label, o.count])).toEqual([["Keep only Elves", "98 commanders"], ["Drop Elves and Wizards", "1 commander"]]);
@@ -71,6 +72,7 @@ describe("narrowOptions", () => {
       { answers: [{ kind: "bracket" as const }], count: 0 },
     ],
     widen: { count: 24 },
+    anyOf: null,
     cardOverBracket: "gameChanger" as const,
   };
 
@@ -155,5 +157,72 @@ describe("readForThisAsk", () => {
     const loaded = { kind: "read" as const, read, wordsHash: hash("big lizards", { budgetDollars: null, bracket: null }) };
     expect(readForThisAsk(p({ words: "tiny pirates", budgetDollars: 150, deeper: ["b"] }), loaded, hash)).toBeNull();
     expect(readForThisAsk(p({ words: "big lizards", budgetDollars: 150, bracket: 3, deeper: ["b"] }), loaded, hash)).toBeNull();
+  });
+});
+
+describe("themes asked as any of", () => {
+  const tribal = { ...labels, theme: (s: string) => s[0].toUpperCase() + s.slice(1) };
+  const four = p({ themes: ["orcs", "elves", "dwarves", "wizards"] });
+  const anyFour = { ...four, themeJoin: "any" as const };
+
+  it("orders by the theme each fits best, naming the group", () => {
+    expect(orderLine("fit", anyFour, tribal)).toEqual({
+      title: "Ordered by the theme each fits best",
+      sub: "You asked for any of Orcs, Elves, Dwarves or Wizards, so each commander ranks by the one it fits best. Every one it fits is shown.",
+    });
+    expect(orderLine("fit", { ...anyFour, card: "c" }, tribal)).toEqual({
+      title: "Ordered by fit to everything you asked",
+      sub: "Each commander ranks by the theme of Orcs, Elves, Dwarves or Wizards it fits best, or by Regisaur Alpha where that figure is lower.",
+    });
+  });
+
+  it("tags the group's best figure and dims the other fits, never the weakest of the group", () => {
+    const f = figures(row({ themeFits: [{ slug: "elves", share: 0.11 }, { slug: "wizards", share: 0.44, best: true }] }), "fit", tribal);
+    expect(f.map((x) => [x.pct, x.setsRank, x.dim])).toEqual([[11, false, true], [44, true, false]]);
+  });
+
+  it("lets a card below the group's best set the rank instead", () => {
+    const f = figures(row({ themeFits: [{ slug: "wizards", share: 0.44, best: true }], cardFit: 0.2 }), "fit", tribal);
+    expect(f.map((x) => x.setsRank)).toEqual([false, true]);
+  });
+
+  it("offers the join first when all of found too few, with the measured reason", () => {
+    const [widen] = narrowOptions({ without: [], widen: null, anyOf: { count: 98, most: 2 }, cardOverBracket: null }, four, tribal);
+    expect(widen).toMatchObject({
+      label: "Any of the four themes, not all",
+      reason: "No commander fits more than two of Orcs, Elves, Dwarves and Wizards at once.",
+      count: "98 commanders",
+    });
+    expect(widen.params.themeJoin).toBe("any");
+  });
+
+  it("gives no reason when no commander fits more than one of them", () => {
+    const [widen] = narrowOptions({ without: [], widen: null, anyOf: { count: 12, most: 1 }, cardOverBracket: null }, four, tribal);
+    expect(widen.reason).toBeNull();
+  });
+
+  it("drops the group whole, named as its chip names it", () => {
+    const [drop] = narrowOptions({ without: [{ answers: [{ kind: "themes" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null }, anyFour, tribal);
+    expect(drop.label).toBe("Drop any of Orcs, Elves, Dwarves or Wizards");
+    expect(drop.params).toMatchObject({ themes: [], themeJoin: "all" });
+  });
+
+  it("draws one chip for the group, its names apart and its spoken name whole", () => {
+    expect(answerChips(anyFour, tribal)).toEqual([{
+      kind: "any of",
+      value: "Orcs, Elves, Dwarves or Wizards",
+      names: ["Orcs", "Elves", "Dwarves", "Wizards"],
+      deeper: false,
+    }]);
+    expect(answerChips(four, tribal).map((c) => c.kind)).toEqual(["theme", "theme", "theme", "theme"]);
+  });
+});
+
+describe("the join's reason", () => {
+  const tribal = { ...labels, theme: (s: string) => s[0].toUpperCase() + s.slice(1) };
+  it("is not given when some commander fits every theme asked", () => {
+    const [widen] = narrowOptions({ without: [], widen: null, anyOf: { count: 40, most: 4 }, cardOverBracket: null },
+      p({ themes: ["orcs", "elves", "dwarves", "wizards"] }), tribal);
+    expect(widen.reason).toBeNull();
   });
 });
