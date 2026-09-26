@@ -1901,20 +1901,22 @@ export const STAND_INS = {
   } satisfies SheetGroup,
   /**
    * A SPELL's group beside the land one, because stand-ins key 3 is about spells and a lands-only
-   * figure left it pointing at nothing (the About audit, 2026-09-26). Smothering Tithe is a ramp
-   * enchantment; its stand-ins keep that job and each row compares itself against it, in the
-   * keeps / gains / loses form #1046 shipped: `compare` set, `body` and `muted` empty.
+   * figure left it pointing at nothing (the About audit, 2026-09-26). Birds of Paradise ramps by
+   * tapping for mana and flies; two mana elves keep the first job and lose the second. The words are
+   * the sheet's own (`swapToolsCopy.sheet.job`), in the keeps / gains / loses form #1046 shipped:
+   * `compare` set, `body` and `muted` empty. The lead names ramp by its kind, as `honestJobs` does,
+   * and a job that is not a role (evasion) is a row's to lose but never the lead's.
    */
   spell: {
-    card: "Smothering Tithe",
-    jobs: "ramp",
+    card: "Birds of Paradise",
+    jobs: sheet.job.tapsForMana,
     group: {
-      heading: sheet.groupSameType("enchantments"),
+      heading: sheet.groupSameType("creatures"),
       order: sheet.orderMostShared,
-      noun: "enchantments",
+      noun: "creatures",
       rows: [
-        { name: "Wild Growth", free: false, cents: 25, compare: { type: null, keeps: ["ramp"], gains: ["mana value 1"], loses: ["taxes opponents"] } },
-        { name: "Utopia Sprawl", free: false, cents: 40, compare: { type: null, keeps: ["ramp"], gains: ["mana value 1"], loses: ["taxes opponents"] } },
+        { name: "Llanowar Elves", free: false, cents: 25, compare: { type: null, keeps: [sheet.job.tapsForMana], gains: [], loses: [sheet.job.evasion] } },
+        { name: "Elvish Mystic", free: false, cents: 30, compare: { type: null, keeps: [sheet.job.tapsForMana], gains: [], loses: [sheet.job.evasion] } },
       ].map((r, i) => ({ oracleId: `about-stand-in-spell-${i}`, imageUri: null, soft: 0, foilOnly: false, body: [], muted: [], ...r })),
     } satisfies SheetGroup,
   },

@@ -304,7 +304,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs. Under each row, a line names what that commander plays and none of your decks do.',
+      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs. Under each row, a line names what that commander plays and none of your decks do, or its top play styles when your decks already play them all.',
     keys: [
       'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
       'Best fit, the default, reads your whole collection, because you would own this commander if you bought it.',
@@ -322,7 +322,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
       // shipped in #1011, and Create is what fills the deck, not the pick.
-      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words, which is matched for free, while Look deeper weighs everything you gave for one credit. The results are ordered by how well each commander fits what you asked, owned or not. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them. When too few commanders fit, the page offers answers to loosen.',
+      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words, which is matched for free, while Look deeper weighs everything you wrote for one credit. The results are ordered by how well each commander fits what you asked, owned or not. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them. When too few commanders fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
       "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
@@ -504,7 +504,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'no count of how many combos a card has. Detection leaves out combos that need a third piece, so a total would be the first thing on the surface that is not true.',
       'one partner is named on a row and all of them in the card’s details. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
-      'the list runs from what this deck already holds to what you would have to buy, so the cap never hides a partner already on the table.',
+      'the list runs from what this deck already holds, through what you own, to what you would have to buy.',
       'it comes from Commander Spellbook, and the details say so behind the heading’s marker rather than under every block.',
     ],
     since: 9,
@@ -872,7 +872,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Six of them, each named for how it looks rather than where it came from. A theme changes the palette, never the meaning: owned is green in all six, over-committed is red in all six.',
     keys: [
       'the plane is the subtitle, not the name: you pick Neon Rain, not Kamigawa.',
-      'the accent is the one color that moves from theme to theme.',
+      'each theme brings its own accent, which is the bar across its miniature.',
       'the choice is remembered in this browser, so a different device starts on the default until you pick there too.',
     ],
     since: 1,

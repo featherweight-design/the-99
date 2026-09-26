@@ -1614,7 +1614,7 @@ export function LockedCardsFigureBody() {
           // 1: the closed lock at rest. 2: Lock cards, drawn as its Done. 3: the mode's count.
           { n: 1, find: first('[data-testid="row-lock-mark"]'), side: "gutter" },
           { n: 2, find: withText("button", lockedCardsCopy.mode.done), side: "before" },
-          { n: 3, find: first('[data-testid="lock-mode-line"] span'), side: "after" },
+          { n: 3, find: first('[data-testid="lock-mode-line"] span.font-mono'), side: "after" },
         ]}
       >
         <LockCardsProvider value={LOCKS_AT_REST}>
