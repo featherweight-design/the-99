@@ -102,6 +102,25 @@ describe("the report agrees with the artifacts it cites", () => {
   // tautology that passed over the very stale prose it was written to catch. Caught in
   // review, which is the right outcome and an uncomfortable one for a test whose whole
   // job is to stop things reaching review.
+  // THE INTEGER COUNTS. The check above scans `0.NNN` only, and that gap shipped two
+  // wrong figures: the prose said Haiku invented 6 spurious restrictions and Sonnet 2
+  // where the artifact recorded 7 and 5, in two separate sentences, and the accuracy
+  // scan could not see either by construction. Named counts are checked by name
+  // rather than by shape, because a bare integer in prose is usually a card count or
+  // a round number and flagging every one would be noise.
+  it("states the spurious-restriction counts the artifact records, in prose too", () => {
+    const prose = report.split("\n").filter((l) => !l.trimStart().startsWith("|")).join("\n");
+    const haiku = score.models.haiku.spuriousRestrictions;
+    const sonnet = score.models.sonnet.spuriousRestrictions;
+    // Every sentence that talks about inventing restrictions must use the real pair.
+    for (const line of prose.split("\n")) {
+      if (!/invent/i.test(line)) continue;
+      const ints = [...line.matchAll(/(?<![\d.])\d{1,3}(?![\d.%])/g)].map((m) => Number(m[0]));
+      const wrong = ints.filter((n) => n !== haiku && n !== sonnet);
+      expect(wrong, `"${line.trim()}" quotes ${wrong.join(", ")}; the artifact says ${haiku} and ${sonnet}`).toEqual([]);
+    }
+  });
+
   it("quotes no accuracy-shaped figure the artifacts do not contain", () => {
     const known = new Set<string>();
     for (const r of Object.values(score.models)) {

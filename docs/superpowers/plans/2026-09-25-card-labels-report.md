@@ -69,7 +69,8 @@ the WIDER gating set (card types a deck may simply not play), where Sonnet leads
   named a type anyway. Scoped to gold's `none`, not to every non-gating value — an
   earlier version also fired where gold said `creature`, which is the documented
   spec disagreement below rather than invention, and mixed the two silently. The
-  count is unchanged at 6 and 2, so it was not load-bearing here. Both restriction columns key on GOLD's value, so they are recall-like and
+  count is 7 for Haiku and 5 for Sonnet, and was unchanged by that scoping, so it was
+  not load-bearing here. Both restriction columns key on GOLD's value, so they are recall-like and
   blind to over-labelling; an invented restriction refuses a good stand-in, which
   is the mirror of the bug. Haiku invents three times as many.
 
@@ -150,7 +151,7 @@ is 0.767 and Sonnet 0.864.
 **Read that as recall, not precision.** The subset keys on GOLD's value, so 0.767
 means about a quarter of the restrictions that GOLD records are got wrong — it says
 nothing about restrictions a model invents. That direction is counted separately:
-Haiku invents 6 and Sonnet 2. The two failures cost different things. A MISSED
+Haiku invents 7 and Sonnet 5. The two failures cost different things. A MISSED
 restriction is the original bug returning (a card matched in a deck it is dead in);
 an INVENTED one refuses a stand-in that would have been fine. Sonnet is better on
 both.

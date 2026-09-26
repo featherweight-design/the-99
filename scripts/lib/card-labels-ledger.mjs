@@ -87,6 +87,15 @@ export const unreconciled = (led) =>
  * the id is filled in after. A later run then finds an intent with no id and knows
  * to go looking -- `client.messages.batches.list()` will show it -- rather than
  * assuming nothing was submitted and paying for it twice.
+ *
+ * KNOWN GAP, declined on scope for this PR and carried into the full run's plan
+ * (#1031, Task 2): an intent left behind by a crash between `create` and
+ * `clearIntent` is never removed, because `writeMeasured` marks the RUN entry and
+ * knows nothing about intents. `unreconciled()` therefore reports it for ever, and
+ * the runner's refuse-while-pending guard would then block every later run. Harmless
+ * for this sample -- the cap already refuses another run of it -- but the full-run
+ * script must reconcile intents, not only reservations. An earlier version of this
+ * comment claimed a later collection reconciles the submission; it does not.
  */
 export function writeIntent(model, reservedUsd) {
   const led = readLedger();
