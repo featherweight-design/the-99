@@ -1808,7 +1808,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   as a Markdown table.
 
   **Point it at `next start`, never `next dev`**, whose compile times swamp every figure. The
-  server runs on a scratch Neon branch holding a `pull:staging` copy. The harness signs in as
+  server runs on a scratch Neon branch holding a `pull:staging` copy, and the worktree's `.env`
+  `DATABASE_URL` must name that branch: `env.mjs` loads `.env` over the shell, so a
+  `DATABASE_URL` on the command line reaches the server but not the harness. The harness signs in as
   `E2E_AUDIT_USER_EMAIL` and marks the About entries seen, and refuses production and staging for
   that write, by `neon.branch_id`. Two optional readings:
 

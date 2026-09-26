@@ -7,7 +7,7 @@ import { after } from "next/server";
  * sent before its reads finish, and a server action sets no headers at all. So the spans are
  * gathered per request and LOGGED, one line per request, once the response has finished:
  *
- *   [perf] /decks/[id] total=1312 getDeckDetail=88 wave1=612 ...
+ *   [perf] /decks/[id] total=1154 getDeckDetail=325 candidateFacts=459 availability=306 ...
  *
  * Off unless `PERF_TIMING=1`, and then only on the server that set it: the harness runs its own
  * `next start` with it and reads the line off that server's output. Off, `perfRoute` hands back

@@ -23,7 +23,10 @@
 //     write, and the figure means nothing on a database other readers are using.
 //
 // Where to point it: a `next start` (never `next dev`, whose compile times swamp everything) on a
-// scratch Neon branch holding a `pull:staging` copy, signed in as E2E_AUDIT_USER_EMAIL. It writes
+// scratch Neon branch holding a `pull:staging` copy, signed in as E2E_AUDIT_USER_EMAIL. The
+// worktree's `.env` DATABASE_URL must name THAT server's database: `env.mjs` loads `.env` over the
+// shell, so a DATABASE_URL given on the command line is discarded, and the About write and the deck
+// lookup below would land on whatever `.env` names instead. It writes
 // the account's About row (every entry marked seen) so no sheet covers a page, and nothing else;
 // that write is refused on production and staging too.
 //
