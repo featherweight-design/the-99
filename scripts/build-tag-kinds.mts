@@ -263,7 +263,7 @@ ${mechanic.map((m) => `  ${JSON.stringify(m)},`).join("\n")}
 
 /** Classified as creature types, kept for the generator's own assertions and for
     anyone auditing what the gap line is hiding. Read at runtime by Help me choose, which treats
-    a theme with one of these labels as tribal (`tribesFor` in `src/lib/intake/vocabulary.ts`). */
+    a theme with one of these labels as tribal (tribesFor in src/lib/intake/vocabulary.ts). */
 export const CREATURE_TYPE_LABELS: readonly string[] = [
 ${creature.map((c) => `  ${JSON.stringify(c)},`).join("\n")}
 ];
