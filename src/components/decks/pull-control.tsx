@@ -83,14 +83,12 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
     draftAnnouncer();
   }, []);
 
-  // Commander first, and that order is the whole ruling: a deck with pending
-  // changes can be opened and released, a commander cannot. An `Open →` here
-  // would lead somewhere that cannot help, so this arm draws no control at all.
+  // Commander first: no route releases one, so this arm draws no control at all.
   // The server refuses a commander pull as well; this is the rendering half.
   if (claim.commander) {
     return (
       <span className="inline-flex items-center flex-none">
-        {/* Four letters and no accessible name of its own, exactly as the pending
+        {/* Four letters and no accessible name of its own, exactly as the locked
             guard's tag is: the sentence behind them is the row's, carried in the
             name trigger's `aria-describedby` (`review-changes.tsx`). That trigger
             is the only focusable thing on this arm, so describing it is the one
@@ -109,8 +107,8 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
 
   // The player locked the card in the source deck (L2). The server refuses that pull too
   // (`PULL_REFUSED_LOCKED`), so no control is drawn: the tag sits beside the holding deck's name,
-  // which the row already prints, and the sentence is the row's description, as for the two
-  // guards either side of it. Ahead of pending because a commit would not free the copy.
+  // which the row already prints, and the sentence is the row's description, as for the
+  // commander guard above it.
   if (claim.locked) {
     return (
       <span className="inline-flex items-center flex-none">
@@ -121,29 +119,8 @@ export function PullControl({ deckId, card, claim, onPulled }: PullControlProps)
     );
   }
 
-  // The source deck has a draft of its own. Committing it here would sweep
-  // somebody's half-finished tinkering into a version they never asked for, so
-  // no pull is offered — the tag names the reason and nothing more.
-  //
-  // It drew an `Open →` link to that deck, and the link is what broke the row:
-  // the plate's desktop items are all unshrinkable, so an anchor beside the tag
-  // took its width out of the card name. The holding deck is named on the row,
-  // and reaching it is a search away; a row whose card cannot be read is worse.
-  if (claim.pending) {
-    return (
-      <span className="inline-flex items-center flex-none">
-        {/* Unnamed, like the commander tag above it: the sentence behind it is
-            the row's, carried in the name trigger's `aria-describedby`. */}
-        <span
-          className={GUARD_TAG}
-          aria-hidden="true"
-          style={{ color: "var(--warning)" }}
-        >
-          {copy.pullGuardTag}
-        </span>
-      </span>
-    );
-  }
+  // No guard for a source with a draft of its own (Hugh, 2026-09-27): a pull no longer commits,
+  // it joins that draft, so there is nothing of the owner's to sweep into a version.
 
   // A column, because the refusal is written underneath the control rather than
   // beside it: the row's name is a hand's width to the left and a message in line

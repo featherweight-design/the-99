@@ -134,11 +134,9 @@ describe("PullControl", () => {
     expect(PULL_NAME).not.toBe(copy.pull);
   });
 
-  // The tag and nothing else. It drew an `Open →` link to the holding deck, and
-  // that link is what broke the desktop row: every item on the plate is
-  // unshrinkable except the card name, so an anchor here took its width out of
-  // the name until the name reached zero and the row printed no card at all.
-  it("replaces the action with a tag and no control when that deck has its own draft", () => {
+  // A holder with a draft of its own is pullable (Hugh, 2026-09-27): the pull joins that draft
+  // rather than committing it, so there is nothing of the owner's to sweep into a version.
+  it("offers the pull on a holder that has a draft of its own", () => {
     render(
       <PullControl
         deckId="d"
@@ -147,15 +145,7 @@ describe("PullControl", () => {
         onPulled={noop}
       />,
     );
-    expect(screen.getByText(copy.pullGuardTag)).toBeTruthy();
-    expect(screen.queryByRole("link")).toBeNull();
-    expect(screen.queryByRole("button")).toBeNull();
-  });
-
-  // The tag says whose draft it is. A bare `pending` beside a card name was read
-  // as a pending change to that CARD, on a row where the card is untouched.
-  it("names the deck in the guard tag rather than the state alone", () => {
-    expect(copy.pullGuardTag).toContain("deck");
+    expect(screen.getByRole("button", { name: PULL_NAME })).toBeTruthy();
   });
 
   it("offers no control at all on a commander claim — no route releases it", () => {
@@ -189,25 +179,24 @@ describe("PullControl", () => {
     expect(screen.queryByLabelText(copy.commanderGuardA11y("Atraxa", "Sol Ring"))).toBeNull();
   });
 
-  // Both guards are permanent for as long as the claim is what it is, and a
-  // commander guard is checked first because no route releases it. A claim that
-  // is both lands on the commander arm.
-  it("takes the commander arm over the pending one", () => {
+  // A commander guard is checked first because no route releases it. A claim that is both a
+  // commander and locked lands on the commander arm.
+  it("takes the commander arm over the locked one", () => {
     render(
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, commander: true, pending: true }}
+        claim={{ ...FREE_TO_PULL, commander: true, locked: true }}
         onPulled={noop}
       />,
     );
     expect(screen.getByText(copy.commanderGuardTag)).toBeTruthy();
-    expect(screen.queryByText(copy.pullGuardTag)).toBeNull();
+    expect(screen.queryByText(lockedCardsCopy.pull.tag)).toBeNull();
   });
 
   // L2: the player locked the card in the source deck. A tag and no control, its sentence left to
-  // the row like the other two guards', and ahead of pending, since a commit would not free it.
-  it("draws the locked guard and no control, ahead of pending", () => {
+  // the row like the commander guard's. A holder's own draft does not lift it.
+  it("draws the locked guard and no control, even on a holder with a draft", () => {
     render(
       <PullControl
         deckId="d"
@@ -218,7 +207,6 @@ describe("PullControl", () => {
     );
     const tag = screen.getByText(lockedCardsCopy.pull.tag);
     expect(tag.getAttribute("aria-hidden")).toBe("true");
-    expect(screen.queryByText(copy.pullGuardTag)).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
   });
 
@@ -282,11 +270,11 @@ describe("PullControl", () => {
       <PullControl
         deckId="d"
         card={CARD}
-        claim={{ ...FREE_TO_PULL, pending: true }}
+        claim={{ ...FREE_TO_PULL, commander: true }}
         onPulled={noop}
       />,
     );
-    const tag = screen.getByText(copy.pullGuardTag);
+    const tag = screen.getByText(copy.commanderGuardTag);
     expect(tag.className).toContain("[border:1px_solid_var(--accent-shadow)]");
     expect(tag.className).toContain("tracking-[0.1em]");
   });

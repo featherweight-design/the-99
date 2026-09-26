@@ -14,7 +14,7 @@
 //      about layout at a width.
 //   4. `Pull it` NEEDS A REAL CLAIM. A row offers the control only when the add is
 //      bucketed `claimed` and a holder is releasable — a second deck, sleeved, not
-//      pending, holding the one copy the player owns. That is a claim query, not a
+//      holding it as a commander, holding the one copy the player owns. That is a claim query, not a
 //      prop, and it is the whole reason this surface exists.
 //   5. THE WHAT-CHANGED STRIP DRAWS ALL SIX CELLS AT BOTH WIDTHS. Three of them
 //      used to stand down at 390px, so the phone measured the deck against a
@@ -616,8 +616,7 @@ async function buildDeck(userId, name, template) {
  *
  * This is the shape `Pull it` is offered against and the only one: the add is
  * bucketed `claimed` because the lone copy is spoken for, and the holder is
- * releasable because it is sleeved, has no pending edits of its own, and does not
- * hold the card as its commander. Anything less and the row draws a guard tag or
+ * releasable because it is sleeved and does not hold the card as its commander. Anything less and the row draws a guard tag or
  * no control at all.
  */
 async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId) {
@@ -669,8 +668,8 @@ async function claimOneCopy(userId, holderDeckId, holderVersionId, excludeDeckId
   if (rows.length === 0)
     throw new Error("No singly-owned, unsleeved, costless card to claim.");
   const { oracle_id: oracleId, name } = rows[0];
-  // Into the holder's draft AND its version, or the holder reads as pending and
-  // the pull is refused before it is offered.
+  // Into the holder's draft AND its version, so the holder is a clean sleeved
+  // deck and the pull's draft edit is the only change it carries.
   await pool.query(
     `insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false)`,
     [holderDeckId, oracleId],
@@ -1432,7 +1431,7 @@ try {
   }
 
   // 5. The pull itself, once, at the end: it takes the copy out of the holder's
-  // version for good, so every reading above would change under it. What is being
+  // draft and releases its claim, so every reading above would change under it. What is being
   // proved is the write and the refresh together — the row the reader is standing
   // on stops asking for a purchase, and the page repaints without a navigation.
   //
@@ -1458,22 +1457,24 @@ try {
   console.log(`  after · url: ${pulled.url} (expect the same page, no navigation)`);
   console.log(`  after · footer: ${pulled.footer ?? "absent"} (expect 0 to buy)`);
   console.log(`  after · Pull it: ${pulled.pulls.length} control(s) (expect 0)`);
-  // The holder's NEWEST version, not the v1 the fixture wrote: a pull commits the
-  // release, so the holder ends the run on v2 and v1 still records the copy it
-  // held. Reading v1 here would report a pull that plainly worked as a failure.
+  // The holder's NEWEST version. A pull commits nothing (Hugh, 2026-09-27): the
+  // holder stays on v1, which still lists the copy, its draft no longer does, and
+  // a release row is what frees the copy for the deck under review.
   const holderNow = await pool.query(
     `select
        v.number,
        (select count(*) from deck_version_cards
           where version_id = v.id and oracle_id = $2) as in_version,
-       (select count(*) from deck_cards where deck_id = $1 and oracle_id = $2) as in_draft
+       (select count(*) from deck_cards where deck_id = $1 and oracle_id = $2) as in_draft,
+       (select count(*) from pull_releases
+          where source_deck_id = $1 and oracle_id = $2) as released
        from deck_versions v where v.deck_id = $1 order by v.number desc limit 1`,
     [holder.deckId, claimed.oracleId],
   );
   const held = holderNow.rows[0];
   console.log(
-    `  after · holder is on v${held.number} holding it: version ${held.in_version} · ` +
-      `draft ${held.in_draft} (expect v2 · 0 · 0)`,
+    `  after · holder is on v${held.number}: version ${held.in_version} · ` +
+      `draft ${held.in_draft} · released ${held.released} (expect v1 · 1 · 0 · 1)`,
   );
   await pullContext.close();
 

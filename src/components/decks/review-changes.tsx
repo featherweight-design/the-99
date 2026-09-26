@@ -255,21 +255,16 @@ export function Column({
               : null;
           // Wherever the control is refusing to offer a pull, the word behind
           // the colour is the guard it drew instead: a commander's copy is
-          // claimed and no route releases it, and a holder with a draft of its
-          // own has to be committed before the copy can move. "can be pulled"
-          // on either would name an act this page will not perform.
+          // claimed and no route releases it, and a locked copy stays where the
+          // player put it. "can be pulled" on either would name an act this page
+          // will not perform.
           //
           // Both guards draw a tag and no control, so the row is the only place
-          // either sentence can live. The pending one used to be the accessible
-          // name of an `Open →` link inside the row, and was left off the row so
-          // that a reader would not hear it twice; that link is gone, and with it
-          // the reason for the silence.
+          // either sentence can live.
           const word = pullClaim?.commander
             ? copy.commanderGuardA11y(pullClaim.name, row.name)
             : pullClaim?.locked
               ? lockedCardsCopy.pull.a11y(pullClaim.name, row.name)
-            : pullClaim?.pending
-              ? copy.pullGuardA11y(pullClaim.name, row.name)
               // A full sentence for a printed add, shaped like the two guards
               // above it: it names the card and offers no action, because there
               // is none to offer. The chip alone says `proxied`, which on its own
@@ -391,8 +386,8 @@ export function Column({
               )}
               {/* THE SECOND DOOR. A contested card gets the chooser as a panel beneath its row,
                   with the caption that spells out the distinction from the control above it:
-                  `Pull it` takes the card out of another deck's list and cuts that deck a
-                  version, and this edits nobody's list. A caption rather than a warning, because
+                  `Pull it` takes the card out of another deck's list, leaving that deck a
+                  draft, and this edits nobody's list. A caption rather than a warning, because
                   giving is the safe one of the two. */}
               {contestedCard && (
                 <div

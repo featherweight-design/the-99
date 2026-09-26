@@ -1543,16 +1543,14 @@ export const GAME_SUMMARY: GameSummary = {
  *
  * - `free` — the collection has a spare copy. No control, nothing to decide.
  * - `claimed` with a RELEASABLE holder — `releasableClaims` wants `mature`,
- *   `senior`, not `pending`, not `commander`, and all four have to be right or
+ *   `senior`, not `commander`, not `locked`, and all four have to be right or
  *   `pullCandidate` returns null and the row draws no control at all.
- * - `claimed` with a PENDING holder — the same bucket, and the guard instead:
- *   a deck with changes of its own cannot be raided, because a pull would
- *   sweep those edits into a version its owner never asked for.
+ * - `claimed` with a COMMANDER holder — the same bucket, and the guard instead:
+ *   no route releases a commander, so the row draws the `commander` tag.
  *
- * The third row is the one this entry exists for, and it is also the row that
- * the 2026-09-19 vocabulary sweep renamed: the tag read `deck in draft` when
- * Design drew it and reads `deck has changes` now, because `draft` belongs to
- * the status.
+ * Design drew the third row as a PENDING holder with a `deck has changes` tag.
+ * That guard was retired on 2026-09-27, when a pull stopped committing its
+ * source, so the row shows the guard that remains.
  */
 const claim = (o: Partial<DeckClaim> & { id: string; name: string }): DeckClaim => ({
   quantity: 1,
@@ -1614,19 +1612,21 @@ export const REVIEW_IN_ROWS: DraftRow[] = [
   }),
   reviewRow({
     oracleId: "about-rev-guard",
-    name: CARDS.owned,
-    typeLine: "Artifact",
-    cardTypeGroup: "Artifacts",
-    manaCost: "{1}",
+    name: "Kinnan, Bonder Prodigy",
+    typeLine: "Legendary Creature — Elf Druid",
+    cardTypeGroup: "Creatures",
+    manaCost: "{G}{U}",
     bucket: "claimed",
     availability: {
       owned: 1,
       hard: 1,
       soft: 0,
       free: 0,
-      // `pending` is what draws the guard instead of the control.
+      // `commander` is what draws the guard instead of the control: no pull ever moves a copy
+      // another deck holds as its commander. (A deck with a draft of its own used to be the guard
+      // drawn here; since 2026-09-27 a pull joins that draft, so it guards nothing.)
       claims: [
-        claim({ id: "about-kinnan", name: "Kinnan Ramp", pending: true, versionNumber: 2 }),
+        claim({ id: "about-kinnan", name: "Kinnan Ramp", commander: true, versionNumber: 2 }),
       ],
     },
   }),

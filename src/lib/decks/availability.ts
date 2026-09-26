@@ -25,10 +25,9 @@ export type DeckClaim = {
   quantity: number;
   mature: boolean;
   /**
-   * This deck's draft differs from its newest version. A pull would sweep those
-   * pending edits into a version its owner never asked for, so the server
-   * refuses one (`pullCardFromDeck`) — and a control that can only fail must not
-   * be drawn. Always false for a brew: there is no version to differ from.
+   * This deck's draft differs from its newest version. Always false for a brew:
+   * there is no version to differ from. It no longer guards a pull (Hugh,
+   * 2026-09-27): `pullCardFromDeck` joins that draft rather than committing it.
    */
   pending: boolean;
   /**
@@ -94,7 +93,7 @@ export type DeckClaim = {
    *
    * RESERVATIONS DO NOT ENTER THIS FLAG. A deck displaced by another deck's
    * reservation is not offered a pull, and that is deliberate: its route back is to
-   * change the pick, which is reversible and cuts no version, where a pull cuts one.
+   * change the pick, which edits nobody's list, where a pull edits the holder's draft.
    * An exception here was tried and removed — it is wrong for a partial reservation,
    * since pulling one copy from a deck asking for two still leaves its reservation
    * granting one and moves no figure at all.

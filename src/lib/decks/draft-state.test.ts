@@ -182,11 +182,10 @@ describe("releasableClaims", () => {
     expect(releasableClaims(availability([claim()])).map((c) => c.id)).toEqual(["d-1"]);
   });
 
-  // Committing the source deck to release one card would sweep its owner's
-  // half-finished tinkering into a version nobody asked for, so the server
-  // refuses — and a control that can only fail must not be drawn.
-  it("excludes a holder with pending changes of its own", () => {
-    expect(releasableClaims(availability([claim({ pending: true })]))).toEqual([]);
+  // A pull joins the holder's draft rather than committing it (Hugh, 2026-09-27), so a draft of
+  // its own no longer stands in the way.
+  it("keeps a holder with a draft of its own", () => {
+    expect(releasableClaims(availability([claim({ pending: true })])).map((c) => c.id)).toEqual(["d-1"]);
   });
 
   // No route releases a commander, so there is not even a "go and fix it there".
@@ -238,7 +237,7 @@ describe("pullHints", () => {
   });
 
   it("offers no pull when every holder is refused", () => {
-    expect(pullHints([add()], availability([claim({ pending: true })])).size).toBe(0);
+    expect(pullHints([add()], availability([claim({ commander: true })])).size).toBe(0);
   });
 
   // The failed claim read: nothing is known about who holds the card, so no
@@ -261,29 +260,27 @@ describe("pullCandidate", () => {
 
   it("prefers the holder the pull can be offered against", () => {
     const chosen = pullCandidate(availability([
-      claim({ id: "d-guarded", pending: true }),
+      claim({ id: "d-guarded", commander: true }),
       claim({ id: "d-free" }),
     ]));
     expect(chosen?.id).toBe("d-free");
   });
 
-  // The permanent obstacle is the more useful one to name: a pending deck can be
-  // opened and released, a commander claim never can.
-  it("names a commander claim ahead of a pending one", () => {
+  // A holder with a draft is releasable, so it wins over a commander guard like any other.
+  it("offers a holder with a draft over a commander guard", () => {
     const chosen = pullCandidate(availability([
       claim({ id: "d-pending", pending: true }),
       claim({ id: "d-commander", commander: true }),
     ]));
-    expect(chosen?.id).toBe("d-commander");
+    expect(chosen?.id).toBe("d-pending");
   });
 
   // L2: a locked holder is a guard like the other two, so the row names the deck that holds the
-  // copy. Between them by permanence: commander, then locked, then pending (a commit frees none).
-  it("hands a locked claim to the control as a guard, between commander and pending", () => {
+  // copy. A commander guard is named ahead of it, being the more permanent.
+  it("hands a locked claim to the control as a guard, after a commander", () => {
     expect(pullCandidate(availability([claim({ id: "d-locked", locked: true })]))?.id).toBe("d-locked");
     expect(pullCandidate(availability([
-      claim({ id: "d-pending", pending: true }),
-      claim({ id: "d-locked", locked: true }),
+      claim({ id: "d-locked", locked: true, pending: true }),
     ]))?.id).toBe("d-locked");
     expect(pullCandidate(availability([
       claim({ id: "d-locked", locked: true }),

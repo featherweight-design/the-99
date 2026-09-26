@@ -13,7 +13,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
-  deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
+  deckUnresolvedRows, deckVersions, fillPassCards, fillPasses, pullReleases,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
@@ -59,8 +59,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { seededIntent } from "../../lib/tuning/limits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { changeCommanderEnabled } from "../../lib/commander-change/flag";
-import { commanderMoved } from "../../lib/commander-change/pending";
+import { writePullRelease } from "../../lib/decks/pull-release";
 import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
@@ -1481,10 +1480,9 @@ export type CommitResult =
 /**
  * The declaration a commit should carry into its version, or `undefined` when there is none.
  *
- * ONE COPY, SHARED BY BOTH COMMIT PATHS. `commitVersion` takes this optionally and for a while
- * NEITHER caller passed it, so both declaration columns were written null on every real commit.
- * Wiring only the deliberate commit left the pull path — which auto-commits the source deck —
- * still writing nulls, which is the same defect surviving its own fix.
+ * `commitVersion` takes this optionally and for a while no caller passed it, so both declaration
+ * columns were written null on every real commit. The pull path used to auto-commit the source
+ * deck too; since 2026-09-27 it commits nothing, so the deliberate commit is the one caller.
  *
  * GATED ON THE DECK HAVING DECLARED ANYTHING. Deriving permits needs a whole profile — 630ms
  * median, 2.2s on the slowest real deck — and a deck with no live declaration has nothing to
@@ -1747,8 +1745,16 @@ export async function discardDeckDraft(
     return { ok: false, message: "We couldn't find that deck." };
   }
   await requireDeck(deckId, userId);
+  // The decks this draft's pulls freed a copy for. The discard deletes those releases, so their buy
+  // tags return and their pages are refreshed with this one. Read before the write: after it the
+  // rows are gone, and a pull landing in between only means one refresh too few, never a wrong row.
+  const askers = await db.selectDistinct({ id: pullReleases.askingDeckId })
+    .from(pullReleases).where(eq(pullReleases.sourceDeckId, deckId));
   const outcome = await restoreDraftFromVersion(deckId, expectedVersionId);
   revalidateClaims(deckId, userId);
+  if (outcome === "restored") {
+    for (const { id } of askers) if (id) revalidateClaims(id, userId);
+  }
   if (outcome === "moved") {
     return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
   }
@@ -1802,14 +1808,12 @@ export async function getVersionDiff(
 /**
  * Take a card out of the deck that currently holds it, on the player's say-so.
  *
- * Removing it and committing in one move is deliberate. Pulling a card out of
- * a box is a physical change to that deck, so it earns a version; and the
- * commit is what frees the copy on the spot, rather than leaving the asking
- * deck showing a buy tag until someone remembers to go and commit the source.
- *
- * The guard is the whole reason this is not a bare delete: if the source deck
- * already has pending changes, committing would sweep them into a version its
- * owner never asked for. That case sends the player to the source deck instead.
+ * The pull edits the source deck's DRAFT and cuts no version (Hugh, 2026-09-27): the card goes
+ * under that deck's Going out, and the player commits or discards it there like any other edit.
+ * What frees the copy on the spot is the release row it writes (`writePullRelease`), which
+ * subtracts the pulled copy from the source's committed claim in both claim readers, so the asking
+ * deck's buy tag clears without waiting on the source's commit. Discarding the source's draft
+ * puts the card back and deletes the release; committing it makes the removal the version.
  */
 export type PullResult =
   | {
@@ -2023,66 +2027,44 @@ export async function pullCardFromDeck(
     if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
 
     const before = await versionCards(version.id, tx);
-    // `for update` for the same reason the commit takes it: the deck row's
-    // lock does not stop an edit to `deck_cards`, and the guard below is only
-    // as good as the draft still being what it read.
+    // `for update`: the deck row's lock does not stop an edit to `deck_cards`, and the decrement
+    // below is only as good as the draft still being what it read.
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId)).for("update");
-    const diff = draftDiff(draft, before);
-    // A moved commander is a pending change too (change commander): the commit below copies the
-    // live commander columns into the version, so it would sweep that swap in unasked.
-    const commanderPending = changeCommanderEnabled() && commanderMoved(version, deck);
-    if (diff.adds.length > 0 || diff.removes.length > 0 || commanderPending) {
-      return { ok: false, message: "That deck has pending changes. Release the card there." };
-    }
-    // Nothing to release. Without this the decrement and the delete both match
-    // no row, and the commit below writes a version identical to its predecessor
-    // — a line in the deck's history recording a pull that never happened.
-    if (!draft.some((c) => c.oracleId === oracleId)) {
+    // NO PENDING-CHANGES GUARD (Hugh, 2026-09-27). It existed because the pull committed, and a
+    // commit would have swept the source's own draft into a version nobody asked for. Nothing is
+    // committed now, so the pull simply joins that draft.
+    const inDraft = draft.some((c) => c.oracleId === oracleId);
+    // Nothing to release: the version does not list it and the draft does not hold it.
+    if (!inDraft && !before.some((c) => c.oracleId === oracleId)) {
       return { ok: false, message: "That deck doesn't hold that card." };
     }
 
     // A pull takes ONE copy, matching removeCardFromDeck: a deck holding four
     // Relentless Rats keeps three. Delete only when the decrement would hit 0.
-    const decremented = await tx.update(deckCards)
-      .set({ quantity: sql`${deckCards.quantity} - 1` })
-      .where(and(
-        eq(deckCards.deckId, sourceDeckId),
-        eq(deckCards.oracleId, oracleId),
-        gt(deckCards.quantity, 1),
-      ))
-      .returning({ oracleId: deckCards.oracleId });
-    if (decremented.length === 0) {
-      await tx.delete(deckCards)
-        .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
-      await pruneOrphanProxies(tx, sourceDeckId);
-      await pruneOrphanLocks(tx, sourceDeckId);
+    // Skipped for a card the draft has ALREADY cut: its version is the only thing still claiming
+    // the copy, and the release below is the whole pull.
+    if (inDraft) {
+      const decremented = await tx.update(deckCards)
+        .set({ quantity: sql`${deckCards.quantity} - 1` })
+        .where(and(
+          eq(deckCards.deckId, sourceDeckId),
+          eq(deckCards.oracleId, oracleId),
+          gt(deckCards.quantity, 1),
+        ))
+        .returning({ oracleId: deckCards.oracleId });
+      if (decremented.length === 0) {
+        await tx.delete(deckCards)
+          .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
+        await pruneOrphanProxies(tx, sourceDeckId);
+        await pruneOrphanLocks(tx, sourceDeckId);
+      }
+      // The source's list changed, so it reads as edited, and pending.
+      await touchDeck(tx, sourceDeckId);
     }
-    // The source deck's list really did change, so the column stays truthful.
-    // Both stamps are `clock_timestamp()`, so the commit on the next line is
-    // microseconds later — which a `Date` may or may not be able to represent,
-    // leaving Home to read this row as `committed` or `edited`. Both are true of
-    // a pull, so neither is worth engineering for; see the note in `touched.ts`.
-    await touchDeck(tx, sourceDeckId);
-    // NO SNAPSHOT ON THIS PATH, and the reason is not cost.
-    //
-    // This transaction REMOVES a card and then commits, so any snapshot taken before it
-    // describes the deck as it was one card ago — and removing a card can change what the
-    // remaining cards permit ([4,5] to [1,2], say). `commitVersion` trusts `snapshot.permits`,
-    // so passing one here could persist a declaration the committed rows do not permit, which
-    // is precisely the gate that column exists to be.
-    //
-    // Recomputing after the removal means a 630ms-to-2.2s profile build inside a transaction
-    // holding the deck's row lock, which is not a price a pull should pay. So this version
-    // records no declaration, and nothing is lost: the declaration stays live on the deck and
-    // the next DELIBERATE commit carries it. A pull is the system auto-committing because a
-    // card left, not a player answering a question.
-    //
-    // This is different from `commitDeckVersion`, which mutates nothing between its snapshot
-    // and its commit — there, only a concurrent edit can diverge, and that race is benign in
-    // the direction it fails.
-    await commitVersion(sourceDeckId, "Pulled a card for another deck", tx);
+    // The copy leaves the source's committed claim, which is what frees it for the asking deck.
+    await writePullRelease(tx, { userId, sourceDeckId, oracleId, askingDeckId });
     return { ok: true };
   });
   if (!outcome.ok) return outcome;

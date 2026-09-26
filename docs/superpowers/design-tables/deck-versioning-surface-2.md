@@ -494,6 +494,12 @@ New atom. One per card, neutral, never solid, never the row default (README §De
 
 ### Pull guard — variant 1, the holding deck has pending changes (state 20)
 
+> **Retired 2026-09-27 (Hugh's ruling, PR A of the 0927 lane).** A pull no longer commits the
+> holding deck: it takes the card out of that deck's draft and records a release, so a holder with
+> changes of its own is pullable like any other, and nothing draws this variant. `review.pullGuardTag`
+> and `review.pullGuardA11y` are deleted. The rows below are kept as the record of what shipped
+> between #622 and that ruling.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | `Pull it` | absent | absent |

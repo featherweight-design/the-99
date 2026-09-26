@@ -1490,14 +1490,14 @@ export function ProxiesFigureBody() {
 export function ReviewAndCommitFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      {/* 1: the breakdown beside `Coming in`. 2: the row carrying Pull it. 3: the row whose deck
-          has changes of its own, which says so and offers no control. */}
+      {/* 1: the breakdown beside `Coming in`. 2: the row carrying Pull it. 3: the row whose copy
+          another deck holds as its commander, which says so and offers no control. */}
       <AnchoredNumerals
         gutter
         marks={[
           { n: 1, find: withText("span, p", deckVersioningCopy.review.groupInBreakdown(5, 3, 1)), side: "gutter", mdSide: "before" },
           { n: 2, find: withText("button", deckVersioningCopy.review.pull), side: "before" },
-          { n: 3, find: withText("span", deckVersioningCopy.review.pullGuardTag), side: "before" },
+          { n: 3, find: withText("span", deckVersioningCopy.review.commanderGuardTag), side: "before" },
         ]}
       >
       <Column

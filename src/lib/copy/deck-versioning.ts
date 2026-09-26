@@ -174,9 +174,10 @@ export const deckVersioningCopy = {
      * all would make the sentence a list, so it names none and says what the page IS.
      *
      * AND IT PROMISES NOTHING ABOUT UNDOING. A first draft closed with "anything you change here
-     * is yours to change back", which is true of a pick and of a put-back and FALSE of a pull —
-     * that one cuts another deck a version and is the one act on this page nobody can take
-     * back. A sentence that covers two of three decisions is worse than one that covers none.
+     * is yours to change back", which is true of a pick and of a put-back and not of a pull —
+     * that one edits ANOTHER deck's draft, and is taken back there, by discarding that draft,
+     * rather than here. A sentence that covers two of three decisions is worse than one that
+     * covers none.
      */
     lede: (version: number) =>
       "The deck page already shows this list: this is what it costs to lock in as " +
@@ -224,21 +225,7 @@ export const deckVersioningCopy = {
     // deck. The visible text stays two words because the row prints both names
     // beside it; only the name spoken out of context has to carry them.
     pullA11y: (card: string, deck: string) => `Pull ${card} from ${deck}.`,
-    // The guard: the source deck has a draft of its own, so committing it
-    // automatically would sweep somebody's half-finished tinkering into a version.
-    // The deck NAME is already on the row, so the reason is a tag beside it.
-    //
-    // The tag names the DECK, because a bare `pending` did not: read next to a
-    // card name it was taken for a pending change to that card, on a row where
-    // the card is not being touched at all. R1's two-line sentence ("that deck
-    // has its own pending changes →") was too long visually and in copy.
-    pullGuardTag: "deck has changes",
-    // Never rendered — the row's accessible description, the way the commander
-    // guard's is. It names no action because there is none: the `Open →` link
-    // that used to carry this sentence pushed the card name off the desktop row.
-    pullGuardA11y: (deck: string, card: string) =>
-      `${deck} has pending changes of its own, so ${card} cannot be pulled from it.`,
-    // Third guard: commander claims are in the availability model, so `Pull it` would
+    // The commander guard: commander claims are in the availability model, so `Pull it` would
     // otherwise be offered on a row where it can only ever fail. Same tag shape, and
     // the same silence — no route releases it, so there is nothing to offer.
     commanderGuardTag: "commander",

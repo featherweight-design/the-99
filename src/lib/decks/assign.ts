@@ -20,7 +20,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cardAssignments, deckVersionCards, deckVersions, decks } from "../../db/schema";
+import { cardAssignments, deckVersionCards, deckVersions, decks, pullReleases } from "../../db/schema";
 import { isUuid } from "../uuid";
 
 /**
@@ -105,7 +105,23 @@ export async function assignCopyFor(
         eq(deckVersionCards.versionId, newest.id),
         eq(deckVersionCards.oracleId, oracleId),
       ));
-    const listQuantity = listCard?.quantity ?? 0;
+    // Less any copy a pull released, bounded exactly as the claim model bounds it (`all_claims`):
+    // never more than the version lists beyond what the draft still holds. A deck whose only copy
+    // was pulled claims nothing, and reserving for it would hand a copy to a deck that gave it up.
+    const [released] = await tx.select({
+      copies: pullReleases.copies,
+      draft: sql<number>`coalesce((
+        select sum(dc.quantity) from deck_cards dc
+        where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
+      ), 0)::int`,
+    })
+      .from(pullReleases)
+      .where(and(eq(pullReleases.sourceDeckId, deckId), eq(pullReleases.oracleId, oracleId)));
+    const versionQuantity = listCard?.quantity ?? 0;
+    const releasedCopies = released
+      ? Math.min(released.copies, Math.max(versionQuantity - released.draft, 0))
+      : 0;
+    const listQuantity = versionQuantity - releasedCopies;
     const commanderCopies =
       (newest.commanderOracleId === oracleId ? 1 : 0)
       + (newest.partnerOracleId === oracleId ? 1 : 0);

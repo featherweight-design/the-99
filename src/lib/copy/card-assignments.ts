@@ -9,8 +9,9 @@
  *
  * `Pull it` and giving a copy are DIFFERENT ACTS and must never share a word.
  *
- *   Pull it — takes the card out of another deck's list and CUTS THAT DECK A NEW VERSION
- *             (`pullCardFromDeck`). Not reversible.
+ *   Pull it — takes the card out of another deck's list, leaving that deck a draft with the
+ *             card going out (`pullCardFromDeck`; Hugh, 2026-09-27). Undone in that
+ *             deck: by discarding its draft, or by putting the card back.
  *   Giving  — writes one `card_assignments` row. No list is edited, no version is cut, and the
  *             losing deck still bills the purchase. One tap back.
  *
@@ -241,8 +242,8 @@ export const cardAssignmentsCopy = {
      * On `/decks/[id]/changes`, the one place the distinction from a pull is spelt out.
      *
      * A CAPTION, not a warning — giving is the safe action of the two. The row above it keeps
-     * `Pull it`, which takes the card out of another deck's list and cuts that deck a version;
-     * this panel edits nobody's list, and a reader who confuses them cuts a version they never
+     * `Pull it`, which takes the card out of another deck's list and leaves that deck a draft;
+     * this panel edits nobody's list, and a reader who confuses them edits a deck they never
      * meant to.
      */
     seamCaption: "no list changes",

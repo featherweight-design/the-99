@@ -25,10 +25,4 @@ describe("deckStateMarksCopy", () => {
       expect(every).not.toContain(gone);
     }
   });
-
-  it("does not reuse the pull guard's tag", () => {
-    // `deck in draft` is LIVE copy — `deckVersioningCopy.review.pullGuardTag`,
-    // drawn beside a card name. Here the subject is the deck.
-    expect(JSON.stringify(deckStateMarksCopy)).not.toContain(deckVersioningCopy.review.pullGuardTag);
-  });
 });

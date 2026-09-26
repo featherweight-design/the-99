@@ -33,7 +33,7 @@ export const lockedCardsCopy = {
      */
     refused: "That didn\u2019t save. Try again.",
   },
-  /** The review screen's Pull it guard (L2), in the commander and pending guards' shape. */
+  /** The review screen's Pull it guard (L2), in the commander guard's shape. */
   pull: {
     /** The tag beside the holding deck's name, which the row already prints. */
     tag: "locked",

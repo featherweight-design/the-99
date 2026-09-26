@@ -654,11 +654,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     // the versionless deck rather than the edits, and key line 3 quoted the
     // guard tag as `deck in draft`. Both are copy, so eng resolved them.
     caption:
-      'Committing turns your changes into a version, and this page lays out what that will cost. Not what the deck holds, which the deck page already shows, but what committing it asks of the rest of your collection. Cards coming in are counted into buckets, and a card another deck has already sleeved carries Pull it: take that copy and the deck holding it is cut a version. Unlike Put back, it cannot be taken back.',
+      'Committing turns your changes into a version, and this page lays out what that will cost. Not what the deck holds, which the deck page already shows, but what committing it asks of the rest of your collection. Cards coming in are counted into buckets, and a card another deck has already sleeved carries Pull it: take that copy and the deck holding it goes into a draft with the card going out. Discard that draft and the card goes back where it was.',
     keys: [
       '`Coming in` is broken down by where each card comes from, free, sleeved or to buy, so the page says what the commit costs before a single row is read.',
-      '`Pull it` takes a copy out of another deck and cuts that deck a version. It cannot be undone, which is why the deck it raids is named on the row.',
-      'a deck with changes of its own cannot be raided, so the row says `deck has changes` and offers no control.',
+      '`Pull it` takes a copy out of another deck and leaves that deck a draft, the card under Going out. Nothing is committed for it, which is why the deck it raids is named on the row: that is where to look if you change your mind.',
+      'a copy another deck holds as its commander never moves, so the row says `commander` and offers no control.',
     ],
     since: 7,
   },
