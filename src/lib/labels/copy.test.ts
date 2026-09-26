@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { planCopy, type SourceLabel } from "./copy";
+import { labelInputHash } from "./prompt";
 import type { Job } from "./types";
 
 const JOB: Job = {
@@ -67,5 +68,53 @@ describe("planCopy", () => {
   it("plans nothing from an empty source", () => {
     const p = planCopy([], [{ oracleId: "a", inputHash: "h" }], new Set());
     expect(p).toEqual({ install: [], mismatched: [], notInTargetCatalog: [], absentFromSource: [] });
+  });
+});
+
+/**
+ * The composition the SCRIPT performs, not just the rule.
+ *
+ * `copy-card-labels.ts` builds `targetHashes` by walking the target's catalog and keeping the rows
+ * the source has labelled. Round 5 of review read that filter's negation backwards and reported
+ * that every source row would land in `notInTargetCatalog` and nothing would ever install. It does
+ * not — but the only way to know is to run the composition rather than read it, and nothing here
+ * covered the two pieces together. Now something does.
+ */
+describe("the script's composition installs a matching row", () => {
+  const TARGET_MODEL = "claude-sonnet-4-5";
+  const card = {
+    oracleId: "aaa", name: "Llanowar Elves", mana_cost: "{G}",
+    type_line: "Creature — Elf Druid", oracle_text: "{T}: Add {G}.", layout: "normal",
+  };
+  const notInSource = { ...card, oracleId: "zzz", name: "Not In Source" };
+
+  /** Exactly the loop in `copy-card-labels.ts`. */
+  const buildTargetHashes = (catalog: (typeof card)[], usable: SourceLabel[]) => {
+    const labelled = new Set(usable.map((r) => r.oracleId));
+    const out: { oracleId: string; inputHash: string }[] = [];
+    for (const c of catalog) {
+      if (!labelled.has(c.oracleId)) continue;
+      out.push({ oracleId: c.oracleId, inputHash: labelInputHash(c, TARGET_MODEL) });
+    }
+    return out;
+  };
+
+  it("installs a source row whose hash matches the target's own inputs", () => {
+    const usable: SourceLabel[] = [{
+      oracleId: "aaa", labels: [JOB], model: TARGET_MODEL, promptVersion: "1",
+      inputHash: labelInputHash(card, TARGET_MODEL),
+    }];
+    const plan = planCopy(usable, buildTargetHashes([card, notInSource], usable), new Set());
+    expect(plan.install.map((r) => r.oracleId)).toEqual(["aaa"]);
+    expect(plan.notInTargetCatalog).toEqual([]);
+  });
+
+  it("still reports a source row the target's catalog does not hold", () => {
+    const usable: SourceLabel[] = [{
+      oracleId: "ghost", labels: [JOB], model: TARGET_MODEL, promptVersion: "1", inputHash: "h",
+    }];
+    const plan = planCopy(usable, buildTargetHashes([card], usable), new Set());
+    expect(plan.install).toEqual([]);
+    expect(plan.notInTargetCatalog).toEqual(["ghost"]);
   });
 });
