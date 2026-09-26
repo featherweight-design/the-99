@@ -141,6 +141,76 @@ describe("catalogCard", () => {
     expect(c.primarySetCode).toBe("BBB");
   });
 
+  // The modal's price tag belongs to the printing it opens on, so an unowned card opens on
+  // one the shop carries NOW (Zul Ashur opened on FDC #135, never stocked, over five live
+  // printings). Live is a non-foil price at the newest as_of.
+  describe("the printing an unowned card opens on", () => {
+    const NEWEST = new Date("2026-09-22T01:20:25Z");
+    const fact = (cents: number | null, over: { foilCents?: number | null; asOf?: Date } = {}) =>
+      ({ cents, foilCents: over.foilCents ?? null, etchedCents: null, asOf: over.asOf ?? NEWEST });
+    const prices = (by: Record<string, ReturnType<typeof fact>>) => ({
+      byScryfallId: by, byPrintingKey: {}, ambiguousKeys: [], catalogIds: Object.keys(by), catalogKeys: [], newestAsOf: NEWEST,
+    });
+    const rows = () => [
+      printing({ scryfallId: "s-fdc", setCode: "fdc", collectorNumber: "135", imageUri: "https://img/fdc.jpg" }),
+      printing({ scryfallId: "s-cheap", setCode: "fdn", collectorNumber: "77", imageUri: "https://img/fdn77.jpg" }),
+      printing({ scryfallId: "s-dear", setCode: "fdn", collectorNumber: "326", imageUri: "https://img/fdn326.jpg" }),
+    ];
+
+    it("opens on the oracle's own printing when it is live, first in the list", () => {
+      const c = catalogCard(card({ scryfallId: "s-dear" }), rows(), prices({ "s-cheap": fact(32), "s-dear": fact(203) }));
+      expect(c.printings[0].collectorNumber).toBe("326");
+      expect(c.imageUri).toBe("https://img/fdn326.jpg");
+    });
+
+    it("otherwise opens on the cheapest live printing with art, not the one that sorts first", () => {
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({ "s-cheap": fact(32), "s-dear": fact(203) }));
+      expect(c.printings[0].collectorNumber).toBe("77");
+      expect(c.primarySetCode).toBe("FDN");
+      // The rest keep their order.
+      expect(c.printings.map((p) => p.collectorNumber)).toEqual(["77", "135", "326"]);
+    });
+
+    // Each case below leaves ONE disqualified printing cheaper than the live winner, so counting
+    // it would move that printing to the front.
+    it("does not count a stale row as live", () => {
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({
+        "s-cheap": fact(5, { asOf: new Date("2026-09-01T00:00:00Z") }),
+        "s-dear": fact(203),
+      }));
+      expect(c.printings[0].collectorNumber).toBe("326");
+    });
+
+    it("does not count a foil-only row as live", () => {
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({
+        "s-cheap": fact(null, { foilCents: 4 }),
+        "s-dear": fact(203),
+      }));
+      expect(c.printings[0].collectorNumber).toBe("326");
+    });
+
+    it("skips a live printing drawn only in the oracle's fallback art", () => {
+      const r = rows();
+      r[1] = { ...r[1], imageUri: null };
+      // The card itself has art, so the printing still resolves a picture: just not its own.
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), r, prices({ "s-cheap": fact(10), "s-dear": fact(203) }));
+      expect(c.printings.find((p) => p.collectorNumber === "77")?.imageUri).not.toBeNull();
+      expect(c.printings[0].collectorNumber).toBe("326");
+    });
+
+    it("passes over a live oracle printing drawn only in fallback art", () => {
+      const r = rows();
+      r[2] = { ...r[2], imageUri: null };
+      const c = catalogCard(card({ scryfallId: "s-dear" }), r, prices({ "s-cheap": fact(32), "s-dear": fact(20) }));
+      expect(c.printings[0].collectorNumber).toBe("77");
+    });
+
+    it("keeps today's order when no printing is live", () => {
+      const c = catalogCard(card({ scryfallId: "s-fdc" }), rows(), prices({}));
+      expect(c.printings.map((p) => p.collectorNumber)).toEqual(["135", "77", "326"]);
+    });
+  });
+
   // A `cards` row whose printings never ingested still has to open — the modal
   // falls through to the identity gradient rather than rendering nothing.
   it("survives a card with no printings", () => {
@@ -228,6 +298,25 @@ describe("loadCardDetail availability", () => {
     const card = await loadCardDetail("user_1", "o-1");
     expect(card?.prices).toEqual(PRICES);
     expect(loadPrintingPrices).toHaveBeenCalledWith("o-1");
+  });
+
+  // The live-printing rule is the UNOWNED branch's alone. An owned card opens on the reader's
+  // own copy and their saved pick, whatever the shop is carrying.
+  it("leaves an owned card's printings and saved preference as they were", async () => {
+    selectCollectionRows.mockResolvedValue([
+      { ...row, preferredSetCode: "c21", preferredCollectorNumber: "263" },
+      { ...row, setCode: "znr", collectorNumber: "1", setName: "Zendikar Rising", preferredSetCode: "c21", preferredCollectorNumber: "263" },
+    ]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockResolvedValue({
+      ...PRICES,
+      byScryfallId: {},
+      byPrintingKey: { "ZNR|1": { cents: 5, foilCents: null, etchedCents: null, asOf: PRICES.newestAsOf } },
+    });
+    const card = await loadCardDetail("user_1", "o-1");
+    expect(card?.preferredPrinting).toEqual({ setCode: "C21", collectorNumber: "263" });
+    const { resolvedPrinting } = await import("./browse");
+    expect(resolvedPrinting(card!)?.collectorNumber).toBe("263");
   });
 
   // The unowned card is the whole point of the feature — it is the case with no

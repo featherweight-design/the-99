@@ -58,10 +58,15 @@ export type CatalogPrintingRow = {
 export function catalogCard(
   card: CatalogCardRow,
   printingRows: CatalogPrintingRow[],
+  /** The card's price read, when it arrived: it decides which printing the modal opens on. */
+  prices: PrintingPrices | null = null,
 ): BrowseCard {
   const entries = printingRows
     .map((p) => ({
       scryfallId: p.scryfallId,
+      // The printing's OWN picture. `printing.imageUri` below falls back to the oracle's, and a
+      // printing drawn in another printing's art would put this one's price under that picture.
+      ownArt: p.imageUri !== null,
       printing: {
         setCode: p.setCode.toUpperCase(),
         // This row IS the printing, so its id is never inferred here.
@@ -131,8 +136,37 @@ export function catalogCard(
   // sorts by set code alphabetically: the modal opened on a different printing from the tile
   // the user had just tapped. The fallback covers the ~6% of oracle rows whose default printing
   // is not itself in `printings`.
-  const primary =
-    entries.find((e) => e.scryfallId === card.scryfallId)?.printing ?? resolvedPrinting(result);
+  //
+  // And the printing it opens on must be one the shop carries NOW, because the modal's price
+  // tag belongs to the printing on screen. Opening on a printing the feed never stocked read
+  // `no stock` over a card with five live printings (Zul Ashur: FDC #135 sorts before FDN).
+  // So: the oracle's own printing when it is live, else the cheapest live printing with art,
+  // else as before. Live is AGENTS.md's rule: a non-foil price at the newest `as_of`. The
+  // chosen printing moves to the FRONT of the list too, because the modal resolves its art,
+  // caption and price from the first printing with art (`resolvedPrinting`), not from this
+  // card-level field; before, the two could name different printings.
+  const oracleDefault = entries.find((e) => e.scryfallId === card.scryfallId);
+  const live = (scryfallId: string) => {
+    const fact = prices?.byScryfallId[scryfallId];
+    return prices?.newestAsOf != null && fact !== undefined && fact.cents !== null
+      && fact.asOf.getTime() === prices.newestAsOf.getTime() ? fact.cents : null;
+  };
+  const withArt = entries.filter((e) => e.ownArt);
+  const cheapestLive = withArt
+    .map((e) => ({ e, cents: live(e.scryfallId) }))
+    .filter((x): x is { e: (typeof entries)[number]; cents: number } => x.cents !== null)
+    .sort((a, b) => a.cents - b.cents)[0]?.e;
+  const opensOn =
+    (oracleDefault && oracleDefault.ownArt && live(oracleDefault.scryfallId) !== null
+      ? oracleDefault
+      : undefined)
+    ?? cheapestLive;
+  if (opensOn) {
+    result.printings = [opensOn.printing, ...printings.filter((p) => p !== opensOn.printing)];
+  }
+  const primary = opensOn?.printing
+    ?? oracleDefault?.printing
+    ?? resolvedPrinting(result);
   if (primary) {
     result.primarySetCode = primary.setCode;
     result.imageUri = primary.imageUri;
@@ -393,7 +427,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // only the owned branch left the block silently absent on the commonest open it has.
   return withComboPartners(
     await withBracketFacts({
-      ...catalogCard(card, printingRows),
+      ...catalogCard(card, printingRows, await prices),
       facts: card.gameChanger ? ["gameChanger"] : undefined,
       prices: await prices,
       proxiedBy: await proxiedBy,
