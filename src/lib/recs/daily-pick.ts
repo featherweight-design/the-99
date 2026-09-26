@@ -144,7 +144,9 @@ export function dailyPicks<T>(
  * The shuffle, re-ordered to lean on the new: positions sorted by how new each commander is
  * (the themes it plays that none of the reader's decks do, most first), then the newer half
  * INTERLEAVED with the rest, so the cycle's `(day * count + i)` walk puts one card from each
- * half on every day at `count` 2. Every guarantee in the header still holds, because only the
+ * half on every day at `count` 2 when the set's size is EVEN (a full set of 28 is). An odd set
+ * has one more in the newer half, so the day the walk wraps draws two from it; the cycle's own
+ * guarantees (no repeat in a tour, none on consecutive days) hold at every size either way. Every guarantee in the header still holds, because only the
  * order moved and the walk did not.
  *
  * Ties keep the shuffle's order (Array.prototype.sort is stable), so two readers whose pools

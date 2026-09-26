@@ -1,5 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
+import { SCORE_WRITER_CURRENT } from "../../db/schema";
 import { READY_COUNT } from "./ready-to-build";
 
 /**
@@ -13,6 +14,11 @@ import { READY_COUNT } from "./ready-to-build";
  * half of a page fa is making faster). It therefore picks its own candidates, the same way the
  * ranked list orders them (`rank_score desc, oracle_id`, built commanders out), with a margin past
  * the set in case the two disagree about a tie. A commander it did not cover counts 0.
+ *
+ * It also condemns a stale set the way `loadScores` does: one row carrying the `rank_score`
+ * sentinel or an old `writer_version` means the ranked list is about to be recomputed, so this
+ * returns NO candidates and the rotation walks its plain shuffle for that render, rather than
+ * leaning on an order the ranking no longer holds.
  *
  * Measured on staging, Hugh's account: 4.0ms, returning 40 integers.
  */
@@ -35,6 +41,11 @@ export function unplayedCountsSql(userId: string, limit = NOVELTY_CANDIDATES): S
       select s.oracle_id
       from commander_scores s
       where s.user_id = ${userId}
+        and not exists (
+          select 1 from commander_scores stale
+          where stale.user_id = ${userId}
+            and (stale.rank_score < 0 or stale.writer_version < ${SCORE_WRITER_CURRENT})
+        )
         and not exists (
           select 1 from decks bd
           where bd.user_id = ${userId}

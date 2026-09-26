@@ -11,7 +11,7 @@ describe("unplayedCountsSql", () => {
   const { sql, params } = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
 
   it("scopes every read to the reader, and reaches past the set", () => {
-    expect(params.filter((p) => p === "user_1")).toHaveLength(3);
+    expect(params.filter((p) => p === "user_1")).toHaveLength(4);
     expect(params).toContain(NOVELTY_CANDIDATES);
     expect(NOVELTY_CANDIDATES).toBeGreaterThan(READY_COUNT);
   });
@@ -20,6 +20,14 @@ describe("unplayedCountsSql", () => {
   it("picks candidates the way the ranked list orders them, built commanders out", () => {
     expect(sql).toContain("order by s.rank_score desc, s.oracle_id");
     expect(sql).toContain("bd.commander_oracle_id = s.oracle_id or bd.partner_oracle_id = s.oracle_id");
+  });
+
+  // `loadScores` refuses a set with one sentinel row and the ranked list recomputes; leaning on
+  // that set's order would disagree with the list Home is drawing, so it yields no candidates.
+  it("condemns a stale score set the way loadScores does", async () => {
+    const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
+    expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <");
+    expect(params).toContain(SCORE_WRITER_CURRENT);
   });
 
   // A deck plays the tags of BOTH its commanders, as `loadPlayedTags` reads them for Something new.
