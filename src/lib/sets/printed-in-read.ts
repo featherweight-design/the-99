@@ -24,19 +24,22 @@ export async function readCommanderPrintings(): Promise<CommanderPrintings> {
 // Memoised per catalog generation, the way `intake/search.ts` memoises its theme vocabulary: the
 // index moves only when the catalog does, and every reader shares one copy.
 const MEMO_MS = 10 * 60 * 1000;
-let memo: { generation: string; at: number; value: Promise<CommanderPrintings> } | null = null;
+let memo: { generation: string; at: number; ticket: number; value: Promise<CommanderPrintings> } | null = null;
+// Taken BEFORE the generation read's await, so it orders calls by when they started. A timestamp
+// cannot: two calls in one millisecond tie, and the earlier one could roll the memo back.
+let tickets = 0;
 
 export async function loadCommanderPrintings(now: number = Date.now()): Promise<CommanderPrintings> {
+  const ticket = ++tickets;
   const generation = await catalogGeneration();
   if (memo && memo.generation === generation && now - memo.at < MEMO_MS) return memo.value;
-  const entry = { generation, at: now, value: readCommanderPrintings() };
+  const entry = { generation, at: now, ticket, value: readCommanderPrintings() };
   // A read that started earlier never replaces one that started later: around a catalog refresh
   // an old-generation read can finish last, and must not roll the memo back to it.
-  if (memo && memo.at > now) return entry.value;
+  if (memo && memo.ticket > ticket) return entry.value;
   memo = entry;
   entry.value.catch(() => {
     if (memo === entry) memo = null;
   });
   return entry.value;
 }
-
