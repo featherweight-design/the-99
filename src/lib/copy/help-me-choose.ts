@@ -228,10 +228,10 @@ export const helpMeChooseCopy = {
     budgetUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it. The fill caps the rest as usual.`,
     /** No card to pay for first, or one already owned: the budget caps the fill alone. Eng: undrawn. */
     budgetAlone: "The fill buys in its own order while the price fits, and finishes with basics.",
-    /** Own-only: the fill buys nothing, so the budget has only the placed card to pay for. */
-    budgetOwn: "The 99 comes from your cards, so the fill buys nothing and finishes with basics.",
+    /** Own-only: the pool row says where the 99 comes from, so this says only that nothing is bought for it. */
+    budgetOwn: "The fill buys nothing for the 99.",
     poolValue: "From cards you own",
-    poolLine: "The fill takes only cards you own, with a copy free, and finishes with basics.",
+    poolLine: "It takes only cards with a copy free, and finishes with basics.",
     bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
     bracket: (n: number) => `The fill keeps every card it chooses inside bracket ${n}’s limits.`,
     backToResults: "Back to results",

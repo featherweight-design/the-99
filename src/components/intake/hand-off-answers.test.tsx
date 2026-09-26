@@ -57,8 +57,8 @@ describe("Built from your answers", () => {
   it("draws own-only as a row, and says the budget buys nothing for the 99", () => {
     render(<HandOffAnswersBlock answers={{ ...all, card: null, themes: [], bracket: null, pool: "own" }} changeHref="/x" />);
     expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual([
-      "The 99From cards you ownThe fill takes only cards you own, with a copy free, and finishes with basics.",
-      "Budget$150The 99 comes from your cards, so the fill buys nothing and finishes with basics.",
+      "The 99From cards you ownIt takes only cards with a copy free, and finishes with basics.",
+      "Budget$150The fill buys nothing for the 99.",
     ]);
   });
 
