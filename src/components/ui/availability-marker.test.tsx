@@ -411,7 +411,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     const { container } = render(
       <AvailabilityMarker availability={av} density="row" selfExcluded />,
     );
-    expect(container.textContent).toBe("short 1, also in Atraxa");
+    expect(container.textContent).toBe("short, also in Atraxa");
     expect(markerAria(av, { selfExcluded: true })).toBe(
       "your Atraxa deck also includes this card and you don’t own enough for both",
     );
@@ -436,7 +436,8 @@ describe("selfExcluded, on a deck's own decklist", () => {
     const { container } = render(
       <AvailabilityMarker availability={av} density="row" selfExcluded nameless />,
     );
-    expect(container.textContent).toBe("short 1");
+    // One short draws no figure (Hugh, 2026-09-26); the aria below still counts it.
+    expect(container.textContent).toBe("short");
     expect(markerAria(av, { selfExcluded: true, nameless: true })).toBe(
       "you own 1 too few for the committed decks that include it",
     );

@@ -83,7 +83,7 @@ function Tail({
   fact: PriceFact;
   state: PriceState;
   variant: BuyTagVariant;
-  reserveSlot: boolean;
+  reserveSlot: boolean | "lg";
   /** True where the tag already speaks the price in its own sentence. */
   silent: boolean;
 }) {
@@ -109,9 +109,12 @@ function Tail({
           decimal point rather than on the word before it.
           FIGURE_SLOT is what that column actually needs — see the constant. */}
       <span
+        // `lg` reserves the slot from 1024px up only. Below it the Shopping row is two lines and
+        // every pixel goes to the name, so the figure hugs the word (Hugh, 2026-09-26).
+        className={reserveSlot === "lg" ? "lg:inline-block lg:min-w-[46px] lg:text-right" : undefined}
         style={{
           color: FIGURE_INK[variant],
-          ...(reserveSlot
+          ...(reserveSlot === true
             ? { display: "inline-block", minWidth: FIGURE_SLOT, textAlign: "right" as const }
             : null),
         }}
@@ -154,8 +157,11 @@ export function BuyTag({
   newestAsOf?: Date | null;
   /** Server-built; only the labelled (tile) variant speaks it. */
   provenance?: ProvenanceForm | null;
-  /** Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. */
-  reserveSlot?: boolean;
+  /**
+   * Shopping reserves the figure a `FIGURE_SLOT`-wide slot so the column aligns. `"lg"` reserves
+   * it from 1024px up only (the class spells `FIGURE_SLOT`'s 46px, since a class cannot read it).
+   */
+  reserveSlot?: boolean | "lg";
   /**
    * `collapsed` draws a bare `$` in the same box, ink, radius and position —
    * the All tab is a list being scanned, not a bill being read. Nothing is

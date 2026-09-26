@@ -69,8 +69,13 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
  */
 export function LockModeLine({ count }: { count: number }) {
   return (
-    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
-      {lockedCardsCopy.mode.line}{" "}
+    // A 16px line, the mark key's own height, so trading one for the other moves nothing below it
+    // (Hugh, 2026-09-26: at 1.5 leading, entering the mode shifted the page 2.75px). Flex rather
+    // than one line of text: a smaller mono span on a sans baseline grows a shared line box by a
+    // pixel, and as centered flex items each keeps its own (baseline alignment grows it again).
+    <p className="m-0 flex flex-wrap items-center gap-x-[4px] text-[12.5px] leading-[16px] text-fg-body" data-testid="lock-mode-line">
+      {/* The space rides the text, so the line still reads as one sentence to a screen reader. */}
+      <span>{lockedCardsCopy.mode.line}{" "}</span>
       <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(count)}</span>
     </p>
   );

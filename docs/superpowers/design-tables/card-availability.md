@@ -124,7 +124,7 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
 | 1.12 | `marker.hardAria` | `no free copies; this one is in your ${deckName} deck` | CP:41 |
 | 1.13 | `marker.hardMultiAria` | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
-| 1.14 | `marker.over` | `short ${shortBy}` | CP:46 |
+| 1.14 | `marker.over` | `short` at one copy, `short ${shortBy}` above one (**amended 2026-09-26**, Hugh: the figure is drawn only when it is over one; the same rule governs 1.15 and 1.17, and every aria string still speaks the count) | CP:46 |
 | 1.15 | `marker.overWithDemand` | `short ${shortBy} — ${deckCount} decks want it` | CP:47 |
 | 1.16 | `marker.overAria` | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
 | 1.17 | `marker.overAlsoIn` | `short ${shortBy} — also in ${otherDeck}` | CP:49 |
