@@ -168,7 +168,11 @@ describe("themes asked as any of", () => {
   it("orders by the theme each fits best, naming the group", () => {
     expect(orderLine("fit", anyFour, tribal)).toEqual({
       title: "Ordered by the theme each fits best",
-      sub: "You asked for any of Orcs, Elves, Dwarves or Wizards, so each commander ranks by the one it fits best. Every one of them it fits is shown.",
+      sub: "You asked for any of Orcs, Elves, Dwarves or Wizards, so each commander ranks by the one it fits best. Every one it fits is shown.",
+    });
+    expect(orderLine("fit", { ...anyFour, card: "c" }, tribal)).toEqual({
+      title: "Ordered by fit to everything you asked",
+      sub: "Each commander ranks by the theme of Orcs, Elves, Dwarves or Wizards it fits best, or by Regisaur Alpha where that figure is lower.",
     });
   });
 

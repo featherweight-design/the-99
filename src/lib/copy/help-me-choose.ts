@@ -57,7 +57,7 @@ export const helpMeChooseCopy = {
       any: "Any",
       aria: "Themes: all or any",
       captionAll: "All of these: a commander has to fit every one.",
-      captionAny: "Any of these: a commander fits if it fits one, and ranks by the one it fits best.",
+      captionAny: "Any of these: a commander has to fit one, and ranks by the one it fits best.",
     },
     budget: "Budget", // canvas
     budgetPlaceholder: "No cap",
@@ -124,7 +124,9 @@ export const helpMeChooseCopy = {
     byOwned: "Ordered by cards you already have",
     byBestTheme: "Ordered by the theme each fits best",
     subAny: (names: string) =>
-      `You asked for any of ${names}, so each commander ranks by the one it fits best. Every one of them it fits is shown.`,
+      `You asked for any of ${names}, so each commander ranks by the one it fits best. Every one it fits is shown.`,
+    subAnyCard: (names: string, card: string) =>
+      `Each commander ranks by the theme of ${names} it fits best, or by ${card} where that figure is lower.`,
     subTheme: (t: string) => `Each figure is the share of that commander’s decks on EDHREC tagged ${t}.`,
     subCard: (c: string) => `Each figure is how often that commander’s decks on EDHREC run ${c}. It goes in the deck whichever you pick.`,
     subSeveral: (lead: string, other: string) =>

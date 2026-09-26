@@ -48,7 +48,7 @@ describe("the Theme field's join", () => {
     expect(group().getAttribute("aria-disabled")).toBeNull();
     expect(screen.getByText("All of these: a commander has to fit every one.")).toBeTruthy();
     fireEvent.click(within(group()).getByRole("radio", { name: "Any" }));
-    expect(screen.getByText("Any of these: a commander fits if it fits one, and ranks by the one it fits best.")).toBeTruthy();
+    expect(screen.getByText("Any of these: a commander has to fit one, and ranks by the one it fits best.")).toBeTruthy();
     fireEvent.submit(group().closest("form")!);
     expect(push.mock.calls[0][0]).toContain("tj=any");
   });

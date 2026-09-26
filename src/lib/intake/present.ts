@@ -25,14 +25,14 @@ export function orderLine(order: SearchResult["order"], p: ChooseParams, labels:
       : copy.results.subOwned;
     return { title: copy.results.byOwned, sub };
   }
-  // Any of, with no card: the group's best figure alone ranks each row.
-  if (isAnyOf(p) && !(p.card && labels.card)) {
-    return { title: copy.results.byBestTheme, sub: copy.results.subAny(orList(p.themes.map(labels.theme))) };
+  // Any of: the group's best figure ranks each row, or the card where it is lower.
+  if (isAnyOf(p)) {
+    const names = orList(p.themes.map(labels.theme));
+    return p.card && labels.card
+      ? { title: copy.results.all, sub: copy.results.subAnyCard(names, labels.card) }
+      : { title: copy.results.byBestTheme, sub: copy.results.subAny(names) };
   }
-  const names = [
-    ...(isAnyOf(p) ? [copy.narrow.anyOfName(p.themes.map(labels.theme))] : p.themes.map(labels.theme)),
-    ...(p.card && labels.card ? [labels.card] : []),
-  ];
+  const names = [...p.themes.map(labels.theme), ...(p.card && labels.card ? [labels.card] : [])];
   // A card the catalog could not name (a stale link): the order is still fit, with nothing to cite.
   if (names.length === 0) return { title: copy.results.all, sub: "" };
   if (names.length === 1) {
