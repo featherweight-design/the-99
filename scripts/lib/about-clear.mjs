@@ -16,9 +16,11 @@
 // proxy reads the row instead, finding every entry seen. A card already drawn on the current
 // document is pressed away with Later.
 //
-// The ids it adds are NOT put back afterwards. They mark the fixture account as having seen
-// every entry, which is what its `about_version_seen` write already says about the rest.
-// `probe:about`, which needs the account behind, holds and restores both columns itself.
+// A probe that puts the account's About row back afterwards does it with `captureAboutSeen`
+// before its first write and `restoreAboutSeen` in its `finally`. Both columns, always: this
+// module writes `about_seen_ids`, so a restore of the version alone leaves the ids it added
+// behind and the fixture account changed. A probe that captures nothing leaves the row raised,
+// which is what its `about_version_seen` write already says about the account.
 import { readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
 import { requireEnv } from "./env.mjs";
@@ -83,4 +85,31 @@ export async function clearAboutSheet(page, userId) {
   if (await card.isVisible().catch(() => false)) {
     await card.getByRole("button", { name: "Later" }).click();
   }
+}
+
+/**
+ * The account's About row as it stands, for `restoreAboutSeen` to put back: both columns, or
+ * `existed: false` when there is no row. Taken BEFORE the probe's first write to it.
+ */
+export async function captureAboutSeen(userId, sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)) {
+  const [row] = await sql`select about_version_seen, about_seen_ids from user_prefs where user_id = ${userId}`;
+  return row
+    ? { userId, existed: true, version: row.about_version_seen, ids: row.about_seen_ids }
+    : { userId, existed: false, version: null, ids: null };
+}
+
+/**
+ * Puts back exactly what `captureAboutSeen` read: both columns as they were, or no row at all
+ * when there was none.
+ */
+export async function restoreAboutSeen(capture, sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)) {
+  if (!capture.existed) {
+    await sql`delete from user_prefs where user_id = ${capture.userId}`;
+    return;
+  }
+  // An upsert, not an update: a probe may delete the row part-way through a run, and the row it
+  // captured has to come back either way.
+  await sql`insert into user_prefs (user_id, about_version_seen, about_seen_ids)
+      values (${capture.userId}, ${capture.version}, ${capture.ids})
+    on conflict (user_id) do update set about_version_seen = ${capture.version}, about_seen_ids = ${capture.ids}`;
 }

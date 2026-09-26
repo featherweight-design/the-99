@@ -74,6 +74,7 @@ import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
@@ -155,10 +156,15 @@ async function hold(userId) {
   return value;
 }
 async function restore(userId, value) {
-  if (value === null) await sql`delete from user_prefs where user_id = ${userId}`;
   // A hold file written before the ids column held the bare version.
-  else if (typeof value === "number") await setSeen(userId, value);
-  else await setSeen(userId, value.about_version_seen, value.about_seen_ids ?? []);
+  if (typeof value === "number") return setSeen(userId, value);
+  // The shared restore, so every probe puts the row back the same way: both columns, or no row.
+  return restoreAboutSeen(
+    value === null
+      ? { userId, existed: false, version: null, ids: null }
+      : { userId, existed: true, version: value.about_version_seen, ids: value.about_seen_ids ?? [] },
+    sql,
+  );
 }
 
 /** Puts this browser and account back to "behind, and never shown the sheet". */

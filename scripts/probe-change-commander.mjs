@@ -19,7 +19,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
-import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -77,11 +77,8 @@ async function signIn(page) {
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
   // Captured BEFORE the write and put back in the run's finally: the About gate is the account's own
   // state, and a probe that only raises it leaves the real audit account changed.
-  const [prior] = await sql`select about_version_seen from user_prefs where user_id = ${userId}`;
-  restorePrefs = async () => {
-    if (prior) await sql`update user_prefs set about_version_seen = ${prior.about_version_seen} where user_id = ${userId}`;
-    else await sql`delete from user_prefs where user_id = ${userId}`;
-  };
+  const prior = await captureAboutSeen(userId);
+  restorePrefs = () => restoreAboutSeen(prior);
   await sql`
     insert into user_prefs (user_id, about_version_seen) values (${userId}, ${version})
     on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, ${version})`;
