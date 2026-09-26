@@ -46,9 +46,37 @@ type CardRow = {
 };
 
 async function main(): Promise<void> {
-  if (LABEL_COPY_SOURCE_URL === LABEL_COPY_TARGET_URL) {
-    throw new Error("LABEL_COPY_SOURCE_URL and LABEL_COPY_TARGET_URL are the same database");
+  // THE SAME-DATABASE GUARD COMPARES `neon.branch_id`, NOT THE URLS.
+  //
+  // Comparing connection strings is the check this repository has already learned is not one:
+  // `pull:staging` records that two URLs can address the same Neon branch through different
+  // credentials, hosts or query parameters, so a text comparison passes and the tool writes onto
+  // its own source. It also records why `system_identifier` is the wrong discriminator — every
+  // branch of one Neon project reports the same cluster identifier, so that is byte-identical here
+  // too. The branch id is the only thing that distinguishes them.
+  //
+  // FAILS CLOSED: a database that reports no branch id is refused rather than assumed distinct.
+  const branchOf = async (db: typeof source, which: string): Promise<string> => {
+    const r = await db.execute<{ branch: string | null }>(
+      sql`select current_setting('neon.branch_id', true) as branch`,
+    );
+    const branch = ((r as { rows?: { branch: string | null }[] }).rows
+      ?? (r as unknown as { branch: string | null }[]))[0]?.branch ?? null;
+    if (branch === null || branch === "") {
+      throw new Error(`${which} reports no neon.branch_id, so this cannot prove the two databases `
+        + `are different. Refusing rather than guessing: this script WRITES to the target.`);
+    }
+    return branch;
+  };
+  const [srcBranch, tgtBranch] = await Promise.all([
+    branchOf(source, "LABEL_COPY_SOURCE_URL"),
+    branchOf(target, "LABEL_COPY_TARGET_URL"),
+  ]);
+  if (srcBranch === tgtBranch) {
+    throw new Error(`source and target are the same Neon branch (${srcBranch}). A URL comparison `
+      + `would have passed this — different credentials or host spellings reach one branch.`);
   }
+  console.log(`source branch ${srcBranch} → target branch ${tgtBranch}`);
 
   const srcRows = await source.select().from(cardLabels);
   const src: SourceLabel[] = srcRows.map((r) => ({

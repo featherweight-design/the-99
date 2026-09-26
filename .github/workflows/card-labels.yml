@@ -126,7 +126,15 @@ jobs:
               # A pause is a hold awaiting a decision, so it is a failure rather than a quiet stop.
               *"PAUSED"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 1 ;;
               # Published, or there was nothing stale to label: done either way.
-              *"published"*|*"nothing to do"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              #
+              # Matched on the SPECIFIC success line, not the bare word. `*"published"*` also
+              # matched the WAITING line — "N chunk(s) still processing. Nothing submitted, nothing
+              # published." — so the loop exited 0 on its second pass while a batch was still
+              # running, reporting success over a run that had published nothing. The poll loop
+              # existed to prevent exactly that and this pattern undid it.
+              *"label(s) in one transaction"*|*"nothing to do — every Commander-legal card"*)
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+                exit 0 ;;
               # TERMINAL AND NOT SUCCESS: every request came back and nothing valid was staged.
               # Sleeping on this looped all 40 passes and failed ~80 minutes later, hiding the one
               # line that says what happened and what to do about it.
