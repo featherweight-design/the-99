@@ -1,0 +1,76 @@
+# The whole suite again with the clock moved forward, on a schedule rather than
+# per PR.
+#
+# WHY IT IS NOT IN `CI`. It was, and it roughly doubled every PR's wait: main's CI
+# ran a median of 17 minutes (range 12-19, n=21) before the step landed in #1012
+# and a median of 35 (range 19-37, n=13) after, because the step is a SECOND full
+# run of a 10,400-test suite. Date rot arrives from the CALENDAR, not from a diff:
+# a test that pins "today" is no more likely to break because someone opened a
+# pull request. Paying 16 minutes on every PR across six concurrent lanes to
+# re-ask a question whose answer changes once a day is the wrong trade.
+#
+# So: nightly, and on every push to main. The nightly catches rot as the date
+# reaches it; the main push catches a test that was written today and is already
+# rotten, before it has a week to be forgotten about.
+#
+# A red run here EMAILS THE REPOSITORY OWNER, which GitHub does for a failed
+# scheduled workflow by default. That is the whole notification design, deliberately
+# -- a bespoke alert would be another thing to maintain and to trust.
+#
+# The shift-applied self-test (`scripts/clock-shift.test.mts`) stays in the normal
+# suite, where it costs one test unshifted. It is what makes a green here mean
+# anything: a preload that silently stopped patching `Date` would otherwise run the
+# suite against today's clock and report a confident pass.
+name: Clock-shifted tests
+
+on:
+  schedule:
+    # 04:12 UTC. Off the hour because every scheduled job on the hour contends,
+    # and well clear of the 09:00 catalog refresh and the 13:00 combo refresh.
+    - cron: "12 4 * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days to shift the clock forward"
+        required: false
+        default: "400"
+
+# One run at a time: this is a full suite, and two of them race nothing but the
+# runner's patience.
+concurrency:
+  group: clock-shifted-tests
+  cancel-in-progress: false
+
+jobs:
+  shifted:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ONE offset, +400 days. Measured on 2026-09-25: +90, +400 and +1500 all pass
+      # the whole suite, because #996 fixed the only rot there was, so no offset
+      # earns its ~16 minutes by finding more than another. +400 crosses a year
+      # boundary, which is where date pinning usually breaks. The others are one
+      # dispatch input away.
+      - name: Test with the clock moved forward
+        env:
+          CLOCK_SHIFT_DAYS: ${{ github.event.inputs.days || '400' }}
+        run: |
+          # Echoed here rather than from the shim: vitest captures a setup file's
+          # stdout and the default reporter does not print it, so the shim's own
+          # announce is invisible under `pnpm test`. Without this line the log does
+          # not say what date the run believed in.
+          echo "Running the suite as if today were $(date -u -d "+${CLOCK_SHIFT_DAYS} days" +%Y-%m-%d) (+${CLOCK_SHIFT_DAYS} days)"
+          pnpm test:clock

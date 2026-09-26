@@ -59,31 +59,6 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # The same suite with the clock moved forward, so a test that pins "today"
-      # fails here instead of in an unrelated PR on the day it rots. b1 found two
-      # that way (#996); this makes the walk happen on demand rather than by
-      # calendar accident.
-      #
-      # ONE offset, not three. Measured on 2026-09-25, +90, +400 and +1500 days
-      # all pass the whole suite — #996 fixed the only rot there was — so no
-      # offset earns its ~2.5 minutes by finding more than another today. +400 is
-      # the brief's floor and crosses a year boundary, which is where most date
-      # pinning breaks. The other offsets stay one env var away:
-      # `CLOCK_SHIFT_DAYS=1500 pnpm test` locally.
-      #
-      # `scripts/clock-shift.test.mts` asserts the shift APPLIED, so a preload
-      # that silently stopped patching Date fails this step rather than passing it.
-      - name: Test with the clock moved forward
-        env:
-          CLOCK_SHIFT_DAYS: "400"
-        run: |
-          # Echoed here rather than from the shim: vitest captures a setup
-          # file's stdout and the default reporter does not print it, so the
-          # shim's own announce is invisible under `pnpm test`. Without this
-          # line the log does not say what date the run believed in.
-          echo "Running the suite as if today were $(date -u -d "+${CLOCK_SHIFT_DAYS} days" +%Y-%m-%d) (+${CLOCK_SHIFT_DAYS} days)"
-          pnpm test:clock
-
       - name: Build
         env:
           # next build only needs the var to exist — no queries run at build time.
