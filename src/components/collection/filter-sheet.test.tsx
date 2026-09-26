@@ -122,6 +122,21 @@ describe("CollectionFilterSheet", () => {
     expect(onChange).toHaveBeenCalledWith({ ...FILTERS, types: [] });
   });
 
+  // The wide panel draws each set's code after its name, and so does this list now that it is
+  // the shared set list (ui/set-list-sheet.tsx).
+  it("draws each set's code after its name, as the wide panel does", () => {
+    render(sheet({ setOptions: [{ ...SETS[0], hint: "BLB" }] }));
+    const row = within(openSets()).getByRole("switch", { name: /Bloomburrow/ });
+    // Named as the wide panel names it: the code in parentheses after the set.
+    expect(row).toHaveAccessibleName(/^Bloomburrow \(BLB\)/);
+  });
+
+  it("keeps the code in the name of a set that is out", () => {
+    render(sheet({ setOptions: [{ ...SETS[0], hint: "BLB", count: 0, disabled: true }] }));
+    const row = within(openSets()).getByRole("switch", { name: /Bloomburrow/ });
+    expect(row).toHaveAccessibleName(/Bloomburrow \(BLB\)/);
+  });
+
   it("filters the set list, and keeps a selected set visible through the query", () => {
     // Otherwise unticking a set means clearing the field to find it again.
     render(sheet({ filters: { ...FILTERS, setCodes: ["LEA"] } }));
