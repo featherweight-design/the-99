@@ -1457,7 +1457,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   and brings it back one, at any depth, and `route.test.ts` asserts the route and the action
   answer the same card.
 
-  Its deck is the account's largest with two or more versions. It writes only the About row.
+  Its deck is the account's largest with two or more versions. It writes only the About row, captured first and put back in a `finally`.
   Point it at `next start` on `local-dev` or a scratch branch, **never production**.
 
 - `pnpm probe:card-note` measures the card note on all three of the deck page's add surfaces —

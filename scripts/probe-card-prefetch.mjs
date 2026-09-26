@@ -21,7 +21,7 @@
 //   5. No prefetch is ever a server action.
 //
 // Makes no writes but the account's About row (every entry marked seen, so no sheet covers the
-// page), refused on production and staging. Point it at `next start` on local-dev or a scratch
+// page), captured first and put back in a `finally`. Refused on production and staging. Point it at `next start` on local-dev or a scratch
 // branch holding a `pull:staging` copy; the deck is the account's largest with two or more versions.
 //
 //   PROBE_BASE=http://localhost:3061 pnpm probe:card-prefetch
@@ -30,7 +30,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
+import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen, sheetCookie } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { readFileSync } from "node:fs";
 
@@ -57,6 +57,9 @@ function report(label, ok, detail = "") {
   console.log(`${ok ? " ok  " : " FAIL"} ${label}${detail ? ` — ${detail}` : ""}`);
 }
 
+/** The account's About columns as found, put back in `main`'s `finally`. Set before the first write. */
+let aboutCapture = null;
+
 async function signIn(browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -75,6 +78,7 @@ async function signIn(browser) {
     await window.Clerk.setActive({ session: a.createdSessionId });
     return window.Clerk.user.id;
   }, EMAIL);
+  aboutCapture = await captureAboutSeen(userId);
   await markEveryEntrySeen(userId);
   await context.addCookies([sheetCookie(userId, page.url())]);
   const state = await context.storageState();
@@ -278,6 +282,7 @@ async function main() {
     for (const width of WIDTHS) await walk(browser, state, width, deck.id);
   } finally {
     await browser.close();
+    if (aboutCapture) await restoreAboutSeen(aboutCapture);
   }
   console.log(failures ? `\n${failures} check(s) failed.` : "\nAll checks passed.");
   process.exitCode = failures ? 1 : 0;

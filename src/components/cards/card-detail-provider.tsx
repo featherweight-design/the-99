@@ -206,7 +206,8 @@ export const INTENT_DELAY_MS = 100;
  * resting for `INTENT_DELAY_MS` prefetches, so a pointer sweeping down a list reads nothing; KEYBOARD
  * focus arriving prefetches at once.
  *
- * NOT a press going down, and not the focus a press brings with it. A prefetch started by the
+ * NOT a press going down, not a touch (a finger resting on a card fires `pointerenter` too), and
+ * not the focus a press brings with it. A prefetch started by the
  * press itself has no head start on the press's own read, so it can only cost: measured at 390,
  * where a tap is all there is, the route (~190ms there) missed `PREFETCH_WAIT_MS` often enough that
  * a tap paid the wait AND the action, and the medians went from 354 to 408ms for a first press and
@@ -223,8 +224,10 @@ export function useCardIntent(oracleId: string, art?: string | null) {
   useEffect(() => cancel, [cancel]);
   return useMemo(
     () => ({
-      onPointerEnter: () => {
+      onPointerEnter: (event: React.PointerEvent<HTMLElement>) => {
         cancel();
+        // A finger resting on a card is a tap about to land, not intent ahead of one.
+        if (event.pointerType === "touch") return;
         timer.current = setTimeout(() => { timer.current = null; prefetch(oracleId, art); }, INTENT_DELAY_MS);
       },
       onPointerLeave: cancel,
@@ -801,7 +804,14 @@ export function CardDetailProvider({
           (next) => {
             // Filed only if nothing moved under it: an eviction since it started means a write
             // it may have read the wrong side of, and a new scope means a different question.
-            if (next && (evictions.current.get(oracleId) ?? 0) === evictedAt && scope === comboScopeRef.current) {
+            // Nor over an entry filed meanwhile: that is a press's action that outran the wait,
+            // and its answer is newer than this one.
+            if (
+              next &&
+              !cache.current.has(oracleId) &&
+              (evictions.current.get(oracleId) ?? 0) === evictedAt &&
+              scope === comboScopeRef.current
+            ) {
               cache.current.set(oracleId, next);
             }
             return next;

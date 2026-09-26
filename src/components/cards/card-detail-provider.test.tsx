@@ -1154,6 +1154,14 @@ describe("CardDetailProvider prefetch on intent", () => {
     expect(fetchCard.mock.calls.map((c) => c[0])).toEqual(["o-signet"]);
   });
 
+  it("reads nothing for a finger resting on a card, which is a tap about to land", async () => {
+    const fetchCard = vi.fn(async (_id: string) => SIGNET);
+    mount(fetchCard);
+    fireEvent.pointerEnter(trigger("Arcane Signet"), { pointerType: "touch" });
+    await pause(INTENT_DELAY_MS * 2);
+    expect(fetchCard).not.toHaveBeenCalled();
+  });
+
   // A press while its card's prefetch is still reading WAITS on it, for up to PREFETCH_WAIT_MS.
   // Answered in time, no action is sent at all; otherwise the press reads for itself and only its
   // own answer paints, so no action is ever left pending after the modal has moved on.
@@ -1191,6 +1199,24 @@ describe("CardDetailProvider prefetch on intent", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     await act(async () => { own.resolve(SIGNET_AFTER_WRITE); });
     expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+  });
+
+  it("never files a late prefetch over the answer the press's own action already filed", async () => {
+    const guess = deferred();
+    const own = deferred();
+    const fetchCard = vi.fn().mockReturnValueOnce(own.promise).mockReturnValue(new Promise(() => {}));
+    mountSplit(() => guess.promise, fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    await pause(PREFETCH_WAIT_MS + 50);
+    await act(async () => { own.resolve(SIGNET_AFTER_WRITE); });
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+    await act(async () => { guess.resolve(SIGNET); });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // Reopened, it paints from the cache before its check read answers: the action's answer.
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
   });
 
   it("reads for itself at once when the prefetch fails", async () => {
