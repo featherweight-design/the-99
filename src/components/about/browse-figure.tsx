@@ -176,9 +176,9 @@ export function BrowseFigureBody() {
           ))}
         </span>
         <span className="hidden items-center gap-[6px] min-[1000px]:flex">
-          <Trigger label={collectionFilterCopy.type.triggerLabel} />
+          <Trigger label={collectionFilterCopy.type.triggerCount!(0)} />
           <Trigger label={collectionFilterCopy.set.triggerCount!(1)} active />
-          <Trigger label={collectionFilterCopy.availability.triggerLabel} />
+          <Trigger label={collectionFilterCopy.availability.triggerCount!(0)} />
         </span>
 
         {/* Sort does NOT move into the sheet. `FilterChassis` keeps it in its

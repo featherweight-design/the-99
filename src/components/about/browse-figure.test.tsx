@@ -110,7 +110,7 @@ describe("the browse figure", () => {
 
     // The wide form's own controls, read from the route's copy so a rename
     // reaches the figure without anyone editing it.
-    expect(screen.getByText(collectionFilterCopy.type.triggerLabel)).toBeInTheDocument();
+    expect(screen.getByText(collectionFilterCopy.type.triggerCount!(0))).toBeInTheDocument();
     expect(screen.getByText(collectionFilterCopy.set.triggerCount!(1))).toBeInTheDocument();
     expect(
       screen.getByText(collectionFilterCopy.sort.triggerOne("Name · A–Z")),
@@ -160,7 +160,7 @@ describe("the browse figure", () => {
       at(collectionChassisCopy.sheet.trigger).closest("[class*='min-[1000px]:hidden']"),
     ).not.toBeNull();
     expect(
-      at(collectionFilterCopy.type.triggerLabel).closest("[class*='min-[1000px]:flex']"),
+      at(collectionFilterCopy.type.triggerCount!(0)).closest("[class*='min-[1000px]:flex']"),
     ).not.toBeNull();
 
     // Sort is NOT one of the controls that moves. `FilterChassis` keeps it in

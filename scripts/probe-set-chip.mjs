@@ -1,4 +1,5 @@
-// probe:set-chip — picking a set on /collection moves nothing else in the filter row.
+// probe:set-chip — picking a set, a type or an availability state on /collection moves nothing else
+// in the filter row.
 //
 // The desktop Set trigger used to read `Set: The Hobbit` once one set was picked, so it grew by the
 // set's name. The row is anchored at its right edge, so the growth went LEFT: the colour pips and
@@ -102,10 +103,17 @@ function moved(before, after, skip) {
   return out;
 }
 
-async function desktop(page) {
+// Every trigger on the row that counts: Set (#1050), then Type and Availability (Hugh, 2026-09-27).
+const COUNTING = [
+  { aria: "Filter by set", name: "set", labels: ["Set 0", "Set 1", "Sets 2"] },
+  { aria: "Filter by type", name: "type", labels: ["Type 0", "Type 1", "Types 2"] },
+  { aria: "Filter by availability", name: "availability", labels: ["Availability 0", "Availability 1", "Availability 2"] },
+];
+
+async function desktop(page, t) {
   await page.setViewportSize({ width: 1300, height: 900 });
   await page.goto(`${BASE}/collection?view=grid`, { waitUntil: "networkidle" });
-  const trigger = onPage(page, 'button[aria-label^="Filter by set"]:visible').first();
+  const trigger = onPage(page, `button[aria-label^="${t.aria}"]:visible`).first();
   // Null rather than a 30s wait when the label is missing, so a build without it reports quickly.
   const label = () => trigger.locator("[data-trigger-label]").textContent({ timeout: 2_000 }).catch(() => null);
   const pick = async (nth) => {
@@ -119,21 +127,21 @@ async function desktop(page) {
   };
 
   const at0 = await readRow(trigger);
-  const setIndex = at0.findIndex((c) => c.name.startsWith("Filter by set"));
-  report(setIndex >= 0 && at0.length > 1, "1300: the Set trigger has other controls on its row to measure", `${at0.length} controls, Set at ${setIndex}`);
-  report((await label()) === "Set 0", "1300: nothing picked reads Set 0", await label());
+  const own = at0.findIndex((c) => c.name.startsWith(t.aria));
+  report(own >= 0 && at0.length > 1, `1300 ${t.name}: the trigger has other controls on its row to measure`, `${at0.length} controls, it at ${own}`);
+  report((await label()) === t.labels[0], `1300 ${t.name}: nothing picked reads ${t.labels[0]}`, await label());
 
   await pick(0);
   const at1 = await readRow(trigger);
-  report((await label()) === "Set 1", "1300: one set picked reads Set 1", await label());
-  const shift1 = moved(at0, at1, (_, i) => i === setIndex);
-  report(shift1.length === 0, "1300: picking one set moves nothing else on the row", shift1.join("; ") || "all still");
+  report((await label()) === t.labels[1], `1300 ${t.name}: one picked reads ${t.labels[1]}`, await label());
+  const shift1 = moved(at0, at1, (_, i) => i === own);
+  report(shift1.length === 0, `1300 ${t.name}: picking one moves nothing else on the row`, shift1.join("; ") || "all still");
 
   await pick(0);
   const at2 = await readRow(trigger);
-  report((await label()) === "Sets 2", "1300: two sets picked reads Sets 2", await label());
-  const shift2 = moved(at1, at2, (_, i) => i === setIndex);
-  report(shift2.length === 0, "1300: picking a second set moves nothing else on the row", shift2.join("; ") || "all still");
+  report((await label()) === t.labels[2], `1300 ${t.name}: two picked reads ${t.labels[2]}`, await label());
+  const shift2 = moved(at1, at2, (_, i) => i === own);
+  report(shift2.length === 0, `1300 ${t.name}: picking a second moves nothing else on the row`, shift2.join("; ") || "all still");
 }
 
 async function phone(page) {
@@ -176,7 +184,7 @@ try {
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 900 } })).newPage();
   const userId = await signIn(page);
   await clearAboutSheet(page, userId);
-  await desktop(page);
+  for (const t of COUNTING) await desktop(page, t);
   await phone(page);
 } catch (e) {
   failures += 1;

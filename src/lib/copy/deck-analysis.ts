@@ -104,7 +104,7 @@ export const deckAnalysisCopy = {
      * 99. An earlier draft said exactly that.
      */
     loading: {
-      heading: "Reading your deck\u2026",
+      heading: "Working out your bracket\u2026",
       body: "Checking your list against each bracket's rules.",
     },
     /**
