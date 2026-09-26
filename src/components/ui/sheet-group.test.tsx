@@ -47,3 +47,18 @@ describe("SheetGroupToggle", () => {
     expect(b.className).not.toContain("pl-[43px]");
   });
 });
+
+describe("SheetGroupToggle busy", () => {
+  it("is busy and not pressable while it fetches, and draws neither when not", () => {
+    const onToggle = vi.fn();
+    const { rerender } = render(<SheetGroupToggle all={false} busy onToggle={onToggle} label="Show all 12 cards" fewer="Show fewer" />);
+    const b = screen.getByRole("button", { name: /Show all 12 cards/ });
+    expect(b).toHaveAttribute("aria-busy", "true");
+    expect(b).toBeDisabled();
+    fireEvent.click(b);
+    expect(onToggle).not.toHaveBeenCalled();
+    rerender(<SheetGroupToggle all={false} onToggle={onToggle} label="Show all 12 cards" fewer="Show fewer" />);
+    expect(b).not.toHaveAttribute("aria-busy");
+    expect(b).not.toBeDisabled();
+  });
+});

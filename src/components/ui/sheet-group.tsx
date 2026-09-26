@@ -22,17 +22,21 @@ export function SheetGroupHeading({ label, note, as: Tag = "h4" }: { label: stri
  * decides whether the group is long enough to draw one. `className` sets the left indent, which
  * lines the label up with its rows' name column (43px on the swap sheet).
  */
-export function SheetGroupToggle({ all, onToggle, label, fewer, className }: {
+export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy = false }: {
   all: boolean;
   onToggle: () => void;
   label: string;
   fewer: string;
   className?: string;
+  /** The press is fetching the rest of a capped group (the swap sheet's Show all): busy, and not pressable. */
+  busy?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-expanded={all}
+      aria-busy={busy || undefined}
+      disabled={busy}
       onClick={onToggle}
       className={twMerge(
         "flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent border-0 border-b border-[color:var(--border)] text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer",

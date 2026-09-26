@@ -24,6 +24,7 @@ import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { loadingStatus, sheetModel, type SheetGroup, type SheetRow } from "../../lib/swaps/sheet-model";
 import { STAND_IN_GROUP_SHOWN } from "../../lib/swaps/stand-ins";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 import { CardDetailTrigger, useCardDetail, type SheetFooter } from "../cards/card-detail-provider";
 import { Crown } from "../ui/crown";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
@@ -110,25 +111,16 @@ export function StandInGroup({
   const more = groupTotal(group) > STAND_IN_GROUP_SHOWN;
   return (
     <section className="flex flex-col" aria-label={group.heading}>
-      <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
-        <h4 className="m-0 font-mono font-normal text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
-          {group.heading}
-        </h4>
-        <span className="font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--fg-locked)" }}>{group.order}</span>
-      </div>
+      <SheetGroupHeading label={group.heading} note={group.order} />
       <ul className="m-0 p-0 list-none">{shown.map(children)}</ul>
       {more ? (
-        <button
-          type="button"
-          aria-expanded={all}
-          aria-busy={fetching || undefined}
-          disabled={fetching}
-          onClick={onToggle ?? (() => setOwn((v) => !v))}
-          className="flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent border-0 border-b border-[color:var(--border)] text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer"
-        >
-          <span>{all ? copy.showFewer : copy.showAll(groupTotal(group), group.noun)}</span>
-          <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{all ? "▴" : "▾"}</span>
-        </button>
+        <SheetGroupToggle
+          all={all}
+          busy={fetching}
+          onToggle={onToggle ?? (() => setOwn((v) => !v))}
+          label={copy.showAll(groupTotal(group), group.noun)}
+          fewer={copy.showFewer}
+        />
       ) : null}
     </section>
   );
