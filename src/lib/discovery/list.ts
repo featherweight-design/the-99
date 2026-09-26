@@ -156,7 +156,7 @@ const pick = (fit: ReturnType<typeof computeFit>) => ({
   fitSynergy: fit.fitSynergy,
 });
 
-export function assembleDiscovery(input: {
+type AssembleInput = {
   candidates: CandidateRow[];
   playedTags: DeckTagSet[];
   prices: Map<string, PriceAggRow>;
@@ -166,7 +166,14 @@ export function assembleDiscovery(input: {
   freePoolSize: number;
   sort: "fit" | "new";
   availOk: boolean;
-}): DiscoveryList {
+};
+
+export function assembleDiscovery(input: AssembleInput): DiscoveryList {
+  return assembleDiscoveryWithIds(input).list;
+}
+
+/** `assembleDiscovery`, plus each row's oracle id in row order, for the server alone. */
+export function assembleDiscoveryWithIds(input: AssembleInput): { list: DiscoveryList; oracleIds: string[] } {
   const played = new Set(input.playedTags.flatMap((d) => [...d.slugs]));
   const orderedDecks = orderDeckSets(input.playedTags);
 
@@ -257,7 +264,7 @@ export function assembleDiscovery(input: {
 
   const ordered = [...active].sort(input.sort === "new" ? byNovelty : byFit);
 
-  return {
+  const list: DiscoveryList = {
     // Named rather than spread, because four of the enriched fields are spent
     // here and read by nothing downstream: `oracleId` is the two sorts' final
     // tiebreak, `collectionSupport` is what the floor decides on, and `counts`
@@ -294,6 +301,7 @@ export function assembleDiscovery(input: {
     deckIdentities: input.playedTags.map((d) => d.colorIdentity),
     sort: input.sort,
   };
+  return { list, oracleIds: ordered.map((c) => c.oracleId) };
 }
 
 /**
@@ -355,8 +363,12 @@ export function assembleDiscovery(input: {
  * headline figure — every field the redesigned row is built to draw — so this
  * is the strongest kind of bump rather than the weakest: the old entry cannot
  * render the new row at all.
+ *
+ * 9 — the cached value is `{ encoded, oracleIds }` rather than the encoded list alone, so the
+ * page can build `Printed in ▾`'s index aligned to the rows by position (decision 9). A warm
+ * version-8 entry is the bare list, and reading `.encoded` off it would be undefined.
  */
-const PAYLOAD_VERSION = 8;
+const PAYLOAD_VERSION = 9;
 
 /** The cache key a discovery payload is filed under: its sort, and the version
     of the code that produced it. */
@@ -406,6 +418,18 @@ export async function loadDiscovery(
   userId: string,
   opts: { sort: "fit" | "new" },
 ): Promise<DiscoveryList> {
+  return (await loadDiscoveryWithIds(userId, opts)).list;
+}
+
+/**
+ * `loadDiscovery`, plus each row's oracle id in row order. The ids stay on the server: a row
+ * ships no oracle id (it was a sizable share of the payload), and what needs one here is
+ * `Printed in ▾`'s index, which the page builds beside the list and aligns by position.
+ */
+export async function loadDiscoveryWithIds(
+  userId: string,
+  opts: { sort: "fit" | "new" },
+): Promise<{ list: DiscoveryList; oracleIds: string[] }> {
   const { collection, availability, availOk } = await loadDiscoveryPool(userId);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
@@ -419,7 +443,7 @@ export async function loadDiscovery(
     loadPlayedTags(userId),
   ]);
 
-  return assembleDiscovery({
+  return assembleDiscoveryWithIds({
     availOk,
     candidates,
     playedTags,

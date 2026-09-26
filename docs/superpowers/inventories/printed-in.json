@@ -1,0 +1,77 @@
+{
+  "feature": "Printed in ▾ on the commander lanes (filter-chassis decision 9)",
+  "note": "Both lanes render the rack, and the rack mounts PrintedInControl in the wide form and the nested set panel in the sheet. PI_SET is a set code with commanders on both lanes for the signed-in account (on local-dev, sld for the owned lane and plst for discover both draw rows).",
+  "shares": {
+    "module": "src/components/commanders/rack/printed-in-control.tsx",
+    "binding": "PrintedInControl",
+    "note": "One rack serves both lanes, so each row's view is the rack that imports it; the lane views never import the control themselves."
+  },
+  "rows": [
+    {
+      "id": "owned-open",
+      "label": "/commanders: Printed in opened (wide popover; phone: sheet, then the set panel)",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/commanders", "wait": "[data-testid='printed-in'] button:visible", "settle": 1500 },
+        { "click": "[data-testid='printed-in'] button", "settle": 600 }
+      ]
+    },
+    {
+      "id": "owned-open-phone",
+      "label": "/commanders phone: the sheet's Printed in row opened as a second layer",
+      "view": "src/components/commanders/rack/filter-sheet.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/commanders", "settle": 1500 },
+        { "clickRole": "button", "name": "Filters", "settle": 600 },
+        { "click": "[data-testid='printed-in-row']", "settle": 600 }
+      ]
+    },
+    {
+      "id": "owned-filtered",
+      "label": "/commanders?p=${PI_SET}: the list filtered, the chip and the badge",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders?p=${PI_SET}", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "discover-open",
+      "label": "/discover: Printed in opened (wide popover)",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/discover", "wait": "[data-testid='printed-in'] button:visible", "settle": 1500 },
+        { "click": "[data-testid='printed-in'] button", "settle": 600 }
+      ]
+    },
+    {
+      "id": "discover-open-phone",
+      "label": "/discover phone: the sheet's Printed in row opened as a second layer",
+      "view": "src/components/commanders/rack/filter-sheet.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/discover", "settle": 1500 },
+        { "clickRole": "button", "name": "Filters", "settle": 600 },
+        { "click": "[data-testid='printed-in-row']", "settle": 600 }
+      ]
+    },
+    {
+      "id": "discover-filtered",
+      "label": "/discover?p=${PI_SET}: the list filtered, the chip and the badge",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/discover?p=${PI_SET}", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "zero",
+      "label": "/commanders with a pip and a set that leave nothing: the one-fix sentence",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders?c=w,u,b,r,g&m=exact&p=${PI_SET}", "settle": 1500 }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import type { CommanderRowItem } from "../../lib/commanders/rankings";
 import { toFreeDelta } from "../../lib/recs/free-delta";
 import { CommandersView, type AvailMode } from "./commanders-view";
 import { REVEAL_STEP } from "./reveal-control";
+import type { LanePrintedIn } from "../../lib/sets/printed-in";
 
 // The reveal control is unreachable on real data by design — the beta reference
 // collection yields 24 generals and REVEAL_STEP is 25. These tests are therefore
@@ -81,6 +82,7 @@ type Over = {
   freeItems?: CommanderRowItem[] | null;
   availOk?: boolean;
   degraded?: boolean;
+  printedIn?: LanePrintedIn;
 };
 
 // The mode is the URL's alone now, so a test that opens in `free` says so by
@@ -111,6 +113,7 @@ function el(list: CommanderRowItem[], over: Over = {}) {
       // assertion below therefore also asserts the round-trip.
       freeRanking={freeItems ? toFreeDelta(list, freeItems) : null}
       availOk={availOk}
+      printedIn={over.printedIn}
     />
   );
 }
@@ -393,6 +396,55 @@ describe("CommandersView zero states", () => {
     view(results(0));
     expect(screen.queryByText("Nothing in the pile matches")).toBeNull();
     expect(screen.queryByText("No commander by that name")).toBeNull();
+  });
+});
+
+describe("CommandersView Printed in", () => {
+  // Rows 0 and 1 were printed in HOB, row 2 in CMM, and rows 3 and 4 in neither. Aligned to the
+  // rows by position, as the page ships it.
+  const index: LanePrintedIn = {
+    sets: [
+      { code: "hob", name: "The Hobbit" },
+      { code: "cmm", name: "Commander Masters" },
+    ],
+    rows: [[0], [0], [1], [], []],
+  };
+  const withSets = (qs: string) => window.history.replaceState(null, "", `/commanders?${qs}`);
+  const names = () => cards().map((c) => c.textContent ?? "");
+
+  it("keeps the commanders printed in a chosen set", () => {
+    withSets("p=hob");
+    view(results(5), { printedIn: index });
+    expect(names()).toEqual([expect.stringContaining("General 0"), expect.stringContaining("General 1")]);
+  });
+
+  it("keeps a commander printed in ANY of several chosen sets", () => {
+    withSets("p=hob,cmm");
+    view(results(5), { printedIn: index });
+    expect(cards()).toHaveLength(3);
+    expect(names().some((n) => n.includes("General 3"))).toBe(false);
+  });
+
+  it("applies nothing when the lane shipped no index", () => {
+    withSets("p=hob");
+    view(results(5));
+    expect(cards()).toHaveLength(5);
+    // Nor draws a chip claiming it did.
+    expect(screen.queryByRole("button", { name: /Printed in HOB/ })).not.toBeInTheDocument();
+  });
+
+  // The one-fix sentence counts Printed in as ONE control. Here the pip gives back one row and
+  // the set filter gives back four, so the set filter is the fix it names.
+  it("names the set filter when dropping it gives back the most rows", () => {
+    const list = results(5, ["R"]);
+    list[2] = { ...list[2], colorIdentity: ["G"] };
+    withSets("c=r&p=cmm");
+    view(list, { printedIn: index });
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    expect(screen.getByText(/Drop the set filter and you get 4 rows back/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Drop Printed in CMM" }));
+    expect(cards()).toHaveLength(4);
+    expect(new URLSearchParams(window.location.search).get("p")).toBeNull();
   });
 });
 

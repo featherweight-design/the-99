@@ -293,7 +293,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // entry’s caption is about would be inside a sheet no specimen can open.
     width: 'plate',
     caption:
-      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no committed deck is holding. Where we could not read a commander’s most-played list, the bar has two segments instead of three and the score is out of 40.",
+      "Every commander you own and have not built yet, ranked by fit. Build from chooses which of your cards the scores are counted against: all of them, or only the ones no committed deck is holding. Printed in keeps the commanders printed in the sets you pick, by any printing and not only the one you own. Where we could not read a commander’s most-played list, the bar has two segments instead of three and the score is out of 40.",
     keys: [],
     since: 1,
   },
@@ -304,7 +304,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs. Under each row, a line names what that commander plays and none of your decks do, or its top play styles when your decks already play them all.',
+      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs. Under each row, a line names what that commander plays and none of your decks do, or its top play styles when your decks already play them all. Pick sets under Printed in and only commanders printed in them stay.',
     keys: [
       'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
       'Best fit, the default, reads your whole collection, because you would own this commander if you bought it.',

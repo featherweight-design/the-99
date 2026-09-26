@@ -31,6 +31,16 @@ export type ChipSpec = {
   next: Partial<LaneParams>;
 };
 
+/**
+ * The Printed in chip's label, and the control's name wherever the lane names it (the empty
+ * state's one fix): one set by its code, two by both, more by a count.
+ */
+export function printedInLabel(codes: readonly string[]): string {
+  if (codes.length === 1) return filterCopy.printedIn.one(codes[0]);
+  if (codes.length === 2) return filterCopy.printedIn.many(codes);
+  return filterCopy.printedIn.manyShort(codes.length);
+}
+
 // Control order, and search first: the row reads in the order the rack above it
 // is laid out, so a chip and the control that made it are on the same sight line.
 export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
@@ -80,6 +90,24 @@ export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
     }
   }
 
+  // One chip for the whole selection, like the colours: past two sets the codes collapse to a count,
+  // and the spoken form still names every one.
+  if (params.printedIn.length > 0) {
+    const label = printedInLabel(params.printedIn);
+    chips.push({
+      key: "printedIn",
+      label,
+      spoken: params.printedIn.length > 2 ? filterCopy.printedIn.many(params.printedIn) : undefined,
+      removeAria: filterCopy.printedIn.removeAria,
+      next: { printedIn: [] },
+    });
+  }
+
+  // Order is never chipped, on either lane: it always has a value, and the
+  // trigger on the rack already names the one in force. That holds on discover
+  // even though two of its five orders now decide what the list is ranked on —
+  // a chip saying so would restate the control beside it.
+
   if (lane === "owned" && params.avail === "free") {
     chips.push({
       key: "avail",
@@ -88,11 +116,6 @@ export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
       next: { avail: "all" },
     });
   }
-
-  // Order is never chipped, on either lane: it always has a value, and the
-  // trigger on the rack already names the one in force. That holds on discover
-  // even though two of its five orders now decide what the list is ranked on —
-  // a chip saying so would restate the control beside it.
 
   return chips;
 }

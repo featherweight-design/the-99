@@ -23,6 +23,9 @@ import {
 } from "../../lib/commanders/lane-params";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import { nearestFix } from "../../lib/commanders/nearest-fix";
+import { laneOracleIds, printedInOptions } from "../../lib/commanders/printed-in-lane";
+import { filePrintedIn, isPrintedIn, type LanePrintedIn } from "../../lib/sets/printed-in";
+import { printedInLabel } from "./rack/chip-line";
 import { filterCopy } from "../../lib/copy/lanes";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CommanderRow } from "./commander-row";
@@ -47,6 +50,9 @@ export type AvailMode = "all" | "free";
 // happens once, here, rather than inside the predicate — the collection browser
 // passes it upper-case already.
 const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
+
+/** One empty selection, so a memo reading it holds still across renders. */
+const NO_SETS: string[] = [];
 
 /** The reader's word for one pip. The catalog's hues are upper-case and the copy
     module keys on the URL's lower-case form, so the lift happens here. */
@@ -98,6 +104,9 @@ export type CommandersViewProps = {
       failed, or the ranking itself came back unusable. Either way `What's free`
       is unavailable, and `freeRanking` is null alongside it. */
   availOk: boolean;
+  /** `Printed in ▾`'s index, aligned to `laneOracleIds(results)`. Absent when the read failed,
+      and then the control is not drawn and a `?p=` is not applied. */
+  printedIn?: LanePrintedIn;
 };
 
 export function CommandersView({
@@ -108,6 +117,7 @@ export function CommandersView({
   firstRun,
   freeRanking,
   availOk,
+  printedIn,
 }: CommandersViewProps) {
   const search = useSearchParams();
 
@@ -290,9 +300,49 @@ export function CommandersView({
     return q === "" ? active : active.filter((r) => matchesQuery(r, q));
   }, [active, params.q]);
 
+  // `Printed in` (decision 9): each row's sets, filed once per payload. With no index the
+  // selection is not applied, since there is nothing to apply it against.
+  const codesByOracle = useMemo(
+    () => (printedIn ? filePrintedIn(new Map(), laneOracleIds(results), printedIn) : null),
+    [printedIn, results],
+  );
+  const setCodes = codesByOracle ? params.printedIn : NO_SETS;
+  // With no index the selection filters nothing, so the rack must not draw its chip or count it on
+  // the badge either: a chip over an unfiltered list says the list was narrowed when it was not.
+  const rackParams = useMemo(
+    () => (codesByOracle || params.printedIn.length === 0 ? params : { ...params, printedIn: NO_SETS }),
+    [codesByOracle, params],
+  );
+  const inSets = useCallback(
+    <T extends { oracleId: string }>(rows: T[]): T[] =>
+      setCodes.length === 0 || !codesByOracle
+        ? rows
+        : rows.filter((r) => isPrintedIn(codesByOracle, r.oracleId, setCodes)),
+    [codesByOracle, setCodes],
+  );
+  // Search, then sets, then colour: every figure below counts over the list the other
+  // controls left, which is what makes each one answer for a single control.
+  const narrowed = useMemo(() => inSets(searched), [inSets, searched]);
+
   const filtered = useMemo(
-    () => ordered(filterByColors(searched, colors, params.match), params.order),
-    [searched, colors, params.match, params.order],
+    () => ordered(filterByColors(narrowed, colors, params.match), params.order),
+    [narrowed, colors, params.match, params.order],
+  );
+
+  // The panel's rows: this lane's sets, each counting the rows the OTHER controls leave. Search
+  // is not one of them, as on /collection's Set: the counts hold still while the reader types.
+  const setOptions = useMemo(
+    () =>
+      printedIn && codesByOracle
+        ? printedInOptions(
+            printedIn.sets,
+            codesByOracle,
+            laneOracleIds(results),
+            filterByColors(active, colors, params.match).map((r) => r.oracleId),
+            setCodes,
+          )
+        : undefined,
+    [printedIn, codesByOracle, results, active, colors, params.match, setCodes],
   );
 
   // What `Exactly` costs against `Any`, counted over the same searched list so
@@ -300,10 +350,10 @@ export function CommandersView({
   // no pip is lit, or when the two modes agree — a "0 excluded" aside is noise.
   const excludedByExactly = useMemo(() => {
     if (params.match !== "exactly" || colors.length === 0) return null;
-    const loose = filterByColors(searched, colors, "contains").length;
-    const diff = loose - filterByColors(searched, colors, "exactly").length;
+    const loose = filterByColors(narrowed, colors, "contains").length;
+    const diff = loose - filterByColors(narrowed, colors, "exactly").length;
     return diff > 0 ? diff : null;
-  }, [searched, colors, params.match]);
+  }, [narrowed, colors, params.match]);
 
   // What `Build from` cost, and it answers for that one control — the same shape
   // as `excludedByExactly` above. Null outside free mode and null where it hid
@@ -320,10 +370,10 @@ export function CommandersView({
   const sleevedByFree = useMemo(() => {
     if (avail !== "free" || !freeItems) return null;
     const q = params.q.trim().toLowerCase();
-    const searchedAll = q === "" ? results : results.filter((r) => matchesQuery(r, q));
+    const searchedAll = inSets(q === "" ? results : results.filter((r) => matchesQuery(r, q)));
     const hidden = filterByColors(searchedAll, colors, params.match).length - filtered.length;
     return hidden > 0 ? hidden : null;
-  }, [avail, freeItems, results, params.q, colors, params.match, filtered.length]);
+  }, [avail, freeItems, results, params.q, inSets, colors, params.match, filtered.length]);
 
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
@@ -383,10 +433,10 @@ export function CommandersView({
   // a button that claimed to have cleared them.
   const handleClearFilter = useCallback(() => update(defaultParams("owned")), [update]);
 
-  // The zero state's specific correction: the one lit pip whose removal returns
-  // the most rows, with the commander it brings back and how many come with it.
+  // The zero state's specific correction: the one lit pip, or the Printed in selection, whose
+  // removal returns the most rows, with the commander it brings back and how many come with it.
   //
-  // Colours only. Availability is a scoring control — it re-scores the same
+  // Not availability. Availability is a scoring control — it re-scores the same
   // members and removes none — so dropping it could never return a row, and the
   // mode is excluded because the sentence the copy module owns promises the
   // reader a colour ("Drop the colour and you get N rows back"), which a mode
@@ -401,11 +451,17 @@ export function CommandersView({
       returned.set(
         colourName(hue),
         filterByColors(
-          searched,
+          narrowed,
           colors.filter((c) => c !== hue),
           params.match,
         ),
       );
+    }
+    // `Printed in` is one control however many sets it names, so dropping it is one candidate,
+    // named as its chip names it. Last in the map, so a tie goes to a pip: `changedAt` is 0 for
+    // every candidate, and `nearestFix` keeps the first of equals.
+    if (setCodes.length > 0) {
+      returned.set(printedInLabel(setCodes), filterByColors(searched, colors, params.match));
     }
     const best = nearestFix(
       [...returned].map(([control, rows]) => ({ control, rows: rows.length, changedAt: 0 })),
@@ -414,19 +470,25 @@ export function CommandersView({
     const back = ordered(returned.get(best.control) as typeof searched, params.order);
     // The DRAWN name: this sentence offers to bring a row back, and naming it by the
     // oracle name would promise a commander no row on this lane is captioned with.
-    return { name: commanderDisplayName(back[0]), control: best.control, rows: best.rows };
-  }, [colors, searched, params.match, params.order]);
+    const kind: "color" | "sets" =
+      setCodes.length > 0 && best.control === printedInLabel(setCodes) ? "sets" : "color";
+    return { name: commanderDisplayName(back[0]), control: best.control, rows: best.rows, kind };
+  }, [colors, narrowed, searched, setCodes, params.match, params.order]);
 
   // The named correction, and only it: one pip goes out and every other control
   // stays where the reader put it. The control is carried as the reader's word
   // for it, so the pip it names is found by that word rather than by index.
   const handleDropColour = useCallback(() => {
     if (nearest === null) return;
+    if (setCodes.length > 0 && nearest.control === printedInLabel(setCodes)) {
+      update({ ...params, printedIn: [] });
+      return;
+    }
     update({
       ...params,
       colors: rawColors.filter((hue) => colourName(hue) !== nearest.control),
     });
-  }, [nearest, update, params, rawColors]);
+  }, [nearest, update, params, rawColors, setCodes]);
 
   const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
   const remaining = Math.max(0, filtered.length - shown);
@@ -526,13 +588,14 @@ export function CommandersView({
           which is a different question from the reveal control's "N more
           below" — so the rack states one and never the other. */}
       <FilterRack
-        params={params}
+        params={rackParams}
         lane="owned"
         onChange={update}
         shown={filtered.length}
         total={active.length}
         excludedByExactly={excludedByExactly}
         sleevedByFree={sleevedByFree}
+        printedInOptions={setOptions}
       />
 
       {/* ── Main content: list (or filtered-empty) ── */}
@@ -549,12 +612,12 @@ export function CommandersView({
             when the query really did match commanders that free mode then hid. Zero with nothing lit at all is not a filtered result —
             the reader owns no commanders — and the list's own emptiness is the
             honest thing to show. */}
-        {filtered.length === 0 && colors.length === 0 && sleevedByFree ? (
+        {filtered.length === 0 && colors.length === 0 && setCodes.length === 0 && sleevedByFree ? (
           <FreeEmpty
             query={params.q.trim() || undefined}
             onShowAll={() => update({ ...params, avail: "all" })}
           />
-        ) : filtered.length === 0 && colors.length > 0 ? (
+        ) : filtered.length === 0 && (colors.length > 0 || setCodes.length > 0) ? (
           <FilteredEmpty
             nearest={nearest}
             onDrop={handleDropColour}

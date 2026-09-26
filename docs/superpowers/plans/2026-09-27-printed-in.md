@@ -86,10 +86,12 @@ are counted against; the set filter narrows rows. They compose like the colors d
    `probe:printed-in`, read-only against the real catalog: the predicate and the index agree set by
    set, a card printed in two sets matches either, two sets are the union, case, an unknown code.
    `nearestFix` moves to PR 2, where its candidates are built.
-2. **The control on both lanes.** Rack slot, sheet row plus second layer, chips, the owned and
-   discover empty states, the excluded report cause, the About edit, the probe below and the
-   contact-sheet inventory. ~600 lines. If it runs past ~800 it splits owned lane / discover
-   lane, named before it is split.
+2. **The shared set list (#1069).** `/collection`'s phone set list moves to
+   `ui/set-list-sheet.tsx`, parameterised by copy, and draws each set's code as the wide panel
+   does. It was split off the next PR, which came to 1,659 lines (d9 approved the split).
+3. **The control on both lanes.** Rack slot, sheet row plus second layer (the shared list, with its
+   `note` for the hint), chips, the owned and discover empty states, the About edit, the probe and
+   the contact-sheet inventory. Opened once #1069 is on main.
 
 ## About
 

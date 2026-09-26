@@ -1793,6 +1793,22 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every
   candidate in every set and fails three more. It makes no writes, so it can point at staging.
 
+- `pnpm probe:printed-in-lanes` presses `Printed in ▾` on `/commanders` and `/discover` at
+  390x844 and 1300x900 (filter-chassis decision 9). At 1300 it opens the rack's popover. At 390 it
+  opens the filter sheet, then the set list as a SECOND layer over it (decision 23), and asserts the
+  sheet goes inert under that layer and that Done closes the layer alone. It picks the enabled set
+  with the most rows by ASKING THE PANEL, so the fixture follows the account rather than a set name.
+  Then it asserts `?p=`, the chip, that the result line holds exactly the count the option promised,
+  and that every row on screen is printed in that set. That last one is checked against the
+  DATABASE (card names and flavor names), never against the index the page shipped, which would
+  only prove the index agrees with itself. Removing the chip must give the rows back.
+
+  Its last walk is the owned lane's one fix, with Printed in as one candidate beside the pips. It
+  tries color sets until the lane empties with the set lit, then asserts that pressing the named
+  `Drop …` returns what the sentence promised. With the owned lane's set filter taken out of the
+  view, three checks fail at 390 (`194 shown, option said 39`). It writes only the account's About
+  row, captured and restored. Point it at `local-dev`, **never production**.
+
 - `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — fourteen
   checks in seven sections, one per rule the fill gained when it stopped building to four
   asserted constants.

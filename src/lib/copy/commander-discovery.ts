@@ -218,6 +218,19 @@ export const discoveryCopy = {
             total,
           )} decks ${matching === 1 ? "covers" : "cover"} ${identity}. That is where those commanders went.`,
     filteredCta: "Clear the color filter",
+    // When Printed in emptied the list rather than the colors (decision 9). The set filter
+    // matches printings the reader does not own, so this lane can be emptied by it outright.
+    filteredSetsHeading: "No commander printed there",
+    filteredSetsBody: (sets: string, candidates: number) =>
+      `${sets} leaves nothing in the ${n(candidates)} you don't own.`,
+    filteredSetsCta: "Clear the printed-in filter",
+    // Both lit: the COMBINATION left nothing, so neither is named as the cause on its own.
+    filteredTogetherHeading: "No commander fits both",
+    // `colors` arrives lower-case (`colorWords`), and `sets` as the chip names it (`Printed in
+    // CMM`), so the sentence opens on the count and lowers the chip's first letter.
+    filteredTogetherBody: (colors: string, sets: string, candidates: number) =>
+      `None of the ${n(candidates)} you don't own is ${colors} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
+    filteredBothCta: "Clear both filters",
     // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
     // was the deleted scope control's option label, and it opened on "or", which
     // read as a trailing clause of the button beside it rather than a link.
