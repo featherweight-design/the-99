@@ -147,13 +147,19 @@ function network(reqs, t0) {
   };
 }
 
-/** The `[perf]` lines the server logged since `from` (a byte offset into its log). */
-function serverSpans(from) {
+/**
+ * The `[perf]` line for `pattern` the server logged since `from` (a byte offset into its log), or
+ * null. Filtered by the route PATTERN because a page's `<Link>` prefetches and a card press's own
+ * reads can log in the same window, and another route's spans are not this load's breakdown. The
+ * first match is the measured request's: it was asked for first and the window closes with it.
+ */
+function serverSpans(from, pattern) {
   if (!SERVER_LOG) return null;
   // `from` is a byte offset, so the slice is taken on the bytes before decoding: a string
   // slice counts UTF-16 units and lands mid-line after any non-ASCII output.
   const text = readFileSync(SERVER_LOG).subarray(from).toString("utf8");
-  return text.split("\n").filter((l) => l.startsWith("[perf] ")).map((l) => l.slice(7));
+  const line = text.split("\n").find((l) => l.startsWith(`[perf] ${pattern} `));
+  return line ? line.slice(7) : null;
 }
 const logSize = () => (SERVER_LOG ? statSync(SERVER_LOG).size : 0);
 
@@ -201,7 +207,7 @@ async function cardPress(page, cap) {
     }, null, { timeout: 30_000, polling: 16 }).then(() => Date.now() - pressed, () => null);
     await page.waitForTimeout(400);
     // The action logs its spans in `after()`, once it has answered; the 400ms above covers that.
-    out[key] = { dialog: dialogMs, art, action: network(cap.all(), 0).actionMs, spans: serverSpans(from) };
+    out[key] = { dialog: dialogMs, art, action: network(cap.all(), 0).actionMs, spans: serverSpans(from, "getCardDetail") };
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
   }
@@ -220,7 +226,7 @@ async function one(browser, state, width, routes, sql) {
     const cold = await load(page, cap, `${BASE}${route.path}`);
     const from = logSize();
     const warm = await load(page, cap, `${BASE}${route.path}`);
-    const spans = serverSpans(from);
+    const spans = route.pattern ? serverSpans(from, route.pattern) : null;
     const db = sql ? await dbExec(sql, () => load(page, cap, `${BASE}${route.path}`)) : null;
     result.routes[route.label] = { cold, warm, spans, db };
     if (route.label === "deck") result.card = await cardPress(page, cap);
@@ -297,9 +303,10 @@ async function main() {
           order by (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id) desc, d.id limit 1`;
     if (!deck) throw new Error(deckName ? `The account has no deck named ${deckName}.` : "The account has no decks.");
     const routes = [
-      { label: "home", path: "/" },
-      { label: "decks", path: "/decks" },
-      { label: "deck", path: `/decks/${deck.id}` },
+      // `pattern` is the name the page's `perfRoute` logs under; a route with none logs no spans.
+      { label: "home", path: "/", pattern: "/" },
+      { label: "decks", path: "/decks", pattern: "/decks" },
+      { label: "deck", path: `/decks/${deck.id}`, pattern: "/decks/[id]" },
       { label: "collection", path: "/collection" },
       { label: "commanders", path: "/commanders" },
       { label: "discover", path: "/discover" },
