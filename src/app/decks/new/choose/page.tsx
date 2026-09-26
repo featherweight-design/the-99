@@ -23,6 +23,7 @@ import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../li
 import { isAnyOf } from "../../../../lib/intake/rank";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
+import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
 import { DeeperLook, DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
 import { loadOwnRead, wordsHash } from "../../../../lib/intake/run-store";
@@ -60,6 +61,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // themes with it: a failed read there draws each theme by its slug rather than taking the page
   // down above the results' own recovery (*Search failed*, with Retry).
   const themes = p.results ? await loadIntakeThemes().catch(() => []) : await loadIntakeThemes();
+  // The Sets answer's list, and its names on the results: a decoration either way, so a failed
+  // read draws codes rather than taking the page down.
+  const sets = await loadCommanderPrintings().then((x) => x.sets).catch(() => []);
 
   if (!p.results) {
     return (
@@ -71,7 +75,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.intake.subPhone}
           centered
         />
-        <IntakeForm themes={themes} initial={p} />
+        <IntakeForm themes={themes} sets={sets} initial={p} />
       </div>
     );
   }
@@ -89,7 +93,12 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
   ]);
   const settled = readForThisAsk(p, loaded, wordsHash);
-  const labels = { theme: (slug: string) => themeLabels[slug] ?? slug, card: card?.name ?? null };
+  const setNames = new Map(sets.map((s) => [s.code, s.name]));
+  const labels = {
+    theme: (slug: string) => themeLabels[slug] ?? slug,
+    card: card?.name ?? null,
+    set: (code: string) => setNames.get(code) ?? code.toUpperCase(),
+  };
   // A carried `a` the search could not apply (stale, or hand-edited) is no answer: the look sees
   // the answers the search ran on, so a card its read finds is not set aside for it.
   const lookParams = card === null && p.card !== null ? { ...p, card: null } : p;

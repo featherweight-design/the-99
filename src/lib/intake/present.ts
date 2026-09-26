@@ -13,7 +13,15 @@ import type { ResultRow } from "./rows";
  */
 
 /** Names the page needs that the answers hold only as ids. */
-export type Labels = { theme: (slug: string) => string; card: string | null };
+export type Labels = {
+  theme: (slug: string) => string;
+  card: string | null;
+  /** A set's name by its code; the code itself, upper-case, when the page has none. */
+  set?: (code: string) => string;
+};
+
+/** Set codes as the chip and the note print them: upper-case, joined by "or". */
+export const setCodesPhrase = (codes: readonly string[]) => codes.map((c) => c.toUpperCase()).join(` ${copy.readAs.joiner} `);
 
 export const colorsPhrase = (colors: readonly string[]) => colorNames(colors.map((c) => c.toUpperCase())).join(" · ");
 
@@ -146,6 +154,7 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
     case "colors": return colorsPhrase(p.colors);
     case "theme": return labels.theme(a.slug);
     case "themes": return copy.narrow.anyOfName(p.themes.map(labels.theme));
+    case "sets": return setCodesPhrase(p.sets);
     case "card": return labels.card ?? copy.readAs.kinds.card;
     case "budget": return `$${p.budgetDollars}`;
     case "bracket": return `bracket ${p.bracket}`;
@@ -164,6 +173,7 @@ export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
     case "colors": return { ...q, colors: [], match: "contains" };
     case "theme": return { ...q, themes: p.themes.filter((s) => s !== a.slug) };
     case "themes": return { ...q, themes: [], themeJoin: "all" };
+    case "sets": return { ...q, sets: [] };
     case "card": return { ...q, card: null };
     case "budget": return { ...q, budgetDollars: null };
     case "bracket": return { ...q, bracket: null };
@@ -224,6 +234,8 @@ export type AnswerChip = {
   deeper: boolean;
   /** An any-of chip's names, drawn with the joiner between them; `value` is then its spoken name. */
   names?: string[];
+  /** A printed-in chip's set codes, drawn mono with the joiner; `value` is then its full names. */
+  codes?: string[];
 };
 
 /**
@@ -245,6 +257,16 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
         deeper: p.themes.some((s) => marked(`t:${s}`)),
       }]
       : p.themes.map((s) => ({ kind: k.theme, value: labels.theme(s), deeper: marked(`t:${s}`) }))),
+    ...(p.sets.length > 0
+      ? [{
+        kind: k.printedIn,
+        // The kind, `printed in`, is read first, so the value is the sets' names alone (#1071's
+        // any-of chip was spoken with its kind twice).
+        value: p.sets.map((c) => labels.set?.(c) ?? c.toUpperCase()).join(` ${copy.readAs.joiner} `),
+        codes: p.sets.map((c) => c.toUpperCase()),
+        deeper: false,
+      }]
+      : []),
     ...(p.card && labels.card ? [{ kind: k.card, value: labels.card, deeper: marked("a") }] : []),
     ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}`, deeper: marked("b") }] : []),
     ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}`, deeper: marked("k") }] : []),

@@ -8,6 +8,8 @@ import { notBuiltBy } from "../decks/built";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
 import type { EdhrecTag } from "../edhrec/parse";
+import { printedIn } from "../sets/printed-in";
+import { loadCommanderPrintings } from "../sets/printed-in-read";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
 import { buildPhraseIndex, type PhraseIndex } from "./match";
 import { rankCandidates, type Answers, type Candidate, type CardFacts, type SearchResult, type Tribes } from "./rank";
@@ -87,14 +89,21 @@ export async function loadIntakeCatalog(now: number = Date.now()): Promise<{ the
  * format bans could never be placed in the deck (`validateCardForDeck` refuses it), so it is not a
  * build-around card either. Basic lands are left out through the repository's own rule,
  * `isBasicLand`, which takes a snow basic too: no player means a build-around Forest.
+ *
+ * And every set that printed a commander (the lanes' `Printed in` index), for the Sets answer: a
+ * set with none could only ever find nothing.
  */
 export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promise<PhraseIndex> {
-  const cards = (await db.execute(sql`
-    select c.oracle_id, c.name, c.type_line from cards c where c.commander_legal
-  `)).rows as { oracle_id: string; name: string; type_line: string }[];
+  const [cards, printings] = await Promise.all([
+    db.execute(sql`
+      select c.oracle_id, c.name, c.type_line from cards c where c.commander_legal
+    `).then((r) => r.rows as { oracle_id: string; name: string; type_line: string }[]),
+    // The sets are one answer among many: a failed read matches no set rather than every submit.
+    loadCommanderPrintings().catch(() => ({ sets: [] })),
+  ]);
   return buildPhraseIndex(themes, cards
     .filter((c) => !isBasicLand(c.type_line))
-    .map((c) => ({ oracleId: c.oracle_id, name: c.name })));
+    .map((c) => ({ oracleId: c.oracle_id, name: c.name })), printings.sets);
 }
 
 /** The search, with the build-around card's own facts for its chip (owned, price, flags). */
@@ -127,6 +136,7 @@ export async function loadSearchFacts(userId: string, asked: Answers): Promise<S
                 where t->>'slug' = any(${sql.param(answers.themes)}::text[])), '[]'::jsonb) as tags,
       exists (select 1 from collection_items ci
               where ci.user_id = ${userId} and ci.oracle_id = cs.commander_oracle_id) as owned,
+      ${printedIn(sql`cs.commander_oracle_id`, answers.sets ?? [])} as in_sets,
       ${card === null ? sql`null::real` : sql`(
         select csc.inclusion from commander_support_cards csc
         where csc.commander_oracle_id = cs.commander_oracle_id and csc.oracle_id = ${card}::uuid)`} as card_inclusion,
@@ -148,7 +158,7 @@ export async function loadSearchFacts(userId: string, asked: Answers): Promise<S
     where ${isCandidate(userId)}
   `)).rows as {
     id: string; name: string; color_identity: string[]; type_line: string | null; deck_count: number | null; game_changer: boolean;
-    tags: EdhrecTag[]; owned: boolean; card_inclusion: number | null; owned_support: number; support_total: number;
+    tags: EdhrecTag[]; owned: boolean; in_sets: boolean; card_inclusion: number | null; owned_support: number; support_total: number;
   }[];
 
   const ids = rows.map((r) => r.id);
@@ -164,6 +174,8 @@ export async function loadSearchFacts(userId: string, asked: Answers): Promise<S
     name: r.name,
     colorIdentity: r.color_identity,
     typeLine: r.type_line,
+    // The Sets answer, by the lanes' own rule (`printedIn`): any printing in any set asked.
+    inSets: r.in_sets,
     deckCount: r.deck_count,
     tags: r.tags,
     owned: r.owned,

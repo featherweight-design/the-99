@@ -136,3 +136,49 @@ describe("the themes' join (three-answers addendum §1)", () => {
     expect(match("elves or something").themeJoin).toBe("all");
   });
 });
+
+describe("sets (three-answers addendum §2)", () => {
+  const withSets = buildPhraseIndex(themes, cards, [
+    { code: "hob", name: "The Hobbit" },
+    { code: "hoc", name: "The Hobbit Commander" },
+    { code: "big", name: "The Big Score" },
+    { code: "all", name: "Alliances" },
+  ]);
+  const m = (text: string) => matchWords(text, withSets);
+  const sets = (text: string) => m(text).chips.flatMap((c) => (c.kind === "set" ? [c.code] : []));
+
+  it("reads Hugh's codes, in capitals beside sets, and uses the word sets", () => {
+    const r = m("I want a deck from the HOB or HOC sets using cards I own.");
+    expect(sets("I want a deck from the HOB or HOC sets using cards I own.")).toEqual(["hob", "hoc"]);
+    expect(r.leftover).not.toContain("sets");
+  });
+
+  it("never reads a lower-case code on its own as a set", () => {
+    expect(sets("a big deck with all the wizards")).toEqual([]);
+  });
+
+  it("never reads a letters-only code in lower case, even beside set or sets", () => {
+    expect(sets("a commander from all sets")).toEqual([]);
+    expect(sets("cards from the big set")).toEqual([]);
+    expect(sets("hob and hoc sets")).toEqual([]);
+  });
+
+  it("reads a lower-case code with a digit beside set or sets", () => {
+    const digits = buildPhraseIndex(themes, cards, [{ code: "m21", name: "Core Set 2021" }]);
+    expect(matchWords("from the m21 set", digits).chips).toEqual([{ kind: "set", code: "m21", name: "Core Set 2021" }]);
+  });
+
+  it("reads a set by name, the longest first, and only with a capital on one of its words", () => {
+    expect(sets("something from the Hobbit Commander set")).toEqual(["hoc"]);
+    expect(sets("Alliances please")).toEqual(["all"]);
+    expect(sets("alliances please")).toEqual([]);
+    // A two-word name is words as often as a set: `the big score` is no set.
+    expect(sets("go for the big score")).toEqual([]);
+    expect(sets("The Big Score cards")).toEqual(["big"]);
+  });
+
+  it("keeps a theme over a set sharing its words", () => {
+    const clash = buildPhraseIndex([{ slug: "dinosaurs", label: "Dinosaurs" }], [], [{ code: "dno", name: "Dinosaurs" }]);
+    expect(matchWords("Dinosaurs", clash).chips.map((c) => c.kind)).toEqual(["theme"]);
+  });
+});

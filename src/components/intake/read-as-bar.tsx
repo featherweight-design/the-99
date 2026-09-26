@@ -63,7 +63,20 @@ export function ReadAsBar({
                   className={`inline-flex items-center gap-[6px] max-w-full min-w-0 whitespace-nowrap h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border ${chip.deeper ? "border-dashed border-[color:var(--accent)]" : "border-solid border-[color:var(--border-strong)]"} bg-[color:var(--surface)]`}
                 >
                   <span className="shrink-0 font-mono text-[9px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{chip.kind}</span>
-                  {chip.names ? (
+                  {chip.codes ? (
+                    // Printed in: the codes, mono, joined by "or"; the sets spoken in full.
+                    <span data-testid="printed-in-codes" className="min-w-0 truncate">
+                      <span className="sr-only">{chip.value}</span>
+                      <span aria-hidden>
+                        {chip.codes.map((c, j) => (
+                          <span key={c}>
+                            {j > 0 && <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{` ${copy.readAs.joiner} `}</span>}
+                            <span className="font-mono text-[12px] font-semibold text-[color:var(--fg)]">{c}</span>
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                  ) : chip.names ? (
                     // Any of: the names with a mono "or" drawn between them, and the chip's name spoken whole.
                     <span data-testid="any-of-names" className="min-w-0 truncate text-[12.5px] text-[color:var(--fg-body)]">
                       <span className="sr-only">{chip.value}</span>

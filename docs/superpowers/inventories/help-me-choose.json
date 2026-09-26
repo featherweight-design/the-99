@@ -184,6 +184,49 @@
           "settle": 6000
         }
       ]
+    },
+    {
+      "id": "form-sets",
+      "label": "/decks/new/choose: two sets chosen (three answers §2)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?p=hob,hoc",
+          "wait": "[data-testid='sets-field']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "results-sets",
+      "label": "results: any of four tribes, printed in HOB or HOC (§2)",
+      "view": "src/components/intake/choose-results.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=orcs,elves,dwarves,wizards&tj=any&p=hob,hoc&v=results",
+          "wait": "[data-testid='order-line']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "form-sets-panel",
+      "label": "/decks/new/choose: the Sets panel open, over every set that printed a commander (§2)",
+      "view": "src/components/intake/sets-field.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?p=hob,hoc",
+          "wait": "[data-testid='sets-field']",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Filter by printed-in set"
+        },
+        {
+          "settle": 800
+        }
+      ]
     }
   ]
 }

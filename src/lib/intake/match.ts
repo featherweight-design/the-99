@@ -22,6 +22,12 @@ import { singularForms } from "../edhrec/tag-kinds";
  * all of. There is one join for every theme, so a single "or" between any two makes it any. A clause
  * mark other than a comma, or any word that is not a stop word, ends the phrase.
  *
+ * SETS (addendum §2): a set's NAME matches anywhere, after a theme or a card sharing its words. A set's CODE matches only typed in
+ * capitals (`HOB`), or in lower case beside "set" or "sets" when it holds a digit (`m21 set`):
+ * `all`, `big`, `one`, `war`, `who`, `ice` and `mid` are all codes, and "a big deck from all sets"
+ * names no set. A set's name, at any length, needs a capital on one of its words.
+ * The words "set" and "sets" beside a matched set are used, not left over.
+ *
  * A ONE-WORD CARD NAME MATCHES ONLY WHEN TYPED WITH A CAPITAL. The catalog holds `Fog`, `Opt`,
  * `Shock` and `Island`, and "a fog of a deck" is not a request for a build-around card. A name of two
  * or more words is specific enough on its own. The loader leaves basic lands out entirely.
@@ -29,6 +35,8 @@ import { singularForms } from "../edhrec/tag-kinds";
 export type Chip =
   | { kind: "theme"; slug: string; label: string }
   | { kind: "card"; oracleId: string; name: string }
+  /** A set, lower-case code as `printings` stores it. */
+  | { kind: "set"; code: string; name: string }
   | { kind: "budget"; dollars: number }
   | { kind: "bracket"; bracket: 1 | 2 | 3 | 4 | 5 };
 
@@ -47,7 +55,10 @@ export type MatchResult = {
   themeJoin: "all" | "any";
 };
 
-type Target = { kind: "theme"; slug: string; label: string } | { kind: "card"; oracleId: string; name: string };
+type Target =
+  | { kind: "theme"; slug: string; label: string }
+  | { kind: "card"; oracleId: string; name: string }
+  | { kind: "set"; code: string; name: string };
 
 export type PhraseIndex = {
   /** Keyed by `phraseKey`. A theme and a card may share a key; the theme is listed first. */
@@ -56,6 +67,8 @@ export type PhraseIndex = {
   maxWords: number;
   /** Every card the index was built from: the cards the intake can offer as an answer. */
   cardIds: ReadonlySet<string>;
+  /** Every set by its lower-case code, for the code pass. */
+  setCodes: ReadonlyMap<string, { code: string; name: string }>;
 };
 
 /**
@@ -98,6 +111,7 @@ export const phraseKey = (text: string): string => phraseWords(text).join(" ");
 export function buildPhraseIndex(
   themes: readonly { slug: string; label: string }[],
   cards: readonly { oracleId: string; name: string }[],
+  sets: readonly { code: string; name: string }[] = [],
 ): PhraseIndex {
   const targets = new Map<string, Target[]>();
   const add = (key: string, t: Target) => {
@@ -129,10 +143,17 @@ export function buildPhraseIndex(
     }
   }
   for (const [key, c] of faces) if (c) add(key, { kind: "card", oracleId: c.oracleId, name: c.name });
+  // Last, so a theme or a card sharing a set's words keeps them.
+  for (const s of sets) add(phraseKey(s.name), { kind: "set", code: s.code.toLowerCase(), name: s.name });
 
   let maxWords = 0;
   for (const key of targets.keys()) maxWords = Math.max(maxWords, key.split(" ").length);
-  return { targets, maxWords, cardIds: new Set(cards.map((c) => c.oracleId)) };
+  return {
+    targets,
+    maxWords,
+    cardIds: new Set(cards.map((c) => c.oracleId)),
+    setCodes: new Map(sets.map((s) => [s.code.toLowerCase(), { code: s.code.toLowerCase(), name: s.name }])),
+  };
 }
 
 // `$200`, `$1,500`, `$49.99`, `200$`, `200 dollars`, `150 bucks`, `300 usd`.
@@ -172,17 +193,62 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
   const consumed = new Array<boolean>(words.length).fill(false);
   // Word indexes where each theme match starts and ends, for the join between them.
   const themeSpans: [number, number][] = [];
+  // The last word of each set NAME the scan matched, so its own "set(s)" can be used after it.
+  const setEnds = new Set<number>();
   for (let i = 0; i < words.length; i++) {
     for (let n = Math.min(index.maxWords, words.length - i); n >= 1; n--) {
       const key = words.slice(i, i + n).map((w) => w.word).join(" ");
-      const target = (index.targets.get(key) ?? []).find((t) => t.kind === "theme" || n > 1 || /^\p{Lu}/u.test(words[i].raw.replace(/^[^\p{L}\p{N}]+/u, "")));
+      const capitalAt = (k: number) => /^\p{Lu}/u.test(words[k].raw.replace(/^[^\p{L}\p{N}]+/u, ""));
+      const target = (index.targets.get(key) ?? []).find((t) =>
+        t.kind === "theme"
+        // A set is a proper name at any length: `game night` and `the list` are words, `Game
+        // Night` and `The List` are sets. Some word in the span must carry its capital.
+        || (t.kind === "set" ? Array.from({ length: n }, (_, d) => i + d).some(capitalAt) : n > 1 || capitalAt(i)));
       if (!target) continue;
       found.push({ at: words[i].at, chip: target });
       if (target.kind === "theme") themeSpans.push([i, i + n - 1]);
+      if (target.kind === "set") setEnds.add(i + n - 1);
       for (let k = i; k < i + n; k++) consumed[k] = true;
       i += n - 1;
       break;
     }
+  }
+
+  // Set codes, on what the phrase scan left: in capitals, or beside "set(s)" (see the header).
+  const SET_WORD = /^sets?$/;
+  const JOINS = new Set(["or", "and"]);
+  const nearSetWord = (k: number, dir: 1 | -1) => {
+    for (let j = k + dir; j >= 0 && j < words.length; j += dir) {
+      if (SET_WORD.test(words[j].word)) return j;
+      const w = words[j].word;
+      if (!(JOINS.has(w) || index.setCodes.has(w))) return -1;
+    }
+    return -1;
+  };
+  for (let k = 0; k < words.length; k++) {
+    if (consumed[k]) continue;
+    const set = index.setCodes.get(words[k].word);
+    if (!set) continue;
+    const bare = words[k].raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+    const capitals = /^[A-Z0-9]+$/.test(bare) && /[A-Z]/.test(bare);
+    // In lower case only a code no one would type as a word counts beside "set(s)": one with a
+    // digit (`m21 set`). A letters-only code is an English word as often as a set (`all sets`,
+    // `one set`, `the big set`), and a set read in error cuts the results to that one set.
+    const wordlike = /^[a-z]+$/.test(bare);
+    const after = capitals || wordlike ? -1 : nearSetWord(k, 1);
+    const before = capitals || wordlike || after >= 0 ? -1 : nearSetWord(k, -1);
+    if (!capitals && after < 0 && before < 0) continue;
+    // Capitals: the word "set(s)" beside the codes is still theirs.
+    const own = capitals ? nearSetWord(k, 1) : -1;
+    if (own >= 0) consumed[own] = true;
+    found.push({ at: words[k].at, chip: { kind: "set", code: set.code, name: set.name } });
+    consumed[k] = true;
+    for (const j of [after, before]) if (j >= 0) consumed[j] = true;
+  }
+  // A matched set name's own "set(s)" beside it is used too.
+  for (let k = 0; k < words.length; k++) {
+    if (consumed[k] || !SET_WORD.test(words[k].word)) continue;
+    if (k > 0 && setEnds.has(k - 1)) consumed[k] = true;
   }
 
   for (const f of found.sort((a, b) => a.at - b.at)) push(f.chip);
@@ -273,13 +339,18 @@ function leftoverPhrases(
 }
 
 function sameTarget(a: Target, b: Target): boolean {
-  return a.kind === "theme" ? b.kind === "theme" && a.slug === b.slug : b.kind === "card" && a.oracleId === b.oracleId;
+  switch (a.kind) {
+    case "theme": return b.kind === "theme" && a.slug === b.slug;
+    case "card": return b.kind === "card" && a.oracleId === b.oracleId;
+    case "set": return b.kind === "set" && a.code === b.code;
+  }
 }
 
 function sameChip(a: Chip, b: Chip): boolean {
   switch (a.kind) {
     case "theme": return b.kind === "theme" && a.slug === b.slug;
     case "card": return b.kind === "card" && a.oracleId === b.oracleId;
+    case "set": return b.kind === "set" && a.code === b.code;
     case "budget": return b.kind === "budget" && a.dollars === b.dollars;
     case "bracket": return b.kind === "bracket" && a.bracket === b.bracket;
   }

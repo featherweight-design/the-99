@@ -31,7 +31,7 @@ Each PR ships working on its own and stays under ~800 lines.
     await, same pattern and test shape as `printed-in-read`.
   - The `narrow.fewLead` divergence (audit 9).
 
-**PR 2: Cards for the 99 (own-only).**
+**PR 3: Cards for the 99 (own-only).** Built last (2026-09-26): its migration waits on two others, and it carries the About caption edit.
 - Engine:
   - A `pool: "any" | "own"` answer (`pool=own`).
   - Migration `decks.answer_owned_only boolean not null default false`, so `fillDeck`'s retry fills the
@@ -51,11 +51,11 @@ Each PR ships working on its own and stays under ~800 lines.
   - The `the 99` chip. It is never offered as a loosening.
 - Hand-off: the hand-off row and intent.
 
-**PR 3: Sets.**
+**PR 2: Sets.** Built second, once #1064 merged, since it needs no migration.
 - Engine:
   - A `sets: string[]` answer (`p=hob,hoc`, the same key as the lanes' Printed in), OR within the answer.
   - Filtered by **0f's `printedIn(setCodes)`** from `src/lib/sets/printed-in.ts` (#1064), imported and
-    never copied. This PR waits for #1064 to merge, which is why it is last.
+    never copied. The row's code tag reads the lanes' `loadCommanderPrintings` index, the same rule over the same table.
 - Free match: a set name anywhere, and a code only in capitals or beside "set(s)" (audit 6).
 - UI:
   - The Sets field on the #1050 count trigger, with a `FilterPanel` over the whole catalog.
@@ -63,7 +63,7 @@ Each PR ships working on its own and stays under ~800 lines.
   - The row's mono code tag.
   - The narrow note's `Drop HOB or HOC · N commanders`.
 - Hand-off: the hand-off row and intent.
-- About: the **caption edit on `help-me-choose`**, listing the three answers. This is an ordinary edit
+- About (moved to PR 3, the last): the **caption edit on `help-me-choose`**, listing the three answers. This is an ordinary edit
   with no new entry and no bump, routed through /copy-review.
 
 ## Fence
@@ -76,7 +76,7 @@ Each PR ships working on its own and stays under ~800 lines.
 - `src/app/decks/new/choose/page.tsx`
 - `src/app/decks/actions.ts`, only the `createDeck` / `fillDeck` answer plumbing
 - `src/lib/tuning/limits.ts` (`seededAnswersIntent`)
-- `src/db/schema.ts` and migration 0071 (PR 2; rebase onto 0069 and 0070 before generating)
+- `src/db/schema.ts` and migration 0072 (PR 3; 0070 and 0071 belong to other lanes, and are on main before generating)
 - `src/lib/copy/about.ts`, the caption only (PR 3)
 - `scripts/probe-help-me-choose-*`
 - `scripts/measure-intake-tribes.mts`

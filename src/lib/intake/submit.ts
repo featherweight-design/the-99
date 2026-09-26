@@ -36,6 +36,7 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
   const resolved = resolveWords(carried === null ? match.chips : match.chips.filter((c) => c.kind !== "card"), {
     themes: p.themes,
     themeJoin: p.themeJoin,
+    sets: p.sets,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   }, match.themeJoin);
@@ -44,6 +45,7 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     words,
     themes: resolved.themes,
     themeJoin: resolved.themeJoin,
+    sets: resolved.sets,
     card: carried ?? resolved.card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,
@@ -67,6 +69,7 @@ export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string):
   const resolved = resolveWords(p.card === null ? read.chips : read.chips.filter((c) => c.kind !== "card"), {
     themes: p.themes,
     themeJoin: p.themeJoin,
+    sets: p.sets,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   }, p.themeJoin);
@@ -82,6 +85,7 @@ export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string):
     ...p,
     themes: resolved.themes,
     themeJoin: resolved.themeJoin,
+    sets: resolved.sets,
     card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,

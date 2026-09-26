@@ -14,6 +14,8 @@ export type CreateAnswers = {
   themes: string[];
   /** How the themes were joined, for the brief's wording alone. Absent is all of. */
   themeJoin?: "all" | "any";
+  /** Set codes, for the brief's wording alone. */
+  sets?: string[];
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: number | null;
@@ -22,6 +24,7 @@ export type CreateAnswers = {
 export type ValidAnswers = {
   themes: string[];
   themeJoin: "all" | "any";
+  sets: string[];
   cardOracleId: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -31,6 +34,8 @@ export type ValidAnswers = {
 export const MAX_BUDGET_DOLLARS = 100_000;
 /** The most theme labels a create takes: they write the brief, and the fill reads none of them. */
 export const MAX_THEMES = 8;
+/** The most set codes a create takes, for the brief. */
+export const MAX_SETS = 8;
 const MAX_THEME_LABEL = 60;
 
 export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
@@ -49,9 +54,14 @@ export function validateCreateAnswers(raw: CreateAnswers): ValidAnswers {
     throw new Error("themes are not valid");
   }
   if (raw.themeJoin !== undefined && raw.themeJoin !== "all" && raw.themeJoin !== "any") throw new Error("themes are not valid");
+  if (raw.sets !== undefined && (!Array.isArray(raw.sets) || raw.sets.length > MAX_SETS
+    || raw.sets.some((c) => typeof c !== "string" || !/^[a-z0-9]{2,8}$/.test(c)))) {
+    throw new Error("sets are not valid");
+  }
   return {
     themes: raw.themes.map((t) => t.trim()),
     themeJoin: raw.themeJoin ?? "all",
+    sets: raw.sets ?? [],
     cardOracleId,
     budgetDollars,
     bracket: bracket as Bracket | null,
@@ -87,7 +97,7 @@ export function answerColumnsFor(
     answerBracket: asked.bracket,
     answerCardOracleId: card?.oracleId ?? null,
     intent: seededAnswersIntent(commanderNames, {
-      themes: asked.themes, themeJoin: asked.themeJoin, cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
+      themes: asked.themes, themeJoin: asked.themeJoin, sets: asked.sets, cardName: card?.name ?? null, budgetDollars: asked.budgetDollars, bracket: asked.bracket,
     }),
     intentSeeded: true,
   };

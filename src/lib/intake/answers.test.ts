@@ -8,7 +8,9 @@ const UUID = "6ad8011d-3471-4369-9d68-b264cc027487";
 describe("validateCreateAnswers", () => {
   it("passes a well-formed set, trimming theme labels", () => {
     expect(validateCreateAnswers({ ...ok, themes: [" Dinosaurs "], cardOracleId: UUID }))
-      .toEqual({ themes: ["Dinosaurs"], themeJoin: "all", cardOracleId: UUID, budgetDollars: 150, bracket: 3 });
+      .toEqual({ themes: ["Dinosaurs"], themeJoin: "all", sets: [], cardOracleId: UUID, budgetDollars: 150, bracket: 3 });
+    expect(validateCreateAnswers({ ...ok, sets: ["hob", "hoc"] }).sets).toEqual(["hob", "hoc"]);
+    expect(() => validateCreateAnswers({ ...ok, sets: ["HOB"] })).toThrow("sets");
     expect(validateCreateAnswers({ ...ok, themes: ["Orcs", "Elves"], themeJoin: "any" }).themeJoin).toBe("any");
   });
 

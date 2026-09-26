@@ -51,6 +51,10 @@ export const helpMeChooseCopy = {
     themeAnother: "Add another…", // canvas
     themeCount: (n: number) => plural(n, "commander", "commanders"), // canvas
     removeTheme: (label: string) => `Remove ${label}`, // eng: the chip's ✕, spoken
+    // Three-answers addendum §2: the Sets answer.
+    sets: "Sets",
+    setsCaption: "Only commanders printed in one of these. Leave it empty for every set.",
+    removeSet: (name: string) => `Remove ${name}`, // eng: the chip's ✕, spoken
     // Three-answers addendum §1: how two or more themes join.
     themeJoin: {
       all: "All",
@@ -76,7 +80,7 @@ export const helpMeChooseCopy = {
     startOver: "Start over", // canvas
     noPrice: "buy · no price", // canvas
     noPriceTail: "no price", // canvas: the tail of `noPrice`, drawn in --fg-faint
-    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", printedIn: "printed in", card: "card", budget: "budget", bracket: "bracket" }, // canvas
     /** Between the names on an any-of chip, drawn apart from them. */
     joiner: "or",
     /** After a deeper look: what even it could not place. */
@@ -144,6 +148,8 @@ export const helpMeChooseCopy = {
     figCardTail: (c: string) => `of its decks run ${c}`, // canvas
     figOwnedTail: (total: number) => `of the ${total} cards its decks run are yours`, // canvas
     setsRank: "SETS RANK",
+    /** The row's set tag, spoken: its code is drawn, the set named. */
+    printedIn: (set: string) => `Printed in ${set}`,
     bestFits: "Best fits",
     moreCommanders: "More commanders",
     // The ownership line's two figures, drawn as separate segments so the line wraps between them
@@ -200,7 +206,7 @@ export const helpMeChooseCopy = {
     block: "Built from your answers",
     change: "Change",
     changeAria: "Change your answers",
-    keys: { theme: "Theme", anyOf: "Any of", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
+    keys: { theme: "Theme", anyOf: "Any of", sets: "Printed in", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
     themeFig: (pct: number, t: string) => `${pct}% of its decks are ${t}.`, // canvas
     placed: "Placed in the deck because you asked for it.",
     cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas

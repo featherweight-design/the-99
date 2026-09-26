@@ -118,3 +118,19 @@ describe("an any-of chip", () => {
     expect(only.textContent?.startsWith("any of")).toBe(true);
   });
 });
+
+describe("a printed-in chip", () => {
+  it("draws the codes with or between them, and speaks the sets by name", () => {
+    const labels2 = { theme: (s: string) => s, card: null, set: (c: string) => ({ hob: "The Hobbit", hoc: "The Hobbit Commander" })[c] ?? c };
+    const p = { ...emptyParams(), sets: ["hob", "hoc"] };
+    render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ReadAsBar chips={answerChips(p, labels2)} card={null} notUsed={[]} changeHref="/x" startOverHref="/y" />
+      </CardDetailProvider>,
+    );
+    const [only] = screen.getAllByTestId("answer-chip");
+    const codes = within(only).getByTestId("printed-in-codes");
+    expect(codes.querySelector("[aria-hidden]")?.textContent).toBe("HOB or HOC");
+    expect(within(codes).getByText("The Hobbit or The Hobbit Commander").className).toContain("sr-only");
+  });
+});

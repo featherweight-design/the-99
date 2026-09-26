@@ -5,6 +5,7 @@ import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { hardDecks } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices, slotFor } from "../discovery/price";
+import { loadCommanderPrintings } from "../sets/printed-in-read";
 import type { Answers, CardFacts, Ranked, SearchResult } from "./rank";
 import { loadCardRow, searchCommanders } from "./search";
 
@@ -41,6 +42,11 @@ export type ResultRow = {
   cardFit: number | null;
   ownedSupport: number;
   supportTotal: number;
+  /**
+   * With sets asked, the first of them this commander was printed in, for the row's code tag
+   * (addendum §2), from the lanes' `Printed in` index. Absent or null with none asked.
+   */
+  set?: { code: string; name: string } | null;
 };
 
 export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
@@ -57,13 +63,21 @@ export async function loadResultsPage(userId: string, answers: Answers, offset =
     order: outcome.order,
     tooNarrow: outcome.tooNarrow,
     card: outcome.card,
-    rows: await decorate(userId, slice),
+    rows: await decorate(userId, slice, answers.sets ?? []),
     hasMore: outcome.rows.length > offset + RESULT_PAGE,
   };
 }
 
-async function decorate(userId: string, slice: readonly Ranked[]): Promise<ResultRow[]> {
+async function decorate(userId: string, slice: readonly Ranked[], sets: readonly string[]): Promise<ResultRow[]> {
   if (slice.length === 0) return [];
+  // A decoration: a failed read draws rows with no tag rather than no rows.
+  const index = sets.length === 0 ? null : await loadCommanderPrintings().catch(() => null);
+  const setOf = (id: string) => {
+    if (!index) return null;
+    const mine = new Set((index.byOracle[id] ?? []).map((i) => index.sets[i].code));
+    const code = sets.find((s) => mine.has(s));
+    return code ? { code, name: index.sets.find((s) => s.code === code)?.name ?? code.toUpperCase() } : null;
+  };
   const ids = slice.map((r) => r.candidate.oracleId);
   const owned = slice.filter((r) => r.candidate.owned).map((r) => r.candidate.oracleId);
   const [art, printings, availability, prices] = await Promise.all([
@@ -94,6 +108,7 @@ async function decorate(userId: string, slice: readonly Ranked[]): Promise<Resul
       cardFit,
       ownedSupport: c.ownedSupport,
       supportTotal: c.supportTotal,
+      set: setOf(c.oracleId),
     };
   });
 }

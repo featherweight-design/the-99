@@ -4,6 +4,7 @@ import type { ChooseParams } from "./params";
 import { backing, bestFit, isAnyOf, type Bracket } from "./rank";
 import { loadCardChip, type CardChip } from "./rows";
 import { loadIntakeThemes } from "./search";
+import { loadCommanderPrintings } from "../sets/printed-in-read";
 import { tribesFor, type ThemeRow } from "./vocabulary";
 
 /**
@@ -19,6 +20,8 @@ export type HandOffAnswers = {
   themes: { slug: string; label: string; pct: number | null; best?: boolean }[];
   /** Any of: one row for the group, its line the best figure, as the results row ranked it. */
   themeJoin: "all" | "any";
+  /** The sets asked, each with its name: one row, the codes as the chip draws them. */
+  sets: { code: string; name: string }[];
   /** Null when none was asked, or when it is not one the search would have applied. */
   card: (CardChip & { pct: number | null }) | null;
   /** The card's read FAILED, which says nothing about the card: the block draws no row it cannot
@@ -34,7 +37,7 @@ export type HandOffAnswers = {
  * prints no figures, and a failed card read draws no card row. None takes the create form down.
  */
 export async function loadHandOffAnswers(userId: string, commanderId: string, p: ChooseParams): Promise<HandOffAnswers> {
-  const [vocabulary, card, [row]] = await Promise.all([
+  const [vocabulary, card, [row], printings] = await Promise.all([
     p.themes.length > 0 ? loadIntakeThemes().catch(() => []) : Promise.resolve([]),
     // `undefined` when the read failed; `null` when it says there is no such card.
     p.card ? loadCardChip(userId, p.card).catch(() => undefined) : Promise.resolve(null),
@@ -45,8 +48,11 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
       from commander_support cs join cards c on c.oracle_id = cs.commander_oracle_id
       where cs.commander_oracle_id = ${commanderId}::uuid
     `).then((r) => r.rows as { deck_count: number | null; tags: ThemeRow["tags"]; type_line: string | null; card_inclusion: number | null }[]).catch(() => []),
+    // The sets' names, a decoration: a failed read draws their codes.
+    p.sets.length > 0 ? loadCommanderPrintings().catch(() => ({ sets: [], byOracle: {} })) : Promise.resolve({ sets: [], byOracle: {} }),
   ]);
   const labels = new Map(vocabulary.map((t) => [t.slug, t.label]));
+  const setNames = new Map(printings.sets.map((s) => [s.code, s.name]));
   const themeRow = row ? { deckCount: row.deck_count, tags: row.tags ?? [], typeLine: row.type_line } : null;
   // The results' own backing, a tribal theme's type line included, so a row admitted that way
   // shows the same figure here as it did there.
@@ -59,6 +65,7 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
     card: card ? { ...card, pct: row?.card_inclusion == null ? null : Math.round(row.card_inclusion) } : null,
     cardUnread: card === undefined,
     themeJoin: isAnyOf(p) ? "any" : "all",
+    sets: p.sets.map((code) => ({ code, name: setNames.get(code) ?? code.toUpperCase() })),
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   };
@@ -82,5 +89,5 @@ export function handOffThemes(
 
 /** Whether the block has a row to draw: colors and the words are never rows. */
 export function hasAnswerRows(a: HandOffAnswers): boolean {
-  return a.themes.length > 0 || a.card !== null || a.budgetDollars !== null || a.bracket !== null;
+  return a.themes.length > 0 || a.sets.length > 0 || a.card !== null || a.budgetDollars !== null || a.bracket !== null;
 }

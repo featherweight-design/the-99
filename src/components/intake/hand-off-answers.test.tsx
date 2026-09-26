@@ -12,6 +12,7 @@ const all: HandOffAnswers = {
   card: card(),
   cardUnread: false,
   themeJoin: "all",
+  sets: [],
   budgetDollars: 150,
   bracket: 2,
 };
@@ -47,8 +48,13 @@ describe("Built from your answers", () => {
     expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual(["Any ofOrcs, Elves or Wizards44% of its decks are Wizards."]);
   });
 
+  it("draws the sets as one row of their names", () => {
+    render(<HandOffAnswersBlock answers={{ ...all, card: null, budgetDollars: null, bracket: null, themes: [], sets: [{ code: "hob", name: "The Hobbit" }, { code: "hoc", name: "The Hobbit Commander" }] }} changeHref="/x" />);
+    expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual(["Printed inThe Hobbit or The Hobbit Commander"]);
+  });
+
   it("draws no row for an answer not given", () => {
-    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
+    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", sets: [], card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
     expect(screen.getAllByTestId("hand-off-row")).toHaveLength(1);
   });
 
