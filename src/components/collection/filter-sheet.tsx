@@ -18,7 +18,7 @@
 // on the commander lanes, because a field a reader can see beats one they must
 // open a dialog to reach — and the badge never counts it, for the same reason.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sheet } from "../ui/sheet";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -27,23 +27,29 @@ import { toggleAvailability } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import type { BrowseFilters } from "../../lib/collection/browse";
 import type { ColorOption } from "../../lib/collection/color-filter";
-import { rankSetOptions, type SetOption } from "../../lib/collection/set-filter";
+import type { SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColourPips } from "../ui/colour-pips";
-import { SearchField } from "../ui/text-field";
+import { SetListSheet, SheetChip, type SetListSheetCopy } from "../ui/set-list-sheet";
 import type { FilterChangeIntent } from "./filter-bar";
 
 const copy = collectionChassisCopy.sheet;
 
-/** 44px, not 36. This is the phone's only route to each filter (R3 §2). */
-// `shrink-0` is the height, not tidiness: in the set panel these are direct
-// children of a `flex-1` column holding hundreds of options, and a flex item's
-// default `flex-shrink: 1` compresses it toward min-content the moment the
-// column overflows. `h-[44px]` alone bought 26px rows on a real collection —
-// `min-h-0` constrains the LIST, and nothing was holding the options.
-const CHIP =
-  "flex h-[44px] shrink-0 cursor-pointer items-center gap-[7px] rounded-full border border-solid px-[13px] font-sans text-[13px]";
+/** The shared set panel, in this sheet's words. */
+const SET_LIST_COPY: SetListSheetCopy = {
+  panelAriaLabel: collectionFilterCopy.set.panelAriaLabel,
+  sheetTitle: collectionFilterCopy.set.sheetTitle,
+  footerSelected: collectionFilterCopy.set.footerSelected,
+  searchPlaceholder: copy.setSearchPlaceholder,
+  searchAriaLabel: copy.setSearchAria,
+  none: copy.setNone,
+  empty: copy.setEmpty,
+  optionAriaUnavailable: collectionFilterCopy.set.optionAriaUnavailable,
+  announceMatches: collectionFilterCopy.set.announceMatches,
+  announceResult: copy.match,
+  done: collectionFilterCopy.set.done,
+};
 
 const HEADING =
   "mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] tracking-[0.14em] uppercase text-[color:var(--fg-faint)]";
@@ -177,7 +183,8 @@ function SheetBody({
       // the very readers the trap exists for.
       beside={
         setsOpen && (
-          <SetPanel
+          <SetListSheet
+            copy={SET_LIST_COPY}
             onDismiss={() => setSetsOpen(false)}
             options={setOptions}
             selected={filters.setCodes}
@@ -213,7 +220,7 @@ function SheetBody({
         <Group heading={copy.typeHeading}>
           <div className="flex flex-wrap gap-[8px]">
             {typeOptions.map((option) => (
-              <Chip
+              <SheetChip
                 key={option.code}
                 label={option.label}
                 count={option.count}
@@ -247,7 +254,7 @@ function SheetBody({
             }
           >
             {availabilityOptions.map((option) => (
-              <Chip
+              <SheetChip
                 key={option.code}
                 label={option.label}
                 count={option.count}
@@ -353,241 +360,11 @@ function SheetBody({
   );
 }
 
-/**
- * The set list, as a panel above the filter sheet.
- *
- * It holds a FIXED height rather than a cap: the complaint that moved it here
- * was that narrowing the list resized the surface under the reader's thumb, and
- * a `max-h` list inside a growing sheet does exactly that. At 86vh with the list
- * as the only flexible row, typing narrows the list and moves nothing else.
- *
- * It carries its own live region because it is `aria-modal`: the sheet's region
- * is outside it, and a count announced there would be written where nothing can
- * read it — the same reason the sheet has one at all.
- */
-function SetPanel({
-  onDismiss,
-  options,
-  selected,
-  onToggle,
-  shown,
-  total,
-  returnFocusTo,
-}: {
-  onDismiss: () => void;
-  options: SetOption[];
-  selected: readonly string[];
-  onToggle: (code: string) => void;
-  /** The result count a set toggle moves — announced HERE, not behind the sheet. */
-  shown: number;
-  total: number;
-  /** The Set row, which is inert by the time this panel's own capture runs. */
-  returnFocusTo: React.RefObject<HTMLButtonElement | null>;
-}) {
-  const dialog = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState("");
-  const [announcement, setAnnouncement] = useState("");
-
-  // The panel takes initial focus rather than the search field, for the reason
-  // the sheet does: raising the keyboard on a reader who pressed a row is not
-  // what they asked for.
-  useDialogA11y(dialog, onDismiss, { initialFocusRef: dialog, returnFocusRef: returnFocusTo });
-
-  // The query's matches, on their own. `sets` below prepends the selected
-  // options so they stay reachable, which makes its length useless as a match
-  // count — with LEA selected and `bloom` typed it would say two sets match
-  // when one does.
-  const matching = useMemo(() => rankSetOptions(options, query), [options, query]);
-
-  const sets = useMemo(() => {
-    // `rankSetOptions`, not a `label.includes` of my own: the wide panel ranks
-    // with it and matches the set CODE as well as the name, so a hand-rolled
-    // match here would find nothing for `BLB` while the desktop control found
-    // Bloomburrow — the two forms of one filter disagreeing, which is the
-    // thing this panel exists to stop.
-    // Selected sets stay visible whatever the query says, or unticking one
-    // means clearing the field first to find it again.
-    const chosen = options.filter((o) => selected.includes(o.code));
-    const seen = new Set(chosen.map((o) => o.code));
-    return [...chosen, ...matching.filter((o) => !seen.has(o.code))];
-  }, [matching, options, selected]);
-
-  // THE RESULT COUNT, from the foreground. The sheet runs the same effect and is
-  // `inert` while this panel is up, so its region is out of the accessibility
-  // tree — a set toggled in here moved the list and said so where nothing could
-  // read it. Same 300ms as every other count in this codebase, so four taps are
-  // one number, and the same first-render skip: opening the panel is not a result.
-  const announcedShown = useRef<number | null>(null);
-  useEffect(() => {
-    if (announcedShown.current === null || announcedShown.current === shown) {
-      announcedShown.current = shown;
-      return;
-    }
-    announcedShown.current = shown;
-    const timer = setTimeout(() => setAnnouncement(copy.match(shown, total)), 300);
-    return () => clearTimeout(timer);
-  }, [shown, total]);
-
-  // Nothing is said for a blank query — clearing the field is not a result —
-  // and nothing for an empty VOCABULARY, where the list already reads
-  // `No sets to filter by` and "No sets match" would contradict it. Both are
-  // `FilterPanel`'s own rules.
-  useEffect(() => {
-    const typed = query.trim();
-    if (typed === "" || options.length === 0) return;
-    const timer = setTimeout(
-      () => setAnnouncement(collectionFilterCopy.set.announceMatches(matching.length, typed)),
-      300,
-    );
-    return () => clearTimeout(timer);
-  }, [query, matching.length, options.length]);
-
-  return (
-    // z-[60]: the sheet is z-50 and the phone tab bar is z-40, and this sits
-    // over both.
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
-      <div
-        aria-hidden="true"
-        onClick={onDismiss}
-        className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
-      />
-      <div
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-label={collectionFilterCopy.set.panelAriaLabel}
-        tabIndex={-1}
-        className="relative z-10 flex h-[86vh] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
-      >
-        <div
-          aria-hidden="true"
-          className="h-[4px] w-[38px] shrink-0 self-center rounded-[2px] bg-[color:var(--border-strong)]"
-        />
-        <div className="flex shrink-0 items-baseline gap-[10px]">
-          <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
-            {collectionFilterCopy.set.sheetTitle}
-          </h2>
-          <span className="ml-auto font-mono text-[11px] text-[color:var(--fg-faint)]">
-            {collectionFilterCopy.set.footerSelected(selected.length, options.length)}
-          </span>
-        </div>
-
-        <SearchField
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={copy.setSearchPlaceholder}
-          aria-label={copy.setSearchAria}
-          containerClassName="shrink-0 gap-[8px] px-[12px] py-[9px] min-h-[44px]"
-          className="text-[14px]"
-        />
-
-        {/* THE ONLY FLEXIBLE ROW. `min-h-0` is load-bearing: a flex child's
-            default `min-height:auto` refuses to shrink below its content, so
-            without it the list pushes `Done` off the bottom instead of
-            scrolling. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-[6px] overflow-y-auto">
-          {sets.length === 0 ? (
-            <p className="m-0 font-sans text-[13px] text-[color:var(--fg-muted)]">
-              {/* An empty VOCABULARY is not a failed search, and the panel opens
-                  with a blank query — so a collection whose rows all went
-                  unmatched against the catalog would have read `No sets match `
-                  with nothing after it. */}
-              {options.length === 0 ? copy.setNone : copy.setEmpty(query.trim())}
-            </p>
-          ) : (
-            sets.map((option) => (
-              <Chip
-                key={option.code}
-                label={option.label}
-                count={option.count}
-                on={selected.includes(option.code)}
-                disabled={option.disabled}
-                unavailableAria={collectionFilterCopy.set.optionAriaUnavailable(option.label)}
-                onClick={() => onToggle(option.code)}
-              />
-            ))
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="h-[44px] shrink-0 cursor-pointer rounded-lg border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] font-sans text-[14px] font-medium text-[color:var(--fg)]"
-        >
-          {collectionFilterCopy.set.done}
-        </button>
-
-        <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-          {announcement}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function Group({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
     <section className="shrink-0">
       <h3 className={HEADING}>{heading}</h3>
       {children}
     </section>
-  );
-}
-
-function Chip({
-  label,
-  count,
-  on,
-  disabled,
-  dimmed = true,
-  unavailableAria,
-  glyph,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  on: boolean;
-  disabled?: boolean;
-  /** False when an ancestor already dims — opacity compounds through a parent. */
-  dimmed?: boolean;
-  /** Why this value is out, in its dimension's own words. */
-  unavailableAria?: string;
-  glyph?: React.ReactNode;
-  onClick: () => void;
-}) {
-  const out = Boolean(disabled) && !on;
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      // A value with no matches under the other filters stays listed and
-      // disabled — `color-filter.ts` states the contract and the panels already
-      // honour it, so the sheet cannot be the one surface where a dead value is
-      // tappable. A LIT one stays live, or the filter that emptied the list is
-      // the one nobody can turn off.
-      aria-disabled={out ? true : undefined}
-      // The wide panel explains a zero-count option in its dimension's own
-      // words; a chip carrying only its label and count leaves a screen-reader
-      // user with an unexplained dead control.
-      aria-label={out ? unavailableAria : undefined}
-      onClick={() => {
-        if (!out) onClick();
-      }}
-      className={[
-        CHIP,
-        out ? "cursor-default" : "",
-        out && dimmed ? "opacity-[0.42]" : "",
-        on
-          ? "border-[color:var(--accent)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
-          : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]",
-      ].join(" ")}
-    >
-      {glyph}
-      <span>{label}</span>
-      <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-        {count.toLocaleString("en-US")}
-      </span>
-    </button>
   );
 }
