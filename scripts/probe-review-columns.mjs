@@ -9,10 +9,10 @@
 // jsdom lays nothing out, so no unit test can see a row the other column's note pushed down.
 // This measures, at 1300 and at 820 (the narrowest desktop, where the note wraps most):
 //   - the two header rules sit on one line;
-//   - the two columns' first group headings sit on one line;
+//   - the two columns' first group headings, and their first cards, sit on one line;
 //   - the note really did wrap, since a run where it fits on one line measures nothing.
 // At 390 the columns are one at a time behind a segmented pair and neither heading is drawn,
-// so the check there is that pressing `Going out` puts its first group where `Coming in`'s was.
+// so the check there is that pressing `Going out` puts its first card where `Coming in`'s was.
 //
 // It writes one deck (a copy of the template, committed as v1, then 12 cuts and 2 adds staged
 // into its draft) under the account it signs in as, and deletes it in a `finally`. Point it at
@@ -24,6 +24,7 @@ import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { requireEnv } from "./lib/env.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 neonConfig.webSocketConstructor = ws;
@@ -131,7 +132,9 @@ const readColumns = (page) =>
       .map((section) => {
         const header = section.firstElementChild;
         const note = header.querySelector("span");
+        // The first group heading carries the first `id`; the first card is the first diff row.
         const firstGroup = section.querySelector("[id]");
+        const firstRow = section.querySelector("[data-diff-row]");
         const lineHeight = parseFloat(getComputedStyle(note).lineHeight) || 13;
         return {
           heading: header.querySelector("h2")?.textContent ?? "",
@@ -139,6 +142,7 @@ const readColumns = (page) =>
           headerDrawn: header.getBoundingClientRect().height > 0,
           noteLines: Math.round(note.getBoundingClientRect().height / lineHeight),
           groupTop: firstGroup?.getBoundingClientRect().top ?? null,
+          rowTop: firstRow?.getBoundingClientRect().top ?? null,
         };
       }),
   );
@@ -164,18 +168,23 @@ async function desktop(page, changes, width) {
   );
   report(
     inCol.groupTop !== null && Math.abs(inCol.groupTop - outCol.groupTop) <= TOLERANCE,
-    `${width}: first cards level`,
+    `${width}: first group headings level`,
     `in ${inCol.groupTop?.toFixed(1)}, out ${outCol.groupTop?.toFixed(1)}`,
+  );
+  report(
+    inCol.rowTop !== null && outCol.rowTop !== null && Math.abs(inCol.rowTop - outCol.rowTop) <= TOLERANCE,
+    `${width}: first cards level`,
+    `in ${inCol.rowTop?.toFixed(1)}, out ${outCol.rowTop?.toFixed(1)}`,
   );
 }
 
 async function phone(page, changes) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${BASE}${changes}`, { waitUntil: "networkidle" });
-  const inTop = (await readColumns(page))[0]?.groupTop ?? null;
+  const inTop = (await readColumns(page))[0]?.rowTop ?? null;
   await onPage(page, "button[aria-pressed]").filter({ hasText: /going out/i }).click();
   const shown = await readColumns(page);
-  const outTop = shown[0]?.groupTop ?? null;
+  const outTop = shown[0]?.rowTop ?? null;
   report(
     shown.length === 1 && /out/i.test(shown[0].heading) && !shown[0].headerDrawn,
     "390: one column at a time, its heading left to the segmented pair",
@@ -194,6 +203,8 @@ const holder = { deckId: null };
 try {
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 900 } })).newPage();
   const userId = await signIn(page);
+  // Or an account behind the About version is redirected to /about and `#review` never draws.
+  await clearAboutSheet(page, userId);
   await buildFixture(userId, holder);
   const changes = `/decks/${holder.deckId}/changes`;
   console.log(`fixture ${holder.deckId}`);
