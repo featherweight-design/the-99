@@ -549,9 +549,21 @@ describe("SetGridView — the open modal follows the grid", () => {
 
   it("closes a card the grid no longer draws rather than stranding it", () => {
     // Prev/Next would otherwise page through cells that are not on the page.
-    openOracleId = "o-gone";
-    view([p("1"), p("2")], []);
+    openOracleId = "o-2";
+    const r = view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    expect(closeCard).not.toHaveBeenCalled();
+    search = "q=plains";
+    r.rerender(r.again());
     expect(closeCard).toHaveBeenCalled();
+  });
+
+  // A card opened from inside another surface is off the grid by nature: a partner named in Find
+  // a deck's reason line, stacked over the picker. The grid has not moved, so nothing closes it.
+  it("leaves a card opened from elsewhere open while the grid stands still", () => {
+    openOracleId = "o-gone";
+    const r = view([p("1"), p("2")], []);
+    r.rerender(r.again());
+    expect(closeCard).not.toHaveBeenCalled();
   });
 
   it("leaves the modal alone when nothing is open", () => {

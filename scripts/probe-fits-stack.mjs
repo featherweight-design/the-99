@@ -7,9 +7,11 @@
 // steps back to the sheet.
 //
 // jsdom paints nothing, so the unit tests can pin document order and nothing about what is on top.
-// This reads it from the laid-out page at 1300x900 and 390x844: the element at the centre of the
-// stacked card's dialog belongs to that dialog, and after Escape the picker is there and the card
-// is not.
+// This reads it from the laid-out page at 1300x900 and 390x844, on /collection and on the card's
+// set page: the element at the centre of the stacked card's dialog belongs to that dialog, and
+// after Escape the picker is there and the card is not. The set page is walked because its grid
+// closed any open card it did not draw, and a partner is off the grid by nature: the card opened
+// and shut in one frame, which the pre-open pass found before any run did.
 //
 // It needs a card whose picker draws a combo reason, and finds one by query: an owned card that a
 // two-card Spellbook variant pairs with a card sitting in one of the reader's decks. The page has
@@ -99,10 +101,31 @@ async function candidates(userId) {
   return rows;
 }
 
-/** Opens `card` on /collection, presses Find a deck, and returns the partner trigger it draws. */
-async function openPicker(page, card, partner) {
-  await page.goto(`${BASE}/collection?view=grid&q=${encodeURIComponent(card)}`, { waitUntil: "networkidle" });
-  const tile = onPage(page, 'button:has(div[style*="aspect-ratio"])').first();
+/** A set the reader owns `card` in, for the set grid's walk. */
+async function ownedSet(userId, card) {
+  const { rows } = await pool.query(
+    `select ci.set_code from collection_items ci
+       join cards c on c.oracle_id = ci.oracle_id
+      where ci.user_id = $1 and c.name = $2 order by ci.set_code limit 1`,
+    [userId, card],
+  );
+  return rows[0]?.set_code ?? null;
+}
+
+/**
+ * Opens `card` on a grid, presses Find a deck, and returns the partner trigger it draws. The
+ * grid is /collection by default, or a set page (`/collection/sets/<code>`), whose grid used to
+ * close any open card it did not draw: a partner is off that grid by nature.
+ */
+async function openPicker(page, card, partner, setCode = null) {
+  const route = setCode
+    ? `/collection/sets/${setCode}?q=${encodeURIComponent(card)}`
+    : `/collection?view=grid&q=${encodeURIComponent(card)}`;
+  await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+  // A set cell names its card in its own label; a /collection tile is found by its art box.
+  const tile = setCode
+    ? onPage(page, `button[aria-label^="${card.replace(/"/g, '\\"')}"]`).first()
+    : onPage(page, 'button:has(div[style*="aspect-ratio"])').first();
   if ((await tile.count()) === 0) return null;
   await tile.click();
   const door = page.getByRole("button", { name: `Find a deck for ${card}` }).first();
@@ -153,22 +176,33 @@ try {
   if (!fixture) throw new Error(`None of ${pool8.length} candidate(s) drew a combo partner in the picker.`);
   console.log(`fixture: ${fixture.card}, partner ${fixture.partner}`);
 
-  for (const viewport of VIEWPORTS) {
+  const setCode = await ownedSet(userId, fixture.card);
+  if (!setCode) throw new Error(`No owned printing of ${fixture.card} to find its set by.`);
+  const walks = VIEWPORTS.flatMap((viewport) => [
+    { viewport, setCode: null, where: "collection" },
+    { viewport, setCode, where: `set ${setCode}` },
+  ]);
+  for (const { viewport, setCode: code, where } of walks) {
     await page.setViewportSize(viewport);
-    const label = `${viewport.width}`;
-    const trigger = await openPicker(page, fixture.card, fixture.partner);
+    const label = `${viewport.width} ${where}`;
+    const trigger = await openPicker(page, fixture.card, fixture.partner, code);
     if (!trigger) {
       report(false, `${label}: picker draws ${fixture.partner}`);
       continue;
     }
     await trigger.click();
-    await page.waitForFunction(
-      (name) => [...document.querySelectorAll('[role="dialog"]')].some(
-        (d) => !d.querySelector('[data-testid="fits-picker"]') && d.textContent.includes(name),
-      ),
-      fixture.partner,
-      { timeout: 10_000 },
-    );
+    const opened = await page
+      .waitForFunction(
+        (name) => [...document.querySelectorAll('[role="dialog"]')].some(
+          (d) => !d.querySelector('[data-testid="fits-picker"]') && d.textContent.includes(name),
+        ),
+        fixture.partner,
+        { timeout: 10_000 },
+      )
+      .then(() => true, () => false);
+    // A card the page shuts the instant it opens never reaches the checks below.
+    report(opened, `${label}: ${fixture.partner} opens and stays open`);
+    if (!opened) continue;
     await page.waitForTimeout(300);
     const read = await onTop(page, fixture.partner);
     report(read.found && read.onTop, `${label}: ${fixture.partner} paints over the picker`, `hit ${read.hit}`);

@@ -342,10 +342,17 @@ export function SetGridView(props: SetGridViewProps) {
 
   const openInGrid = openOracleId !== null && siblingIds.includes(openOracleId);
   const siblingKey = siblingIds.join(",");
+  // Closes only when the GRID moves and the open card is not in it, as `/collection` does
+  // (collection/browser.tsx). A card opened from inside another surface is off the grid by
+  // nature: a partner named in Find a deck's reason line, stacked over the picker. Closing on
+  // "not in the grid" alone shut that card the instant it opened.
+  const lastSiblingKey = useRef(siblingKey);
   useEffect(() => {
+    const gridMoved = lastSiblingKey.current !== siblingKey;
+    lastSiblingKey.current = siblingKey;
     if (openOracleId === null) return;
     if (openInGrid) setSiblings(siblingIds);
-    else close();
+    else if (gridMoved) close();
     // `siblingKey` stands in for the array, which is rebuilt every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siblingKey, openOracleId, openInGrid, setSiblings, close]);
