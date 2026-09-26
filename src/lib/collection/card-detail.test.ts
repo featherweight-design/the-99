@@ -462,3 +462,146 @@ describe("fitsGate", () => {
     expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, true)).toEqual({});
   });
 });
+
+describe("loadCardDetail's round trips", () => {
+  const ownedRow = {
+    oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263", finish: "nonfoil",
+    setName: "Commander 2021", releasedAt: "2021-04-23", preferredSetCode: null,
+    preferredCollectorNumber: null, name: "Arcane Signet", typeLine: "Artifact", manaCost: "{2}",
+    oracleText: null, keywords: [], rarity: "common", colorIdentity: [],
+    cardImageUri: "https://img/oracle.jpg", exactImageUri: null, representativeImageUri: null,
+  };
+  const catalogRow = { oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet", gameChanger: false };
+
+  /** A fresh module over a db stub that counts what it is asked, plus the two side reads. */
+  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]> }) {
+    const asked = { select: 0, printings: 0, execute: 0, flags: 0, partners: 0 };
+    vi.doMock("../../db", () => ({
+      db: {
+        select: () => {
+          asked.select += 1;
+          return {
+            from: () => ({
+              where: async () => {
+                if (opts.catalog === "stall") return new Promise<never>(() => {});
+                if (opts.catalog instanceof Error) throw opts.catalog;
+                return opts.catalog;
+              },
+              leftJoin: () => ({ where: () => { asked.printings += 1; return opts.printings ?? Promise.resolve([]); } }),
+            }),
+          };
+        },
+        execute: async () => { asked.execute += 1; return { rows: [] }; },
+      },
+    }));
+    vi.doMock("../bracket/flags-read", () => ({
+      loadBracketFlags: async () => { asked.flags += 1; return new Map(); },
+    }));
+    vi.doMock("../combos/near-miss", () => ({
+      loadCardComboPartners: async () => { asked.partners += 1; return []; },
+    }));
+    vi.resetModules();
+    const mod = await import("./card-detail");
+    return { load: mod.loadCardDetail, asked };
+  }
+  const done = () => {
+    vi.doUnmock("../../db");
+    vi.doUnmock("../bracket/flags-read");
+    vi.doUnmock("../combos/near-miss");
+  };
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  it("stops an unknown id after its two stage-1 reads", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    loadPrintingPrices.mockClear();
+    loadAvailability.mockClear();
+    const { load, asked } = await fresh({ catalog: [] });
+    try {
+      expect(await load("user_1", "o-missing")).toBeNull();
+      // Long enough for any read started behind the return to have reached its stub.
+      for (let i = 0; i < 5; i += 1) await flush();
+      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0 });
+      expect(loadPrintingPrices).not.toHaveBeenCalled();
+      expect(loadAvailability).not.toHaveBeenCalled();
+    } finally { done(); }
+  });
+
+  it("starts every owned-card read before any of them answers", async () => {
+    selectCollectionRows.mockResolvedValue([ownedRow]);
+    let answer!: (v: unknown) => void;
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockReturnValue(new Promise((r) => { answer = r; }));
+    loadAvailability.mockReset();
+    loadAvailability.mockResolvedValue(new Map());
+    const { load, asked } = await fresh({ catalog: [catalogRow] });
+    try {
+      const pending = load("user_1", "o-1");
+      for (let i = 0; i < 5; i += 1) await flush();
+      // The prices read has not answered, and everything else has already been asked.
+      expect(loadAvailability).toHaveBeenCalled();
+      expect(asked.flags).toBe(1);
+      expect(asked.partners).toBe(1);
+      expect(asked.execute).toBeGreaterThanOrEqual(1);
+      answer(null);
+      expect((await pending)?.name).toBe("Arcane Signet");
+    } finally { done(); }
+  });
+
+  it("starts every unowned-card read before any of them answers", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    let answer!: (v: unknown[]) => void;
+    const printings = new Promise<unknown[]>((r) => { answer = r; });
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockResolvedValue(null);
+    const { load, asked } = await fresh({ catalog: [catalogRow], printings });
+    try {
+      const pending = load("user_1", "o-1");
+      for (let i = 0; i < 5; i += 1) await flush();
+      expect(asked.printings).toBe(1);
+      expect(loadPrintingPrices).toHaveBeenCalled();
+      expect(asked.flags).toBe(1);
+      expect(asked.partners).toBe(1);
+      answer([]);
+      expect((await pending)?.oracleId).toBe("o-1");
+    } finally { done(); }
+  });
+
+  it("keeps an owned card when the catalog read it does not need fails", async () => {
+    selectCollectionRows.mockResolvedValue([ownedRow]);
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockResolvedValue(null);
+    loadAvailability.mockReset();
+    loadAvailability.mockResolvedValue(new Map());
+    const { load } = await fresh({ catalog: new Error("catalog down") });
+    try {
+      expect((await load("user_1", "o-1"))?.name).toBe("Arcane Signet");
+    } finally { done(); }
+  });
+
+  it("does not hold an owned card on a catalog read it never uses", async () => {
+    selectCollectionRows.mockResolvedValue([ownedRow]);
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockResolvedValue(null);
+    loadAvailability.mockReset();
+    loadAvailability.mockResolvedValue(new Map());
+    const { load } = await fresh({ catalog: "stall" });
+    try {
+      expect((await load("user_1", "o-1"))?.name).toBe("Arcane Signet");
+    } finally { done(); }
+  });
+
+  it("keeps an unowned card when its printings read fails", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockResolvedValue(null);
+    const { load } = await fresh({ catalog: [catalogRow], printings: (() => {
+      // Rejects for the loader, and is marked handled so the test itself raises nothing.
+      const failed = Promise.reject(new Error("printings down"));
+      failed.catch(() => {});
+      return failed;
+    })() });
+    try {
+      expect((await load("user_1", "o-1"))?.oracleId).toBe("o-1");
+    } finally { done(); }
+  });
+});
