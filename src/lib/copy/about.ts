@@ -304,11 +304,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs.',
+      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs. Under each row, a line names what that commander plays and none of your decks do, or its top play styles when your decks already play them all.',
     keys: [
       'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
-      'the fit score is read against your whole collection, because you would own this commander if you bought it.',
-      'the line under each row names what this commander plays that none of your decks do, which is the reason to buy it. When your decks already play all of it, the line names its top play styles instead.',
+      'Best fit, the default, reads your whole collection, because you would own this commander if you bought it.',
+      'every order says what it ranks by, so Popularity is most decks tracked first rather than a score of its own.',
     ],
     since: 1,
   },
@@ -322,18 +322,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
       // shipped in #1011, and Create is what fills the deck, not the pick.
-      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words. The results are ordered by how well each commander fits what you asked, owned or not. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them.',
+      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words, which is matched for free, while Look deeper weighs everything you wrote for one credit. The results are ordered by how well each commander fits what you asked, owned or not. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them. When too few commanders fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
       "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
       // Audit H5. The owned-order exception is said once, in the caption, so this line drops the
       // "never orders it" that the exception made false.
       "Every row shows what you own beside the fit: the commander's own mark, how much of its 99 you own, and roughly what the rest would cost.",
-      // Audit H2 (the panel shipped in #1000), and a fact 1f corrected: the cost is shown on the
-      // results, in the Look deeper panel, never on the form.
-      'Your sentence is matched for free. Look deeper, on the results, weighs all of it for one credit, and the cost is shown before you press.',
-      // Audit H6: the page offers answers to loosen, each with a count.
-      'When too few commanders fit, the page offers answers to loosen, each with how many commanders it would bring back, or you can change the answers yourself.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -451,15 +446,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'NEVER_CUT_ENABLED',
     caption:
-      "Lock a card and no tool will offer to cut it: Suggested changes won't propose it and it gets no cheaper stand-ins. The ✕ still removes it: a lock binds the app's suggestions, not you.",
+      "Lock a card and no tool will offer to cut it: Suggested changes won't propose it and it gets no cheaper stand-ins. The ✕ still removes it: a lock binds the app's suggestions, not you. Clear all auto and Pull it pass a locked card by, and one you remove comes back locked by Undo, Put back or a discard, until a commit without it ends the lock.",
     keys: [
       // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
       // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
-      "A locked card shows a closed lock beside its ✕ in the list, and on its tile's caption.",
+      "A locked card shows a closed lock beside its ✕ in the list.",
       "Lock cards, in the deck's toolbar, turns each ✕ into a lock until you press Done. It is how you lock a card from a phone or a keyboard.",
-      'Clear all auto skips locked cards and says how many stayed. Pull it never takes a copy from a deck where the card is locked, and says locked instead.',
-      // Audit L1: a discard brings a removed locked card back locked; a commit is what ends it.
-      'Remove a locked card and bring it back with Undo, Put back or a discard, and it is still locked. Once a version is committed without it, the lock is gone.',
+      'while Lock cards is on, the line counts the cards locked so far, one per card however many copies.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -495,8 +488,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Fill, the last 31 and the Add panel all build toward what other decks with your commander actually run, rather than one recipe for every deck. A Kinnan deck wants about twice the ramp of an Atraxa deck and no board wipes at all; both used to be told the same ten, ten, eight and three. Where there are not enough decks to measure, the old numbers still stand in, and the strip says which you are looking at.',
     keys: [
       'the land count moves too. Twenty-eight lands is a real answer for a deck that ramps, and thirty-seven was never right for all of them.',
-      'The fill that builds a new deck and `Select the N this deck needs` both ask what the deck is short of, so a deck already deep in ramp is offered draw instead of more of what it has.',
-      'the Add panel puts the role you are shortest of first, and within a shelf the card whose type your deck is thinner on comes first.',
+      'a target of 0 is an answer too: the decks this commander leads run no board wipes, so the cell asks for none.',
     ],
     since: 8,
   },
@@ -511,9 +503,9 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Some cards only do something remarkable next to one other card, and the app says which: on a collection row when you own both halves and no deck has put them together, and on a card the deck you are building is one away from. The card’s details list every partner it has, with whether that partner is in the deck, in your collection, or neither.',
     keys: [
       'no count of how many combos a card has. Detection leaves out combos that need a third piece, so a total would be the first thing on the surface that is not true.',
-      'one partner is named on a row and all of them on the card’s page. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
-      'a combo you have already built says nothing. `you own both` is about two cards sitting apart, and a deck holding both has answered the question.',
-      'it comes from Commander Spellbook, and the card’s page says so behind the heading’s marker rather than under every block.',
+      'one partner is named on a row and all of them in the card’s details. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
+      'the list runs from what this deck already holds, through what you own, to what you would have to buy.',
+      'it comes from Commander Spellbook, and the details say so behind the heading’s marker rather than under every block.',
     ],
     since: 9,
   },
@@ -589,8 +581,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit.',
     keys: [
-      'a version shows how many games it held, and each game in the log names its version, so you can tell whether a change helped.',
-      'a deck you have never committed reads Draft once it holds a card, however many. Commit v1 and it takes the status its list earns.',
+      'each version carries its date, its card count and its average mana value, and on a wide screen how many games it held; each game in the log names its version, so you can tell whether a change helped.',
+      'a version keeps the note you wrote when you committed it, or says it has none.',
     ],
     since: 1,
   },
@@ -622,9 +614,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'The line under the price strip is this deck\'s limit per card. Until you set your own, it says it is the default.',
       "A row over the limit is marked, and its ⇄ opens the stand-ins. Any card on Shopping that isn't locked links to its stand-ins from its details too.",
-      // Audit R2-A4-1: "each says what it gives up" is about every row, so it moves here. The order
-      // within a group is the shipped lead's: shared work, then this commander's favor, staples last.
-      "A spell's stand-ins do its job at its mana value or less. In each group, the cards that share more of its work lead, then the ones this commander's decks favor, and staples come last. Each says what it gives up, and a few show until you ask for all.",
+      // #1046's spell rows: each keeps one of the card's jobs and compares itself as keeps / gains /
+      // loses. What a row gives up is its `loses`, so the older "gives up" wording is gone.
+      "A spell's stand-ins each keep at least one of its jobs, and every row says what it keeps, gains and loses against it. A few show until you ask for all.",
       // r2 said a once-only color "doesn't count as making it"; the shipped ladder (`landRung`) counts it,
       // on the last rung.
       "Lands are ordered by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying for it, for a narrow use, or once.",
@@ -880,7 +872,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Six of them, each named for how it looks rather than where it came from. A theme changes the palette, never the meaning: owned is green in all six, over-committed is red in all six.',
     keys: [
       'the plane is the subtitle, not the name: you pick Neon Rain, not Kamigawa.',
-      'the accent moves; the greens, ambers and reds that carry meaning stay green, amber and red.',
+      'each theme brings its own accent, which is the bar across its miniature.',
       'the choice is remembered in this browser, so a different device starts on the default until you pick there too.',
     ],
     since: 1,

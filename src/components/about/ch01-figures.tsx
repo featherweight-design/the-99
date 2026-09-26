@@ -54,6 +54,8 @@ import {
   CHOOSE,
   FITS,
   STAND_INS,
+  READY_IN_USE,
+  READY_SLICE,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -108,7 +110,16 @@ import {
   ParseErrorRowView,
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
-import { KeyNumeral } from "./numeral";
+import { AnchoredNumerals, KeyNumeral, byAriaPrefix, first, leafMatching, nth, withText } from "./numeral";
+import { discoverCopy } from "../../lib/copy/lanes";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { gameLogCopy } from "../../lib/copy/game-log";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { ReadyToBuild } from "../home/ready-to-build";
+import { exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
@@ -433,7 +444,14 @@ export function DiscoverFigureBody() {
     // 320. At 330 the last order clipped against the plate's own edge by 13px,
     // which a reader reads as a list that ends early rather than as a figure
     // cut short.
-    <div className="min-h-[380px] w-[300px]">
+    <AnchoredNumerals
+      className="min-h-[380px] w-[300px]"
+      marks={[
+        { n: 1, find: withText('[role="menuitemradio"]', discoverCopy.order.somethingNew, true), side: "inset-tr" },
+        { n: 2, find: withText('[role="menuitemradio"]', discoverCopy.order.bestFit, true), side: "inset-tr" },
+        { n: 3, find: withText('[role="menuitemradio"]', discoverCopy.order.popularity, true), side: "inset-tr" },
+      ]}
+    >
       <OrderControl
         value={LANE_DISCOVER.order}
         options={ORDER_OPTIONS.discover}
@@ -441,7 +459,7 @@ export function DiscoverFigureBody() {
         wide
         pinnedOpen
       />
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -470,6 +488,8 @@ export function PartnerSlotFigureBody() {
  * unowned, because the list PRICES what you do not own and an all-owned
  * fixture draws no price at all.
  */
+const SYNERGY_NUMERAL: Record<number, number> = { 0: 1, 2: 2, 4: 3 };
+
 export function CommanderAvailabilityFigureBody() {
   // Same fault as the fit key. `SynergyRow` has a phone layout, and forcing
   // the desktop one put its type, score, availability and toggle columns past
@@ -485,17 +505,24 @@ export function CommanderAvailabilityFigureBody() {
     // server action a reference page has no business calling.
     <CardDetailProvider fetchCard={async () => null}>
       <div className="flex flex-col">
-        {SYNERGY_ROWS.map((card) => (
-          <SynergyRow
-            key={card.oracleId}
-            card={card}
-            selected={false}
-            onToggle={() => {}}
-            siblings={[]}
-            width={desktop ? "desktop" : "phone"}
-            facet={card.facet}
-            newestAsOf={PRICES[0].fact.asOf}
-          />
+        {/* The free card carries key 1 (the dot and nothing else), the card with no free copy
+            key 2 (the note counts copies), the unowned card key 3 (the list prices it). The
+            other rows keep a spacer so the five stay in one column. */}
+        {SYNERGY_ROWS.map((card, i) => (
+          <div key={card.oracleId} className="flex items-center gap-[8px]">
+            {SYNERGY_NUMERAL[i] ? <KeyNumeral n={SYNERGY_NUMERAL[i]} /> : <span aria-hidden className="w-[14px] flex-none" />}
+            <div className="min-w-0 flex-1">
+              <SynergyRow
+                card={card}
+                selected={false}
+                onToggle={() => {}}
+                siblings={[]}
+                width={desktop ? "desktop" : "phone"}
+                facet={card.facet}
+                newestAsOf={PRICES[0].fact.asOf}
+              />
+            </div>
+          </div>
         ))}
       </div>
     </CardDetailProvider>
@@ -580,10 +607,17 @@ export function DeckPageFigureBody() {
         <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
       </div>
 
-      <div className="mt-[10px] flex items-center gap-[9px]">
+      {/* Key 2 over the Games tab, which drops a zero count; key 3 over Consider. Above rather
+          than beside, because the tabs sit 16px apart on a phone. */}
+      <AnchoredNumerals
+        className="mt-[24px]"
+        marks={[
+          { n: 2, find: first("#tab-games"), side: "above" },
+          { n: 3, find: first("#tab-consider"), side: "above" },
+        ]}
+      >
         <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
-        <KeyNumeral n={2} />
-      </div>
+      </AnchoredNumerals>
     </div>
   );
 }
@@ -750,12 +784,20 @@ const MEASURED_MIX: RecommendedMix = {
 
 export function InformedBuildFigureBody() {
   return (
-    <RoleCounterStrip
-      mix={MEASURED_MIX}
-      cards={ROLE_MIX_CARDS}
-      onSeeShelf={() => {}}
-      rolesWithShelves={new Set(["draw", "removal"])}
-    />
+    <AnchoredNumerals
+      marks={[
+        // 1: the land cell, measured at 28. 2: the wipes cell, whose target of 0 is an answer.
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Land"), side: "above", mdSide: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "above", mdSide: "inset-tr" },
+      ]}
+    >
+      <RoleCounterStrip
+        mix={MEASURED_MIX}
+        cards={ROLE_MIX_CARDS}
+        onSeeShelf={() => {}}
+        rolesWithShelves={new Set(["draw", "removal"])}
+      />
+    </AnchoredNumerals>
   );
 }
 
@@ -783,32 +825,53 @@ const COMBO_SPECIMEN = [
 ];
 
 export function ComboAwarenessFigureBody() {
+  const c = comboAwarenessCopy.modal;
   return (
-    <ComboPartnersDetail
-      card={
-        {
-          oracleId: "about-combo",
-          name: "Basalt Monolith",
-          comboPartners: COMBO_SPECIMEN,
-        } as never
-      }
-      // Open, because key 4 names the Spellbook marker, which the block draws only open.
-      initiallyExpanded
-    />
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the heading, which carries no count. 2: the list of every partner. 3: its last row,
+        // the one you would have to buy, at the far end of the order. 4: Spellbook's marker.
+        { n: 1, find: withText("span", c.heading), side: "gutter" },
+        { n: 2, find: first("ul"), side: "gutter", align: "top" },
+        { n: 3, find: first("ul > li:last-child"), side: "gutter" },
+        { n: 4, find: first(`button[aria-label="${c.boundMarkerAria}"]`), side: "after" },
+      ]}
+    >
+      <ComboPartnersDetail
+        card={
+          {
+            oracleId: "about-combo",
+            name: "Basalt Monolith",
+            comboPartners: COMBO_SPECIMEN,
+          } as never
+        }
+        // Open, because key 4 names the Spellbook marker, which the block draws only open.
+        initiallyExpanded
+      />
+    </AnchoredNumerals>
   );
 }
 
 export function RolesFigureBody() {
   return (
-    <RoleCounterStrip
-      // A FIXTURE mix, because this is a specimen of the strip rather than a real deck: the
-      // page has no commander to resolve one for, and the figures exist to show the cells.
-      // `measured: false` keeps the source line honest — the specimen quotes EDHREC at nobody.
-      mix={SPECIMEN_MIX}
-      cards={ROLE_MIX_CARDS}
-      onSeeShelf={() => {}}
-      rolesWithShelves={new Set(["wipes", "land"])}
-    />
+    <AnchoredNumerals
+      marks={[
+        // 1: ramp over its recommendation, a surplus. 2: wipes short of it, with a shelf.
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Ramp"), side: "inset-br", mdSide: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "above", mdSide: "inset-tr" },
+      ]}
+    >
+      <RoleCounterStrip
+        // A FIXTURE mix, because this is a specimen of the strip rather than a real deck: the
+        // page has no commander to resolve one for, and the figures exist to show the cells.
+        // `measured: false` keeps the source line honest — the specimen quotes EDHREC at nobody.
+        mix={SPECIMEN_MIX}
+        cards={ROLE_MIX_CARDS}
+        onSeeShelf={() => {}}
+        rolesWithShelves={new Set(["wipes", "land"])}
+      />
+    </AnchoredNumerals>
   );
 }
 
@@ -1033,6 +1096,16 @@ export function ExportFigureBody() {
     // `md:` because that is where the dialog itself switches, not the page's
     // own wide stop.
     <div className="relative h-[590px] overflow-hidden rounded-[8px] [transform:translateZ(0)] md:h-[470px]">
+      {/* 1: the Shopping list tab. 2: the Mana Pool link. 3: Download .txt, the twin of Copy. The
+          wrapper fills the box, so the numerals share the dialog's origin. */}
+      <AnchoredNumerals
+        className="h-full"
+        marks={[
+          { n: 1, find: withText("button, [role=tab]", exportTabCopy.shopping, true), side: "after" },
+          { n: 2, find: withText("a", exportLinkOutCopy.shopping, true), side: "before" },
+          { n: 3, find: withText("button", ".txt", true), side: "above" },
+        ]}
+      >
       <ExportDialog
         inert
         open
@@ -1048,6 +1121,7 @@ export function ExportFigureBody() {
         decklistCards={EXPORT_DECKLIST}
         shoppingCards={EXPORT_SHOPPING}
       />
+      </AnchoredNumerals>
     </div>
   );
 }
@@ -1118,7 +1192,19 @@ export function ShoppingFigureBody() {
  * deck page rather than the Versions tab, so it is not drawn here.
  */
 export function VersionsFigureBody() {
-  return <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />;
+  return (
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the older version's meta line, which carries its games on a wide screen. 2: the
+        // newest version's note.
+        { n: 1, find: nth("span.block.font-mono", 1), side: "gutter" },
+        { n: 2, find: withText("span", DECK_VERSIONS[0].note ?? "", true), side: "gutter" },
+      ]}
+    >
+      <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />
+    </AnchoredNumerals>
+  );
 }
 
 /**
@@ -1138,7 +1224,24 @@ export function VersionsFigureBody() {
  */
 export function LogAGameFigureBody() {
   return (
-    <div className="relative">
+    // Measured against the form's own parts rather than fixed offsets: the offsets were right
+    // at 1300 and wrong at 390, where the form restacks. 1: the pod-size row. 2: the note field.
+    // 3: the second column of axes, the same eight as the first.
+    <AnchoredNumerals
+      marks={[
+        { n: 1, find: first('[aria-labelledby="game-pod-label"]'), side: "after" },
+        {
+          n: 2,
+          find: (r) => {
+            const label = withText("label", deckTuningCopy.note.label, true)(r);
+            const id = label?.getAttribute("for");
+            return id ? r.querySelector(`[id="${id}"]`) : null;
+          },
+          side: "inset-tr",
+        },
+        { n: 3, find: nth("fieldset", 1), side: "inset-tr" },
+      ]}
+    >
       <GameLogForm
         deckId="about-figure"
         isFirstGame
@@ -1146,24 +1249,7 @@ export function LogAGameFigureBody() {
         onSaved={() => {}}
         onAnnounce={() => {}}
       />
-      {/* The two numerals the canvas draws, beside the things the key lines
-          are about: the pod-size row, and the optional note under the save.
-          They are absolutely positioned because the form is mounted whole and
-          nothing here reaches inside it — the alternative was a prop on
-          `GameLogForm` for annotation it has no business knowing about.
-
-          The offsets are MEASURED, not guessed — the first version put ① on
-          top of the `POD SIZE` label. Both are anchored to the figure's RIGHT
-          and to a row whose height is fixed, because the plate is a fixed
-          760px cap on the one page that mounts this; the left edge of the pod
-          row moves with the label beside it and the right edge does not. */}
-      <span aria-hidden className="pointer-events-none absolute right-[120px] top-[138px]">
-        <KeyNumeral n={1} />
-      </span>
-      <span aria-hidden className="pointer-events-none absolute right-[36px] bottom-[54px]">
-        <KeyNumeral n={2} />
-      </span>
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -1273,10 +1359,21 @@ export function ThemesFigureBody() {
     () => null,
   );
   return (
-    <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
+    // 1: the first tile's subtitle, its plane. 2: the second tile's miniature, whose accent is
+    // the one color that moves. 3: the tile in force, remembered in this browser.
+    <AnchoredNumerals
+      className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6"
+      marks={[
+        { n: 1, find: first("[data-theme-tile] [data-theme-short]"), side: "after" },
+        { n: 2, find: nth("[data-theme-tile]", 1), side: "inset-tl" },
+        // On the tile's name rather than its corner, where the miniature draws its own tick.
+        { n: 3, find: first('[data-theme-tile="active"] [data-theme-name]'), side: "after" },
+      ]}
+    >
       {THEMES.map((theme) => (
         <div
           key={theme.key}
+          data-theme-tile={theme.key === active ? "active" : ""}
           // The selected tile takes the PICKER'S OWN treatment, not just the
           // tick: `bg-[--elevated]` under a 1px accent outline, which is what
           // the account menu draws. The tick alone reads as a stray mark at
@@ -1288,15 +1385,15 @@ export function ThemesFigureBody() {
           }`}
         >
           <ThemeMiniature theme={theme.key} compact={false} selected={theme.key === active} />
-          <span className="text-[12.5px] leading-[1.2] text-[color:var(--fg)]">{theme.name}</span>
+          <span data-theme-name className="self-start text-[12.5px] leading-[1.2] text-[color:var(--fg)]">{theme.name}</span>
           {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
               not Kamigawa, and an earlier figure had them the other way up.
               `short`, which is what the picker draws — the full plane name is
               "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
-          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{theme.short}</span>
+          <span data-theme-short className="self-start font-mono text-[10px] text-[color:var(--fg-faint)]">{theme.short}</span>
         </div>
       ))}
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -1320,10 +1417,17 @@ export function LogFindingsFigureBody() {
   // the key named a thing the figure did not draw.
   const headline = deriveHeadline(GAME_SUMMARY);
   return (
-    <div>
+    // 1: the heading. 2: the Mixed line, the one axis stated rather than filed.
+    <AnchoredNumerals
+      gutter
+      marks={[
+        { n: 1, find: first("h3"), side: "gutter", align: "top" },
+        { n: 2, find: withText("span", gameLogCopy.buckets.mixed), side: "gutter" },
+      ]}
+    >
       {headline && <GameHeadlineHeader headline={headline} count={GAME_SUMMARY.count} />}
       <GameFindings summary={GAME_SUMMARY} />
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -1386,6 +1490,16 @@ export function ProxiesFigureBody() {
 export function ReviewAndCommitFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
+      {/* 1: the breakdown beside `Coming in`. 2: the row carrying Pull it. 3: the row whose deck
+          has changes of its own, which says so and offers no control. */}
+      <AnchoredNumerals
+        gutter
+        marks={[
+          { n: 1, find: withText("span, p", deckVersioningCopy.review.groupInBreakdown(5, 3, 1)), side: "gutter", mdSide: "before" },
+          { n: 2, find: withText("button", deckVersioningCopy.review.pull), side: "before" },
+          { n: 3, find: withText("span", deckVersioningCopy.review.pullGuardTag), side: "before" },
+        ]}
+      >
       <Column
         deckId="about-figure"
         columnKey="in"
@@ -1409,6 +1523,7 @@ export function ReviewAndCommitFigureBody() {
         onRestore={null}
         restoreErrors={{}}
       />
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }
@@ -1441,10 +1556,21 @@ export function NewDeckFigureBody() {
           BEFORE anything happens rather than the one the caption describes —
           and it leaves the name field and `Create deck →` undrawn, which are
           two of the three things the entry's key lines are about. */}
-      <CreatePicker
-        legalCommanders={CREATE_COMMANDERS}
-        initialSelectedId={CREATE_COMMANDERS[1].oracleId}
-      />
+      {/* 1: the first commander in the list, which holds only what you own. 2: its pool figure.
+          3: the deck's name, the one thing asked for. Inside the clip, so the gutter is not cut. */}
+      <AnchoredNumerals
+        gutter
+        marks={[
+          { n: 1, find: first("ul button[aria-pressed]"), side: "gutter", align: "top" },
+          { n: 2, find: leafMatching("ul button[aria-pressed]", /\d+ cards$/), side: "gutter" },
+          { n: 3, find: first("#picker-deck-name, #picker-deck-name-mobile"), side: "gutter", mdSide: "before" },
+        ]}
+      >
+        <CreatePicker
+          legalCommanders={CREATE_COMMANDERS}
+          initialSelectedId={CREATE_COMMANDERS[1].oracleId}
+        />
+      </AnchoredNumerals>
     </div>
   );
 }
@@ -1481,7 +1607,16 @@ function LockedRows() {
 export function LockedCardsFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <div className="flex flex-col gap-[14px]">
+      <AnchoredNumerals
+        gutter
+        className="flex flex-col gap-[14px]"
+        marks={[
+          // 1: the closed lock at rest. 2: Lock cards, drawn as its Done. 3: the mode's count.
+          { n: 1, find: first('[data-testid="row-lock-mark"]'), side: "gutter" },
+          { n: 2, find: withText("button", lockedCardsCopy.mode.done), side: "before" },
+          { n: 3, find: first('[data-testid="lock-mode-line"] span.font-mono'), side: "after" },
+        ]}
+      >
         <LockCardsProvider value={LOCKS_AT_REST}>
           <LockedRows />
         </LockCardsProvider>
@@ -1494,7 +1629,7 @@ export function LockedCardsFigureBody() {
             <LockedRows />
           </LockCardsProvider>
         </div>
-      </div>
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }
@@ -1512,8 +1647,8 @@ const NAYA = ["R", "G", "W"];
 
 export function ChangeCommanderFigureBody() {
   const desktop = useIsDesktop();
-  const { deckName, current, yours, toBuy } = CHANGE_COMMANDER;
-  const siblings = [yours, toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
+  const { deckName, current, yours, inDeck, toBuy } = CHANGE_COMMANDER;
+  const siblings = [yours, inDeck, toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
   const row = (c: typeof yours) => (
     <CandidateRow
       candidate={c}
@@ -1529,8 +1664,27 @@ export function ChangeCommanderFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <ChangeCommanderProvider deckId="about-figure" deckName={deckName} pair={false} hasVersion>
-        <div className="flex flex-col gap-[14px]">
+        {/* 1: the art band, in this deck's colors, where the door sits. 2: the first candidate's
+            overlap figure. 3: the To buy group, after the ones you own. 4: the candidate already
+            in the 99, which trades places with the commander. */}
+        <AnchoredNumerals
+          gutter
+          className="flex flex-col gap-[14px]"
+          marks={[
+            { n: 1, find: first('[data-figure-band]'), side: "gutter", align: "top" },
+            { n: 2, find: first('[data-testid="change-commander-row"] button[aria-controls]'), side: "before" },
+            { n: 3, find: withText("h3", changeCommanderCopy.sheet.groupBuy(1), true), side: "gutter" },
+            // The mark whose own first words are "in this deck" (the separator is a child span).
+            {
+              n: 4,
+              find: (r) =>
+                [...r.querySelectorAll("span")].find((el) => el.firstChild?.textContent === changeCommanderCopy.sheet.inDeck.split(" · ")[0]) ?? null,
+              side: "gutter",
+            },
+          ]}
+        >
           <div
+            data-figure-band
             className="relative h-[150px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] md:h-[120px]"
             style={{ background: identityGradient(NAYA) }}
           >
@@ -1538,10 +1692,11 @@ export function ChangeCommanderFigureBody() {
           </div>
           <section>
             <CandidateGroupHeading
-              label={changeCommanderCopy.sheet.groupYours(1)}
+              label={changeCommanderCopy.sheet.groupYours(2)}
               note={changeCommanderCopy.sheet.groupNote}
             />
             {row(yours)}
+            {row(inDeck)}
           </section>
           <section>
             <CandidateGroupHeading
@@ -1550,7 +1705,7 @@ export function ChangeCommanderFigureBody() {
             />
             {row(toBuy)}
           </section>
-        </div>
+        </AnchoredNumerals>
       </ChangeCommanderProvider>
     </CardDetailProvider>
   );
@@ -1567,6 +1722,14 @@ export function ChangeCommanderFigureBody() {
 export function HelpMeChooseFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
+      {/* Key 1 on the figure that sets a row's rank, key 2 on the ownership line beside it. */}
+      <AnchoredNumerals
+        gutter
+        marks={[
+          { n: 1, find: first("[data-sets-rank]"), side: "gutter", mdSide: "before" },
+          { n: 2, find: first('[data-testid="ownership-line"]'), side: "gutter" },
+        ]}
+      >
       <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
         {CHOOSE.rows.map(({ row, trial }) => (
           <ChooseRow
@@ -1581,6 +1744,7 @@ export function HelpMeChooseFigureBody() {
           />
         ))}
       </ul>
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }
@@ -1603,16 +1767,28 @@ export function FitsYourDecksFigureBody() {
           freeNow={FITS.free}
           countsKnown
         />
-        <FitsRows
-          rows={FITS.rows}
-          staple={false}
-          cardName={FITS.card.name}
-          freeNow={FITS.free}
-          busy={null}
-          refused={null}
-          noteFor={() => null}
-          onAdd={() => {}}
-        />
+        {/* 1: the group's heading, the decks that could take it. 2: the order note at its right.
+            3: the first row's reason. 4: the first row's need. */}
+        <AnchoredNumerals
+          gutter
+          marks={[
+            { n: 1, find: withText("h3", swapToolsCopy.fits.groupJoin), side: "after" },
+            { n: 2, find: withText("span", swapToolsCopy.fits.orderReasons), side: "before" },
+            { n: 3, find: first('[data-testid="fits-reason"]'), side: "gutter" },
+            { n: 4, find: first('[data-testid="fits-reason-need"]'), side: "after" },
+          ]}
+        >
+          <FitsRows
+            rows={FITS.rows}
+            staple={false}
+            cardName={FITS.card.name}
+            freeNow={FITS.free}
+            busy={null}
+            refused={null}
+            noteFor={() => null}
+            onAdd={() => {}}
+          />
+        </AnchoredNumerals>
         <FitsHolds holds={FITS.holds} />
       </div>
     </CardDetailProvider>
@@ -1642,23 +1818,65 @@ const NO_TAKE = { onTake: null, taking: false, busy: false, refused: null, error
 
 export function StandInsFigureBody() {
   const siblings = STAND_INS.group.rows.map((r) => r.oracleId);
+  const spellSiblings = STAND_INS.spell.group.rows.map((r) => r.oracleId);
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <SwapToolsProvider deckId="about-figure" deckName={STAND_INS.deckName} storedLimitCents={null}>
-        <div className="flex flex-col gap-[6px]">
+        {/* 1: the limit line. 2: the marked row's ⇄. 4: the land group, ordered by its mana. */}
+        <AnchoredNumerals
+          gutter
+          className="flex flex-col gap-[6px]"
+          marks={[
+            { n: 1, find: first('[data-testid="stand-in-limit"]'), side: "gutter" },
+            { n: 2, find: withText("button", "⇄", true), side: "gutter" },
+            { n: 3, find: first("[data-stand-in-spells]"), side: "gutter", align: "top" },
+            { n: 4, find: first("[data-stand-in-group]"), side: "gutter", align: "top" },
+          ]}
+        >
           <StandInLimit shoppingCount={STAND_INS.shoppingCount} overCount={STAND_INS.overCount} />
           <div className="mt-[6px] border-t border-solid border-[color:var(--border)]">
             <DecklistRow deckId="about-figure" card={PLATEAU} siblings={[]} inShopping newestAsOf={PRICES[0].fact.asOf} />
           </div>
+          {/* A spell's stand-ins: the sheet's own lead for the card, then its group, each row
+              comparing itself as keeps / gains / loses. Key 3. */}
+          <div data-stand-in-spells className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
+            <p className="m-0 mb-[8px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
+              {swapToolsCopy.sheet.leadSpellsJob(STAND_INS.spell.card, STAND_INS.spell.jobs)}
+            </p>
+            <StandInGroup group={STAND_INS.spell.group} keep={null}>
+              {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={spellSiblings} />}
+            </StandInGroup>
+          </div>
           {/* The sheet's own group, in the box the canvas draws it in. No title: the sheet's shipped
               one is "Cheaper stand-ins", which is this entry's own title one line up. */}
-          <div className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
+          <div data-stand-in-group className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
             <StandInGroup group={STAND_INS.group} keep={null}>
               {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={siblings} />}
             </StandInGroup>
           </div>
-        </div>
+        </AnchoredNumerals>
       </SwapToolsProvider>
     </CardDetailProvider>
+  );
+}
+
+/** `ready-to-build` — Home's own block, with its numerals measured onto the parts it draws. */
+export function ReadyToBuildFigureBody() {
+  return (
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the top nine is a ranking, under the block's own heading.
+        { n: 1, find: withText("h2", refreshCopy.home.readyHeading), side: "gutter" },
+        // 2: the fit line and the in-use clause, on the first card's meta row.
+        { n: 2, find: first(".hero-footer > div"), side: "gutter" },
+        // 3: the pair, which changes daily: the first card.
+        { n: 3, find: first(".grid > *"), side: "gutter", align: "top" },
+        // 4: the `N more scored X or better` line.
+        { n: 4, find: withText("span", "more scored", true), side: "after" },
+      ]}
+    >
+      <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
+    </AnchoredNumerals>
   );
 }

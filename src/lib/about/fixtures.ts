@@ -1713,6 +1713,8 @@ export const CHANGE_COMMANDER: {
   deckName: string;
   current: { cmc: number; name: string };
   yours: Candidate;
+  /** A candidate already in the 99: it moves to the command zone and Gishath takes its slot. */
+  inDeck: Candidate;
   toBuy: Candidate;
 } = {
   deckName: "HD - Gishath",
@@ -1736,6 +1738,26 @@ export const CHANGE_COMMANDER: {
     fit: { n: 23, of: 64 },
     matched: [],
     deckCount: 1204,
+  },
+  inDeck: {
+    key: "about-uril",
+    halves: [
+      {
+        oracleId: "about-uril",
+        name: "Uril, the Miststalker",
+        manaCost: "{2}{R}{G}{W}",
+        cmc: 5,
+        artCropUri: null,
+        imageUri: null,
+        inDeck: true,
+        owned: true,
+        availability: { owned: 1, hard: 0, soft: 0, free: 1, claims: [] },
+        price: null,
+      },
+    ],
+    fit: { n: 19, of: 64 },
+    matched: [],
+    deckCount: 896,
   },
   toBuy: {
     key: "about-mayael",
@@ -1877,4 +1899,25 @@ export const STAND_INS = {
       { name: "Needle Spires", free: false, cents: 25, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
     ].map((r, i) => ({ oracleId: `about-stand-in-${i}`, imageUri: null, soft: 0, foilOnly: false, ...r })),
   } satisfies SheetGroup,
+  /**
+   * A SPELL's group beside the land one, because stand-ins key 3 is about spells and a lands-only
+   * figure left it pointing at nothing (the About audit, 2026-09-26). Birds of Paradise ramps by
+   * tapping for mana and flies; two mana elves keep the first job and lose the second. The words are
+   * the sheet's own (`swapToolsCopy.sheet.job`), in the keeps / gains / loses form #1046 shipped:
+   * `compare` set, `body` and `muted` empty. The lead names ramp by its kind, as `honestJobs` does,
+   * and a job that is not a role (evasion) is a row's to lose but never the lead's.
+   */
+  spell: {
+    card: "Birds of Paradise",
+    jobs: sheet.job.tapsForMana,
+    group: {
+      heading: sheet.groupSameType("creatures"),
+      order: sheet.orderMostShared,
+      noun: "creatures",
+      rows: [
+        { name: "Llanowar Elves", free: false, cents: 25, compare: { type: null, keeps: [sheet.job.tapsForMana], gains: [], loses: [sheet.job.evasion] } },
+        { name: "Elvish Mystic", free: false, cents: 30, compare: { type: null, keeps: [sheet.job.tapsForMana], gains: [], loses: [sheet.job.evasion] } },
+      ].map((r, i) => ({ oracleId: `about-stand-in-spell-${i}`, imageUri: null, soft: 0, foilOnly: false, body: [], muted: [], ...r })),
+    } satisfies SheetGroup,
+  },
 };
