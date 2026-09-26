@@ -121,10 +121,30 @@ export function AnchoredNumerals({
     measure();
     // Webfonts move text after the first layout without resizing the figure.
     void document.fonts?.ready.then(measure);
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+    // A viewport change can cross a breakpoint (and flip an `mdSide`) while the figure keeps its
+    // size, which the observer below never hears about.
+    window.addEventListener("resize", measure);
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    ro?.observe(el);
+    // A part can arrive after mount without the figure resizing: the themes figure's active tile is
+    // only known after hydration. Re-measure on the next frame after the figure's markup changes,
+    // ignoring the numerals' own style writes so a measure cannot trigger itself.
+    let frame = 0;
+    const mo =
+      typeof MutationObserver === "undefined"
+        ? null
+        : new MutationObserver((records) => {
+            if (records.every((r) => (r.target as Element).hasAttribute?.("data-key-numeral"))) return;
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(measure);
+          });
+    mo?.observe(el, { childList: true, subtree: true, attributes: true });
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro?.disconnect();
+      mo?.disconnect();
+      cancelAnimationFrame(frame);
+    };
     // The marks are declared inline by each figure; they are stable in meaning, and re-measuring
     // on every render would loop through the state write.
     // eslint-disable-next-line react-hooks/exhaustive-deps
