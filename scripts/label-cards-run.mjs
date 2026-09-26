@@ -17,28 +17,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
-import { buildRequest, SYSTEM } from "./lib/card-labels-prompt.mjs";
-
-const MODELS = {
-  haiku: "claude-haiku-4-5-20251001",
-  sonnet: "claude-sonnet-4-5",
-};
-
-// Per million tokens, BATCH rate (half of standard). Cache reads are a tenth of
-// the input rate; a cache write is 1.25x. Published rates as of 2026-09-25.
-//
-// `caches` is MEASURED, not assumed. Two identical calls per model, 2026-09-25:
-//   sonnet  pass 1 cacheWrite=1215, pass 2 cacheRead=1215  -> caching engages
-//   haiku   pass 1 cacheWrite=0,    pass 2 cacheRead=0     -> inert
-// The instruction block is ~1,280 tokens, under Haiku's minimum cacheable prompt
-// length, so its `cache_control` does nothing. The breakpoint is left in place
-// (it is free and starts working if the block grows), but the estimate must not
-// claim a discount Haiku does not get -- that would under-estimate, and an
-// under-estimate spends money it promised not to.
-const PRICING = {
-  haiku: { in: 0.50, out: 2.50, cacheWrite: 0.625, cacheRead: 0.05, caches: false },
-  sonnet: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
-};
+import { costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
+import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM } from "./lib/card-labels-prompt.mjs";
 
 const CAP_USD = 5;
 const CARDS_PER_BATCH = 12;   // ~12 cards keeps a reply inside max_tokens with room
@@ -78,27 +58,33 @@ const batches = chunk(all, CARDS_PER_BATCH);
 const sysTokens = estTokens(SYSTEM);
 let estIn = 0, estCacheRead = 0, estOut = 0;
 for (const [i, cards] of batches.entries()) {
-  const body = cards.map((c) => `${c.name}\n${c.mana_cost ?? ""} | ${c.type_line}\n${c.oracle_text ?? ""}`).join("\n\n");
-  estIn += estTokens(body);
+  // The REAL body, via `renderBody`, not an approximation of it. The earlier
+  // version omitted the "Label these N cards." preamble and the `---` separators
+  // and rendered a null mana cost as "" where the request sends "(no cost)", so it
+  // estimated BELOW what is sent -- the one direction this file says is unsafe.
+  estIn += estTokens(renderBody(cards));
   // NOT "first batch writes, the rest read". Measured on this sample: Sonnet wrote
-  // the cache 37 times and read it 6 over 43 requests, because batch requests run
-  // in parallel and almost none finds a warm cache. Booking 1 write and 42 reads
-  // under-estimates the instruction portion ~8x, in the one direction this file
-  // says must never happen. Modelled as mostly-writes instead.
-  if (i === 0) estIn += sysTokens; else if (i % 7 === 0) estCacheRead += sysTokens; else estIn += sysTokens;
+  // the cache 37 times and read it 6 over 43 requests, because batch requests run in
+  // parallel and almost none finds a warm cache. Booking 1 write and 42 reads
+  // under-estimates the instruction portion ~8x, in the one direction this file says
+  // must never happen.
+  //
+  // Modelled as ~1 read in 7 and everything else FULL PRICE, which is the measured
+  // 6-in-43 rounded against the estimator rather than for it. The write itself is
+  // booked at full input rather than at the 1.25x write rate, so the figure is a
+  // floor on the instruction portion, not a ceiling -- stated because the report
+  // quotes the measured $0.0854 and this estimate lands under it.
+  if (i % 7 === 0) estCacheRead += sysTokens; else estIn += sysTokens;
   estOut += cards.length * 160;   // ~160 output tokens per card, measured on a pilot
 }
 
-const costOf = (m, { i = 0, cr = 0, o = 0, cw = 0 }) => {
-  const p = PRICING[m];
-  return (i * p.in + cr * p.cacheRead + o * p.out + cw * p.cacheWrite) / 1e6;
-};
-
 // The WORST CASE the request actually permits, which is what a cap has to bind on.
-// `max_tokens` is 8000 per batch of 12 -- 667 tokens a card against the 160
-// measured, so an estimate built on the average leaves 4x of headroom the cap
-// never sees. A cap that cannot be exceeded by the run it approves is not a cap.
-const estOutWorst = batches.length * 8000;
+// `MAX_TOKENS_PER_BATCH` is IMPORTED from the module that sets it, never copied:
+// 8000 per batch of 12 is 667 tokens a card against the 160 measured, so an estimate
+// built on the average leaves 4x of headroom the cap never sees. A cap that cannot
+// be exceeded by the run it approves is not a cap -- and a cap reading a stale copy
+// of the ceiling is the same failure with an extra step.
+const estOutWorst = batches.length * MAX_TOKENS_PER_BATCH;
 
 let estTotal = 0, worstTotal = 0;
 const lines = [];
@@ -124,7 +110,7 @@ let spentBefore = 0;
 try { spentBefore = JSON.parse(readFileSync(LEDGER, "utf8")).totalUsd ?? 0; } catch { /* first run */ }
 
 console.log(`cards: ${all.length} (gold ${gold.length}, random ${random.length}) in ${batches.length} batches of ${CARDS_PER_BATCH}`);
-console.log(`system block: ${sysTokens} tokens, cached after the first batch`);
+console.log(`system block: ${sysTokens} estimated tokens (1,215 as billed); caching ${PRICING.sonnet.caches ? "engages for sonnet only" : "engages for neither model"}, and measured a net loss — see the note above PRICING`);
 console.log("ESTIMATE (batch rates, both models):");
 lines.forEach((l) => console.log(l));
 console.log(`  TOTAL   $${estTotal.toFixed(3)} expected, $${worstTotal.toFixed(3)} worst case`);
@@ -158,16 +144,24 @@ if (!process.env.ANTHROPIC_API_KEY) {
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 mkdirSync("out", { recursive: true });
 
+// CHARGED PER MODEL, as each submission lands. Writing the ledger after both
+// submissions leaves the hole it exists to close: a process that dies between
+// haiku's `create` and sonnet's has spent Haiku's money and recorded nothing, so
+// the next invocation reads $0 and authorises the whole run again.
+const perModelWorst = Object.fromEntries(Object.keys(MODELS).map((m) => [m,
+  costOf(m, PRICING[m].caches
+    ? { i: estIn - sysTokens, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
+    : { i: estIn + estCacheRead, o: estOutWorst })]));
+
 const submitted = {};
+let charged = spentBefore;
 for (const [key, model] of Object.entries(MODELS)) {
   const requests = batches.map((cards, i) => buildRequest(`${key}-${i}`, model, cards));
   const batch = await client.messages.batches.create({ requests });
   submitted[key] = batch.id;
-  console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests)`);
+  charged += perModelWorst[key];
+  writeFileSync(LEDGER, JSON.stringify({ totalUsd: charged, submitted, reconciled: false }, null, 1));
+  console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests), ledger now $${charged.toFixed(4)}`);
 }
 writeFileSync("out/batches.json", JSON.stringify({ submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
-// Charge the WORST CASE to the ledger at submission. The true figure is only known
-// after collection, and a ledger that waits for it credits an interrupted run with
-// having spent nothing.
-writeFileSync(LEDGER, JSON.stringify({ totalUsd: spentBefore + worstTotal, note: "worst case charged at submission; see collect for measured" }, null, 1));
 console.log("\nbatch ids written to out/batches.json — poll with `node scripts/label-cards-collect.mjs`");

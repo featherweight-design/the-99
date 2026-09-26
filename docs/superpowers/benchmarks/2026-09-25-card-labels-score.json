@@ -1,5 +1,5 @@
 {
- "scoredAt": "2026-09-26T00:14:50.547Z",
+ "scoredAt": "2026-09-26T00:39:08.821Z",
  "goldCards": 108,
  "models": {
   "haiku": {
@@ -70,12 +70,12 @@
      "infWrong": 11
     },
     "restrictedTo(tribal)": {
-     "accuracy": 0.903,
-     "informativeAccuracy": 0.903,
-     "right": 28,
-     "wrong": 3,
-     "infRight": 28,
-     "infWrong": 3
+     "accuracy": 0.964,
+     "informativeAccuracy": 0.964,
+     "right": 27,
+     "wrong": 1,
+     "infRight": 27,
+     "infWrong": 1
     }
    },
    "worstKinds": [
@@ -213,12 +213,12 @@
      "infWrong": 6
     },
     "restrictedTo(tribal)": {
-     "accuracy": 0.969,
-     "informativeAccuracy": 0.969,
-     "right": 31,
-     "wrong": 1,
-     "infRight": 31,
-     "infWrong": 1
+     "accuracy": 1,
+     "informativeAccuracy": 1,
+     "right": 30,
+     "wrong": 0,
+     "infRight": 30,
+     "infWrong": 0
     }
    },
    "worstKinds": [
@@ -359,9 +359,9 @@
      "accuracy": 0,
      "informativeAccuracy": 0,
      "right": 0,
-     "wrong": 27,
+     "wrong": 25,
      "infRight": 0,
-     "infWrong": 27
+     "infWrong": 25
     }
    },
    "worstKinds": [

@@ -14,8 +14,8 @@ construction, because they cannot express one.
 
 Sonnet **is** markedly better on the limit family that caused the false matches.
 It gets 85.7% of gating restrictions against Haiku's 72.5% — half the error rate —
-96.9% of tribal restrictions against 90.3%, and invents 2 spurious restrictions
-against Haiku's 6. Haiku wins the ramp kind (95.5% against 87.5%) and nothing else
+every one of the 30 tribal restrictions against Haiku's 27 of 28, and invents 2
+spurious restrictions against Haiku's 6. Haiku wins the ramp kind (95.5% against 87.5%) and nothing else
 that decides a match. The one-time difference is **$27.60**.
 
 > **This reverses the recommendation in the first draft of this report, which said
@@ -23,10 +23,16 @@ that decides a match. The one-time difference is **$27.60**.
 > — a 3.4-point gap — computed by an ad-hoc command that was never committed and
 > that used the naive same-kind job pairing this repository had already identified
 > as a defect. Recomputed through the committed scorer with reuse-free pairing, the
-> gap is 6.6 points on tribal and 13.2 on gating, both to Sonnet. The first draft's
+> gap is on gating restrictions and it is 13.2 points, to Sonnet. The first draft's
 > number was wrong, and it was wrong in the direction that flattered the cheaper
-> model. Every figure below is now emitted by a committed script into a committed
-> JSON artifact.
+> model.
+>
+> **Every figure in this report is now emitted by a committed script into one of
+> three committed artifacts** — the scores, the agreement figures and the costs. That
+> was not true of the second draft either: the entire cost table lived only in a
+> script's stdout, so a reader following this report's own instruction to check the
+> tables against the artifacts could not reproduce the recommendation's dollar
+> figure. `out/cost.json` is now written and committed.
 
 ## The two limits that caused the bug
 
@@ -36,21 +42,27 @@ on a **Wolf** and the deck was Dinosaurs; and on `ramp`, where the Warg makes a
 
 | | tribal restriction | gating restriction | ramp kind | spurious invented |
 |---|---|---|---|---|
-| **Haiku 4.5** | 0.903 (28/31) | 0.725 (29/40) | **0.955** (21/22) | 6 |
-| **Sonnet 4.5** | **0.969** (31/32) | **0.857** (36/42) | 0.875 (21/24) | **2** |
-| today's text rules | **0** (0/27) | **0** (0/35) | **0** (0/21) | 0 |
+| **Haiku 4.5** | 0.964 (27/28) | 0.725 (29/40) | **0.955** (21/22) | 6 |
+| **Sonnet 4.5** | **1.000** (30/30) | **0.857** (36/42) | 0.875 (21/24) | **2** |
+| today's text rules | **0** (0/25) | **0** (0/35) | **0** (0/21) | 0 |
 
 **Restrictions are the larger half of the bug and Sonnet wins them; the ramp kind
 is the smaller half and Haiku wins it.** Both are far above nothing.
 
-- **tribal** is gold restricting to a NAMED type, capitalised as printed — Wolf,
-  Dinosaur, Pirate. The Warg case exactly.
+- **tribal** is gold restricting to a named CREATURE TYPE — Wolf, Dinosaur, Pirate
+  — checked against the catalog's own creature subtypes. The Warg case exactly. An
+  earlier version tested for a capital letter, which let `Vehicle` and `Commander`
+  into the column while the prose called them examples of the superset; the
+  denominators disagreed with the definition.
 - **gating** is the superset that also holds lowercase card types (artifact, land)
   — restrictions that make a card dead in a deck that plays none of them. Both are
   reported because they do not agree about the size of the gap, and a reader shown
   only one is being steered.
-- **spurious** is the opposite direction: the model named a type where gold has
-  none. Both restriction columns key on GOLD's value, so they are recall-like and
+- **spurious** is the opposite direction: gold records NO restriction and the model
+  named a type anyway. Scoped to gold's `none`, not to every non-gating value — an
+  earlier version also fired where gold said `creature`, which is the documented
+  spec disagreement below rather than invention, and mixed the two silently. The
+  count is unchanged at 6 and 2, so it was not load-bearing here. Both restriction columns key on GOLD's value, so they are recall-like and
   blind to over-labelling; an invented restriction refuses a good stand-in, which
   is the mirror of the bug. Haiku invents three times as many.
 
@@ -64,7 +76,7 @@ on the jobs it got right, did it get the limits right.
 | JOB precision | **0.781** | 0.760 | 0.736 |
 | JOB recall | 0.732 | **0.820** | 0.722 |
 | rampKind | **0.955** | 0.875 | 0 |
-| restrictedTo, tribal | 0.903 | **0.969** | 0 |
+| restrictedTo, tribal | 0.964 | **1.000** | 0 |
 | restrictedTo, gating | 0.725 | **0.857** | 0 |
 | trigger | **0.938** | 0.921 | 0 |
 | recurrence | 0.781 | **0.853** | 0 |
@@ -112,11 +124,17 @@ for half the error rate on the limit family that caused the bug.
 Where there is no gold label, agreement bounds the disputed fraction. It is not
 accuracy: two models can agree and both be wrong.
 
-- Same job set exactly: **53.5%**
-- Same jobs and every limit: **31.0%**
-- Job instances: 430 both, 113 Haiku only, 150 Sonnet only
-- Limit disagreement where both found the job: restrictedTo **24.1%**, recurrence
-  9.2%, trigger 5.9%, threshold 5.0%, modal 2.6%, rampKind 13.3%
+- Same job set exactly: **52.5%** (210/400)
+- Same jobs and every limit: **31.0%** (124/400)
+- Job instances: 423 both, 120 Haiku only, 164 Sonnet only
+- Limit disagreement where both found the job: restrictedTo **23.6%** (100/423),
+  recurrence 9.0%, trigger 5.7%, threshold 5.0%, modal 2.4%, rampKind 13.3% (4/30)
+
+> These figures were quoted from a pre-fix run in the first two drafts. The
+> agreement script compared each card's job kinds as a SET, so a card with two jobs
+> of one kind counted both as agreeing against one — `both` read 430 against 423
+> actually pairable instances. Fixed to multiset pairing without reuse, as the
+> scorer does, and every number above regenerated.
 
 `restrictedTo` is where they part company, and the gold scoring says why: it is the
 hardest limit for both, and the one that separates them. On the GATING subset Haiku
@@ -158,8 +176,8 @@ both.
    43 batch requests run in parallel and nearly every one arrives before any cache
    is warm. At 1.25x to write and 0.1x to read, that is **$0.0854 against $0.0784**
    without caching — a 9% loss on the instruction portion. For Haiku the
-   `cache_control` is inert outright: the ~1,280-token block is under its minimum
-   cacheable length, measured as zero writes and zero reads across two identical
+   `cache_control` is inert outright: the block is under its minimum cacheable
+   length (~1,285 tokens by our estimate, 1,215 as billed), measured as zero writes and zero reads across two identical
    calls. **For the full run, either drop the breakpoint or batch sequentially
    enough that reads dominate.**
 
@@ -207,9 +225,12 @@ both.
 - **Both models got an identical, temperature-0 prompt**, so the comparison is
   between models and not between prompts.
 - **What would make this wrong:** the gold set is one person's reading, and the
-  `restrictedTo` spec is genuinely ambiguous — 54% of the raw disagreements there
-  were gold `creature` against a model's `none`, which is a disagreement about the
-  spec rather than about the card. That is why the gating subset is reported
+  `restrictedTo` spec is genuinely ambiguous. On the FIRST scored run, before the
+  pairing fix, 54% of the raw disagreements there were gold `creature` against a
+  model's `none` — a disagreement about the spec rather than about the card. That
+  figure is quoted as it was measured then and is not regenerated, because it came
+  from the uncommitted disagreement list; the point it supports is why the gating
+  subset is reported separately at all. That is why the gating subset is reported
   separately and the gold labels were left alone rather than relabelled to suit the
   result. A second labeller disagreeing with 10% of the gold set would move the
   headline numbers by a few points; it would not move 0 to 90.
@@ -230,10 +251,12 @@ both.
 
 - `docs/superpowers/plans/2026-09-25-card-labels-blind-sheet.md` — **15 telling
   disagreements, columns unlabelled**, gold in a key beneath them
-- `docs/superpowers/benchmarks/2026-09-25-card-labels-score.json` — every figure in
-  the tables above, per model, per job kind and per limit
+- `docs/superpowers/benchmarks/2026-09-25-card-labels-score.json` — every accuracy
+  figure in the tables above, per model, per job kind and per limit
 - `docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json` — the
   Haiku-against-Sonnet figures on the random 400
+- `docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json` — measured tokens,
+  cost per model, and the full-run and per-set projections with their basis
 
 The raw labels (296KB across both models) and the 711-row disagreement list stay in
 `out/` and are NOT committed: they are reproducible from the committed scripts for

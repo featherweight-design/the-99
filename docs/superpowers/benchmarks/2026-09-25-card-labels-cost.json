@@ -1,0 +1,50 @@
+{
+ "measuredAt": "2026-09-26T00:41:44.280Z",
+ "perModel": {
+  "haiku": {
+   "cards": 508,
+   "notReturned": 0,
+   "rejectedJobs": 17,
+   "tokens": {
+    "in": 88349,
+    "out": 63406,
+    "cacheWrite": 0,
+    "cacheRead": 0
+   },
+   "usd": 0.2027,
+   "usdPerCard": 0.000399
+  },
+  "sonnet": {
+   "cards": 508,
+   "notReturned": 0,
+   "rejectedJobs": 8,
+   "tokens": {
+    "in": 36104,
+    "out": 67156,
+    "cacheWrite": 44955,
+    "cacheRead": 7290
+   },
+   "usd": 0.6432,
+   "usdPerCard": 0.001266
+  }
+ },
+ "totalUsd": 0.8459,
+ "projections": {
+  "haiku": {
+   "fullRunUsd": 12.7,
+   "perSetUsd": 0.16,
+   "basis": {
+    "commanderLegalCards": 31830,
+    "avgRecentSetCards": 390
+   }
+  },
+  "sonnet": {
+   "fullRunUsd": 40.3,
+   "perSetUsd": 0.49,
+   "basis": {
+    "commanderLegalCards": 31830,
+    "avgRecentSetCards": 390
+   }
+  }
+ }
+}

@@ -7,15 +7,13 @@ import "./lib/env.mjs";
 
 import Anthropic from "@anthropic-ai/sdk";
 
+import { costOf } from "./lib/card-labels-pricing.mjs";
 import { validateJob } from "./lib/card-labels-schema.mjs";
 
-const PRICING = {
-  haiku: { in: 0.50, out: 2.50, cacheWrite: 0.625, cacheRead: 0.05 },
-  sonnet: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15 },
-};
-
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
+const LEDGER = "out/spend.json";
 const { submitted, batches } = JSON.parse(readFileSync("out/batches.json", "utf8"));
+let collected = 0;
 mkdirSync("out", { recursive: true });
 
 /** A model may fence its JSON however it likes; the reply is data, not code. */
@@ -28,8 +26,11 @@ const parseReply = (text) => {
 };
 
 let grandTotal = 0;
+/** Written out so the report's dollar figures come from an artifact, not prose. */
+const measured = {};
 for (const [key, id] of Object.entries(submitted)) {
   const batch = await client.messages.batches.retrieve(id);
+  if (batch.processing_status === "ended") collected++;
   if (batch.processing_status !== "ended") {
     console.log(`${key}: ${batch.processing_status} — ${JSON.stringify(batch.request_counts)}`);
     continue;
@@ -83,8 +84,7 @@ for (const [key, id] of Object.entries(submitted)) {
     for (const name of asked) if (!(name in labels)) labels[name] = labels[name] ?? null;
   }
 
-  const p = PRICING[key];
-  const cost = (inTok * p.in + outTok * p.out + cacheW * p.cacheWrite + cacheR * p.cacheRead) / 1e6;
+  const cost = costOf(key, { i: inTok, o: outTok, cw: cacheW, cr: cacheR });
   grandTotal += cost;
 
   const missing = Object.entries(labels).filter(([, v]) => v === null).length;
@@ -93,5 +93,39 @@ for (const [key, id] of Object.entries(submitted)) {
   console.log(`${key}: ${Object.keys(labels).length} cards (${missing} not returned), ${malformed.length} rejected jobs, ${errored} failed requests`);
   console.log(`  tokens in=${inTok} out=${outTok} cacheWrite=${cacheW} cacheRead=${cacheR}`);
   console.log(`  COST $${cost.toFixed(4)}  (batch rates)`);
+  measured[key] = {
+    cards: Object.keys(labels).length, notReturned: missing, rejectedJobs: malformed.length,
+    tokens: { in: inTok, out: outTok, cacheWrite: cacheW, cacheRead: cacheR },
+    usd: +cost.toFixed(4), usdPerCard: +(cost / Object.keys(labels).length).toFixed(6),
+  };
 }
-if (grandTotal) console.log(`\nMEASURED TOTAL: $${grandTotal.toFixed(4)}`);
+if (grandTotal) {
+  console.log(`\nMEASURED TOTAL: $${grandTotal.toFixed(4)}`);
+  // COMMITTED alongside the scores, because the recommendation's dollar figure was
+  // quoted in the report while living only in this script's stdout -- so a reader
+  // told to check the tables against the artifacts could not reproduce it.
+  const COMMANDER_LEGAL = 31830, AVG_SET = 390;
+  writeFileSync("out/cost.json", JSON.stringify({
+    measuredAt: new Date().toISOString(),
+    perModel: measured,
+    totalUsd: +grandTotal.toFixed(4),
+    projections: Object.fromEntries(Object.entries(measured).map(([m, v]) => [m, {
+      fullRunUsd: +(v.usdPerCard * COMMANDER_LEGAL).toFixed(2),
+      perSetUsd: +(v.usdPerCard * AVG_SET).toFixed(2),
+      basis: { commanderLegalCards: COMMANDER_LEGAL, avgRecentSetCards: AVG_SET },
+    }])),
+  }, null, 1));
+  console.log("cost and projections -> out/cost.json");
+  // RECONCILE the ledger the runner wrote. It charges the WORST CASE at submission,
+  // because an interrupted run must not read as having spent nothing -- but leaving
+  // that figure standing refuses the next legitimate run on a number ~4x the truth.
+  // Written only when every batch has ended, or a partial collection would credit
+  // back money still in flight.
+  const ended = Object.keys(submitted).length === collected;
+  if (ended) {
+    writeFileSync(LEDGER, JSON.stringify({ totalUsd: grandTotal, submitted, reconciled: true }, null, 1));
+    console.log(`ledger reconciled to the measured figure ($${grandTotal.toFixed(4)})`);
+  } else {
+    console.log(`ledger left at the worst case: ${collected} of ${Object.keys(submitted).length} batches ended`);
+  }
+}

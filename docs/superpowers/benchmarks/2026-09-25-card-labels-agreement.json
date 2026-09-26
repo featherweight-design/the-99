@@ -1,5 +1,6 @@
 {
  "cards": 400,
+ "skipped": 0,
  "sameJobs": 210,
  "sameEverything": 124,
  "jobTally": {

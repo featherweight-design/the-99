@@ -46,6 +46,21 @@ const subtypeRows = (await sql`
 const creatureTypes = new Set(subtypeRows.map((r) => r.word));
 const isCreatureType = (w: string) => creatureTypes.has(w);
 
+/**
+ * TRIBAL: gold restricts to a named CREATURE TYPE -- Wolf, Dinosaur, Pirate. The
+ * Bejeweled Warg case exactly, and a strict subset of the gating set, which also
+ * holds card types (artifact, land, Vehicle) and game roles (Commander). The two are
+ * reported SEPARATELY because they do not agree about which model is better, and a
+ * reader shown only one is being steered.
+ *
+ * Checked against the CATALOG'S creature subtypes, not `/^[A-Z]/`. The capitalised
+ * test let `Vehicle` and `Commander` into the tribal column -- 3 of 34 gold values --
+ * while the prose beside it called them examples of the gating superset. The
+ * published denominators disagreed with the published definition.
+ */
+const isTribal = (v: string) => creatureTypes.has(v);
+
+
 /** A gold card missing from the catalog is a broken run, not a blank row. */
 const mustGet = (name: string): CardRow => {
   const row = byName.get(name);
@@ -93,15 +108,6 @@ const limitValue = (j: Job, f: string) =>
 // are, and `restrictedTo(gating)` is scored separately on the subset that
 // actually decides a match.
 const NON_GATING = new Set(["creature", "permanent", "spell", "player", "none"]);
-
-/**
- * TRIBAL: gold restricts to a NAMED type, capitalised as printed -- Wolf,
- * Dinosaur, Pirate. This is the Bejeweled Warg case exactly, and it is a strict
- * subset of the gating set, which also holds lowercase card types (artifact,
- * land). The two are reported SEPARATELY because they do not agree about which
- * model is better, and a reader shown only one is being steered.
- */
-const isTribal = (v: string) => /^[A-Z]/.test(v);
 
 const DEFAULTS: Record<string, string> = {
   rampKind: "none", restrictedTo: "none", trigger: "none",
@@ -215,8 +221,14 @@ for (const [model, byCard] of Object.entries(predictions)) {
               const b = limits["restrictedTo(tribal)"];
               if (gv === pv) { b.right++; b.infRight++; } else { b.wrong++; b.infWrong++; }
             }
-          } else if (!NON_GATING.has(pv)) {
-            // Gold says this gates nothing and the model named a type anyway.
+          } else if (gv === "none" && !NON_GATING.has(pv)) {
+            // INVENTED: gold records NO restriction at all and the model named a
+            // type. Scoped to `gv === "none"` deliberately. The earlier version
+            // fired whenever gold was in NON_GATING, which includes `creature` (49
+            // of the gold set's jobs) and `permanent` -- so a model answering
+            // `Vehicle` where gold says `creature` was counted as inventing, when
+            // that is the documented spec disagreement rather than invention, and
+            // the count silently mixed the two.
             spurious++;
             disagreements.push({ card: row.name, klass: row.klass, model, type: "spurious restriction", job: kindKey(g), gold: gv, predicted: pv, informative: true });
           }

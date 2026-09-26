@@ -8,6 +8,20 @@
 // The random 400 is separate and IS random, because an agreement rate is only
 // meaningful over the distribution the full run would actually meet.
 //
+// PROVENANCE, stated plainly: re-running this file does NOT reproduce the committed
+// gold set exactly. Four `tribalStatic` rows -- Achilles Davenport, Adeliz the
+// Cinder Wind, Admiral Beckett Brass, Aeronaut Admiral -- were labelled from an
+// EARLIER run, before the case-sensitivity and ordering fixes below, and the fixed
+// queries no longer surface them. They are real cards, correctly labelled, and they
+// are exactly the class this selector targets, so they were kept rather than thrown
+// away for tidiness.
+//
+// The limits were briefly widened to make the counts line up, which is fitting the
+// instrument to the data and worse than the gap it hid. The GOLD FILE is the
+// authority on what was labelled; this file is the authority on how candidates are
+// found. A reader checking the sampling gets an overlapping set, not an identical
+// one, and now knows why.
+//
 // Read-only. Catalog rows only -- no per-account data is touched, so local-dev's
 // catalog is the right source, and it carries the same 31,830 Commander-legal
 // cards staging does (checked 2026-09-25).

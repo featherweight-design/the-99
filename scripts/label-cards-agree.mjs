@@ -16,16 +16,20 @@ const lim = (j, f) => f === "threshold"
   ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
   : String(j[f] ?? "none");
 
-let cards = 0, sameJobs = 0, sameEverything = 0;
+let cards = 0, sameJobs = 0, sameEverything = 0, skipped = 0;
 const jobTally = { both: 0, haikuOnly: 0, sonnetOnly: 0 };
 const limitDisagree = Object.fromEntries(LIMITS.map((f) => [f, 0]));
 const limitCompared = Object.fromEntries(LIMITS.map((f) => [f, 0]));
-const worst = [];
+/** Written out, not collected and dropped: the per-card list the name promises. */
+const disagreeing = [];
 
 for (const name of Object.keys(h)) {
   if (gold.has(name)) continue;          // the random tail only
   const a = h[name], b = s[name];
-  if (!Array.isArray(a) || !Array.isArray(b)) continue;
+  // A card one model returned and the other did not cannot be compared. COUNTED,
+  // because silently skipping moves every percentage's denominator with nothing
+  // saying so -- invisible on this run, where both models returned all 508.
+  if (!Array.isArray(a) || !Array.isArray(b)) { skipped++; continue; }
   cards++;
   // MULTISET, not set. `ak.filter(k => bk.includes(k))` counts a card's two jobs
   // of the same kind as two agreements against one, so `both` over-counts and
@@ -68,15 +72,17 @@ for (const name of Object.keys(h)) {
     }
   }
   if (allLimitsMatch) sameEverything++;
-  else worst.push({ name, haiku: ak.join(","), sonnet: bk.join(",") });
+  else disagreeing.push({ name, haiku: ak.join(","), sonnet: bk.join(",") });
 }
 
 const pct = (n, d) => d ? `${((100 * n) / d).toFixed(1)}%` : "-";
-console.log(`random cards compared: ${cards}`);
+console.log(`random cards compared: ${cards}${skipped ? ` (${skipped} skipped: returned by one model only)` : ""}`);
 console.log(`  same job SET exactly:        ${sameJobs} (${pct(sameJobs, cards)})`);
 console.log(`  same jobs AND all limits:    ${sameEverything} (${pct(sameEverything, cards)})`);
 console.log(`  job instances: both ${jobTally.both}, haiku only ${jobTally.haikuOnly}, sonnet only ${jobTally.sonnetOnly}`);
 console.log("  limit disagreement, where both found the job:");
 for (const f of LIMITS) console.log(`    ${f.padEnd(13)} ${limitDisagree[f]}/${limitCompared[f]} (${pct(limitDisagree[f], limitCompared[f])})`);
 mkdirSync("out", { recursive: true });
-writeFileSync("out/agreement.json", JSON.stringify({ cards, sameJobs, sameEverything, jobTally, limitDisagree, limitCompared }, null, 1));
+writeFileSync("out/agreement.json", JSON.stringify({ cards, skipped, sameJobs, sameEverything, jobTally, limitDisagree, limitCompared }, null, 1));
+writeFileSync("out/agreement-disagreeing-cards.json", JSON.stringify(disagreeing, null, 1));
+console.log(`  ${disagreeing.length} cards differ -> out/agreement-disagreeing-cards.json`);

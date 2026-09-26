@@ -4,7 +4,8 @@
 // so any prompt difference would confound it.
 //
 // A cache_control breakpoint sits at the end of the system block, and MEASUREMENT
-// says it is close to worthless here. The block is 1,215 tokens as billed, which is
+// says it is close to worthless here. The block is ~1,285 tokens by this repo's estimate and 1,215 as BILLED (two
+// different quantities, so both are named), which is
 // under Haiku's minimum cacheable length -- zero writes and zero reads across two
 // identical calls -- so for the recommended model it is inert. For Sonnet it
 // engages and still loses: 37 writes against 6 reads over 43 batch requests,
@@ -18,7 +19,7 @@
 // change 2b makes reaches the prompt and the scorer together. A prompt that
 // listed jobs by hand would drift from the thing it is scored against, and the
 // drift would read as model error.
-import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_STATS, TRIGGERS } from "./card-labels-schema.mjs";
+import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "./card-labels-schema.mjs";
 
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
 
@@ -72,6 +73,7 @@ EVERY JOB CARRIES:
                "creature spell with mana value 5 or greater" is
                {"stat":"mv","op":">=","value":5}. Otherwise null.
                stat is one of: ${THRESHOLD_STATS.join(", ")}
+               op is one of: ${THRESHOLD_OPS.join(" ")} — exactly these strings
   modal        true when this job is ONE OPTION AMONG ALTERNATIVES ("choose one")
                so the card can do this OR another job but not both. false
                otherwise. Two separate triggers are NOT modal.
@@ -84,10 +86,15 @@ object uses EXACTLY these keys, spelled this way — "space", not "role":
   {"space":"role","kind":"ramp","rampKind":"makesTreasure","restrictedTo":null,"trigger":"combatDamage","recurrence":"repeatable","threshold":null,"modal":true}
 ]}]
 
-Omit "rampKind" entirely on any job that is not a role "ramp" job.
+Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
+accepted there too).
 A card with no job in the vocabulary gets "jobs": []. No prose, no markdown fence.`;
 
 /** One card as the model sees it. Front face only, as the text rules read. */
+/** The user turn exactly as sent, so the estimate can measure the real thing. */
+export const renderBody = (cards) =>
+  `Label these ${cards.length} cards.\n\n${cards.map(renderCard).join("\n\n---\n\n")}`;
+
 export const renderCard = (c) =>
   `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${c.oracle_text ?? "(no text)"}`;
 
@@ -96,15 +103,22 @@ export const renderCard = (c) =>
  * above it is cached; the per-batch card list goes in the user turn, below the
  * breakpoint, where it is not.
  */
+/**
+ * The output ceiling for one batch. EXPORTED because the spend estimate has to bind
+ * on it: a hardcoded copy in the estimator means raising this doubles what the
+ * requests permit while the cap still books the old figure.
+ */
+export const MAX_TOKENS_PER_BATCH = 8000;
+
 export const buildRequest = (customId, model, cards) => ({
   custom_id: customId,
   params: {
     model,
-    max_tokens: 8000,
+    max_tokens: MAX_TOKENS_PER_BATCH,
     // Deterministic, so a re-run of the same batch is comparable. A sampled run
     // would make the Haiku/Sonnet difference partly noise.
     temperature: 0,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: `Label these ${cards.length} cards.\n\n${cards.map(renderCard).join("\n\n---\n\n")}` }],
+    messages: [{ role: "user", content: renderBody(cards) }],
   },
 });

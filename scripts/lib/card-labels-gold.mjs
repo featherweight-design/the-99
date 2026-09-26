@@ -9,6 +9,11 @@
 // `why` is the reasoning for the label, per d9's ask. Where a label is a judgement
 // rather than a reading, the why says so -- those are the rows to argue with.
 //
+// NOT EXACTLY REPRODUCIBLE from `label-cards-select.mjs`, and the selector's header
+// says which four rows and why: they were labelled before that file's
+// case-sensitivity and ordering fixes, and the fixed queries no longer surface them.
+// This file is the authority on what was labelled.
+//
 // LABELLED AGAINST THE VOCABULARY'S INTENT, NOT AGAINST ITS REGEXES. The text
 // rules are SCORED against this file, so mimicking them would make the baseline
 // score 100% by construction and measure nothing. Two consequences worth knowing:

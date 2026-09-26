@@ -77,6 +77,14 @@ export const TRIGGERS = [
 /** Whether the job can be had again. Generator Servant's mana is `oneShot`. */
 export const RECURRENCE = ["oneShot", "repeatable"];
 
+/**
+ * The comparison a threshold may use. Unvalidated before, and `label-cards-score.mts`
+ * compares thresholds by concatenating `op` -- so a model answering `"atLeast"`
+ * passed validation and was then scored wrong on a limit whose format was never
+ * specified, charging the model for the prompt's omission.
+ */
+export const THRESHOLD_OPS = [">=", "<=", ">", "<", "=="];
+
 export const THRESHOLD_STATS = ["mv", "power", "counters", "cardsInGraveyard", "artifacts", "creatures", "life", "other"];
 
 /**
@@ -115,7 +123,11 @@ export function validateJob(job) {
   if (job.kind === "ramp" && job.space === "role") {
     // null is permitted and meaningful; undefined is an omission.
     if (job.rampKind !== null && !RAMP_KINDS.includes(job.rampKind)) bad.push(`rampKind "${job.rampKind}"`);
-  } else if (job.rampKind !== undefined) {
+  } else if (job.rampKind !== undefined && job.rampKind !== null) {
+    // An explicit `rampKind: null` on a non-ramp job is ACCEPTED as equivalent to
+    // omitting it. Rejecting it meant the collector dropped the whole job, which
+    // then read as a missed job in recall -- charging a model for answering `null`
+    // where the prompt says "omit", a formatting choice rather than a wrong label.
     bad.push(`rampKind on a non-ramp job`);
   }
   if (!TRIGGERS.includes(job.trigger)) bad.push(`trigger "${job.trigger}"`);
@@ -124,6 +136,7 @@ export function validateJob(job) {
   if (typeof job.modal !== "boolean") bad.push(`modal`);
   if (job.threshold !== null && job.threshold !== undefined) {
     if (!THRESHOLD_STATS.includes(job.threshold.stat)) bad.push(`threshold.stat "${job.threshold?.stat}"`);
+    if (!THRESHOLD_OPS.includes(job.threshold.op)) bad.push(`threshold.op "${job.threshold?.op}"`);
     if (typeof job.threshold.value !== "number") bad.push(`threshold.value`);
   }
   return bad;
