@@ -210,7 +210,8 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   const firstScreen = (rows: Candidate[], all: boolean) => (all ? rows : rows.slice(0, GROUP_SHOWN));
   const yours = firstScreen(data.yours, allYours);
   const toBuy = firstScreen(data.toBuy, allBuy);
-  const siblings = [...yours, ...toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
+  // The card modal's Prev/Next walks every candidate, folded or not, as the swap sheet's does.
+  const siblings = [...data.yours, ...data.toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
   const current = {
     cmc: data.current.reduce((n, c) => n + c.cmc, 0),
     name: joinShort(data.current.map((c) => c.name)),

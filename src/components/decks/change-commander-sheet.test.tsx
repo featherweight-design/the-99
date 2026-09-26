@@ -63,6 +63,28 @@ describe("ChangeCommanderSheet", () => {
     expect(screen.getAllByTestId("change-commander-row").length).toBe(5 + 10);
   });
 
+  it("pages the card modal across every candidate, folded or not", async () => {
+    const yours = Array.from({ length: 7 }, (_, i) => cand(half(`Own ${i}`), 40 - i));
+    readChangeCandidates.mockResolvedValue(data({ yours }));
+    const asCard = (id: string) => ({
+      oracleId: id, name: id, typeLine: "Creature", manaCost: "{2}", cmc: 2, oracleText: null, keywords: [],
+      rarity: "common", colorIdentity: [], imageUri: null, printedName: null, quantity: 0, printings: [],
+      setCodes: [], primarySetCode: "", preferredPrinting: null,
+    }) as BrowseCard;
+    const fetchCard = vi.fn(async (id: string) => asCard(id));
+    render(
+      <CardDetailProvider fetchCard={fetchCard}>
+        <ChangeCommanderSheet deckId="d1" deckName="Jund" pair={false} hasVersion onClose={() => {}} />
+      </CardDetailProvider>,
+    );
+    await screen.findByText("Yours · 7");
+    // The last drawn row of a folded group: its Next is the first row Show all would add.
+    fireEvent.click(screen.getByText("Own 4").closest("button")!);
+    await screen.findByRole("dialog", { name: "own 4" });
+    fireEvent.click(screen.getByRole("button", { name: "Next card" }));
+    await waitFor(() => expect(fetchCard).toHaveBeenLastCalledWith("own 5", undefined));
+  });
+
   it("draws no toggle under a group of 5 or fewer", async () => {
     readChangeCandidates.mockResolvedValue(data({ toBuy: data().toBuy.slice(0, 5) }));
     mount();
