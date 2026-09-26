@@ -14,7 +14,8 @@
 // through the sheet leaves the phone's row where it was, apart from the Filters badge, which
 // counts the dimensions on and is reported rather than asserted.
 //
-// It picks sets through the page, never by writing the URL, and makes no writes. Point it at
+// It picks sets through the page, never by writing the URL. Its one write is the About row
+// `clearAboutSheet` sets for the account (every entry marked seen), which it leaves set. Point it at
 // `local-dev`.
 //
 //   PROBE_BASE=http://localhost:3018 node scripts/probe-set-chip.mjs
