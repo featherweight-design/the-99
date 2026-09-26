@@ -306,6 +306,8 @@ async function reconcile(): Promise<{
   const byCustomId = new Map<string, string>();
   /** True when the search was exhaustive, so "not found" actually means "never submitted". */
   let searchWasComplete = false;
+  /** Set when any listed batch is still running, which makes "not found" inconclusive. */
+  let anyStillProcessing = false;
   const unresolved = new Set(open.filter((o) => o.batchId === null).map((o) => o.customId));
   if (unresolved.size > 0) {
     // PAGINATED UNTIL EXHAUSTED, or until every lost id is accounted for. One page of 100 does
@@ -329,12 +331,18 @@ async function reconcile(): Promise<{
           console.warn(`  could not read ${batch.id}: ${(err as Error).message}`);
         }
       }
+      // A batch still PROCESSING has no readable results, so it is skipped above — which means
+      // its `custom_id`s cannot be matched. If any such batch exists, the absence of a match
+      // proves nothing: the lost request may be running inside it right now. Treating an
+      // exhausted page as proof would re-plan work that is in flight.
+      if (page.data.some((b) => b.processing_status !== "ended")) anyStillProcessing = true;
       cursor = page.data.at(-1)?.id;
       if (unresolved.size === 0) { searchWasComplete = true; break; }
-      if (!page.has_more) { searchWasComplete = true; break; }
+      if (!page.has_more) { searchWasComplete = !anyStillProcessing; break; }
     } while (pages < 50);
     console.log(`  searched ${pages} page(s) of provider batches; `
-      + `${unresolved.size} id(s) still unaccounted for`);
+      + `${unresolved.size} id(s) still unaccounted for`
+      + (anyStillProcessing ? "; a batch is still processing, so absence proves nothing" : ""));
   } else {
     searchWasComplete = true;
   }
@@ -441,9 +449,10 @@ async function submit(chunks: Chunk[]): Promise<void> {
   // resolves against the provider — and stamping this batch's id onto it would assert that a
   // request belongs to a batch that never contained it, corrupting the one lookup the resume
   // path depends on.
-  await db.update(cardLabelBatches)
-    .set({ batchId: batch.id, status: "submitted", submittedAt: new Date() })
-    .where(inArray(cardLabelBatches.intentKey, chunks.map((c) => c.intentKey)));
+  // The SHARED helper, which the probe also calls. This had its own copy of the same update: the
+  // probe was green on `stampWave` while the script ran code nothing exercised, which is the
+  // failure extracting it was supposed to end.
+  await stampWave(db, chunks.map((c) => c.intentKey), batch.id);
   console.log(`submitted ${requests.length} request(s) as ${batch.id}`);
 }
 
@@ -511,7 +520,31 @@ async function main(): Promise<void> {
     return;
   }
 
-  const cards = await cardsNeedingLabels();
+  const all = await cardsNeedingLabels();
+
+  // **A CARD WHOSE NAME IS SHARED IS EXCLUDED AND NAMED, never labelled by guess.**
+  //
+  // The prompt asks by name and the model answers by name, so two oracle rows sharing one name are
+  // indistinguishable in the reply — and the name-keyed lookups in `submit` and `collectBatch`
+  // would collapse them to whichever row the map kept, leaving the other card's hash stale, or
+  // stage one oracle id twice. `src/lib/tuning/resolve-names.ts` exists because catalog names are
+  // NOT unique, and it takes the same position: resolve when unambiguous, otherwise drop rather
+  // than guess.
+  //
+  // Zero such cards in the legal set today, so this costs nothing now; it is here because the
+  // catalog refreshes weekly and a run costs money, so the day one appears is not the day to
+  // discover that a label went to the wrong card.
+  const byNameCount = new Map<string, number>();
+  for (const c of all) byNameCount.set(c.name, (byNameCount.get(c.name) ?? 0) + 1);
+  const ambiguous = all.filter((c) => (byNameCount.get(c.name) ?? 0) > 1);
+  const cards = all.filter((c) => (byNameCount.get(c.name) ?? 0) === 1);
+  if (ambiguous.length > 0) {
+    console.warn(`\n${ambiguous.length} card(s) share a name with another oracle row and are `
+      + `EXCLUDED — the model's reply could not be attributed to one of them:`);
+    for (const c of ambiguous.slice(0, 10)) console.warn(`  ${c.name} (${c.oracleId})`);
+    if (ambiguous.length > 10) console.warn(`  ...and ${ambiguous.length - 10} more`);
+  }
+
   console.log(`${cards.length} card(s) need labels (stored hash differs or absent)`);
 
   const planned = planChunks(runId, MODEL, cards.map((c) => c.name));
