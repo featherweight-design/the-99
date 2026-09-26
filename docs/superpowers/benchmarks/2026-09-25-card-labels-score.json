@@ -1,5 +1,5 @@
 {
- "scoredAt": "2026-09-26T01:58:45.196Z",
+ "scoredAt": "2026-09-26T02:13:15.530Z",
  "goldCards": 108,
  "models": {
   "haiku": {
@@ -292,10 +292,10 @@
    "notReturned": 0,
    "spuriousRestrictions": 0,
    "jobs": {
-    "precision": 0.742,
+    "precision": 0.762,
     "recall": 0.717,
     "tp": 147,
-    "fp": 51,
+    "fp": 46,
     "fn": 58
    },
    "limits": {
@@ -332,12 +332,12 @@
      "infWrong": 63
     },
     "threshold": {
-     "accuracy": 0.932,
+     "accuracy": 0.939,
      "informativeAccuracy": 0,
-     "right": 137,
-     "wrong": 10,
+     "right": 138,
+     "wrong": 9,
      "infRight": 0,
-     "infWrong": 10
+     "infWrong": 9
     },
     "modal": {
      "accuracy": 0.857,
@@ -370,7 +370,7 @@
      "precision": 0,
      "recall": null,
      "tp": 0,
-     "fp": 29,
+     "fp": 24,
      "fn": 0
     },
     {

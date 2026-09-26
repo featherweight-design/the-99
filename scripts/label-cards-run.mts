@@ -17,7 +17,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
-import { ledgerTotal, readLedger, unreconciled, writeReservation } from "./lib/card-labels-ledger.mjs";
+import { clearIntent, ledgerTotal, readLedger, unreconciled, writeIntent, writeReservation } from "./lib/card-labels-ledger.mjs";
 import { costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
 import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM } from "./lib/card-labels-prompt.mjs";
 
@@ -180,12 +180,19 @@ const submitted: Record<string, string> = {};
 let charged = spentBefore;
 for (const [key, model] of Object.entries(MODELS) as [keyof typeof MODELS, string][]) {
   const requests = batches.map((cards, i) => buildRequest(`${key}-${i}`, model, cards));
+  // The intent goes down BEFORE the call. A process exit between `create` returning
+  // and the id reaching disk would otherwise lose a batch the provider still bills:
+  // the next run would see no id, submit again, and pay twice. With the intent
+  // recorded, the next run refuses and says to look for the orphan with
+  // `client.messages.batches.list()`.
+  const intentKey = writeIntent(key, perModelWorst[key]);
   const batch = await client.messages.batches.create({ requests });
   submitted[key] = batch.id;
   charged += perModelWorst[key];
   // `reservedUsd` is what THIS run booked, so `collect` can swap exactly it for the
   // measured figure and leave every earlier run's spend standing.
   writeReservation(submitted, charged - spentBefore);
+  clearIntent(intentKey);
   // `batches.json` is written HERE, not after the loop. The collector reads it to
   // know which ids exist, so a process dying between the first and second model used
   // to strand a submitted batch: the ledger held its id, the collector never saw it,

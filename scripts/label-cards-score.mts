@@ -20,8 +20,10 @@ import { neon } from "@neondatabase/serverless";
 
 import { frontFaceOracle } from "../src/lib/recs/faces";
 import { classifyRoles } from "../src/lib/recs/roles";
+import { loadCreatureTypes } from "../src/lib/swaps/gather";
 import { cardThemes } from "../src/lib/recs/themes";
 import { GOLD } from "./lib/card-labels-gold.mjs";
+import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 
 type Job = {
@@ -39,15 +41,15 @@ const cards = await sql`
 type CardRow = { name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; keywords: string[] | null; layout: string };
 const byName = new Map((cards as CardRow[]).map((c) => [c.name, c]));
 
-// `cardThemes` needs the catalog's own creature subtypes, because the word before
-// "you control" is a creature type only sometimes. Read from type lines, as the
-// caller in the app does.
-const subtypeRows = (await sql`
-  select distinct trim(word) as word from (
-    select unnest(string_to_array(split_part(type_line, '—', 2), ' ')) as word
-    from cards where type_line like '%Creature%—%'
-  ) w where length(trim(word)) > 2`) as { word: string }[];
-const creatureTypes = new Set(subtypeRows.map((r) => r.word));
+// `cardThemes` needs the catalog's own creature subtypes, and it must be the
+// APPLICATION'S list, not a query written here. `readCreatureTypes` in
+// `src/lib/swaps/gather.ts` excludes a subtype word that also appears on a
+// non-creature land, artifact or enchantment face -- `Forest` is its own example,
+// because Dryad Arbor is a `Land Creature — Forest Dryad`. A local query taking
+// every token after `Creature —` therefore admits `Forest`, `Equipment`, `Saga` and
+// `Vehicle` as creature types, which moves BOTH the baseline's tribal theme and this
+// file's tribal denominators. 303 types against the local version's wider set.
+const creatureTypes = await loadCreatureTypes();
 const isCreatureType = (w: string) => creatureTypes.has(w);
 
 /**
@@ -96,67 +98,7 @@ const textRuleJobs = (card: CardRow): Job[] => {
 
 const kindKey = (j: Job) => `${j.space}:${j.kind}`;
 
-/**
- * Pairs gold jobs with predicted jobs of the SAME KIND, maximising total limit
- * agreement across the whole group rather than taking the best match for each gold
- * job in turn.
- *
- * Greedy is not merely untidy here, it is wrong: with two gold jobs of one kind, the
- * locally best prediction for the first can be the only one that fits the second, so
- * consuming it manufactures a limit disagreement out of two labels that both match.
- * The gold set exercises this ON PURPOSE -- Depala carries two restricted pumps and
- * Tyrant's Scorn two removals -- so the defect lands exactly where the set is
- * sharpest.
- *
- * Exhaustive over permutations, which is affordable because the groups are tiny: the
- * largest same-kind group in the gold set is 3, and the factorial is bounded by a
- * guard rather than assumed. Above the guard it falls back to greedy and SAYS SO,
- * because a silent fallback would be the same defect wearing a comment.
- */
-const PERMUTATION_LIMIT = 6;
-export function bestPairing(
-  gold: Job[], predicted: Job[], agreement: (a: Job, b: Job) => number,
-): [Job, Job][] {
-  const pairs: [Job, Job][] = [];
-  const byKind = new Map<string, Job[]>();
-  for (const g of gold) {
-    const k = kindKey(g);
-    byKind.set(k, [...(byKind.get(k) ?? []), g]);
-  }
-  for (const [kind, golds] of byKind) {
-    const cands = predicted.filter((q) => kindKey(q) === kind);
-    if (cands.length === 0) continue;
-    if (golds.length === 1 || cands.length === 1 || golds.length > PERMUTATION_LIMIT) {
-      if (golds.length > PERMUTATION_LIMIT) {
-        console.warn(`  (${kind}: ${golds.length} same-kind jobs exceeds the permutation limit — paired greedily)`);
-      }
-      const pool = [...cands];
-      for (const g of golds) {
-        let best = -1, at = -1;
-        for (const [i, q] of pool.entries()) {
-          const sc = agreement(g, q);
-          if (sc > best) { best = sc; at = i; }
-        }
-        if (at >= 0) pairs.push([g, pool.splice(at, 1)[0]]);
-      }
-      continue;
-    }
-    // Every assignment of these golds to distinct candidates; keep the best total.
-    const idx = cands.map((_, i) => i);
-    let bestTotal = -1, bestAssign: number[] = [];
-    const walk = (chosen: number[], left: number[]) => {
-      if (chosen.length === Math.min(golds.length, cands.length)) {
-        const total = chosen.reduce((a, ci, gi) => a + agreement(golds[gi], cands[ci]), 0);
-        if (total > bestTotal) { bestTotal = total; bestAssign = [...chosen]; }
-        return;
-      }
-      for (const [n, ci] of left.entries()) walk([...chosen, ci], left.filter((_, m) => m !== n));
-    };
-    walk([], idx);
-    bestAssign.forEach((ci, gi) => pairs.push([golds[gi], cands[ci]]));
-  }
-  return pairs;
-}
+
 const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"] as const;
 const limitValue = (j: Job, f: string) =>
   f === "threshold"

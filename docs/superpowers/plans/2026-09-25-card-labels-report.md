@@ -276,6 +276,7 @@ both.
 - `scripts/label-cards-run.mts` — batch submission, with the spend cap
 - `scripts/label-cards-collect.mjs` — collection, measured cost, face reconciliation
 - `scripts/label-cards-score.mts` — precision, recall, the non-default split
+- `scripts/lib/card-labels-pairing.mts` — which prediction answers which gold job when a card has two of a kind, with its own tests (6)
 - `scripts/label-cards-agree.mjs` — Haiku against Sonnet on the random 400
 - `scripts/label-cards-blindsheet.mjs` — the blind sheet below
 ### Committed evidence
@@ -283,9 +284,9 @@ both.
 Regenerate and republish with:
 
 ```
-npx tsx scripts/label-cards-score.mts --publish
-node scripts/label-cards-agree.mjs --publish
-node scripts/label-cards-blindsheet.mjs --publish
+pnpm tsx scripts/label-cards-score.mts --publish
+pnpm node scripts/label-cards-agree.mjs --publish
+pnpm node scripts/label-cards-blindsheet.mjs --publish
 ```
 
 `--publish` is opt-in so a run against a scratch database, or a half-collected
