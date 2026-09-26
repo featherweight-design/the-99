@@ -156,8 +156,12 @@ async function hold(userId) {
   return value;
 }
 async function restore(userId, value) {
-  // A hold file written before the ids column held the bare version.
-  if (typeof value === "number") return setSeen(userId, value);
+  // A hold file written before the ids column held the bare version and says nothing about the
+  // ids, so the ids the row carries now stay: clearing them would erase whatever was recorded since.
+  if (typeof value === "number") {
+    const ids = (await readRow(userId))?.about_seen_ids ?? [];
+    return restoreAboutSeen({ userId, existed: true, version: value, ids }, sql);
+  }
   // The shared restore, so every probe puts the row back the same way: both columns, or no row.
   return restoreAboutSeen(
     value === null
