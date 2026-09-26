@@ -2,17 +2,24 @@
 
 > **HELD FOR HUGH'S APPROVAL.** Nothing in this plan is built or run until he
 > picks. It follows the sample and its report
-> (`2026-09-25-card-labels-report.md`), whose recommendation is **Haiku 4.5, about
-> $12.70 for 31,830 Commander-legal cards**, because Sonnet is not markedly better
-> on the two limits that caused the reported false matches.
+> (`2026-09-25-card-labels-report.md`), whose recommendation is **Sonnet 4.5, about
+> $40.30 for 31,830 Commander-legal cards** — $27.60 more than Haiku, one time, for
+> half the error rate on the limit family that caused the reported false matches.
+>
+> **The report's first draft said Haiku**, on a figure that turned out to come from
+> an uncommitted command using a job-pairing defect this repository had already
+> identified. Corrected, Sonnet takes the whole restriction family: tribal 0.969
+> against 0.903, gating 0.857 against 0.725, and 2 invented restrictions against 6.
+> Haiku keeps the ramp kind, 0.955 against 0.875, and nothing else that decides a
+> match.
 
 **Goal:** store one label document per card — its jobs, and the LIMITS on each —
 so E1's stand-in matching can refuse a match that shares a job and nothing else.
 
 **Why it is worth building:** today's text rules score **0** on every limit's
 non-default subset. Not poorly — zero, because they cannot express a limit. The
-sample measured a model at ~90% on the tribal restriction and the ramp kind, which
-are exactly the two limits behind `Bejeweled Warg` matching `Runadi`.
+sample measured Sonnet at 0.969 on the tribal restriction and 0.875 on the ramp
+kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
 
 **Tech:** Drizzle on Neon, the Anthropic batch API, the `scripts/.env` convention.
 
@@ -29,7 +36,7 @@ are exactly the two limits behind `Bejeweled Warg` matching `Runadi`.
 - **Batches go direct to `api.anthropic.com`.** This repo's `ANTHROPIC_BASE_URL`
   proxy (`127.0.0.1:8787`) has no `/v1/messages/batches` route and answers
   `cave_route_not_found`. Batch pricing is half of standard, so this is the
-  difference between $12.70 and $25.40.
+  difference between $40.30 and $80.60.
 - **Migration number: check main's journal at build time.** 0067 is next free as of
   2026-09-25 (journal ends 0066_about_seen_ids), and several lanes are open, so it
   will move. A collision is regenerate-and-restamp, not renumber by hand.
@@ -104,11 +111,12 @@ stop being a second source of truth.
 
 Measured in the sample, and it contradicts the obvious choice:
 
-- **Sonnet:** 37 cache WRITES against 6 reads over 43 batches. Batch requests run in
-  parallel, so almost none finds a warm cache. At 1.25x to write and 0.1x to read
-  that is **$0.0854 against $0.0784** without caching — a 9% LOSS.
-- **Haiku:** the breakpoint is inert. The ~1,280-token block is under its minimum
-  cacheable length; zero writes and zero reads, measured across two identical calls.
+- **Sonnet, the recommended model:** 37 cache WRITES against 6 reads over 43
+  batches. Batch requests run in parallel, so almost none finds a warm cache. At
+  1.25x to write and 0.1x to read that is **$0.0854 against $0.0784** without
+  caching — a 9% LOSS.
+- **Haiku:** the breakpoint is inert outright. The 1,215-token block is under its
+  minimum cacheable length; zero writes and zero reads across two identical calls.
 
 So: **ship with no `cache_control`.** Revisit only if the instruction block grows
 past ~2,048 tokens AND batches are submitted sequentially enough for reads to
@@ -133,7 +141,8 @@ so the next reader does not "fix" it back.
 - **`max-parallel: 1` under one workflow-wide concurrency group**, as `Commander
   index` uses: two legs submitting batches at once double the spend and race the
   same table.
-- A new set is ~390 cards, so a weekly run costs about **16 cents** on Haiku.
+- A new set is ~390 cards, so a weekly run costs about **49 cents** on Sonnet (16 on
+  Haiku). Either way the ongoing cost is not a consideration; the backfill is.
 
 ## Task 5 — consumers: how E1 reads the labels
 
@@ -162,11 +171,20 @@ exactly as today. That keeps the feature working on a database this pass has nev
 run against — which is every database until it does — and makes the rollout
 reversible by ignoring one table.
 
-**`restrictedTo` is the weakness to watch.** Measured 0.725 for Haiku on the gating
-subset: about a quarter of gating restrictions are wrong, and a wrong one is either
-a false match (the bug returning) or a good stand-in refused. If false matches
-survive this pass, look here first, and consider Sonnet for this field alone —
-0.857 — before re-running everything.
+**`restrictedTo` is the weakness to watch, and it is why the model choice is
+Sonnet.** Measured 0.857 for Sonnet on the gating subset against 0.725 for Haiku —
+so roughly one gating restriction in seven is still missed on the recommended model,
+and one in four on the cheaper one.
+
+Two failure directions, costing different things, and both are measured:
+
+- a **missed** restriction is the original bug returning — a card matched into a
+  deck it is dead in (Sonnet 6 of 42 wrong, Haiku 11 of 40);
+- an **invented** restriction refuses a stand-in that would have been fine (Sonnet
+  2, Haiku 6).
+
+If false matches survive this pass, look here first; the gold re-score in Task 6 is
+what tells you whether the stored labels or the matching rule is at fault.
 
 ## Task 6 — validation: re-score a gold subset
 
@@ -176,12 +194,14 @@ After the run, score the STORED labels for the 108 gold cards against
 `card-labels-gold.mjs`, using the sample's scorer, and compare to the sample's
 figures:
 
-| | sample (Haiku) | after the run |
+| | sample (Sonnet) | after the run |
 |---|---|---|
-| tribal restriction | 87.5% | must not drop |
-| rampKind | 95.5% | must not drop |
-| trigger | 0.938 | must not drop |
-| restrictedTo (gating) | 0.725 | must not drop |
+| tribal restriction | 0.969 | must not drop |
+| restrictedTo (gating) | 0.857 | must not drop |
+| rampKind | 0.875 | must not drop |
+| trigger | 0.921 | must not drop |
+| recurrence | 0.853 | must not drop |
+| spurious restrictions | 2 | must not rise |
 
 - **A drop means the pass is not what was measured** — a prompt edit, a model
   change, a parse regression — and is a hard failure, not a warning.
@@ -213,11 +233,19 @@ Five PRs. Each is independently reviewable and none leaves the tree broken.
 
 ## What would make this plan wrong
 
-- **If Hugh picks Sonnet**, only the cost table and `model` in the input hash change;
-  no structure moves. The recommendation is Haiku, but the plan is model-agnostic.
-- **If `restrictedTo` at 0.725 is not good enough**, the answer is a second pass on
-  that field alone rather than a better model everywhere — the report's per-limit
-  split is what makes that affordable to decide.
+- **If Hugh picks Haiku** to save the $27.60, only the cost table, the Task 6
+  thresholds and `model` in the input hash change; no structure moves. The plan is
+  model-agnostic, and the input hash carrying the model means a later switch
+  relabels rather than mixing two models' output in one table.
+- **A HYBRID is not proposed, because it is not measured.** Haiku is better at ramp
+  kinds (0.955 against 0.875) and Sonnet at restrictions, so labelling each field
+  with its stronger model is an obvious thought — but nothing in the sample measures
+  a two-pass merge, and the merge itself has a cost the sample did not pay (two runs,
+  plus a rule for reconciling a job the two models disagree about the EXISTENCE of).
+  It would need its own sample before it belonged in a plan.
+- **If `restrictedTo` at 0.857 is not good enough**, the answer is a prompt round
+  aimed at that field, re-scored against the same gold set, rather than a different
+  model — the per-limit split is what makes that affordable to decide.
 - **If E1's matching ends up needing a limit the schema has no field for**, the gold
   set already names three: a pooled threshold (`Technomancer`'s "total mana value 6
   or less"), a resource limit (`Gatewatch Beacon`'s loyalty counters), and a Saga's
