@@ -127,5 +127,6 @@ type Limits = {
 };
 
 export type Job =
-  | (Limits & { space: "role"; kind: Role; rampKind?: RampKind | null })
-  | (Limits & { space: "theme"; kind: Theme; rampKind?: never });
+  | (Limits & { space: "role"; kind: "ramp"; rampKind: RampKind | null })
+  | (Limits & { space: "role"; kind: Exclude<Role, "ramp">; rampKind?: null })
+  | (Limits & { space: "theme"; kind: Theme; rampKind?: null });

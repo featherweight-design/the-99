@@ -108,4 +108,31 @@ describe("Job encodes the space-to-kind relationship the validator enforces", ()
     const bad: Job = { space: "theme", kind: "treasure", rampKind: "makesTreasure", ...limits };
     expect(bad.space).toBe("theme");
   });
+
+  // The ramp field's own three cases. `validateJob` REQUIRES it on `role:ramp` — nullable,
+  // since `undefined` fails its `RAMP_KINDS.includes` check — and accepts only `undefined`
+  // or `null` on every other kind. A two-arm union got all three of these wrong.
+  it("requires rampKind on a ramp job", () => {
+    // @ts-expect-error — the validator rejects a ramp job with no rampKind
+    const bad: Job = { space: "role", kind: "ramp", ...limits };
+    expect(bad.kind).toBe("ramp");
+  });
+
+  it("accepts an explicit null rampKind on a ramp job", () => {
+    const job: Job = { space: "role", kind: "ramp", rampKind: null, ...limits };
+    expect(job.rampKind).toBeNull();
+  });
+
+  it("rejects a rampKind on a non-ramp role", () => {
+    // @ts-expect-error — the validator accepts only undefined or null off the ramp role
+    const bad: Job = { space: "role", kind: "draw", rampKind: "tapsForMana", ...limits };
+    expect(bad.kind).toBe("draw");
+  });
+
+  // An explicit null IS accepted off the ramp role, which is why those arms are `?: null`
+  // rather than `?: never` — the first fix used `never` and would have rejected this.
+  it("accepts an explicit null rampKind off the ramp role", () => {
+    const job: Job = { space: "role", kind: "draw", rampKind: null, ...limits };
+    expect(job.rampKind).toBeNull();
+  });
 });
