@@ -29,18 +29,20 @@ export const PRICING = {
 };
 
 /**
- * `sonnet5` is priced at SONNET 4.5's published rates, and that is an assumption this
- * file cannot discharge: the cost and usage endpoints need an Admin API key, which this
- * script does not have (measured: both answer 401). So the dollar figures for it are a
- * PROJECTION at 4.5's rates, while the TOKEN counts are exact. Any report quoting them
- * has to say which is which.
+ * No row here is a BILL. The cost and usage endpoints need an Admin API key this script
+ * does not have (measured: both answer 401), so every dollar figure is derived from
+ * published rates and measured tokens — the tokens are exact and the dollars are arithmetic
+ * over a rate table. That holds for all three models equally; it is not a Sonnet 5 caveat.
+ *
+ * This block used to say Sonnet 5 was priced at 4.5's rates and that its rates were
+ * unverified. Both were true of the code and neither should have been: the verified rates
+ * were already in this repository, at `scripts/eval/lib/pricing.mts`.
  */
 /**
- * The models a DEFAULT run submits. `sonnet5` is deliberately NOT here: its rates are
- * unverified, so including it would compute the preflight worst case and the ledger
- * reservation from placeholder numbers on every ordinary run, and the $5 cap would be
- * advertising a bound it cannot hold. It is opt-in through `LABEL_MODELS=sonnet5`,
- * which is how the comparison run was made.
+ * The models a DEFAULT run submits. `sonnet5` is deliberately NOT here — but the reason is
+ * SPEND, not pricing. It is a third model on every ordinary run, so including it would
+ * charge a comparison nobody asked for against the same $5 cap. It is opt-in through
+ * `LABEL_MODELS=sonnet5`, which is how the comparison run was made.
  */
 /** @type {Partial<Record<ModelKey, string>>} */
 export const MODELS = {

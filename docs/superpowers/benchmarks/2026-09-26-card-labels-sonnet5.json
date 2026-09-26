@@ -16,7 +16,7 @@
   "usdPerCard": 0.00079
  },
  "projection": {
-  "fullRunUsd": 25.13,
+  "fullRunUsd": 25.15,
   "perSetUsd": 0.31,
   "basis": {
    "commanderLegalCards": 31830,
@@ -168,5 +168,6 @@
    }
   ]
  },
- "_wastedNote": "The first attempt, which returned no labels: adaptive thinking consumed 2,999 of a 3,000-token ceiling. Recorded as $1.0367 at the superseded 4.5 rates; restated exactly, because every rate is two thirds of what was used. Its token counts were overwritten by the second run."
+ "_wastedNote": "The first attempt, which returned no labels: adaptive thinking consumed 2,999 of a 3,000-token ceiling. Recorded as $1.0367 at the superseded 4.5 rates; restated exactly, because every rate is two thirds of what was used. Its token counts were overwritten by the second run.",
+ "_projectionNote": "Projections are the COLLECTOR's arithmetic \u2014 its rounded usdPerCard times the basis \u2014 so a --publish regeneration reproduces these exactly. Computed from the unrounded token cost instead they would read 25.13 and 0.31; the two-model artifact's own figures come from the same rounded path (haiku 12.73, sonnet 41.09), so matching it keeps all three columns comparable rather than making one of them alone more precise."
 }

@@ -106,7 +106,7 @@ Thresholds and modality are ties at 1.000 on all three — two limits that need 
 model choice at all, and that today's rules still get none of.
 
 **Sonnet 5 was run after the decision, on Hugh's request, and it does not reverse
-it.** It wins recall (0.888 against 0.834) and it is markedly cheaper ($25.13
+it.** It wins recall (0.888 against 0.834) and it is markedly cheaper ($25.15
 against $41.09), and it loses the restriction family, which is the family the bug
 was about: gating 0.727 against 0.864, and tribal 0.931 against a tie at 1.000 —
 the only score in the whole table where a model failed a limit that both others got
@@ -130,6 +130,12 @@ figures:
   Sonnet 4.5's rates, which overstated it by exactly 3/2. Review caught it, and it
   mattered for more than the report: the same row feeds the ledger reservation, so
   an opt-in run was being approved against a ceiling two thirds of its real one.
+
+  Every projection here is the collector's own arithmetic — its rounded per-card
+  figure times the basis — so re-running it reproduces the table. From the unrounded
+  token cost this column would read $25.13, and the two 4.5-family columns come from
+  the same rounded path, so matching it keeps the three comparable rather than making
+  one of them alone more precise.
 - **It needed `thinking: {type: "disabled"}` to run at all.** Adaptive thinking is
   on by default and consumed 2,999 of a 3,000-token output ceiling, returning
   nothing; the first attempt cost **$1.0367 for zero labels**. Its figures come
@@ -161,7 +167,7 @@ Measured, at batch rates, over 508 cards (108 gold + 400 random):
 |---|---|---|---|---|
 | Haiku 4.5 | $0.2033 | $0.000400 | **$12.73** | $0.16 |
 | Sonnet 4.5 | $0.6556 | $0.001291 | **$41.09** | $0.50 |
-| Sonnet 5 | $0.4011 | $0.000790 | **$25.13** | $0.31 |
+| Sonnet 5 | $0.4011 | $0.000790 | **$25.15** | $0.31 |
 
 Sample total **$0.8589** against a $5 cap for the two-model run. Four runs went against
 that cap and **$2.7971** of it was spent: this one, $0.8459 for the first contaminated

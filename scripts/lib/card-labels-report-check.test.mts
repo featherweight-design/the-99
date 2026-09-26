@@ -170,6 +170,23 @@ describe("the report agrees with the artifacts it cites", () => {
     expect(prose, "job-recall range").toContain(`Job recall runs ${lo} to ${hi}`);
   });
 
+  // EVERY projection must be the COLLECTOR's own arithmetic, which is its ROUNDED
+  // per-card figure times the basis. Review found the Sonnet 5 artifact carrying $25.13,
+  // computed from unrounded tokens, where a `--publish` regeneration produces $25.15 —
+  // so the committed evidence could not be reproduced by the documented command, which is
+  // the exact drift this whole file exists to rule out, arriving through arithmetic rather
+  // than through a stale copy.
+  it("projects every model the way the collector does, from its rounded per-card figure", () => {
+    const BASIS = { full: 31830, set: 390 };
+    for (const [m, sample] of [
+      ["haiku", cost.perModel.haiku], ["sonnet", cost.perModel.sonnet], ["sonnet5", sonnet5.cost],
+    ] as const) {
+      const p = m === "sonnet5" ? sonnet5.projection : cost.projections[m];
+      expect(p.fullRunUsd, `full run for ${m}`).toBeCloseTo(+(sample.usdPerCard * BASIS.full).toFixed(2), 6);
+      expect(p.perSetUsd, `per set for ${m}`).toBeCloseTo(+(sample.usdPerCard * BASIS.set).toFixed(2), 6);
+    }
+  });
+
   // The per-set figures are quoted in prose as WORDS ("50 cents", "16"), which carry no
   // `$` and so escape the dollar guard below entirely. Named, because the sentence is
   // the one the report's conclusion rests on. Read from the JOINED prose: the sentence
@@ -207,6 +224,8 @@ describe("the report agrees with the artifacts it cites", () => {
       "2.7971", // the whole spend against the sample cap, at verified rates
       "28.36", // Sonnet 4.5 minus Haiku on the full run
       "0.0854", "0.0784", // the caching measurement, quoted in Method as history
+      "25.13", // what Sonnet 5's full run costs from UNROUNDED tokens, named where the
+               // report explains why the table carries the collector's figure instead
     ]);
     const prose = report.split("\n").filter((l) => !l.startsWith("| ")).join("\n");
     const unknown = [...prose.matchAll(/\$(\d+(?:\.\d+)?)/g)].map((m) => m[1]).filter((v) => !known.has(v));
