@@ -276,19 +276,39 @@ async function reconcile(): Promise<{
   // history, which grows without limit; a lost id is by definition recent, so one page is the
   // right scope and a wider sweep is cost without evidence.
   const byCustomId = new Map<string, string>();
-  if (open.some((o) => o.batchId === null)) {
-    const page = await client.messages.batches.list({ limit: 100 });
-    for (const batch of page.data) {
-      if (batch.processing_status !== "ended") continue;
-      try {
-        for await (const r of await client.messages.batches.results(batch.id)) {
-          byCustomId.set(r.custom_id, batch.id);
+  /** True when the search was exhaustive, so "not found" actually means "never submitted". */
+  let searchWasComplete = false;
+  const unresolved = new Set(open.filter((o) => o.batchId === null).map((o) => o.customId));
+  if (unresolved.size > 0) {
+    // PAGINATED UNTIL EXHAUSTED, or until every lost id is accounted for. One page of 100 does
+    // NOT prove the provider has no matching batch — other activity can push a lost batch past
+    // it — and treating a truncated search as "no match" re-submits a request a successful
+    // `create` already accepted. So the search either completes or says it did not.
+    let cursor: string | undefined;
+    let pages = 0;
+    do {
+      const page = await client.messages.batches.list({ limit: 100, ...(cursor ? { after_id: cursor } : {}) });
+      pages++;
+      for (const batch of page.data) {
+        if (batch.processing_status !== "ended") continue;
+        try {
+          for await (const r of await client.messages.batches.results(batch.id)) {
+            byCustomId.set(r.custom_id, batch.id);
+            unresolved.delete(r.custom_id);
+          }
+        } catch (err) {
+          // One unreadable batch must not blind the lookup to the others.
+          console.warn(`  could not read ${batch.id}: ${(err as Error).message}`);
         }
-      } catch (err) {
-        // One unreadable batch must not blind the lookup to the other ninety-nine.
-        console.warn(`  could not read ${batch.id}: ${(err as Error).message}`);
       }
-    }
+      cursor = page.data.at(-1)?.id;
+      if (unresolved.size === 0) { searchWasComplete = true; break; }
+      if (!page.has_more) { searchWasComplete = true; break; }
+    } while (pages < 50);
+    console.log(`  searched ${pages} page(s) of provider batches; `
+      + `${unresolved.size} id(s) still unaccounted for`);
+  } else {
+    searchWasComplete = true;
   }
 
   const abandoned: string[] = [];
@@ -299,7 +319,10 @@ async function reconcile(): Promise<{
   // is simply re-planned (omitted from `done`), while an old one is `abandoned` and reported
   // rather than silently re-submitted.
   for (const intent of open.filter((o) => (o.batchId ?? byCustomId.get(o.customId) ?? null) === null)) {
-    if (Date.now() - intent.intendedAt.getTime() < 60 * 60 * 1000) continue;
+    // A young intent is re-planned only when the search was EXHAUSTIVE, so "not found" means
+    // "never submitted" rather than "not on the page I looked at". Otherwise it is abandoned and
+    // reported: re-submitting a request the provider already accepted is the double charge.
+    if (searchWasComplete && Date.now() - intent.intendedAt.getTime() < 60 * 60 * 1000) continue;
     await db.update(cardLabelBatches).set({ status: "abandoned" })
       .where(eq(cardLabelBatches.intentKey, intent.intentKey));
     abandoned.push(intent.intentKey);
@@ -349,9 +372,31 @@ async function reconcile(): Promise<{
  * shape that pays twice.
  */
 async function submit(chunks: Chunk[]): Promise<void> {
-  await db.insert(cardLabelBatches).values(chunks.map((c) => ({
+  // THE INSERT IS THE CLAIM, and only what this process actually inserted is submitted.
+  //
+  // Two invocations sharing a `LABEL_RUN_ID` — copied by hand from a previous run's output, so an
+  // ordinary mistake — could otherwise both reconcile, both find the intents already present
+  // because `onConflictDoNothing` leaves them, and both call `batches.create` for the same
+  // chunks. The last stamp wins, so one provider batch becomes invisible to the ledger while BOTH
+  // are billable: the double charge, arriving through concurrency rather than a crash.
+  //
+  // `returning()` on a conflict-do-nothing insert reports the rows THIS statement created, which
+  // is an atomic claim decided by the database rather than by a read the other process cannot
+  // see. A session advisory lock was the first attempt and it is INERT here: `drizzle(url)` pools
+  // connections, session locks are per connection, and a second connection took the same lock —
+  // measured, both returned true.
+  const claimed = await db.insert(cardLabelBatches).values(chunks.map((c) => ({
     intentKey: c.intentKey, runId, model: MODEL, customId: c.customId, asked: c.names,
-  }))).onConflictDoNothing();
+  }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
+
+  const mine = new Set(claimed.map((r) => r.intentKey));
+  const unclaimed = chunks.filter((c) => !mine.has(c.intentKey));
+  if (unclaimed.length > 0) {
+    console.error(`\n${unclaimed.length} of ${chunks.length} chunk(s) were already claimed by `
+      + `another process for ${runId}. Nothing has been submitted by this one.`);
+    return die(`two invocations of one run can both submit the same chunks, and both are `
+      + `billable. Wait for the other process, or start a new run.`);
+  }
 
   const cards = await db.execute<CardRow>(sql`
     select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
@@ -390,18 +435,32 @@ async function submit(chunks: Chunk[]): Promise<void> {
  * one for a ceiling, and these two are ceilings.
  */
 const SYSTEM_TOKENS = 1215;
-const PER_CARD_TOKENS = 223;
+/**
+ * ONE TOKEN PER CHARACTER for the variable text, which is a provable upper bound rather than an
+ * estimate: no tokenizer emits more tokens than the string has characters.
+ *
+ * `892 / 4` was the first version and it is not a maximum — four characters a token is an
+ * AVERAGE, and punctuation, short fragments and non-Latin text all beat it. A bound derived from
+ * an average is not a bound, and this is the quantity the $55 hard stop is enforced against.
+ *
+ * It costs almost nothing to be this conservative, which is why there is no argument for
+ * precision here: input is a small share of the worst case, so over all 2,653 requests the
+ * difference between 4 chars a token and 1 is $174.90 against $206.85. `SYSTEM_TOKENS` stays at
+ * the MEASURED 1,215 because that block is a fixed string somebody billed, and a measurement of
+ * the actual thing beats a bound over it.
+ */
+const PER_CARD_TOKENS = 892;
 
 /**
  * The body's own fixed text, DERIVED from `renderBody` rather than estimated: the
  * "Label these N cards." line plus the `---` separators between them. Measured by rendering a
  * full request of empty cards, so what is left is exactly the wrapper.
  */
-const BODY_OVERHEAD_TOKENS = Math.ceil(
-  renderBody(Array.from({ length: CARDS_PER_REQUEST }, () => ({
+const BODY_OVERHEAD_TOKENS = renderBody(
+  Array.from({ length: CARDS_PER_REQUEST }, () => ({
     name: "", mana_cost: null, type_line: "", oracle_text: null, layout: "normal",
-  }))).length / 4,
-);
+  })),
+).length; // characters, for the reason above
 
 async function main(): Promise<void> {
   console.log(`run ${runId}  model ${MODEL}  cap $${CAP_USD.toFixed(2)}${dryRun ? "  (dry run)" : ""}`);
@@ -495,8 +554,26 @@ async function main(): Promise<void> {
   }).from(cardLabelBatches)
     .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.status, "collected")));
 
-  const alreadySpent = (usage.inTok * RATES.in + usage.outTok * RATES.out
+  // Measured cost of what came back.
+  const measuredUsd = (usage.inTok * RATES.in + usage.outTok * RATES.out
     + usage.cacheW * RATES.in * 1.25 + usage.cacheR * RATES.in * 0.1) / 1e6;
+
+  // PLUS a reservation for work that was billed and could not be read. An `expired` batch was
+  // paid for — the provider ran it — and its results are simply gone past the 29-day window, so
+  // there are no tokens to sum. Counting it as $0 and then re-submitting its chunks spends twice
+  // and can carry actual spend past the cap while the ledger says there is room. Reserved at the
+  // WORST case, because the real figure is unknowable once the results have gone.
+  const [{ n: expiredChunks }] = await db.select({ n: sql<number>`count(*)::int` })
+    .from(cardLabelBatches)
+    .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.status, "expired")));
+  const expiredReserve = worstCaseUsd(
+    expiredChunks, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES, BODY_OVERHEAD_TOKENS,
+  );
+  const alreadySpent = measuredUsd + expiredReserve;
+  if (expiredChunks > 0) {
+    console.log(`  ${expiredChunks} expired chunk(s) reserved at worst case $${expiredReserve.toFixed(2)} `
+      + `— billed, unreadable, so counted rather than assumed free`);
+  }
   /** This run's own measured rate, which is what the projection must use once it has one. */
   const measuredPerCard = usage.cards > 0 ? alreadySpent / usage.cards : SAMPLE_PER_CARD_USD;
 
