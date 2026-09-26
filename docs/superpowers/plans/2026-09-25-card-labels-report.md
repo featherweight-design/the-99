@@ -27,13 +27,17 @@ one-time difference is **$28.36**.
 > — a 3.4-point gap — computed by an ad-hoc command that was never committed and
 > that used the naive same-kind job pairing this repository had already identified
 > as a defect. Recomputed through the committed scorer with reuse-free pairing, the
-> gap is on gating restrictions and it is 13.2 points, to Sonnet. The first draft's
-> number was wrong, and it was wrong in the direction that flattered the cheaper
-> model.
+> gap is on gating restrictions and it runs to Sonnet — 13.2 points as first
+> recomputed, and 9.7 after the contamination below was fixed and the whole sample
+> re-run. The first draft's number was wrong, and it was wrong in the direction that
+> flattered the cheaper model.
 >
-> **Every figure in this report is emitted by a committed script and published by
-> that same script into a committed artifact** — the scores, the agreement figures
-> and the costs. Two earlier drafts failed that in different ways: the cost table
+> **Every CURRENT figure in this report is emitted by a committed script and
+> published by that same script into a committed artifact** — the scores, the
+> agreement figures and the costs. The one exception is deliberate and named where it
+> appears: the 54% in Method comes from the FIRST scored run's uncommitted
+> disagreement list, is quoted as history rather than as a current measurement, and
+> is not regenerated. Two earlier drafts failed that in different ways: the cost table
 > lived only in a script's stdout, and the committed snapshots were then copied by
 > hand, so re-running the documented commands could not regenerate the checked-in
 > evidence and the two could drift silently. Each script now takes `--publish` and

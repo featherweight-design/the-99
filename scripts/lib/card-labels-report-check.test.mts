@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 const REPORT = "docs/superpowers/plans/2026-09-25-card-labels-report.md";
 const SCORE = "docs/superpowers/benchmarks/2026-09-25-card-labels-score.json";
 const COST = "docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json";
+const AGREE = "docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json";
 
 /** The shapes these artifacts actually have, so the checks read them without casts. */
 type ModelScore = {
@@ -25,10 +26,18 @@ type ModelScore = {
 };
 type Score = { models: Record<string, ModelScore> };
 type Cost = { totalUsd: number; projections: Record<string, { fullRunUsd: number }> };
+type Agree = {
+  cards: number; sameJobs: number; sameEverything: number;
+  jobTally: { both: number; haikuOnly: number; sonnetOnly: number };
+  limitDisagree: Record<string, number>; limitCompared: Record<string, number>;
+};
 
 const report = readFileSync(REPORT, "utf8");
+/** Emphasis removed, so a matcher compares figures rather than markdown. */
+const plain = report.replace(/\*\*/g, "");
 const score = JSON.parse(readFileSync(SCORE, "utf8")) as Score;
 const cost = JSON.parse(readFileSync(COST, "utf8")) as Cost;
+const agree = JSON.parse(readFileSync(AGREE, "utf8")) as Agree;
 
 describe("the report agrees with the artifacts it cites", () => {
   // The full-scores table, read as a table rather than by regex over the prose: a
@@ -102,6 +111,24 @@ describe("the report agrees with the artifacts it cites", () => {
   // tautology that passed over the very stale prose it was written to catch. Caught in
   // review, which is the right outcome and an uncomfortable one for a test whose whole
   // job is to stop things reaching review.
+  // THE AGREEMENT SECTION was not covered at all, so its rows could drift while this
+  // file stayed green -- and this branch's history says that is not hypothetical: the
+  // agreement figures were quoted from a pre-fix run for two drafts, which is the
+  // single defect this verifier exists to prevent.
+  it("states the agreement counts the artifact records", () => {
+    const pct = (n: number) => `${((100 * n) / agree.cards).toFixed(1)}%`;
+    expect(plain, "same job set").toContain(`${pct(agree.sameJobs)} (${agree.sameJobs}/${agree.cards})`);
+    expect(plain, "same jobs and limits").toContain(`${pct(agree.sameEverything)} (${agree.sameEverything}/${agree.cards})`);
+    expect(plain, "job instances").toContain(
+      `${agree.jobTally.both} both, ${agree.jobTally.haikuOnly} Haiku only, ${agree.jobTally.sonnetOnly} Sonnet only`,
+    );
+  });
+
+  it("states the restrictedTo disagreement rate the artifact records", () => {
+    const n = agree.limitDisagree.restrictedTo, d = agree.limitCompared.restrictedTo;
+    expect(plain).toContain(`${((100 * n) / d).toFixed(1)}% (${n}/${d})`);
+  });
+
   // THE INTEGER COUNTS. The check above scans `0.NNN` only, and that gap shipped two
   // wrong figures: the prose said Haiku invented 6 spurious restrictions and Sonnet 2
   // where the artifact recorded 7 and 5, in two separate sentences, and the accuracy
