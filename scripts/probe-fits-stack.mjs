@@ -25,6 +25,7 @@ import { chromium } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { requireEnv } from "./lib/env.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 neonConfig.webSocketConstructor = ws;
@@ -165,6 +166,8 @@ const browser = await chromium.launch();
 try {
   const page = await (await browser.newContext({ viewport: VIEWPORTS[0] })).newPage();
   const userId = await signIn(page);
+  // Or an account behind the About version is redirected to /about and no grid ever draws.
+  await clearAboutSheet(page, userId);
   const pool8 = await candidates(userId);
   let fixture = null;
   for (const c of pool8) {
