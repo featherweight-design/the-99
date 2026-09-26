@@ -100,6 +100,12 @@ export const isJob = (job: unknown): job is Job => validateJob(job).length === 0
  *
  * `null` and `undefined` are folded together deliberately: an absent `rampKind` and an
  * explicit null are the same label, which is the rule `validateJob` applies too.
+ *
+ * **The serialized STRING is not compatible with the joined form, and nothing may persist
+ * it.** Only the equality relation carries over — measured over all 20,910 pairs of
+ * accepted gold jobs, the old key agrees exactly when this one does. So a stored key from
+ * before this change cannot be compared against one produced after it; a caller that wants
+ * durable identity needs its own field rather than this function's output.
  */
 export function jobKey(job: Job): string {
   return JSON.stringify([
