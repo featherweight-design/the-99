@@ -11,7 +11,9 @@
 // holding the server action's request for a few seconds, so the busy label is on screen long
 // enough to measure. The fixture is the first legal, whole deck the account owns with a stored
 // reading; that row is held ON DISK first (`profile-hold.mjs`) and put back in a `finally`, since
-// the press rewrites it. Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`,
+// the press rewrites it. A press with a credit left also writes an overview and spends that credit,
+// so any overview the run added is deleted in the same `finally` with its ledger unit, which hands
+// the credit back. Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`,
 // never production.
 //
 //   PROBE_BASE=http://localhost:3018 node scripts/probe-banner-busy.mjs
@@ -156,6 +158,8 @@ async function walk(page, deck, width) {
 await clerkSetup();
 const browser = await chromium.launch();
 let restoreProfile = null;
+// The deck, and the overview rows it held before the run: anything else on it afterwards is ours.
+let ours = null;
 try {
   const page = await (await browser.newContext({ viewport: { width: 1300, height: 900 } })).newPage();
   const userId = await signIn(page);
@@ -163,6 +167,7 @@ try {
   const deck = await pickDeck(userId);
   if (!deck) throw new Error("The account owns no legal, whole deck with a stored reading.");
   console.log(`fixture ${deck.name}`);
+  ours = { id: deck.id, before: (await sql`select id from deck_synopses where deck_id = ${deck.id}`).map((r) => r.id) };
   restoreProfile = await holdProfile(sql, deck.id);
   for (const width of [1300, 390]) await walk(page, deck, width);
 } catch (e) {
@@ -170,6 +175,17 @@ try {
   console.log(`FAIL  run aborted — ${e?.stack ?? e}`);
 } finally {
   await browser.close();
+  if (ours) {
+    try {
+      const calls = (await sql`
+        delete from deck_synopses where deck_id = ${ours.id} and not (id = any(${ours.before}::uuid[]))
+        returning model_call_id`).map((r) => r.model_call_id).filter(Boolean);
+      if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
+    } catch (error) {
+      failures += 1;
+      console.log(`FAIL  cleanup: the overview on ${ours.id} was left behind — ${error.message}`);
+    }
+  }
   if (restoreProfile) {
     try {
       await restoreProfile();

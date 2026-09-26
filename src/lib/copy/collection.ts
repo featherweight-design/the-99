@@ -409,10 +409,10 @@ export type FilterPanelCopy = {
   /** The trigger once exactly one option is chosen. Omitted where `triggerCount` names it instead. */
   triggerOne?: (name: string) => string;
   /**
-   * A trigger that COUNTS rather than names, drawn at every selection including none. Set carries
-   * it because a set's name is long and varied: `Set: The Hobbit` grew the trigger and pushed every
-   * control after it along the row. A count keeps one width from nothing chosen to one, and the
-   * names live in the chip row, as they already did past one.
+   * A trigger that COUNTS rather than names, drawn at every selection including none. Set, Type and
+   * Availability all carry it: a name grew the trigger (`Set: The Hobbit` by 131px) and pushed the
+   * rest of the right-anchored row along. A count holds one width, and the names live in the chip
+   * row, as they already did past one.
    */
   triggerCount?: (n: number) => string;
   triggerAriaCollapsed: string;
