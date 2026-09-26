@@ -249,10 +249,10 @@ describe("the removal search is bounded", () => {
     expect(r.tooNarrow!.without[0].count).toBe(5);
   });
 
-  it("gives up rather than searching when even keeping one would be too many sets", () => {
+  it("still offers keeping one answer when there are too many to search in between", () => {
     const slugs = Array.from({ length: 70 }, (_, i) => `t${i}`);
     const pool = [cmd({ name: "One", tags: [tag("t0", 400)] })];
     const r = rankCandidates(pool, { ...none, themes: slugs }, null);
-    expect(r.tooNarrow!.without).toEqual([]);
+    expect(r.tooNarrow!.without).toEqual([{ answers: slugs.slice(1).map((slug) => ({ kind: "theme", slug })), count: 1 }]);
   });
 });

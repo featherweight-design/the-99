@@ -231,9 +231,8 @@ function removals(
     // number of themes), and every set rescans every candidate, so an unbounded search is
     // exponential in them; this one is linear in the answers plus a constant.
     if (size > 1 && size < last && choose(answers.length, size) > REMOVAL_SETS_MAX) {
-      if (answers.length <= REMOVAL_SETS_MAX) {
-        found.push(...subsets(answers, last).map(count).filter((r) => r.count > 0));
-      }
+      // Keeping one answer is n sets, linear like the single drops, so it is always searched.
+      found.push(...answers.map((_, i) => answers.filter((__, j) => j !== i)).map(count).filter((r) => r.count > 0));
       break;
     }
     const atSize = subsets(answers, size).map(count).filter((r) => r.count > 0);
@@ -255,9 +254,11 @@ function choose(n: number, k: number): number {
 function subsets<T>(items: readonly T[], size: number): T[][] {
   if (size === 0) return [[]];
   const out: T[][] = [];
-  items.forEach((item, i) => {
-    for (const rest of subsets(items.slice(i + 1), size - 1)) out.push([item, ...rest]);
-  });
+  // Only a start that leaves enough items after it can complete a set, which keeps the work to
+  // the sets themselves rather than every dead branch.
+  for (let i = 0; i <= items.length - size; i++) {
+    for (const rest of subsets(items.slice(i + 1), size - 1)) out.push([items[i], ...rest]);
+  }
   return out;
 }
 
