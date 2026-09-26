@@ -1159,6 +1159,10 @@ Component note: min-height 52px (64px phone, two lines), `--surface` on `1px --b
 padding `8px 12px 8px 14px`, gap 14px. Slots: result 26px · meta 132px mono 11px tabular · marks
 (wrapping) · delete 30px.
 
+Phone (the handoff's anatomy, enforced 2026-09-27): result, meta and stamp on line one with the
+delete at its end (`ml-auto`), the marks on line two at full width (`order-last basis-full`). From
+`md` the marks share line one again. `probe:games-log` measures both.
+
 ### History section heading row
 
 | Property | Mobile | Desktop |
@@ -1642,7 +1646,7 @@ Save is enabled by **A alone**. D and E are optional per §3.
 | 8 | **Marks with no result** | A unset · D = 3 | **disabled** | Save disabled and **unexplained** until Result is touched — then it enables. No inline error text for an untouched required field. |
 | 9 | **Future `playedAt`** | C ahead of today | **disabled** | The date field itself refuses forward dates; the form never submits one. §4's server rule stays as the backstop. |
 | 10 | **Saving** | submit in flight; all fields disabled | in flight | Button reads `form.saving`, disabled; Cancel disabled; axis rows go non-interactive but **stay in place and stay legible** — nothing unmounts mid-write. |
-| 11 | **Saved** | server accepted | — | Form collapses to state 1. Record line, aggregate and history update together. Focus returns to the collapsed row. Announced: `announce.saved(record)` / `announce.savedFirst`. **No toast, no confetti.** |
+| 11 | **Saved** | server accepted | — | A FIRST game's save stays in state 10 until the game is on the page, then the empty state gives way to the log (Hugh, 2026-09-27: collapsing on resolve painted the empty pitch again for a beat). Any later save: form collapses to state 1. Record line, aggregate and history update together. Focus returns to the collapsed row. Announced: `announce.saved(record)` / `announce.savedFirst`. **No toast, no confetti.** |
 | 12 | **Refused** | server rejected | enabled | Shipped `MutationError` under the save button; form intact, **every value preserved**. |
 | 13 | **Cancelled** | Cancel pressed | — | Collapses to state 1. Values discarded with **no confirm**. |
 | 14 | **Reopened after cancel or save** | form opened again | disabled | Back to state 2. **The form does not remember**: pod returns to 4, result unset, marks empty. |
