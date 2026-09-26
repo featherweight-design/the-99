@@ -1211,10 +1211,18 @@ describe("CardDetailProvider prefetch on intent", () => {
     await pause(PREFETCH_WAIT_MS + 50);
     await act(async () => { own.resolve(SIGNET_AFTER_WRITE); });
     expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
-    await act(async () => { guess.resolve(SIGNET); });
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    // Reopened, it paints from the cache before its check read answers: the action's answer.
+    // Reopened while the prefetch is STILL reading: it paints the action's answer from the cache,
+    // and its check read goes to the action rather than joining the older prefetch.
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+    expect(fetchCard).toHaveBeenCalledTimes(2);
+    // The prefetch lands at last, and neither the modal nor the cache moves back to it.
+    await act(async () => { guess.resolve(SIGNET); });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
     expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
   });

@@ -605,10 +605,12 @@ export function CardDetailProvider({
           // it does not (a cold route, or a failure), the press reads for itself through the
           // action, and that answer is the one shown: the prefetch may still fill the cache, but it
           // never paints while the press's action is pending. See the header for why that rule.
+          // Never over a filed answer: that came from a read the prefetch did not see finish, and
+          // is newer than anything the prefetch can bring back.
           const ahead = prefetching.current;
           const joined =
             attempt === 0 && ahead && ahead.oracleId === oracleId && ahead.scope === comboScope &&
-            ahead.evictedAt === evictedAtStart
+            ahead.evictedAt === evictedAtStart && !cache.current.has(oracleId)
               ? await withinWait(ahead.read)
               : undefined;
           if (latest.current !== request) return;
