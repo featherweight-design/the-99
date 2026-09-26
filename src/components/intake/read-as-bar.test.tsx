@@ -99,3 +99,20 @@ describe("We read this as", () => {
     expect(screen.getByTestId("not-used")).toBeTruthy();
   });
 });
+
+describe("an any-of chip", () => {
+  it("draws the names with or between them, and speaks the group whole", () => {
+    const tribes = { theme: (s: string) => s[0].toUpperCase() + s.slice(1), card: null };
+    const p = { ...emptyParams(), themes: ["orcs", "elves", "wizards"], themeJoin: "any" as const };
+    render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ReadAsBar chips={answerChips(p, tribes)} card={null} notUsed={[]} changeHref="/x" startOverHref="/y" />
+      </CardDetailProvider>,
+    );
+    const [only] = screen.getAllByTestId("answer-chip");
+    const names = within(only).getByTestId("any-of-names");
+    expect(within(names).getByText("Any of Orcs, Elves or Wizards").className).toContain("sr-only");
+    expect(names.querySelector("[aria-hidden]")?.textContent).toBe("Orcs or Elves or Wizards");
+    expect(only.textContent?.startsWith("any of")).toBe(true);
+  });
+});

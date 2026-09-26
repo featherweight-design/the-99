@@ -20,6 +20,7 @@ import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS, serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
 import type { Bracket } from "../../lib/intake/rank";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
+import { ThemeJoinControl } from "./theme-join";
 import { ThemePicker } from "./theme-picker";
 
 import { CHOOSE_PATH } from "../../lib/intake/submit";
@@ -51,6 +52,7 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
   const [colors, setColors] = useState<string[]>(initial.colors);
   const [match, setMatch] = useState(initial.match);
   const [picked, setPicked] = useState<string[]>(initial.themes);
+  const [themeJoin, setThemeJoin] = useState(initial.themeJoin);
   const [budget, setBudget] = useState(initial.budgetDollars === null ? "" : String(initial.budgetDollars));
   const [bracket, setBracket] = useState<Bracket | null>(initial.bracket);
   const themeLabelId = useId();
@@ -93,6 +95,7 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
         colors,
         match,
         themes: picked,
+        themeJoin,
         budgetDollars: parseBudget(budget),
         bracket,
       }),
@@ -138,7 +141,12 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
           />
         </Field>
 
-        <Field label={copy.intake.theme} labelId={themeLabelId} caption={copy.intake.themeCaption}>
+        <Field
+          label={copy.intake.theme}
+          labelId={themeLabelId}
+          caption={picked.length < 2 ? copy.intake.themeCaption : themeJoin === "any" ? copy.intake.themeJoin.captionAny : copy.intake.themeJoin.captionAll}
+          aside={<ThemeJoinControl value={themeJoin} onChange={setThemeJoin} live={picked.length >= 2} />}
+        >
           <ThemePicker themes={themes} value={picked} onChange={setPicked} labelId={themeLabelId} />
         </Field>
 
@@ -195,9 +203,12 @@ function Field({
   labelId,
   caption,
   captionMono = false,
+  aside,
   children,
 }: {
   label: string;
+  /** Drawn at the label's right, on its line: the Theme field's join. */
+  aside?: ReactNode;
   htmlFor?: string;
   labelId?: string;
   caption: string;
@@ -207,11 +218,14 @@ function Field({
   const labelClass = "font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]";
   return (
     <div className="flex flex-col gap-[9px]">
-      {htmlFor ? (
-        <label htmlFor={htmlFor} className={labelClass}>{label}</label>
-      ) : (
-        <span id={labelId} className={labelClass}>{label}</span>
-      )}
+      <div className={aside ? "flex items-center gap-[10px] min-h-[28px]" : "contents"}>
+        {htmlFor ? (
+          <label htmlFor={htmlFor} className={labelClass}>{label}</label>
+        ) : (
+          <span id={labelId} className={labelClass}>{label}</span>
+        )}
+        {aside}
+      </div>
       {children}
       <p
         className={[

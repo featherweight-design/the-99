@@ -124,3 +124,11 @@ describe("deeperTarget", () => {
     expect(p.notUsed).toEqual(["Doubling Season"]);
   });
 });
+
+describe("the submit's theme join", () => {
+  it("carries the words' or into the address, and the control's join once it holds two themes", () => {
+    expect(landed(target({ words: "dinosaurs or landfall" })).themeJoin).toBe("any");
+    expect(landed(target({ words: "dinosaurs and landfall" })).themeJoin).toBe("all");
+    expect(landed(target({ words: "dinosaurs or landfall", themes: ["dinosaurs", "landfall"], themeJoin: "all" })).themeJoin).toBe("all");
+  });
+});
