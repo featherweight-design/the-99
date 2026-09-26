@@ -872,7 +872,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Six of them, each named for how it looks rather than where it came from. A theme changes the palette, never the meaning: owned is green in all six, over-committed is red in all six.',
     keys: [
       'the plane is the subtitle, not the name: you pick Neon Rain, not Kamigawa.',
-      'the accent moves; the greens, ambers and reds that carry meaning stay green, amber and red.',
+      'the accent is the one color that moves from theme to theme.',
       'the choice is remembered in this browser, so a different device starts on the default until you pick there too.',
     ],
     since: 1,

@@ -113,6 +113,9 @@ import { discoverCopy } from "../../lib/copy/lanes";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { gameLogCopy } from "../../lib/copy/game-log";
+import { exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
@@ -1089,6 +1092,16 @@ export function ExportFigureBody() {
     // `md:` because that is where the dialog itself switches, not the page's
     // own wide stop.
     <div className="relative h-[590px] overflow-hidden rounded-[8px] [transform:translateZ(0)] md:h-[470px]">
+      {/* 1: the Shopping list tab. 2: the Mana Pool link. 3: Download .txt, the twin of Copy. The
+          wrapper fills the box, so the numerals share the dialog's origin. */}
+      <AnchoredNumerals
+        className="h-full"
+        marks={[
+          { n: 1, find: withText("button, [role=tab]", exportTabCopy.shopping, true), side: "after" },
+          { n: 2, find: withText("a", exportLinkOutCopy.shopping, true), side: "before" },
+          { n: 3, find: withText("button", ".txt", true), side: "above" },
+        ]}
+      >
       <ExportDialog
         inert
         open
@@ -1104,6 +1117,7 @@ export function ExportFigureBody() {
         decklistCards={EXPORT_DECKLIST}
         shoppingCards={EXPORT_SHOPPING}
       />
+      </AnchoredNumerals>
     </div>
   );
 }
@@ -1206,7 +1220,24 @@ export function VersionsFigureBody() {
  */
 export function LogAGameFigureBody() {
   return (
-    <div className="relative">
+    // Measured against the form's own parts rather than fixed offsets: the offsets were right
+    // at 1300 and wrong at 390, where the form restacks. 1: the pod-size row. 2: the note field.
+    // 3: the second column of axes, the same eight as the first.
+    <AnchoredNumerals
+      marks={[
+        { n: 1, find: first('[aria-labelledby="game-pod-label"]'), side: "after" },
+        {
+          n: 2,
+          find: (r) => {
+            const label = withText("label", deckTuningCopy.note.label, true)(r);
+            const id = label?.getAttribute("for");
+            return id ? r.querySelector(`[id="${id}"]`) : null;
+          },
+          side: "inset-tr",
+        },
+        { n: 3, find: (r) => r.querySelectorAll("fieldset")[1] ?? null, side: "inset-tr" },
+      ]}
+    >
       <GameLogForm
         deckId="about-figure"
         isFirstGame
@@ -1214,24 +1245,7 @@ export function LogAGameFigureBody() {
         onSaved={() => {}}
         onAnnounce={() => {}}
       />
-      {/* The two numerals the canvas draws, beside the things the key lines
-          are about: the pod-size row, and the optional note under the save.
-          They are absolutely positioned because the form is mounted whole and
-          nothing here reaches inside it — the alternative was a prop on
-          `GameLogForm` for annotation it has no business knowing about.
-
-          The offsets are MEASURED, not guessed — the first version put ① on
-          top of the `POD SIZE` label. Both are anchored to the figure's RIGHT
-          and to a row whose height is fixed, because the plate is a fixed
-          760px cap on the one page that mounts this; the left edge of the pod
-          row moves with the label beside it and the right edge does not. */}
-      <span aria-hidden className="pointer-events-none absolute right-[120px] top-[138px]">
-        <KeyNumeral n={1} />
-      </span>
-      <span aria-hidden className="pointer-events-none absolute right-[36px] bottom-[54px]">
-        <KeyNumeral n={2} />
-      </span>
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -1341,10 +1355,20 @@ export function ThemesFigureBody() {
     () => null,
   );
   return (
-    <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
+    // 1: the first tile's subtitle, its plane. 2: the second tile's miniature, whose accent is
+    // the one color that moves. 3: the tile in force, remembered in this browser.
+    <AnchoredNumerals
+      className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6"
+      marks={[
+        { n: 1, find: first("[data-theme-tile] [data-theme-short]"), side: "after" },
+        { n: 2, find: (r) => r.querySelectorAll("[data-theme-tile]")[1] ?? null, side: "inset-tl" },
+        { n: 3, find: first('[data-theme-tile="active"]'), side: "inset-tr" },
+      ]}
+    >
       {THEMES.map((theme) => (
         <div
           key={theme.key}
+          data-theme-tile={theme.key === active ? "active" : ""}
           // The selected tile takes the PICKER'S OWN treatment, not just the
           // tick: `bg-[--elevated]` under a 1px accent outline, which is what
           // the account menu draws. The tick alone reads as a stray mark at
@@ -1361,10 +1385,10 @@ export function ThemesFigureBody() {
               not Kamigawa, and an earlier figure had them the other way up.
               `short`, which is what the picker draws — the full plane name is
               "Kamigawa: Neon Dynasty" where the app says "Kamigawa". */}
-          <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{theme.short}</span>
+          <span data-theme-short className="self-start font-mono text-[10px] text-[color:var(--fg-faint)]">{theme.short}</span>
         </div>
       ))}
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -1388,10 +1412,17 @@ export function LogFindingsFigureBody() {
   // the key named a thing the figure did not draw.
   const headline = deriveHeadline(GAME_SUMMARY);
   return (
-    <div>
+    // 1: the heading. 2: the Mixed line, the one axis stated rather than filed.
+    <AnchoredNumerals
+      gutter
+      marks={[
+        { n: 1, find: first("h3"), side: "gutter", align: "top" },
+        { n: 2, find: withText("span", gameLogCopy.buckets.mixed), side: "gutter" },
+      ]}
+    >
       {headline && <GameHeadlineHeader headline={headline} count={GAME_SUMMARY.count} />}
       <GameFindings summary={GAME_SUMMARY} />
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -1785,19 +1816,28 @@ export function StandInsFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <SwapToolsProvider deckId="about-figure" deckName={STAND_INS.deckName} storedLimitCents={null}>
-        <div className="flex flex-col gap-[6px]">
+        {/* 1: the limit line. 2: the marked row's ⇄. 4: the land group, ordered by its mana. */}
+        <AnchoredNumerals
+          gutter
+          className="flex flex-col gap-[6px]"
+          marks={[
+            { n: 1, find: first('[data-testid="stand-in-limit"]'), side: "gutter" },
+            { n: 2, find: withText("button", "⇄", true), side: "before" },
+            { n: 4, find: first("[data-stand-in-group]"), side: "gutter", align: "top" },
+          ]}
+        >
           <StandInLimit shoppingCount={STAND_INS.shoppingCount} overCount={STAND_INS.overCount} />
           <div className="mt-[6px] border-t border-solid border-[color:var(--border)]">
             <DecklistRow deckId="about-figure" card={PLATEAU} siblings={[]} inShopping newestAsOf={PRICES[0].fact.asOf} />
           </div>
           {/* The sheet's own group, in the box the canvas draws it in. No title: the sheet's shipped
               one is "Cheaper stand-ins", which is this entry's own title one line up. */}
-          <div className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
+          <div data-stand-in-group className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
             <StandInGroup group={STAND_INS.group} keep={null}>
               {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={siblings} />}
             </StandInGroup>
           </div>
-        </div>
+        </AnchoredNumerals>
       </SwapToolsProvider>
     </CardDetailProvider>
   );
