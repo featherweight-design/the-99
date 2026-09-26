@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { printingPickerCopy } from "../../lib/copy/collection";
 
@@ -9,7 +9,7 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 
 const {
-  CardDetailProvider, CardDetailTrigger, cardDetailCopy, useCardDetail,
+  CardDetailProvider, CardDetailTrigger, cardDetailCopy, useCardDetail, INTENT_DELAY_MS, PREFETCH_WAIT_MS,
 } = await import("./card-detail-provider");
 
 const card = (oracleId: string, name: string): BrowseCard => ({
@@ -1107,5 +1107,168 @@ describe("CardDetailTrigger's art preload", () => {
       window.Image = Real;
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("CardDetailProvider prefetch on intent", () => {
+  // jsdom never matches :focus-visible, so keyboard focus is stood in for here; the two cases at
+  // the foot put the real answer back to prove a press's own focus reads nothing.
+  let keyboard = true;
+  const realMatches = Element.prototype.matches;
+  beforeEach(() => {
+    keyboard = true;
+    vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, selector: string) {
+      return selector === ":focus-visible" ? keyboard : realMatches.call(this, selector);
+    });
+  });
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  const deferred = () => {
+    let resolve!: (c: BrowseCard | null) => void;
+    const promise = new Promise<BrowseCard | null>((r) => { resolve = r; });
+    return { promise, resolve };
+  };
+  const pause = (ms: number) => act(() => new Promise<void>((r) => setTimeout(r, ms)));
+  const trigger = (name: string) => screen.getByRole("button", { name: cardDetailCopy.triggerAria(name) });
+  const mount = (fetchCard: (id: string) => Promise<BrowseCard | null>) =>
+    render(
+      // One stub behind both reads, so the counts below are every read the provider made.
+      <CardDetailProvider fetchCard={fetchCard} prefetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">Arcane Signet</CardDetailTrigger>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">Sol Ring</CardDetailTrigger>
+        <Evicter oracleId="o-signet" />
+      </CardDetailProvider>,
+    );
+
+  it("reads a card the pointer rests on, and nothing for a pointer passing over", async () => {
+    const fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? SOL : SIGNET));
+    mount(fetchCard);
+    fireEvent.pointerEnter(trigger("Sol Ring"));
+    await pause(INTENT_DELAY_MS / 2);
+    fireEvent.pointerLeave(trigger("Sol Ring"));
+    await pause(INTENT_DELAY_MS * 2);
+    expect(fetchCard).not.toHaveBeenCalled();
+
+    fireEvent.pointerEnter(trigger("Arcane Signet"));
+    await pause(INTENT_DELAY_MS * 2);
+    expect(fetchCard.mock.calls.map((c) => c[0])).toEqual(["o-signet"]);
+  });
+
+  // A press while its card's prefetch is still reading WAITS on it, for up to PREFETCH_WAIT_MS.
+  // Answered in time, no action is sent at all; otherwise the press reads for itself and only its
+  // own answer paints, so no action is ever left pending after the modal has moved on.
+  const mountSplit = (prefetchCard: (id: string) => Promise<BrowseCard | null>, fetchCard: (id: string) => Promise<BrowseCard | null>) =>
+    render(
+      <CardDetailProvider prefetchCard={prefetchCard} fetchCard={fetchCard}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">Arcane Signet</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+
+  it("takes a prefetch that answers within the wait, and sends no action", async () => {
+    const guess = deferred();
+    const prefetchCard = vi.fn((_id: string) => guess.promise);
+    const fetchCard = vi.fn(async (_id: string) => SIGNET_AFTER_WRITE);
+    mountSplit(prefetchCard, fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    await act(async () => { guess.resolve(SIGNET); });
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET.name);
+    expect(fetchCard).not.toHaveBeenCalled();
+  });
+
+  it("reads for itself when the prefetch outlasts the wait, and shows only its own answer", async () => {
+    const guess = deferred();
+    const own = deferred();
+    const fetchCard = vi.fn((_id: string) => own.promise);
+    mountSplit(() => guess.promise, fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(fetchCard).not.toHaveBeenCalled();
+    await pause(PREFETCH_WAIT_MS + 50);
+    expect(fetchCard).toHaveBeenCalledTimes(1);
+    // The cold prefetch answers while the press's action is pending: it must not paint.
+    await act(async () => { guess.resolve(SIGNET); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => { own.resolve(SIGNET_AFTER_WRITE); });
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+  });
+
+  it("reads for itself at once when the prefetch fails", async () => {
+    const fetchCard = vi.fn(async (_id: string) => SIGNET);
+    mountSplit(async () => { throw new Error("route down"); }, fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET.name);
+    expect(fetchCard).toHaveBeenCalledTimes(1);
+  });
+
+  it("paints a prefetched card at the press, before its check read answers", async () => {
+    const check = deferred();
+    const fetchCard = vi.fn().mockResolvedValueOnce(SIGNET).mockReturnValueOnce(check.promise);
+    mount(fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    await act(async () => {});
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET.name);
+    expect(fetchCard).toHaveBeenCalledTimes(2);
+  });
+
+  it("yields to a read already running, one prefetch at a time", async () => {
+    const read = deferred();
+    const fetchCard = vi.fn((_id: string) => read.promise);
+    mount(fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    fireEvent.focus(trigger("Sol Ring"));
+    expect(fetchCard.mock.calls.map((c) => c[0])).toEqual(["o-signet"]);
+    await act(async () => { read.resolve(SIGNET); });
+
+    // An open's check read running, and a prefetch asked for an uncached card beside it: the
+    // guess waits. Pressed with no focus or pointerdown, so the open is the only read it starts.
+    const open = deferred();
+    fetchCard.mockReturnValueOnce(open.promise);
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    fireEvent.focus(trigger("Sol Ring"));
+    expect(fetchCard.mock.calls.map((c) => c[0])).toEqual(["o-signet", "o-signet"]);
+    await act(async () => { open.resolve(SIGNET); });
+  });
+
+  it("files nothing, and is not joined, when a write lands under it", async () => {
+    const stale = deferred();
+    const fetchCard = vi.fn().mockReturnValueOnce(stale.promise).mockResolvedValueOnce(SIGNET_AFTER_WRITE);
+    mount(fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    fireEvent.click(screen.getByRole("button", { name: "evict" }));
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(fetchCard).toHaveBeenCalledTimes(2);
+    await act(async () => { stale.resolve(SIGNET); });
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+
+    // The stale answer landed after the fresh one and must not have replaced it: reopened,
+    // the card paints from the cache before its check read answers.
+    fetchCard.mockReturnValueOnce(new Promise(() => {}));
+    await act(async () => { fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" }); });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
+  });
+
+  // A prefetch the press starts has no head start on the press's own read, so a press never
+  // starts one: not its pointerdown, and not the focus the press brings with it.
+  it("reads nothing on a press going down", async () => {
+    const prefetchCard = vi.fn((_id: string) => deferred().promise);
+    mountSplit(prefetchCard, async () => SIGNET);
+    fireEvent.pointerDown(trigger("Arcane Signet"));
+    expect(prefetchCard).not.toHaveBeenCalled();
+  });
+
+  it("reads nothing on focus a pointer brought, and on keyboard focus reads ahead", async () => {
+    const prefetchCard = vi.fn((_id: string) => deferred().promise);
+    mountSplit(prefetchCard, async () => SIGNET);
+    keyboard = false;
+    fireEvent.focus(trigger("Arcane Signet"));
+    expect(prefetchCard).not.toHaveBeenCalled();
+    keyboard = true;
+    fireEvent.focus(trigger("Arcane Signet"));
+    expect(prefetchCard).toHaveBeenCalledTimes(1);
   });
 });

@@ -51,7 +51,9 @@ vi.mock("../../app/decks/actions", () => ({
 // The page mounts its own provider, so the modal's paging is reachable only
 // through the read that provider does — there is no `fetchCard` to inject.
 const { getCardDetail } = vi.hoisted(() => ({ getCardDetail: vi.fn() }));
+// A press reads through the action and a prefetch through the route; one stub answers both.
 vi.mock("../../app/card-detail-action", () => ({ getCardDetail }));
+vi.mock("../../lib/cards/fetch-card-detail", () => ({ fetchCardDetail: getCardDetail }));
 
 const browseCard = (oracleId: string, name: string): BrowseCard => ({
   oracleId, name, typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: "", keywords: [],

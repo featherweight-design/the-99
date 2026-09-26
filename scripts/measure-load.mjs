@@ -140,8 +140,15 @@ function network(reqs, t0) {
     firstImage: images.length ? Math.min(...images.map((r) => ms(r.end, t0))) : null,
     docKb: doc ? kb(doc.transferred ?? 0) : null,
     jsKb: kb(scripts.reduce((n, r) => n + (r.transferred ?? 0), 0)),
+    // The card-detail reads, kept apart: the press's own read is a server action (a POST to the
+    // page), and a prefetch is `GET /api/card-detail`. A press can make either or both, so one
+    // column for "the read" would time whichever happened to start first.
     actionMs: (() => {
-      const a = reqs.find((r) => r.method === "POST" && r.url.startsWith(BASE));
+      const a = reqs.find((r) => r.url.startsWith(BASE) && r.method === "POST");
+      return a ? ms(a.headersAt, a.start) : null;
+    })(),
+    prefetchMs: (() => {
+      const a = reqs.find((r) => r.url.startsWith(BASE) && new URL(r.url).pathname === "/api/card-detail");
       return a ? ms(a.headersAt, a.start) : null;
     })(),
   };
@@ -189,14 +196,27 @@ async function dbExec(sql, run) {
   };
 }
 
-async function cardPress(page, cap) {
+/** Both card-detail reads' `[perf]` lines: the press's action and a prefetch's route, apart. */
+const cardSpans = (from) => ({ action: serverSpans(from, "getCardDetail"), prefetch: serverSpans(from, "/api/card-detail") });
+
+async function cardPress(page, cap, width) {
   const triggers = onPage(page, '[aria-label^="View details for "]').filter({ visible: true });
   await triggers.first().waitFor({ state: "visible", timeout: 30_000 });
   const dialog = page.locator('[role="dialog"][aria-labelledby="card-modal-title"]');
   const out = {};
-  for (const [key, index] of [["cold", 0], ["warm", 0], ["coldOther", 3]]) {
+  // `intent` rests on the card first (a pointer on desktop, focus at 390: a keyboard reader, since a
+  // tap never focuses first) and then presses,
+  // which is where a prefetch-on-intent build answers from what it already read.
+  for (const [key, index] of [["cold", 0], ["warm", 0], ["coldOther", 3], ["intent", 5]]) {
     cap.reset();
     const from = logSize();
+    if (key === "intent") {
+      // Keyboard focus at 390: the provider prefetches on :focus-visible, which Chrome grants to
+      // programmatic focus only after a key. Shift sets that and types nothing.
+      if (width.isMobile) { await page.keyboard.press("Shift"); await triggers.nth(index).focus(); }
+      else await triggers.nth(index).hover();
+      await page.waitForTimeout(400);
+    }
     const pressed = Date.now();
     await triggers.nth(index).click();
     await dialog.waitFor({ state: "visible", timeout: 30_000 });
@@ -206,8 +226,9 @@ async function cardPress(page, cap) {
       return Boolean(d && [...d.querySelectorAll("*")].some((el) => /scryfall/.test(getComputedStyle(el).backgroundImage)));
     }, null, { timeout: 30_000, polling: 16 }).then(() => Date.now() - pressed, () => null);
     await page.waitForTimeout(400);
-    // The action logs its spans in `after()`, once it has answered; the 400ms above covers that.
-    out[key] = { dialog: dialogMs, art, action: network(cap.all(), 0).actionMs, spans: serverSpans(from, "getCardDetail") };
+    // The read logs its spans in `after()`, once it has answered; the 400ms above covers that.
+    const net = network(cap.all(), 0);
+    out[key] = { dialog: dialogMs, art, action: net.actionMs, prefetch: net.prefetchMs, spans: cardSpans(from) };
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
   }
@@ -229,7 +250,7 @@ async function one(browser, state, width, routes, sql) {
     const spans = route.pattern ? serverSpans(from, route.pattern) : null;
     const db = sql ? await dbExec(sql, () => load(page, cap, `${BASE}${route.path}`)) : null;
     result.routes[route.label] = { cold, warm, spans, db };
-    if (route.label === "deck") result.card = await cardPress(page, cap);
+    if (route.label === "deck") result.card = await cardPress(page, cap, width);
     await context.close();
   }
   // Client navigation from Home, a first visit and then a revisit.
@@ -274,7 +295,7 @@ function table(runs, routes) {
       const db = m((p) => p.routes[route.label]?.db?.ms);
       lines.push(`| ${route.label} | ${m((p) => r("cold")(p)?.ttfb)} / ${m((p) => r("warm")(p)?.ttfb)} | ${m((p) => r("cold")(p)?.content)} / ${m((p) => r("warm")(p)?.content)} | ${m((p) => r("warm")(p)?.streamEnd)} | ${m((p) => r("cold")(p)?.firstImage)} / ${m((p) => r("warm")(p)?.firstImage)} | ${m((p) => p.soft[route.label]?.first)} / ${m((p) => p.soft[route.label]?.revisit)} | ${db == null ? "—" : `${db}ms`} |`);
     }
-    lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms.`);
+    lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
   }
   return lines.join("\n");
 }

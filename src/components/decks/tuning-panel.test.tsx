@@ -11,7 +11,7 @@ vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(), readTuningEvidence: vi.fn(),
   readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(), undoSuggestion: vi.fn(),
 }));
-vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }) }));
+vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
 
 const copy = deckTuningCopy.panel;
 const at = new Date("2026-09-23T12:00:00Z");

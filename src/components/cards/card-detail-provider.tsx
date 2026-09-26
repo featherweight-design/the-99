@@ -3,8 +3,24 @@
 // suggestion, search result, commander thumb — opens through this context, so there is one
 // piece of modal state on the page rather than one per row.
 //
-// The card is fetched on click because deck surfaces carry only an oracle id; shipping 99
-// cards' printings with the page to open one of them is the alternative.
+// The card is fetched on demand because deck surfaces carry only an oracle id; shipping 99
+// cards' printings with the page to open one of them is the alternative. "On demand" starts at
+// INTENT rather than at the click, on every surface that spreads `useCardIntent` (the shared
+// `CardDetailTrigger` and the openers that call `open` themselves): a pointer resting on a trigger
+// or keyboard focus arriving prefetches the card, so the click usually finds it already read or
+// already reading.
+// Two reads, deliberately: a prefetch goes to `GET /api/card-detail`, which queues behind none
+// of the reader's actions, and a press goes to the server action, which runs in the page's own
+// warm function. See `fetchCard` and `prefetchCard` below.
+//
+// A PRESS NEVER LEAVES AN ACTION PENDING AFTER THE UI HAS MOVED ON. Measured, not reasoned: an
+// earlier build raced the prefetch against the press's own action and showed whichever answered
+// first. The prefetch usually won, the modal painted, and the losing action stayed pending — and
+// the NEXT server action on the page then ran ~800ms client-side against ~210ms on the server,
+// so another card pressed 400ms after closing one took 815ms to open, every run (315ms before).
+// With 2.5s between presses the effect vanished. The mechanism inside Next was not pinned down;
+// the rule that avoids it is: wait on the prefetch for a bounded time, and if it has not
+// answered, send the action and show ONLY the action's answer.
 
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
@@ -12,6 +28,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
+import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import { FitsPicker } from "./fits-picker";
 import { CardModal } from "./card-modal";
 
@@ -94,6 +111,15 @@ type CardDetailContextValue = {
   /** Close the modal, and abandon any fetch still in flight for it. */
   close: () => void;
   /**
+   * Read `oracleId` ahead of an open, on a sign the reader is about to press it. Files the
+   * card in the cache, so the press paints at once; a press landing while the read is still
+   * running waits on it for up to `PREFETCH_WAIT_MS` before reading for itself. A guess, so it yields: it never starts
+   * while any read is in flight, a prefetch or an open's. Surfaces call it through
+   * `useCardIntent`, never directly. `art` is the opener's art hint, asked for alongside the
+   * read exactly as `open` asks for it.
+   */
+  prefetch: (oracleId: string, art?: string | null) => void;
+  /**
    * Declare a sheet that stays open UNDER the card modal, and get back the call that
    * withdraws it.
    *
@@ -140,6 +166,74 @@ export function useCardDetail(): CardDetailContextValue {
   const ctx = useContext(CardDetailContext);
   if (!ctx) throw new Error("useCardDetail must be used inside a CardDetailProvider");
   return ctx;
+}
+
+/**
+ * How long a press waits on its card's prefetch before reading for itself: the warm route's p90,
+ * MEASURED rather than chosen, rounded up to the next 10ms. Sixty prefetches of distinct cards on a `pull:staging` deck, 30 at
+ * 1300 and 30 at 390, against `next start` with #1067's two-round-trip `loadCardDetail`, timed from
+ * the GET's start to its last byte: p50 168ms, p90 177ms, p95 183ms, max 230ms. A prefetch has
+ * already been reading for a while by the time the press lands, so a warm route almost always
+ * answers inside this; a cold one costs the press at most this much before it reads for itself.
+ * Re-measure it when the route's read changes.
+ */
+export const PREFETCH_WAIT_MS = 180;
+
+/**
+ * The prefetch's answer if it arrives within `PREFETCH_WAIT_MS`, else `undefined`. A failed
+ * prefetch (`undefined`) is no answer either. The timer is cleared either way.
+ */
+function withinWait<T>(read: Promise<T | undefined>): Promise<T | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expiry = new Promise<undefined>((r) => { timer = setTimeout(() => r(undefined), PREFETCH_WAIT_MS); });
+  return Promise.race([read, expiry]).finally(() => clearTimeout(timer));
+}
+
+/** Whether focus arrived from the keyboard rather than with a press. */
+function keyboardFocus(el: HTMLElement): boolean {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+}
+
+/** How long a pointer rests on a trigger before it reads as intent rather than passing over. */
+export const INTENT_DELAY_MS = 100;
+
+/**
+ * The handlers that prefetch a card on intent, spread onto whatever element opens it. A pointer
+ * resting for `INTENT_DELAY_MS` prefetches, so a pointer sweeping down a list reads nothing; KEYBOARD
+ * focus arriving prefetches at once.
+ *
+ * NOT a press going down, and not the focus a press brings with it. A prefetch started by the
+ * press itself has no head start on the press's own read, so it can only cost: measured at 390,
+ * where a tap is all there is, the route (~190ms there) missed `PREFETCH_WAIT_MS` often enough that
+ * a tap paid the wait AND the action, and the medians went from 354 to 408ms for a first press and
+ * from 336 to 828ms for the next card. Chrome focuses a button on mousedown, so a focus handler
+ * would start the same useless read; `:focus-visible` is what tells keyboard focus apart.
+ */
+export function useCardIntent(oracleId: string, art?: string | null) {
+  const { prefetch } = useCardDetail();
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancel = useCallback(() => {
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+  useEffect(() => cancel, [cancel]);
+  return useMemo(
+    () => ({
+      onPointerEnter: () => {
+        cancel();
+        timer.current = setTimeout(() => { timer.current = null; prefetch(oracleId, art); }, INTENT_DELAY_MS);
+      },
+      onPointerLeave: cancel,
+      onFocus: (event: React.FocusEvent<HTMLElement>) => {
+        if (keyboardFocus(event.currentTarget)) prefetch(oracleId, art);
+      },
+    }),
+    [oracleId, art, prefetch, cancel],
+  );
 }
 
 /**
@@ -200,10 +294,12 @@ export function CardDetailTrigger({
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
+  const intent = useCardIntent(oracleId, imageUri);
   const pending = pendingOracleId === oracleId;
   return (
     <button
       type="button"
+      {...intent}
       data-testid={testId}
       onClick={() => open(oracleId, siblings, undefined, door || imageUri ? { door, art: imageUri } : undefined)}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
@@ -243,8 +339,8 @@ type Held = { card: BrowseCard; siblings: string[]; openAt: OpenAt; door: boolea
 
 export function CardDetailProvider({
   children,
-  // Injected for tests; production always uses the server action.
-  fetchCard = getCardDetail,
+  fetchCard: fetchCardProp,
+  prefetchCard: prefetchCardProp,
   onArtChange,
   deckId = null,
   deckName = null,
@@ -252,7 +348,22 @@ export function CardDetailProvider({
   comboDeckOracleIds,
 }: {
   children: ReactNode;
+  /**
+   * The read a PRESS makes. Production is the server action, which runs in the page's own
+   * function: warm, because the page just rendered there. Injected for tests.
+   */
   fetchCard?: (
+    oracleId: string,
+    deckOracleIds?: readonly string[],
+  ) => Promise<BrowseCard | null>;
+  /**
+   * The read a PREFETCH makes. Production is `GET /api/card-detail`, which is an ordinary request
+   * and so never queues ahead of the reader's own actions — Next runs a page's actions one at a
+   * time, and a guess must not sit in front of a press. It may run in a function the page never
+   * warmed, which is why a press does not rely on it (see `load`). Injected for tests. A test that
+   * injects only `fetchCard` gets NO prefetch, so the reads it counts are the presses' alone.
+   */
+  prefetchCard?: (
     oracleId: string,
     deckOracleIds?: readonly string[],
   ) => Promise<BrowseCard | null>;
@@ -290,6 +401,8 @@ export function CardDetailProvider({
    */
   onArtChange?: (oracleId: string, art: CardArt | null) => void;
 }) {
+  const fetchCard = fetchCardProp ?? getCardDetail;
+  const prefetchCard = prefetchCardProp ?? (fetchCardProp ? null : fetchCardDetail);
   const [card, setCard] = useState<BrowseCard | null>(null);
   const [siblings, setSiblings] = useState<string[]>([]);
   // Opened from a Shopping row: the swap tools' door draws (audit F17).
@@ -336,6 +449,9 @@ export function CardDetailProvider({
     () => (comboScopeKey ? comboScopeKey.split(",") : undefined),
     [comboScopeKey],
   );
+  // The scope current NOW, for a prefetch landing after the deck changed under it.
+  const comboScopeRef = useRef(comboScope);
+  useEffect(() => { comboScopeRef.current = comboScope; }, [comboScope]);
   // Clicks can overlap — a slow first fetch must not land on top of the card the user
   // actually asked for second.
   const latest = useRef(0);
@@ -378,6 +494,16 @@ export function CardDetailProvider({
   // abandon the read they are waiting for — so the re-read is owed rather than taken, and
   // paid once the read in flight is done and that card turns out to still be the one shown.
   const owed = useRef<string | null>(null);
+  // The one prefetch in flight, or null. `load` takes its answer rather than asking again when
+  // it is for the same card and the same deck scope, and nothing evicted the card since it
+  // started. Resolves `undefined` when the read failed, so a load that joined it asks for
+  // itself instead of inheriting a failure nobody pressed for.
+  const prefetching = useRef<{
+    oracleId: string;
+    scope: readonly string[] | undefined;
+    evictedAt: number;
+    read: Promise<BrowseCard | null | undefined>;
+  } | null>(null);
   const show = useCallback((next: BrowseCard | null) => {
     openRef.current = next?.oracleId ?? null;
     shownRef.current = openRef.current;
@@ -471,7 +597,19 @@ export function CardDetailProvider({
           // and render its scope line. `deckOracleIds` is set by the deck page alone; every
           // other route sends nothing and the block draws the two states that have a referent,
           // which is the `/collection` face the design specifies.
-          next = await fetchCard(oracleId, comboScope);
+          // A prefetch already reading this card, from this side of every write, is WAITED ON for
+          // up to `PREFETCH_WAIT_MS` rather than raced. If it answers, no action is sent at all. If
+          // it does not (a cold route, or a failure), the press reads for itself through the
+          // action, and that answer is the one shown: the prefetch may still fill the cache, but it
+          // never paints while the press's action is pending. See the header for why that rule.
+          const ahead = prefetching.current;
+          const joined =
+            attempt === 0 && ahead && ahead.oracleId === oracleId && ahead.scope === comboScope &&
+            ahead.evictedAt === evictedAtStart
+              ? await withinWait(ahead.read)
+              : undefined;
+          if (latest.current !== request) return;
+          next = joined !== undefined ? joined : await fetchCard(oracleId, comboScope);
           if (latest.current !== request) return;
           raced = (evictions.current.get(oracleId) ?? 0) !== evictedAtStart;
         }
@@ -526,7 +664,10 @@ export function CardDetailProvider({
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
       opts?: { door?: boolean; art?: string | null },
     ) => {
-      if (opts?.art && !cache.current.has(oracleId)) preloadCardArt(opts.art);
+      // A prefetch reading this card asked for its art already.
+      if (opts?.art && !cache.current.has(oracleId) && prefetching.current?.oracleId !== oracleId) {
+        preloadCardArt(opts.art);
+      }
       // PENDING, not committed, and the door with it: the door belongs to the card the open asked
       // for, so it moves when that card arrives and a failed read leaves the card on screen as it was.
       // PENDING, not committed. A second open while the first card is still painted must
@@ -644,9 +785,42 @@ export function CardDetailProvider({
     [load],
   );
 
+  const prefetch = useCallback(
+    (oracleId: string, art?: string | null) => {
+      // Yields to every read already running: a prefetch is a guess, and a second request
+      // beside the one the reader is waiting on only slows that one down.
+      if (!prefetchCard || cache.current.has(oracleId) || inFlight.current !== null || prefetching.current) return;
+      if (art) preloadCardArt(art);
+      const evictedAt = evictions.current.get(oracleId) ?? 0;
+      const scope = comboScope;
+      const entry = {
+        oracleId,
+        scope,
+        evictedAt,
+        read: prefetchCard(oracleId, scope).then(
+          (next) => {
+            // Filed only if nothing moved under it: an eviction since it started means a write
+            // it may have read the wrong side of, and a new scope means a different question.
+            if (next && (evictions.current.get(oracleId) ?? 0) === evictedAt && scope === comboScopeRef.current) {
+              cache.current.set(oracleId, next);
+            }
+            return next;
+          },
+          () => undefined,
+        ),
+      };
+      prefetching.current = entry;
+      void entry.read.finally(() => {
+        if (prefetching.current === entry) prefetching.current = null;
+      });
+    },
+    [prefetchCard, comboScope],
+  );
+
   const value = useMemo<CardDetailContextValue>(
     () => ({
       open,
+      prefetch,
       pendingOracleId,
       openOracleId: card?.oracleId ?? null,
       setSiblings,
@@ -657,7 +831,7 @@ export function CardDetailProvider({
       registerSheet,
       registerDoor,
     }),
-    [open, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
+    [open, prefetch, pendingOracleId, card, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
   );
 
   const index = card ? siblings.indexOf(card.oracleId) : -1;

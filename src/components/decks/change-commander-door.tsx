@@ -11,7 +11,7 @@
 
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { PENDING_OPACITY } from "../commanders/pending";
-import { useCardDetail } from "../cards/card-detail-provider";
+import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { useLayoutEffect, useState } from "react";
@@ -73,6 +73,7 @@ export function ChangeCommanderDoor({
 }) {
   const door = useChangeCommander();
   const { open, pendingOracleId } = useCardDetail();
+  const intent = useCardIntent(oracleId);
   if (!door) {
     // Today's control, exactly, and exactly when today drew it.
     return hasCrop ? (
@@ -107,6 +108,7 @@ export function ChangeCommanderDoor({
           aria-label="View card details"
           aria-busy={pending}
           onClick={() => open(oracleId)}
+          {...intent}
           className="relative flex h-[44px] items-center bg-transparent p-0 font-mono whitespace-nowrap text-[color:var(--fg)]"
           style={{ gap: 6, padding: "0 9px", fontSize: 11, cursor: "pointer" }}
         >
@@ -183,6 +185,7 @@ export function ChangeCommanderDoor({
         aria-label="View card details"
         aria-busy={pending}
         onClick={() => open(oracleId)}
+        {...intent}
         className="absolute flex items-center justify-center bg-transparent p-0"
         style={{ left: 0, width: 44, top: half, height: 44, paddingBottom: overhang, cursor: "pointer" }}
       >

@@ -28,7 +28,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { Availability } from "../../lib/decks/availability";
 import type { PriceFact } from "../../lib/decks/price";
-import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { COST_PIP_CAP, COST_PIP_SIZE, COST_TRACK, CostPips, CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -288,12 +288,17 @@ function useRowOpen(
   card: DiffRowCard,
   siblings: string[] | undefined,
   review: boolean,
-): ((event: React.MouseEvent<HTMLElement>) => void) | undefined {
+): React.HTMLAttributes<HTMLElement> {
   const { open } = useCardDetail();
-  if (!review) return undefined;
-  return (event) => {
-    if ((event.target as HTMLElement).closest("button, a")) return;
-    open(card.oracleId, siblings);
+  // The row body opens the card too, so resting on it prefetches the card as the name does.
+  const intent = useCardIntent(card.oracleId);
+  if (!review) return {};
+  return {
+    ...intent,
+    onClick: (event) => {
+      if ((event.target as HTMLElement).closest("button, a")) return;
+      open(card.oracleId, siblings);
+    },
   };
 }
 
@@ -430,11 +435,11 @@ export function DiffRowOut({
    *  line under it repeating the name. */
   recount?: DiffRowRecount;
 } & DiffRowNameExtras) {
-  const openRow = useRowOpen(card, siblings, review);
+  const rowOpen = useRowOpen(card, siblings, review);
   const previewHandlers = usePreviewRow(card.imageUri);
   return (
     <div
-      onClick={openRow}
+      {...rowOpen}
       {...previewHandlers}
       data-diff-row
       className={[
@@ -542,7 +547,7 @@ export function DiffRowIn({
    *  which no deck holds. */
   heldBy?: string | null;
 } & DiffRowNameExtras) {
-  const openRow = useRowOpen(card, siblings, review);
+  const rowOpen = useRowOpen(card, siblings, review);
   const previewHandlers = usePreviewRow(card.imageUri);
   // Two lines on the phone, one above it. Only a row carrying a decision earns
   // the second line: a plain add has nothing on its right but a tag.
@@ -621,7 +626,7 @@ export function DiffRowIn({
   );
   return (
     <div
-      onClick={openRow}
+      {...rowOpen}
       {...previewHandlers}
       data-diff-row
       className={[
