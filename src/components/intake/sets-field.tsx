@@ -18,6 +18,8 @@ const PANEL_COPY: FilterPanelCopy = {
   ...printedInPanelCopy,
   triggerLabel: copy.sets,
   triggerCount: collectionFilterCopy.set.triggerCount,
+  // The phone's sheet is titled as the field is, not as the lanes' control.
+  sheetTitle: copy.sets,
 };
 
 export function SetsField({
