@@ -121,11 +121,17 @@ async function main(): Promise<void> {
     target: cardLabels.oracleId,
     set: { model: "older-model", promptVersion: "0", inputHash: "untouched", labels: [JOB] },
   });
-  // Captured before the publish overwrites them, for the same reason as card `c`.
-  publishedIds = [a.oracleId, b.oracleId];
-  for (const row of await db.select().from(cardLabels).where(inArray(cardLabels.oracleId, publishedIds))) {
-    priorRows.set(row.oracleId, row);
-  }
+  // Captured before the publish overwrites them, and the CLEANUP HANDLE IS SET LAST.
+  //
+  // Order matters and I had it backwards: with `publishedIds` assigned before the select, a failed
+  // or partial capture leaves the handle populated and `priorRows` empty — and the `finally` reads
+  // a missing entry as "this card had no label" and DELETES a real row. That is the exact rule this
+  // file cites from `probe:review` (populate the handle before the write it covers) applied in the
+  // wrong order: the handle must cover a capture that has already succeeded.
+  const ids = [a.oracleId, b.oracleId];
+  const captured = await db.select().from(cardLabels).where(inArray(cardLabels.oracleId, ids));
+  for (const row of captured) priorRows.set(row.oracleId, row);
+  publishedIds = ids;
   await db.insert(cardLabelsStaging).values([a, b].map((card) => ({
     runId, oracleId: card.oracleId, labels: [JOB],
     model: "claude-sonnet-4-5", promptVersion: "1", inputHash: `h-${card.oracleId}`,

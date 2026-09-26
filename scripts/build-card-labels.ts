@@ -88,7 +88,16 @@ const RATES = { in: PRICING[MODEL_KEY].in, out: PRICING[MODEL_KEY].out };
 const SAMPLE_PER_CARD_USD = 0.001291;
 
 const dryRun = process.argv.includes("--dry-run");
-const client = new Anthropic();
+/**
+ * The REAL Anthropic endpoint, overridden explicitly.
+ *
+ * `.env` points `ANTHROPIC_BASE_URL` at this repository's local messages proxy, which does not
+ * expose `/v1/messages/batches` — so a default client sends `batches.create` to the proxy and the
+ * run fails before submitting anything. The sample runner overrides it for exactly this reason and
+ * I did not carry that across; a dry run never reaches the call, so nothing I had run would have
+ * shown it.
+ */
+const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 
 /** A run id that sorts and is readable; the run TOKEN in each custom id derives from it. */
 const runId = process.env.LABEL_RUN_ID ?? `run-${new Date().toISOString().replace(/[:.]/g, "-")}`;
