@@ -14,7 +14,7 @@ import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
 import { synopsisResponseSchema, type SynopsisResponse } from "./response-schema";
-import { STUB_MODEL, stubMode, stubReply, synopsisLive } from "./stub";
+import { STUB_MODEL, stubDelay, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionId, SectionVerdict, SynopsisOutcome } from "./types";
 import { marksIn, validateSynopsis } from "./validate";
 import { overviewDataMovedFor } from "../notices/overview";
@@ -99,7 +99,10 @@ export function defaultDeps(): GenerateDeps {
         schema: synopsisResponseSchema,
         deadlineMs: req.deadlineMs,
       })
-      : async (req, facts) => stubReply(facts, stubMode(), isRepair(req.user)),
+      : async (req, facts) => {
+        await stubDelay();
+        return stubReply(facts, stubMode(), isRepair(req.user));
+      },
     now: () => new Date(),
   };
 }

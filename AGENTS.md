@@ -904,6 +904,29 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   writes only what the walked deck lacked (a reading, an overview: stub, free) and deletes both again in a `finally`, reading what the deck had BEFORE any press, since an Analyze press may write the overview too; the About row is left set.
   Point `PROBE_TARGET_URL` at a scratch branch or `local-dev`, **never production**.
 
+- `pnpm probe:overview-hold` walks a FIRST Analyze that also writes the overview, at 1300x900
+  and 390x844 (Hugh's ruling, 2026-09-26; the overview-loading addendum). Such a press holds the
+  empty state's ring through the write, its heading stepping from `Reading your deck…` to
+  `Writing the overview…`, and lets go ONCE: the verdict, the written overview and Suggested
+  changes paint in one frame, nothing moves afterwards, and the verdict and the overview are
+  announced together. Past `OVERVIEW_HOLD_MS` (25s) it lets go onto the verdict with the slot's
+  status line, and the overview lands later in its slot.
+
+  **The server decides which path is walked**, by how long its stub takes: run `pnpm dev` with
+  `SYNOPSIS_STUB_DELAY_MS=3000` and `PROBE_HOLD=held`, then with `SYNOPSIS_STUB_DELAY_MS=30000`
+  and `PROBE_HOLD=fallback`. The delay only slows the stub, which spends nothing. The limit was
+  tuned from five live writes on Hugh's pulled decks (`probe:synopsis --live`): every write made
+  one model call and took 17.0 to 18.3s, so 15s would have made every first press fall back. On
+  the fallback, Suggested changes lands with the overview rather than the verdict, because Next
+  runs a page's server actions one at a time and its read waits behind the write; it is drawn at
+  the foot and moves nothing, and the probe asserts that ordering.
+
+  Its first run found that Suggested changes painted ~740ms after the rest, because it mounted
+  only at release; the reading now mounts HIDDEN behind the loader while the overview is written.
+  With the panel's hold removed it fails four checks. It writes a reading and an overview onto a
+  deck that had neither and deletes both, with the overview's ledger unit, in a `finally`. Point
+  it at `local-dev` or a scratch branch, **never production**.
+
 - `pnpm probe:verdict-findings` walks the Analysis tab's findings and their receipt at
   1300x900 and 390x844 — thirty-four checks, and every one is a fact about layout or about two
   dialogs at once, which jsdom has neither of.

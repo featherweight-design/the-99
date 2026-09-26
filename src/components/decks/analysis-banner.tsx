@@ -3,6 +3,7 @@
 import { useId } from "react";
 
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { WorkPulse } from "./work-pulse";
 
 /**
  * The staleness banner (Analysis tab handoff, 2i and 2d): the ONE place staleness is said, drawn
@@ -12,8 +13,10 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
  *   load: the region is present from the first paint, so its text is not a change.
  * - `failed` (2d): the re-read failed and the reading is from before the changes. `role="alert"`,
  *   which is what STATES:49 asks of a failure (the frames' `status` is conflict C4).
- * - `busy`: the press is in flight. The button disables IN PLACE, keeping its label, and the
- *   reading under it stays (STATES:19).
+ * - `busy`: the press is in flight. The button disables in place and shows the work: the pulse and
+ *   *Reading your deck…* replace its label, and the credit note goes, because the press already drew
+ *   it (addendum_overview_loading 1a, which supersedes STATES:19's "keeps its label"). The reading
+ *   under it stays. A failed-mode *Try again* runs the same read, so it takes the same form.
  * - `blocked`: the deck is not whole (ruling 1). The sentence becomes the reason and the button is
  *   disabled, because pressing it would be refused.
  * - `note`: the credit note when the press also writes the overview (`CREDITS-overview.md` 7c, 7e).
@@ -41,7 +44,7 @@ export function AnalysisBanner({
   const copy = deckAnalysisCopy.banner;
   const noteId = useId();
   const disabled = busy || blocked !== null;
-  const shownNote = blocked === null ? note : null;
+  const shownNote = blocked === null && !busy ? note : null;
   const sentence = blocked ?? (mode === "failed" ? copy.failedHeld : copy.stale);
   return (
     <div
@@ -59,13 +62,19 @@ export function AnalysisBanner({
         aria-disabled={disabled || undefined}
         aria-describedby={shownNote ? noteId : undefined}
         className={
-          "min-h-[44px] flex-none whitespace-nowrap rounded-[8px] px-[18px] text-[14px] font-semibold md:order-3 md:min-h-[36px] md:text-[13.5px] "
+          "min-h-[44px] flex-none whitespace-nowrap rounded-[8px] text-[14px] font-semibold md:order-3 md:min-h-[36px] md:text-[13.5px] "
+          + (busy ? "px-[16px] " : "px-[18px] ")
           + (disabled
             ? "cursor-default bg-[color:var(--elevated)] text-[color:var(--fg-faint)]"
             : "bg-[color:var(--fg)] text-[color:var(--bg)]")
         }
       >
-        {mode === "failed" ? copy.tryAgain : copy.reanalyze}
+        {busy ? (
+          <span className="inline-flex items-center gap-[9px]">
+            <WorkPulse />
+            <span>{deckAnalysisCopy.panel.loading.heading}</span>
+          </span>
+        ) : mode === "failed" ? copy.tryAgain : copy.reanalyze}
       </button>
       {shownNote ? (
         <p

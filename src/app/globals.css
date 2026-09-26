@@ -701,6 +701,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
 .anim-quickadd-in { animation: quickadd-in 0.14s ease-out both; }
+/* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
+   instant under reduced motion. */
+.anim-overview-in { animation: backdrop-in 0.15s ease-out both; }
 /* `both`, so the first frame is the 0% state rather than a full-size card for one
    frame before the animation takes it. The blur underneath is set at its final value
    on the first frame and never animated: at 10px it is invisible in motion and
@@ -755,6 +758,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-zoom-in,
   /* The fan holds still in its fanned pose, the inline transform each card carries. */
   .anim-fan-shuffle,
+  .anim-overview-in,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer

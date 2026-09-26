@@ -6,7 +6,7 @@ vi.mock("../../db", () => ({ db: {} }));
 import type { SynopsisFacts } from "./facts";
 import { chargeFor, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
 import { isRepair } from "./prompt";
-import { stubMode, stubReply, synopsisLive } from "./stub";
+import { stubDelayMs, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionVerdict } from "./types";
 import { validateSynopsis } from "./validate";
 
@@ -143,5 +143,13 @@ describe("the stub", () => {
     expect(synopsisLive({ NODE_ENV: "production" })).toBe(true);
     expect(stubMode({ SYNOPSIS_STUB: "partial" })).toBe("partial");
     expect(stubMode({ SYNOPSIS_STUB: "nonsense" })).toBe("survived");
+  });
+
+  it("waits only as long as a probe asks, and never past a minute", () => {
+    expect(stubDelayMs({})).toBe(0);
+    expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "nonsense" })).toBe(0);
+    expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "-5" })).toBe(0);
+    expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "2500" })).toBe(2500);
+    expect(stubDelayMs({ SYNOPSIS_STUB_DELAY_MS: "600000" })).toBe(60_000);
   });
 });

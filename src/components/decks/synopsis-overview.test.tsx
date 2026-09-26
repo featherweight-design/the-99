@@ -19,12 +19,14 @@ const onRetry = vi.fn();
 const onReanalyze = vi.fn();
 const onSeeWhich = vi.fn();
 const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
-const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy: boolean; settled: boolean; reanalyzeBlocked: boolean; deeperLooks: boolean }> = {}) =>
-  render(
+type Over = Partial<{ readingFresh: boolean; busy: boolean; pressed: boolean; announceReady: boolean; settled: boolean; reanalyzeBlocked: boolean; deeperLooks: boolean }>;
+const tree = (state: SynopsisState, over: Over = {}) => (
     <CardDetailProvider fetchCard={async () => null}>
       <SynopsisOverview
         state={state}
         busy={over.busy ?? false}
+        pressed={over.pressed ?? false}
+        announceReady={over.announceReady ?? true}
         deckName="Hoof"
         art={new Map()}
         readingFresh={over.readingFresh ?? true}
@@ -35,8 +37,9 @@ const draw = (state: SynopsisState, over: Partial<{ readingFresh: boolean; busy:
         onSeeWhich={onSeeWhich}
         reanalyze={{ onPress: onReanalyze, disabled: over.reanalyzeBlocked ?? false, note: null }}
       />
-    </CardDetailProvider>,
-  );
+    </CardDetailProvider>
+);
+const draw = (state: SynopsisState, over: Over = {}) => render(tree(state, over));
 
 beforeEach(() => {
   onWrite.mockClear();
@@ -178,9 +181,90 @@ describe("SynopsisOverview", () => {
     expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
   });
 
-  it("disables the write while a run is in flight", () => {
+  // 1b (addendum_overview_loading): a run in flight is said, never drawn as a write that is
+  // refused. No Write one, no credit note, no entry point.
+  it("says the overview is being written while a run is in flight, and offers no write", () => {
     draw(synopsisState({ synopsis: null, pending: true }));
-    expect(inert(screen.getByRole("button", { name: copy.writeOne }))).toBe(true);
+    expect(screen.getByTestId("overview-writing").textContent).toContain(copy.writing);
+    expect(screen.getByTestId("overview-writing")).toHaveAttribute("role", "status");
+    expect(screen.queryByRole("button", { name: copy.writeOne })).toBeNull();
+    expect(screen.queryByText(copy.absent)).toBeNull();
+  });
+
+  // 1b, re-analysis: the held overview stays whole and the label row says a new one is being
+  // written; ruling D's row waits, so nothing is inserted above painted text.
+  it("keeps a held overview whole while a new one is written, and says so in the label row", () => {
+    draw(synopsisState({ stale: true, wouldSpend: true }), { busy: true });
+    expect(screen.getByTestId("overview-writing-new").textContent).toContain(copy.writingNew);
+    expect(screen.getByText(/Ramp early with/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
+    expect(screen.queryByText(copy.olderThanList)).toBeNull();
+  });
+
+  // 1d, first press: the failure is heard at once, and Try again draws no credit note, because
+  // the press that failed already drew it.
+  it("says a failed write as an alert, with no credit note after this page's press", () => {
+    draw(synopsisState({ synopsis: null, lastFailed: true, wouldSpend: true }), { pressed: true });
+    expect(screen.getByRole("alert").textContent).toBe(copy.failed);
+    expect(screen.getByRole("button", { name: copy.tryAgain })).toBeTruthy();
+    expect(screen.queryByText(/Uses a credit/)).toBeNull();
+  });
+
+  // Audit finding 3: a stored failure read on a later visit keeps the note, since the reader never
+  // saw one and Try again spends on success.
+  it("keeps the credit note on a stored failure no press of this page made", () => {
+    draw(synopsisState({ synopsis: null, lastFailed: true, wouldSpend: true }));
+    expect(screen.getByText(/Uses a credit/)).toBeTruthy();
+  });
+
+  // 1d, re-analysis: the failure leads, then a hairline and ruling D's line over the held text.
+  it("leads a held overview with the failure, then labels the held text as older", () => {
+    const { container } = draw(synopsisState({ stale: true, lastFailed: true, wouldSpend: true }), { pressed: true });
+    const alert = screen.getByRole("alert");
+    const caption = screen.getByTestId("overview-held-caption");
+    const para = screen.getByText(/Ramp early with/);
+    expect(caption.textContent).toBe(copy.olderThanList);
+    const order = [alert, caption, para].map((el) => [...container.querySelectorAll("*")].indexOf(el));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(screen.getAllByRole("button", { name: copy.tryAgain })).toHaveLength(1);
+  });
+
+  // 1c: said once, when a written overview lands after a write.
+  it("announces a written overview once, when it lands", () => {
+    const { rerender } = draw(synopsisState({ synopsis: null, pending: true }));
+    expect(screen.queryByText(copy.ready)).toBeNull();
+    rerender(tree(synopsisState(), { pressed: true }));
+    expect(screen.getByText(copy.ready)).toBeTruthy();
+  });
+
+  // 1c: a new overview replacing a held one fades in; a first one arriving does not.
+  it("fades in only an overview that replaces a held one", () => {
+    const { rerender, container } = draw(synopsisState({ synopsis: null, pending: true }));
+    rerender(tree(synopsisState(), { pressed: true }));
+    expect(container.querySelector(".anim-overview-in")).toBeNull();
+    rerender(tree(synopsisState({ synopsis: { ...synopsisRow(), id: "syn-2" } }), { pressed: true }));
+    expect(container.querySelector(".anim-overview-in")).not.toBeNull();
+  });
+
+  it("does not fade an overview in behind a held press's loader", () => {
+    const { rerender, container } = draw(synopsisState());
+    rerender(tree(synopsisState({ synopsis: { ...synopsisRow(), id: "syn-2" } }), { pressed: true, announceReady: false }));
+    expect(container.querySelector(".anim-overview-in")).toBeNull();
+  });
+
+  // Ruling D's own failed write, under a held overview whose Overview section was refused: the
+  // same 1d row, heard at once, with no second credit note after the press.
+  it("says ruling D's failed write as an alert, with no note after this page's press", () => {
+    const refused = checkedSynopsis({ overview: null as unknown as string, verdicts: [{ section: "overview", status: "refused", reason: "unknown_card", failed: 1, total: 2 }] });
+    draw(synopsisState({ synopsis: synopsisRow(refused), stale: true, lastFailed: true, wouldSpend: true }), { pressed: true });
+    expect(screen.getByRole("alert").textContent).toBe(copy.failed);
+    expect(screen.queryByText(/Uses a credit/)).toBeNull();
+  });
+
+  it("says nothing when a write ends in a failure", () => {
+    const { rerender } = draw(synopsisState({ synopsis: null }), { busy: true });
+    rerender(tree(synopsisState({ synopsis: null, lastFailed: true }), { pressed: true }));
+    expect(screen.queryByText(copy.ready)).toBeNull();
   });
 
   it("gives the modal ruling D's write over a stale overview, and its sections no retry", () => {

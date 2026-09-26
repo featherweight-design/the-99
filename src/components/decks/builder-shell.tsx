@@ -19,7 +19,7 @@ import { HoverPreviewProvider } from "./hover-preview";
 import { TuningPanel } from "./tuning-panel";
 import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
-import { useDeckSynopsis } from "./synopsis-state";
+import { OVERVIEW_HOLD_MS, useDeckSynopsis } from "./synopsis-state";
 import { shownReading, useDeckProfile } from "./use-deck-profile";
 import { holdsOpening, isOpening, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 import { useHeaderBracket } from "./use-header-bracket";
@@ -406,19 +406,53 @@ export function BuilderShell({
   // that was not drawn (the state not yet read, the list already written, no credit left) is a
   // press that spends nothing, whatever the state says by the time the reading lands.
   const pressWrites = useRef(false);
+  // THE FIRST PRESS HOLDS ITS LOADER THROUGH THE WRITE (Hugh, 2026-09-26): a first Analyze that
+  // also writes the overview keeps the empty state's ring up, its heading stepping from reading the
+  // deck to writing the overview, until the verdict AND the overview can paint together, so nothing
+  // moves once they do. A write that fails or is refused releases it at once (the slot then shows
+  // 1d or 7h), and so does `OVERVIEW_HOLD_MS` passing mid-write: the verdict paints and the slot
+  // takes the addendum's 1b status line, so only a slow run pays the one-time growth. Re-analysis
+  // holds nothing: a reading is already painted, and the held overview stays under its label row.
+  const [staged, setStaged] = useState<{ deckId: string; writing: boolean } | null>(null);
+  // The panel says the verdict and the overview together when a held press lets go, so the
+  // overview's own *Overview ready.* stays quiet for it. It speaks again for a press that let go at
+  // the limit (the overview then lands on its own) and for the overview's own write controls.
+  const [quietReady, setQuietReady] = useState(false);
   const requestAnalysis = useCallback(() => {
     pressWrites.current = Boolean(analyzeNote?.writes);
+    const holds = pressWrites.current && reading === null;
+    if (holds) setStaged({ deckId: deck.id, writing: false });
+    setQuietReady(holds);
     profile.request();
-  }, [analyzeNote?.writes, profile]);
+  }, [analyzeNote?.writes, profile, reading, deck.id]);
   const writeSynopsisNow = synopsis.write;
   useEffect(() => {
     writeOnFresh.current = (landed: string) => {
       if (landed !== deck.id || !pressWrites.current) return;
       pressWrites.current = false;
+      setStaged((s) => (s && s.deckId === landed ? { ...s, writing: true } : s));
       // A refusal (reused, in flight, allowance) is a silent no-op: the Overview re-reads either way.
-      void writeSynopsisNow();
+      // However the write ends, the first press's hold is over.
+      void writeSynopsisNow().finally(() => setStaged((s) => (s && s.deckId === landed ? null : s)));
     };
   }, [deck.id, writeSynopsisNow]);
+  // A read that settles without starting a write ends the hold here, during render, so a later
+  // press (the Notices foot's, say) never finds a stale one waiting.
+  if (staged && !staged.writing && staged.deckId === deck.id && profile.state.kind !== "loading") setStaged(null);
+  const stagedWriting = staged?.deckId === deck.id && staged.writing;
+  useEffect(() => {
+    if (!stagedWriting) return;
+    const id = setTimeout(() => {
+      setStaged(null);
+      setQuietReady(false);
+    }, OVERVIEW_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [stagedWriting]);
+  // Held while the bracket is read, and then while the overview is written. A read that ends any
+  // other way (failed, refused, an edit landing mid-press) calls no write and so ends the hold.
+  const hold: "reading" | "writing" | null = staged?.deckId !== deck.id
+    ? null
+    : profile.state.kind === "loading" ? "reading" : staged.writing ? "writing" : null;
   const counts = deckCounts(cards, unresolvedCount);
 
   // THE HEADER'S BRACKET, held across an edit and retired by a change of deck; see `useHeaderBracket`.
@@ -1312,6 +1346,8 @@ export function BuilderShell({
                   opening={opening}
                   locked={lockedIds}
                   onRequest={requestAnalysis}
+                  hold={hold}
+                  overviewReady={synopsis.view.kind === "ready" && !synopsis.view.busy && !synopsis.view.state.stale && !!synopsis.view.state.synopsis?.content?.overview}
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   legality={{ built, size: bodySize }}
@@ -1345,12 +1381,14 @@ export function BuilderShell({
                       <SynopsisOverview
                         state={synopsis.view.state}
                         busy={synopsis.view.busy}
+                        pressed={synopsis.pressed}
                         deckName={deck.name}
                         art={findingArt}
                         readingFresh={readingFresh}
                         settled={synopsis.view.current}
-                        onWrite={synopsis.write}
-                        onRetry={synopsis.retry}
+                        announceReady={!quietReady}
+                        onWrite={() => { setQuietReady(false); return synopsis.write(); }}
+                        onRetry={(id) => { setQuietReady(false); return synopsis.retry(id); }}
                         onSeeWhich={openNoticesSheet}
                         deeperLooks={deeperLooks}
                         reanalyze={{

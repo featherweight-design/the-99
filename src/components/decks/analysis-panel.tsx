@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import { bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { synopsisCopy } from "../../lib/copy/synopsis";
 import { shownReading, type ProfileState } from "./use-deck-profile";
 import { AnalysisBanner } from "./analysis-banner";
 import { AnalysisEmpty } from "./analysis-empty";
@@ -52,6 +53,8 @@ export function AnalysisPanel({
   tuning,
   opening = "off",
   overview,
+  hold = null,
+  overviewReady = false,
   pressNote,
   pressSee,
   children,
@@ -86,6 +89,14 @@ export function AnalysisPanel({
   tuning?: (permits: readonly Bracket[]) => ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
+  /**
+   * A first Analyze that also writes the overview holds the empty state's loader through the write
+   * (Hugh, 2026-09-26), its heading naming the stage: the bracket being read, then the overview
+   * being written. The shell decides when it lets go; null is no hold.
+   */
+  hold?: "reading" | "writing" | null;
+  /** The overview on hand is written and current, so a held press that lets go says so as well. */
+  overviewReady?: boolean;
   /** The credit note beside Analyze (the empty state) and Re-analyze (the banner), when the press
    *  also writes the overview; null where it writes nothing (`synopsis-note.ts`). */
   pressNote?: { analyze: string | null; reanalyze: string | null };
@@ -96,17 +107,28 @@ export function AnalysisPanel({
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
   // Adjusted during render, React's pattern for deriving state from a changed prop.
-  const [prevKind, setPrevKind] = useState(state.kind);
+  // A held first press is still loading as far as the reader can see, so it is announced when it
+  // lets go, once, with the overview beside the verdict when that landed too.
+  const shownKind = hold ? "loading" : state.kind;
+  const [prevKind, setPrevKind] = useState(shownKind);
+  const [prevHold, setPrevHold] = useState(hold ?? null);
   const [announced, setAnnounced] = useState("");
-  if (prevKind !== state.kind) {
-    setPrevKind(state.kind);
+  if (prevKind !== shownKind) {
+    setPrevKind(shownKind);
+    setPrevHold(hold ?? null);
     setAnnounced(
       prevKind === "loading" && state.kind === "ready"
         ? deckAnalysisCopy.panel.settled(bracketPhrase(slotDeck(state.profile).permits))
+          + (prevHold && overviewReady ? ` ${synopsisCopy.ready}` : "")
         : "",
     );
+  } else if (prevHold !== (hold ?? null)) {
+    setPrevHold(hold ?? null);
   }
-  const held = shownReading(state);
+  // WHILE THE OVERVIEW IS WRITTEN the reading is already in: it mounts behind the loader, hidden,
+  // so Suggested changes reads its own state then and everything paints in one frame at release.
+  const behind = hold === "writing";
+  const held = hold === "reading" ? null : shownReading(state);
   // Ruling 1. The shell's own count decides when it has one, so completing the deck re-enables the
   // press after a refusal; the server's refusal speaks only where no count was handed in.
   const short = legality
@@ -127,7 +149,7 @@ export function AnalysisPanel({
     ) : null}
     <div hidden={gated} className="flex flex-col gap-[22px] px-[16px] pt-[18px] pb-[32px] md:gap-[28px] md:px-[30px] md:pt-6 md:pb-10">
       {held ? (
-        <>
+        <div hidden={behind} className="contents">
           {/* THE BANNER, the one place staleness is said (2i, 2d), over a reading that stays. Only
               over a STALE reading (deck notices readiness F2): a press over a fresh one, which is
               the Notices foot's, shows busy and failure on its own button, and a banner reading
@@ -155,21 +177,23 @@ export function AnalysisPanel({
             declaration={declaration}
             overview={overview}
           />
-        </>
-      ) : state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (
+        </div>
+      ) : null}
+      {!held || behind ? (hold || state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (
         <AnalysisEmpty
-          phase={state.kind === "illegal" ? "idle" : state.kind}
+          phase={hold || state.kind === "loading" ? "loading" : state.kind === "failed" ? "failed" : "idle"}
+          stage={hold === "writing" ? "writing" : "reading"}
           onRequest={onRequest}
           blocked={blocked}
           note={pressNote?.analyze ?? null}
           see={pressSee ?? null}
         />
-      ) : null}
+      ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
       {children}
       {held && tuning ? (
-        <div className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+        <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}
         </div>
       ) : null}

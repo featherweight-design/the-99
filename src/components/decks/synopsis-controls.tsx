@@ -12,7 +12,7 @@ import { synopsisCopy } from "../../lib/copy/synopsis";
 // the one place the reader learns why it will not press and when it will again.
 
 /** The outlined press both rows draw: 44px on the phone, 36px (34px in the modal) from `md`. */
-function Press({
+export function Press({
   label, note, disabled, busy, onPress, compact = false,
 }: {
   label: string;

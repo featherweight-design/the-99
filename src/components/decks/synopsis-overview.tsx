@@ -9,8 +9,9 @@ import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
 import type { FindingArt } from "./receipt-modal";
 import { SynopsisModal } from "./synopsis-body";
-import { RefusedSlot, WriteRow } from "./synopsis-controls";
+import { Press, RefusedSlot, WriteRow } from "./synopsis-controls";
 import { SynopsisText } from "./synopsis-text";
+import { WorkPulse } from "./work-pulse";
 
 /**
  * The Analysis tab's Overview (handoff §2 row 1; `SYNOPSIS-modal.md`): the overview's own
@@ -32,12 +33,20 @@ import { SynopsisText } from "./synopsis-text";
  *   one, that overview stays whole under the warning line built from the same form (H3, Q4), and
  *   no write is offered anywhere, the modal's included.
  *
+ * WHILE ONE IS WRITTEN (addendum_overview_loading, 1b to 1d): with nothing on hand the slot is one
+ * status line, `Writing the overview…`; over a held overview the label row says a new one is being
+ * written and the held text stays whole, so nothing is inserted above painted content. The new
+ * paragraph replaces the held one in place, and `Overview ready.` is said once. A write that fails
+ * leads with the failure and, over a held overview, labels it as older than the list.
+ *
  * NO SPACE IS RESERVED for prose that is not there, and no partial sentence can arrive: a section
  * that failed checking has no content stored at all.
  */
 export function SynopsisOverview({
   state,
   busy,
+  pressed = false,
+  announceReady = true,
   deckName,
   art,
   readingFresh,
@@ -50,6 +59,13 @@ export function SynopsisOverview({
 }: {
   state: SynopsisState;
   busy: boolean;
+  /** A press of this page wrote (or tried to write) this overview: its credit note was drawn, so a
+   *  failure that follows draws none. */
+  pressed?: boolean;
+  /** Off while a first press holds the tab: the panel says the verdict and the overview together
+   *  when it lets go, and a second *Overview ready.* would repeat it. Nor does its overview fade in
+   *  behind the loader, where the fade would play only once the tab is shown. */
+  announceReady?: boolean;
   deckName: string;
   art: FindingArt;
   /** The reading beside it is current: a write control is offered only over one. */
@@ -69,6 +85,24 @@ export function SynopsisOverview({
   reanalyze: { onPress: () => void; disabled: boolean; note: string | null };
 }) {
   const [open, setOpen] = useState(false);
+  // Written now: this page's press, or one another page load started (the stored row is pending).
+  const writing = busy || state.pending;
+  // SAID ONCE, WHEN A WRITTEN OVERVIEW LANDS: a write settling onto an overview current for this
+  // list. Adjusted during render, as the verdict's own announcement is (`AnalysisPanel`).
+  // THE CROSSFADE IS FOR A REPLACEMENT (1c): a new overview taking the place of a held one fades
+  // in. A first overview arriving, or one painted with the whole tab when a hold lets go, does not.
+  const [shownId, setShownId] = useState(state.synopsis?.id ?? null);
+  const [replaced, setReplaced] = useState(false);
+  if ((state.synopsis?.id ?? null) !== shownId) {
+    setReplaced(announceReady && shownId !== null && state.synopsis !== null);
+    setShownId(state.synopsis?.id ?? null);
+  }
+  const [wasWriting, setWasWriting] = useState(writing);
+  const [announced, setAnnounced] = useState("");
+  if (wasWriting !== writing) {
+    setWasWriting(writing);
+    setAnnounced(announceReady && !writing && state.synopsis?.content?.overview && !state.stale ? synopsisCopy.ready : "");
+  }
   // The page's art covers the deck; the read's covers every card the overview names, which is how
   // a Weaknesses card the deck does not hold still previews. The page's entry wins where both do.
   const named = useMemo<FindingArt>(() => {
@@ -101,19 +135,39 @@ export function SynopsisOverview({
   const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
   const retryNote = spent ? spentNote : spendNote;
 
+  const failedRow = (
+    <FailedRow
+      note={pressed ? null : canWrite ? note : null}
+      disabled={!canWrite || spent}
+      busy={busy}
+      onPress={onWrite}
+    />
+  );
+
+  // 1d over a held overview: the new write failed, so the failure leads, and the held paragraph under
+  // it is labelled as older than the list.
+  const heldFailed = !!content?.overview && !writing && stale && readingFresh && !state.illegal && !state.lastRefused && state.lastFailed;
   // Ruling D, drawn under whatever the older overview shows (its paragraph, or its refused
-  // Overview slot): the write it offers, or what became of the last one.
-  const followUp = stale && readingFresh && !state.illegal
+  // Overview slot): the write it offers, or what became of the last one. Not while a new one is
+  // written: the label row says so.
+  const followUp = stale && readingFresh && !state.illegal && !writing && !heldFailed
     ? state.lastRefused
       ? <RefusedSlot sentence={synopsisCopy.overviewRefused} failed={state.lastRefused.failed} total={state.lastRefused.total} onRetry={canWrite ? onWrite : null} busy={busy} note={note} spent={spent} />
       : state.lastFailed
-      ? <WriteRow line={synopsisCopy.failed} label={synopsisCopy.tryAgain} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
+      ? failedRow
       : <WriteRow line={synopsisCopy.olderThanList} label={synopsisCopy.writeNew} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
     : null;
 
   let body: React.ReactNode;
   if (!synopsis && state.illegal) {
     body = <CheckLine line={deckNoticesCopy.check.withheld} withWrite onSee={onSeeWhich} />;
+  } else if (!synopsis && writing) {
+    body = (
+      <div role="status" data-testid="overview-writing" className="flex min-h-[44px] items-center gap-[10px] md:min-h-[36px]">
+        <WorkPulse />
+        <span className="text-[13px] leading-[1.55] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[13.5px]">{synopsisCopy.writing}</span>
+      </div>
+    );
   } else if (!synopsis && state.lastRefused) {
     // Every section refused: Round 0's refused state, and no entry point.
     body = (
@@ -129,12 +183,21 @@ export function SynopsisOverview({
     );
   } else if (!synopsis) {
     body = state.lastFailed
-      ? <WriteRow line={synopsisCopy.failed} label={synopsisCopy.tryAgain} note={canWrite ? note : null} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
+      ? failedRow
       : <WriteRow line={synopsisCopy.absent} label={synopsisCopy.writeOne} note={canWrite ? note : null} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />;
   } else if (content?.overview) {
     body = (
       <>
-        <p className="text-[13.5px] leading-[1.65] md:text-[15px] md:leading-[1.7] md:max-w-[760px] text-[var(--fg-body)] [text-wrap:pretty]">
+        {heldFailed ? (
+          <>
+            {failedRow}
+            <p data-testid="overview-held-caption" className="m-0 mt-[10px] border-t border-[var(--border)] pt-[12px] font-mono text-[10.5px] leading-[1.5] text-[var(--fg-faint)]">
+              {synopsisCopy.olderThanList}
+            </p>
+          </>
+        ) : null}
+        {/* Keyed on the overview, so a new one replaces the held one in place, fading in (1c). */}
+        <p key={synopsis.id} className={`${replaced ? "anim-overview-in " : ""}text-[13.5px] leading-[1.65] md:text-[15px] md:leading-[1.7] md:max-w-[760px] text-[var(--fg-body)] [text-wrap:pretty]`}>
           <SynopsisText text={content.overview} cards={content.cards} art={named} />
         </p>
         {followUp}
@@ -158,9 +221,18 @@ export function SynopsisOverview({
 
   return (
     <section aria-labelledby="synopsis-overview-label" data-testid="synopsis-overview" className="flex flex-col gap-[7px] md:gap-[8px]">
-      <h3 id="synopsis-overview-label" className="font-mono uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em] text-[var(--fg-faint)]">
-        {synopsisCopy.label}
-      </h3>
+      <div className="flex flex-wrap items-center gap-[10px]">
+        <h3 id="synopsis-overview-label" className="font-mono uppercase text-[9.5px] tracking-[0.14em] md:text-[10px] md:tracking-[0.16em] text-[var(--fg-faint)]">
+          {synopsisCopy.label}
+        </h3>
+        {synopsis && writing ? (
+          <span role="status" data-testid="overview-writing-new" className="inline-flex items-center gap-[8px]">
+            <WorkPulse />
+            <span className="font-mono text-[10px] text-[var(--fg-muted)] md:text-[10.5px]">{synopsisCopy.writingNew}</span>
+          </span>
+        ) : null}
+      </div>
+      <p role="status" className="sr-only">{announced}</p>
       {synopsis && state.illegal ? <CheckLine line={deckNoticesCopy.check.warning} onSee={onSeeWhich} /> : null}
       {body}
       {synopsis ? (
@@ -202,6 +274,19 @@ export function SynopsisOverview({
         />
       ) : null}
     </section>
+  );
+}
+
+/**
+ * 1d, the write failed (addendum_overview_loading): the shipped failure line, heard at once, and
+ * Try again. No tag and no `--danger`: `not written` is a refusal's, and this is an outage.
+ */
+function FailedRow({ note, disabled, busy, onPress }: { note: string | null; disabled: boolean; busy: boolean; onPress: () => void }) {
+  return (
+    <div className="flex flex-col gap-[7px] md:gap-[8px]">
+      <p role="alert" className="m-0 text-[13px] leading-[1.6] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[13.5px]">{synopsisCopy.failed}</p>
+      <Press label={synopsisCopy.tryAgain} note={note} disabled={disabled} busy={busy} onPress={onPress} />
+    </div>
   );
 }
 
