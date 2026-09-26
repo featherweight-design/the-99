@@ -17,5 +17,11 @@ export function scopeRedirectTarget(sp: URLSearchParams): string | null {
   // spellings is what lets every legacy URL shed it on the first visit.
   const lane = scope === "play" ? "discover" : "owned";
   const params = parseLaneParams(sp, lane);
-  return `${lane === "discover" ? "/discover" : "/commanders"}${serializeLaneParams(params, lane)}`;
+  const qs = new URLSearchParams(serializeLaneParams(params, lane).slice(1));
+  // An explicit `a=all` (or legacy `avail=all`) wins over the reader's saved mode, so it survives
+  // the redirect. Serialized against the default `all` it would vanish, and a reader whose saved
+  // mode is `free` would land in Free under a link that asked for All.
+  if (lane === "owned" && (sp.get("a") ?? sp.get("avail")) === "all") qs.set("a", "all");
+  const query = qs.toString();
+  return `${lane === "discover" ? "/discover" : "/commanders"}${query ? `?${query}` : ""}`;
 }

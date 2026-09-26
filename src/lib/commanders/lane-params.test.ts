@@ -89,6 +89,50 @@ describe("parseLaneParams", () => {
   });
 });
 
+describe("the saved mode", () => {
+  it("opens in the saved mode when the URL says nothing", () => {
+    expect(parseLaneParams(sp(""), "owned", "free").avail).toBe("free");
+    expect(parseLaneParams(sp(""), "owned", "all").avail).toBe("all");
+  });
+
+  it("lets an explicit a= win over the saved mode, in both directions", () => {
+    expect(parseLaneParams(sp("a=all"), "owned", "free").avail).toBe("all");
+    expect(parseLaneParams(sp("a=free"), "owned", "all").avail).toBe("free");
+  });
+
+  it("falls back to the saved mode for an a= it does not know", () => {
+    expect(parseLaneParams(sp("a=bogus"), "owned", "free").avail).toBe("free");
+  });
+
+  it("never applies to discover", () => {
+    expect(parseLaneParams(sp(""), "discover", "free").avail).toBe("all");
+  });
+
+  it("writes a= only where the mode differs from the saved one", () => {
+    const free: LaneParams = { ...defaultParams("owned"), avail: "free" };
+    const all = defaultParams("owned");
+    expect(serializeLaneParams(free, "owned", "free")).toBe("");
+    expect(serializeLaneParams(all, "owned", "free")).toBe("?a=all");
+    expect(serializeLaneParams(free, "owned", "all")).toBe("?a=free");
+    expect(serializeLaneParams(all, "owned", "all")).toBe("");
+  });
+
+  it("round-trips through parse against the same saved mode", () => {
+    for (const saved of ["all", "free"] as const) {
+      for (const avail of ["all", "free"] as const) {
+        const p: LaneParams = { ...defaultParams("owned"), avail };
+        const qs = serializeLaneParams(p, "owned", saved).slice(1);
+        expect(parseLaneParams(sp(qs), "owned", saved).avail).toBe(avail);
+      }
+    }
+  });
+
+  it("carries the saved mode through laneQuery", () => {
+    const all = defaultParams("owned");
+    expect(laneQuery(sp("x=1"), all, "owned", "free")).toBe("?x=1&a=all");
+  });
+});
+
 describe("serializeLaneParams", () => {
   it("serialises every default as an absence", () => {
     expect(serializeLaneParams(defaultParams("owned"), "owned")).toBe("");

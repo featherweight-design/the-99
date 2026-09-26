@@ -18,6 +18,7 @@ import {
   defaultParams,
   laneQuery,
   parseLaneParams,
+  type Avail,
   type LaneOrder,
   type LaneParams,
 } from "../../lib/commanders/lane-params";
@@ -28,6 +29,7 @@ import { filePrintedIn, isPrintedIn, type LanePrintedIn } from "../../lib/sets/p
 import { printedInLabel } from "./rack/chip-line";
 import { filterCopy } from "../../lib/copy/lanes";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { rememberCommandersAvail } from "../../app/commanders/actions";
 import { CommanderRow } from "./commander-row";
 import { commanderDetailHref } from "./list-nav";
 import { FilterRack } from "./rack/filter-rack";
@@ -107,6 +109,10 @@ export type CommandersViewProps = {
   /** `Printed in ▾`'s index, aligned to `laneOracleIds(results)`. Absent when the read failed,
       and then the control is not drawn and a `?p=` is not applied. */
   printedIn?: LanePrintedIn;
+  /** The mode the reader last chose, saved per account: what the page opens in when the URL
+      names none, and what the URL is written against, so `a=` appears only where the mode
+      on screen differs from it. `all` for an account that has never chosen. */
+  savedAvail?: Avail;
 };
 
 export function CommandersView({
@@ -118,8 +124,22 @@ export function CommandersView({
   freeRanking,
   availOk,
   printedIn,
+  savedAvail = "all",
 }: CommandersViewProps) {
   const search = useSearchParams();
+
+  // The mode a bare URL is READ against. The server's `savedAvail` is the account's choice as of
+  // this payload; a flip here saves a newer one, and a same-route navigation to a URL with no
+  // `a=` has to honour it before any fresh payload says so. Reset whenever the server sends a
+  // different value, adjusted during render so no frame reads the stale one. URL WRITES stay
+  // against `savedAvail`, so a flip still leaves `a=` on the address: a back navigation that
+  // remounts this view from a cached payload reads that `a=` and opens in the chosen mode.
+  const [savedChoice, setSavedChoice] = useState<Avail>(savedAvail);
+  const [savedFromServer, setSavedFromServer] = useState<Avail>(savedAvail);
+  if (savedFromServer !== savedAvail) {
+    setSavedFromServer(savedAvail);
+    setSavedChoice(savedAvail);
+  }
 
   // Rebuilt once per payload, not per flip: everything below reads the free
   // ranking as the plain list it was before the diff, and the toggle stays the
@@ -147,13 +167,13 @@ export function CommandersView({
   // to switch to, and the seed refuses it exactly as the flip does.
   const fromUrl = useCallback(
     (query: URLSearchParams): LaneParams => {
-      const parsed = parseLaneParams(query, "owned");
+      const parsed = parseLaneParams(query, "owned", savedChoice);
       return {
         ...parsed,
         avail: parsed.avail === "free" && availOk && freeRanking !== null ? "free" : "all",
       };
     },
-    [availOk, freeRanking],
+    [availOk, freeRanking, savedChoice],
   );
 
   // The reader's edit, and the ONE query it is valid for.
@@ -239,13 +259,13 @@ export function CommandersView({
   // The query `p` serialises to against the URL as it stands right now, in
   // `useSearchParams`' spelling — no leading `?`, its key order — so every
   // comparison here is between two like things.
-  const queryFor = useCallback((live: URLSearchParams, p: LaneParams) => {
-    const written = laneQuery(live, p, "owned");
+  const queryFor = useCallback((live: URLSearchParams, p: LaneParams, base: Avail = savedAvail) => {
+    const written = laneQuery(live, p, "owned", base);
     return {
       written,
       query: new URLSearchParams(written.replace(/^\?/, "")).toString(),
     };
-  }, []);
+  }, [savedAvail]);
 
   // The event path, and the ONLY path that writes the URL itself.
   //
@@ -278,7 +298,20 @@ export function CommandersView({
     // the keys the lane owns, leaving the path and every foreign parameter
     // exactly as it found them.
     const { pathname, search: live } = window.location;
-    const { written, query } = queryFor(new URLSearchParams(live), params);
+    // The mirror never re-decides `a=`: an address that names a mode keeps naming it, and a bare
+    // one stays bare. Re-serializing against `savedAvail` did both wrong once the reader had
+    // flipped in this visit (the baseline had moved on, the prop had not): a bare navigation
+    // gained `a=free`, and an explicit `a=all` was stripped and then read as the new choice. The
+    // one change it makes is a CLIMB-DOWN, where the mode on screen is not the one asked for:
+    // there `a=` goes, because naming the mode that could not be served would pin the address to
+    // it after the free ranking recovers.
+    const liveParams = new URLSearchParams(live);
+    const raw = liveParams.get("a") ?? liveParams.get("avail");
+    const explicit: Avail | null = raw === "all" || raw === "free" ? raw : null;
+    const keep = explicit !== null && explicit === params.avail;
+    // Serialized against the other mode, `a=` is written; against the mode itself, it is not.
+    const base: Avail = keep ? (params.avail === "all" ? "free" : "all") : params.avail;
+    const { written, query } = queryFor(liveParams, params, base);
     // Idempotent: an edit has already written its own URL, so this finds the bar
     // already correct and leaves it alone. What it is here for is the render-time
     // climb-down below, which changes `params` without an event to write from.
@@ -409,13 +442,20 @@ export function CommandersView({
   // no dimmed list waiting on a server that has nothing left to say.
   const update = useCallback(
     (next: LaneParams) => {
-      setParams((prev) => ({
-        ...next,
-        // `?a=free` is a request, not a promise. With no free ranking there is
-        // nothing to switch to, so the flip is refused rather than rendering an
-        // empty list under a checked segment.
-        avail: next.avail === "free" && !freeItems ? prev.avail : next.avail,
-      }));
+      // `?a=free` is a request, not a promise. With no free ranking there is
+      // nothing to switch to, so the flip is refused rather than rendering an
+      // empty list under a checked segment.
+      const avail = next.avail === "free" && !freeItems ? params.avail : next.avail;
+      setParams({ ...next, avail });
+      // A flip the reader made is remembered for their next visit (Hugh, 2026-09-27). Out here
+      // rather than in an updater, which must stay pure, and only when the mode moved. A Clear
+      // counts: the chassis puts availability inside Clear's scope (one `activeControlCount`
+      // feeds the badge, the chips and Clear, and the badge counts `Free cards only`), so a
+      // Clear that resets it to `All my cards` is the reader choosing that, and is saved.
+      if (avail !== params.avail) {
+        setSavedChoice(avail);
+        void rememberCommandersAvail(avail);
+      }
       // The window belongs to the current result set, not the session: every
       // one of these changes which commanders occupy the revealed range.
       setShown(REVEAL_STEP);
@@ -424,7 +464,7 @@ export function CommandersView({
     // valid for, so it changes whenever the live query does. Left out, this
     // callback would keep the first render's copy and file every later edit
     // against the query the page opened on, which drops it.
-    [freeItems, setParams],
+    [freeItems, params.avail, setParams],
   );
 
   // The zero state's wholesale escape says `Clear all filters`, so it means the

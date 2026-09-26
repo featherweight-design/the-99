@@ -40,6 +40,11 @@ describe("scopeRedirectTarget", () => {
     );
   });
 
+  it("keeps an explicit a=all on the owned lane, which wins over a saved Free", () => {
+    expect(scopeRedirectTarget(new URLSearchParams("scope=owned&a=all"))).toBe("/commanders?a=all");
+    expect(scopeRedirectTarget(new URLSearchParams("scope=owned&avail=all&c=r"))).toBe("/commanders?c=r&a=all");
+  });
+
   it("drops the legacy avail on the play redirect", () => {
     expect(scopeRedirectTarget(new URLSearchParams("scope=play&avail=free&join=exact"))).toBe(
       "/discover?m=exact",

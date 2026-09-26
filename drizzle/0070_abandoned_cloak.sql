@@ -1,0 +1,2 @@
+ALTER TABLE "user_prefs" ADD COLUMN "commanders_avail" text;--> statement-breakpoint
+ALTER TABLE "user_prefs" ADD CONSTRAINT "user_prefs_commanders_avail_check" CHECK ("user_prefs"."commanders_avail" in ('all', 'free'));

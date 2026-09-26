@@ -106,6 +106,7 @@
     "probe:catalog-stamp": "tsx scripts/probe-catalog-stamp.ts",
     "probe:commander-art": "tsx scripts/probe-commander-art.ts",
     "probe:build-from": "node scripts/probe-build-from.mjs",
+    "probe:commanders-mode": "node scripts/probe-commanders-mode.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:about": "node scripts/probe-about.mjs",
     "probe:about-numerals": "node scripts/probe-about-numerals.mjs",

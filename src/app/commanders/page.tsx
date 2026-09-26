@@ -2,6 +2,7 @@ import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { cacheForUser } from "../../lib/cache/user-lists";
 import { commanderRankingsKey, loadCommanderRankings } from "../../lib/commanders/rankings";
+import { readCommandersAvail } from "../../lib/commanders/avail-pref";
 import { permanentRedirect } from "next/navigation";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
@@ -60,14 +61,16 @@ export default async function CommandersPage({
     );
   }
 
-  // Fetch recommendations and recent decks in parallel.
-  // decks is used only for the firstRun flag (no confirmed deck yet).
+  // Fetch recommendations, recent decks and the saved mode in parallel.
+  // decks is used only for the firstRun flag (no confirmed deck yet). The saved mode is read
+  // fresh, never from the cached rankings: it moves on a flip, and the rankings do not.
   // Started now so it runs beside the rankings; a failure is handled where it is read.
   const printings = loadCommanderPrintings();
   printings.catch(() => {});
-  const [rankings, decks] = await Promise.all([
+  const [rankings, decks, savedAvail] = await Promise.all([
     cacheForUser(userId, commanderRankingsKey, () => loadCommanderRankings(userId)),
     listRecentDecks(userId, 1),
+    readCommandersAvail(userId),
   ]);
 
   const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
@@ -208,9 +211,11 @@ export default async function CommandersPage({
   // URL without a re-render, so a cached tree's prop and the live URL drift
   // apart, and whichever won was wrong half the time.
   //
-  // `All my cards` stays the lane's default, and the reason is still the rack's:
-  // `Free cards only` counts as an active control, so opening on it would badge
-  // the `Filters` trigger for a choice the reader never made.
+  // What IS sent is the reader's saved mode, the one the page opens in when the URL names none
+  // (Hugh, 2026-09-27). It is the default the URL is read and written against, never a statement
+  // of the mode on screen: `a=` wins over it in either direction. `All my cards` is still the
+  // default for an account that has never chosen, so `Free cards only` only badges the `Filters`
+  // trigger for a reader who picked it.
 
   return (
     <section className="flex flex-col min-h-screen">
@@ -225,6 +230,7 @@ export default async function CommandersPage({
         freeRanking={freeRanking}
         availOk={availOk}
         printedIn={printedIn}
+        savedAvail={savedAvail}
       />
     </section>
   );
