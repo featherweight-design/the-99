@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CARDS_PER_REQUEST, meetsFloor, planChunks, runToken, withinCap, worstCaseUsd,
+  CARDS_PER_REQUEST, meetsFloor, planChunks, runToken, waveSize, withinCap, worstCaseUsd,
 } from "./plan";
 
 const names = (n: number) => Array.from({ length: n }, (_, i) => `Card ${i}`);
@@ -136,5 +136,38 @@ describe("meetsFloor", () => {
     const v = meetsFloor(0, 0, 0.95);
     expect(v.ok).toBe(false);
     if (!v.ok) expect(v.why).toContain("no cards at all");
+  });
+});
+
+describe("waveSize", () => {
+  const rates = { in: 0, out: 7.5 };
+  // $7.50 per million output, 1,000-token ceiling → $0.0075 a request.
+  const size = (remaining: number, cap?: number) =>
+    waveSize(remaining, 0, 0, 1000, rates, cap);
+
+  it("fits as many requests as the remaining budget allows", () => {
+    expect(size(0.075)).toBe(10);
+  });
+
+  // The whole reason this exists: one `batches.create` is atomic, so a wave that overruns
+  // the budget cannot be stopped part-way.
+  it("never plans a wave whose worst case passes the remainder", () => {
+    for (const remaining of [0.01, 0.1, 1, 3]) {
+      const n = size(remaining);
+      expect(worstCaseUsd(n, 0, 0, 1000, rates)).toBeLessThanOrEqual(remaining);
+    }
+  });
+
+  it("returns 0 when not even one request fits", () => {
+    expect(size(0.001)).toBe(0);
+    expect(size(0)).toBe(0);
+  });
+
+  it("is bounded by the cap even with budget to spare", () => {
+    expect(size(1000, 300)).toBe(300);
+  });
+
+  it("never returns a negative size for a negative remainder", () => {
+    expect(size(-5)).toBe(0);
   });
 });

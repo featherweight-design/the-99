@@ -125,3 +125,29 @@ export function meetsFloor(returned: number, asked: number, floor: number): Floo
   }
   return { ok: true, share };
 }
+
+/**
+ * How many requests may be submitted in ONE provider batch, given the budget left.
+ *
+ * **This exists because `batches.create` is atomic.** Submit 2,653 requests and the run is
+ * committed to whatever they cost; there is no stopping at the cap mid-batch. So a spend
+ * stop is only enforceable if the run goes in WAVES: each wave's worst case must fit the
+ * REMAINING budget, and the next wave is authorised after the previous one's true cost is
+ * known.
+ *
+ * Returns 0 when not even one request fits, which the caller must treat as a refusal rather
+ * than as an empty wave — otherwise a run with no budget left loops forever submitting
+ * nothing.
+ */
+export function waveSize(
+  remainingUsd: number,
+  systemTokens: number,
+  perCardTokens: number,
+  maxTokensPerRequest: number,
+  rates: Rates,
+  cap = 400,
+): number {
+  const perRequest = worstCaseUsd(1, systemTokens, perCardTokens, maxTokensPerRequest, rates);
+  if (perRequest <= 0) return cap;
+  return Math.max(0, Math.min(cap, Math.floor(remainingUsd / perRequest)));
+}
