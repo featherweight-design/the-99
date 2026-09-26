@@ -32,9 +32,21 @@ export const PRICING = {
  * PROJECTION at 4.5's rates, while the TOKEN counts are exact. Any report quoting them
  * has to say which is which.
  */
+/**
+ * The models a DEFAULT run submits. `sonnet5` is deliberately NOT here: its rates are
+ * unverified, so including it would compute the preflight worst case and the ledger
+ * reservation from placeholder numbers on every ordinary run, and the $5 cap would be
+ * advertising a bound it cannot hold. It is opt-in through `LABEL_MODELS=sonnet5`,
+ * which is how the comparison run was made.
+ */
 export const MODELS = {
   haiku: "claude-haiku-4-5-20251001",
   sonnet: "claude-sonnet-4-5",
+};
+
+/** Every model the runner CAN submit, including opt-in ones. */
+export const ALL_MODELS = {
+  ...MODELS,
   sonnet5: "claude-sonnet-5",
 };
 

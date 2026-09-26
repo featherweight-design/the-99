@@ -132,7 +132,18 @@ export const renderBody = (cards: CardForPrompt[]) =>
  * on it: a hardcoded copy in the estimator means raising this doubles what the
  * requests permit while the cap still books the old figure.
  */
-export const MAX_TOKENS_PER_BATCH = Number(process.env.LABEL_MAX_TOKENS ?? 8000);
+export const MAX_TOKENS_PER_BATCH = (() => {
+  const raw = process.env.LABEL_MAX_TOKENS;
+  if (raw === undefined || raw === "") return 8000;
+  const n = Number(raw);
+  // NaN is the dangerous case, not the obvious one: it makes `worstTotal` NaN, and
+  // `NaN > CAP_USD` is FALSE, so the spend guard waves the run through and the request
+  // carries an invalid `max_tokens`. A bad ceiling has to refuse before submission.
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`LABEL_MAX_TOKENS must be a positive whole number of tokens, got "${raw}"`);
+  }
+  return n;
+})();
 
 /**
  * `LABEL_MAX_TOKENS` lowers the ceiling for a run whose PRICE is not known. The spend
@@ -146,6 +157,22 @@ export const MAX_TOKENS_PER_BATCH = Number(process.env.LABEL_MAX_TOKENS ?? 8000)
  * accept 0. A list rather than a pattern, so a new model is a deliberate addition.
  */
 export const acceptsTemperature = (model: string) => model !== "claude-sonnet-5";
+
+/**
+ * Models whose thinking must be turned OFF explicitly, and why it is not optional here.
+ *
+ * Sonnet 5 thinks ADAPTIVELY by default. Measured 2026-09-26: a trivial prompt used 0
+ * thinking tokens, and this labelling prompt used 2,999 of a 3,000 output budget and
+ * emitted a single `thinking` block with no text at all — 42 of 43 batch requests hit
+ * `max_tokens` and the run produced 5 card objects out of 508. That cost $1.0367 for
+ * nothing.
+ *
+ * Disabling it is also what makes the comparison fair: neither Haiku 4.5 nor Sonnet 4.5
+ * thinks, so a thinking Sonnet 5 would be a different kind of run, not a faster one.
+ * `{type:"enabled", budget_tokens}` is rejected for this model — it wants
+ * `adaptive` with `output_config.effort` — so `disabled` is the only way to match.
+ */
+export const needsThinkingDisabled = (model: string) => model === "claude-sonnet-5";
 
 export const buildRequest = (customId: string, model: string, cards: CardForPrompt[]) => ({
   custom_id: customId,
@@ -161,6 +188,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
     // are: the comparison is matched on prompt, batching and scorer but NOT on
     // temperature, which is a real caveat rather than a formality.
     ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
+    ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
     system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
     messages: [{ role: "user" as const, content: renderBody(cards) }],
   },

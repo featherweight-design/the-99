@@ -18,7 +18,7 @@ import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { clearIntent, ledgerTotal, readLedger, unreconciled, writeIntent, writeReservation } from "./lib/card-labels-ledger.mjs";
-import { costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
+import { ALL_MODELS, costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
 import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM } from "./lib/card-labels-prompt.mjs";
 
 const CAP_USD = 5;
@@ -31,10 +31,10 @@ const dryRun = process.argv.includes("--dry-run");
 // comparison without paying for the others again. Names are the keys of MODELS.
 const only = (process.env.LABEL_MODELS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const chosen = only.length
-  ? Object.fromEntries(Object.entries(MODELS).filter(([k]) => only.includes(k)))
+  ? Object.fromEntries(Object.entries(ALL_MODELS).filter(([k]) => only.includes(k)))
   : MODELS;
 if (only.length && Object.keys(chosen).length !== only.length) {
-  throw new Error(`LABEL_MODELS names a model that is not in MODELS: ${only.join(",")}`);
+  throw new Error(`LABEL_MODELS names a model that is not in ALL_MODELS: ${only.join(",")}`);
 }
 
 const sql = neon(process.env.DATABASE_URL!);
