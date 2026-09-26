@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --avail-soft:var(--fg-muted);
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-soft:var(--fg-muted);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ sheetStyle }}">
+  <div style="{{ headStyle }}">
+    <h2 style="margin:0;flex:1;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2;color:var(--fg);white-space:nowrap;">Cheaper stand-ins</h2>
+    <span aria-label="Close cheaper stand-ins" style="flex:none;width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span>
+  </div>
+
+  <div style="{{ bodyStyle }}">
+    <div style="display:flex;flex-direction:column;gap:6px;padding:11px 13px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">replacing, in HD Gishath</span>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 9px;">
+        <span aria-hidden="true" style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--border) 0 3px,var(--surface-raised) 3px 6px);"></span>
+        <span aria-hidden="true" style="flex:none;width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-faint);"></span>
+        <span style="font-size:14px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ orig.name }}</span>
+        <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ orig.price }}</span></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);white-space:nowrap;">over $10</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);">{{ orig.job }}</span>
+    </div>
+
+    <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ lead }}</p>
+
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 0 6px;border-bottom:1px solid var(--border);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ g.heading }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);white-space:nowrap;">{{ g.order }}</span>
+        </div>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+          <div style="border-bottom:1px solid var(--border);">
+            <div style="{{ r.gridStyle }}">
+              <div style="{{ r.leftStyle }}">
+                <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+                  <span aria-hidden="true" style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-dashed);background:repeating-linear-gradient(135deg,var(--elevated) 0 3px,var(--border) 3px 6px);"></span>
+                  <span aria-hidden="true" style="{{ r.dotStyle }}"></span>
+                  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ r.name }}</span>
+                  <sc-if value="{{ r.mark }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:inline-flex;align-items:center;gap:6px;"><span aria-hidden="true" style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--avail-soft);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);white-space:nowrap;">{{ r.mark }}</span></span></sc-if>
+                  <sc-if value="{{ r.priceInline }}" hint-placeholder-val="{{ false }}"><span style="flex:none;display:flex;"><sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 6px;color:var(--success);background:color-mix(in oklab,var(--success) 13%,transparent);">free</span></sc-if>
+                <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if></span></sc-if>
+                </div>
+                <sc-if value="{{ r.lineMode }}" hint-placeholder-val="{{ true }}"><span style="{{ r.factStyle }}"><sc-for list="{{ r.segs }}" as="s" hint-placeholder-count="2"><sc-if value="{{ s.sep }}" hint-placeholder-val="{{ false }}"><span style="color:var(--border-strong);"> · </span></sc-if><sc-if value="{{ s.verb }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-faint);">{{ s.verb }} </span></sc-if><sc-if value="{{ s.body }}" hint-placeholder-val="{{ true }}"><span style="color:var(--fg-body);">{{ s.obj }}</span></sc-if><sc-if value="{{ s.muted }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-muted);">{{ s.obj }}</span></sc-if></sc-for></span></sc-if>
+              </div>
+              <sc-if value="{{ r.priceCol }}" hint-placeholder-val="{{ true }}"><div style="{{ r.priceStyle }}">
+                <sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 6px;color:var(--success);background:color-mix(in oklab,var(--success) 13%,transparent);">free</span></sc-if>
+                <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab,var(--warning) 13%,transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+              </div></sc-if>
+              <div style="{{ r.takeCell }}"><button type="button" style="{{ takeStyle }}">Take</button></div>
+              <sc-if value="{{ r.catMode }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ r.catWrap }}">
+                  <sc-if value="{{ r.type }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);white-space:nowrap;">{{ r.type }}</span></sc-if>
+                  <sc-for list="{{ r.cats }}" as="c" hint-placeholder-count="3">
+                    <span style="{{ c.groupStyle }}">
+                      <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;">{{ c.sr }}</span>
+                      <sc-if value="{{ c.hasTag }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="{{ c.tagStyle }}">{{ c.tag }}</span></sc-if>
+                      <span><sc-for list="{{ c.items }}" as="i" hint-placeholder-count="1"><sc-if value="{{ i.plus }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--fg);">+</span></sc-if><span style="{{ i.style }}">{{ i.t }}</span><sc-if value="{{ i.comma }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-faint);">, </span></sc-if></sc-for></span>
+                    </span>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ g.toggle }}" hint-placeholder-val="{{ true }}">
+          <button type="button" aria-expanded="{{ g.expanded }}" style="{{ toggleStyle }}"><span>{{ g.toggle }}</span><span aria-hidden="true" style="font-size:10px;color:var(--fg-faint);">{{ g.caret }}</span></button>
+        </sc-if>
+      </div>
+    </sc-for>
+
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-locked);">Cheapest printing of each, from ManaPool · last checked 3 hours ago</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:640,&quot;height&quot;:620},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;lands&quot;,&quot;landsall&quot;,&quot;creature&quot;,&quot;creatureall&quot;],&quot;default&quot;:&quot;lands&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;treat&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;line&quot;,&quot;tags&quot;,&quot;signs&quot;,&quot;struck&quot;],&quot;default&quot;:&quot;line&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const kind = this.props.kind ?? "lands";
+    const treat = this.props.treat ?? "line";
+    const all = kind.endsWith("all");
+    const row = (o) => {
+      const r = { mark: null, mana: "", facts: "", price: "", ...o };
+      // One fact line. Lands: the mana line, then the drawback. Everything else: {type ·} keeps · gains · loses
+      // against the card being replaced. Never a percentage.
+      const seg = (verb, obj, muted) => ({ verb, obj, body: !muted, muted: !!muted, sep: false });
+      const segs = r.mana
+        ? [seg("", r.mana), r.facts && seg("", r.facts, true)]
+        : [r.type && seg("", r.type, true), r.staple && seg("", "staple", true), r.keeps && seg("keeps", r.keeps), r.gains && seg("gains", r.gains), r.loses && seg("loses", r.loses, true)];
+      r.segs = segs.filter(Boolean).map((s, i) => ({ ...s, sep: i > 0 }));
+      r.factStyle = { paddingLeft: 43, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, lineHeight: 1.45, color: "var(--fg-muted)", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: phone ? 2 : 1, overflow: "hidden" };
+      r.priceInline = phone; r.priceCol = !phone;
+      // Turn 3: the categories as marked groups, on a line that spans the whole row.
+      r.catMode = treat !== "line" && !r.mana; r.lineMode = !r.catMode;
+      if (r.catMode) {
+        const K = [["keeps", r.keeps], ["gains", r.gains], ["loses", r.loses]].filter(([, v]) => v && v.length);
+        r.cats = K.map(([k, v], gi) => {
+          const list = [].concat(v), lose = k === "loses";
+          const tagBase = { flex: "none", alignSelf: "center", fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 };
+          const tagStyle = treat === "tags"
+            ? { ...tagBase, fontSize: 8.5, letterSpacing: "0.1em", textTransform: "uppercase", padding: "2px 5px", borderRadius: 4, color: lose ? "var(--fg-muted)" : "var(--fg-body)", border: lose ? "1px dashed var(--border-dashed)" : "1px solid var(--border-strong)", background: lose ? "transparent" : "var(--surface)" }
+            : { ...tagBase, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, fontSize: 11, fontWeight: 600, borderRadius: 3, color: lose ? "var(--fg-muted)" : "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" };
+          return {
+            sr: k + " ", hasTag: treat !== "struck", tag: treat === "tags" ? k : ({ keeps: "=", gains: "+", loses: "\u2212" })[k], tagStyle,
+            groupStyle: { position: "relative", display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0,
+              ...(treat === "struck" && gi > 0 ? { borderLeft: "1px solid var(--border-strong)", paddingLeft: 10 } : {}) },
+            items: list.map((x, i) => ({ t: x, comma: i < list.length - 1, plus: treat === "struck" && k === "gains",
+              style: lose
+                ? { color: "var(--fg-muted)", ...(treat === "struck" ? { textDecoration: "line-through", textDecorationColor: "var(--fg-faint)" } : {}) }
+                : { color: "var(--fg-body)" } })),
+          };
+        });
+        r.leftStyle = { gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column", minWidth: 0 };
+        r.catWrap = { gridColumn: "1 / -1", gridRow: 2, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: treat === "struck" ? 10 : 14, rowGap: 3,
+          paddingLeft: 43, marginTop: phone ? 2 : 3, fontSize: 12, lineHeight: 1.45, maxHeight: phone ? 40 : 19, overflow: "hidden" };
+      }
+      r.buy = !!r.price; r.free = !r.price;
+      r.gridStyle = phone
+        ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) 72px", columnGap: 10, alignItems: "center", padding: "10px 0" }
+        : { display: "grid", gridTemplateColumns: "minmax(0,1fr) 96px 64px", columnGap: 12, alignItems: "center", padding: "9px 0" };
+      r.leftStyle = { gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column", gap: 3, minWidth: 0 };
+      r.priceStyle = phone ? { gridColumn: 1, gridRow: 2, display: "flex", paddingLeft: 43 } : { gridColumn: 2, gridRow: 1, display: "flex", justifyContent: "flex-end" };
+      r.takeCell = phone ? { gridColumn: 2, gridRow: 1, display: "flex", justifyContent: "flex-end" } : { gridColumn: 3, gridRow: 1, display: "flex", justifyContent: "flex-end" };
+      r.dotStyle = r.price
+        ? { flex: "none", width: 7, height: 7, borderRadius: "50%", border: "1px dashed var(--fg-faint)" }
+        : { flex: "none", width: 7, height: 7, borderRadius: "50%", background: "var(--success)" };
+      return r;
+    };
+    const group = (heading, order, rows, noun) => {
+      const shown = all ? rows : rows.slice(0, 3);
+      const more = rows.length > 3;
+      return { heading, order, rows: shown, expanded: all ? "true" : "false",
+        toggle: more ? (all ? "Show fewer" : `Show all ${rows.length} ${noun}`) : null, caret: all ? "▴" : "▾" };
+    };
+    const WR = "makes white and red";
+    const lands = [
+      row({ name: "Sacred Foundry", mark: "in 1 brew", mana: `${WR}, untapped if you pay 2 life` }),
+      row({ name: "Battlefield Forge", mana: `${WR}, untapped`, facts: "1 damage for either" }),
+      row({ name: "Sunbaked Canyon", price: "$1.12", mana: `${WR}, untapped`, facts: "1 life for either" }),
+      row({ name: "Clifftop Retreat", price: "$3.40", mana: `${WR}, untapped with a Mountain or Plains` }),
+      row({ name: "Inspiring Vantage", price: "$6.80", mana: `${WR}, untapped with 2 or fewer other lands` }),
+      row({ name: "Boros Guildgate", price: "$0.18", mana: `${WR}, tapped` }),
+      row({ name: "Wind-Scarred Crag", price: "$0.22", mana: `${WR}, tapped`, facts: "gain 1 life" }),
+      row({ name: "Ravaged Highlands", price: "$0.30", mana: "makes red, tapped", facts: "white once, by sacrificing it" }),
+    ];
+    const cobra = "landfall bursts";
+    const multi = treat !== "line";
+    const creatures = multi ? [
+      row({ name: "Birds of Paradise", price: "$7.90", keeps: "any color", gains: ["flying", "mana value 1"], loses: [cobra, "1 power"] }),
+      row({ name: "Paradise Druid", price: "$0.40", keeps: "any color", gains: "hexproof while untapped", loses: cobra }),
+      row({ name: "Sylvan Caryatid", keeps: "any color", gains: ["hexproof", "3 toughness"], loses: [cobra, "2 power"] }),
+      row({ name: "Incubation Druid", price: "$1.60", keeps: "your lands’ colors", gains: "3 with a counter", loses: [cobra, "2 power"] }),
+    ] : [
+      row({ name: "Birds of Paradise", price: "$7.90", keeps: "any color", gains: "flying", loses: cobra }),
+      row({ name: "Paradise Druid", price: "$0.40", keeps: "any color", loses: cobra }),
+      row({ name: "Sylvan Caryatid", keeps: "any color", gains: "hexproof", loses: cobra }),
+      row({ name: "Incubation Druid", price: "$1.60", keeps: "your lands’ colors", loses: cobra }),
+    ];
+    const others = multi ? [
+      row({ name: "Farseek", price: "$0.45", type: "sorcery", keeps: "fixing", gains: "a land to keep", loses: ["the body", "untapped mana"] }),
+      row({ name: "Nature’s Lore", price: "$0.90", type: "sorcery", gains: ["an untapped Forest", "a land to keep"], loses: ["fixing", "the body"] }),
+      row({ name: "Three Visits", price: "$1.80", type: "sorcery", gains: ["an untapped Forest", "a land to keep"], loses: ["fixing", "the body"] }),
+      row({ name: "Rampant Growth", price: "$0.35", type: "sorcery", gains: "a tapped basic", loses: "the body" }),
+      row({ name: "Arcane Signet", type: "artifact · staple", keeps: "your colors", loses: ["the body", cobra] }),
+    ] : [
+      row({ name: "Farseek", price: "$0.45", type: "sorcery", keeps: "fixing", gains: "a land", loses: "the body" }),
+      row({ name: "Nature’s Lore", price: "$0.90", type: "sorcery", gains: "an untapped land", loses: "the body" }),
+      row({ name: "Three Visits", price: "$1.80", type: "sorcery", gains: "an untapped land", loses: "the body" }),
+      row({ name: "Rampant Growth", price: "$0.35", type: "sorcery", gains: "a tapped basic", loses: "the body" }),
+      row({ name: "Arcane Signet", type: "artifact", staple: true, keeps: "your colors", loses: "the body" }),
+    ];
+    let v;
+    if (kind.startsWith("creature")) {
+      v = {
+        orig: { name: "Lotus Cobra", price: "$11.40", job: "creature · mana value 2 · landfall: one mana of any color" },
+        lead: "Every card here ramps, as Lotus Cobra does, and each row says what it keeps, gains and loses against it. Creatures come first, then other types, each from the cards Gishath decks favor most.",
+        groups: [group("same type · creatures", "by Gishath synergy", creatures, "creatures"), group("other types", "by Gishath synergy", others, "other types")],
+      };
+    } else {
+      v = {
+        orig: { name: "Plateau", price: "$293.84", job: "land · makes white and red, untapped · gives up nothing" },
+        lead: "Each land says what it makes. Lands that come in untapped are first, then tapped ones, then any that make a color only once. Within each, free copies and the cheapest lead.",
+        groups: [group("same type · lands", "best mana first", lands, "lands")],
+      };
+    }
+    const btn = phone
+      ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", height: 44, width: 72, borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+      : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "6px 13px", fontSize: 12.5, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" };
+    return {
+      ...v,
+      theme: this.props.theme ?? "amonkhet",
+      takeStyle: btn,
+      toggleStyle: { appearance: "none", background: "transparent", border: 0, borderBottom: "1px solid var(--border)", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, width: "100%", minHeight: phone ? 44 : 34, padding: "0 0 0 43px", fontSize: 12.5, fontWeight: 500, color: "var(--accent)", textAlign: "left" },
+      sheetStyle: phone
+        ? { width: 390, background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" }
+        : { width: 640, background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.45)", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" },
+      headStyle: phone
+        ? { flex: "none", height: 43, display: "flex", alignItems: "center", gap: 9, padding: "0 6px 0 16px", borderBottom: "1px solid var(--border)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "8px 18px", borderBottom: "1px solid var(--border)" },
+      bodyStyle: { padding: phone ? "14px 16px 24px" : "16px 18px 18px", display: "flex", flexDirection: "column", gap: phone ? 12 : 14 },
+    };
+  }
+}
+</script>
+</body>
+</html>
