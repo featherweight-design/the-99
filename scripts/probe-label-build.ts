@@ -46,6 +46,15 @@ let failures = 0;
 let restoreC: typeof cardLabels.$inferSelect | null = null;
 /** Card `c`'s oracle id, recorded so the cleanup can address it without re-querying. */
 let cOracleId: string | null = null;
+/**
+ * Every `card_labels` row this probe overwrites, captured BEFORE the write, restored after.
+ *
+ * Cards `a` and `b` are published over by the fixture, and the first version deleted them
+ * afterwards by `input_hash like 'h-%'` — which destroys a real label for those cards and any
+ * unrelated row whose hash happens to start that way. Captured by oracle id and put back.
+ */
+const priorRows = new Map<string, typeof cardLabels.$inferSelect>();
+let publishedIds: string[] = [];
 const report = (what: string, ok: boolean, detail = "") => {
   if (!ok) failures++;
   console.log(`  ${ok ? "ok  " : "FAIL"} ${what}${detail ? ` — ${detail}` : ""}`);
@@ -112,6 +121,11 @@ async function main(): Promise<void> {
     target: cardLabels.oracleId,
     set: { model: "older-model", promptVersion: "0", inputHash: "untouched", labels: [JOB] },
   });
+  // Captured before the publish overwrites them, for the same reason as card `c`.
+  publishedIds = [a.oracleId, b.oracleId];
+  for (const row of await db.select().from(cardLabels).where(inArray(cardLabels.oracleId, publishedIds))) {
+    priorRows.set(row.oracleId, row);
+  }
   await db.insert(cardLabelsStaging).values([a, b].map((card) => ({
     runId, oracleId: card.oracleId, labels: [JOB],
     model: "claude-sonnet-4-5", promptVersion: "1", inputHash: `h-${card.oracleId}`,
@@ -182,9 +196,25 @@ main()
           });
         }
       },
-      // The two cards this run published are the fixture's own: removed, since the run created
-      // their rows.
-      () => db.delete(cardLabels).where(sql`${cardLabels.inputHash} like 'h-%'`),
+      // The two published cards are restored to what they held, or removed if they held
+      // nothing. NEVER deleted by hash prefix: `h-%` is this fixture's marker and a real row
+      // could carry it.
+      async () => {
+        for (const id of publishedIds) {
+          const prior = priorRows.get(id);
+          if (prior === undefined) {
+            await db.delete(cardLabels).where(eq(cardLabels.oracleId, id));
+          } else {
+            await db.insert(cardLabels).values(prior).onConflictDoUpdate({
+              target: cardLabels.oracleId,
+              set: {
+                labels: prior.labels, model: prior.model,
+                promptVersion: prior.promptVersion, inputHash: prior.inputHash,
+              },
+            });
+          }
+        }
+      },
     ]) {
       try { await step(); } catch (e) { console.error("cleanup step failed:", e); failures++; }
     }

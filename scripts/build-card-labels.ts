@@ -31,10 +31,11 @@ import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { faceResolver } from "../src/lib/labels/parse";
 import {
-  CARDS_PER_REQUEST, meetsFloor, planChunks, waveSize, withinCap, worstCaseUsd, type Chunk,
+  boundedNumber, CARDS_PER_REQUEST, meetsFloor, planChunks, waveSize, withinCap, worstCaseUsd,
+  type Chunk,
 } from "../src/lib/labels/plan";
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, SYSTEM,
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody,
 } from "../src/lib/labels/prompt";
 import { publishRun, stampWave } from "../src/lib/labels/publish";
 import { validateJob } from "../src/lib/labels/schema";
@@ -46,12 +47,15 @@ const MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
 /**
  * The cap, and the pause. Hugh's ruling: hard stop $55, and PAUSE AND REPORT if the
  * projection passes $50 rather than spending up to the stop silently.
+ *
+ * Both are bounded ABOVE as well as below: a fat-fingered `LABEL_CAP_USD=5500` is a plausible
+ * typo and would authorise a hundred times the approved spend.
  */
-const CAP_USD = Number(process.env.LABEL_CAP_USD ?? 55);
-const REPORT_AT_USD = Number(process.env.LABEL_REPORT_AT_USD ?? 50);
+const CAP_USD = boundedNumber("LABEL_CAP_USD", process.env.LABEL_CAP_USD, 55, 0, 100);
+const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REPORT_AT_USD, 50, 0, 100);
 
 /** 95% of the cards asked about, per the plan. Below it the run refuses and publishes nothing. */
-const FLOOR = Number(process.env.LABEL_FLOOR ?? 0.95);
+const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);
 
 /** Batch rates for `MODEL`, per million tokens — the canonical table, halved. */
 const RATES = { in: 1.5, out: 7.5 };
@@ -388,6 +392,17 @@ async function submit(chunks: Chunk[]): Promise<void> {
 const SYSTEM_TOKENS = 1215;
 const PER_CARD_TOKENS = 223;
 
+/**
+ * The body's own fixed text, DERIVED from `renderBody` rather than estimated: the
+ * "Label these N cards." line plus the `---` separators between them. Measured by rendering a
+ * full request of empty cards, so what is left is exactly the wrapper.
+ */
+const BODY_OVERHEAD_TOKENS = Math.ceil(
+  renderBody(Array.from({ length: CARDS_PER_REQUEST }, () => ({
+    name: "", mana_cost: null, type_line: "", oracle_text: null, layout: "normal",
+  }))).length / 4,
+);
+
 async function main(): Promise<void> {
   console.log(`run ${runId}  model ${MODEL}  cap $${CAP_USD.toFixed(2)}${dryRun ? "  (dry run)" : ""}`);
 
@@ -466,7 +481,7 @@ async function main(): Promise<void> {
     console.log(`published ${published} label(s) in one transaction`);
     return;
   }
-  const worst = worstCaseUsd(chunks.length, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES);
+  const worst = worstCaseUsd(chunks.length, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES, BODY_OVERHEAD_TOKENS);
 
   // MEASURED spend, summed over the batches that have collected. Not the worst case of
   // committed requests: that books ~$25 for a wave costing ~$6, so the budget would exhaust
@@ -493,15 +508,15 @@ async function main(): Promise<void> {
   // budget means the worst case is bounded at every point, and the next wave is authorised
   // against what the previous one actually cost.
   const remaining = CAP_USD - alreadySpent;
-  const size = waveSize(remaining, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES);
+  const size = waveSize(remaining, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES, 400, BODY_OVERHEAD_TOKENS);
   if (size === 0) {
     return die(`no budget left for even one request: $${alreadySpent.toFixed(2)} of the `
       + `$${CAP_USD.toFixed(2)} cap is committed, and one request's worst case is `
-      + `$${worstCaseUsd(1, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES).toFixed(4)}.`);
+      + `$${worstCaseUsd(1, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES, BODY_OVERHEAD_TOKENS).toFixed(4)}.`);
   }
 
   const wave = chunks.slice(0, size);
-  const waveWorst = worstCaseUsd(wave.length, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES);
+  const waveWorst = worstCaseUsd(wave.length, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES, BODY_OVERHEAD_TOKENS);
   const verdict = withinCap(waveWorst, alreadySpent, CAP_USD);
   if (!verdict.ok) return die(verdict.why);
 

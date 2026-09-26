@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * What a label run intends to do, before it does any of it. PURE — no database, no API.
  *
@@ -18,11 +20,18 @@ export const CARDS_PER_REQUEST = 12;
  * matches requests from an earlier run — which is either adopting a stale result or
  * re-paying for a finished chunk (#1056 round 4).
  */
-export const runToken = (runId: string): string => {
-  let h = 0x811c9dc5;
-  for (const ch of runId) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(36).padStart(7, "0").slice(0, 7);
-};
+export const runToken = (runId: string): string =>
+  // sha256, first 12 hex characters. A 32-bit FNV hash truncated to seven base-36 characters was
+  // the first version and it is not collision-resistant: two run ids colliding produce the same
+  // `custom_id`, which the database's global unique constraint then rejects — and the insert is
+  // `onConflictDoNothing`, so the new run's intent would be ABSENT while `submit` still sent the
+  // request. That is a request nobody can reconcile and therefore work that can be paid for
+  // twice, arriving through the one mechanism built to prevent it.
+  //
+  // 48 bits over the handful of runs this will ever see is not a risk worth modelling; the point
+  // is that the failure mode is silent and expensive, so the cheap strong hash is correct even
+  // though the weak one would almost certainly have held.
+  createHash("sha256").update(runId).digest("hex").slice(0, 12);
 
 /** One request: the id sent to the provider, and the cards it asks about. */
 export type Chunk = { customId: string; intentKey: string; names: string[] };
@@ -66,10 +75,17 @@ export function worstCaseUsd(
   perCardTokens: number,
   maxTokensPerRequest: number,
   rates: Rates,
+  bodyOverheadTokens = 0,
 ): number {
-  // Input is the instruction block once per REQUEST — one system block each, no caching
-  // (see `SENDS_CACHE_BREAKPOINT`) — plus the cards in that request.
-  const inTokens = chunks * (systemTokens + CARDS_PER_REQUEST * perCardTokens);
+  // Input is the instruction block once per REQUEST — one system block each, no caching (see
+  // `SENDS_CACHE_BREAKPOINT`) — plus the cards in that request, PLUS the body's own fixed text.
+  //
+  // That last term was missing and it made the ceiling too low: `renderBody` wraps the cards in
+  // a "Label these N cards." line and eleven `---` separators, none of which `perCardTokens`
+  // covers. A ceiling that omits part of the request is not a ceiling, and this is the quantity
+  // the $55 hard stop is enforced against — so the caller derives it from the real renderer
+  // rather than estimating it here.
+  const inTokens = chunks * (systemTokens + bodyOverheadTokens + CARDS_PER_REQUEST * perCardTokens);
   const outTokens = chunks * maxTokensPerRequest;
   return (inTokens * rates.in + outTokens * rates.out) / 1e6;
 }
@@ -146,8 +162,31 @@ export function waveSize(
   maxTokensPerRequest: number,
   rates: Rates,
   cap = 400,
+  bodyOverheadTokens = 0,
 ): number {
-  const perRequest = worstCaseUsd(1, systemTokens, perCardTokens, maxTokensPerRequest, rates);
+  const perRequest = worstCaseUsd(1, systemTokens, perCardTokens, maxTokensPerRequest, rates, bodyOverheadTokens);
   if (perRequest <= 0) return cap;
   return Math.max(0, Math.min(cap, Math.floor(remainingUsd / perRequest)));
+}
+
+/**
+ * A numeric override, REFUSED unless it is a real number in range.
+ *
+ * Pure, and here rather than in the script, because it guards money and therefore needs tests.
+ *
+ * `Number("abc")` is `NaN`, and NaN defeats every comparison this run protects spend with:
+ * `worst > cap` is false, `share < floor` is false, `projected > reportAt` is false. One mistyped
+ * variable would switch the cap, the floor and the pause off at once — silently, with the run
+ * reporting that it had passed every guard. Bounded ABOVE as well as below, because
+ * `LABEL_CAP_USD=5500` is a plausible typo that would authorise a hundred times the approved
+ * spend.
+ */
+export function boundedNumber(
+  name: string, raw: string | undefined, fallback: number, min: number, max: number,
+): number {
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) throw new Error(`${name} must be a finite number, got "${raw}"`);
+  if (n < min || n > max) throw new Error(`${name} must be between ${min} and ${max}, got ${n}`);
+  return n;
 }

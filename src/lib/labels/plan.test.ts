@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CARDS_PER_REQUEST, meetsFloor, planChunks, runToken, waveSize, withinCap, worstCaseUsd,
+  boundedNumber, CARDS_PER_REQUEST, meetsFloor, planChunks, runToken, waveSize, withinCap,
+  worstCaseUsd,
 } from "./plan";
 
 const names = (n: number) => Array.from({ length: n }, (_, i) => `Card ${i}`);
@@ -9,7 +10,7 @@ const names = (n: number) => Array.from({ length: n }, (_, i) => `Card ${i}`);
 describe("runToken", () => {
   // Short because the provider caps `custom_id`, and the run id is a 29-character timestamp.
   it("is short enough to leave room in a custom id", () => {
-    expect(runToken("run-2026-09-26T06-54-54-984Z")).toHaveLength(7);
+    expect(runToken("run-2026-09-26T06-54-54-984Z")).toHaveLength(12);
   });
 
   it("is stable for one run id, so a resumed run reproduces its own ids", () => {
@@ -169,5 +170,56 @@ describe("waveSize", () => {
 
   it("never returns a negative size for a negative remainder", () => {
     expect(size(-5)).toBe(0);
+  });
+});
+
+describe("boundedNumber", () => {
+  it("takes the fallback when unset or empty", () => {
+    expect(boundedNumber("X", undefined, 55, 0, 100)).toBe(55);
+    expect(boundedNumber("X", "", 55, 0, 100)).toBe(55);
+  });
+
+  it("takes a valid override", () => {
+    expect(boundedNumber("X", "12.5", 55, 0, 100)).toBe(12.5);
+  });
+
+  // THE ONE THAT MATTERS. NaN makes `worst > cap`, `share < floor` and `projected > reportAt`
+  // all false, so one mistyped variable switches the cap, the floor and the pause off together
+  // and the run reports that it passed every guard.
+  for (const bad of ["NaN", "abc", "Infinity", "-Infinity", "1e999"]) {
+    it(`refuses ${bad}`, () => {
+      expect(() => boundedNumber("LABEL_FLOOR", bad, 0.95, 0, 1)).toThrow(/finite number/);
+    });
+  }
+
+  // Bounded above as well: `LABEL_CAP_USD=5500` is a plausible typo for 55.
+  it("refuses a value past the ceiling", () => {
+    expect(() => boundedNumber("LABEL_CAP_USD", "5500", 55, 0, 100)).toThrow(/between 0 and 100/);
+  });
+
+  it("refuses a negative", () => {
+    expect(() => boundedNumber("LABEL_FLOOR", "-0.5", 0.95, 0, 1)).toThrow(/between 0 and 1/);
+  });
+
+  it("allows the exact bounds", () => {
+    expect(boundedNumber("X", "0", 1, 0, 1)).toBe(0);
+    expect(boundedNumber("X", "1", 0, 0, 1)).toBe(1);
+  });
+});
+
+describe("worstCaseUsd counts the request body's own wrapper", () => {
+  const rates = { in: 1.5, out: 0 };
+  // `renderBody` wraps the cards in a preamble and separators, which `perCardTokens` does not
+  // cover. A ceiling that omits part of the request is not a ceiling, and this is the quantity
+  // the $55 hard stop is enforced against.
+  it("charges the overhead once per request", () => {
+    const without = worstCaseUsd(4, 0, 0, 0, rates, 0);
+    const with100 = worstCaseUsd(4, 0, 0, 0, rates, 100);
+    expect(with100 - without).toBeCloseTo((4 * 100 * 1.5) / 1e6, 12);
+  });
+
+  it("feeds the wave sizing too, so a wave cannot be planned above the budget", () => {
+    const n = waveSize(1, 0, 0, 0, rates, 400, 1_000_000);
+    expect(worstCaseUsd(n, 0, 0, 0, rates, 1_000_000)).toBeLessThanOrEqual(1);
   });
 });

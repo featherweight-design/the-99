@@ -50,9 +50,23 @@ export async function stampWave(db: Db, intentKeys: string[], batchId: string): 
  */
 export async function publishRun(db: Db, runId: string): Promise<number> {
   return db.transaction(async (tx) => {
+    // SERIALIZED on the run, before anything is read.
+    //
+    // Two concurrent publishes of one run would otherwise both read the staging rows, and the
+    // second — waiting on the first's label delete — would resume to find staging already gone,
+    // still delete the labels it had selected, and return the count it read. The visible result
+    // is a successful-looking publish that leaves NO labels behind. A transaction alone does not
+    // prevent it, because the second call's read happened before the first's delete.
+    //
+    // An advisory lock rather than `select ... for update`: the rows to lock are the ones being
+    // deleted, so row locks cannot order a reader that has already read them.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`card-labels:${runId}`}))`);
+
     const staged = await tx.select({ id: cardLabelsStaging.oracleId }).from(cardLabelsStaging)
       .where(eq(cardLabelsStaging.runId, runId));
     const ids = staged.map((r) => r.id);
+    // Re-read AFTER the lock, so a second caller that queued behind the first sees the empty
+    // staging the first left and reports 0 rather than re-deleting what it published.
     if (ids.length === 0) return 0;
     await tx.delete(cardLabels).where(inArray(cardLabels.oracleId, ids));
     await tx.execute(sql`
