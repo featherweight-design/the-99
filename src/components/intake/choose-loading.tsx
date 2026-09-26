@@ -16,8 +16,8 @@ import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { shellCopy } from "../../lib/copy/shell";
 import { parseChooseParams, serializeChooseParams } from "../../lib/intake/params";
 import { CHOOSE_PATH } from "../../lib/intake/submit";
-import { ChooseHeader } from "./choose-header";
-import { ResultsSkeleton, RESULTS_COLUMN } from "./choose-results";
+import { ChooseHeader, RESULTS_COLUMN } from "./choose-header";
+import { ResultsSkeleton } from "./choose-results";
 
 // Still: Help me choose draws no motion anywhere (STATES invariant), its loading screens included.
 export function ChooseLoading() {

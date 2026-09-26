@@ -10,8 +10,8 @@ import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 
 import { CardDetailProvider } from "../../../../components/cards/card-detail-provider";
-import { ChooseResults, ResultsSkeleton, RESULTS_COLUMN } from "../../../../components/intake/choose-results";
-import { ChooseHeader } from "../../../../components/intake/choose-header";
+import { ChooseResults, ResultsSkeleton } from "../../../../components/intake/choose-results";
+import { ChooseHeader, RESULTS_COLUMN } from "../../../../components/intake/choose-header";
 import { IntakeForm } from "../../../../components/intake/intake-form";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
 import { SearchFailed } from "../../../../components/intake/search-failed";

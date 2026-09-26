@@ -2,6 +2,16 @@
 // loading screen, so the screen a reader waits on is the one the page then fills.
 import Link from "next/link";
 
+/**
+ * The results column: §4's 1080 content (1160 less its 40px sides), CENTERED under the form's 680
+ * column rather than pinned left (Hugh, 2026-09-27; ruling Q2b (a), keeping §4's width and its row
+ * grid). The page and its loading screen both draw it, so the loader holds the page's position. It lives here,
+ * in a module with no `'use client'`, because the page is a Server Component: a value imported from a
+ * client module crosses as a client reference, not as the string.
+ */
+export const RESULTS_COLUMN =
+  "flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] mx-auto p-[16px_18px_24px] md:p-[0_40px_48px]";
+
 export function ChooseHeader({
   back,
   title,
