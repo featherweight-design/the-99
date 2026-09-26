@@ -561,8 +561,9 @@ export const READY_SLICE: ReadySlice<CommanderListItem> = {
   ],
   // The floor is the lowest score actually SHOWN behind the pair, so the count
   // is checkable against the lane — key line 3's whole subject.
-  moreCount: 7,
-  floor: 68,
+  // Two weeks deep: 28 in the set, so 26 behind the pair. Hugh's own figures on staging, 2026-09-27.
+  moreCount: 26,
+  floor: 66,
 };
 
 /** Fitting cards a committed deck already sleeves, per commander. */

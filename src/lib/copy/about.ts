@@ -261,7 +261,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       "the top 28 is a ranking, not a passing score. The last one’s score moves as your collection grows; it is never a fixed number to beat.",
       'each card shows how many of your cards fit, then how many of those are already committed. The second figure is left out when it is zero.',
-      'the pair changes at midnight UTC and never repeats a commander from the day before, so you see all 28 within two weeks. Each day pairs one of the newer half, by themes your decks do not play yet, with one of the rest.',
+      'the pair changes at midnight UTC and never repeats a commander from the day before, so you see all 28 within two weeks, leaning on the ones whose themes your decks do not play yet.',
       "the `N more scored X or better` line uses the 28th commander’s own score, so you can check it against the lane.",
     ],
     since: 1,

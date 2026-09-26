@@ -38,7 +38,7 @@ export const refreshCopy = {
     startDeck: 'Start this deck',
     seePool: 'See the pool',
     // Threshold is the lowest score in the READY SET, never a rounder number —
-    // the ninth commander's where nine are ranked, and the last one's where
+    // the 28th commander's where 28 are ranked, and the last one's where
     // `readySlice` truncated to fewer. Not the lowest of the two CARDS: those
     // rotate daily within the set and routinely exclude the commander this
     // figure comes from.

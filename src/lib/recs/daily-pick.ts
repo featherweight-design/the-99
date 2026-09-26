@@ -19,10 +19,10 @@
  * whatever index falls out. That is independent sampling, not a rotation, so it
  * streaks: simulated over 3,000 accounts × 365 days, a nine-commander pool left one
  * commander unseen for **15 consecutive days** at worst, which is the complaint this
- * exists to answer. Walking a cycle gives every commander a fixed beat — 4.5 days
- * on average across a set of nine — a full tour within five days, since the pair
- * turns over once per UTC day, and two fresh cards each day at the sizes named
- * below. Read the next paragraph before quoting any of those three: each one has
+ * exists to answer. Walking a cycle gives every commander a fixed beat — a full tour
+ * every `size / 2` days, since the pair turns over once per UTC day (four and a half
+ * days at the nine this was written for, two weeks at the 28 the set holds since
+ * 2026-09-27) — and two fresh cards each day at the sizes named below. Read the next paragraph before quoting any of those three: each one has
  * a condition, and this sentence used to claim all three unconditionally.
  *
  * WHERE "TWO FRESH CARDS" STOPS BEING TRUE, precisely: consecutive days are disjoint
@@ -30,12 +30,12 @@
  * the one reachable exception is a set of exactly three, where two cards a day out of
  * three must repeat one — pigeonhole, not a defect, and no scheduling fixes it. Sets
  * of 0, 1 and 2 return early and do not rotate at all. So the guarantee reads: a full
- * set of nine never repeats, an account with three ranked commanders repeats exactly
+ * set never repeats on consecutive days, an account with three ranked commanders repeats exactly
  * one card a day, and `ready-to-build.test.ts` sweeps every size between.
  *
  * WHY THE CYCLE WALKS A SHUFFLE. Walking the set in RANK order pairs adjacent
- * ranks — ranks 1&2, then 3&4, then 5&6, then 7&8 — so once every 4.5 days Home
- * draws the two weakest commanders of the nine together, and the reader watches the
+ * ranks — ranks 1&2, then 3&4, then 5&6, then 7&8 — so once every tour Home
+ * draws the two weakest commanders of the set together, and the reader watches the
  * pair march down the list. Measured the same way: 22.2% of days put both cards in
  * the set's bottom three, against 8.5% for a shuffled walk, which is the random
  * baseline (3/36). Shuffling once per account costs a few lines and removes the

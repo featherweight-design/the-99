@@ -143,7 +143,7 @@ export default async function HomePage() {
   // figure stamped today. Read here rather than inside the slice because a helper
   // reading the clock itself could not be tested.
   const now = new Date();
-  // The slice FIRST, then the printings — nine rows rather than every commander the
+  // The slice FIRST, then the printings — the two shown rather than every commander the
   // player could build. `getRankedList` deliberately does not resolve art itself: this
   // page draws two of its rows on the desktop hero and the rest never reach a screen,
   // and the lookup is a join over `collection_items × printings × sets`.

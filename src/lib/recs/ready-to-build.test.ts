@@ -226,7 +226,7 @@ describe("readySlice — two weeks without a repeat, leaning on the new", () => 
     expect([...seen.values()].every((n) => n === 1)).toBe(true);
   });
 
-  // Novelty for the set: the ten newest are c20..c29 (outside the top twenty), the rest 0.
+  // Novelty for the set: the ten newest are c18..c27, the bottom of the 28, the rest 0.
   const unplayed = new Map(Array.from({ length: 28 }, (_, i) => [`c${i}`, i >= 18 ? 30 - i : 0] as const));
 
   it("still shows each of the 28 once over 14 days with the lean", () => {
