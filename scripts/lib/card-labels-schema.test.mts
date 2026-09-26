@@ -147,18 +147,21 @@ describe("the gold set", () => {
   const DIVERGING = [
     {
       name: "Dora Milaje Elite",
+      expectKind: "tapsForMana",
       typeLine: "Creature — Human Berserker",
       // Its only mana is the token's REMINDER, which `usableText` strips.
       oracleText: "First strike\nWhen this creature enters, if an opponent controls more lands than you, create a tapped Vibranium token. (It's an artifact with indestructible and \"{T}: Add {C}. This mana can't be spent to cast a nonartifact spell.\")",
     },
     {
       name: "Weathered Wayfarer",
+      expectKind: "fetchesLand",
       typeLine: "Creature — Human Nomad Cleric",
       // Fetches to HAND; E1's FETCHES requires `onto the battlefield`.
       oracleText: "{W}, {T}: Search your library for a land card, reveal it, put it into your hand, then shuffle. Activate only if an opponent controls more lands than you.",
     },
     {
       name: "Marshals' Pathcruiser",
+      expectKind: "fetchesLand",
       typeLine: "Artifact — Vehicle",
       oracleText: "When this Vehicle enters, search your library for a basic land card, reveal it, put it into your hand, then shuffle.\nCrew 5",
     },
@@ -179,8 +182,17 @@ describe("the gold set", () => {
       const kinds = (jobs.roles as string[]).filter((r) => RAMP_KIND_NAMES.includes(r));
       expect(kinds, `E1 now assigns ${fixture.name} a ramp kind — the divergence has closed, so the gold row and the report's 22/0/3 both need revisiting`).toEqual([]);
 
-      const row = (GOLD as { name: string; why: string }[]).find((r) => r.name === fixture.name);
+      const row = (GOLD as { name: string; why: string; jobs: { space: string; kind: string; rampKind?: string }[] }[])
+        .find((r) => r.name === fixture.name);
       expect(row, `${fixture.name} is not in the gold set`).toBeTruthy();
+
+      // THE LABEL ITSELF, not only its prose. An earlier version checked `why` alone,
+      // so reverting Dora to `burstMana` stayed green while the report claimed a label
+      // regression was caught — the claim was in the test's reply, not in the test.
+      const ramp = row!.jobs.find((x) => x.space === "role" && x.kind === "ramp");
+      expect(ramp, `${fixture.name} has no role:ramp job`).toBeTruthy();
+      expect(ramp!.rampKind, `${fixture.name}'s ramp kind regressed`).toBe(fixture.expectKind);
+
       expect(row!.why, `${fixture.name} does not record that E1 assigns it no kind`)
         .toMatch(/E1 assigns (this card )?no (ramp job|kind)/);
     }

@@ -151,9 +151,13 @@ const loadModel = (key: string) => {
   try { return JSON.parse(raw); }
   catch (e) { throw new Error(`${path} is present but unparseable — refusing to score a partial run: ${(e as Error).message}`); }
 };
+// Every model whose labels are on disk, plus the text rules. A model is SKIPPED with a
+// line rather than scored as empty when its file is absent, so adding one to an existing
+// comparison does not require re-running the others.
 const predictions: Record<string, Record<string, Job[] | null>> = Object.fromEntries([
   ["haiku", loadModel("haiku")],
   ["sonnet", loadModel("sonnet")],
+  ["sonnet5", loadModel("sonnet5")],
   ["textRules", Object.fromEntries(GOLD.map((r) => [r.name, textRuleJobs(mustGet(r.name))]))],
 ].filter(([, v]) => v != null) as [string, Record<string, Job[] | null>][]);
 

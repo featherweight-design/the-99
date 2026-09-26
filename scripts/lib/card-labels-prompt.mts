@@ -132,16 +132,35 @@ export const renderBody = (cards: CardForPrompt[]) =>
  * on it: a hardcoded copy in the estimator means raising this doubles what the
  * requests permit while the cap still books the old figure.
  */
-export const MAX_TOKENS_PER_BATCH = 8000;
+export const MAX_TOKENS_PER_BATCH = Number(process.env.LABEL_MAX_TOKENS ?? 8000);
+
+/**
+ * `LABEL_MAX_TOKENS` lowers the ceiling for a run whose PRICE is not known. The spend
+ * cap binds on the worst case, which is `MAX_TOKENS_PER_BATCH` x batches x the output
+ * rate -- so with an unpriced model the only way to keep the cap meaningful is to
+ * shrink the ceiling. Measured output is ~160 tokens a card, or ~1,920 a batch of 12,
+ * so 3,000 leaves over 50% headroom while making the worst case affordable.
+ *
+ * Whether a model still accepts `temperature`. Measured, not guessed: Sonnet 5 answers
+ * 400 with "`temperature` is deprecated for this model", while Haiku 4.5 and Sonnet 4.5
+ * accept 0. A list rather than a pattern, so a new model is a deliberate addition.
+ */
+export const acceptsTemperature = (model: string) => model !== "claude-sonnet-5";
 
 export const buildRequest = (customId: string, model: string, cards: CardForPrompt[]) => ({
   custom_id: customId,
   params: {
     model,
     max_tokens: MAX_TOKENS_PER_BATCH,
-    // Deterministic, so a re-run of the same batch is comparable. A sampled run
-    // would make the Haiku/Sonnet difference partly noise.
-    temperature: 0,
+    // Deterministic WHERE THE MODEL ACCEPTS IT, so a re-run of the same batch is
+    // comparable and the difference between models is not partly sampling noise.
+    //
+    // `claude-sonnet-5` REJECTS the parameter -- "`temperature` is deprecated for this
+    // model", HTTP 400, measured 2026-09-26 -- so it is omitted there and that model
+    // runs at its default sampling. The consequence is stated wherever its figures
+    // are: the comparison is matched on prompt, batching and scorer but NOT on
+    // temperature, which is a real caveat rather than a formality.
+    ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
     system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
     messages: [{ role: "user" as const, content: renderBody(cards) }],
   },

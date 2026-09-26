@@ -265,9 +265,13 @@ both.
   `Marshals' Pathcruiser`, which fetch to HAND where E1's rule requires the
   battlefield and 2b's written definition allows either.
 
-  All three are pinned by a test that RUNS `honestJobs` on fixture text rather than
-  restating the list, so a divergence closing — or a label reverting to a kind E1
-  contradicts — fails it and names what needs revisiting.
+  **The three divergences are pinned; the 22 agreements are not.** A test runs
+  `honestJobs` on fixture text and asserts, for each of the three, that E1 still
+  assigns no kind, that the gold label is still the expected one, and that the row
+  records the divergence — so a divergence closing, or one of those labels regressing,
+  fails it by name. The 22 agreements were MEASURED once and are not mechanically
+  held: enumerating them needs a database, which makes it a probe rather than a unit
+  test, and that is a gap rather than a decision to be proud of.
 - **The vocabulary is 2b's**, asserted against `src/lib/recs/roles.ts` and
   `src/lib/recs/themes.ts` by a test rather than copied. A drifted copy would give
   a score that reads fine while a dropped theme is never measured.
