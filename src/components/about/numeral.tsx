@@ -38,9 +38,9 @@ export function KeyNumeral({
  * - `gutter`: in the wrapper's left gutter, level with the part
  * - `before` / `after`: 6px to the part's left or right, centred on it
  * - `above` / `below`: centred over or under the part, just clear of it
- * - `inset-tl` / `inset-tr`: 5px inside the part's top corner
+ * - `inset-tl` / `inset-tr` / `inset-br`: 5px inside that corner of the part
  */
-export type NumeralSide = "gutter" | "before" | "after" | "above" | "below" | "inset-tl" | "inset-tr";
+export type NumeralSide = "gutter" | "before" | "after" | "above" | "below" | "inset-tl" | "inset-tr" | "inset-br";
 
 export type NumeralAnchor = {
   n: number;
@@ -73,6 +73,8 @@ function place(side: NumeralSide, align: "center" | "top", t: DOMRect, r: DOMRec
       return { left: t.left - r.left + 5, top: t.top - r.top + 5 };
     case "inset-tr":
       return { left: t.right - r.left - SIZE - 5, top: t.top - r.top + 5 };
+    case "inset-br":
+      return { left: t.right - r.left - SIZE - 5, top: t.bottom - r.top - SIZE - 5 };
   }
 }
 

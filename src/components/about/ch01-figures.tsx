@@ -787,8 +787,8 @@ export function InformedBuildFigureBody() {
     <AnchoredNumerals
       marks={[
         // 1: the land cell, measured at 28. 2: the wipes cell, whose target of 0 is an answer.
-        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Land"), side: "below", mdSide: "inset-tr" },
-        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "below", mdSide: "inset-tr" },
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Land"), side: "above", mdSide: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "above", mdSide: "inset-tr" },
       ]}
     >
       <RoleCounterStrip
@@ -858,8 +858,8 @@ export function RolesFigureBody() {
     <AnchoredNumerals
       marks={[
         // 1: ramp over its recommendation, a surplus. 2: wipes short of it, with a shelf.
-        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Ramp"), side: "below", mdSide: "inset-tr" },
-        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "below", mdSide: "inset-tr" },
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Ramp"), side: "inset-br", mdSide: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "above", mdSide: "inset-tr" },
       ]}
     >
       <RoleCounterStrip
@@ -1562,7 +1562,7 @@ export function NewDeckFigureBody() {
         gutter
         marks={[
           { n: 1, find: first("ul button[aria-pressed]"), side: "gutter", align: "top" },
-          { n: 2, find: leafMatching("ul button[aria-pressed]", /\d+ cards$/), side: "after" },
+          { n: 2, find: leafMatching("ul button[aria-pressed]", /\d+ cards$/), side: "gutter" },
           { n: 3, find: first("#picker-deck-name, #picker-deck-name-mobile"), side: "gutter", mdSide: "before" },
         ]}
       >
