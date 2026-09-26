@@ -78,6 +78,7 @@
     "probe:shopping-band": "node scripts/probe-shopping-band.mjs",
     "probe:non-game": "tsx scripts/probe-non-game.ts",
     "probe:pending": "node scripts/probe-pending-banner.mjs",
+    "probe:deck-menu-stack": "node scripts/probe-deck-menu-stack.mjs",
     "probe:fits-stack": "node scripts/probe-fits-stack.mjs",
     "probe:review": "node scripts/probe-review-changes.mjs",
     "probe:review-columns": "node scripts/probe-review-columns.mjs",
