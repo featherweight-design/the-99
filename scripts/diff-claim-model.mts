@@ -27,7 +27,15 @@ const DIFF_BASE = process.env.DIFF_BASE ?? "2c117877a";
 const oldPath = fileURLToPath(new URL("../src/lib/decks/.availability-query.old.ts", import.meta.url));
 if (existsSync(oldPath)) throw new Error(`${oldPath} already exists; remove it first`);
 writeFileSync(oldPath, execFileSync("git", ["show", `${DIFF_BASE}:src/lib/decks/availability-query.ts`]));
-process.on("exit", () => rmSync(oldPath, { force: true }));
+const removeOld = () => rmSync(oldPath, { force: true });
+process.on("exit", removeOld);
+// A signal ends the process without an "exit" event, so each one removes the copy itself.
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    removeOld();
+    process.exit(signal === "SIGINT" ? 130 : 143);
+  });
+}
 const OLD = (await import(pathToFileURL(oldPath).href)) as typeof NEW;
 
 const [{ branch }] = (await db.execute<{ branch: string }>(sql`select current_setting('neon.branch_id', true) as branch`)).rows;
