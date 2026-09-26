@@ -98,7 +98,7 @@ card_labels
 
 Promote the sample's four scripts into the app's own modules. `card-labels-schema.mjs`
 (DONE in PR 2: it is now `src/lib/labels/schema.ts`, and every consumer imports it)
-and `card-labels-prompt.mjs` move under `src/lib/labels/` so the READER and the
+and `card-labels-prompt.mjs` move under `src/lib/labels/` (BOTH DONE: schema in PR 2, prompt in PR 3a) so the READER and the
 writer share one definition of a job; the sample's copies then import from there and
 stop being a second source of truth.
 

@@ -245,18 +245,27 @@ export const LABEL_PROMPT_VERSION = "1";
  * - the NAME and TYPE LINE, because a card errata'd under its existing oracle id leaves a
  *   stored label describing something else — the one case where the id alone says fresh
  *   and the label is not. `proseInputHash` carries the name for the same reason;
- * - the CAST-FACE text rather than the raw column, because that is what the model is
- *   actually sent: hashing both faces would mark a row stale whenever a back face changed
+ * - the MANA COST, because `renderCard` sends it and a limit is derived from it: a
+ *   threshold may carry `stat: "mv"`, so a cost corrected under the same oracle id would
+ *   otherwise hash identically, skip, and keep a `mv >= 5` derived from the OLD cost for
+ *   ever. This was missed in the first version of this function, whose doc justified the
+ *   payload as "what the model is actually sent" while omitting a field that is sent;
+ * - the CAST-FACE text rather than the raw column, for the same reason from the other
+ *   direction: hashing both faces would mark a row stale whenever a back face changed
  *   without changing anything the label was derived from;
  * - the PROMPT VERSION and the MODEL, so switching either relabels rather than silently
  *   mixing two models' output in one table.
+ *
+ * **The payload is derived from `renderCard`, not assembled beside it.** Anything
+ * `renderCard` sends and this omits is a field a card can change under a fixed oracle id
+ * while the row is still called fresh — so the two are pinned together by a test that
+ * renders a card, mutates each sent field in turn, and requires the hash to move.
  */
 export function labelInputHash(card: CardForPrompt & { oracleId: string }, model: string): string {
   const payload = JSON.stringify([
     card.oracleId,
-    card.name,
-    card.type_line,
-    castFaceText(card.oracle_text, card.layout ?? ""),
+    // EXACTLY the string the model is sent, so no sent field can be forgotten here.
+    renderCard(card),
     LABEL_PROMPT_VERSION,
     model,
   ]);

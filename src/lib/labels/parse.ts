@@ -30,47 +30,11 @@ export function faceResolver(asked: readonly string[]): (returned: string) => st
   const faceOf = new Map<string, string>();
   for (const name of asked) {
     if (!name.includes(" // ")) continue;
-    for (const face of name.split(" // ")) {
-      // A face that is ALSO a whole asked-for name stays itself. Two cards in one batch
-      // where one's name is the other's face is not a shape the catalog produces today,
-      // and resolving such a face to the joined name would silently move a label from
-      // one card to another — so the exact match wins.
-      if (exact.has(face)) continue;
-      faceOf.set(face, name);
-    }
+    // An exact asked-for name always wins over being some other card's face — the
+    // returned lambda checks `exact` before `faceOf`, so that precedence is in the lookup
+    // rather than in this loop. A `continue` here for a face that is also a whole name
+    // would be unreachable by effect, which is what an earlier version had.
+    for (const face of name.split(" // ")) faceOf.set(face, name);
   }
   return (returned: string) => (exact.has(returned) ? returned : faceOf.get(returned) ?? null);
-}
-
-/** What `reconcile` did with one batch's reply, for the caller to record. */
-export type Reconciled<T> = {
-  /** Catalog name to the entries the model returned for it, faces merged. */
-  byName: Map<string, T[]>;
-  /** Names returned that this batch never asked about, in the order seen. */
-  unexpected: string[];
-  /** Names asked for and not returned — a MISS, recorded rather than silently absent. */
-  missing: string[];
-};
-
-/**
- * Groups a reply's entries under the catalog names a batch asked for.
- *
- * Two faces of one card MERGE into one entry list, which is what the schema labels — the
- * card, not the face. A card asked for and not returned lands in `missing`, never in
- * `byName` with an empty list: an empty label and an absent one mean different things to
- * every reader downstream.
- */
-export function reconcile<T>(
-  asked: readonly string[],
-  returned: readonly { name: string; value: T }[],
-): Reconciled<T> {
-  const resolve = faceResolver(asked);
-  const byName = new Map<string, T[]>();
-  const unexpected: string[] = [];
-  for (const { name, value } of returned) {
-    const to = resolve(name);
-    if (to === null) { unexpected.push(name); continue; }
-    byName.set(to, [...(byName.get(to) ?? []), value]);
-  }
-  return { byName, unexpected, missing: asked.filter((n) => !byName.has(n)) };
 }

@@ -352,7 +352,7 @@ both.
 - `src/lib/labels/types.ts` and `src/lib/labels/schema.ts` — the vocabulary (with the four ramp kinds) and the validator that enforces it, shared with the app
 - `scripts/lib/card-labels-schema.test.mts` — vocabulary drift guard, 14 tests
 - `scripts/lib/card-labels-gold.mts` — the 108-card gold set with reasoning
-- `scripts/lib/card-labels-prompt.mts` — the shared instruction block
+- `src/lib/labels/prompt.ts` — the shared instruction block, the request builder and the input hash
 - `scripts/label-cards-select.mjs` — hard-class candidate selection
 - `scripts/label-cards-run.mts` — batch submission, with the spend cap
 - `scripts/label-cards-collect.mts` — collection, measured cost, face reconciliation

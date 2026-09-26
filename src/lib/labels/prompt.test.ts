@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRequest, labelInputHash, LABEL_PROMPT_VERSION, SENDS_CACHE_BREAKPOINT } from "./prompt";
+import { createHash } from "node:crypto";
+
+import { buildRequest, labelInputHash, LABEL_PROMPT_VERSION, renderCard, SENDS_CACHE_BREAKPOINT } from "./prompt";
 
 const card = {
   oracleId: "11111111-1111-4111-8111-111111111111",
@@ -13,18 +15,37 @@ describe("the request asks for no prompt caching", () => {
   // Task 3, and it is a MEASUREMENT: caching is inert for Haiku (block under the minimum
   // cacheable length) and a 9% loss for Sonnet, whose batch requests run in parallel so
   // almost none finds a warm cache — 53,277 write tokens against ZERO reads.
-  it("sends no cache_control on the system block", () => {
-    const req = buildRequest("claude-sonnet-4-5", "b-0", [card]);
-    const system = req.params.system;
-    expect(system).toHaveLength(1);
-    expect(system[0]).not.toHaveProperty("cache_control");
+  // Both real model ids, because the first version of this had the arguments the wrong way
+  // round — `buildRequest(customId, model, cards)` — and built a request for a model called
+  // "b-0", where `acceptsTemperature` and `needsThinkingDisabled` both take their default
+  // branch. It asserted caching on a model that does not exist.
+  for (const model of ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-sonnet-5"]) {
+    it(`sends no cache_control on the system block for ${model}`, () => {
+      const req = buildRequest("b-0", model, [card]);
+      expect(req.params.model).toBe(model);
+      expect(req.params.system).toHaveLength(1);
+      expect(req.params.system[0]).not.toHaveProperty("cache_control");
+    });
+  }
+
+  // While a real id is in hand: the two model-specific branches, which nothing else pins.
+  it("omits temperature for Sonnet 5 and disables its thinking", () => {
+    const s5 = buildRequest("b-0", "claude-sonnet-5", [card]).params;
+    expect(s5).not.toHaveProperty("temperature");
+    expect(s5.thinking).toEqual({ type: "disabled" });
+  });
+
+  it("pins temperature at 0 for the 4.5 family and leaves thinking alone", () => {
+    const s45 = buildRequest("b-0", "claude-sonnet-4-5", [card]).params;
+    expect(s45.temperature).toBe(0);
+    expect(s45).not.toHaveProperty("thinking");
   });
 
   // The estimator multiplies by this rather than by a model's capability, so it has to
   // agree with what the request actually sends. Two places, one fact.
   it("advertises that through SENDS_CACHE_BREAKPOINT", () => {
     expect(SENDS_CACHE_BREAKPOINT).toBe(false);
-    const req = buildRequest("claude-sonnet-4-5", "b-0", [card]);
+    const req = buildRequest("b-0", "claude-sonnet-4-5", [card]);
     const sends = req.params.system.some((b) => "cache_control" in b);
     expect(sends).toBe(SENDS_CACHE_BREAKPOINT);
   });
@@ -79,10 +100,41 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  it("changes when the prompt version changes", () => {
-    // Asserted through the payload rather than by mutating the constant: the version is in
-    // the hash, so this pins that it is READ rather than merely exported.
-    expect(LABEL_PROMPT_VERSION).toBeTruthy();
-    expect(labelInputHash(card, "m")).toHaveLength(64);
+  // The version has to be READ, not merely exported. A hash computed over a payload with
+  // the version removed is a different digest, so recomputing the documented payload by
+  // hand and requiring the function to agree is what pins it — the first version of this
+  // test asserted the constant was truthy and the digest 64 chars, which passes with
+  // `LABEL_PROMPT_VERSION` deleted from the payload entirely.
+  it("reads the prompt version, and the documented payload is the real one", () => {
+    const expected = createHash("sha256")
+      .update(JSON.stringify([card.oracleId, renderCard(card), LABEL_PROMPT_VERSION, "m"]))
+      .digest("hex");
+    expect(labelInputHash(card, "m")).toBe(expected);
+  });
+
+  // EVERY field `renderCard` sends must move the hash. This is the coupling that was
+  // missing: the payload omitted `mana_cost`, which is sent and from which an `mv`
+  // threshold is derived, so a cost errata'd under the same oracle id hashed identically,
+  // skipped, and kept a stale `mv >= 5` for ever.
+  describe("every field the model is sent moves the hash", () => {
+    for (const [what, changed] of [
+      ["mana_cost", { ...card, mana_cost: "{4}{R}" }],
+      ["name", { ...card, name: "Bejewelled Warg" }],
+      ["type_line", { ...card, type_line: "Creature — Dog" }],
+      ["oracle_text", { ...card, oracle_text: "Whenever this creature attacks, draw a card." }],
+    ] as const) {
+      it(`moves when ${what} changes`, () => {
+        expect(renderCard(changed)).not.toBe(renderCard(card));
+        expect(labelInputHash(changed, "m")).not.toBe(labelInputHash(card, "m"));
+      });
+    }
+
+    // The converse, so the rule is not "any change at all": a field the model is NOT sent
+    // must not buy a relabel. `oracleId` is excluded — it is the key, and in the payload.
+    it("does not move when something the model never sees changes", () => {
+      const sameRender = { ...card, layout: "normal" };
+      expect(renderCard(sameRender)).toBe(renderCard(card));
+      expect(labelInputHash(sameRender, "m")).toBe(labelInputHash(card, "m"));
+    });
   });
 });

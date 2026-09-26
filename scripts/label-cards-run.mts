@@ -134,7 +134,7 @@ const ledger = readLedger();
 const spentBefore = ledgerTotal(ledger);
 
 console.log(`cards: ${all.length} (gold ${gold.length}, random ${random.length}) in ${batches.length} batches of ${CARDS_PER_BATCH}`);
-console.log(`system block: ${sysTokens} estimated tokens (1,215 as billed); caching ${PRICING.sonnet.caches ? "engages for sonnet only" : "engages for neither model"}, and measured a net loss — see the note above PRICING`);
+console.log(`system block: ${sysTokens} estimated tokens (1,215 as billed); caching ${SENDS_CACHE_BREAKPOINT ? (PRICING.sonnet.caches ? "engages for sonnet only" : "engages for neither model") : "not requested"}, measured a net loss — see the note atop src/lib/labels/prompt.ts`);
 console.log("ESTIMATE (batch rates, both models):");
 lines.forEach((l) => console.log(l));
 console.log(`  TOTAL   $${estTotal.toFixed(3)} expected, $${worstTotal.toFixed(3)} worst case`);

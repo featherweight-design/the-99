@@ -1908,27 +1908,6 @@ export const deckVersionSynopses = pgTable("deck_version_synopses", {
 });
 
 /**
- * What a card DOES, and the limits on each job.
- *
- * NOTHING writes or reads this yet. The build that fills it is Task 2 of
- * `docs/superpowers/plans/2026-09-25-card-labels-run.md` and the stand-in matcher that
- * consumes it is Task 5; the table lands first so the storage can be reviewed alone,
- * and an unused table costs nothing.
- *
- * Keyed on ORACLE ID, not `scryfall_id`: a label is a fact about the card, not the
- * printing, so a reprint must not need relabelling. `on delete cascade` rather than
- * `set null`, so a card leaving the catalog takes its label with it — safe because
- * `src/lib/scryfall/seed.ts` upserts on `cards.oracle_id` and has no deletion path,
- * so a refresh cannot cascade labels away.
- *
- * `input_hash` mirrors `proseInputHash`: sha256 over the oracle id, name, type line,
- * oracle text, prompt version AND MODEL. The name and type line are in it because a
- * card errata'd under its existing oracle id leaves a stored label describing something
- * else; the model is in it so switching models relabels rather than silently mixing two
- * models' output in one table. A row whose hash still matches its inputs is skipped, so
- * a re-run costs nothing for a card nothing has moved.
- */
-/**
  * Where a label run accumulates before it is allowed to publish.
  *
  * **The staging table is what makes REFUSING possible.** A run must leave the previous
@@ -1992,6 +1971,29 @@ export const cardLabelBatches = pgTable("card_label_batches", {
   ),
 ]);
 
+/**
+ * What a card DOES, and the limits on each job.
+ *
+ * NOTHING writes or reads this yet. The build that fills it is Task 2 of
+ * `docs/superpowers/plans/2026-09-25-card-labels-run.md` and the stand-in matcher that
+ * consumes it is Task 5; the table lands first so the storage can be reviewed alone,
+ * and an unused table costs nothing.
+ *
+ * Keyed on ORACLE ID, not `scryfall_id`: a label is a fact about the card, not the
+ * printing, so a reprint must not need relabelling. `on delete cascade` rather than
+ * `set null`, so a card leaving the catalog takes its label with it — safe because
+ * `src/lib/scryfall/seed.ts` upserts on `cards.oracle_id` and has no deletion path,
+ * so a refresh cannot cascade labels away.
+ *
+ * `input_hash` is `labelInputHash` in `src/lib/labels/prompt.ts`: sha256 over the oracle id,
+ * the card AS RENDERED FOR THE MODEL, the prompt version and the model. Derived from
+ * `renderCard` rather than listed beside it, so no field the model is sent can be left out
+ * of the freshness check. The name and type line are in it because a
+ * card errata'd under its existing oracle id leaves a stored label describing something
+ * else; the model is in it so switching models relabels rather than silently mixing two
+ * models' output in one table. A row whose hash still matches its inputs is skipped, so
+ * a re-run costs nothing for a card nothing has moved.
+ */
 export const cardLabels = pgTable("card_labels", {
   oracleId: uuid("oracle_id").primaryKey().references(() => cards.oracleId, { onDelete: "cascade" }),
   labels: jsonb("labels").$type<Job[]>().notNull(),

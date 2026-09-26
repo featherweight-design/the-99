@@ -103,10 +103,11 @@ for (const [key, id] of Object.entries(submitted)) {
     );
     if (!Array.isArray(parsed)) { malformed.push(`${entry.custom_id}: unparseable`); markMissing(entry.custom_id); continue; }
 
-    // Face reconciliation lives in `src/lib/labels/parse.ts` now, shared with the build
-    // that will do the same job over 32,000 cards. Its rules — merge by face, refuse an
-    // invented name, and record a miss rather than writing an empty label — are the
-    // sample's own, measured here and pinned by that module's tests.
+    // Name resolution lives in `src/lib/labels/parse.ts` now, shared with the build that
+    // will do the same job over 32,000 cards: a two-faced name resolves to the joined
+    // name, and a name neither asked for nor a face of one is REFUSED. The merge and the
+    // missing-card backfill below stay here, because they interleave with per-card job
+    // validation that is this script's own.
     const resolveName = faceResolver(asked);
 
     for (const card of parsed) {
