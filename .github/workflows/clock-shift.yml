@@ -37,6 +37,12 @@ on:
         required: false
         default: "400"
 
+# Read-only token, as every other workflow here pins. This one runs repository code
+# on a schedule and needs nothing but the checkout, so inheriting the repository
+# default would hand it a broader and changeable privilege surface for no reason.
+permissions:
+  contents: read
+
 # One run at a time: this is a full suite, and two of them race nothing but the
 # runner's patience.
 concurrency:
