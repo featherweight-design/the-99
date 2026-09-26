@@ -73,8 +73,8 @@ async function signIn(page) {
 
 /**
  * Every tile ⋯ button whose centre lies inside `panel`, and whether the popover is what is
- * painted there. The menu buttons are named by their own copy (`More for <deck>`-style labels
- * all end in the deck's name), so they are found by being the tiles' `aria-expanded` buttons.
+ * painted there. The menu buttons carry `Actions for <deck>` (`refreshCopy.decks.menu.trigger`),
+ * and are found structurally, as the tiles' `aria-expanded` buttons, rather than by that label.
  */
 const covered = (panel) =>
   panel.evaluate((box) => {
