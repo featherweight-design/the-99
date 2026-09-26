@@ -603,6 +603,7 @@ export const LANE_OWNED: LaneParams = {
   match: "exactly",
   avail: "free",
   order: "fit",
+  printedIn: [],
 };
 
 export const LANE_DISCOVER: LaneParams = {
@@ -611,6 +612,7 @@ export const LANE_DISCOVER: LaneParams = {
   match: "contains",
   avail: "all",
   order: "popularity",
+  printedIn: [],
 };
 
 /**

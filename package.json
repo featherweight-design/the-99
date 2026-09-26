@@ -33,6 +33,7 @@
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:pair-index": "tsx scripts/probe-pair-index.ts",
+    "probe:printed-in": "tsx scripts/probe-printed-in.ts",
     "probe:card-art-corners": "node scripts/probe-card-art-corners.mjs",
     "probe:commander-availability": "tsx scripts/probe-commander-availability.mjs",
     "probe:fit-parity": "tsx scripts/probe-fit-parity.mts",

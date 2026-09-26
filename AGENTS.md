@@ -1761,6 +1761,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Mutations: narrowing the prefilter to `Partner with` fails the floor and the kinds check; removing
   the enumeration floor fails the refusal check. Point it at `local-dev` or a scratch branch.
 
+- `pnpm probe:printed-in` proves that `Printed in`'s two readers are one rule, against the real
+  catalog. The rule is decision 9's: a card is printed in a set when ANY of its printings is.
+  Help me choose asks it in SQL through `printedIn(oracleId, codes)`, and the commander lanes
+  test rows they already hold against an index, `loadCommanderPrintings`, that each page crosses
+  with the rows it ships. The unit suite proves the emitted SQL and the index's shaping over
+  hand-built rows. Only a database answers whether they AGREE, so the probe counts eighteen sets
+  both ways (the ten busiest and the ten newest), plus a card printed in two sets matching
+  either, two sets taken as the union, case, and an unknown code. Every fixture is found by query.
+
+  With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every legendary
+  card in every set and fails three checks. It makes no writes, so it can point at staging.
+
 - `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — fourteen
   checks in seven sections, one per rule the fill gained when it stopped building to four
   asserted constants.
