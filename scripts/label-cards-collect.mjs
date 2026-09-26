@@ -93,7 +93,19 @@ for (const [key, id] of Object.entries(submitted)) {
       const resolved = resolveName(card.name);
       if (resolved === null) { unexpected.push(`${entry.custom_id}: ${card.name}`); continue; }
       card.name = resolved;
-      const jobs = Array.isArray(card.jobs) ? card.jobs : [];
+      // A MISSING or non-array `jobs` is NOT an empty answer. The prompt requires the
+      // key, and the gold set has four HARD NEGATIVES where `[]` is the correct
+      // label -- a Saga's lore counter, an artifact's charge counter -- so coercing
+      // malformed output to `[]` credits it as right on exactly the cards designed to
+      // catch over-labelling, and moves published precision and recall with nothing
+      // in the log to say so. Recorded as a miss instead, which `score` counts as
+      // such and this log names.
+      if (!Array.isArray(card.jobs)) {
+        malformed.push(`${card.name}: \`jobs\` is ${card.jobs === undefined ? "missing" : JSON.stringify(card.jobs)}, not an array`);
+        labels[card.name] = null;
+        continue;
+      }
+      const jobs = card.jobs;
       // A job the schema rejects is DROPPED and RECORDED, never repaired. A
       // repaired label would score the repair rather than the model.
       const kept = [];
