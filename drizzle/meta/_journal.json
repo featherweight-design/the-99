@@ -498,6 +498,13 @@
       "when": 1790443602865,
       "tag": "0070_abandoned_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1790450875580,
+      "tag": "0071_card_label_usage",
+      "breakpoints": true
     }
   ]
 }
