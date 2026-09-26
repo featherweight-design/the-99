@@ -10,7 +10,10 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * A pull edits the source deck's draft and cuts no version, so the source's committed version
  * still lists the card. This row subtracts the pulled copy from that claim in `all_claims`, which
  * both claim readers share, and that is what frees it for the asking deck. It lives as long as the
- * source's draft: every writer that ends that draft, or takes the card back, deletes it here.
+ * source's draft, and ONLY the source's commit or discard deletes it (`clearPullReleases`). A card
+ * that comes back into the draft does not: `all_claims` limits the release to what the draft
+ * lacks, so it stops subtracting while the card is back and counts again if the card is cut again
+ * before the commit. Deleting it on a return path would lose that second cut's release.
  */
 export async function writePullRelease(
   tx: Tx,
