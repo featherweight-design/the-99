@@ -33,7 +33,7 @@ vi.mock("../cards/card-detail-provider", async (actual) => ({
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
-const { StandInsSheet, shownRows } = await import("./stand-ins-sheet");
+const { StandInsSheet, StandInGroup, shownRows } = await import("./stand-ins-sheet");
 
 const original = {
   oracleId: "id-Anguished Unmaking", name: "Anguished Unmaking", role: "removal", owned: false, quantity: 1, cardTypeGroup: "Instants",
@@ -393,5 +393,27 @@ describe("StandInGroup and StandInRow, mounted alone", () => {
       </CardDetailProvider>,
     );
     expect(alone.getByRole("region", { name: group.heading }).outerHTML).toBe(inSheet);
+  });
+});
+
+// The group reads its heading and toggle from ui/sheet-group.tsx, shared with the Change commander sheet.
+// Pinned before the move and held across it: folded, open, and busy while Show all fetches the rest.
+describe("StandInGroup's markup", () => {
+  const rows = Array.from({ length: 7 }, (_, i) => ({
+    oracleId: `r${i}`, name: `Row ${i}`, imageUri: null, free: false, soft: 0, cents: 100, foilOnly: false, body: [], muted: [],
+  }));
+  const group = { heading: "same type · instants", order: "most in common first", noun: "instants", rows, total: 12 };
+  const draw = (props: { expanded?: boolean; fetching?: boolean }) =>
+    render(
+      <StandInGroup group={group} {...props} onToggle={() => {}}>
+        {(row) => <li key={row.oracleId}>{row.name}</li>}
+      </StandInGroup>,
+    ).container.innerHTML;
+  it.each([
+    ["folded", {}],
+    ["open", { expanded: true }],
+    ["busy", { fetching: true }],
+  ])("is unchanged %s", (_, props) => {
+    expect(draw(props)).toMatchSnapshot();
   });
 });

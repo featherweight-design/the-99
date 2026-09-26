@@ -1,0 +1,376 @@
+{
+  "feature": "Swap tools v2 (sub-project 4): the stand-ins sheet from both doors, Show all, Take, the receipt, Undo swap, and the stacked stand-in",
+  "clearAbout": true,
+  "note": "Needs a server with SWAP_TOOLS_ENABLED=true, signed in as the swaptools-v2 account (swaptools-v2+clerk_test@example.com on local-dev, which holds Hugh's pulled HD decks), with About marked seen (every swap probe does it through clearAboutSheet). SHEET_DECK is HD - Gishath (904fdc61-e190-4ba5-8e34-2b18fa0584f2): Naya, an $8 limit, and every kind over it as a real Shopping row: Plateau (land), Wooded Foothills (fetch), Runadi, Behemoth Caller (creature) and The Great Henge (a noncreature on identity). v1's fixture was a deck probe:swap-sheet builds and deletes, so nothing durable reached the sheet, and its noncreature was Deadly Rollick, off identity. Shopping is client state: every row reaches it by a PRESS. The take, receipt and undo rows are ONE CHAIN on one page at each width, since the receipt is page state a reload loses: take writes the swap, receipt reads it, undo reverses it. A run that fails part-way through the chain leaves Runadi swapped out of HD - Gishath; undo it from the deck's Shopping list, or with probe:swap-sheet's discipline in mind, by hand.",
+  "shares": {
+    "module": "src/components/decks/stand-ins-sheet.tsx",
+    "binding": "StandInsSheet",
+    "note": "One sheet for both doors. DecklistRow's ⇄ and the card modal's StandInDoor both call openStandIns, and decklist.tsx renders the one StandInsSheet; a door that drew its own sheet is how the two would drift."
+  },
+  "rows": [
+    {
+      "id": "sheet-land",
+      "label": "/decks/[id] Shopping: the ⇄ on Plateau, the stand-ins sheet for a land: every row's mana line, groups of five",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Plateau,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-land-all",
+      "label": "/decks/[id] Shopping: Plateau's sheet with Show all pressed, the whole group fetched and drawn (the one-shot lands, `… once, by sacrificing it`, are past row 30)",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Plateau,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all \\d+",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "sheet-fetch",
+      "label": "/decks/[id] Shopping: the ⇄ on Wooded Foothills, the stand-ins sheet for a fetch: what each finds, and costs",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Wooded Foothills,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-fetch-all",
+      "label": "/decks/[id] Shopping: Wooded Foothills's sheet with Show all pressed, the whole group fetched and drawn",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Wooded Foothills,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all \\d+",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "sheet-creature",
+      "label": "/decks/[id] Shopping: the ⇄ on Runadi, Behemoth Caller, the stand-ins sheet for a creature: same type first, then other types",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Runadi, Behemoth Caller,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-creature-all",
+      "label": "/decks/[id] Shopping: Runadi, Behemoth Caller's sheet with Show all pressed, the whole group fetched and drawn",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Runadi, Behemoth Caller,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all \\d+",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "sheet-noncreature",
+      "label": "/decks/[id] Shopping: the ⇄ on The Great Henge, the stand-ins sheet for a noncreature spell, on identity (Naya): its type group, then other types",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for The Great Henge,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-noncreature-all",
+      "label": "/decks/[id] Shopping: The Great Henge's sheet with Show all pressed, the whole group fetched and drawn",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for The Great Henge,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all \\d+",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "stacked",
+      "label": "/decks/[id] Shopping: a stand-in's card stacked over Runadi's sheet, with the Take footer and Prev/Next over the five rows shown",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Runadi, Behemoth Caller,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='stand-in-row'] button",
+          "settle": 1200
+        },
+        {
+          "wait": "[data-testid='stand-in-footer']:visible",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "door-sheet",
+      "label": "/decks/[id] Shopping: Plateau's card, its `See cheaper stand-ins` door, and the same sheet over the card",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for Plateau",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='stand-in-door']:visible",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "See cheaper stand-ins",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "take",
+      "label": "/decks/[id] Shopping: Take pressed on Runadi's first stand-in: the taken row, the note, and Take put away on the rest. CHAIN: the next two rows continue this page and the last undoes it",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHEET_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping \\d+",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cheaper stand-ins for Runadi, Behemoth Caller,",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-ins-sheet'] h4",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Take .* in place of ",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='stand-in-taken']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "label": "/decks/[id] Shopping: the sheet closed after the take: focus on the receipt, in view, in the slot Runadi sat in (probe:swap-sheet proves the Escape path)",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "clickRole": "button",
+          "name": "^Close cheaper stand-ins",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='swap-receipt']:visible",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "undo",
+      "label": "/decks/[id] Shopping: Undo swap pressed on the receipt: Runadi back in the list, the receipt gone. This row PUTS THE DECK BACK",
+      "view": "src/components/decks/decklist.tsx",
+      "steps": [
+        {
+          "clickRole": "button",
+          "name": "^Undo the swap",
+          "settle": 400
+        },
+        {
+          "wait": "button[aria-label^='Cheaper stand-ins for Runadi']",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

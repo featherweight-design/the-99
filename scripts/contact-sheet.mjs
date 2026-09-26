@@ -27,6 +27,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -238,6 +239,15 @@ try {
     });
     const page = await context.newPage();
     await signIn(page);
+    // `"clearAbout": true` marks the About gate seen before the first row, through the one helper every
+    // probe uses, so the first load photographs the surface rather than `/about` (swap tools close-out:
+    // the first row of every width failed on the redirect). Opt-in, because the /about inventory
+    // photographs the gate itself. It writes what `clearAboutSheet` writes and puts nothing back.
+    if (inventory.clearAbout) {
+      const userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
+      if (!userId) throw new Error("clearAbout: signed in, but Clerk reports no user.");
+      await clearAboutSheet(page, userId);
+    }
     for (const row of inventory.rows) {
       // A surface that only EXISTS at one width says so, and the other width is
       // not a failed cell. `/collection`'s filter sheet is the case: below 1000px
