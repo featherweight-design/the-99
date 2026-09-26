@@ -13,13 +13,13 @@ a job. Today's text rules score **0 on every limit** — not poorly, zero, by
 construction, because they cannot express one.
 
 Sonnet **is** markedly better on the limits that decide a match. It gets 86.4% of
-gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 85.7%
-of recurrences against 78.8%, and finds about one job in twelve more (recall 0.834
+gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 87.0%
+of recurrences against 80.0%, and finds about one job in twelve more (recall 0.834
 against 0.761). It invents 5 spurious restrictions against Haiku's 7.
 
 **Both models get every TRIBAL restriction right**, so the Warg's Wolf clause is
 solved by either; the choice turns on the wider gating set and on `trigger`. Haiku
-wins the ramp kind (95.7% against 91.7%) and job precision by 1.6 points. The
+wins the ramp kind (91.3% against 87.5%) and job precision by 1.6 points. The
 one-time difference is **$28.36**.
 
 > **This reverses the recommendation in the first draft of this report, which said
@@ -51,8 +51,8 @@ on a **Wolf** and the deck was Dinosaurs; and on `ramp`, where the Warg makes a
 
 | | tribal restriction | gating restriction | ramp kind | spurious invented |
 |---|---|---|---|---|
-| **Haiku 4.5** | 1.000 (29/29) | 0.767 (33/43) | **0.957** (22/23) | 7 |
-| **Sonnet 4.5** | 1.000 (30/30) | **0.864** (38/44) | 0.917 (22/24) | **5** |
+| **Haiku 4.5** | 1.000 (29/29) | 0.767 (33/43) | **0.913** (21/23) | 7 |
+| **Sonnet 4.5** | 1.000 (30/30) | **0.864** (38/44) | 0.875 (21/24) | **5** |
 | today's text rules | **0** (0/25) | **0** (0/35) | **0** (0/21) | 0 |
 
 **The tribal restriction — the Warg's Wolf clause — is now a tie at 1.000.** Either
@@ -87,11 +87,11 @@ on the jobs it got right, did it get the limits right.
 |---|---|---|---|
 | JOB precision | **0.8** | 0.784 | 0.762 |
 | JOB recall | 0.761 | **0.834** | 0.717 |
-| rampKind | **0.957** | 0.917 | 0 |
+| rampKind | **0.913** | 0.875 | 0 |
 | restrictedTo, tribal | 1.000 | 1.000 | 0 |
 | restrictedTo, gating | 0.767 | **0.864** | 0 |
 | trigger | 0.867 | **0.942** | 0 |
-| recurrence | 0.788 | **0.857** | 0 |
+| recurrence | 0.8 | **0.87** | 0 |
 | threshold | 1.000 | 1.000 | 0 |
 | modal | 1.000 | 1.000 | 0 |
 | spurious restrictions invented | 7 | **5** | 0 |

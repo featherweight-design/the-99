@@ -273,13 +273,13 @@ export const GOLD = [
   },
   {
     name: "Kessig Naturalist // Lord of the Ulvenwald", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: "burstMana", tr: "attacks", rec: "oneShot" })],
-    why: "Mana on ATTACK, once per combat, and it does not empty between steps. Not a tap, no Treasure — another kindless burst, and the front face is the only one the rules read.",
+    jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "attacks" })],
+    why: "Mana on ATTACK. Labelled `burstMana`/`oneShot` at first, on the reasoning that it is not a tap and makes no Treasure — WRONG against E1's ratified kinds (2026-09-26). One-shot means the source is CONSUMED making the mana: sacrifice this, an instant or sorcery, an entering trigger, a Gold token. An attack trigger is none of those and the creature survives, so this is repeatable mana from the permanent's own ability. `rampKinds` in src/lib/swaps/honest.ts returns [\"tapsForMana\"], checked directly.",
   },
   {
     name: "The Mana Rig", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: "burstMana", tr: "cast" })],
-    why: "A Powerstone is Treasure-adjacent but is NOT a Treasure (it cannot pay for spells generally). Labelling it makesTreasure would be false; kindless.",
+    jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "cast" })],
+    why: "A Powerstone is Treasure-adjacent but is NOT a Treasure (it cannot pay for spells generally), so `makesTreasure` would be false — but `burstMana` was wrong too. E1 names the Powerstone explicitly under taps for mana, because it taps every turn; the source is not consumed. `rampKinds` returns [\"tapsForMana\"], checked directly.",
   },
   {
     name: "Sorcerer Class", klass: "conditionalMana",
