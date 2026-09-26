@@ -96,6 +96,17 @@ export function ChooseRow({
       </CardDetailTrigger>
       <span className="md:hidden"><IdentityPips colorIdentity={row.colorIdentity} size={9} gap={4} /></span>
       <span className="hidden md:inline-flex"><IdentityPips colorIdentity={row.colorIdentity} size={11} gap={4} /></span>
+      {/* The set it was printed in, of those asked (addendum §2), titled with the set's name. */}
+      {row.set && (
+        <span
+          data-testid="row-set"
+          title={row.set.name}
+          className="flex-none font-mono text-[9.5px] leading-none px-[4px] py-[2px] rounded-[4px] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
+        >
+          <span className="sr-only">{copy.results.printedIn(row.set.name)}</span>
+          <span aria-hidden>{row.set.code.toUpperCase()}</span>
+        </span>
+      )}
     </div>
   );
   const press = (children: ReactNode, className: string) => (

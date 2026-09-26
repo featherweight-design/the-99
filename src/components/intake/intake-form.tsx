@@ -20,6 +20,8 @@ import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { READ_WORDS_MAX_CHARS, serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
 import type { Bracket } from "../../lib/intake/rank";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
+import type { PrintedInSet } from "../../lib/sets/printed-in";
+import { SetsField } from "./sets-field";
 import { ThemeJoinControl } from "./theme-join";
 import { ThemePicker } from "./theme-picker";
 
@@ -45,7 +47,16 @@ export function submitHref(p: ChooseParams): string {
 
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
 
-export function IntakeForm({ themes, initial }: { themes: readonly VocabularyTheme[]; initial: ChooseParams }) {
+export function IntakeForm({
+  themes,
+  sets = [],
+  initial,
+}: {
+  themes: readonly VocabularyTheme[];
+  /** Every set that printed a commander, for the Sets answer. */
+  sets?: readonly PrintedInSet[];
+  initial: ChooseParams;
+}) {
   const router = useRouter();
   const wide = useIsDesktop();
   const [words, setWords] = useState(initial.words);
@@ -53,6 +64,7 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
   const [match, setMatch] = useState(initial.match);
   const [picked, setPicked] = useState<string[]>(initial.themes);
   const [themeJoin, setThemeJoin] = useState(initial.themeJoin);
+  const [pickedSets, setPickedSets] = useState<string[]>(initial.sets);
   const [budget, setBudget] = useState(initial.budgetDollars === null ? "" : String(initial.budgetDollars));
   const [bracket, setBracket] = useState<Bracket | null>(initial.bracket);
   const themeLabelId = useId();
@@ -96,6 +108,7 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
         match,
         themes: picked,
         themeJoin,
+        sets: pickedSets,
         budgetDollars: parseBudget(budget),
         bracket,
       }),
@@ -148,6 +161,10 @@ export function IntakeForm({ themes, initial }: { themes: readonly VocabularyThe
           aside={<ThemeJoinControl value={themeJoin} onChange={setThemeJoin} live={picked.length >= 2} />}
         >
           <ThemePicker themes={themes} value={picked} onChange={setPicked} labelId={themeLabelId} />
+        </Field>
+
+        <Field label={copy.intake.sets} caption={copy.intake.setsCaption}>
+          <SetsField sets={sets} value={pickedSets} onChange={setPickedSets} wide={wide} />
         </Field>
 
         <Field label={copy.intake.budget} htmlFor={budgetId} caption={copy.intake.budgetCaption}>

@@ -63,6 +63,8 @@ export const deckTuningCopy = {
     /** Themes asked as any of (Help me choose's three-answers addendum): *any of Orcs, Elves or Wizards*. */
     answerThemesAny: (labels: readonly string[]) =>
       `any of ${labels.length < 2 ? labels.join("") : `${labels.slice(0, -1).join(", ")} or ${labels[labels.length - 1]}`}`,
+    /** The sets asked, by code as their chip names them: *from HOB or HOC*. */
+    answerSets: (codes: readonly string[]) => `from ${codes.join(" or ")}`,
     answerCard: (name: string) => `with ${name}`,
     answerBudget: (dollars: number) => `under $${dollars}`,
     answerBracket: (bracket: number) => `bracket ${bracket}`,

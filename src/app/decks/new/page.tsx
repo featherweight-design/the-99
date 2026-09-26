@@ -41,6 +41,7 @@ export default async function NewDeckPage({
           // block still lists every theme the player asked for.
           themes: answers.themes.slice(0, MAX_THEMES).map((t) => t.label),
           themeJoin: answers.themeJoin,
+          sets: answers.sets.map((s) => s.code),
           // A card whose read failed is still the answer: `createDeck` checks it against the catalog.
           cardOracleId: answers.card?.oracleId ?? (answers.cardUnread ? asked.card : null),
           budgetDollars: answers.budgetDollars,

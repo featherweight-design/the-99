@@ -26,7 +26,7 @@ export function budgetLine(card: HandOffAnswers["card"], cardUnread = false): st
 }
 
 export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffAnswers; changeHref: string }) {
-  const { themes, themeJoin, card, cardUnread, budgetDollars, bracket } = answers;
+  const { themes, themeJoin, sets, card, cardUnread, budgetDollars, bracket } = answers;
   // Any of is one row, its line the figure of the theme the results row ranked by.
   const best = themes.find((t) => t.best) ?? null;
   return (
@@ -62,6 +62,11 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
             <span>{t.label}</span>
           </Row>
         ))}
+        {sets.length > 0 && (
+          <Row k={copy.keys.sets} line={null}>
+            <span>{sets.map((s) => s.name).join(" or ")}</span>
+          </Row>
+        )}
         {card && (
           <Row k={copy.keys.card} line={card.pct === null ? copy.placed : `${copy.placed} ${copy.cardFig(card.pct)}`}>
             <span className="flex min-w-0 items-center gap-[8px]">

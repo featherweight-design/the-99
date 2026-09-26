@@ -93,6 +93,11 @@ describe("seededAnswersIntent (F2)", () => {
     expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Dwarves"], themeJoin: "any" })).toBe("Built around Thorin: Dwarves.");
   });
 
+  it("names the sets by code, joined by or", () => {
+    expect(seededAnswersIntent(["Thorin"], { ...none, themes: ["Orcs", "Elves"], themeJoin: "any", sets: ["hob", "hoc"] }))
+      .toBe("Built around Thorin: any of Orcs or Elves, from HOB or HOC.");
+  });
+
   it("names several themes as a list", () => {
     expect(seededAnswersIntent(["Gishath, Sun's Avatar"], { ...none, themes: ["Dinosaurs", "Ramp", "Landfall"] }))
       .toBe("Built around Gishath, Sun's Avatar: Dinosaurs, Ramp and Landfall.");

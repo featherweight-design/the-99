@@ -234,7 +234,7 @@ describe("the Sets answer", () => {
   it("draws one printed-in chip of codes, spoken with the names in full", () => {
     expect(answerChips(asked, sets)[1]).toEqual({
       kind: "printed in",
-      value: "Printed in The Hobbit or The Hobbit Commander",
+      value: "The Hobbit or The Hobbit Commander",
       codes: ["HOB", "HOC"],
       deeper: false,
     });

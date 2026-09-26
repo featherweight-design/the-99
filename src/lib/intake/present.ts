@@ -260,7 +260,9 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
     ...(p.sets.length > 0
       ? [{
         kind: k.printedIn,
-        value: copy.readAs.printedInAria(p.sets.map((c) => labels.set?.(c) ?? c.toUpperCase())),
+        // The kind, `printed in`, is read first, so the value is the sets' names alone (#1071's
+        // any-of chip was spoken with its kind twice).
+        value: p.sets.map((c) => labels.set?.(c) ?? c.toUpperCase()).join(` ${copy.readAs.joiner} `),
         codes: p.sets.map((c) => c.toUpperCase()),
         deeper: false,
       }]
