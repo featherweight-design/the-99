@@ -13,7 +13,7 @@ a job. Today's text rules score **0 on every limit** — not poorly, zero, by
 construction, because they cannot express one.
 
 Sonnet **is** markedly better on the limits that decide a match. It gets 86.4% of
-gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 87.0%
+gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 86.8%
 of recurrences against 80.0%, and finds about one job in twelve more (recall 0.834
 against 0.761). It invents 5 spurious restrictions against Haiku's 7.
 
@@ -76,7 +76,7 @@ the WIDER gating set (card types a deck may simply not play), where Sonnet leads
   count is 7 for Haiku and 5 for Sonnet, and was unchanged by that scoping, so it was
   not load-bearing here. Both restriction columns key on GOLD's value, so they are recall-like and
   blind to over-labelling; an invented restriction refuses a good stand-in, which
-  is the mirror of the bug. Haiku invents three times as many.
+  is the mirror of the bug. Haiku invents 7 against Sonnet's 5.
 
 ## Full scores against the gold set
 
@@ -91,7 +91,7 @@ on the jobs it got right, did it get the limits right.
 | restrictedTo, tribal | 1.000 | 1.000 | 0 |
 | restrictedTo, gating | 0.767 | **0.864** | 0 |
 | trigger | 0.867 | **0.942** | 0 |
-| recurrence | 0.8 | **0.87** | 0 |
+| recurrence | 0.8 | **0.868** | 0 |
 | threshold | 1.000 | 1.000 | 0 |
 | modal | 1.000 | 1.000 | 0 |
 | spurious restrictions invented | 7 | **5** | 0 |
@@ -204,7 +204,7 @@ both.
    every sacrifice-for-mana land are the same shape. Forcing it into
    `makesTreasure` would have recreated the very false match the kinds exist to
    prevent, both being "one-time mana". Raised with 2b, ruled by d9: a fourth
-   kind, `burstMana`. Seven gold jobs carry it. (The rampKind row above is
+   kind, `burstMana`. Four gold jobs carry it. (The rampKind row above is
    accuracy over ALL paired ramp jobs; nothing committed reports per-kind accuracy,
    so there is no separate `burstMana` figure to quote.)
 
@@ -240,7 +240,7 @@ both.
   recommendation. Just under a quarter of the gating restrictions gold records are
   missed by Haiku against about a seventh by Sonnet. If false matches survive the pass, this is the
   first place to look, and re-scoring the gold subset is what tells you.
-- **Job recall is ~0.73–0.82**, so roughly a fifth of jobs are missed by every
+- **Job recall runs 0.717 to 0.834**, so roughly a fifth of jobs are missed by every
   labeller including the models. The pass improves limits, not coverage.
 - **A second pass costs the same as the first.** At 16 cents a set there is no
   reason to treat the labels as immutable; re-running a set after a rule change is

@@ -288,8 +288,8 @@ export const GOLD = [
   },
   {
     name: "Dora Milaje Elite", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: "burstMana", tr: "etb", rec: "oneShot" })],
-    why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. Kindless (Vibranium token).",
+    jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "etb" })],
+    why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. The Vibranium token reads `{T}: Add {C}` — a repeatable tap, nothing consumed — which is the POWERSTONE shape and therefore `tapsForMana` under E1's kinds, not a burst. Labelled `burstMana`/`oneShot` at first and corrected 2026-09-26 in the same sweep as The Mana Rig; it was the sibling that sweep missed on its first pass.",
   },
   {
     name: "Gatewatch Beacon", klass: "conditionalMana",

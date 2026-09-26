@@ -1,5 +1,5 @@
 {
- "scoredAt": "2026-09-26T05:41:16.220Z",
+ "scoredAt": "2026-09-26T05:55:50.561Z",
  "goldCards": 108,
  "models": {
   "haiku": {
@@ -181,11 +181,11 @@
      "infWrong": 6
     },
     "recurrence": {
-     "accuracy": 0.947,
-     "informativeAccuracy": 0.87,
-     "right": 162,
-     "wrong": 9,
-     "infRight": 60,
+     "accuracy": 0.942,
+     "informativeAccuracy": 0.868,
+     "right": 161,
+     "wrong": 10,
+     "infRight": 59,
      "infWrong": 9
     },
     "threshold": {
@@ -324,12 +324,12 @@
      "infWrong": 103
     },
     "recurrence": {
-     "accuracy": 0.578,
+     "accuracy": 0.585,
      "informativeAccuracy": 0,
-     "right": 85,
-     "wrong": 62,
+     "right": 86,
+     "wrong": 61,
      "infRight": 0,
-     "infWrong": 62
+     "infWrong": 61
     },
     "threshold": {
      "accuracy": 0.939,
