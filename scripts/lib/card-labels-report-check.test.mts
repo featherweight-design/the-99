@@ -192,6 +192,9 @@ describe("the report agrees with the artifacts it cites", () => {
       ...Object.values(cost.projections).map((p) => p.fullRunUsd.toFixed(2)),
       ...Object.values(cost.projections).map((p) => p.perSetUsd.toFixed(2)),
       cost.totalUsd.toFixed(4), sonnet5.cost.usd.toFixed(4),
+      // What reproducing all three models' labels costs — derived, so it tracks a rate
+      // change rather than needing to be re-stated beside one.
+      (cost.totalUsd + sonnet5.cost.usd).toFixed(2),
       sonnet5.wastedUsd.toFixed(4), // the attempt that returned nothing
       // NAMED, with their provenance — the same treatment the report's 54% gets. Each
       // is a figure no artifact holds, and listing it here is what makes a NEW

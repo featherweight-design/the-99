@@ -378,6 +378,8 @@ batch, cannot quietly overwrite the evidence a merged report rests on.
   cost per model, and the full-run and per-set projections with their basis
 
 The raw labels (462KB across the three models) and the 711-row disagreement list stay in
-`out/` and are NOT committed: they are reproducible from the committed scripts for
-about 85 cents, and the figures derived from them are committed above. Re-run
-`label-cards-run` then `-collect`, `-score`, `-agree` to regenerate.
+`out/` and are NOT committed: they are reproducible from the committed scripts for about
+85 cents for the default two, or **$1.26** with Sonnet 5, and the figures derived from
+them are committed above. Re-run `label-cards-run` then `-collect`, `-score`, `-agree`
+to regenerate; Sonnet 5 needs `LABEL_MODELS=sonnet5`, and publishing that run is refused
+rather than allowed to replace the two-model artifacts.
