@@ -120,6 +120,7 @@
     "pull:staging": "tsx scripts/pull-staging-decks.mts",
     "measure:facts-cost": "tsx scripts/measure-facts-cost.mts",
     "measure:profile-cost": "tsx scripts/measure-profile-cost.mts",
+    "measure:load": "node scripts/measure-load.mjs",
     "check:constraints": "node scripts/check-constraints.mjs",
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
