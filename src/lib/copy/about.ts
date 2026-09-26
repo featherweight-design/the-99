@@ -304,11 +304,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/discover',
     width: 'plate',
     caption:
-      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs.',
+      'Commanders you do not own, ranked by how many cards you already own that would go in the deck. Each row scores the fit the same way the commander lane does, and adds what only matters for a commander you would have to buy: what the card costs. Under each row, a line names what that commander plays and none of your decks do.',
     keys: [
       'five orders. Only Something new changes which commanders appear: it drops any whose decks run less than 30% cards you already own.',
-      'the fit score is read against your whole collection, because you would own this commander if you bought it.',
-      'the line under each row names what this commander plays that none of your decks do, which is the reason to buy it. When your decks already play all of it, the line names its top play styles instead.',
+      'Best fit, the default, reads your whole collection, because you would own this commander if you bought it.',
+      'every order says what it ranks by, so Popularity is most decks tracked first rather than a score of its own.',
     ],
     since: 1,
   },
@@ -495,8 +495,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Fill, the last 31 and the Add panel all build toward what other decks with your commander actually run, rather than one recipe for every deck. A Kinnan deck wants about twice the ramp of an Atraxa deck and no board wipes at all; both used to be told the same ten, ten, eight and three. Where there are not enough decks to measure, the old numbers still stand in, and the strip says which you are looking at.',
     keys: [
       'the land count moves too. Twenty-eight lands is a real answer for a deck that ramps, and thirty-seven was never right for all of them.',
-      'The fill that builds a new deck and `Select the N this deck needs` both ask what the deck is short of, so a deck already deep in ramp is offered draw instead of more of what it has.',
-      'the Add panel puts the role you are shortest of first, and within a shelf the card whose type your deck is thinner on comes first.',
+      'a target of 0 is an answer too: the decks this commander leads run no board wipes, so the cell asks for none.',
     ],
     since: 8,
   },
@@ -511,9 +510,9 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Some cards only do something remarkable next to one other card, and the app says which: on a collection row when you own both halves and no deck has put them together, and on a card the deck you are building is one away from. The card’s details list every partner it has, with whether that partner is in the deck, in your collection, or neither.',
     keys: [
       'no count of how many combos a card has. Detection leaves out combos that need a third piece, so a total would be the first thing on the surface that is not true.',
-      'one partner is named on a row and all of them on the card’s page. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
-      'a combo you have already built says nothing. `you own both` is about two cards sitting apart, and a deck holding both has answered the question.',
-      'it comes from Commander Spellbook, and the card’s page says so behind the heading’s marker rather than under every block.',
+      'one partner is named on a row and all of them in the card’s details. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
+      'the list runs from what this deck already holds to what you would have to buy, so the cap never hides a partner already on the table.',
+      'it comes from Commander Spellbook, and the details say so behind the heading’s marker rather than under every block.',
     ],
     since: 9,
   },

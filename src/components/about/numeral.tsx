@@ -1,3 +1,5 @@
+"use client";
+
 // The annotation numeral, in one place.
 //
 // "Annotation is a numeral and a line" is the handoff's grammar, and the page
@@ -5,13 +7,160 @@
 // at is a bullet. The figure needs the same mark on the part each line
 // describes, so the mark is a component rather than two class lists that agree
 // today.
-export function KeyNumeral({ n, className = "" }: { n: number; className?: string }) {
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+
+export function KeyNumeral({
+  n,
+  className = "",
+  style,
+  onFigure = true,
+}: {
+  n: number;
+  className?: string;
+  style?: CSSProperties;
+  /** False for the key list's own numerals, which are not marks ON a figure. */
+  onFigure?: boolean;
+}) {
   return (
     <span
       aria-hidden
+      data-key-numeral={onFigure ? n : undefined}
       className={`flex h-[14px] w-[14px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] font-mono text-[9px] text-[color:var(--accent)] ${className}`}
+      style={style}
     >
       {n}
     </span>
   );
+}
+
+/**
+ * Where an anchored numeral sits against the part it names:
+ * - `gutter`: in the wrapper's left gutter, level with the part
+ * - `before` / `after`: 6px to the part's left or right, centred on it
+ * - `above`: centred over the part, just clear of its top
+ * - `inset-tl` / `inset-tr`: 5px inside the part's top corner
+ */
+export type NumeralSide = "gutter" | "before" | "after" | "above" | "inset-tl" | "inset-tr";
+
+export type NumeralAnchor = {
+  n: number;
+  /** Finds the part inside the figure; the figure's own copy or an existing test id or role. */
+  find: (root: HTMLElement) => Element | null;
+  side: NumeralSide;
+  /** The side from 768px up, where the part moves between layouts. */
+  mdSide?: NumeralSide;
+  /** Level with the part's top line rather than its middle. */
+  align?: "center" | "top";
+};
+
+const SIZE = 14;
+const GAP = 6;
+
+function place(side: NumeralSide, align: "center" | "top", t: DOMRect, r: DOMRect): { left: number; top: number } {
+  const middle = align === "top" ? t.top - r.top + 1 : t.top - r.top + t.height / 2 - SIZE / 2;
+  switch (side) {
+    case "gutter":
+      return { left: 0, top: middle };
+    case "before":
+      return { left: t.left - r.left - GAP - SIZE, top: middle };
+    case "after":
+      return { left: t.right - r.left + GAP, top: middle };
+    case "above":
+      return { left: t.left - r.left + t.width / 2 - SIZE / 2, top: t.top - r.top - SIZE - 2 };
+    case "inset-tl":
+      return { left: t.left - r.left + 5, top: t.top - r.top + 5 };
+    case "inset-tr":
+      return { left: t.right - r.left - SIZE - 5, top: t.top - r.top + 5 };
+  }
+}
+
+/**
+ * Numerals placed on parts of a MOUNTED app component, measured rather than guessed.
+ *
+ * A figure that mounts the app's own component cannot put a numeral inside it without editing
+ * that component for the About page's sake, and a fixed pixel offset is right at one width and
+ * wrong at the other (log-a-game's were). So the wrapper finds each part after layout, and places
+ * the numeral against the part's own box, again whenever the figure resizes. Every numeral is in
+ * the document from the first render, hidden until measured, so a count of them never depends on
+ * layout.
+ */
+export function AnchoredNumerals({
+  marks,
+  gutter = false,
+  className = "",
+  children,
+}: {
+  marks: NumeralAnchor[];
+  /** Reserves a 22px left gutter for `gutter` numerals. */
+  gutter?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const root = useRef<HTMLDivElement>(null);
+  const [spots, setSpots] = useState<Record<number, { left: number; top: number } | null>>({});
+
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const wide = window.matchMedia?.("(min-width: 768px)").matches ?? false;
+      const next: Record<number, { left: number; top: number } | null> = {};
+      for (const m of marks) {
+        const target = m.find(el);
+        next[m.n] = target
+          ? place(wide && m.mdSide ? m.mdSide : m.side, m.align ?? "center", target.getBoundingClientRect(), r)
+          : null;
+      }
+      setSpots(next);
+    };
+    measure();
+    // Webfonts move text after the first layout without resizing the figure.
+    void document.fonts?.ready.then(measure);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // The marks are declared inline by each figure; they are stable in meaning, and re-measuring
+    // on every render would loop through the state write.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div ref={root} className={`relative ${gutter ? "pl-[22px]" : ""} ${className}`}>
+      {children}
+      {marks.map((m) => {
+        const at = spots[m.n];
+        return (
+          <KeyNumeral
+            key={m.n}
+            n={m.n}
+            className="pointer-events-none absolute z-10 bg-[color:var(--bg)]"
+            style={at ? { left: at.left, top: at.top } : { left: 0, top: 0, visibility: "hidden" }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** A finder for the first `selector` whose text is `text`, or contains it with `contains`. */
+export function withText(selector: string, text: string, contains = false) {
+  return (root: HTMLElement) =>
+    [...root.querySelectorAll(selector)].find((el) =>
+      contains ? (el.textContent ?? "").includes(text) : (el.textContent ?? "").trim() === text,
+    ) ?? null;
+}
+
+/** A finder for the first element matching `selector`. */
+export function first(selector: string) {
+  return (root: HTMLElement) => root.querySelector(selector);
+}
+
+/** A finder for the first element under `scope` whose `aria-label` starts with `prefix`. */
+export function byAriaPrefix(scope: string, prefix: string) {
+  return (root: HTMLElement) =>
+    [...root.querySelectorAll(`${scope} [aria-label]`)].find((el) =>
+      (el.getAttribute("aria-label") ?? "").startsWith(prefix),
+    ) ?? null;
 }

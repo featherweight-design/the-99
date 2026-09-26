@@ -19,7 +19,7 @@ import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 
 import { BrowseFigureBody } from "./browse-figure";
-import { KeyNumeral } from "./numeral";
+import { AnchoredNumerals, KeyNumeral, first, withText } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { ReadyToBuild } from "../home/ready-to-build";
@@ -191,6 +191,9 @@ function BuyTagFigure({ width }: { width: AboutWidth }) {
  * the whole explanation, which is exactly why a plate without the bar could not
  * teach them.
  */
+/** Key 1 is New, Draft and Building; 2 is Over and Unresolved; 3 is To buy; 4 is Complete. */
+const STATUS_NUMERAL: Partial<Record<StatusPill, number>> = { New: 1, Over: 2, "To buy": 3, Complete: 4 };
+
 function StatusFigure({ width }: { width: AboutWidth }) {
   const detail = refreshCopy.decks;
   // Only what the app actually renders. `detailCopies` was used here for
@@ -249,6 +252,13 @@ function StatusFigure({ width }: { width: AboutWidth }) {
                   `absolute bottom-[13px] left-[13px]` and would pin all seven
                   to the page corner, and the deck card's own footer draws 22px
                   tall at 10.5px rather than the tile's 24px at 11px. */}
+              {/* Each key line's numeral sits on the first status it names; the rest keep a
+                  spacer so the badges stay in one column. */}
+              {STATUS_NUMERAL[status] ? (
+                <KeyNumeral n={STATUS_NUMERAL[status]!} />
+              ) : (
+                <span aria-hidden className="w-[14px] flex-none" />
+              )}
               <StatusPillBadge
                 status={status}
                 className="flex h-[22px] w-[86px] flex-none items-center rounded-[6px] px-[8px] font-mono text-[10.5px] tracking-[0.06em]"
@@ -320,7 +330,9 @@ function FitFigure({ width }: { width: AboutWidth }) {
         <span className="text-[13.5px] font-semibold text-[color:var(--success)]">
           {e.bestInPool}
         </span>
-        <KeyNumeral n={2} />
+        {/* Key 3: a score means something only against your own collection, which is what
+            "best in your pool" says. */}
+        <KeyNumeral n={3} />
       </div>
 
       {/* The route's own bar, and its own legend. `legend` draws the three
@@ -330,8 +342,12 @@ function FitFigure({ width }: { width: AboutWidth }) {
           points over its weight and, expanded, the three explanations — which
           is what the entry is about and what the figure had none of. */}
       <FitBar fit={FIT_FULL} />
-      <div className="mt-[10px]">
-        <FitLegendFigureBody />
+      {/* Key 2: the three parts printed with their sum. */}
+      <div className="mt-[10px] flex items-start gap-[8px]">
+        <KeyNumeral n={2} className="mt-[2px]" />
+        <div className="min-w-0 flex-1">
+          <FitLegendFigureBody />
+        </div>
       </div>
 
       {/* THE OTHER DENOMINATOR. §3 draws one shape; key line 1 names two —
@@ -637,7 +653,21 @@ function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
           line and the way to the lane. The figure it replaces was three
           mark-and-meaning rows that NAMED two of those figures and showed
           neither, so the entry's three key lines had nothing to point at. */}
-      <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
+      <AnchoredNumerals
+        gutter
+        marks={[
+          // 1: the top nine is a ranking, under the block's own heading.
+          { n: 1, find: withText("h2", refreshCopy.home.readyHeading), side: "after" },
+          // 2: the fit line and the in-use clause, on the first card's meta row.
+          { n: 2, find: first(".hero-footer > div"), side: "gutter" },
+          // 3: the pair, which changes daily: the first card.
+          { n: 3, find: first(".grid > *"), side: "gutter", align: "top" },
+          // 4: the `N more scored X or better` line.
+          { n: 4, find: withText("span", "more scored", true), side: "after" },
+        ]}
+      >
+        <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
+      </AnchoredNumerals>
     </Specimen>
   );
 }

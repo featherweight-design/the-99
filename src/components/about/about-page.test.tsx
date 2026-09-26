@@ -1685,3 +1685,25 @@ describe("figures that draw what their keys name", () => {
     expect(specimen(container, "post-import").textContent).not.toContain("2 decks want 1 copy");
   });
 });
+
+// STATES-about-r2 B1/B2: one numeral ON the figure for every key line, placed on the part the
+// line names. The page shipped with 21 of 26 keyed figures breaking it (the About audit,
+// 2026-09-26), because nothing counted them. A key line with no mark is a bullet, and a mark with
+// no line is noise, so the check is an exact set in both directions.
+describe("every key line has its numeral on its figure", () => {
+  const keyed = aboutEntries.filter((e) => e.keys.length > 0 && e.id in FIGURES);
+
+  it("covers the entries it is about", () => {
+    expect(keyed.length).toBeGreaterThanOrEqual(26);
+  });
+
+  it.each(keyed.map((e) => [e.id, e] as const))("%s", (_id, entry) => {
+    const { container } = render(<AboutPage seen={0} />);
+    const figure = container.querySelector(`[id="${entry.id}"] [data-specimen]`);
+    expect(figure, "no figure drawn").not.toBeNull();
+    const drawn = [...figure!.querySelectorAll("[data-key-numeral]")]
+      .map((n) => Number(n.getAttribute("data-key-numeral")))
+      .sort((a, b) => a - b);
+    expect(drawn).toEqual(entry.keys.map((_, i) => i + 1));
+  });
+});

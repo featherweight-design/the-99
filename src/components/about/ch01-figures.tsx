@@ -108,7 +108,9 @@ import {
   ParseErrorRowView,
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
-import { KeyNumeral } from "./numeral";
+import { AnchoredNumerals, KeyNumeral, byAriaPrefix, first, withText } from "./numeral";
+import { discoverCopy } from "../../lib/copy/lanes";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
@@ -433,7 +435,14 @@ export function DiscoverFigureBody() {
     // 320. At 330 the last order clipped against the plate's own edge by 13px,
     // which a reader reads as a list that ends early rather than as a figure
     // cut short.
-    <div className="min-h-[380px] w-[300px]">
+    <AnchoredNumerals
+      className="min-h-[380px] w-[300px]"
+      marks={[
+        { n: 1, find: withText('[role="menuitemradio"]', discoverCopy.order.somethingNew, true), side: "inset-tr" },
+        { n: 2, find: withText('[role="menuitemradio"]', discoverCopy.order.bestFit, true), side: "inset-tr" },
+        { n: 3, find: withText('[role="menuitemradio"]', discoverCopy.order.popularity, true), side: "inset-tr" },
+      ]}
+    >
       <OrderControl
         value={LANE_DISCOVER.order}
         options={ORDER_OPTIONS.discover}
@@ -441,7 +450,7 @@ export function DiscoverFigureBody() {
         wide
         pinnedOpen
       />
-    </div>
+    </AnchoredNumerals>
   );
 }
 
@@ -470,6 +479,8 @@ export function PartnerSlotFigureBody() {
  * unowned, because the list PRICES what you do not own and an all-owned
  * fixture draws no price at all.
  */
+const SYNERGY_NUMERAL: Record<number, number> = { 0: 1, 2: 2, 4: 3 };
+
 export function CommanderAvailabilityFigureBody() {
   // Same fault as the fit key. `SynergyRow` has a phone layout, and forcing
   // the desktop one put its type, score, availability and toggle columns past
@@ -485,17 +496,24 @@ export function CommanderAvailabilityFigureBody() {
     // server action a reference page has no business calling.
     <CardDetailProvider fetchCard={async () => null}>
       <div className="flex flex-col">
-        {SYNERGY_ROWS.map((card) => (
-          <SynergyRow
-            key={card.oracleId}
-            card={card}
-            selected={false}
-            onToggle={() => {}}
-            siblings={[]}
-            width={desktop ? "desktop" : "phone"}
-            facet={card.facet}
-            newestAsOf={PRICES[0].fact.asOf}
-          />
+        {/* The free card carries key 1 (the dot and nothing else), the card with no free copy
+            key 2 (the note counts copies), the unowned card key 3 (the list prices it). The
+            other rows keep a spacer so the five stay in one column. */}
+        {SYNERGY_ROWS.map((card, i) => (
+          <div key={card.oracleId} className="flex items-center gap-[8px]">
+            {SYNERGY_NUMERAL[i] ? <KeyNumeral n={SYNERGY_NUMERAL[i]} /> : <span aria-hidden className="w-[14px] flex-none" />}
+            <div className="min-w-0 flex-1">
+              <SynergyRow
+                card={card}
+                selected={false}
+                onToggle={() => {}}
+                siblings={[]}
+                width={desktop ? "desktop" : "phone"}
+                facet={card.facet}
+                newestAsOf={PRICES[0].fact.asOf}
+              />
+            </div>
+          </div>
         ))}
       </div>
     </CardDetailProvider>
@@ -580,10 +598,17 @@ export function DeckPageFigureBody() {
         <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{version}</span>
       </div>
 
-      <div className="mt-[10px] flex items-center gap-[9px]">
+      {/* Key 2 over the Games tab, which drops a zero count; key 3 over Consider. Above rather
+          than beside, because the tabs sit 16px apart on a phone. */}
+      <AnchoredNumerals
+        className="mt-[24px]"
+        marks={[
+          { n: 2, find: first("#tab-games"), side: "above" },
+          { n: 3, find: first("#tab-consider"), side: "above" },
+        ]}
+      >
         <BuilderTabs tabs={DECK_TABS} view="deck" onViewChange={() => {}} />
-        <KeyNumeral n={2} />
-      </div>
+      </AnchoredNumerals>
     </div>
   );
 }
@@ -750,12 +775,20 @@ const MEASURED_MIX: RecommendedMix = {
 
 export function InformedBuildFigureBody() {
   return (
-    <RoleCounterStrip
-      mix={MEASURED_MIX}
-      cards={ROLE_MIX_CARDS}
-      onSeeShelf={() => {}}
-      rolesWithShelves={new Set(["draw", "removal"])}
-    />
+    <AnchoredNumerals
+      marks={[
+        // 1: the land cell, measured at 28. 2: the wipes cell, whose target of 0 is an answer.
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Land"), side: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "inset-tr" },
+      ]}
+    >
+      <RoleCounterStrip
+        mix={MEASURED_MIX}
+        cards={ROLE_MIX_CARDS}
+        onSeeShelf={() => {}}
+        rolesWithShelves={new Set(["draw", "removal"])}
+      />
+    </AnchoredNumerals>
   );
 }
 
@@ -783,32 +816,53 @@ const COMBO_SPECIMEN = [
 ];
 
 export function ComboAwarenessFigureBody() {
+  const c = comboAwarenessCopy.modal;
   return (
-    <ComboPartnersDetail
-      card={
-        {
-          oracleId: "about-combo",
-          name: "Basalt Monolith",
-          comboPartners: COMBO_SPECIMEN,
-        } as never
-      }
-      // Open, because key 4 names the Spellbook marker, which the block draws only open.
-      initiallyExpanded
-    />
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the heading, which carries no count. 2: the list of every partner. 3: its last row,
+        // the one you would have to buy, at the far end of the order. 4: Spellbook's marker.
+        { n: 1, find: withText("span", c.heading), side: "after" },
+        { n: 2, find: first("ul"), side: "gutter", align: "top" },
+        { n: 3, find: first("ul > li:last-child"), side: "gutter" },
+        { n: 4, find: first(`button[aria-label="${c.boundMarkerAria}"]`), side: "after" },
+      ]}
+    >
+      <ComboPartnersDetail
+        card={
+          {
+            oracleId: "about-combo",
+            name: "Basalt Monolith",
+            comboPartners: COMBO_SPECIMEN,
+          } as never
+        }
+        // Open, because key 4 names the Spellbook marker, which the block draws only open.
+        initiallyExpanded
+      />
+    </AnchoredNumerals>
   );
 }
 
 export function RolesFigureBody() {
   return (
-    <RoleCounterStrip
-      // A FIXTURE mix, because this is a specimen of the strip rather than a real deck: the
-      // page has no commander to resolve one for, and the figures exist to show the cells.
-      // `measured: false` keeps the source line honest — the specimen quotes EDHREC at nobody.
-      mix={SPECIMEN_MIX}
-      cards={ROLE_MIX_CARDS}
-      onSeeShelf={() => {}}
-      rolesWithShelves={new Set(["wipes", "land"])}
-    />
+    <AnchoredNumerals
+      marks={[
+        // 1: ramp over its recommendation, a surplus. 2: wipes short of it, with a shelf.
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Ramp"), side: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "inset-tr" },
+      ]}
+    >
+      <RoleCounterStrip
+        // A FIXTURE mix, because this is a specimen of the strip rather than a real deck: the
+        // page has no commander to resolve one for, and the figures exist to show the cells.
+        // `measured: false` keeps the source line honest — the specimen quotes EDHREC at nobody.
+        mix={SPECIMEN_MIX}
+        cards={ROLE_MIX_CARDS}
+        onSeeShelf={() => {}}
+        rolesWithShelves={new Set(["wipes", "land"])}
+      />
+    </AnchoredNumerals>
   );
 }
 
