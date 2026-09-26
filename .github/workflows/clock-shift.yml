@@ -70,6 +70,24 @@ jobs:
       # earns its ~16 minutes by finding more than another. +400 crosses a year
       # boundary, which is where date pinning usually breaks. The others are one
       # dispatch input away.
+      # A dispatch with `days=0` would be the worst possible outcome here: the shim
+      # no-ops at 0, `clock-shift.test.mts` takes its UNSHIFTED branch, and the
+      # workflow reports green having tested no future date at all -- a green that
+      # means nothing, which is the exact failure the self-test exists to prevent.
+      # A negative value shifts into the past, which tests something real but not
+      # what this job is for. Both are refused before the suite starts.
+      - name: Check the offset is a positive whole number of days
+        env:
+          CLOCK_SHIFT_DAYS: ${{ github.event.inputs.days || '400' }}
+        run: |
+          case "$CLOCK_SHIFT_DAYS" in
+            ''|*[!0-9]*) echo "::error::CLOCK_SHIFT_DAYS must be a positive whole number of days, got '$CLOCK_SHIFT_DAYS'"; exit 1 ;;
+          esac
+          if [ "$CLOCK_SHIFT_DAYS" -lt 1 ]; then
+            echo "::error::CLOCK_SHIFT_DAYS must be at least 1; 0 makes the suite run against today's clock and report a green that proves nothing"
+            exit 1
+          fi
+
       - name: Test with the clock moved forward
         env:
           CLOCK_SHIFT_DAYS: ${{ github.event.inputs.days || '400' }}
