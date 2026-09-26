@@ -81,10 +81,26 @@ describe("every probe that puts the About row back restores both columns (fa, 20
   const dir = new URL("../", import.meta.url);
   const probes = readdirSync(dir).filter((f) => /^probe-.*\.(mjs|ts|mts)$/.test(f));
 
+  // Every write that SETS the version to a stated value, as an update or an upsert's update
+  // clause. Raising it with `greatest(...)` is the gate-clearing write every probe makes and is
+  // not a restore; anything else is, and must carry the ids beside it.
+  const versionOnly = (src: string) =>
+    [...src.matchAll(/set\s+about_version_seen\s*=\s*([^`]*)`/g)]
+      .map((m) => m[1])
+      .filter((rest) => !/^greatest\(/.test(rest.trim()) && !rest.includes("about_seen_ids"));
+
   it.each(probes)("%s never restores the version on its own", (f) => {
-    const src = readFileSync(new URL(f, dir), "utf8");
     // A restore written by hand is where the ids column gets forgotten; the helper writes both.
-    expect(src).not.toMatch(/update user_prefs set about_version_seen = [^,`]*(`|where)/);
+    expect(versionOnly(readFileSync(new URL(f, dir), "utf8"))).toEqual([]);
+  });
+
+  it("reads a version-only restore in every form it has been written", () => {
+    expect(versionOnly("sql`update user_prefs set about_version_seen = ${p} where user_id = ${u}`")).toHaveLength(1);
+    expect(versionOnly("pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`")).toHaveLength(1);
+    expect(versionOnly("sql`insert into user_prefs (user_id, about_version_seen) values (${u}, ${p}) on conflict (user_id) do update set about_version_seen = ${p}`")).toHaveLength(1);
+    expect(versionOnly("sql`update user_prefs set about_version_seen = coalesce(${p}, 0) where user_id = ${u}`")).toHaveLength(1);
+    expect(versionOnly("sql`insert into user_prefs (user_id, about_version_seen) values (${u}, ${v}) on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, ${v})`")).toEqual([]);
+    expect(versionOnly("sql`update user_prefs set about_version_seen = ${v}, about_seen_ids = ${ids} where user_id = ${u}`")).toEqual([]);
   });
 
   it.each(probes.filter((f) => readFileSync(new URL(f, dir), "utf8").includes("captureAboutSeen(")))(
