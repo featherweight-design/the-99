@@ -8,10 +8,13 @@
 // different quantities, so both are named), which is
 // under Haiku's minimum cacheable length -- zero writes and zero reads across two
 // identical calls -- so for the recommended model it is inert. For Sonnet it
-// engages and still loses: 37 writes against 6 reads over 43 batch requests,
-// because they run in parallel and almost none finds a warm cache, which at 1.25x
-// to write and 0.1x to read cost more than not caching. Uncached, the block is paid
-// once per BATCH of 12 (one system block per request), never once per card.
+// engages and still loses, because the 43 batch requests run in parallel and almost
+// none finds a warm cache. The committed cost artifact records the CURRENT run:
+// 53,277 cache-write tokens and ZERO reads for Sonnet, 0 and 0 for Haiku. An earlier
+// run measured 37 writes against 6 reads; either way the writes dominate, and at
+// 1.25x to write against 0.1x to read that costs more than not caching. Uncached,
+// the block is paid once per BATCH of 12 (one system block per request), never once
+// per card.
 // Retained only because it is free to leave and starts paying if the block grows
 // past ~2,048 tokens AND submission is sequenced so reads dominate.
 //

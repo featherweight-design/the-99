@@ -71,8 +71,9 @@ for (const [i, cards] of batches.entries()) {
   // and rendered a null mana cost as "" where the request sends "(no cost)", so it
   // estimated BELOW what is sent -- the one direction this file says is unsafe.
   estIn += estTokens(renderBody(cards));
-  // NOT "first batch writes, the rest read". Measured on this sample: Sonnet wrote
-  // the cache 37 times and read it 6 over 43 requests, because batch requests run in
+  // NOT "first batch writes, the rest read". Measured: the committed cost artifact
+  // records 53,277 cache-write tokens and ZERO reads for Sonnet on the current run,
+  // and an earlier run saw 37 writes against 6 reads -- because batch requests run in
   // parallel and almost none finds a warm cache. Booking 1 write and 42 reads
   // under-estimates the instruction portion ~8x, in the one direction this file says
   // must never happen.

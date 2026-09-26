@@ -15,8 +15,9 @@
 //
 // THE VOCABULARY IS NOT OURS. Roles and themes are 2b's, confirmed 2026-09-25 as
 // "those two files as they stand on main, and nothing else": `Role` in
-// src/lib/recs/roles.ts and `Theme` in src/lib/recs/themes.ts. The three ramp
-// kinds are the shape d9 ruled and 2b is building to in E1. Nothing here invents
+// src/lib/recs/roles.ts and `Theme` in src/lib/recs/themes.ts. The FOUR ramp kinds
+// are the shape d9 ruled and 2b is building to in E1 -- three from the original
+// ruling plus `burstMana`, which this gold set found was missing. Nothing here invents
 // a job, and a model that returns one is scored as wrong rather than accommodated.
 
 /** `Role` in src/lib/recs/roles.ts. Stand-ins use this minus `land` (`SpellRole`). */

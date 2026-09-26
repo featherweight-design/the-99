@@ -204,14 +204,16 @@ both.
    so there is no separate `burstMana` figure to quote.)
 
 4. **Caching the instructions cost more than it saved.** d9 asked for cached
-   instructions. Measured: Sonnet wrote the cache 37 times and read it 6, because
-   43 batch requests run in parallel and nearly every one arrives before any cache
-   is warm. At 1.25x to write and 0.1x to read, that is **$0.0854 against $0.0784**
-   without caching — a 9% loss on the instruction portion. For Haiku the
-   `cache_control` is inert outright: the block is under its minimum cacheable
-   length (~1,285 tokens by our estimate, 1,215 as billed), measured as zero writes and zero reads across two identical
-   calls. **For the full run, either drop the breakpoint or batch sequentially
-   enough that reads dominate.**
+   instructions. The committed cost artifact records the current run: Sonnet wrote
+   **53,277 cache tokens and read ZERO**, because the 43 batch requests run in
+   parallel and none arrives after a cache is warm. The contaminated first run was
+   milder and pointed the same way — 37 writes against 6 reads, which at 1.25x to
+   write and 0.1x to read came to **$0.0854 against $0.0784** without caching, a 9%
+   loss on the instruction portion. With zero reads the loss is the whole write
+   premium. For Haiku the `cache_control` is inert outright: the block is under its
+   minimum cacheable length (~1,285 tokens by our estimate, 1,215 as billed),
+   measured as zero writes and zero reads across two identical calls. **For the full
+   run, drop the breakpoint unless submission is sequenced so reads dominate.**
 
 5. **The batch API is not reachable through this repo's proxy.** `ANTHROPIC_BASE_URL`
    points at `127.0.0.1:8787`, which forwards `/v1/messages` and answers
