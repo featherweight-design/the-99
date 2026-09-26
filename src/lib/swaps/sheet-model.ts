@@ -71,6 +71,12 @@ export type SheetGroup = {
   /** What `Show all {n} {noun}` counts: `lands`, `creatures`, `other types`. */
   noun: string;
   rows: SheetRow[];
+  /**
+   * Every stand-in in the group, which `rows` holds only once the whole group has been read. The sheet's
+   * model always sets it; a group built without a read (the About figure's) leaves it out, meaning its
+   * rows are the whole group.
+   */
+  total?: number;
 };
 
 const PLURAL: Record<MainType, string> = {
@@ -218,6 +224,7 @@ export function sheetModel(read: StandInsRead): SheetModel {
       noun,
       // An other-types row names its type first (addendum §1b): the heading cannot say it for the row.
       rows: g.rows.map((s) => row(s, line(s, g.same))),
+      total: g.total,
     };
   });
 

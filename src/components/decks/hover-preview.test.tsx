@@ -10,11 +10,13 @@ function rect(r: Partial<DOMRect> & { left: number; right: number; top: number; 
 /** A pane and two rows, each measuring wherever the test says it sits. */
 function Harness({
   rows,
+  waitForMove,
 }: {
   rows: Array<{ name: string; imageUri: string | null; box: DOMRect }>;
+  waitForMove?: boolean;
 }) {
   return (
-    <HoverPreviewProvider className="pane">
+    <HoverPreviewProvider className="pane" waitForMove={waitForMove}>
       {rows.map((r) => (
         <Row key={r.name} name={r.name} imageUri={r.imageUri} box={r.box} />
       ))}
@@ -113,6 +115,50 @@ describe("HoverPreviewProvider", () => {
 
     act(() => void vi.advanceTimersByTime(1));
     expect(preview()).not.toBeNull();
+  });
+
+  // Close-out ruling 3: a surface that opens under a resting pointer previews on intent, not position.
+  describe("waitForMove", () => {
+    it("previews nothing for a row drawn under a resting pointer, however long it rests", () => {
+      render(<Harness waitForMove rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+      fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
+      // A synthetic move after a layout repeats the resting position.
+      fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
+      act(() => void vi.advanceTimersByTime(1000));
+      expect(preview()).toBeNull();
+    });
+
+    it("previews the row once the pointer moves, after the usual delay, and as usual from then on", () => {
+      render(<Harness waitForMove rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }, { name: "b", imageUri: ART, box: LEFT_COLUMN }]} />);
+      fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
+      fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 104, clientY: 100 });
+      act(() => void vi.advanceTimersByTime(239));
+      expect(preview()).toBeNull();
+      act(() => void vi.advanceTimersByTime(1));
+      expect(preview()).not.toBeNull();
+      fireEvent.mouseLeave(screen.getByTestId("a"));
+      act(() => void vi.advanceTimersByTime(1000));
+      fireEvent.mouseEnter(screen.getByTestId("b"), { clientX: 100, clientY: 140 });
+      act(() => void vi.advanceTimersByTime(240));
+      expect(preview()).not.toBeNull();
+    });
+
+    it("opens on the arming move even when a leave cleared the row first", () => {
+      render(<Harness waitForMove rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+      fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
+      // The browser's own leave as the sheet's layout settles under a still pointer.
+      fireEvent.mouseLeave(screen.getByTestId("a"));
+      fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 106, clientY: 100 });
+      act(() => void vi.advanceTimersByTime(240));
+      expect(preview()).not.toBeNull();
+    });
+
+    it("leaves a provider without it previewing on entry, as the decklist always has", () => {
+      render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+      fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
+      act(() => void vi.advanceTimersByTime(240));
+      expect(preview()).not.toBeNull();
+    });
   });
 
   it("does not open when the pointer leaves inside the delay", () => {

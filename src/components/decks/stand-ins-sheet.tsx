@@ -30,12 +30,24 @@ import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { MutationError } from "./mutation-error";
 import { ModalChrome } from "./receipt-modal";
+import { landOnReceipt } from "./swap-receipt";
 
 const copy = swapToolsCopy.sheet;
 
 type Load = { state: "loading" } | { state: "failed" } | { state: "ready"; read: StandInsRead };
 
-function Thumb({ imageUri, border }: { imageUri: string | null; border: string }) {
+/**
+ * The card's art, or the design table's placeholder hatch when the catalog has none. The two thumbs hatch
+ * differently, as suggestion-card.tsx's cut and add do: the head's (the card leaving) in --border over
+ * --surface-raised, a row's (a card arriving) in --elevated over --border.
+ */
+const HATCH = {
+  head: "repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)",
+  row: "repeating-linear-gradient(135deg, var(--elevated) 0 3px, var(--border) 3px 6px)",
+} as const;
+
+function Thumb({ imageUri, side }: { imageUri: string | null; side: keyof typeof HATCH }) {
+  const border = side === "head" ? "var(--border-strong)" : "var(--border-dashed)";
   return (
     <span
       aria-hidden="true"
@@ -44,7 +56,7 @@ function Thumb({ imageUri, border }: { imageUri: string | null; border: string }
         border: `1px solid ${border}`,
         background: imageUri
           ? `center / cover no-repeat url("${imageUri}")`
-          : "repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)",
+          : HATCH[side],
       }}
     />
   );
@@ -60,15 +72,42 @@ const QUIET =
   "ml-auto min-h-[44px] rounded-[8px] px-[14px] text-[13px] md:min-h-[32px] md:rounded-[7px] md:px-[11px] md:py-[6px] md:text-[12px] leading-none font-medium bg-transparent cursor-pointer disabled:opacity-50 text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]";
 
 /**
- * One type group (addendum §1b): its heading with the order note at the right, the first
- * `STAND_IN_GROUP_SHOWN` rows, and a `Show all` text button that expands the group in place. A group no
- * longer than it shows draws no toggle. A taken row is always drawn, wherever it ranks.
+ * The rows a group draws: all of them once expanded, else the first `STAND_IN_GROUP_SHOWN` plus a taken
+ * row wherever it ranks. The stacked card's Prev/Next walks exactly these, so it never pages to a row the
+ * sheet is not showing (d9, close-out ruling 8).
  */
-// Exported for the About page's stand-ins figure (E3), which draws one group without the sheet's read.
-export function StandInGroup({ group, keep, children }: { group: SheetGroup; keep: string | null; children: (row: SheetRow) => React.ReactNode }) {
-  const [all, setAll] = useState(false);
-  const more = group.rows.length > STAND_IN_GROUP_SHOWN;
-  const shown = all || !more ? group.rows : group.rows.filter((r, i) => i < STAND_IN_GROUP_SHOWN || r.oracleId === keep);
+export function shownRows(group: SheetGroup, expanded: boolean, keep: string | null): SheetRow[] {
+  if (expanded || groupTotal(group) <= STAND_IN_GROUP_SHOWN) return group.rows;
+  return group.rows.filter((r, i) => i < STAND_IN_GROUP_SHOWN || r.oracleId === keep);
+}
+
+/** The group's true size: `total` when the read was capped, else the rows it carries (the About figure). */
+const groupTotal = (group: SheetGroup) => group.total ?? group.rows.length;
+
+/**
+ * One type group (addendum §1b): its heading with the order note at the right, the rows `shownRows`
+ * picks, and a `Show all {total}` text button that expands the group in place. The count is the group's
+ * true size, never the capped read's: when the first read carried less than the whole group, the press
+ * fetches the rest first and the button waits on it. A group no longer than it shows draws no toggle.
+ *
+ * The sheet CONTROLS it (`expanded`, `onToggle`), because the stacked card's Prev/Next pages the rows it
+ * shows. Exported for the About page's stand-ins figure (E3), which draws one group without the sheet's
+ * read and passes none of that: the group then holds its own open state, as it always did.
+ */
+export function StandInGroup({
+  group, keep = null, expanded, fetching = false, onToggle, children,
+}: {
+  group: SheetGroup;
+  keep?: string | null;
+  expanded?: boolean;
+  fetching?: boolean;
+  onToggle?: () => void;
+  children: (row: SheetRow) => React.ReactNode;
+}) {
+  const [own, setOwn] = useState(false);
+  const all = expanded ?? own;
+  const shown = shownRows(group, all, keep);
+  const more = groupTotal(group) > STAND_IN_GROUP_SHOWN;
   return (
     <section className="flex flex-col" aria-label={group.heading}>
       <div className="flex items-baseline justify-between gap-[10px] pb-[6px] border-b border-[color:var(--border)]">
@@ -82,10 +121,12 @@ export function StandInGroup({ group, keep, children }: { group: SheetGroup; kee
         <button
           type="button"
           aria-expanded={all}
-          onClick={() => setAll((v) => !v)}
+          aria-busy={fetching || undefined}
+          disabled={fetching}
+          onClick={onToggle ?? (() => setOwn((v) => !v))}
           className="flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent border-0 border-b border-[color:var(--border)] text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer"
         >
-          <span>{all ? copy.showFewer : copy.showAll(group.rows.length, group.noun)}</span>
+          <span>{all ? copy.showFewer : copy.showAll(groupTotal(group), group.noun)}</span>
           <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{all ? "▴" : "▾"}</span>
         </button>
       ) : null}
@@ -119,7 +160,7 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
         className="grid grid-cols-[minmax(0,1fr)_72px] md:grid-cols-[minmax(0,1fr)_96px_64px] gap-x-[10px] gap-y-[6px] md:gap-x-[12px] md:gap-y-0 items-center py-[10px] md:py-[9px]">
         <div className="flex flex-col gap-[3px] min-w-0">
           <div className="flex items-center gap-[7px] min-w-0">
-            <Thumb imageUri={row.imageUri} border="var(--border-dashed)" />
+            <Thumb imageUri={row.imageUri} side="row" />
             <span
               aria-hidden="true"
               className="flex-none w-[7px] h-[7px] rounded-full"
@@ -276,12 +317,42 @@ export function StandInsSheet({
   const [load, setLoad] = useState<Load>({ state: "loading" });
 
   const deckId = tools?.deckId;
+  // Whether the list in hand is every stand-in (`Show all` asked for it) or the capped first read. A ref
+  // so a re-read after a refusal reads back the same size of list the reader was looking at.
+  const full = useRef(false);
   const fetchList = useCallback(() => {
     if (!deckId) return;
-    loadStandInsAction(deckId, card.oracleId)
+    loadStandInsAction(deckId, card.oracleId, full.current)
       .then((r) => setLoad(r ? { state: "ready", read: r } : { state: "failed" }))
       .catch(() => setLoad({ state: "failed" }));
   }, [deckId, card.oracleId]);
+
+  // Expanded groups, by heading. Held here rather than in each group, because the stacked card's
+  // Prev/Next pages the rows the sheet is showing and has to know which groups are open.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [fetchingAll, setFetchingAll] = useState(false);
+  const toggleGroup = (group: SheetGroup) => {
+    const open = (on: boolean) => setExpanded((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(group.heading); else next.delete(group.heading);
+      return next;
+    });
+    if (expanded.has(group.heading)) return open(false);
+    if (group.rows.length >= groupTotal(group)) return open(true);
+    // The first read was capped: fetch the whole list, then open. A failed fetch leaves the group
+    // collapsed under its true count rather than opening it on a silent partial list.
+    if (!deckId) return;
+    setFetchingAll(true);
+    loadStandInsAction(deckId, card.oracleId, true)
+      .then((r) => {
+        if (!r) return;
+        full.current = true;
+        setLoad({ state: "ready", read: r });
+        open(true);
+      })
+      .catch(() => {})
+      .finally(() => setFetchingAll(false));
+  };
 
   // The sheet opens loading, so the first read needs no state change of its own.
   useEffect(fetchList, [fetchList]);
@@ -301,6 +372,21 @@ export function StandInsSheet({
   // A ref, not the `taking` state: two presses in one frame both read the state before either
   // render lands, and each would start its own swap.
   const inFlight = useRef(false);
+
+  // Closed after a take from a Shopping row, the sheet lands on the receipt the take left, as the card's
+  // door does (close-out ruling 2): the row that opened it left the list, so the dialog's focus return
+  // has nowhere to go and dropped to the page, thousands of pixels above the receipt. From the card's
+  // door the sheet closes back onto the card, which does this itself when it closes.
+  const takenSwap = useRef<string | null>(null);
+  useEffect(() => {
+    takenSwap.current = fromCard ? null : taken?.swapId ?? null;
+  });
+  // Whether the sheet is still up: a take the reader closed the sheet on lands after this has unmounted.
+  const mounted = useRef(true);
+  useEffect(() => () => {
+    mounted.current = false;
+    if (takenSwap.current) landOnReceipt(takenSwap.current);
+  }, []);
 
   if (!tools) return null;
   const model = load.state === "ready" ? sheetModel(load.read) : null;
@@ -324,6 +410,8 @@ export function StandInsSheet({
           free: result.addWasFree, cutLeft: result.cutLeft,
         });
         tools.announce(swapToolsCopy.announce.taken(name, row.name));
+        // Closed while the take was in flight: the unmount found no swap to land on, so the take does.
+        if (!mounted.current && !fromCard) landOnReceipt(result.swapId);
       } else {
         setRefused({ addId: row.oracleId, reason: result.reason });
       }
@@ -334,6 +422,7 @@ export function StandInsSheet({
       setTaking(null);
     }
   };
+
 
   const undo = async () => {
     if (!taken) return;
@@ -372,9 +461,12 @@ export function StandInsSheet({
         }
       : null,
   });
-  // The stacked card pages the sheet's own list, in the sheet's order across its groups.
+  // The stacked card pages the rows the sheet is SHOWING, in its order across its groups: five of a
+  // collapsed group, all of an expanded one (ruling 8). `rows` stays the whole list, for the stack's lookup.
+  const keep = taken?.addId ?? null;
   const rows = model?.groups.flatMap((g) => g.rows) ?? [];
-  const siblings = rows.map((r) => r.oracleId);
+  const shownBy = new Map(model?.groups.map((g) => [g.heading, shownRows(g, expanded.has(g.heading), keep)]) ?? []);
+  const siblings = [...shownBy.values()].flat().map((r) => r.oracleId);
   const listAsOf = load.state === "ready" ? load.read.newestAsOf : null;
 
   // A stand-in's card, stacked over the sheet, takes it from where the reader is (§7.3). Nothing for
@@ -424,7 +516,8 @@ export function StandInsSheet({
   return (
     // Its own preview provider, as the version synopsis has (swap tools v2, item 5): a stand-in row
     // previews its card like a decklist row does, raised above the sheet since it sits in a dialog.
-    <HoverPreviewProvider>
+    // It opens under the pointer that pressed its ⇄, often right over a row: a preview waits for a move.
+    <HoverPreviewProvider waitForMove>
     <ModalChrome
       title={copy.title}
       closeLabel={copy.closeAria}
@@ -443,7 +536,7 @@ export function StandInsSheet({
             {copy.replacing(tools.deckName)}
           </span>
           <div className="flex flex-wrap items-center gap-x-[9px] gap-y-[6px]">
-            <Thumb imageUri={card.imageUri ?? (load.state === "ready" ? load.read.original.imageUri : null)} border="var(--border-strong)" />
+            <Thumb imageUri={card.imageUri ?? (load.state === "ready" ? load.read.original.imageUri : null)} side="head" />
             <span aria-hidden="true" className="flex-none w-[7px] h-[7px] rounded-full" style={{ border: "1px dashed var(--fg-faint)" }} />
             <CardDetailTrigger
               oracleId={card.oracleId}
@@ -525,7 +618,14 @@ export function StandInsSheet({
         ) : null}
 
         {model?.groups.map((group) => (
-          <StandInGroup key={group.heading} group={group} keep={taken?.addId ?? null}>
+          <StandInGroup
+            key={group.heading}
+            group={group}
+            keep={keep}
+            expanded={expanded.has(group.heading)}
+            fetching={fetchingAll}
+            onToggle={() => toggleGroup(group)}
+          >
             {(row) => (
               taken?.addId === row.oracleId ? (
                 <TakenRow key={row.oracleId} cut={name} add={row.name} busy={undoing} error={undoFailed ? copy.undoRefused : null} onUndo={() => void undo()} />

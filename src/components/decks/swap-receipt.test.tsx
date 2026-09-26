@@ -10,7 +10,7 @@ const { undoSwapAction } = vi.hoisted(() => ({ undoSwapAction: vi.fn() }));
 vi.mock("../../lib/swaps/actions", () => ({ undoSwapAction }));
 
 const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
-const { SwapReceiptRow } = await import("./swap-receipt");
+const { SwapReceiptRow, landOnReceipt } = await import("./swap-receipt");
 
 const base: SwapReceipt = {
   swapId: "s1", deckId: "d1", cutOracleId: "c1", cut: "Plateau", add: "Rugged Prairie",
@@ -101,5 +101,35 @@ describe("SwapReceiptRow", () => {
       );
     });
     expect(screen.getByTestId("swap-receipt")).toBeInTheDocument();
+  });
+});
+
+describe("landOnReceipt", () => {
+  const frames = (n: number) => act(async () => {
+    for (let i = 0; i < n; i++) await new Promise((r) => requestAnimationFrame(() => r(null)));
+  });
+
+  it("lands on a receipt that draws late, and never after the reader has pressed or typed elsewhere", async () => {
+    const rects = vi.spyOn(Element.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    try {
+      const view = render(<button type="button">Somewhere else</button>);
+      const other = screen.getByRole("button", { name: "Somewhere else" });
+      // The reader moves on while the list is still re-rendering: a press, then a Tab, before any receipt.
+      landOnReceipt("late");
+      other.focus();
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab" }));
+      await frames(2);
+      view.rerender(<><button type="button">Somewhere else</button><div data-swap-id="late"><button type="button">Undo swap</button></div></>);
+      await frames(4);
+      expect(document.activeElement).toBe(other);
+
+      // With no input between, the same late receipt is landed on.
+      landOnReceipt("late");
+      (document.activeElement as HTMLElement).blur();
+      await frames(2);
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Undo swap" }));
+    } finally {
+      rects.mockRestore();
+    }
   });
 });

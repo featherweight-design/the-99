@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -235,6 +235,9 @@ describe("focus after a take", () => {
   const frame = () => act(async () => { await new Promise((r) => requestAnimationFrame(() => r(null))); });
 
   it("lands on the receipt's Undo swap when the swapped-out card closes, and not when it only pages", async () => {
+    // jsdom lays nothing out; the shared helper takes the visible copy of the receipt.
+    const rects = vi.spyOn(Element.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    onTestFinished(() => rects.mockRestore());
     render(
       <>
         {draw({ receipt })}

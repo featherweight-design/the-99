@@ -59,10 +59,10 @@ export async function setShoppingLimitAction(deckId: string, cents: number | nul
  * nothing. Null covers every refusal alike (flag off, a bad id, a deck that is not the reader's),
  * because the sheet draws one `failed` state for all of them.
  */
-export async function loadStandInsAction(deckId: string, cutOracleId: string): Promise<StandInsRead | null> {
+export async function loadStandInsAction(deckId: string, cutOracleId: string, full = false): Promise<StandInsRead | null> {
   if (!swapToolsEnabled() || !isUuid(deckId) || !isUuid(cutOracleId)) return null;
   const userId = await requireUserId();
-  return loadStandIns(deckId, userId, cutOracleId);
+  return loadStandIns(deckId, userId, cutOracleId, full === true);
 }
 
 /**

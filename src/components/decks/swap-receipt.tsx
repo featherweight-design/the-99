@@ -14,6 +14,66 @@ import { MutationError } from "./mutation-error";
 
 const copy = swapToolsCopy.row;
 
+/**
+ * Put focus on a take's receipt, where Undo swap lives, and bring it into view (addendum §3). Both doors
+ * close onto it: the row that opened the sheet or the card leaves the list with its last copy, so the
+ * dialog's own focus return has nowhere to go. The receipt draws once per mounted view, so the visible
+ * copy is the one taken.
+ *
+ * It HOLDS for up to three seconds rather than landing once, and that is measured, not caution: a sheet
+ * closed quickly after a take lands on the receipt the page draws at once, and then the revalidated page
+ * arrives and draws it again as a NEW node in the cut row's slot. Focus falls to the body with the old
+ * node, and the new one sat 2,000px below the viewport; and the page scrolled back under a receipt
+ * already focused as the list landed. So each frame it lands again when focus has fallen to the body,
+ * and brings the receipt back when it has left the viewport. It stops at the reader's first wheel,
+ * touch, key or press, and when focus moves anywhere else.
+ */
+export function landOnReceipt(swapId: string): () => void {
+  let frame = 0;
+  let landed = false;
+  let stopped = false;
+  let frames = 0;
+  const until = performance.now() + 3000;
+  // The reader's own input ends the hold at once: nothing here may fight a scroll or a keypress.
+  const inputs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+  const stop = () => {
+    stopped = true;
+    cancelAnimationFrame(frame);
+    for (const e of inputs) window.removeEventListener(e, stop, true);
+  };
+  for (const e of inputs) window.addEventListener(e, stop, true);
+  const land = () => {
+    if (stopped) return;
+    if (performance.now() > until) return stop();
+    frames += 1;
+    // A card still open (paging, a combo partner, the card the sheet was stacked over) keeps focus. One
+    // that is closing is still in the document for a frame or two, so it is waited out that long.
+    if (document.querySelector('[role="dialog"][aria-labelledby^="card-modal-title"]')) {
+      if (frames > 10) return stop();
+      frame = requestAnimationFrame(land);
+      return;
+    }
+    const receipt = [...document.querySelectorAll<HTMLElement>(`[data-swap-id="${CSS.escape(swapId)}"]`)]
+      .find((el) => el.getClientRects().length > 0);
+    const button = receipt?.querySelector<HTMLButtonElement>("button");
+    const active = document.activeElement;
+    // The reader has gone somewhere of their own: leave them there.
+    if (landed && active && active !== document.body && !receipt?.contains(active)) return stop();
+    // The sheet that is closing is still in the document the frame after its unmount began; a list
+    // still re-rendering has no receipt yet. Both are waited out.
+    if (receipt && button && !document.querySelector('[role="dialog"]')) {
+      if (!receipt.contains(active)) button.focus({ preventScroll: true });
+      const box = receipt.getBoundingClientRect();
+      // Out of view, it is brought back: the page moves under it as the revalidated list lands.
+      if (!landed || box.top < 0 || box.bottom > window.innerHeight) receipt.scrollIntoView?.({ block: "center" });
+      landed = true;
+    }
+    frame = requestAnimationFrame(land);
+  };
+  frame = requestAnimationFrame(land);
+  return stop;
+}
+
 export function SwapReceiptRow({ receipt }: { receipt: SwapReceipt }) {
   const tools = useSwapTools();
   const [busy, setBusy] = useState(false);

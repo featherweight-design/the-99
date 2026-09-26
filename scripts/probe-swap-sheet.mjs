@@ -63,6 +63,10 @@ const STAPLE_FACT = "staple, any commander";
 const SAME_TYPE = /^same type · [a-z]+$/;
 const LAND_GROUP = "same type · lands";
 const SHOWN = 5;
+/** The engine's first-read cap (`STAND_IN_GROUP_CAP`): Show all has to reach past it (close-out ruling 1). */
+const CAP = 30;
+/** The one-shot land's clause (`swapToolsCopy.sheet.mana.once`): rung 4, all ranked past the cap on Plateau. */
+const ONCE = / once, by sacrificing it/;
 
 const WIDTHS = [
   { label: 1300, viewport: { width: 1300, height: 900 } },
@@ -327,13 +331,33 @@ try {
         const n = Number(/Show all (\d+)/.exec(t.label)?.[1]);
         const height = await button.evaluate((b) => b.getBoundingClientRect().height);
         await button.click();
-        const opened = await section.evaluate((sec) => ({
+        // A capped first read fetches the rest on the press, so the rows arrive after it.
+        await section.evaluate((sec, want) => new Promise((done) => {
+          const ready = () => sec.querySelectorAll("li").length >= want
+            && sec.querySelector("button[aria-expanded]")?.getAttribute("aria-expanded") === "true";
+          if (ready()) return done();
+          const watch = new MutationObserver(() => { if (ready()) { watch.disconnect(); done(); } });
+          watch.observe(sec, { subtree: true, childList: true, attributes: true });
+          setTimeout(() => { watch.disconnect(); done(); }, 30_000);
+        }), n);
+        const opened = await section.evaluate((sec, source) => ({
           rows: sec.querySelectorAll("li").length,
           expanded: sec.querySelector("button[aria-expanded]").getAttribute("aria-expanded"),
-        }));
+          once: [...sec.querySelectorAll("li")].filter((li) => new RegExp(source).test(li.textContent)).length,
+        }), ONCE.source);
         report(`${tag} ${kind}: Show all draws the ${n} it names, in place, ${w.label === 390 ? 44 : 34}px tall`,
           opened.rows === n && opened.expanded === "true" && Math.round(height) === (w.label === 390 ? 44 : 34),
           `${opened.rows} rows, expanded ${opened.expanded}, ${height}px`);
+        if (kind === "land" && fx.picks.land === "Plateau") {
+          // Close-out ruling 1: the count is the WHOLE group, never the capped read's 30, and the one-shot
+          // lands (rung 4, all ranked past row 30 on Plateau) are on the page once it opens.
+          report(`${tag} land: Show all counts Plateau's whole group, past the ${CAP} the first read carries`, n > CAP, `Show all ${n}`);
+          report(`${tag} land: a one-shot land is reachable ("… once, by sacrificing it")`, opened.once > 0,
+            `${opened.once} of ${opened.rows} rows`);
+        }
+      }
+      if (kind === "land" && fx.picks.land !== "Plateau") {
+        report(`${tag} land: the Show all reading ran on Plateau`, false, `the account owns Plateau, so the fixture is ${fx.picks.land}`);
       }
       if (long.length === 0 && kind === "land") report(`${tag} land: a group long enough to carry Show all`, false, "none drawn");
       if (kind === "staple") {
@@ -391,6 +415,46 @@ try {
       }
     }
 
+    // Close-out ruling 3: the sheet opens under a RESTING pointer and previews nothing until it moves.
+    // d8's repro first: the ⇄ pressed with the pointer, which then rests where it pressed. Where that is
+    // not over a row at this layout, the pointer is parked over where a row draws (read off one opening)
+    // and the sheet opened from the keyboard, so it has not moved since the sheet appeared either way.
+    if (w.label === 1300) {
+      const landName = fx.picks.land;
+      const dialog = page.getByRole("dialog", { name: "Cheaper stand-ins" });
+      const rowAt = (x, y) => page.evaluate(([px, py]) =>
+        Boolean(document.elementFromPoint(px, py)?.closest('[data-testid="stand-in-row"]')), [x, y]);
+      const swapBox = await swapButton(page, landName).boundingBox();
+      let at = { x: swapBox.x + swapBox.width / 2, y: swapBox.y + swapBox.height / 2 };
+      await page.mouse.click(at.x, at.y);
+      await dialog.locator('[data-testid="stand-in-row"]').first().waitFor({ timeout: 30_000 });
+      let how = "pressed with the pointer";
+      if (!(await rowAt(at.x, at.y))) {
+        const row = await dialog.locator('[data-testid="stand-in-row"]').nth(1).boundingBox();
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached", timeout: 5_000 });
+        at = { x: row.x + row.width / 2, y: row.y + row.height / 2 };
+        await page.mouse.move(at.x, at.y);
+        await page.waitForTimeout(600);
+        await swapButton(page, landName).focus();
+        await page.keyboard.press("Enter");
+        await dialog.locator('[data-testid="stand-in-row"]').first().waitFor({ timeout: 30_000 });
+        how = "opened from the keyboard over a parked pointer";
+      }
+      const resting = await rowAt(at.x, at.y);
+      await page.waitForTimeout(1200);
+      const box = page.locator('[data-testid="hover-preview"]');
+      const early = await box.count();
+      report(`${tag} resting pointer: a row drawn under it previews nothing`, resting && early === 0,
+        resting ? `${early} preview(s) after 1.2s, ${how}` : "the pointer is not over a row, so this measured nothing");
+      await page.mouse.move(at.x + 12, at.y, { steps: 4 });
+      const moved = await box.waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false);
+      report(`${tag} resting pointer: a move previews the row`, moved, moved ? "previewed" : "no preview after the move");
+      await page.mouse.move(8, 8);
+      await page.keyboard.press("Escape");
+      await dialog.waitFor({ state: "detached", timeout: 5_000 });
+    }
+
     // ── PR 4b: a stand-in's card stacked over the sheet, Take, the receipt, Undo swap, a refusal ──
     const cut = fx.picks.spell;
     const openSheet = async () => {
@@ -412,14 +476,34 @@ try {
     const footer = await card.locator('[data-testid="stand-in-footer"]').filter({ visible: true }).count();
     report(`${tag} stacked: the card draws the Take footer`, footer === 1, `${footer} visible footer(s) on ${firstName}`);
     report(`${tag} stacked: the sheet stays under the card`, await sheet.isVisible(), "sheet mounted");
+    // The pager's own position, the span between Prev and Next (the footer carries mono text too).
+    const position = async () =>
+      (await card.getByRole("button", { name: "Next card" }).locator("xpath=preceding-sibling::span[1]").textContent())?.trim() ?? "";
     if (w.label === 1300) {
-      // The pager's own position, the span between Prev and Next (the footer carries mono text too).
-      const pos = (await card.getByRole("button", { name: "Next card" }).locator("xpath=preceding-sibling::span[1]").textContent())?.trim();
-      report(`${tag} stacked: Prev/Next page the sheet's list`, /^1 of \d+$/.test(pos ?? ""), `position ${pos}`);
+      // Close-out ruling 8: Prev/Next walks the rows the sheet SHOWS: five a collapsed group, all of an
+      // open one. Read against the rows drawn, collapsed now and again with every group opened.
+      const drawn = await sheet.locator("li").count();
+      const pos = await position();
+      report(`${tag} stacked: Prev/Next pages the ${drawn} rows the sheet shows, collapsed`, pos === `1 of ${drawn}`, `position ${pos}`);
       await card.getByRole("button", { name: "Next card" }).click();
       await page.waitForTimeout(800);
       const next = await card.locator('[data-testid="stand-in-footer"]').filter({ visible: true }).count();
       report(`${tag} stacked: the next stand-in keeps its footer`, next === 1, `${next} footer(s)`);
+      await page.keyboard.press("Escape");
+      await card.waitFor({ state: "detached", timeout: 5_000 });
+      // Every group opened, then the first row's card again: the pager now walks all of them.
+      const toggles = sheet.locator('button[aria-expanded="false"]');
+      const had = await toggles.count();
+      for (let i = 0; i < had; i++) {
+        await toggles.first().click();
+        await page.waitForTimeout(1500);
+      }
+      const all = await sheet.locator("li").count();
+      await sheet.locator("li button").first().click();
+      await card.waitFor({ timeout: 15_000 });
+      const open = await position();
+      report(`${tag} stacked: Prev/Next pages all ${all} rows once every group is open`, had > 0 && all > drawn && open === `1 of ${all}`,
+        `position ${open}, ${had} group(s) opened`);
     }
     await page.keyboard.press("Escape");
     await card.waitFor({ state: "detached", timeout: 5_000 });
@@ -433,18 +517,33 @@ try {
     const landed = await sheet.locator('[data-testid="stand-in-taken"]').waitFor({ timeout: 20_000 }).then(() => null, async () =>
       (await sheet.locator('[role="alert"], [data-testid="stand-in-refused"]').allTextContents()).join(" | ") || "nothing drawn");
     if (landed !== null) throw new Error(`Take on ${addName} landed no taken row: ${landed}`);
-    report(`${tag} take: the taken row, and Take put away on the others`, (await takes.count()) === 0 && before > 1,
-      `${before} Take buttons before, ${await takes.count()} after`);
     report(`${tag} take: the note under the head`, await sheet.getByText(/has left the draft/).isVisible(), "takenNote drawn");
+    const putAway = await takes.count();
+    // Close-out ruling 2: Escape out of the sheet lands on the receipt, in view, as the card's door does.
+    // Pressed AT ONCE, before the revalidated page lands: that is the order that moved the page out from
+    // under the receipt, and a probe that waits reads the receipt before the page moves and passes.
+    await page.keyboard.press("Escape");
+    await sheet.waitFor({ state: "detached", timeout: 5_000 });
+    report(`${tag} take: the taken row, and Take put away on the others`, putAway === 0 && before > 1,
+      `${before} Take buttons before, ${putAway} after`);
     const draft = await pool.query(`select c.name from deck_cards dc join cards c using (oracle_id) where dc.deck_id = $1 and c.name = any($2::text[])`, [deckId, [cut, addName]]);
     const inDraft = draft.rows.map((r) => r.name);
     report(`${tag} take: the draft holds the add and not the cut`, inDraft.includes(addName) && !inDraft.includes(cut),
       `in the draft: ${inDraft.join(", ") || "neither"}`);
-    await sheet.getByRole("button", { name: "Close cheaper stand-ins" }).click();
 
     // The receipt in the cut row's slot, then Undo swap from it.
     const receipt = onPage(page, '[data-testid="swap-receipt"]:visible').first();
     await receipt.waitFor({ timeout: 15_000 });
+    // Read once the page has settled, after the revalidated list has landed and moved what it moves.
+    await page.waitForTimeout(3_500);
+    const focused = await page.evaluate(() => {
+      const el = document.activeElement;
+      const r = el?.closest('[data-testid="swap-receipt"]');
+      if (!r) return `focus on ${el ? `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 40)}"` : "nothing"}`;
+      const b = r.getBoundingClientRect();
+      return b.top >= 0 && b.bottom <= window.innerHeight ? "in view" : `out of view (top ${Math.round(b.top)})`;
+    });
+    report(`${tag} escape after a take: focus lands on the receipt, in view`, focused === "in view", focused);
     report(`${tag} receipt: drawn in the list`, ((await receipt.textContent()) ?? "").includes(`${cut} → ${addName}`), (await receipt.textContent())?.slice(0, 70));
     // The receipt is the page's own note and draws at once; the row leaves when the revalidated page lands.
     const left = await swapButton(page, cut).waitFor({ state: "detached", timeout: 20_000 }).then(() => true, () => false);
