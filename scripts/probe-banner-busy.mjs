@@ -145,6 +145,9 @@ async function walk(page, deck, width) {
       { timeout: 5_000 },
     )
     .then(() => true, () => false);
+  // The hold has to have caught the press, or a busy label read after the reply proves nothing
+  // about the label while the press is in flight.
+  report(held, `${width}: the press's request was held`);
   report(busy, `${width}: the button reads "${BUSY}" while the press runs`);
   if (busy) {
     const b = await readButton(banner);

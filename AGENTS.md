@@ -906,7 +906,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
 - `pnpm probe:overview-hold` walks a FIRST Analyze that also writes the overview, at 1300x900
   and 390x844 (Hugh's ruling, 2026-09-26; the overview-loading addendum). Such a press holds the
-  empty state's ring through the write, its heading stepping from `Reading your deck…` to
+  empty state's ring through the write, its heading stepping from `Working out your bracket…` to
   `Writing the overview…`, and lets go ONCE: the verdict, the written overview and Suggested
   changes paint in one frame, nothing moves afterwards, and the verdict and the overview are
   announced together. Past `OVERVIEW_HOLD_MS` (25s) it lets go onto the verdict with the slot's

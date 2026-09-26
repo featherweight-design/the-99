@@ -260,8 +260,10 @@ async function run() {
       try {
         await restoreProfile();
       } catch (error) {
+        // Counted as a failure, not only an exit code: the line below sets the code from `failures`,
+        // and a restore that failed has left the reader's saved analysis missing.
         console.error(`cleanup: ${error.message}`);
-        process.exitCode = 1;
+        failures += 1;
       }
     }
   }
