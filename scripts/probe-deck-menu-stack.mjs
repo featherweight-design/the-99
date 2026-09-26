@@ -12,7 +12,8 @@
 // measured nothing. At 390x844 the dropdowns open inside the filter sheet, a fixed overlay above
 // everything, and the same check runs over the sheet as an invariance.
 //
-// It makes no writes. Point it at `local-dev`, whose fixture account holds enough decks for the
+// Its one write is the About row `clearAboutSheet` sets for the account (every entry marked seen),
+// which it leaves set. Point it at `local-dev`, whose fixture account holds enough decks for the
 // first row of tiles to sit under the popover.
 //
 //   PROBE_BASE=http://localhost:3018 node scripts/probe-deck-menu-stack.mjs
