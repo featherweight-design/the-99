@@ -1770,8 +1770,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   sets both ways (the ten busiest and the ten newest, less any on both lists), plus a card printed in two sets matching
   either, two sets taken as the union, case, and an unknown code. Every fixture is found by query.
 
-  With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every legendary
-  card in every set and fails three checks. It makes no writes, so it can point at staging.
+  The index covers the commander candidates by the ranking's own `isCommanderCandidate`, and the
+  probe checks that too: a legendary type-line shortcut leaves out the cards that only SAY they
+  can be your commander, and a Printed in selection then hides them whatever their printings.
+  With the read narrowed back to that shortcut, three checks fail (`index 3860, catalog 3866`).
+  With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every
+  candidate in every set and fails three more. It makes no writes, so it can point at staging.
 
 - `pnpm probe:fill` proves `planFill` against a real Postgres and the real catalog — fourteen
   checks in seven sections, one per rule the fill gained when it stopped building to four

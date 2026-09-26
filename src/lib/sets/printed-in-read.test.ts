@@ -10,7 +10,21 @@ vi.mock("../../db", () => ({
   db: {
     execute: async () => {
       reads += 1;
-      return { rows: [{ oracle_id: `read-${reads}`, set_code: "hob", name: "Hobbits", released_at: null }] };
+      // One shape serves both reads: the candidate read and the printings read.
+      return {
+        rows: [
+          {
+            oracle_id: `read-${reads}`,
+            type_line: "Legendary Creature — Halfling",
+            oracle_text: null,
+            mana_cost: "{1}{G}",
+            layout: "normal",
+            set_code: "hob",
+            name: "Hobbits",
+            released_at: null,
+          },
+        ],
+      };
     },
   },
 }));
@@ -37,6 +51,7 @@ describe("loadCommanderPrintings", () => {
     const third = loadCommanderPrintings(at + 1);
     generations[2]("new");
     expect(Object.keys((await third).byOracle)).toEqual(Object.keys((await later).byOracle));
-    expect(reads).toBe(2);
+    // Two loads, two reads each: the candidates, then their printings.
+    expect(reads).toBe(4);
   });
 });
