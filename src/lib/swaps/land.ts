@@ -371,7 +371,11 @@ const DRAWBACK_LINES: readonly RegExp[] = [
  * A drawback is a line with no activation cost: an ability that returns the land to hand as its COST
  * (Maze's End, Ghost Town) or as part of what it does (Thawing Glaciers) is an ability, and is given up.
  */
-const isDrawbackLine = (line: string) => !/^[^.]*:/.test(line) && DRAWBACK_LINES.some((d) => d.test(line));
+const isDrawbackLine = (line: string, name: string) => {
+  // Older oracle text names the card where current text says `this land`: read both as `this land`.
+  const own = line.replaceAll(name.toLowerCase(), "this land");
+  return !/^[^.]*:/.test(own) && DRAWBACK_LINES.some((d) => d.test(own));
+};
 
 /**
  * What a stand-in gives up against the original: each of the original's non-mana abilities the
@@ -390,7 +394,7 @@ export function givesUp(original: LandText, standIn: LandText): GivenUp[] {
   const kept = new Set(nonManaAbilities(standIn).map((s) => key(s, standIn.name)));
   const out: GivenUp[] = [];
   const seen = new Set<string>();
-  for (const sentence of nonManaAbilities(original).filter((s) => !isDrawbackLine(s))) {
+  for (const sentence of nonManaAbilities(original).filter((s) => !isDrawbackLine(s, original.name))) {
     const k = key(sentence, original.name);
     if (seen.has(k) || kept.has(k)) continue;
     seen.add(k);

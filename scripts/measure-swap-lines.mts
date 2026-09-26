@@ -30,7 +30,7 @@ import { chromium, type Page } from "playwright";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 
-import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPageRole } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { jobOf, rankStandIns, type Candidate, type CardRow } from "../src/lib/swaps/stand-ins";
@@ -171,7 +171,8 @@ async function signIn(page: Page): Promise<string> {
 
 let failures = 0;
 let deckId: string | null = null;
-let aboutPrior: { userId: string; existed: boolean; value: number | null } | null = null;
+/** Both About columns as the run found them: `clearAboutSheet` adds ids, and a version-only restore leaves them. */
+let aboutPrior: Awaited<ReturnType<typeof captureAboutSeen>> | null = null;
 let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
 try {
   const started = Date.now();
@@ -187,8 +188,7 @@ try {
   const page = await browser.newPage({ viewport: WIDTH === 390 ? { width: 390, height: 844 } : { width: WIDTH, height: 900 } });
   const userId = await signIn(page);
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
-  const prior = await pool.query(`select about_version_seen from user_prefs where user_id = $1`, [userId]);
-  aboutPrior = { userId, existed: (prior.rowCount ?? 0) > 0, value: prior.rows[0]?.about_version_seen ?? null };
+  aboutPrior = await captureAboutSeen(userId);
   await pool.query(
     `insert into user_prefs (user_id, about_version_seen) values ($1, $2)
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
@@ -285,7 +285,11 @@ try {
     // The ruling's three lines, with the named residue allowed four and nothing allowed five.
     const listed = new Map(FOUR_LINE_RESIDUE.map((r) => [r.text, r]));
     const five = worst.filter((w) => w.lines > MAX_LINES + 1);
-    const unlisted = worst.filter((w) => w.lines === MAX_LINES + 1 && listed.get(w.text)?.originalId !== w.originalId);
+    // Listed means THIS line for THIS original and stand-in: a new pair drawing a listed line's text is unlisted.
+    const unlisted = worst.filter((w) => {
+      const entry = listed.get(w.text);
+      return w.lines === MAX_LINES + 1 && (entry?.originalId !== w.originalId || entry?.standInId !== w.row.oracleId);
+    });
     const stale = FOUR_LINE_RESIDUE.filter((r) => {
       const w = worst.find((x) => x.text === r.text);
       return !w || w.lines !== MAX_LINES + 1 || w.originalId !== r.originalId || w.row.oracleId !== r.standInId;
@@ -306,13 +310,7 @@ try {
   console.log(` FAIL  the run threw — ${(error as Error).message}`);
 } finally {
   if (deckId) await pool.query(`delete from decks where id = $1`, [deckId]).catch(() => { failures += 1; });
-  if (aboutPrior) {
-    const a = aboutPrior;
-    await (a.existed
-      ? pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`, [a.userId, a.value])
-      : pool.query(`delete from user_prefs where user_id = $1`, [a.userId])
-    ).catch(() => { failures += 1; });
-  }
+  if (aboutPrior) await restoreAboutSeen(aboutPrior).catch(() => { failures += 1; });
   await browser?.close();
   await pool.end();
 }

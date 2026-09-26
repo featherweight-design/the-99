@@ -287,6 +287,12 @@ describe("givesUp (H3)", () => {
     expect(givesUp(zone, wastes)).toHaveLength(1);
   });
 
+  it("reads a drawback that names the card itself as the same drawback", () => {
+    const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
+    const named = L("Old Paradise", "Land", "{T}: Add one mana of any color. During your next untap step, as you untap your permanents, return Old Paradise to its owner's hand.");
+    expect(givesUp(named, wastes)).toEqual([]);
+  });
+
   it("still gives up an ability whose COST or effect returns the land to hand", () => {
     const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
     for (const land of [
