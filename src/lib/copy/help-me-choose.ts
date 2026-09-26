@@ -51,6 +51,13 @@ export const helpMeChooseCopy = {
     themeAnother: "Add another…", // canvas
     themeCount: (n: number) => plural(n, "commander", "commanders"), // canvas
     removeTheme: (label: string) => `Remove ${label}`, // eng: the chip's ✕, spoken
+    // Three-answers addendum §3: where the 99 comes from.
+    pool: "Cards for the 99",
+    poolAny: "Any cards",
+    poolOwn: "Only cards I own",
+    poolCaptionAny: "Owned or not. The budget caps what you’d buy.",
+    poolCaptionOwn: "The 99 comes from your collection. The commander can still be one you’d buy, and it’s priced on its own.",
+    budgetCaptionOwn: "With the 99 from your cards, this caps the commander only. It never ranks.",
     // Three-answers addendum §2: the Sets answer.
     sets: "Sets",
     setsCaption: "Only commanders printed in one of these. Leave it empty for every set.",
@@ -80,9 +87,12 @@ export const helpMeChooseCopy = {
     startOver: "Start over", // canvas
     noPrice: "buy · no price", // canvas
     noPriceTail: "no price", // canvas: the tail of `noPrice`, drawn in --fg-faint
-    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", printedIn: "printed in", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", printedIn: "printed in", pool: "the 99", card: "card", budget: "budget", bracket: "bracket" }, // canvas
     /** Between the names on an any-of chip, drawn apart from them. */
     joiner: "or",
+    /** The the-99 chip's value, and the mono tail after it. */
+    poolValue: "from cards you own",
+    poolTail: "commander owned or not",
     /** After a deeper look: what even it could not place. */
     stillNotUsed: "Still not used",
     /** The tag on a chip the deeper look added. */
@@ -148,6 +158,10 @@ export const helpMeChooseCopy = {
     figCardTail: (c: string) => `of its decks run ${c}`, // canvas
     figOwnedTail: (total: number) => `of the ${total} cards its decks run are yours`, // canvas
     setsRank: "SETS RANK",
+    /** Own-only (addendum §3): the ownership line splits into the commander, then the 99. */
+    rowCommander: "commander",
+    rowOwn: "99 from your cards",
+    rowUsual: (owned: number) => `${owned} of its usual 99 are yours`,
     /** The row's set tag, spoken: its code is drawn, the set named. */
     printedIn: (set: string) => `Printed in ${set}`,
     bestFits: "Best fits",
@@ -206,7 +220,7 @@ export const helpMeChooseCopy = {
     block: "Built from your answers",
     change: "Change",
     changeAria: "Change your answers",
-    keys: { theme: "Theme", anyOf: "Any of", sets: "Printed in", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
+    keys: { theme: "Theme", anyOf: "Any of", sets: "Printed in", pool: "The 99", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
     themeFig: (pct: number, t: string) => `${pct}% of its decks are ${t}.`, // canvas
     placed: "Placed in the deck because you asked for it.",
     cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas
@@ -214,6 +228,10 @@ export const helpMeChooseCopy = {
     budgetUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it. The fill caps the rest as usual.`,
     /** No card to pay for first, or one already owned: the budget caps the fill alone. Eng: undrawn. */
     budgetAlone: "The fill buys in its own order while the price fits, and finishes with basics.",
+    /** Own-only: the fill buys nothing, so the budget has only the placed card to pay for. */
+    budgetOwn: "The 99 comes from your cards, so the fill buys nothing and finishes with basics.",
+    poolValue: "From cards you own",
+    poolLine: "The fill takes only cards you own, with a copy free, and finishes with basics.",
     bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
     bracket: (n: number) => `The fill keeps every card it chooses inside bracket ${n}’s limits.`,
     backToResults: "Back to results",

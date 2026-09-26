@@ -70,18 +70,21 @@ export function seededAnswersIntent(
     themeJoin?: "all" | "any";
     /** Set codes, drawn upper-case. */
     sets?: readonly string[];
+    /** The 99 from the player's own cards. */
+    ownOnly?: boolean;
     cardName: string | null;
     budgetDollars: number | null;
     bracket: number | null;
   },
 ): string {
   const names = commanderNames.join(" and ");
-  const { seededAnswers, answerThemes, answerThemesAny, answerSets, answerCard, answerBudget, answerBracket, maxLength } = deckTuningCopy.intent;
+  const { seededAnswers, answerThemes, answerThemesAny, answerSets, answerOwn, answerCard, answerBudget, answerBracket, maxLength } = deckTuningCopy.intent;
   const anyOf = answers.themeJoin === "any" && answers.themes.length >= 2;
   const themes = answers.themes.length > 0 ? [(anyOf ? answerThemesAny : answerThemes)(answers.themes)] : [];
   const full = [
     ...themes,
     ...(answers.sets && answers.sets.length > 0 ? [answerSets(answers.sets.map((c) => c.toUpperCase()))] : []),
+    ...(answers.ownOnly ? [answerOwn] : []),
     ...(answers.cardName !== null ? [answerCard(answers.cardName)] : []),
     ...(answers.budgetDollars !== null ? [answerBudget(answers.budgetDollars)] : []),
     ...(answers.bracket !== null ? [answerBracket(answers.bracket)] : []),

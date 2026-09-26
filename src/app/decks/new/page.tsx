@@ -43,6 +43,7 @@ export default async function NewDeckPage({
           themeJoin: answers.themeJoin,
           // The first eight, as the themes are: they write the brief alone, bounded at that.
           sets: answers.sets.slice(0, MAX_SETS).map((s) => s.code),
+          pool: answers.pool,
           // A card whose read failed is still the answer: `createDeck` checks it against the catalog.
           cardOracleId: answers.card?.oracleId ?? (answers.cardUnread ? asked.card : null),
           budgetDollars: answers.budgetDollars,

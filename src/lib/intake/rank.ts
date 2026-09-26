@@ -51,6 +51,7 @@ import { TOO_NARROW_BELOW, carriesSubtype, rawShare, themeShare, type ThemeRow }
 export type Bracket = 1 | 2 | 3 | 4 | 5;
 
 export type ThemeJoin = "all" | "any";
+export type Pool = "any" | "own";
 
 export type Answers = {
   colors: string[];
@@ -64,6 +65,12 @@ export type Answers = {
    * rule). Several sets are always "or" (addendum §2). Absent or empty, no set is asked.
    */
   sets?: readonly string[];
+  /**
+   * Where the 99 comes from (addendum §3): `own` fills it from the player's own cards only. It never
+   * narrows the list and never ranks, so it is not an answer the search reads at all: it scopes the
+   * fill and the row's figures, and is never offered as a loosening.
+   */
+  pool?: Pool;
   /** The build-around card's oracle id. */
   card: string | null;
   budgetDollars: number | null;

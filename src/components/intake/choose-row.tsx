@@ -79,6 +79,7 @@ export function ChooseRow({
       trial={trial}
       retry={retry}
       budgetDollars={params.budgetDollars}
+      ownOnly={params.pool === "own"}
       cardName={cardName}
       cardUnpriced={cardUnpriced}
       best={best !== undefined}
@@ -248,6 +249,7 @@ function OwnershipLine({
   trial,
   retry,
   budgetDollars,
+  ownOnly = false,
   cardName,
   cardUnpriced,
   best,
@@ -256,6 +258,8 @@ function OwnershipLine({
   trial: Trial;
   retry: () => void;
   budgetDollars: number | null;
+  /** Only cards I own (three answers §3): the commander is marked apart from the 99. */
+  ownOnly?: boolean;
   cardName: string | null;
   cardUnpriced: boolean;
   best: boolean;
@@ -278,8 +282,20 @@ function OwnershipLine({
         className="overflow-x-clip min-h-[18px] font-mono text-[10px] md:text-[11px] text-[color:var(--fg-muted)]"
       >
         <div className="flex flex-wrap items-center gap-y-[3px] -ml-[14px]">
-          <Segment><Mark mark={mark} /></Segment>
-          {ready ? (
+          <Segment>
+            {ownOnly && (
+              <span className="mr-[6px] text-[9.5px] uppercase tracking-[.08em] text-[color:var(--fg-locked)]">{copy.results.rowCommander}</span>
+            )}
+            <Mark mark={mark} />
+          </Segment>
+          {ready && ownOnly ? (
+            // The 99 buys nothing here, so no figure to buy: where it comes from, and how much of
+            // its usual 99 (the ordinary fill's, `trialFill`) the player already owns.
+            <>
+              <Segment>{copy.results.rowOwn}</Segment>
+              <Segment>{copy.results.rowUsual(ready.owned)}</Segment>
+            </>
+          ) : ready ? (
             <>
               <Segment>{copy.results.ownCount(ready.owned)}</Segment>
               <Segment>

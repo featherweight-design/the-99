@@ -37,6 +37,8 @@ export type Chip =
   | { kind: "card"; oracleId: string; name: string }
   /** A set, lower-case code as `printings` stores it. */
   | { kind: "set"; code: string; name: string }
+  /** The 99 from the player's own cards (addendum §3). */
+  | { kind: "pool" }
   | { kind: "budget"; dollars: number }
   | { kind: "bracket"; bracket: 1 | 2 | 3 | 4 | 5 };
 
@@ -156,6 +158,19 @@ export function buildPhraseIndex(
   };
 }
 
+/**
+ * The 99 from cards the player owns (addendum §3): a fixed list of phrasings, engineering's to
+ * keep. Matched before the word scan, like the figures, so their words never reach it.
+ */
+const OWN_ONLY =
+  /\b(?:(?:only|just|using|with|from)\s+)?(?:(?:the\s+)?cards?\s+(?:that\s+)?i\s+(?:already\s+)?(?:own|have)|(?:from\s+)?my\s+(?:own\s+)?(?:collection|cards)|what\s+i\s+(?:already\s+)?(?:own|have))\b/gi;
+/**
+ * Said beside own-only, and already the default: the commander is listed owned or not. Absorbed,
+ * so it is neither an answer nor under *Not used*.
+ */
+const COMMANDER_MAY_BE_BOUGHT =
+  /\b(?:the\s+)?commander\s+can\s+be\s+(?:one|something|a\s+card)\s+(?:that\s+)?(?:i|we)(?:'d|\s+would)?\s+(?:(?:have|need)\s+to\s+)?(?:buy|purchase)\b|\b(?:the\s+)?commander\s+can\s+be\s+(?:one|something)\s+(?:that\s+)?(?:i|we)\s+(?:don't|do\s+not)\s+own\b/gi;
+
 // `$200`, `$1,500`, `$49.99`, `200$`, `200 dollars`, `150 bucks`, `300 usd`.
 const DOLLARS = /\$\s?(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s?(?:\$|dollars?\b|bucks?\b|usd\b)/gi;
 const BRACKET = /\bbracket\s*#?\s*([1-5])\b/gi;
@@ -185,6 +200,13 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
     found.push({ at: m.index, chip: { kind: "budget", dollars } });
     blank(m.index, m.index + m[0].length);
   }
+
+  // Own-only, then the phrase it absorbs, on what the figures left.
+  for (const m of rest.matchAll(OWN_ONLY)) {
+    found.push({ at: m.index, chip: { kind: "pool" } });
+    blank(m.index, m.index + m[0].length);
+  }
+  for (const m of rest.matchAll(COMMANDER_MAY_BE_BOUGHT)) blank(m.index, m.index + m[0].length);
 
   // The word scan, over the raw spans so a one-word card name can be tested for its capital.
   const words = [...rest.matchAll(/[^\s]+/g)].flatMap((m) =>
@@ -351,6 +373,7 @@ function sameChip(a: Chip, b: Chip): boolean {
     case "theme": return b.kind === "theme" && a.slug === b.slug;
     case "card": return b.kind === "card" && a.oracleId === b.oracleId;
     case "set": return b.kind === "set" && a.code === b.code;
+    case "pool": return b.kind === "pool";
     case "budget": return b.kind === "budget" && a.dollars === b.dollars;
     case "bracket": return b.kind === "bracket" && a.bracket === b.bracket;
   }

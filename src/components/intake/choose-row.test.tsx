@@ -121,3 +121,22 @@ describe("the set tag (three answers §2)", () => {
     expect(screen.queryAllByTestId("row-set")).toHaveLength(0);
   });
 });
+
+describe("own-only (three answers §3)", () => {
+  it("marks the commander apart, and says where the 99 comes from and how much of its usual 99 is yours", () => {
+    render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ul>
+          <ChooseRow row={row()} figures={[]} owned={false} params={{ ...params, pool: "own" }} cardName="Regisaur Alpha" cardUnpriced={false}
+            trial={{ state: "ready", figures: { body: 99, owned: 58, buyCents: 12_000, unpricedCard: null } }} retry={vi.fn()} />
+        </ul>
+      </CardDetailProvider>,
+    );
+    const line = screen.getByTestId("ownership-line").textContent ?? "";
+    expect(line).toContain("commander");
+    expect(line).toContain("99 from your cards");
+    expect(line).toContain("58 of its usual 99 are yours");
+    // Nothing is bought for the 99: no figure to buy.
+    expect(line).not.toMatch(/to buy/);
+  });
+});

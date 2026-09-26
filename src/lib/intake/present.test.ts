@@ -246,3 +246,10 @@ describe("the Sets answer", () => {
     expect(drop.params.sets).toEqual([]);
   });
 });
+
+describe("own-only", () => {
+  it("draws the the-99 chip with its tail, and is never a narrow option", () => {
+    const own = p({ themes: ["dinos"], pool: "own" });
+    expect(answerChips(own, labels)[1]).toEqual({ kind: "the 99", value: "from cards you own", tail: "commander owned or not", deeper: false });
+  });
+});

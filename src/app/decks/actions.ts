@@ -390,7 +390,12 @@ export async function createDeck(
           : []),
       ],
       selectedSet,
-      asked === null ? {} : { answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null } },
+      asked === null ? {} : {
+        answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
+        // Only cards I own (three answers §3): the 99 from what the collection can supply. Nothing
+        // is bought for it, so the budget has only the placed card to charge.
+        ...(asked.pool === "own" ? { pool: "sleeveable" as const } : {}),
+      },
     );
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
@@ -706,7 +711,11 @@ export async function fillDeck(deckId: string): Promise<void> {
     userId,
     partner ? [commander, partner] : [commander],
     new Set(buildAround ? [buildAround] : []),
-    answers === null ? {} : { answers },
+    {
+      ...(answers === null ? {} : { answers }),
+      // The retry fills the way the create was asked to: from the player's own cards.
+      ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, excludeDeckId: deck.id } : {}),
+    },
   );
   // The card first, then as much of the plan as fits: the plan fills a whole body on its own, so
   // uncapped a stored card made 100.

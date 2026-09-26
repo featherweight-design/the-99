@@ -230,6 +230,8 @@ export function readForThisAsk<T extends { kind: "read" | "nothing"; read: { chi
 export type AnswerChip = {
   kind: string;
   value: string;
+  /** Drawn after the value, mono and faint: the the-99 chip's *commander owned or not*. */
+  tail?: string;
   /** Added by the deeper look (`d`). */
   deeper: boolean;
   /** An any-of chip's names, drawn with the joiner between them; `value` is then its spoken name. */
@@ -267,6 +269,7 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
         deeper: false,
       }]
       : []),
+    ...(p.pool === "own" ? [{ kind: k.pool, value: copy.readAs.poolValue, tail: copy.readAs.poolTail, deeper: false }] : []),
     ...(p.card && labels.card ? [{ kind: k.card, value: labels.card, deeper: marked("a") }] : []),
     ...(p.budgetDollars !== null ? [{ kind: k.budget, value: `$${p.budgetDollars}`, deeper: marked("b") }] : []),
     ...(p.bracket !== null ? [{ kind: k.bracket, value: `${p.bracket} · ${BRACKET_NAMES[p.bracket]}`, deeper: marked("k") }] : []),

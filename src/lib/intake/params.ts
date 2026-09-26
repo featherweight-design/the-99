@@ -3,7 +3,7 @@ import { parseColors } from "../color-param";
 import { isUuid } from "../uuid";
 import { MAX_BUDGET_DOLLARS } from "./answers";
 import type { Chip } from "./match";
-import type { Answers, Bracket, ThemeJoin } from "./rank";
+import type { Answers, Bracket, Pool, ThemeJoin } from "./rank";
 import { READ_WORDS_MAX_CHARS } from "./limits";
 
 // The words box's limit is the deeper read's (`limits.ts`), so the URL, the submit and the read
@@ -23,6 +23,7 @@ export { READ_WORDS_MAX_CHARS };
  * | `c`, `m` | colors and their mode, in the lanes' own encoding, so Discover's link parses as-is |
  * | `t` | theme slugs, comma-separated |
  * | `p` | set codes, lower-case, comma-separated: printed in any of them (the lanes' own key) |
+ * | `pool=own` | the 99 from the player's own cards; absent, any cards |
  * | `tj=any` | the themes as any of; absent, all of. Written only with two or more themes |
  * | `a` | the build-around card's oracle id |
  * | `b` | the budget, whole dollars |
@@ -46,6 +47,7 @@ export type ChooseParams = {
   themeJoin: ThemeJoin;
   /** Set codes, lower-case, deduplicated in the order given. */
   sets: string[];
+  pool: Pool;
   card: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -74,7 +76,7 @@ export const NOT_USED_CHARS = 120;
 export const NOT_USED_SEPARATOR = "\u001f";
 
 export const emptyParams = (): ChooseParams => ({
-  words: "", colors: [], match: "contains", themes: [], themeJoin: "all", sets: [], card: null,
+  words: "", colors: [], match: "contains", themes: [], themeJoin: "all", sets: [], pool: "any", card: null,
   budgetDollars: null, bracket: null, readId: null, notUsed: [], deeper: [], results: false,
 });
 
@@ -98,6 +100,7 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
     match: sp.get("m") === "exact" ? "exactly" : "contains",
     themes: [...new Set((sp.get("t") ?? "").split(",").filter((s) => SLUG.test(s)))],
     themeJoin: sp.get("tj") === "any" ? "any" : "all",
+    pool: sp.get("pool") === "own" ? "own" : "any",
     sets: [...new Set((sp.get("p") ?? "").split(",").map((s) => s.toLowerCase()).filter((s) => SET_CODE.test(s)))],
     // Lowercased: Postgres prints uuids lower, and every id this is compared with (the index, a
     // candidate, a row) comes from there. An address typed or pasted in upper case is the same card.
@@ -119,6 +122,7 @@ export function serializeChooseParams(p: ChooseParams): string {
   if (p.themes.length > 0) sp.set("t", p.themes.join(","));
   if (p.themes.length >= 2 && p.themeJoin === "any") sp.set("tj", "any");
   if (p.sets.length > 0) sp.set("p", p.sets.join(","));
+  if (p.pool === "own") sp.set("pool", "own");
   if (p.card) sp.set("a", p.card);
   if (p.budgetDollars !== null) sp.set("b", String(p.budgetDollars));
   if (p.bracket !== null) sp.set("k", String(p.bracket));
@@ -150,6 +154,7 @@ export function answersOf(p: ChooseParams): Answers {
     themes: p.themes,
     themeJoin: p.themeJoin,
     sets: p.sets,
+    pool: p.pool,
     card: p.card,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
@@ -161,6 +166,8 @@ export type ResolvedWords = {
   themeJoin: ThemeJoin;
   /** The picked sets, then the words' own, once each: several sets are always "or". */
   sets: string[];
+  /** Own-only when the control says so or the words ask for it; a control can only turn it on. */
+  pool: Pool;
   card: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -182,11 +189,12 @@ export type ResolvedWords = {
  */
 export function resolveWords(
   chips: readonly Chip[],
-  controls: { themes: readonly string[]; themeJoin?: ThemeJoin; sets?: readonly string[]; budgetDollars: number | null; bracket: Bracket | null },
+  controls: { themes: readonly string[]; themeJoin?: ThemeJoin; sets?: readonly string[]; pool?: Pool; budgetDollars: number | null; bracket: Bracket | null },
   wordsJoin: ThemeJoin = "all",
 ): ResolvedWords {
   const themes = [...controls.themes];
   const sets = [...(controls.sets ?? [])];
+  let ownFromWords = false;
   let card: string | null = null;
   let budget: number | null = null;
   let bracket: Bracket | null = null;
@@ -198,6 +206,9 @@ export function resolveWords(
         break;
       case "set":
         if (!sets.includes(c.code)) sets.push(c.code);
+        break;
+      case "pool":
+        ownFromWords = true;
         break;
       case "card":
         if (card === null) card = c.oracleId;
@@ -221,6 +232,7 @@ export function resolveWords(
     themes,
     themeJoin: controls.themes.length >= 2 ? controls.themeJoin ?? "all" : wordsJoin,
     sets,
+    pool: controls.pool === "own" || ownFromWords ? "own" : "any",
     card,
     budgetDollars: controls.budgetDollars ?? budget,
     bracket: controls.bracket ?? bracket,

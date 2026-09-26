@@ -94,6 +94,7 @@ export function ReadAsBar({
                   ) : (
                     <span className="min-w-0 truncate text-[12.5px] text-[color:var(--fg-body)]">{chip.value}</span>
                   )}
+                  {chip.tail && <span className="shrink-0 font-mono text-[9.5px] text-[color:var(--fg-faint)]">{chip.tail}</span>}
                   {chip.deeper && (
                     <span className="shrink-0 font-mono text-[9px] tracking-[.06em] text-[color:var(--accent)]">{copy.readAs.deeperMark}</span>
                   )}

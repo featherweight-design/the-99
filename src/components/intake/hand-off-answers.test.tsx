@@ -13,6 +13,7 @@ const all: HandOffAnswers = {
   cardUnread: false,
   themeJoin: "all",
   sets: [],
+  pool: "any",
   budgetDollars: 150,
   bracket: 2,
 };
@@ -53,8 +54,16 @@ describe("Built from your answers", () => {
     expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual(["Printed inThe Hobbit or The Hobbit Commander"]);
   });
 
+  it("draws own-only as a row, and says the budget buys nothing for the 99", () => {
+    render(<HandOffAnswersBlock answers={{ ...all, card: null, themes: [], bracket: null, pool: "own" }} changeHref="/x" />);
+    expect(screen.getAllByTestId("hand-off-row").map((r) => r.textContent)).toEqual([
+      "The 99From cards you ownThe fill takes only cards you own, with a copy free, and finishes with basics.",
+      "Budget$150The 99 comes from your cards, so the fill buys nothing and finishes with basics.",
+    ]);
+  });
+
   it("draws no row for an answer not given", () => {
-    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", sets: [], card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
+    render(<HandOffAnswersBlock answers={{ themes: [], themeJoin: "all", sets: [], pool: "any", card: null, cardUnread: false, budgetDollars: null, bracket: 4 }} changeHref="/x" />);
     expect(screen.getAllByTestId("hand-off-row")).toHaveLength(1);
   });
 

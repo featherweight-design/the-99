@@ -37,6 +37,7 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     themes: p.themes,
     themeJoin: p.themeJoin,
     sets: p.sets,
+    pool: p.pool,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   }, match.themeJoin);
@@ -46,6 +47,7 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     themes: resolved.themes,
     themeJoin: resolved.themeJoin,
     sets: resolved.sets,
+    pool: resolved.pool,
     card: carried ?? resolved.card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,
@@ -70,6 +72,7 @@ export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string):
     themes: p.themes,
     themeJoin: p.themeJoin,
     sets: p.sets,
+    pool: p.pool,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   }, p.themeJoin);
@@ -86,6 +89,7 @@ export function deeperTarget(p: ChooseParams, read: StoredRead, readId: string):
     themes: resolved.themes,
     themeJoin: resolved.themeJoin,
     sets: resolved.sets,
+    pool: resolved.pool,
     card,
     budgetDollars: resolved.budgetDollars,
     bracket: resolved.bracket,

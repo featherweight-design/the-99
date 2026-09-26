@@ -18,7 +18,7 @@ const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const base = { oracleId: COMMANDER, name: "Gishath, Sun's Avatar", typeLine: "Legendary Creature", colorIdentity: ["R", "G", "W"], imageUri: null };
 const RESULTS = "/decks/new/choose?t=dinosaurs&b=150&v=results";
 const handOff = (drawBlock = true) => ({
-  answers: { themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }], card: null, cardUnread: false, themeJoin: "all" as const, sets: [], budgetDollars: 150, bracket: null },
+  answers: { themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }], card: null, cardUnread: false, themeJoin: "all" as const, sets: [], pool: "any" as const, budgetDollars: 150, bracket: null },
   create: { themes: ["Dinosaurs"], cardOracleId: null, budgetDollars: 150, bracket: null },
   resultsHref: RESULTS,
   changeHref: "/decks/new/choose?t=dinosaurs&b=150",
