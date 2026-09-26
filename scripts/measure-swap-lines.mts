@@ -76,7 +76,12 @@ function rowsFor(original: CardRow, pool: Candidate[], isCreatureType: (w: strin
 
 const factText = (r: SheetRow) => [r.body.join(" · "), r.muted.join(" · ")].filter(Boolean).join(" · ");
 
-type Line = { row: SheetRow; text: string; from: string; originalId: string; modes: Set<Mode> };
+/**
+ * One distinct facts line, measured once. `pairs` is every (original, stand-in) that draws it, so the
+ * residue check holds each pair to the list rather than only the first one to draw the text.
+ */
+type Pair = { originalId: string; standInId: string; standIn: string; from: string };
+type Line = { row: SheetRow; text: string; from: string; originalId: string; modes: Set<Mode>; pairs: Pair[] };
 
 async function lines(): Promise<{ lines: Line[]; counts: string }> {
   const { rows } = await pool.query<Row>(
@@ -109,9 +114,14 @@ async function lines(): Promise<{ lines: Line[]; counts: string }> {
     for (const r of rs) {
       const text = factText(r);
       if (!text) continue;
+      const pair = { originalId, standInId: r.oracleId, standIn: r.name, from };
       const had = seen.get(text);
-      if (had) { had.modes.add(mode); continue; }
-      const line = { row: r, text, from, originalId, modes: new Set([mode]) };
+      if (had) {
+        had.modes.add(mode);
+        if (!had.pairs.some((p) => p.originalId === originalId && p.standInId === r.oracleId)) had.pairs.push(pair);
+        continue;
+      }
+      const line = { row: r, text, from, originalId, modes: new Set([mode]), pairs: [pair] };
       seen.set(text, line);
       out.push(line);
     }
@@ -179,7 +189,7 @@ try {
   const computed = await lines();
   // `MEASURE_TEXT` measures one given line (its body) instead, to read the instrument against a known string.
   const { lines: longest, counts } = process.env.MEASURE_TEXT
-    ? { lines: [{ row: { body: [process.env.MEASURE_TEXT], muted: [] } as unknown as SheetRow, text: process.env.MEASURE_TEXT, from: "MEASURE_TEXT", originalId: "", modes: new Set<Mode>(["priced"]) }], counts: "one given line" }
+    ? { lines: [{ row: { body: [process.env.MEASURE_TEXT], muted: [] } as unknown as SheetRow, text: process.env.MEASURE_TEXT, from: "MEASURE_TEXT", originalId: "", modes: new Set<Mode>(["priced"]), pairs: [] }], counts: "one given line" }
     : computed;
   console.log(`${counts} (${((Date.now() - started) / 1000).toFixed(1)}s)`);
 
@@ -283,17 +293,15 @@ try {
   if (process.env.MEASURE_TEXT) console.log(`  breaks: ${JSON.stringify((measured[0] as { breaks?: string[] }).breaks)}`);
   if (Number.isFinite(MAX_LINES) && !process.env.MEASURE_TEXT) {
     // The ruling's three lines, with the named residue allowed four and nothing allowed five.
-    const listed = new Map(FOUR_LINE_RESIDUE.map((r) => [r.text, r]));
+    const key = (text: string, originalId: string, standInId: string) => `${text}\u0000${originalId}\u0000${standInId}`;
+    const listed = new Set(FOUR_LINE_RESIDUE.map((r) => key(r.text, r.originalId, r.standInId)));
     const five = worst.filter((w) => w.lines > MAX_LINES + 1);
-    // Listed means THIS line for THIS original and stand-in: a new pair drawing a listed line's text is unlisted.
-    const unlisted = worst.filter((w) => {
-      const entry = listed.get(w.text);
-      return w.lines === MAX_LINES + 1 && (entry?.originalId !== w.originalId || entry?.standInId !== w.row.oracleId);
-    });
-    const stale = FOUR_LINE_RESIDUE.filter((r) => {
-      const w = worst.find((x) => x.text === r.text);
-      return !w || w.lines !== MAX_LINES + 1 || w.originalId !== r.originalId || w.row.oracleId !== r.standInId;
-    });
+    // Listed means THIS line for THIS original and stand-in, for every pair that draws it: a second pair
+    // drawing a listed line's text is unlisted, however the lines were deduplicated for measuring.
+    const unlisted = worst.filter((w) => w.lines === MAX_LINES + 1)
+      .flatMap((w) => w.pairs.filter((p) => !listed.has(key(w.text, p.originalId, p.standInId))).map((p) => ({ w, p })));
+    const stale = FOUR_LINE_RESIDUE.filter((r) => !worst.some((w) =>
+      w.text === r.text && w.lines === MAX_LINES + 1 && w.pairs.some((p) => p.originalId === r.originalId && p.standInId === r.standInId)));
     const report = (ok: boolean, label: string, rows: string[]) => {
       if (!ok) failures += 1;
       console.log(`${ok ? "  ok  " : " FAIL "} ${label}`);
@@ -301,7 +309,7 @@ try {
     };
     report(five.length === 0, `nothing reaches ${MAX_LINES + 2} lines at ${WIDTH}`, five.map((w) => `${w.lines}: ${w.text}  [${w.from}]`));
     report(unlisted.length === 0, `every row at ${MAX_LINES + 1} lines is on the named residue (${FOUR_LINE_RESIDUE.length})`,
-      unlisted.map((w) => `${w.text}  [${w.from}, stand-in ${w.row.name}]`));
+      unlisted.map(({ w, p }) => `${w.text}  [${p.from}, stand-in ${p.standIn}]`));
     report(stale.length === 0, "every residue entry still reads 4 lines, for its own original and stand-in",
       stale.map((r) => `stale: ${r.original} → ${r.standIn}: ${r.text}`));
   }

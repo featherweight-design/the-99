@@ -3,8 +3,8 @@
  * three (d9, close-out ruling 6, from Hugh's emphasis on card details).
  *
  * WHY THESE, AND WHY A LIST. Ten content rules took the catalog's rows from up to nine lines to three
- * (see sheet-model.ts and land.ts), every one keeping the facts. These eight are what is left: 8 distinct
- * lines of about 22,500, all drawn for three rare utility originals (The World Tree, Mount Doom and
+ * (see sheet-model.ts and land.ts), every one keeping the facts. These are what is left: 8 distinct
+ * lines of about 22,500, drawn by 9 (original, stand-in) pairs, all for three rare utility originals (The World Tree, Mount Doom and
  * Balduvian Trading Post), each still saying every fact. Getting them to three would take copy written
  * for one card, or shortening "once, by sacrificing it", which the Show all ruling quotes. d9 ruled on
  * 2026-09-25 that they read four lines rather than either.
@@ -30,6 +30,13 @@ export const FOUR_LINE_RESIDUE: readonly ResidueLine[] = [
   {
     original: "Balduvian Trading Post", originalId: "7647940e-c99c-401c-ad1d-9ec730f66b6f",
     standIn: "Turbulent Springs", standInId: "9aef7510-9f06-4939-8cae-f71330d1105e",
+    text: "makes red, untapped if your opponents control 8 or more lands · gives up its extra mana and dealing damage",
+  },
+  // The same line for a second stand-in. It was always drawn; a measure that kept only the first pair per
+  // line hid it until each pair was held to the list (review, #1035 round 2).
+  {
+    original: "Balduvian Trading Post", originalId: "7647940e-c99c-401c-ad1d-9ec730f66b6f",
+    standIn: "Turbulent Steppe", standInId: "db444f9d-4dde-4308-b0f2-7acfe6de871a",
     text: "makes red, untapped if your opponents control 8 or more lands · gives up its extra mana and dealing damage",
   },
   ...([
