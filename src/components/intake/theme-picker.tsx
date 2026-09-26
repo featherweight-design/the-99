@@ -45,7 +45,10 @@ export function ThemePicker({
   const expanded = open && shown.length > 0;
 
   return (
-    <div className="flex flex-col gap-[6px]">
+    // `relative`: the list is a popover anchored under the field (Hugh, 2026-09-27; ruling Q2). It
+    // opens OVER the fields below and pushes nothing, which is what its raised surface and shadow
+    // always drew.
+    <div className="relative flex flex-col gap-[6px]">
       <div
         className="flex flex-wrap items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]"
       >
@@ -116,7 +119,7 @@ export function ThemePicker({
         aria-multiselectable="true"
         aria-labelledby={labelId}
         hidden={!expanded}
-        className="m-0 list-none max-h-[288px] overflow-y-auto p-[5px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] shadow-[0_14px_30px_rgba(0,0,0,.45)]"
+        className="absolute left-0 right-0 top-full z-30 mt-[6px] mb-0 mx-0 list-none max-h-[288px] overflow-y-auto p-[5px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] shadow-[0_14px_30px_rgba(0,0,0,.45)]"
       >
         {shown.map((t, i) => {
           const selected = value.includes(t.slug);

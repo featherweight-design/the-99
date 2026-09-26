@@ -11,7 +11,7 @@ import { Suspense } from "react";
 
 import { CardDetailProvider } from "../../../../components/cards/card-detail-provider";
 import { ChooseResults, ResultsSkeleton } from "../../../../components/intake/choose-results";
-import { ChooseHeader } from "../../../../components/intake/choose-header";
+import { ChooseHeader, RESULTS_COLUMN } from "../../../../components/intake/choose-header";
 import { IntakeForm } from "../../../../components/intake/intake-form";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
 import { SearchFailed } from "../../../../components/intake/search-failed";
@@ -108,7 +108,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           sub={copy.results.sub}
           subPhone={copy.results.subPhone}
         />
-        <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[16px_18px_24px] md:p-[0_40px_48px]">
+        <div className={RESULTS_COLUMN}>
           <DeeperLookScope>
           <ReadAsBar
             chips={answerChips(p, labels, verifiedDeeperMarks(p, settled))}
