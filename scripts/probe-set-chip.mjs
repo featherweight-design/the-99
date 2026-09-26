@@ -25,13 +25,15 @@ import { requireEnv } from "./lib/env.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { onPage, openSheet } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
-  "E2E_AUDIT_USER_PASSWORD",
   "CLERK_SECRET_KEY",
   "DATABASE_URL",
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// A `+clerk_test` account signs in by email code and needs no password; any other needs one.
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 const TOLERANCE = 0.5;
 
 let failures = 0;
@@ -64,7 +66,7 @@ async function signIn(page) {
         return String(e?.errors?.[0]?.longMessage ?? e);
       }
     },
-    [EMAIL, PASSWORD],
+    [EMAIL, PASSWORD ?? ""],
   );
   if (failure) throw new Error(failure);
   const userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
