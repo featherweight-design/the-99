@@ -274,15 +274,23 @@ export function nonManaAbilities(card: LandText): string[] {
  * copy's `gives up` line; the first that matches a sentence names it.
  */
 export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
+  // A land that attacks is a creature: its attack trigger is part of becoming one, so the Restless
+  // lands give up one thing rather than two (close-out ruling 6).
+  // The land's OWN trigger only: "whenever a creature deals combat damage to you" is not a creature
+  // ability of the land's (Contested War Zone).
+  [/^whenever this land (?:attacks|blocks|deals combat damage)\b/, "becoming a creature"],
   [/can't be countered/, "uncounterable spells"],
   [/\b(?:becomes|enter[^.]*as) a copy of\b/, "copying a land"],
   [/\bbecomes? an? [^.]*\bcreature\b/, "becoming a creature"],
   [/^channel\b/, "its channel ability"],
   [/^hideaway\b|\bplay the exiled card\b/, "hideaway"],
+  // Ahead of `its extra mana`: a storage land's payoff (`remove … storage counters: add {c} for each`)
+  // is the same ability as its charging, so both of its sentences name one thing (close-out ruling 6).
+  [/\b(?:storage|charge) counters?\b|\bchoose not to untap this land\b/, "storing mana"],
   [/\badd\b[^.]*\bfor each\b|\badd (?:\{[wubrgc]\}){2,}/, "its extra mana"],
   [/\bdestroy target (?:nonbasic )?land\b/, "land destruction"],
   [/\bexile [^.]*\bgraveyards?\b/, "graveyard hate"],
-  [/\b(?:destroy|exile) (?:all|each)\b/, "a board wipe"],
+  [/\b(?:destroy|exile) (?:all|each)\b|\bdestroy the rest\b/, "a board wipe"],
   [/\b(?:destroy|exile) target\b/, "removal"],
   [/\bcounter target\b/, "a counterspell"],
   [/\bcopy target [^.]*\bspell\b/, "copying a spell"],
@@ -305,6 +313,10 @@ export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/\bcost \{\d+\} less\b/, "a cost reduction"],
   [/\bno maximum hand size\b/, "no maximum hand size"],
   [/\bcan't (?:attack|block|cast)\b/, "a restriction on opponents"],
+  // Close-out ruling 6: the abilities the catalog quoted most, named so a row never has to quote them.
+  [/\binvestigate\b/, "investigating"],
+  [/^station\b/, "station"],
+  [/\bdiscover \d/, "discover"],
 ];
 
 /** The longest quoted ability, in characters, before it is cut with an ellipsis. */
@@ -338,6 +350,34 @@ export function quote(sentence: string, cardName: string): string {
 }
 
 /**
+ * A land's own DRAWBACKS written as text of their own, which `nonManaAbilities` keeps because they are
+ * not mana abilities, and which a stand-in never "gives up": it loses nothing by not carrying them
+ * (close-out ruling 6). Measured on the catalog, these were most of the "another ability" clauses left
+ * on a four-line row: Balduvian Trading Post's Mountain, the Invasion lairs' return, Rupture Spire's {1}.
+ */
+const DRAWBACK_LINES: readonly RegExp[] = [
+  /^when this land enters, sacrifice it unless\b/,
+  /^if this land would enter, sacrifice\b/,
+  /^when this land enters, sacrifice (?:a|an|two|three) \w*\s*lands?\b/,
+  /\bdoesn't untap during your (?:next )?untap step\b/,
+  /\bdepletion counters?\b/,
+  /\bgains control of this land\b/,
+  /^at the beginning of the end step, if you control no \w+, sacrifice this land\b/,
+  /\breturn this land to its owner's hand\b/,
+  /\bdeals \w+ damage to you if\b/,
+];
+
+/**
+ * A drawback is a line with no activation cost: an ability that returns the land to hand as its COST
+ * (Maze's End, Ghost Town) or as part of what it does (Thawing Glaciers) is an ability, and is given up.
+ */
+const isDrawbackLine = (line: string, name: string) => {
+  // Older oracle text names the card where current text says `this land`: read both as `this land`.
+  const own = line.replaceAll(name.toLowerCase(), "this land");
+  return !/^[^.]*:/.test(own) && DRAWBACK_LINES.some((d) => d.test(own));
+};
+
+/**
  * What a stand-in gives up against the original: each of the original's non-mana abilities the
  * stand-in does not also have, named where a pattern covers it and quoted where none does (H3).
  * Empty means the stand-in gives up nothing, and that is the only way it can say so.
@@ -354,7 +394,7 @@ export function givesUp(original: LandText, standIn: LandText): GivenUp[] {
   const kept = new Set(nonManaAbilities(standIn).map((s) => key(s, standIn.name)));
   const out: GivenUp[] = [];
   const seen = new Set<string>();
-  for (const sentence of nonManaAbilities(original)) {
+  for (const sentence of nonManaAbilities(original).filter((s) => !isDrawbackLine(s, original.name))) {
     const k = key(sentence, original.name);
     if (seen.has(k) || kept.has(k)) continue;
     seen.add(k);

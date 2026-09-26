@@ -95,6 +95,10 @@ export const swapToolsCopy = {
     /** Addendum §1b: the type groups, each with its order note on the right. */
     groupSameType: (plural: string) => `same type · ${plural}`,
     groupOtherTypes: "other types",
+    /** Close-out ruling 6: all five colors, wherever the sheet lists colors. Owed to /copy-review. */
+    everyColor: "every color",
+    /** …and the rest of them, after a mana line that named one or more. Owed to /copy-review. */
+    everyOtherColor: "every other color",
     orderBestMana: "best mana first",
     orderMostShared: "most in common first",
     /** Addendum §1b: the toggle under a group longer than it shows. */
@@ -110,6 +114,10 @@ export const swapToolsCopy = {
       /** A condition that is a price (a shock's 2 life) is the condition: no separate cost segment. */
       untappedIf: (condition: string) => `untapped if ${condition}`,
       untappedWith: (what: string) => `untapped with ${what}`,
+      /** Close-out ruling 6: "it's your first, second, or third turn of the game", said short. Owed to /copy-review. */
+      untappedEarly: "untapped on your first three turns",
+      /** The reveal lands' condition: `with a Soldier in hand or play`. Owed to /copy-review. */
+      inHandOrPlay: (type: string) => `a ${type} in hand or play`,
       /** A color the land makes only by sacrificing itself. */
       once: (color: string) => `${color} once, by sacrificing it`,
       colorless: "colorless",
@@ -129,12 +137,17 @@ export const swapToolsCopy = {
     stapleFact: "staple, any commander",
     /** H3: what a stand-in for a utility land gives up, the ability named or quoted. Owed to /copy-review. */
     givesUp: (ability: string) => `gives up ${ability}`,
+    /** Close-out ruling 6: a row never quotes; the abilities no pattern names are counted instead. Owed to /copy-review. */
+    otherAbilities: (n: number, afterNamed: boolean) =>
+      afterNamed ? (n === 1 ? "one more" : `${n} more`) : n === 1 ? "an ability" : `${n} abilities`,
     drawback: {
       entersTapped: "it enters tapped",
       entersTappedUnless: (cond: string) => `enters tapped unless ${cond}`,
       damage: (n: number, colors: string) => `deals ${n} damage to you for ${colors}`,
       life: (n: number, colors: string) => `costs ${n} life for ${colors}`,
       lifeFetch: (n: number) => `costs ${n} life`,
+      /** Close-out ruling 6: damage paid for every color the row's mana line names, which it need not repeat. */
+      damageAny: (n: number) => `deals ${n} damage to you`,
       basicOnly: "finds only a basic",
     },
     take: "Take",

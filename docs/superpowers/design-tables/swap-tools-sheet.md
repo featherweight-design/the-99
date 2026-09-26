@@ -256,6 +256,31 @@ Swap Tools :217).
 
 Clauses are joined by ` · ` in the component; no clause is a score and no figure is combined.
 
+**Length: THREE lines at 390, not two (ruled, d9, 2026-09-25, from Hugh's emphasis on card details).**
+The handoff draws this line at two lines. Measured over every row the engine can draw from the catalog
+(`pnpm measure:swap-lines`, about 22,500 distinct lines, rendered in a live row), 21% ran to three and up
+to nine. Every way to hold two drops a fact, and `gives up` is the fact most often dropped, so the line
+keeps every fact and may run to three at 390. It is not clamped: a clamp hides the give-up. Desktop
+measures two lines at most everywhere (1300px, 418px line box) and is unchanged. Eight lines on three rare
+utility originals read four, named one by one in `scripts/lib/swap-lines-residue.mts`; the measure fails
+on any other four, on a stale entry, and on any five. A reviewer should not read three lines as a
+regression from the handoff's two.
+
+The content rules that got there, each keeping the fact:
+
+| Rule | Was | Now |
+|---|---|---|
+| A row never quotes a give-up | `gives up “You may choose not to untap…”` | the ability named by pattern, else counted: `gives up an ability`, `gives up 2 abilities`, `… and one more` (`sheet.otherAbilities`). The lead may still quote a give-up every row shares |
+| One `gives up` clause per row | `gives up X · gives up Y` | `gives up X and Y` |
+| New named abilities | quoted | storage lands, storage and charge counters, `choose not to untap`: `storing mana`; investigate: `investigating`; `station`; `discover`; `…then destroy the rest`: `a board wipe`; a land's attack trigger: `becoming a creature` |
+| The original's own drawbacks are not given up | `gives up “When this land enters, sacrifice it unless…”` | nothing: sacrifice-unless, sacrifice-instead, doesn't-untap, depletion, an opponent gains control, return to hand, damage-if. The job line's `gives up nothing` still reads the full list |
+| One-shot colors share one clause | `blue once, by sacrificing it · black once, …` | `blue and black once, by sacrificing it`; the rest of a five-color job: `every other color once, …` (`sheet.everyOtherColor`) |
+| A cost paid for every color the mana line names | `costs 1 life for white and red` | `costs 1 life`, `deals 1 damage to you` (`drawback.damageAny`) |
+| All five colors | `white, blue, black, red and green` | `every color` (`sheet.everyColor`) |
+| Starting Town | `untapped if it's your first, second, or third turn of the game` | `untapped on your first three turns` (`mana.untappedEarly`) |
+| The reveal lands | `untapped if you revealed a soldier card this way or you control a soldier` | `untapped with a Soldier in hand or play` (`mana.inHandOrPlay`) |
+| A count in a condition | `eight or more lands` | `8 or more lands` |
+
 | Kind | Keys, in order | Arguments |
 |---|---|---|
 | Land (colors) | v2 D2 (addendum §1a): the mana line in `--fg-body`, `sheet.mana.line(colors, state)` with state `sheet.mana.untapped` · `untappedIf(cond)` (a price such as a shock's life) · `untappedWith(cond)` (`you control …`, basic types capitalized) · `tapped`; then, in `--fg-muted` after a ` · ` in `--border-strong`: `damage(n, colors)` · `life(n, colors)` named for the job's colors only, `sheet.mana.once(color)` for a color it makes only by sacrificing itself, and any give-up. A row with no cost says nothing after the mana line | `colors` = the job's colors the land makes again and again, else `sheet.mana.colorless` |

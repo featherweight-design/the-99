@@ -13,6 +13,11 @@
  *   - the add's reply is small. The action defers its revalidation with after(), so the page it
  *     was called from is not shipped back (the proof 5a moved here, since 5a had no caller);
  *   - Escape closes the picker and lands focus on the door.
+ *   - a reason line wraps between its segments only (close-out ruling 5), read per character at 390
+ *     on the longest-named partner of a counted two-card combo. With the old markup the dot sits at
+ *     the end of the first line (311px against a need at 327). The lead's own nowrap cannot be failed
+ *     from the catalog: the longest counted lead, `Completes a combo with Mister Fantastic, Reed
+ *     Richards`, fits one line at 390 with or without it, so that half is defensive.
  *
  * FIXTURE. Two decks under the audit account: one led by Kenrith (every color) holding a colorless
  * universal staple, and one led by a mono-blue legend holding nothing, which the staple fits. The
@@ -38,6 +43,7 @@ import { onPage } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
 import { swapToolsCopy } from "../src/lib/copy/swap-tools";
+import { isInfiniteOrGameEnding } from "../src/lib/spellbook/combo-features";
 
 neonConfig.webSocketConstructor = ws;
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -227,6 +233,74 @@ void (async () => {
       const bytes = (await (await reply).body()).length;
       await row.getByText(copy.added).waitFor({ timeout: 15_000 });
       report("/collection add reply is small", bytes < 20_000, `${bytes.toLocaleString()} bytes`);
+
+      // Close-out ruling 5: a reason line wraps BETWEEN its segments only. The longest-named partner in a
+      // two-card combo the picker counts (`isInfiniteOrGameEnding`, the combo read's own test), for a
+      // short-named card that is no staple, on a Kenrith deck, read at 390: the combo segment on one line
+      // and inside the row, and the dot on the same line as the need it introduces.
+      const { rows: pairs } = await pool.query(
+        `select x.oracle_id x_id, x.name x_name, p.oracle_id p_id, p.name p_name, v.produces
+           from spellbook_variants v
+           join spellbook_variant_cards a on a.variant_id = v.variant_id and not a.must_be_commander
+           join spellbook_variant_cards b on b.variant_id = v.variant_id and b.oracle_id <> a.oracle_id and not b.must_be_commander
+           join cards x on x.oracle_id = a.oracle_id join cards p on p.oracle_id = b.oracle_id
+          where v.card_count = 2 and cardinality(v.requires_template_ids) = 0 and x.commander_legal and p.commander_legal
+            and length(x.name) < 16 and x.name not like '%//%' and p.name not like '%//%' and not (x.oracle_id = any($1::uuid[]))
+          order by length(p.name) desc, p.name, x.name limit 200`,
+        [staples],
+      );
+      const pick = pairs.find((r) => isInfiniteOrGameEnding(r.produces));
+      if (!pick) throw new Error("No two-card combo the picker counts pairs a short-named card with a long-named partner.");
+      const x = { oracle_id: pick.x_id as string, name: pick.x_name as string };
+      const partner = { oracle_id: pick.p_id as string, name: pick.p_name as string };
+      console.log(`combo fixture: ${x.name} with ${partner.name}`);
+      const combo = (await pool.query(
+        `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe · fits combo', $2) returning id`, [userId, kenrith.oracle_id],
+      )).rows[0].id as string;
+      deckIds.push(combo);
+      await pool.query(`insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)`, [combo, partner.oracle_id]);
+      await pool.query(`insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)`, [holder, x.oracle_id]);
+      await page.setViewportSize(WIDTHS[1].viewport);
+      await page.goto(`${BASE}/decks/${holder}`, { waitUntil: "domcontentloaded" });
+      await openRowCard(page, x.name);
+      await visibleDoor(page).click();
+      const comboRow = picker(page).getByTestId("fits-row").filter({ hasText: "probe · fits combo" });
+      await comboRow.waitFor({ timeout: 20_000 });
+      // Read by GEOMETRY, one character at a time, never by the markup: which line each character of the
+      // reason sits on. The lead is everything before the ` · `; the dot must share a line with the need.
+      const wrap = await comboRow.getByTestId("fits-reason").evaluate((line) => {
+        const chars: Array<{ ch: string; top: number }> = [];
+        const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          for (let i = 0; i < (n.textContent ?? "").length; i++) {
+            const r = document.createRange();
+            r.setStart(n, i);
+            r.setEnd(n, i + 1);
+            const rect = r.getClientRects()[0];
+            if (rect) chars.push({ ch: n.textContent![i], top: Math.round(rect.top) });
+          }
+        }
+        const text = chars.map((c) => c.ch).join("");
+        const dot = text.indexOf("·");
+        const lead = (dot < 0 ? chars : chars.slice(0, dot)).filter((c) => c.ch.trim());
+        const after = dot < 0 ? null : chars.slice(dot + 1).find((c) => c.ch.trim()) ?? null;
+        const row = line.closest('[data-testid="fits-row"]')!.getBoundingClientRect();
+        return {
+          text,
+          leadLines: new Set(lead.map((c) => c.top)).size,
+          lines: new Set(chars.filter((c) => c.ch.trim()).map((c) => c.top)).size,
+          inside: line.getBoundingClientRect().right <= row.right + 0.5 && line.scrollWidth <= line.clientWidth,
+          dotTop: dot < 0 ? null : chars[dot].top,
+          nextTop: after?.top ?? null,
+        };
+      });
+      report("390 combo reason: the long name's segment is unbroken and inside the row",
+        wrap.text.includes(partner.name) && wrap.leadLines === 1 && wrap.inside,
+        `lead on ${wrap.leadLines} line(s) of ${wrap.lines}, inside ${wrap.inside}: ${wrap.text}`);
+      report("390 combo reason: the reason wraps, so the dot's place was tested", wrap.lines > 1, `${wrap.lines} line(s)`);
+      report("390 combo reason: the dot travels with the need",
+        wrap.dotTop !== null && wrap.dotTop === wrap.nextTop, wrap.dotTop === null ? "no dot drawn" : `dot at ${wrap.dotTop}, need at ${wrap.nextTop}`);
+      await page.keyboard.press("Escape");
     } catch (e) {
     failures += 1;
     console.log(` FAIL  the run threw — ${(e as Error).message}`);

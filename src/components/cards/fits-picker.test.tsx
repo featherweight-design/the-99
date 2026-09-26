@@ -72,6 +72,26 @@ describe("FitsPicker", () => {
     expect(screen.getAllByRole("button", { name: /using your free copy/ })).toHaveLength(2);
   });
 
+  // Close-out ruling 5: the reason line breaks between segments only, the dot bound to the need.
+  it("draws each reason segment unbroken, the dot travelling with the need", async () => {
+    actions.loadFitsAction.mockResolvedValue(read());
+    draw();
+    await settle();
+    const line = within(screen.getAllByTestId("fits-row")[0]).getByTestId("fits-reason");
+    const need = within(line).getByTestId("fits-reason-need");
+    expect(need).toHaveClass("whitespace-nowrap");
+    expect(need.textContent).toMatch(/^· /);
+    expect(line.firstElementChild).toHaveClass("whitespace-nowrap");
+  });
+
+  // Close-out ruling 7: a card the catalog has no art for draws the fits table's placeholder hatch.
+  it("hatches the plate's thumb when the card has no art", async () => {
+    actions.loadFitsAction.mockReturnValue(new Promise(() => {}));
+    draw();
+    const thumb = screen.getByTestId("fits-copies").closest("div")!.querySelector('span[aria-hidden="true"]')!;
+    expect(thumb.getAttribute("style")).toContain("repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)");
+  });
+
   // R2: with no combo and no theme, the row shows its need alone, and with neither, no line at all.
   it("shows the need alone with no reason, and no line with neither", async () => {
     actions.loadFitsAction.mockResolvedValue(read({

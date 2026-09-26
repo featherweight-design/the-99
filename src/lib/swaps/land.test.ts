@@ -168,6 +168,7 @@ describe("nameAbility: one case per pattern", () => {
   const cases: [string, string][] = [
     ["spend this mana only to cast a creature spell, and that spell can't be countered.", "uncounterable spells"],
     ["{1}: this land becomes a 2/2 artifact creature until end of turn.", "becoming a creature"],
+    ["whenever this land attacks, create a food token and exile up to one target card from a graveyard.", "becoming a creature"],
     ["channel — {1}{g}, discard this card: destroy target artifact.", "its channel ability"],
     ["{t}: add {g} for each creature you control.", "its extra mana"],
     ["{t}: add {c}{c}. this land deals 2 damage to you.", "its extra mana"],
@@ -199,10 +200,23 @@ describe("nameAbility: one case per pattern", () => {
     ["{2}{r}{w}, {t}: target creature gains double strike until end of turn.", "granting an ability"],
     ["colorless eldrazi spells you cast cost {2} less to cast.", "a cost reduction"],
     ["you have no maximum hand size.", "no maximum hand size"],
+    ["{1}, {t}: put a storage counter on this land.", "storing mana"],
+    ["you may choose not to untap this land during your untap step.", "storing mana"],
+    ["{5}{b}{r}, {t}, sacrifice mount doom and a legendary artifact: choose up to two creatures, then destroy the rest.", "a board wipe"],
+    // A storage land's payoff names the same thing as its charging, ahead of `its extra mana`.
+    ["remove any number of storage counters from this land: add {c} for each storage counter removed this way.", "storing mana"],
+    ["{4}, {t}: investigate.", "investigating"],
+    ["station", "station"],
+    ["{4}{u}, {t}, sacrifice this land: discover 4. activate only as a sorcery.", "discover"],
   ];
 
   it("covers every pattern exactly once", () => {
     expect(new Set(cases.map(([, label]) => label))).toEqual(new Set(GIVES_UP_PATTERNS.map(([, label]) => label)));
+  });
+
+  it("names only the land's OWN attack trigger as becoming a creature", () => {
+    expect(nameAbility("whenever a creature deals combat damage to you, that creature's controller gains control of this land.", "Contested War Zone"))
+      .not.toEqual({ kind: "named", label: "becoming a creature" });
   });
 
   it.each(cases)("%s → %s", (sentence, label) => {
@@ -257,12 +271,46 @@ describe("givesUp (H3)", () => {
     expect(givesUp(FACTORY, FACTORY)).toEqual([]);
   });
 
+  it("gives up none of the original's drawbacks, which a stand-in loses nothing by lacking", () => {
+    const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
+    for (const land of [
+      L("Balduvian Trading Post", "Land", "If this land would enter, sacrifice an untapped Mountain instead. If you do, put this land onto the battlefield. If you don't, put it into its owner's graveyard.\n{T}: Add {C}{R}."),
+      L("Dromar's Cavern", "Land — Lair", "When this land enters, sacrifice it unless you return a non-Lair land you control to its owner's hand.\n{T}: Add {W}, {U}, or {B}."),
+      L("Rupture Spire", "Land", "This land enters tapped.\nWhen this land enters, sacrifice it unless you pay {1}.\n{T}: Add one mana of any color."),
+      L("Land Cap", "Land", "This land doesn't untap during your untap step if it has a depletion counter on it.\nAt the beginning of your upkeep, remove a depletion counter from this land.\n{T}: Add {W} or {U}. Put a depletion counter on this land."),
+    ]) {
+      expect(givesUp(land, wastes).filter((g) => g.kind === "quoted"), land.name).toEqual([]);
+    }
+    // Contested War Zone's control change is a drawback, and no creature ability of the land's.
+    const zone = L("Contested War Zone", "Land", "Whenever a creature deals combat damage to you, that creature's controller gains control of this land.\n{T}: Add {C}.\n{1}, {T}: Attacking creatures get +1/+0 until end of turn.");
+    expect(givesUp(zone, wastes).map((g) => (g.kind === "named" ? g.label : "quoted"))).not.toContain("becoming a creature");
+    expect(givesUp(zone, wastes)).toHaveLength(1);
+  });
+
+  it("reads a drawback that names the card itself as the same drawback", () => {
+    const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
+    const named = L("Old Paradise", "Land", "{T}: Add one mana of any color. During your next untap step, as you untap your permanents, return Old Paradise to its owner's hand.");
+    expect(givesUp(named, wastes)).toEqual([]);
+  });
+
+  it("still gives up an ability whose COST or effect returns the land to hand", () => {
+    const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
+    for (const land of [
+      L("Maze's End", "Land", "This land enters tapped.\n{T}: Add {C}.\n{3}, {T}, Return this land to its owner's hand: Search your library for a Gate card, put it onto the battlefield, then shuffle. If you control ten or more Gates with different names, you win the game."),
+      L("Thawing Glaciers", "Land", "This land enters tapped.\n{1}, {T}: Search your library for a basic land card, put that card onto the battlefield tapped, then shuffle. Return this land to its owner's hand at the beginning of the next cleanup step."),
+      L("Ghost Town", "Land", "{T}: Add {C}.\n{0}: Return this land to its owner's hand. Activate only if it's not your turn."),
+    ]) {
+      expect(givesUp(land, wastes), land.name).toHaveLength(1);
+    }
+  });
+
   it("keeps a QUOTED ability the stand-in shares, and still gives up one it does not", () => {
-    const ring = L("Mage-Ring Network", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
-    const twin = L("Storage Twin", "Land", "{T}: Add {C}.\n{1}, {T}: Put a storage counter on this land.");
+    // No pattern names this one (storage lands became `storing mana` in the close-out).
+    const ring = L("Time Tower", "Land", "{T}: Add {C}.\n{T}: Put a time counter on this land.");
+    const twin = L("Time Twin", "Land", "{T}: Add {C}.\n{T}: Put a time counter on this land.");
     expect(givesUp(ring, twin)).toEqual([]);
     expect(givesUp(ring, L("Wastes", "Basic Land", "({T}: Add {C}.)"))).toEqual([
-      { kind: "quoted", text: "{1}, {T}: put a storage counter on this land" },
+      { kind: "quoted", text: "{T}: put a time counter on this land" },
     ]);
   });
 });

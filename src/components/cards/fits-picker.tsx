@@ -36,10 +36,10 @@ const colorsOf = (ids: string[]) => (ids.length === 0 ? "colorless" : colorWords
 function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
   const r = deck.reason;
   const lead = staple
-    ? <span className="italic text-[color:var(--fg-body)]">{copy.cmdrStaple}</span>
+    ? <span className="italic whitespace-nowrap text-[color:var(--fg-body)]">{copy.cmdrStaple}</span>
     : r?.kind === "combo"
       ? (
-        <span className="text-[color:var(--fg)]">
+        <span className="whitespace-nowrap text-[color:var(--fg)]">
           {copy.reasonCombo}{" "}
           <CardDetailTrigger
             oracleId={r.with.oracleId}
@@ -51,17 +51,22 @@ function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
         </span>
       )
       : r?.kind === "theme"
-        ? <span className="text-[color:var(--fg-body)]">{copy.reasonTheme(r.n, typeof r.theme === "string" ? copy.themeWord[r.theme] : r.theme.type)}</span>
+        ? <span className="whitespace-nowrap text-[color:var(--fg-body)]">{copy.reasonTheme(r.n, typeof r.theme === "string" ? copy.themeWord[r.theme] : r.theme.type)}</span>
         : null;
   if (!lead && !deck.need) return null;
+  // The line wraps BETWEEN its segments only (close-out ruling 5): each segment is nowrap, and the dot
+  // travels with the segment after it, so a wrap never strands it at a line's end (stand-in-limit.tsx).
   return (
-    <p data-testid="fits-reason" className="m-0 font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
+    <p data-testid="fits-reason" className="m-0 font-mono text-[10.5px] leading-[1.45] text-[color:var(--fg-muted)]">
       {lead}
       {deck.need ? (
         <>
-          {lead ? <span className="text-[color:var(--border-strong)]"> · </span> : null}
-          <span className="text-[color:var(--fg-locked)]">{copy.needLabel} </span>
-          {copy.need(deck.need.role, deck.need.have, deck.need.target)}
+          {lead ? " " : null}
+          <span data-testid="fits-reason-need" className="whitespace-nowrap">
+            {lead ? <span className="text-[color:var(--border-strong)]">· </span> : null}
+            <span className="text-[color:var(--fg-locked)]">{copy.needLabel} </span>
+            {copy.need(deck.need.role, deck.need.have, deck.need.target)}
+          </span>
         </>
       ) : null}
     </p>
@@ -95,7 +100,8 @@ export function FitsPlate({
       <span
         aria-hidden="true"
         className="flex-none w-[22px] h-[31px] rounded-[3px] border border-[color:var(--border-strong)] bg-cover bg-center"
-        style={imageUri ? { backgroundImage: `url(${imageUri})` } : undefined}
+        // The canvas's placeholder hatch (fits table §2.4) where the catalog has no art for the card.
+        style={{ backgroundImage: imageUri ? `url(${imageUri})` : "repeating-linear-gradient(135deg, var(--border) 0 3px, var(--surface-raised) 3px 6px)" }}
       />
       <span className="flex-1 min-w-0 flex flex-col gap-[3px]">
         <span className="text-[14px] font-semibold truncate" style={{ color: "var(--fg)" }}>{name}</span>
