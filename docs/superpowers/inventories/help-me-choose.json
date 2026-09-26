@@ -148,6 +148,42 @@
           "settle": 2000
         }
       ]
+    },
+    {
+      "id": "form-any-of",
+      "label": "/decks/new/choose: two themes, joined Any (three answers §1)",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=elves,wizards&tj=any",
+          "wait": "textarea",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "results-any-of",
+      "label": "results: themes as any of, ranked by the one each fits best (§1)",
+      "view": "src/components/intake/choose-results.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=orcs,elves,dwarves,wizards&tj=any&v=results",
+          "wait": "[data-testid='order-line']",
+          "settle": 6000
+        }
+      ]
+    },
+    {
+      "id": "narrow-any-of",
+      "label": "results: four themes as all of, the note offering any of (§1)",
+      "view": "src/components/intake/narrow-note.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?t=orcs,elves,dwarves,wizards&v=results",
+          "wait": "[data-testid='narrow-option']",
+          "settle": 6000
+        }
+      ]
     }
   ]
 }

@@ -9,6 +9,11 @@
 //    under the form (ruling Q2b (a)), and the header moves with it: at 1300 the space either side of
 //    the column is equal, and the header's title starts on the column's content edge. At 390 nothing
 //    is wider than the page.
+// 3. THEMES AS ANY OF (three answers, PR 1). The Theme field's All / Any segment sits on the label's
+//    own line, at its right. And the too-narrow note's offers are WHOLE: `Any of the four themes, not
+//    all` beside its reason and a count was cut to `Any of the four themes,…` on a phone, which hid
+//    the offer. An ellipsized label reads whole in `innerText`, so the check is its box's
+//    `scrollWidth` against `clientWidth`, and a run where the note draws no offer fails.
 //
 // Needs a server with HELP_ME_CHOOSE_ENABLED=true. It writes the account's About row through
 // `clearAboutSheet` and nothing else. Point it at `local-dev`, never production.
@@ -23,6 +28,8 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLE
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const RESULTS = "/decks/new/choose?c=g&t=dinosaurs&v=results";
+// Four tribes as all of: no commander backs them together, so the note offers the join.
+const TRIBES = "/decks/new/choose?t=orcs,elves,dwarves,wizards&v=results";
 
 const VIEWPORTS = [
   { label: 1300, width: 1300, height: 900 },
@@ -81,6 +88,10 @@ try {
     const combo = onPageRole(page, "combobox");
     await combo.waitFor({ timeout: 60_000 });
     const budget = onPage(page, 'input[placeholder="No cap"]');
+    // The Theme field at the top of the window, so the Budget field is clear of the phone's fixed
+    // dock: under the dock the dock is what is painted, whatever the list does. The field grew by
+    // the All / Any segment's row (three answers), which put Budget under the dock at 390.
+    await combo.evaluate((n) => n.scrollIntoView({ block: "start" }));
     const before = await budget.evaluate((n) => n.getBoundingClientRect().top);
     await combo.click();
     const list = onPageRole(page, "listbox");
@@ -126,6 +137,26 @@ try {
         Math.abs(layout.titleAt - layout.contentAt) < 1.5, `title ${Math.round(layout.titleAt)}px, content ${Math.round(layout.contentAt)}px`);
     }
     report(`${vp.label} results: nothing wider than the page`, layout.docOver <= 0, `${layout.docOver}px`);
+
+    // ---- 3. Themes as any of ---------------------------------------------------------------------
+    await page.goto(`${BASE}/decks/new/choose?t=orcs,elves`, { waitUntil: "networkidle" });
+    const join = onPageRole(page, "radiogroup", "Themes: all or any");
+    await join.waitFor({ timeout: 60_000 });
+    const seg = await join.evaluate((g) => {
+      const label = [...document.querySelectorAll("main span")].find((n) => n.textContent === "Theme");
+      const a = g.getBoundingClientRect();
+      const b = label.getBoundingClientRect();
+      return { sameLine: a.top < b.bottom && b.top < a.bottom, rightOfLabel: a.left > b.right };
+    });
+    report(`${vp.label} theme join: on the label's line, at its right`, seg.sameLine && seg.rightOfLabel, JSON.stringify(seg));
+
+    await page.goto(`${BASE}${TRIBES}`, { waitUntil: "networkidle" });
+    const options = onPage(page, "[data-testid='narrow-option-label']");
+    await options.first().waitFor({ timeout: 60_000 }).catch(() => {});
+    const labels = await options.evaluateAll((ns) => ns.map((n) => ({ text: n.textContent, cut: n.scrollWidth > n.clientWidth })));
+    report(`${vp.label} narrow note: offers the join, every label whole`,
+      labels.length > 0 && labels[0].text.startsWith("Any of the") && labels.every((l) => !l.cut),
+      labels.length === 0 ? "no offer drawn" : labels.map((l) => `${l.text}${l.cut ? " (cut)" : ""}`).join(" | "));
     await context.close();
   }
 } catch (error) {

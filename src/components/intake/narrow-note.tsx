@@ -102,7 +102,9 @@ function Options({ options, column = false }: { options: readonly NarrowOption[]
             ].join(" ")}
           >
             <span className="flex flex-col gap-[2px] flex-1 min-w-0">
-              <span className="text-[13.5px] font-semibold text-[color:var(--fg)] whitespace-nowrap overflow-hidden text-ellipsis">{o.label}</span>
+              {/* Wraps rather than truncates: the label is the offer, and `Any of the four themes,…`
+                  on a phone hid what it offered. */}
+              <span data-testid="narrow-option-label" className="text-[13.5px] font-semibold text-[color:var(--fg)] [overflow-wrap:anywhere]">{o.label}</span>
               {o.reason && <span className="text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">{o.reason}</span>}
             </span>
             {/* The first option, the one that brings back most, is lit; the rest step back. */}
