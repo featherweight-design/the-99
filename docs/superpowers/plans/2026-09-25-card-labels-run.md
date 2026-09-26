@@ -3,22 +3,27 @@
 > **HELD FOR HUGH'S APPROVAL.** Nothing in this plan is built or run until he
 > picks. It follows the sample and its report
 > (`2026-09-25-card-labels-report.md`), whose recommendation is **Sonnet 4.5, about
-> $40.30 for 31,830 Commander-legal cards** — $27.60 more than Haiku, one time, for
-> half the error rate on the limit family that caused the reported false matches.
+> $41.09 for 31,830 Commander-legal cards** — $28.36 more than Haiku, one time.
 >
-> **The report's first draft said Haiku**, on a figure that turned out to come from
-> an uncommitted command using a job-pairing defect this repository had already
-> identified. Corrected, Sonnet takes the whole restriction family: tribal 0.969
-> against 0.903, gating 0.857 against 0.725, and 2 invented restrictions against 6.
-> Haiku keeps the ramp kind, 0.955 against 0.875, and nothing else that decides a
-> match.
+> **Sonnet wins on gating restrictions (0.864 against 0.767), trigger (0.942 against
+> 0.867), recurrence (0.857 against 0.788), job recall (0.834 against 0.761) and
+> invented restrictions (5 against 7). Haiku keeps the ramp kind, 0.957 against
+> 0.917.** Both models score 1.000 on TRIBAL restrictions, so the Warg's Wolf clause
+> is solved by either; the choice turns on the wider gating set and on trigger.
+>
+> Two corrections stand behind those figures, both recorded in the report: the first
+> draft recommended Haiku on a number from an uncommitted command, and the first
+> sample was contaminated by two-faced cards — `oracle_text` carries both faces, so
+> the model was labelling back-face abilities against front-face-only gold, and the
+> text-rules baseline was measured without the `frontFaceOracle` the real consumer
+> applies. The sample was re-run.
 
 **Goal:** store one label document per card — its jobs, and the LIMITS on each —
 so E1's stand-in matching can refuse a match that shares a job and nothing else.
 
 **Why it is worth building:** today's text rules score **0** on every limit's
 non-default subset. Not poorly — zero, because they cannot express a limit. The
-sample measured Sonnet at 0.969 on the tribal restriction and 0.875 on the ramp
+sample measured Sonnet at 1.000 on the tribal restriction and 0.917 on the ramp
 kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
 
 **Tech:** Drizzle on Neon, the Anthropic batch API, the `scripts/.env` convention.
@@ -36,7 +41,7 @@ kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
 - **Batches go direct to `api.anthropic.com`.** This repo's `ANTHROPIC_BASE_URL`
   proxy (`127.0.0.1:8787`) has no `/v1/messages/batches` route and answers
   `cave_route_not_found`. Batch pricing is half of standard, so this is the
-  difference between $40.30 and $80.60.
+  difference between $41.09 and $82.18.
 - **Migration number: check main's journal at build time.** 0067 is next free as of
   2026-09-25 (journal ends 0066_about_seen_ids), and several lanes are open, so it
   will move. A collision is regenerate-and-restamp, not renumber by hand.
@@ -106,6 +111,14 @@ stop being a second source of truth.
   results 29 days) is dropped with a warning and its cards re-submitted, and a run
   that finds ids still `in_progress` waits or exits cleanly rather than duplicating
   them.
+- **Send the CAST FACE, or the run relabels abilities the card cannot use.**
+  `cards.oracle_text` stores both faces joined by `\n//\n`. Sent whole, the model
+  labels a land back's `{T}: Add` as ramp on a card whose front is an Aura. Use
+  `castFaceText` (`src/lib/cards/facet.ts`) — it cuts the back for `modal_dfc` and
+  `transform` and KEEPS both halves for split, adventure and prepare, where both are
+  castable. This was measured, not anticipated: the sample's first run shipped
+  without it and had to be re-run, and it moved two conclusions.
+
 - **Face reconciliation, or the run silently loses every two-faced card.** Measured
   in the sample: Sonnet returned `Soulcipher Board` and `Cipherbound Spirit` as
   separate entries where the catalog name is `Soulcipher Board // Cipherbound
@@ -173,7 +186,7 @@ so the next reader does not "fix" it back.
 - **`max-parallel: 1` under one workflow-wide concurrency group**, as `Commander
   index` uses: two legs submitting batches at once double the spend and race the
   same table.
-- A new set is ~390 cards, so a weekly run costs about **49 cents** on Sonnet (16 on
+- A new set is ~390 cards, so a weekly run costs about **50 cents** on Sonnet (16 on
   Haiku). Either way the ongoing cost is not a consideration; the backfill is.
 
 ## Task 5 — consumers: how E1 reads the labels
@@ -215,6 +228,10 @@ too, in this order of strictness:
 4. **`modal` matters for counting, not matching.** A modal job is one the card does
    INSTEAD of another; anything summing a card's jobs must not credit both.
 
+**The fallback must apply `frontFaceOracle`,** as `stand-ins.ts:47` already does.
+Measuring the baseline without it understated the text rules in the sample, and
+shipping a fallback without it would let a land back score `ramp` for an Aura.
+
 **Text rules stay as the FALLBACK**, per card and per job: a card with no label row,
 or whose label row is stale by hash, is matched by `classifyRoles`/`cardThemes`
 exactly as today. That keeps the feature working on a database this pass has never
@@ -222,16 +239,17 @@ run against — which is every database until it does — and makes the rollout
 reversible by ignoring one table.
 
 **`restrictedTo` is the weakness to watch, and it is why the model choice is
-Sonnet.** Measured 0.857 for Sonnet on the gating subset against 0.725 for Haiku —
+Sonnet.** Measured 0.864 for Sonnet on the gating subset against 0.767 for Haiku —
 so roughly one gating restriction in seven is still missed on the recommended model,
-and one in four on the cheaper one.
+and just under one in four on the cheaper one. TRIBAL restrictions are 1.000 on both
+and need no watching.
 
 Two failure directions, costing different things, and both are measured:
 
 - a **missed** restriction is the original bug returning — a card matched into a
-  deck it is dead in (Sonnet 6 of 42 wrong, Haiku 11 of 40);
+  deck it is dead in (Sonnet 6 of 44 wrong, Haiku 10 of 43);
 - an **invented** restriction refuses a stand-in that would have been fine (Sonnet
-  2, Haiku 6).
+  5, Haiku 7).
 
 If false matches survive this pass, look here first; the gold re-score in Task 6 is
 what tells you whether the stored labels or the matching rule is at fault.
@@ -246,12 +264,12 @@ figures:
 
 | | sample (Sonnet) | after the run |
 |---|---|---|
-| tribal restriction | 0.969 | must not drop |
-| restrictedTo (gating) | 0.857 | must not drop |
-| rampKind | 0.875 | must not drop |
-| trigger | 0.921 | must not drop |
-| recurrence | 0.853 | must not drop |
-| spurious restrictions | 2 | must not rise |
+| tribal restriction | 1.000 | must not drop |
+| restrictedTo (gating) | 0.864 | must not drop |
+| rampKind | 0.917 | must not drop |
+| trigger | 0.942 | must not drop |
+| recurrence | 0.857 | must not drop |
+| spurious restrictions | 5 | must not rise |
 
 - **A drop means the pass is not what was measured** — a prompt edit, a model
   change, a parse regression — and is a hard failure, not a warning.
@@ -283,17 +301,17 @@ Five PRs. Each is independently reviewable and none leaves the tree broken.
 
 ## What would make this plan wrong
 
-- **If Hugh picks Haiku** to save the $27.60, only the cost table, the Task 6
+- **If Hugh picks Haiku** to save the $28.36, only the cost table, the Task 6
   thresholds and `model` in the input hash change; no structure moves. The plan is
   model-agnostic, and the input hash carrying the model means a later switch
   relabels rather than mixing two models' output in one table.
 - **A HYBRID is not proposed, because it is not measured.** Haiku is better at ramp
-  kinds (0.955 against 0.875) and Sonnet at restrictions, so labelling each field
+  kinds (0.957 against 0.917) and Sonnet at restrictions and triggers, so labelling each field
   with its stronger model is an obvious thought — but nothing in the sample measures
   a two-pass merge, and the merge itself has a cost the sample did not pay (two runs,
   plus a rule for reconciling a job the two models disagree about the EXISTENCE of).
   It would need its own sample before it belonged in a plan.
-- **If `restrictedTo` at 0.857 is not good enough**, the answer is a prompt round
+- **If `restrictedTo` at 0.864 is not good enough**, the answer is a prompt round
   aimed at that field, re-scored against the same gold set, rather than a different
   model — the per-limit split is what makes that affordable to decide.
 - **If E1's matching ends up needing a limit the schema has no field for**, the gold
