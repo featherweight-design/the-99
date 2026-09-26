@@ -17,6 +17,7 @@ import { averageManaValue } from "./mana-value";
 import { pruneOrphanProxies } from "./prune-proxies";
 import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks";
 import { pruneOrphanAssignments } from "./prune-assignments";
+import { clearPullReleases } from "./pull-release";
 import { commanderMoved } from "../commander-change/pending";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -37,8 +38,7 @@ export type DeckVersion = {
  *
  * Ordered by `number` rather than `committed_at`. The unique key makes number
  * strictly increasing per deck, whereas two versions committed in the same
- * millisecond — reachable when a pull commits a source deck inside another
- * deck's commit — would tie on the timestamp.
+ * millisecond would tie on the timestamp.
  *
  * Pass `tx` to read inside a caller's transaction, so a decision made from
  * this row is taken under the same lock as the write it leads to.
@@ -90,17 +90,15 @@ export async function versionCards(versionId: string, tx?: Tx): Promise<CardQty[
  * so a commander swap committed concurrently cannot be snapshotted stale.
  *
  * The deck row is locked `for update` before the number is computed. `max + 1`
- * is otherwise a read-then-write race, and a pull commits a source deck INSIDE
- * another deck's flow — two commits landing together would collide on
- * `deck_versions_deck_number_key` with a 23505 nobody catches.
+ * is otherwise a read-then-write race: two commits landing together would
+ * collide on `deck_versions_deck_number_key` with a 23505 nobody catches.
  *
  * Every `since` is inherited from the predecessor when it held the same card,
  * and set to this version's committed_at when it did not. This is the one place
  * card-level seniority is decided; see the column comment in schema.ts.
  *
- * Pass `tx` to run inside a caller's transaction. A pull edits `deck_cards` and
- * then commits the result: those two must land or fail together, or the source
- * deck loses the card from its draft while its version still claims it.
+ * Pass `tx` to run inside a caller's transaction, so the commit lands or fails
+ * together with whatever the caller wrote before it.
  */
 /**
  * What the deck's verdict said at the moment of the commit.
@@ -233,6 +231,9 @@ async function commitVersionIn(
   // runs, and for the same reason. This commit has just decided what the deck claims, so a
   // reservation for a card the new version does not list has nothing left to be about.
   await pruneOrphanAssignments(tx, deckId);
+  // A pull's release subtracts from the committed claim this commit just replaced. The new version
+  // lists what the draft does, the pulled card absent, so there is nothing left to subtract from.
+  await clearPullReleases(tx, deckId);
   // A COMMIT ENDS A REMOVED CARD'S LOCK: the removal stayed (L1), so nothing may revive it now.
   // A live lock on a card the version holds is untouched: locks are not versioned.
   await clearDormantLocks(tx, deckId);
@@ -273,6 +274,9 @@ async function commitVersionIn(
 export async function restoreDraftFromVersion(
   deckId: string,
   versionId: string,
+  /** Told which decks the discarded draft's pulls were for, read under this function's own lock,
+   *  so a pull landing just before the restore is still among them. Only on "restored". */
+  onReleased?: (askingDeckIds: string[]) => void,
 ): Promise<"restored" | "moved"> {
   return db.transaction(async (tx) => {
     // The same `for update` commitVersion takes, and for the same reason: this
@@ -345,6 +349,10 @@ export async function restoreDraftFromVersion(
     // has its own column, and folding it into this one would leave every deck
     // reading `edited` forever.
     await touchDeck(tx, deckId);
+    // The pulled cards are back in the draft, so their copies are claimed again: a discard undoes the
+    // pull, release included (Hugh, 2026-09-27), and the deck they were pulled for buys again.
+    const askers = await clearPullReleases(tx, deckId);
+    onReleased?.(askers);
     return "restored";
   });
 }

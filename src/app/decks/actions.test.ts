@@ -436,6 +436,12 @@ vi.mock("../../lib/decks/versions", () => ({
 vi.mock("../../lib/decks/availability-query", () => ({
   loadAvailability: vi.fn(async () => new Map()),
 }));
+// The release a pull writes. Its SQL, and both claim readers subtracting it, are `probe:claims`'s;
+// what the action owns is that a pull writes one for the right pair of decks.
+vi.mock("../../lib/decks/pull-release", () => ({
+  writePullRelease: vi.fn(),
+  releaseAskers: vi.fn(async () => []),
+}));
 // The asking deck's position after a pull. Mocked rather than driven off the db
 // stub because the reader assembles a snapshot transaction, a diff, a claim read
 // and a price join — what the action owns is which figures it reports.
@@ -455,6 +461,7 @@ import {
   versionLiveAt,
 } from "../../lib/decks/versions";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { writePullRelease } from "../../lib/decks/pull-release";
 import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DraftState } from "../../lib/decks/draft-shape";
@@ -1623,10 +1630,24 @@ describe("discardDeckDraft", () => {
     vi.mocked(restoreDraftFromVersion).mockResolvedValue("restored");
   });
 
+  // A discard puts back every card this draft's pulls took, so each deck a copy was pulled for
+  // is short again and its buy tag has to come back.
+  it("revalidates every deck this draft's pulls were for", async () => {
+    const ASKER = "66666666-6666-4666-8666-666666666666";
+    vi.mocked(restoreDraftFromVersion).mockImplementation(async (_d, _v, onReleased) => {
+      onReleased?.([ASKER]);
+      return "restored";
+    });
+    const result = await discardDeckDraft(DECK_ID, VERSION_ID);
+    expect(result.ok).toBe(true);
+    expect(stub.state.revalidated).toContain(`/decks/${ASKER}`);
+  });
+
+
   it("restores the version the caller named and revalidates", async () => {
     const result = await discardDeckDraft(DECK_ID, VERSION_ID);
     expect(result.ok).toBe(true);
-    expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID);
+    expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID, expect.any(Function));
     expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
   });
 
@@ -2013,7 +2034,7 @@ describe("pullCardFromDeck", () => {
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalled();
+    expect(writePullRelease).toHaveBeenCalled();
   });
 
   // The bucket check answers for the card, not for the deck this call named. On a
@@ -2054,7 +2075,7 @@ describe("pullCardFromDeck", () => {
       .mockResolvedValueOnce(claimedBySource());
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalled();
+    expect(writePullRelease).toHaveBeenCalled();
   });
 
   // The claim read has to be the one taken inside the transaction, or it is
@@ -2081,14 +2102,29 @@ describe("pullCardFromDeck", () => {
     expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
-  // The guard that stops a pull sweeping somebody else's half-finished
-  // tinkering into a version they never asked for.
-  it("refuses when the source deck already has pending changes", async () => {
+  // No pending-changes guard (Hugh, 2026-09-27): the pull joins the source's draft rather than
+  // committing it, so a draft of its own is nothing to sweep into a version.
+  it("pulls from a source with a draft of its own, and commits nothing", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 }, { oracleId: CARD_B, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
-    expect(result).toEqual({ ok: false, message: expect.stringContaining("pending") });
+    expect(result.ok).toBe(true);
     expect(commitVersion).not.toHaveBeenCalled();
+    expect(writePullRelease).toHaveBeenCalled();
+  });
+
+  // The source's draft already cut the card, so only its version still claims the copy: the pull
+  // is the release alone, and there is no draft row to delete.
+  it("releases a card the source's draft has already cut", async () => {
+    stub.state.deckRowsByDeck[SOURCE_ID] = [];
+    stub.state.deckRowsByDeck[ASKING_ID] = [{ oracleId: CARD_A, quantity: 1 }];
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(newestVersion).mockImplementation(async (deckId) =>
+      deckId === ASKING_ID ? null : aVersion());
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result.ok).toBe(true);
+    expect(stub.state.deleteCalls).not.toContainEqual({ table: "deck_cards", id: SOURCE_ID });
+    expect(writePullRelease).toHaveBeenCalled();
   });
 
   // Otherwise the decrement and the delete both match nothing and the commit
@@ -2117,24 +2153,33 @@ describe("pullCardFromDeck", () => {
     expect(commitVersion).not.toHaveBeenCalled();
   });
 
-  it("removes the card and commits a version recording it", async () => {
+  // A commander change pending on the source: its live commander moved away and the card sits in
+  // the draft's list, but the VERSION still leads with it. A release subtracts from the version's
+  // list claim only, so the pull would empty the draft and cover nothing.
+  it("refuses a card the source's version still has as its commander", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([]);
+    vi.mocked(newestVersion).mockImplementation(async (deckId) =>
+      deckId === ASKING_ID ? null : { ...aVersion(), commanderOracleId: CARD_A });
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.stringContaining("commander") });
+    expect(writePullRelease).not.toHaveBeenCalled();
+  });
+
+  // The ruling (Hugh, 2026-09-27): the card leaves the source's DRAFT, no version is cut, and a
+  // release for this pair of decks is written in the same transaction, which is what frees the
+  // copy for the asking deck before anyone commits the source.
+  it("removes the card from the source's draft and writes a release, committing nothing", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
     const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(result.ok).toBe(true);
     expect(stub.state.deleteCalls).toContainEqual({ table: "deck_cards", id: SOURCE_ID });
-    // The third argument is the caller's transaction: the delete above and this
-    // commit land together, or the draft loses a card its version still claims.
-    // The third argument is the caller's transaction, and there is NO fourth: this path passes
-    // no snapshot at all, because it removes a card before committing and a snapshot taken
-    // beforehand describes a deck one card ago.
-    expect(commitVersion).toHaveBeenCalledWith(SOURCE_ID, expect.any(String), expect.anything());
-    // NO PROFILE AND NO SNAPSHOT ON THIS PATH. The transaction removes a card before it
-    // commits, so a snapshot taken beforehand describes a deck one card ago — and removing a
-    // card can change what the rest permit. The version records no declaration rather than one
-    // its own rows may not permit; the declaration stays live and the next deliberate commit
-    // carries it.
+    expect(commitVersion).not.toHaveBeenCalled();
     expect(cachedDeckProfile).not.toHaveBeenCalled();
+    expect(writePullRelease).toHaveBeenCalledWith(expect.anything(), {
+      userId: USER_ID, sourceDeckId: SOURCE_ID, oracleId: CARD_A, askingDeckId: ASKING_ID,
+    });
   });
 
 

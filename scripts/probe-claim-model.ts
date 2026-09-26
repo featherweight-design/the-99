@@ -15,11 +15,15 @@
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import ws from "ws";
 import { loadAvailability, loadDeckBuyRows } from "../src/lib/decks/availability-query";
+import { db } from "../src/db";
+import { deckCards } from "../src/db/schema";
+import { writePullRelease } from "../src/lib/decks/pull-release";
+import { commitVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
+import { addCardToDeckFor } from "../src/lib/decks/add-card";
 import { assignCopyFor } from "../src/lib/decks/assign";
-import { commitVersion } from "../src/lib/decks/versions";
 import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 import { loadContestedCards } from "../src/lib/collection/summary-read";
 
@@ -43,6 +47,9 @@ const USER_W = `probe-write-${Date.now()}`;
 // And the review page's own read gets a fifth: its two filters and its UNEXCLUDED vantage are
 // facts about a query, and a component test fed hand-built props cannot see either.
 const USER_D = `probe-door-${Date.now()}`;
+// And the release a Pull it writes (Hugh, 2026-09-27) gets a sixth: a pull that edits the source's draft and
+// leaves its version standing, with the copy freed through a release row both readers subtract.
+const USER_P = `probe-pull-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -194,8 +201,8 @@ async function reservationSection() {
     // 2b-ii. RESERVATIONS DO NOT TOUCH THE PULL GUARD. `senior` gates whether a pull
     //     is offered and stays a pure seniority question: a junior claim is not a pull
     //     source, reservation or no reservation. A deck displaced by somebody's pick
-    //     gets its copy back by CHANGING THE PICK — reversible, and it cuts nobody a
-    //     version — where a pull cuts one. An exception here was added during review
+    //     gets its copy back by CHANGING THE PICK — which edits nobody's list — where a
+    //     pull edits the holder's draft. An exception here was added during review
     //     and then removed: it is wrong for a partial reservation, since pulling one
     //     copy from a deck asking for two leaves its reservation granting one and
     //     moves no figure at all. See the note on DeckClaim.senior.
@@ -800,6 +807,205 @@ async function changesDoorSection() {
   }
 }
 
+// ── PULL IT: A DRAFT AND A RELEASE ─────────────────────────────────────────────
+//
+// Hugh's ruling of 2026-09-27: a pull takes the card out of the SOURCE deck's draft and commits
+// nothing, and the asking deck's buy tag clears at once because a `pull_releases` row subtracts the
+// pulled copy from the source's committed claim. Discarding the source's draft undoes the pull,
+// release included; committing it keeps the pull; putting the card back takes the release back.
+//
+// Every figure is read through BOTH claim readers, because the deck page reads one and the
+// Shopping list, the price strip and the tile read the other. The release is subtracted once, in
+// `all_claims`, which both share — so the mutation that drops it is one edit and fails both halves.
+//
+// The pull's own writes are emulated here with the real `writePullRelease`: the server action
+// around them needs a request and a signed-in reader. The discard, the commit and the add are the
+// real functions, since clearing the release is theirs to do and is what these cases are about.
+async function pullReleaseSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M' and commander_legal
+    order by oracle_id limit 2
+  `);
+  // Colourless, so it fits either commander when the real add validates it, and not a basic,
+  // which the add would count up rather than refuse as a repeat.
+  const { rows: [subject] } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line !~ '\\mBasic\\M' and type_line !~ 'Legendary' and commander_legal
+      and cardinality(color_identity) = 0
+    order by oracle_id limit 1
+  `);
+  if (legends.length < 2 || !subject) throw new Error("catalog is empty — seed it first");
+  const card = subject.oracle_id;
+  const [cmdA, cmdB] = [legends[0].oracle_id, legends[1].oracle_id];
+
+  const mk = async (name: string, cmd: string, holds: boolean) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_P}, ${name}, ${cmd}) returning id
+    `);
+    const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${d.id}, 1, now() - interval '1 hour', ${cmd}, now() - interval '1 hour')
+      returning id
+    `);
+    if (holds) {
+      await fixture.execute(sql`
+        insert into deck_version_cards (version_id, oracle_id, quantity, since)
+        values (${v.id}, ${card}, 1, now() - interval '1 hour')
+      `);
+    }
+    // Both drafts hold the card: the source because it is sleeved there, the asker because it is
+    // the add the pull is for.
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, 1)
+    `);
+    return d.id;
+  };
+  const free = async (deckId: string) => {
+    const a = await loadAvailability(USER_P, { oracleIds: [card], excludeDeckId: deckId });
+    return a.get(card)?.free ?? null;
+  };
+  const owes = async (deckId: string) => {
+    const rows = await loadDeckBuyRows(USER_P, [deckId]);
+    return rows.filter((r) => r.oracleId === card).reduce((n, r) => n + r.quantity, 0);
+  };
+  // The asker's figure through each reader, labelled, so a failure names the reader that moved.
+  const both = async (label: string, deckId: string, freeWant: number, owesWant: number) => {
+    check(`${label} (loadAvailability)`, await free(deckId), freeWant);
+    check(`${label} (loadDeckBuyRows)`, await owes(deckId), owesWant);
+  };
+  const pull = (source: string, asking: string) =>
+    db.transaction(async (tx) => {
+      await tx.delete(deckCards).where(and(eq(deckCards.deckId, source), eq(deckCards.oracleId, card)));
+      await writePullRelease(tx, { userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: asking });
+    });
+  const count = async (q: ReturnType<typeof sql>) =>
+    Number((await fixture.execute<{ n: number }>(q)).rows[0].n);
+  const versions = (deckId: string) =>
+    count(sql`select count(*)::int as n from deck_versions where deck_id = ${deckId}`);
+  const releases = (deckId: string) =>
+    count(sql`select count(*)::int as n from pull_releases where source_deck_id = ${deckId}`);
+  const inDraft = (deckId: string) =>
+    count(sql`select count(*)::int as n from deck_cards where deck_id = ${deckId} and oracle_id = ${card}`);
+  const newestId = async (deckId: string) => (await fixture.execute<{ id: string }>(sql`
+    select id from deck_versions where deck_id = ${deckId} order by number desc limit 1
+  `)).rows[0].id;
+
+  try {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code)
+      values (${USER_P}, ${card}, 1, 'probe')
+    `);
+    const source = await mk("Pull source", cmdA, true);
+    const asking = await mk("Pull asker", cmdB, false);
+    // A hand-set reservation on the source: the player's own pick, which a pull must neither
+    // write nor delete, and which must not keep a released copy from reaching the asker.
+    await fixture.execute(sql`
+      insert into card_assignments (user_id, oracle_id, deck_id, copies)
+      values (${USER_P}, ${card}, ${source}, 1)
+    `);
+
+    // 0. The baseline: one copy, sleeved in the source, so the asker's add buys it.
+    await both("before the pull, the asker is short", asking, -1, 1);
+
+    // 1. THE PULL. A draft on the source and no version; the asker is covered at once.
+    await pull(source, asking);
+    check("the pull cuts the source no version", await versions(source), 1);
+    check("the pull takes the card out of the source's draft", await inDraft(source), 0);
+    check("and records one release", await releases(source), 1);
+    await both("after the pull, the asker is covered", asking, 0, 0);
+    check("the source is not billed for the copy it gave up", await owes(source), 0);
+    check("the hand-set reservation is untouched",
+      await count(sql`select count(*)::int as n from card_assignments where user_id = ${USER_P}`), 1);
+
+    // 1b. THE CHOOSER AGREES. A source whose only copy was pulled claims nothing, so a new pick
+    //     for it is refused the way any deck that no longer asks is. The hand-set row goes first:
+    //     pressing a deck that already holds the pick clears it rather than asking the question.
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_P}`);
+    check("the chooser refuses a pick for a source whose copy was pulled",
+      await assignCopyFor(USER_P, card, source), "claimant-no-longer-asks");
+
+    // 2. DISCARD UNDOES IT. The real discard puts the card back in the source's draft and must
+    //    take the release with it, or the asker keeps a copy the source is holding again.
+    check("the discard restores the source's draft",
+      await restoreDraftFromVersion(source, await newestId(source)), "restored");
+    check("the card is back in the source's draft", await inDraft(source), 1);
+    check("and the release is gone", await releases(source), 0);
+    await both("after the discard, the asker is short again", asking, -1, 1);
+
+    // 2b. ANY PATH BACK CANCELS IT. The card returns to the source's draft by a bare write, the
+    //     way a top-off, a list update or a swap would put it there, none of which knows releases
+    //     exist. The row is still standing, and the claim model bounds it by what the draft lacks,
+    //     so the source claims the copy again all the same.
+    await pull(source, asking);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${source}, ${card}, 1)
+    `);
+    check("a bare re-add leaves the release row standing", await releases(source), 1);
+    await both("and still the asker is short again", asking, -1, 1);
+    await fixture.execute(sql`delete from pull_releases where source_deck_id = ${source}`);
+
+    // 3. PUT BACK UNDOES IT, THROUGH THE LIMIT. Pull again, then the real add returns the card to
+    //    the source. No add deletes a release: the row stands, and the card back in the draft is
+    //    what stops it subtracting. The add still names the asker, whose buy tag has to come back.
+    await pull(source, asking);
+    await both("after a second pull, the asker is covered", asking, 0, 0);
+    const back = await addCardToDeckFor(USER_P, source, card, { relock: false });
+    check("put back writes the card", back.wrote, "added");
+    check("and names the asker whose figures moved", back.released?.[0], asking);
+    check("its release row stands", await releases(source), 1);
+    await both("after put back, the asker is short again", asking, -1, 1);
+    // Cut again before any commit and the release counts once more: the pull was never undone,
+    // only matched by a copy that has left again.
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${source} and oracle_id = ${card}`);
+    await both("cut again, the asker is covered again", asking, 0, 0);
+    await fixture.execute(sql`delete from pull_releases where source_deck_id = ${source}`);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${source}, ${card}, 1)
+    `);
+
+    // 4. COMMIT KEEPS IT. Pull again and commit the source: its new version lists no card, so the
+    //    copy stays the asker's, and the release has nothing left to subtract from and is gone.
+    await pull(source, asking);
+    await commitVersion(source, null);
+    check("the source's commit is its second version", await versions(source), 2);
+    check("the commit clears the release", await releases(source), 0);
+    await both("after the source commits, the asker is still covered", asking, 0, 0);
+
+    // 4b. A STALE RELEASE WOULD BITE LATER. The source takes the card back and commits it: it holds
+    //     the copy again, as senior, and the asker is short. A release the commit left behind
+    //     would subtract from this new claim and hand the asker a copy nobody gave up.
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${source}, ${card}, 1)
+    `);
+    await commitVersion(source, null);
+    await both("when the source commits the card again, the asker is short", asking, -1, 1);
+
+    // 5. TWO ASKERS, BOTH TOLD. The same card pulled from the same source for two decks is two
+    //    rows, and the discard hands BOTH back, read under the restore's own lock. One row keyed on
+    //    the source and card alone kept only the last asker, and the first was never refreshed.
+    const second = await mk("Pull second asker", cmdB, false);
+    await pull(source, asking);
+    await db.transaction((tx) => writePullRelease(tx, {
+      userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: second,
+    }));
+    check("two askers are two release rows", await releases(source), 2);
+    // Put back names BOTH askers (either could be the one now short) and deletes neither row.
+    const one = await addCardToDeckFor(USER_P, source, card, { relock: false });
+    check("put back names both askers", [...(one.released ?? [])].sort().join(","), [asking, second].sort().join(","));
+    check("and deletes neither row", await releases(source), 2);
+    let told: string[] = [];
+    await restoreDraftFromVersion(source, await newestId(source), (ids) => { told = ids; });
+    check("the discard names both askers", [...told].sort().join(","), [asking, second].sort().join(","));
+    check("and clears both rows", await releases(source), 0);
+  } finally {
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_P}`);
+    await fixture.execute(sql`delete from decks where user_id = ${USER_P}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_P}`);
+  }
+}
+
 // Wrapped in main() rather than run at top level: tsx transpiles this repo's
 // scripts to CJS, where a top-level await is a build error.
 async function main() {
@@ -884,10 +1090,10 @@ try {
   // this deck is asking for.
   check("the holder's own draft no longer asks for the copy", await free(newer.id), 1);
 
-  // 2a. THE PULL GUARDS, which are render-time facts rather than refusals from
+  // 2a. THE CLAIM'S FLAGS, which are render-time facts rather than refusals from
   //     inside a transaction. The newer deck's draft now differs from the
-  //     version it is sleeved as — exactly the state a pull must not be offered
-  //     in, because committing it would sweep an edit its owner never confirmed.
+  //     version it is sleeved as, so it reads as pending — which no longer
+  //     guards a pull (2026-09-27), since a pull joins that draft.
   check("the holder reads as pending", (await claim(card, older.id, newer.id))?.pending, true);
   //     …and a list card is not a commander claim, whoever holds it.
   check("a list card is not a commander claim", (await claim(card, older.id, newer.id))?.commander, false);
@@ -926,8 +1132,9 @@ try {
   check("the later holder is junior from the earlier deck's vantage",
     (await claim(card, newer.id, older.id))?.senior, false);
 
-  // 4. An accepted pull settles it at once: the source commits a version
-  //    without the card, and the asking deck stops being short.
+  // 4. The source committing a version without the card settles it: the asking
+  //    deck stops being short. (A pull itself no longer commits; see the pull
+  //    section below for the release that clears the asker before any commit.)
   await commit(newer.id, cmdB, 2, false);
   check("the pull clears the shortfall", await free(older.id), 0);
   // …and the copy is now the older deck's, so the source has none spare.
@@ -937,6 +1144,7 @@ try {
   await commanderCeilingSection();
   await assignmentWriteSection();
   await changesDoorSection();
+  await pullReleaseSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);

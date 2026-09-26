@@ -98,9 +98,33 @@ const claimModel = (userId: string) => sql`
   -- deck_version_cards, so this scoping does not even see a draft removal.
   all_claims as (
     select * from (
-    select nv.deck_id, vc.oracle_id, vc.quantity, vc.since, false as is_commander
+    -- A PULLED COPY IS RELEASED (Hugh, 2026-09-27). A pull edits the source's draft and leaves its
+    -- version listing the card, so the release it writes is subtracted HERE, from the version's
+    -- claim, and a card whose every copy was pulled claims nothing. One subtraction in the one CTE
+    -- both loadAvailability and loadDeckBuyRows read, so the two cannot disagree about a pull.
+    --
+    -- BOUNDED BY WHAT THE DRAFT STILL LACKS: never more copies than the version lists beyond the
+    -- source's draft. A card that comes back into the source's draft by ANY path (a top-off, a
+    -- list update, a swap, an import resolve, not only Put back) cancels its own release here,
+    -- without that path having to know releases exist. The row itself dies with the source's
+    -- draft: its commit and its discard both delete it. The CASE keeps the draft read off every
+    -- row that carries no release.
+    select nv.deck_id, vc.oracle_id, vc.quantity - rel.copies as quantity, vc.since, false as is_commander
     from newest_version nv
     join deck_version_cards vc on vc.version_id = nv.version_id
+    -- Summed, because a card pulled for two asking decks is two rows.
+    left join (
+      select source_deck_id, oracle_id, sum(copies)::int as copies
+      from pull_releases where user_id = ${userId}
+      group by source_deck_id, oracle_id
+    ) pr on pr.source_deck_id = nv.deck_id and pr.oracle_id = vc.oracle_id
+    cross join lateral (
+      select case when pr.copies is null then 0 else least(pr.copies, greatest(vc.quantity - coalesce((
+        select sum(dc.quantity) from deck_cards dc
+        where dc.deck_id = nv.deck_id and dc.oracle_id = vc.oracle_id
+      ), 0), 0)) end::int as copies
+    ) rel
+    where vc.quantity - rel.copies > 0
     union all
     select nv.deck_id, nv.commander_oracle_id, 1, nv.commander_since, true
     from newest_version nv
@@ -132,9 +156,9 @@ const claimModel = (userId: string) => sql`
       where p.deck_id = arms.deck_id and p.oracle_id = arms.oracle_id
     )
   ),
-  -- Decks whose draft no longer matches the version they are sleeved as. A pull
-  -- from one of these would commit edits its owner never asked to commit, so the
-  -- server refuses it and the surface must not offer it.
+  -- Decks whose draft no longer matches the version they are sleeved as: a claim's
+  -- pending flag. It no longer guards a pull (Hugh, 2026-09-27), which joins that
+  -- draft rather than committing it.
   --
   -- The difference is symmetric and taken in both directions: one side alone
   -- misses a pure removal, and the pair of (oracle_id, quantity) rows makes a
@@ -533,8 +557,8 @@ ${lockedClaim}            -- Whether free COUNTS this claim, which is the same q
             -- does not move and the pull cost the other deck a slot for nothing — and
             -- the refinement that would fix it grows the pull surface to serve a route
             -- that already exists. A deck displaced by somebody's pick gets its copy
-            -- back by CHANGING THE PICK, which is reversible and cuts no version. A
-            -- pull cuts one. So this flag stays a pure seniority question.
+            -- back by CHANGING THE PICK, which edits nobody's list. A pull edits the
+            -- holder's draft. So this flag stays a pure seniority question.
             'senior', cd.sleeved and (
               not coalesce((select s.sleeved from skip_deck s), false)
               or m.since is null

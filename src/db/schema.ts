@@ -895,6 +895,43 @@ export const cardAssignments = pgTable("card_assignments", {
   check("card_assignments_copies_positive", sql`${t.copies} > 0`),
 ]);
 
+/**
+ * A copy a `Pull it` took out of a sleeved deck for another deck (Hugh's ruling, 2026-09-27).
+ *
+ * A pull no longer commits the deck it takes from: it edits that deck's DRAFT, which leaves the
+ * source's committed version still listing the card, and a committed version claims its cards
+ * against every other deck. This row is what lets the copy go anyway: the claim model subtracts
+ * `copies` from the source's committed claim on the card (`all_claims` in availability-query.ts,
+ * which both `loadAvailability` and `loadDeckBuyRows` read), so the asking deck finds it free at
+ * once and the source reads pending with the card going out.
+ *
+ * It lives exactly as long as the source's draft does. The source's COMMIT deletes it (the new
+ * version no longer lists the card, so there is nothing left to subtract from); its DISCARD deletes
+ * it (the card is back, so the copy is claimed again and the asking deck's buy tag returns). No
+ * add deletes it, Put back included: `all_claims` never subtracts more than the version lists
+ * beyond the draft, so a card back in the draft cancels its own release there, and removing it
+ * again before the commit makes the release count once more.
+ */
+export const pullReleases = pgTable("pull_releases", {
+  userId: text("user_id").notNull(),
+  sourceDeckId: uuid("source_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  /** The deck the copy was pulled for, which is who has to be told when the release changes.
+   *  Deleting that deck deletes the release: the copy stays out of the source's draft, and the
+   *  source's version claims it again, as for any removal nobody has committed. */
+  askingDeckId: uuid("asking_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  copies: integer("copies").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  // One row per card per source PER ASKER, so undoing the release can tell every deck it freed a
+  // copy for. A second pull of the same card for the same deck adds a copy to that row; the claim
+  // model sums the rows.
+  primaryKey({ columns: [t.sourceDeckId, t.oracleId, t.askingDeckId] }),
+  // The claim model reads every release a player holds.
+  index("pull_releases_user_idx").on(t.userId),
+  check("pull_releases_copies_positive", sql`${t.copies} > 0`),
+]);
+
 export const csvUploads = pgTable("csv_uploads", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),

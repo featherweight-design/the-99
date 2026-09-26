@@ -61,9 +61,8 @@ export type DraftState = {
   /**
    * The deck a pull could actually be taken from, per add that offers one.
    *
-   * NOT `DraftAdd.heldBy`, which includes the two holders no pull can come out
-   * of: a deck with pending changes of its own, and a deck holding the card as
-   * its commander. Naming one of those decks in an offer to pull promises an act
+    * NOT `DraftAdd.heldBy`, which includes the holders no pull can come out of:
+   * a deck holding the card as its commander, or one that has locked it. Naming one of those decks in an offer to pull promises an act
    * the server refuses. Filtered through
    * `releasableClaims`, the same guard `pullableCount` counts with, so the hint
    * and the count can never disagree. Absent when no holder is releasable.
@@ -84,7 +83,7 @@ export type DraftState = {
   /** Rows in `adds` that are not free. The banner's `unfree` figure. */
   unfreeCount: number;
   /** Adds a deliberate pull could satisfy: bucket `claimed`, and at least one
-   *  holder that is neither pending nor holding it as a commander. Drawn as a
+   *  holder that neither holds it as a commander nor has locked it. Drawn as a
    *  count only — which row offers which control is `loadDraftRows`' answer. */
   pullableCount: number;
   /**
@@ -175,20 +174,22 @@ export function hasChanges(state: DraftState): boolean {
 /**
  * The holders a pull could actually be offered against.
  *
- * Two of the three guards are the server's own: a deck with pending changes
- * would have them swept into a version nobody asked for, and no route releases a
- * commander. A control that can only fail is worse than no control.
+ * Two guards are the server's own: no route releases a commander, and a card the
+ * player locked in a deck stays there. A control that can only fail is worse than
+ * no control.
  *
  * `senior` is the third, and it is arithmetic rather than a refusal. A junior
  * sleeved claim is already outside this deck's `free`, so the server would take
  * the copy, empty that deck's slot, and leave the shortfall exactly where it was.
  *
  * Filtered off `claims` rather than through `hardDecks`, whose projection drops
- * all three flags — the maturity test is repeated here for that reason.
+ * the flags — the maturity test is repeated here for that reason.
  */
 export function releasableClaims(a: Availability | undefined): DeckClaim[] {
   if (!a) return [];
-  return a.claims.filter((c) => c.mature && c.senior && !c.pending && !c.commander && !c.locked);
+  // A PENDING holder is releasable (Hugh, 2026-09-27): the pull joins its draft rather than
+  // committing it, so there is nothing of the owner's to sweep into a version.
+  return a.claims.filter((c) => c.mature && c.senior && !c.commander && !c.locked);
 }
 
 /**
@@ -196,19 +197,18 @@ export function releasableClaims(a: Availability | undefined): DeckClaim[] {
  * no sleeved holder — an unowned card, or a free one.
  *
  * A releasable holder wins, because that row gets the offer. Below that a
- * commander claim beats a pending one, matching the control's own guard order:
- * a pending deck can be opened and released, a commander never can, so naming
- * the permanent obstacle is the more useful of the two.
+ * commander claim beats a locked one, matching the control's own guard order:
+ * naming the more permanent obstacle is the more useful of the two.
  */
 export function pullCandidate(a: Availability | undefined): DeckClaim | null {
   const releasable = releasableClaims(a)[0];
   if (releasable) return releasable;
   const sleeved = (a?.claims ?? []).filter((c) => c.mature);
-  // A LOCKED claim is a guard like the other two (L2): `PullControl` draws its tag and no offer, so
-  // the row says the spare copy is locked in that deck. Between the two, by permanence: a commander
-  // never moves, a lock is the player's own choice in that deck, and a pending deck needs only a
-  // commit. `locked` is only ever set with NEVER_CUT_ENABLED on.
-  return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.locked) ?? sleeved.find((c) => c.pending) ?? null;
+  // A LOCKED claim is a guard like the commander one (L2): `PullControl` draws its tag and no
+  // offer, so the row says the spare copy is locked in that deck. The commander goes first, by
+  // permanence: it never moves, and a lock is the player's own choice in that deck. `locked` is only ever set
+  // with NEVER_CUT_ENABLED on.
+  return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.locked) ?? null;
 }
 
 /**

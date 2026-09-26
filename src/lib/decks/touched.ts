@@ -50,15 +50,10 @@ export type Touch = { at: Date; verb: TouchVerb };
  * never pressed the control. A commit therefore has to be STRICTLY newer than
  * the edit to name the row.
  *
- * `pullCardFromDeck` is the case that argued the other way, and it lands on
- * either side. It stamps the edit and then commits, both with
- * `clock_timestamp()`, so the commit is microseconds later — but these values
- * reach here as JavaScript `Date`s, which keep milliseconds where Postgres keeps
- * microseconds, so the two collapse to one instant unless a millisecond boundary
- * happens to fall between them. The row therefore reads `committed` or `edited`
- * depending on where that boundary fell, and BOTH are true of a pull: a card left
- * the deck and a version was cut. That is why the migration case decides this
- * rule and the pull does not — it has no wrong answer to protect.
+ * `pullCardFromDeck` used to be the case that argued the other way: it stamped
+ * the edit and then committed, both within one millisecond. Since 2026-09-27 a
+ * pull commits nothing, so it stamps the edit alone and the row reads `edited`.
+ * The migration case is what decides this rule.
  *
  * A game takes its tie against both, which is why it is tested last here.
  * Nothing writes a game together with an edit or a commit in one transaction, so

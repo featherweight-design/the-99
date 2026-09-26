@@ -484,6 +484,13 @@
       "when": 1790427703318,
       "tag": "0068_card_label_batches",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1790437776851,
+      "tag": "0069_pull_releases",
+      "breakpoints": true
     }
   ]
 }

@@ -519,6 +519,22 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   computes the same allocation through a second, independently written expression, and a
   reservation that moved one and not the other would leave the deck page and the receipt
   disagreeing about the same card.
+
+  Its last section covers **the release a `Pull it` writes** (Hugh, 2026-09-27). A pull takes the card out of
+  the SOURCE deck's draft and commits nothing; a `pull_releases` row subtracts the pulled copy from
+  that deck's committed claim, so the asking deck's buy tag clears before anyone commits. The
+  subtraction lives once, in `all_claims`, which `loadAvailability` and `loadDeckBuyRows` both
+  read, and every figure in the section is asserted through BOTH. The two readers cannot be
+  mutated apart on this rule, because there is one expression: dropping it fails both readers'
+  checks at once. The discard, the commit and the add are the REAL functions. Only the source's
+  commit and discard DELETE a release; no add does, Put back included. The release is limited
+  instead: `all_claims` never subtracts more than the version lists beyond the source's draft, so a
+  card back in the draft cancels its own release by any path, and cutting it again before the
+  commit makes it count once more. Mutations that fail it: the subtraction dropped (both readers),
+  the limit removed, the release left standing by a discard or by a commit, and the chooser
+  ignoring the release. The commit case needs a second step to bite: a release a commit leaves
+  behind subtracts nothing until the source commits the card AGAIN, and then hands the asker a
+  copy nobody gave up.
 - `pnpm probe:arrivals` proves the collection confirm's own lock and its receipt against a real
   Postgres by calling the real `replaceCollection`. Two things live there that no unit test here
   can reach. THE LOCK: `confirmed_at` is stamped by a conditional update inside the replace

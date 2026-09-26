@@ -13,6 +13,7 @@ import { deckAddRejectionMessage, type DeckMutationResult } from "./mutation-res
 import { requireDeck } from "./read";
 import { deckSurfaces } from "./revalidate";
 import { revalidateClaims } from "./revalidate-claims";
+import { releaseAskers } from "./pull-release";
 import { touchDeck } from "./touch";
 import { validateCardForDeck, type DeckContextForValidation } from "./add-validation";
 
@@ -50,7 +51,12 @@ export async function deckValidationContext(
 }
 
 /** What an add did, so each caller can revalidate when it chooses (`addFromFits` defers it). */
-export type AddOutcome = { result: DeckMutationResult; wrote: "held" | "added" | "refused" };
+export type AddOutcome = {
+  result: DeckMutationResult;
+  wrote: "held" | "added" | "refused";
+  /** Decks a pull from this one had freed this card for: the card is back, so they buy again. */
+  released?: string[];
+};
 
 /** The surfaces an add has to refresh: the deck's own on a repeat add, the claims on a real one. */
 export function revalidateAdd(deckId: string, userId: string, outcome: AddOutcome): void {
@@ -58,6 +64,7 @@ export function revalidateAdd(deckId: string, userId: string, outcome: AddOutcom
   // /decks shows derived stats (built / to-buy) — keep the index fresh too, and
   // the two surfaces that draw availability off deck rows with it.
   else if (outcome.wrote === "added") revalidateClaims(deckId, userId);
+  for (const id of outcome.released ?? []) revalidateClaims(id, userId);
 }
 
 /**
@@ -93,6 +100,8 @@ export async function addCardToDeckFor(
 
   // Lock the deck row so the 99-card cap check and the write are atomic —
   // concurrent adds serialize here instead of both passing the cap at 98.
+  // Filled inside the transaction, read after it: the decks whose pulled copy this add took back.
+  let released: string[] = [];
   const rejection = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     const [builtRow] = await tx.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
@@ -133,9 +142,13 @@ export async function addCardToDeckFor(
       if (inserted.length === 0) return "held" as const;
       await touchDeck(tx, deckId);
     }
+    // The card is back in this draft, so a release a pull wrote for it no longer subtracts
+    // (`all_claims` limits it by what the draft lacks), and the decks it was pulled for buy again.
+    // Read rather than deleted: the release stands until this deck commits or discards.
+    released = await releaseAskers(tx, deckId, oracleId);
     return null;
   });
   if (rejection === "held") return { result: { ok: true }, wrote: "held" };
   if (rejection) return { result: { ok: false, message: deckAddRejectionMessage(rejection) }, wrote: "refused" };
-  return { result: { ok: true }, wrote: "added" };
+  return { result: { ok: true }, wrote: "added", released };
 }
