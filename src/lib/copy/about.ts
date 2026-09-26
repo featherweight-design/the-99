@@ -202,7 +202,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'One copy cannot be in two committed decks at once. A card carries a diamond and a few words saying how contested it is, and a card that is free carries nothing at all.',
     keys: [
-      'free — you own a copy nothing has claimed. No diamond at all, which is the commonest state in the app.',
+      'free — you own a copy that nothing has claimed. No diamond at all, which is the commonest state in the app.',
       'in a draft — a deck you have never committed wants it, and that deck wears the same Draft badge on your decks page. The claim is real but not binding.',
       'none free — your committed decks hold every copy you own, and none is spare.',
       'short 2 — the committed decks between them ask for two more copies than you own. The deck that sleeved it first keeps it by default, and you can hand it to another. A card you own none of never shows here; on a decklist it takes the buy mark instead.',
@@ -359,7 +359,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a commander',
     width: 'plate',
     caption:
-      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy nothing wants says nothing, because there is nothing to report.",
+      "Owning a card and being free to use it are different things. A green dot means the card is yours. The note beside it says what is claiming it: one in a draft, none free, or short by however many copies your committed decks want past what you own. A card with a spare copy that nothing wants says nothing, because there is nothing to report.",
     keys: [
       'the dot means you own the card and nothing else. It stays the same color whether or not a deck is holding it.',
       'the note counts copies and never names a deck. Open the card to see which decks are holding it.',
@@ -607,7 +607,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // names to `Dockside ...` and `R. —`.
     width: 'plate',
     caption:
-      'Every card a deck wants and you cannot supply, priced, on that deck’s Shopping filter; the deck’s tile carries its count and cost, and Home adds up the cost across your whole library. A card you own can be on this list: if another deck sleeved your only copy first, this one has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
+      'Every card a deck wants and you cannot supply sits on that deck’s Shopping filter, with its price where ManaPool has one; the deck’s tile carries its count and cost, and Home adds up the cost across your whole library. A card you own can be on this list: if another deck sleeved your only copy first, this one has to buy one. Unpriced copies still count in the tally and add nothing to the total.',
     keys: [],
     since: 1,
   },
@@ -684,7 +684,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'only commanders you own and could legally build are listed. The picker is your collection, not a catalog.',
       'the figure beside each one is how many of your cards are legal in its colors, which is the Pool part of a fit score seen from the other side.',
-      'a name is required and everything else has a default: the deck arrives already filled from your collection, and every card of it is yours to change.',
+      'a name is required and everything else has a default: the deck arrives already filled, from your collection first and with staples you don’t own where it runs short, and every card of it is yours to change.',
     ],
     since: 7,
   },
@@ -838,7 +838,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/',
     width: 'inset',
     caption:
-      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many of your cards your committed decks ask for more times than you own copies; and what it would cost to buy everything your decks are short. The middle figure keeps its color at zero, because it is the row that would be red if it were not zero.',
+      'Three figures: how much of what you own is sleeved into a committed deck, against everything you own; how many cards you own that your committed decks ask for more copies of than you have; and what it would cost to buy everything your decks are short. The middle figure keeps its color at zero, because it is the row that would be red if it were not zero.',
     keys: [],
     since: 1,
   },
