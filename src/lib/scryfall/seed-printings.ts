@@ -167,7 +167,7 @@ export function unsizedRunFailure(
   if (r.upserted === 0 && r.skippedLayout === 0 && r.skippedReversible === 0) return null;
   if (r.upserted === 0) {
     return `No set was sized and no printing was ingested, though the bulk held entries: `
-      + `${r.skippedLayout} token/emblem and ${r.skippedReversible} reversible were turned `
+      + `${r.skippedLayout} non-card (token, emblem, theme front, plane and the like) and ${r.skippedReversible} reversible were turned `
       + "away at the layout gates and nothing else was recognised. That is an upstream shape "
       + "change, not a catalog state — the previous denominators are untouched, and "
       + "re-running will do the same until the bulk or the transform moves.";

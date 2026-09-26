@@ -146,13 +146,15 @@ export const printings = pgTable("printings", {
 ]);
 
 /**
- * Token/emblem/art-series ledger. The FK on `printings.oracle_id` means these can never live
- * in `printings` (they have no row in `cards`), but upload needs to tell "this ID is a token"
- * from "this ID is genuinely unknown" without a network call.
+ * Ledger of printings that are not cards (`NON_GAME_LAYOUTS` in `lib/cards/game-card.ts`). The
+ * FK on `printings.oracle_id` means these can never live in `printings` (they have no row in
+ * `cards`). Upload reads the TOKEN_LAYOUTS rows to tell "this ID is a token" from "this ID is
+ * genuinely unknown" without a network call; the rest (theme fronts, planes, schemes) are kept
+ * out of that read and report as unresolved.
  */
 export const skippedPrintings = pgTable("skipped_printings", {
   scryfallId: uuid("scryfall_id").primaryKey(),
-  layout: text("layout").notNull(),   // token | double_faced_token | emblem | art_series
+  layout: text("layout").notNull(),   // one of NON_GAME_LAYOUTS
   name: text("name").notNull(),
 });
 

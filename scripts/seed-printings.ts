@@ -6,7 +6,7 @@ seedPrintings()
     console.log(
       `Seeded ${r.upserted} printings (${r.representatives} representative, ` +
       `${r.baseSetSizes} sets sized); ` +
-      `skipped ${r.skippedLayout} token/emblem, ${r.skippedReversible} reversible, ` +
+      `skipped ${r.skippedLayout} non-card (tokens, emblems, fronts, planes), ${r.skippedReversible} reversible, ` +
       `${r.skippedOrphan} orphan.`,
     );
     // A run that ingested printings and sized no set is a failed refresh, and it used to
