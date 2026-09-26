@@ -169,6 +169,12 @@ export function DiscoveryView({
     if (printedIn) {
       setCodesBySlug((m) => filePrintedIn(new Map(m ?? []), served.items.map((r) => r.slug), printedIn));
       setKnownSets((known) => mergeSets(printedIn.sets, known));
+    } else {
+      // A server payload that arrives with no index is a failed read, and the contract for that is
+      // the control's absence. Keeping the earlier map would go on filtering, and would drop any
+      // row this payload carries that the map never covered.
+      setCodesBySlug(null);
+      setKnownSets([]);
     }
   }
   const search = useSearchParams();

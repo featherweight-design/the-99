@@ -1047,6 +1047,15 @@ describe("DiscoveryView Printed in", () => {
     expect(screen.queryByRole("button", { name: /Printed in HOB/ })).not.toBeInTheDocument();
   });
 
+  it("drops the filter when a later payload arrives with no index", () => {
+    window.history.replaceState(null, "", "/discover?p=hob");
+    const { rerender } = render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
+    expect(shown()).toEqual(["Alpha", "Beta"]);
+    rerender(<DiscoveryView encoded={list({ items, candidateCount: 3 })} />);
+    expect(shown()).toEqual(["Alpha", "Beta", "Gamma"]);
+    expect(screen.queryByRole("button", { name: /Printed in HOB/ })).not.toBeInTheDocument();
+  });
+
   it("names the set filter when it alone emptied the list", () => {
     window.history.replaceState(null, "", "/discover?p=zzz");
     render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
