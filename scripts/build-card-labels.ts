@@ -580,6 +580,18 @@ async function main(): Promise<void> {
     const [{ n: staged }] = await db.select({ n: sql<number>`count(*)::int` })
       .from(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
     if (staged === 0) {
+      // THREE different states reach here and they are not interchangeable. Collapsing the first
+      // two printed "every card's label matches its inputs" when stale cards existed and were
+      // simply unlabelable — so the weekly workflow matched it as success and would have reported
+      // green for ever while those cards were never labelled.
+      if (asked === 0 && ambiguous.length > 0) {
+        console.error(`\nEVERY stale card is unlabelable: ${ambiguous.length} share a name with `
+          + `another oracle row, and the model's reply could not be attributed to one of them. `
+          + `Nothing was submitted and nothing is stale-but-doable. These cards stay unlabelled `
+          + `until the duplicate names are resolved — this is NOT a no-op.`);
+        process.exitCode = 1;
+        return;
+      }
       console.log(asked === 0
         ? "nothing to do — every Commander-legal card's label matches its inputs"
         : "nothing staged and nothing left to submit — re-run to plan these cards afresh");
