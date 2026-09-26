@@ -22,6 +22,7 @@ export { READ_WORDS_MAX_CHARS };
  * | `w` | the words, kept for *Change answers* and the Not used line; never matched again here |
  * | `c`, `m` | colors and their mode, in the lanes' own encoding, so Discover's link parses as-is |
  * | `t` | theme slugs, comma-separated |
+ * | `p` | set codes, lower-case, comma-separated: printed in any of them (the lanes' own key) |
  * | `tj=any` | the themes as any of; absent, all of. Written only with two or more themes |
  * | `a` | the build-around card's oracle id |
  * | `b` | the budget, whole dollars |
@@ -43,6 +44,8 @@ export type ChooseParams = {
   match: JoinMode;
   themes: string[];
   themeJoin: ThemeJoin;
+  /** Set codes, lower-case, deduplicated in the order given. */
+  sets: string[];
   card: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -71,11 +74,13 @@ export const NOT_USED_CHARS = 120;
 export const NOT_USED_SEPARATOR = "\u001f";
 
 export const emptyParams = (): ChooseParams => ({
-  words: "", colors: [], match: "contains", themes: [], themeJoin: "all", card: null,
+  words: "", colors: [], match: "contains", themes: [], themeJoin: "all", sets: [], card: null,
   budgetDollars: null, bracket: null, readId: null, notUsed: [], deeper: [], results: false,
 });
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
+/** A set code as `printings.set_code` stores it: lower-case letters and digits. */
+const SET_CODE = /^[a-z0-9]{2,8}$/;
 
 function wholeNumber(raw: string | null, min: number, max: number): number | null {
   if (raw === null || !/^\d{1,6}$/.test(raw)) return null;
@@ -93,6 +98,7 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
     match: sp.get("m") === "exact" ? "exactly" : "contains",
     themes: [...new Set((sp.get("t") ?? "").split(",").filter((s) => SLUG.test(s)))],
     themeJoin: sp.get("tj") === "any" ? "any" : "all",
+    sets: [...new Set((sp.get("p") ?? "").split(",").map((s) => s.toLowerCase()).filter((s) => SET_CODE.test(s)))],
     // Lowercased: Postgres prints uuids lower, and every id this is compared with (the index, a
     // candidate, a row) comes from there. An address typed or pasted in upper case is the same card.
     card: card !== null && isUuid(card) ? card.toLowerCase() : null,
@@ -112,6 +118,7 @@ export function serializeChooseParams(p: ChooseParams): string {
   if (p.colors.length > 0 && p.match === "exactly") sp.set("m", "exact");
   if (p.themes.length > 0) sp.set("t", p.themes.join(","));
   if (p.themes.length >= 2 && p.themeJoin === "any") sp.set("tj", "any");
+  if (p.sets.length > 0) sp.set("p", p.sets.join(","));
   if (p.card) sp.set("a", p.card);
   if (p.budgetDollars !== null) sp.set("b", String(p.budgetDollars));
   if (p.bracket !== null) sp.set("k", String(p.bracket));
@@ -142,6 +149,7 @@ export function answersOf(p: ChooseParams): Answers {
     match: p.match,
     themes: p.themes,
     themeJoin: p.themeJoin,
+    sets: p.sets,
     card: p.card,
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
@@ -151,6 +159,8 @@ export function answersOf(p: ChooseParams): Answers {
 export type ResolvedWords = {
   themes: string[];
   themeJoin: ThemeJoin;
+  /** The picked sets, then the words' own, once each: several sets are always "or". */
+  sets: string[];
   card: string | null;
   budgetDollars: number | null;
   bracket: Bracket | null;
@@ -172,10 +182,11 @@ export type ResolvedWords = {
  */
 export function resolveWords(
   chips: readonly Chip[],
-  controls: { themes: readonly string[]; themeJoin?: ThemeJoin; budgetDollars: number | null; bracket: Bracket | null },
+  controls: { themes: readonly string[]; themeJoin?: ThemeJoin; sets?: readonly string[]; budgetDollars: number | null; bracket: Bracket | null },
   wordsJoin: ThemeJoin = "all",
 ): ResolvedWords {
   const themes = [...controls.themes];
+  const sets = [...(controls.sets ?? [])];
   let card: string | null = null;
   let budget: number | null = null;
   let bracket: Bracket | null = null;
@@ -184,6 +195,9 @@ export function resolveWords(
     switch (c.kind) {
       case "theme":
         if (!themes.includes(c.slug)) themes.push(c.slug);
+        break;
+      case "set":
+        if (!sets.includes(c.code)) sets.push(c.code);
         break;
       case "card":
         if (card === null) card = c.oracleId;
@@ -206,6 +220,7 @@ export function resolveWords(
   return {
     themes,
     themeJoin: controls.themes.length >= 2 ? controls.themeJoin ?? "all" : wordsJoin,
+    sets,
     card,
     budgetDollars: controls.budgetDollars ?? budget,
     bracket: controls.bracket ?? bracket,

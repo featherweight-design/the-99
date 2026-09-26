@@ -8,6 +8,8 @@ import { describe, expect, it, vi } from "vitest";
 const execute = vi.hoisted(() => vi.fn());
 vi.mock("../../db", () => ({ db: { execute } }));
 vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: async () => "g1" }));
+// The Sets answer's index is the lanes' own reader, memoized there; this file is about this memo.
+vi.mock("../sets/printed-in-read", () => ({ loadCommanderPrintings: async () => ({ sets: [], byOracle: {} }) }));
 
 const { loadIntakeCatalog, loadIntakeThemes } = await import("./search");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;

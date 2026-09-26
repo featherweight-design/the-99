@@ -59,6 +59,11 @@ export type Answers = {
   themes: string[];
   /** How the themes join; absent is all of, and any of applies only from two themes (`isAnyOf`). */
   themeJoin?: ThemeJoin;
+  /**
+   * Set codes, lower-case: the commander is printed in any of them (`printedIn`, the lanes' own
+   * rule). Several sets are always "or" (addendum §2). Absent or empty, no set is asked.
+   */
+  sets?: readonly string[];
   /** The build-around card's oracle id. */
   card: string | null;
   budgetDollars: number | null;
@@ -82,6 +87,8 @@ export type Candidate = ThemeRow & BracketFacts & {
   priceCents: number | null;
   /** The commander's printed type line, for a tribal theme's type-line match. */
   typeLine: string | null;
+  /** Printed in one of the sets asked (`printedIn`, read by the loader); true when none is asked. */
+  inSets?: boolean;
   /** The share (0 to 1) of this commander's decks that run the build-around card; null when none. */
   cardInclusion: number | null;
   /** Two-card combos this commander completes with the build-around card, and how many loop turns. */
@@ -99,6 +106,8 @@ export type AnswerKey =
   | { kind: "theme"; slug: string }
   /** The themes asked as any of: one answer, dropped whole. */
   | { kind: "themes" }
+  /** The sets asked, one answer: dropped whole, never a set at a time. */
+  | { kind: "sets" }
   | { kind: "card" }
   | { kind: "budget" }
   | { kind: "bracket" };
@@ -174,6 +183,7 @@ export function passes(
   }
   // With the card answer removed the card is gone from every test, not only its own: its flags
   // and its price no longer count against the bracket or the budget either.
+  if ((a.sets?.length ?? 0) > 0 && !skipping("sets") && c.inSets === false) return false;
   const withCard = a.card !== null && !skipping("card") ? card : null;
   if (withCard !== null && !(c.cardInclusion !== null && c.cardInclusion > 0)) return false;
   if (a.bracket !== null && !skipping("bracket") && !withinBracket(c, withCard, a.bracket)) return false;
@@ -348,6 +358,7 @@ export function answerKeys(a: Answers): AnswerKey[] {
   return [
     ...(a.colors.length > 0 ? [{ kind: "colors" } as const] : []),
     ...(isAnyOf(a) ? [{ kind: "themes" } as const] : a.themes.map((slug) => ({ kind: "theme", slug }) as const)),
+    ...((a.sets?.length ?? 0) > 0 ? [{ kind: "sets" } as const] : []),
     ...(a.card !== null ? [{ kind: "card" } as const] : []),
     ...(a.budgetDollars !== null ? [{ kind: "budget" } as const] : []),
     ...(a.bracket !== null ? [{ kind: "bracket" } as const] : []),

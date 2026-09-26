@@ -226,3 +226,23 @@ describe("the join's reason", () => {
     expect(widen.reason).toBeNull();
   });
 });
+
+describe("the Sets answer", () => {
+  const sets = { ...labels, set: (c: string) => ({ hob: "The Hobbit", hoc: "The Hobbit Commander" })[c] ?? c.toUpperCase() };
+  const asked = p({ themes: ["dinos"], sets: ["hob", "hoc"] });
+
+  it("draws one printed-in chip of codes, spoken with the names in full", () => {
+    expect(answerChips(asked, sets)[1]).toEqual({
+      kind: "printed in",
+      value: "Printed in The Hobbit or The Hobbit Commander",
+      codes: ["HOB", "HOC"],
+      deeper: false,
+    });
+  });
+
+  it("names a drop as the chip names it, and the drop clears every set", () => {
+    const [drop] = narrowOptions({ without: [{ answers: [{ kind: "sets" }], count: 61 }], widen: null, anyOf: null, cardOverBracket: null }, asked, sets);
+    expect(drop).toMatchObject({ label: "Drop HOB or HOC", count: "61 commanders" });
+    expect(drop.params.sets).toEqual([]);
+  });
+});

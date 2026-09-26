@@ -335,3 +335,24 @@ describe("the join and the other answers", () => {
     expect(best.count).toBe(12);
   });
 });
+
+describe("the Sets answer (three-answers addendum §2)", () => {
+  const pool = [
+    cmd({ name: "Thorin", inSets: true, tags: [tag("dwarves", 400)] }),
+    cmd({ name: "Bombur", inSets: true, tags: [tag("dwarves", 300)] }),
+    cmd({ name: "Elsewhere", inSets: false, tags: [tag("dwarves", 900)] }),
+  ];
+  const asked: Answers = { ...none, themes: ["dwarves"], sets: ["hob", "hoc"] };
+
+  it("passes only a commander printed in one of them", () => {
+    expect(names(rankCandidates(pool, asked, null))).toEqual(["Thorin", "Bombur"]);
+    // No set asked: every commander, whatever the loader read.
+    expect(names(rankCandidates(pool, { ...asked, sets: [] }, null))).toEqual(["Elsewhere", "Thorin", "Bombur"]);
+  });
+
+  it("is one answer to the note, dropped whole", () => {
+    expect(answerKeys(asked)).toEqual([{ kind: "theme", slug: "dwarves" }, { kind: "sets" }]);
+    const r = rankCandidates(pool, asked, null);
+    expect(r.tooNarrow!.without).toContainEqual({ answers: [{ kind: "sets" }], count: 3 });
+  });
+});

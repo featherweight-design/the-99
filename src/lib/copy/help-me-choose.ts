@@ -76,7 +76,9 @@ export const helpMeChooseCopy = {
     startOver: "Start over", // canvas
     noPrice: "buy · no price", // canvas
     noPriceTail: "no price", // canvas: the tail of `noPrice`, drawn in --fg-faint
-    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", printedIn: "printed in", card: "card", budget: "budget", bracket: "bracket" }, // canvas
+    /** The printed-in chip draws codes only; its spoken name gives the sets in full (addendum §2). */
+    printedInAria: (names: readonly string[]) => `Printed in ${names.join(" or ")}`,
     /** Between the names on an any-of chip, drawn apart from them. */
     joiner: "or",
     /** After a deeper look: what even it could not place. */

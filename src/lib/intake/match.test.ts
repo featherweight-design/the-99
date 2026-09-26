@@ -136,3 +136,40 @@ describe("the themes' join (three-answers addendum §1)", () => {
     expect(match("elves or something").themeJoin).toBe("all");
   });
 });
+
+describe("sets (three-answers addendum §2)", () => {
+  const withSets = buildPhraseIndex(themes, cards, [
+    { code: "hob", name: "The Hobbit" },
+    { code: "hoc", name: "The Hobbit Commander" },
+    { code: "big", name: "The Big Score" },
+    { code: "all", name: "Alliances" },
+  ]);
+  const m = (text: string) => matchWords(text, withSets);
+  const sets = (text: string) => m(text).chips.flatMap((c) => (c.kind === "set" ? [c.code] : []));
+
+  it("reads Hugh's codes, in capitals beside sets, and uses the word sets", () => {
+    const r = m("I want a deck from the HOB or HOC sets using cards I own.");
+    expect(sets("I want a deck from the HOB or HOC sets using cards I own.")).toEqual(["hob", "hoc"]);
+    expect(r.leftover).not.toContain("sets");
+  });
+
+  it("never reads a lower-case code on its own as a set", () => {
+    expect(sets("a big deck with all the wizards")).toEqual([]);
+  });
+
+  it("reads a lower-case code beside set or sets", () => {
+    expect(sets("cards from the big set")).toEqual(["big"]);
+    expect(sets("hob and hoc sets")).toEqual(["hob", "hoc"]);
+  });
+
+  it("reads a set by name, the longest name first, and one word only with its capital", () => {
+    expect(sets("something from the hobbit commander set")).toEqual(["hoc"]);
+    expect(sets("Alliances please")).toEqual(["all"]);
+    expect(sets("alliances please")).toEqual([]);
+  });
+
+  it("keeps a theme over a set sharing its words", () => {
+    const clash = buildPhraseIndex([{ slug: "dinosaurs", label: "Dinosaurs" }], [], [{ code: "dno", name: "Dinosaurs" }]);
+    expect(matchWords("Dinosaurs", clash).chips.map((c) => c.kind)).toEqual(["theme"]);
+  });
+});
