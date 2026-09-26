@@ -1,7 +1,7 @@
 {
-  "feature": "Swap tools v2 (sub-project 4): the stand-ins sheet from both doors, Show all, Take, the receipt, Undo swap, and the stacked stand-in",
+  "feature": "Swap tools v2 (sub-project 4): the stand-ins sheet from both doors, Show all, and the stacked stand-in",
   "clearAbout": true,
-  "note": "Needs a server with SWAP_TOOLS_ENABLED=true, signed in as the swaptools-v2 account (swaptools-v2+clerk_test@example.com on local-dev, which holds Hugh's pulled HD decks), with About marked seen (every swap probe does it through clearAboutSheet). SHEET_DECK is HD - Gishath (904fdc61-e190-4ba5-8e34-2b18fa0584f2): Naya, an $8 limit, and every kind over it as a real Shopping row: Plateau (land), Wooded Foothills (fetch), Runadi, Behemoth Caller (creature) and The Great Henge (a noncreature on identity). v1's fixture was a deck probe:swap-sheet builds and deletes, so nothing durable reached the sheet, and its noncreature was Deadly Rollick, off identity. Shopping is client state: every row reaches it by a PRESS. The take, receipt and undo rows are ONE CHAIN on one page at each width, since the receipt is page state a reload loses: take writes the swap, receipt reads it, undo reverses it. A run that fails part-way through the chain leaves Runadi swapped out of HD - Gishath; undo it from the deck's Shopping list, or with probe:swap-sheet's discipline in mind, by hand.",
+  "note": "Needs a server with SWAP_TOOLS_ENABLED=true, signed in as the swaptools-v2 account (swaptools-v2+clerk_test@example.com on local-dev, which holds Hugh's pulled HD decks), with About marked seen (every swap probe does it through clearAboutSheet). SHEET_DECK is HD - Gishath (904fdc61-e190-4ba5-8e34-2b18fa0584f2): Naya, an $8 limit, and every kind over it as a real Shopping row: Plateau (land), Wooded Foothills (fetch), Runadi, Behemoth Caller (creature) and The Great Henge (a noncreature on identity). v1's fixture was a deck probe:swap-sheet builds and deletes, so nothing durable reached the sheet, and its noncreature was Deadly Rollick, off identity. Shopping is client state: every row reaches it by a PRESS. This inventory WRITES NOTHING. Take, the receipt and Undo swap change the deck, and a contact sheet has no cleanup that runs when a row fails, so a run that stopped part-way would leave Runadi swapped out of a shared deck. They are asserted by probe:swap-sheet instead (and photographed with PROBE_SHOTS), which takes on its own fixture deck and deletes it in a finally.",
   "shares": {
     "module": "src/components/decks/stand-ins-sheet.tsx",
     "binding": "StandInsSheet",
@@ -301,73 +301,6 @@
         },
         {
           "wait": "[data-testid='stand-ins-sheet'] h4",
-          "settle": 1500
-        }
-      ]
-    },
-    {
-      "id": "take",
-      "label": "/decks/[id] Shopping: Take pressed on Runadi's first stand-in: the taken row, the note, and Take put away on the rest. CHAIN: the next two rows continue this page and the last undoes it",
-      "view": "src/components/decks/decklist.tsx",
-      "steps": [
-        {
-          "goto": "/decks/${SHEET_DECK}",
-          "wait": "[role=tablist]",
-          "settle": 1500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Shopping \\d+",
-          "settle": 600
-        },
-        {
-          "clickRole": "button",
-          "name": "^Cheaper stand-ins for Runadi, Behemoth Caller,",
-          "settle": 400
-        },
-        {
-          "wait": "[data-testid='stand-ins-sheet'] h4",
-          "settle": 1500
-        },
-        {
-          "clickRole": "button",
-          "name": "^Take .* in place of ",
-          "settle": 400
-        },
-        {
-          "wait": "[data-testid='stand-in-taken']",
-          "settle": 1500
-        }
-      ]
-    },
-    {
-      "id": "receipt",
-      "label": "/decks/[id] Shopping: the sheet closed after the take: focus on the receipt, in view, in the slot Runadi sat in (probe:swap-sheet proves the Escape path)",
-      "view": "src/components/decks/decklist.tsx",
-      "steps": [
-        {
-          "clickRole": "button",
-          "name": "^Close cheaper stand-ins",
-          "settle": 400
-        },
-        {
-          "wait": "[data-testid='swap-receipt']:visible",
-          "settle": 1500
-        }
-      ]
-    },
-    {
-      "id": "undo",
-      "label": "/decks/[id] Shopping: Undo swap pressed on the receipt: Runadi back in the list, the receipt gone. This row PUTS THE DECK BACK",
-      "view": "src/components/decks/decklist.tsx",
-      "steps": [
-        {
-          "clickRole": "button",
-          "name": "^Undo the swap",
-          "settle": 400
-        },
-        {
-          "wait": "button[aria-label^='Cheaper stand-ins for Runadi']",
           "settle": 1500
         }
       ]
