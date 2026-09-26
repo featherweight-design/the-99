@@ -242,7 +242,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 ### Theme picker list (open)
 | Property | Mobile | Desktop |
 |---|---|---|
-| drawn | not drawn at 390 (unspecified) | yes, in flow between field and caption |
+| drawn | yes, as on desktop | a POPOVER under the field, `absolute`, `top-full`, 6px below, `z-30`: it opens over the caption and the fields below and pushes nothing (Hugh, 2026-09-27; ruling Q2). The canvas drew it in flow |
 | display / flex-direction | — | flex / column |
 | padding | — | 5px |
 | border-radius | — | 10px |
@@ -351,7 +351,8 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | display / flex-direction | flex / column | flex / column |
 | gap | 14px | 18px |
 | padding | 16px 18px 24px | — |
-| max-width | — | 1080px |
+| max-width | — | 1080px (the 1160 box less its 40px sides) |
+| margin | — | `0 auto`: centered under the form's 680 column (Hugh, 2026-09-27; ruling Q2b (a)). The results header shares the same centered 1160 box, so the title starts on the column's content edge. `RESULTS_COLUMN`, drawn by the page and its loading screen |
 | order of children | ReadAsBar → order line → narrow note → skeletons / failure → Best fits → More commanders label → rows → show more | same |
 
 ---

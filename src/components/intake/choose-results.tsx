@@ -174,6 +174,14 @@ export function ChooseResults({
 const SKELETON_NAME = ["58%", "53%", "48%", "43%", "38%"];
 
 /**
+ * The results column: §4's 1080 content (1160 less its 40px sides), CENTERED under the form's 680
+ * column rather than pinned left (Hugh, 2026-09-27; ruling Q2b (a), keeping §4's width and its row
+ * grid). The page and its loading screen both draw it, so the loader holds the page's position.
+ */
+export const RESULTS_COLUMN =
+  "flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] mx-auto p-[16px_18px_24px] md:p-[0_40px_48px]";
+
+/**
  * Searching (5c): the order line's heading and five still rows. No shimmer (STATES invariant).
  * `by` names what orders the results; the route's loading screen has no labels to name it with
  * (they come from the database), so it passes none and the line arrives with the page.

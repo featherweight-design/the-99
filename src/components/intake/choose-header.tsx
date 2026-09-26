@@ -19,7 +19,10 @@ export function ChooseHeader({
     <header
       className={[
         "flex flex-col gap-[3px] md:gap-[6px] p-[20px_18px_14px] border-0 border-b border-solid border-[color:var(--border)] md:border-b-0",
-        centered ? "md:w-[680px] md:max-w-full md:mx-auto md:p-[34px_0_26px]" : "md:p-[34px_40px_26px]",
+        centered
+          ? "md:w-[680px] md:max-w-full md:mx-auto md:p-[34px_0_26px]"
+          : // The results header shares `RESULTS_COLUMN`'s box, so it centers with the results.
+            "md:w-full md:max-w-[1160px] md:mx-auto md:p-[34px_40px_26px]",
       ].join(" ")}
     >
       <Link href={back.href} className="self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">

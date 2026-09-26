@@ -17,7 +17,7 @@ import { shellCopy } from "../../lib/copy/shell";
 import { parseChooseParams, serializeChooseParams } from "../../lib/intake/params";
 import { CHOOSE_PATH } from "../../lib/intake/submit";
 import { ChooseHeader } from "./choose-header";
-import { ResultsSkeleton } from "./choose-results";
+import { ResultsSkeleton, RESULTS_COLUMN } from "./choose-results";
 
 // Still: Help me choose draws no motion anywhere (STATES invariant), its loading screens included.
 export function ChooseLoading() {
@@ -28,7 +28,7 @@ export function ChooseLoading() {
   return (
     <div data-testid="choose-loading" className="flex flex-col">
       <ChooseHeader back={{ href: changeHref, label: copy.results.back }} title={copy.results.title} sub={copy.results.sub} subPhone={copy.results.subPhone} />
-      <div className="flex flex-col gap-[14px] md:gap-[18px] w-full max-w-[1160px] p-[16px_18px_24px] md:p-[0_40px_48px]">
+      <div className={RESULTS_COLUMN}>
         <ResultsSkeleton />
       </div>
     </div>
