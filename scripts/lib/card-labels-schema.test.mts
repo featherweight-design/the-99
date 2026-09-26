@@ -132,23 +132,57 @@ describe("the gold set", () => {
     expect(GOLD.filter((r) => r.jobs.length === 0).length).toBeGreaterThanOrEqual(4);
   });
 
-  // THE THREE DIVERGENCES from E1's classifier. The report claims each is "recorded in
-  // its own `why`", and that claim broke the first time it was made: the note went on
-  // `Weathered Wayfarer` and not on `Marshals' Pathcruiser`, its identical sibling.
+  // THE THREE DIVERGENCES from E1's classifier, verified by RUNNING it.
   //
-  // The list is hand-maintained rather than derived, deliberately. Deriving it needs
-  // `honestJobs` and a database, which would make this a probe rather than a unit
-  // test; the trade is that a FOURTH divergence would not be caught here. Measured
-  // 2026-09-26: `honestJobs` agrees with 22 of the 25 ramp-labelled cards, contradicts
-  // 0, and assigns no kind to exactly these three.
+  // An earlier version of this test checked three hard-coded names and a phrase in
+  // `why`, under a title claiming it verified E1's behaviour. It did not: a label
+  // reverting to an E1-incompatible kind, or a fourth divergence appearing, left it
+  // green. `honestJobs` needs no database -- the card, the creature-type predicate and
+  // the deck lens are all arguments -- so the real classifier runs here on literal
+  // oracle text, and the title is now true of what the test does.
+  //
+  // The text is a FIXTURE, not a catalog read: what is under test is E1's behaviour on
+  // that text, and printed oracle text does not move. Each card also has to record its
+  // divergence, because the report claims it does and that claim broke once already.
+  const DIVERGING = [
+    {
+      name: "Dora Milaje Elite",
+      typeLine: "Creature — Human Berserker",
+      // Its only mana is the token's REMINDER, which `usableText` strips.
+      oracleText: "First strike\nWhen this creature enters, if an opponent controls more lands than you, create a tapped Vibranium token. (It's an artifact with indestructible and \"{T}: Add {C}. This mana can't be spent to cast a nonartifact spell.\")",
+    },
+    {
+      name: "Weathered Wayfarer",
+      typeLine: "Creature — Human Nomad Cleric",
+      // Fetches to HAND; E1's FETCHES requires `onto the battlefield`.
+      oracleText: "{W}, {T}: Search your library for a land card, reveal it, put it into your hand, then shuffle. Activate only if an opponent controls more lands than you.",
+    },
+    {
+      name: "Marshals' Pathcruiser",
+      typeLine: "Artifact — Vehicle",
+      oracleText: "When this Vehicle enters, search your library for a basic land card, reveal it, put it into your hand, then shuffle.\nCrew 5",
+    },
+  ] as const;
+
+  const RAMP_KIND_NAMES = ["tapsForMana", "fetchesLand", "makesTreasure", "burstMana"];
+
   it("documents every card E1 assigns no ramp kind to", async () => {
+    const { honestJobs } = await import("../../src/lib/swaps/honest");
     const { GOLD } = await import("./card-labels-gold.mjs");
-    const diverging = ["Dora Milaje Elite", "Weathered Wayfarer", "Marshals' Pathcruiser"];
-    for (const name of diverging) {
-      const row = (GOLD as { name: string; why: string }[]).find((r) => r.name === name);
-      expect(row, `${name} is not in the gold set`).toBeTruthy();
-      expect(row!.why, `${name} does not record that E1 assigns it no kind`)
-        .toMatch(/E1 assigns (this card )?no (ramp job|kind)|E1 gives that card no ramp job/);
+
+    for (const fixture of DIVERGING) {
+      const jobs = honestJobs(
+        { ...fixture, layout: "normal", keywords: [] } as never,
+        () => false,
+        null,
+      );
+      const kinds = (jobs.roles as string[]).filter((r) => RAMP_KIND_NAMES.includes(r));
+      expect(kinds, `E1 now assigns ${fixture.name} a ramp kind — the divergence has closed, so the gold row and the report's 22/0/3 both need revisiting`).toEqual([]);
+
+      const row = (GOLD as { name: string; why: string }[]).find((r) => r.name === fixture.name);
+      expect(row, `${fixture.name} is not in the gold set`).toBeTruthy();
+      expect(row!.why, `${fixture.name} does not record that E1 assigns it no kind`)
+        .toMatch(/E1 assigns (this card )?no (ramp job|kind)/);
     }
   });
 

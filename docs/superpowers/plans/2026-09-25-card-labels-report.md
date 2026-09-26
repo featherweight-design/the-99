@@ -264,6 +264,10 @@ both.
   reminder text that `usableText` strips; and `Weathered Wayfarer` and
   `Marshals' Pathcruiser`, which fetch to HAND where E1's rule requires the
   battlefield and 2b's written definition allows either.
+
+  All three are pinned by a test that RUNS `honestJobs` on fixture text rather than
+  restating the list, so a divergence closing — or a label reverting to a kind E1
+  contradicts — fails it and names what needs revisiting.
 - **The vocabulary is 2b's**, asserted against `src/lib/recs/roles.ts` and
   `src/lib/recs/themes.ts` by a test rather than copied. A drifted copy would give
   a score that reads fine while a dropped theme is never measured.
