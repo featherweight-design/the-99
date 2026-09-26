@@ -1,7 +1,7 @@
 # Readiness audit: the overview's own loading (`addendum_overview_loading/`)
 
-**Verdict: 🟢 Green**, with one product question that is Hugh's and is already with him (the single
-layout move, below). Audited 2026-09-26 against `origin/main` at `d3bbc687`, which carries #1025
+**Verdict: 🟢 Green.** The one product question, the single layout move, is Hugh's and he ruled on
+it on 2026-09-26 (below). Audited 2026-09-26 against `origin/main` at `d3bbc687`, which carries #1025
 (the tab-level loader that holds until the verdict, the overview and the credit lines have all
 answered). The drop was committed on `design/overview-loading-addendum` as additions only.
 
@@ -68,8 +68,8 @@ All seven are engineering's and none changes a drawing.
    `prefers-reduced-motion` the swap is instant, as `.anim-at-wave` already is (`globals.css:771`).
 6. **The status rows reuse the pulse, not a new animation.** Three 5px dots on `at-wave`
    (1.6s, 0.16s stagger) in `--fg-muted` are the fixture's `pulse` (`analysis-fixtures.js:381`).
-   `globals.css` already carries `at-wave` and its reduced-motion rule, so nothing new is added
-   to the stylesheet.
+   `globals.css` already carries `at-wave` and its reduced-motion rule. The only stylesheet
+   addition is the 150ms crossfade (finding 5), which reuses the existing `backdrop-in` keyframes.
 7. **The 1d failure line moves from `--fg-faint` to `--fg-muted`** and gains `role="alert"`. The
    hairline caption under it is mono 10.5px `--fg-faint`, where the standing ruling D row is sans
    13/13.5. That treatment applies only when the failure line heads the held paragraph. The
