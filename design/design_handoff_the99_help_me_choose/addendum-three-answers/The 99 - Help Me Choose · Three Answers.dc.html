@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-raised:#191B22; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADDENDUM</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Help me choose · three new answers · /decks/new/choose</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">extends R1 · everything in the R1 handoff stands</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0;line-height:1.15;color:var(--fg);">Any of these themes, printed in these sets, built from what I own.</h1>
+    <div style="border:1px solid var(--border-strong);border-radius:10px;padding:14px 18px;background:var(--surface-rail);display:flex;flex-direction:column;gap:6px;max-width:980px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The worked example · Hugh’s query, which returned nothing</span>
+      <span style="font-size:15px;line-height:1.6;color:var(--fg);">“I want a deck from the HOB or HOC sets using cards I own. The commander can be one I have to buy. Tribal options are Orcs, Elves, Dwarves, or Wizards.”</span>
+      <span style="font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Today the four tribes are read as all four at once, and no commander backs more than two. HOB or HOC and cards I own have no answer to land in, so they end up under Not used. With this addendum, the free match turns the whole sentence into three chips. No model call is added.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="key" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§A0</span>
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">The three chips, and what they add to a row</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,360px));gap:12px;">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1 · themes, any of</span>
+        <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);white-space:nowrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">any of</span><span style="font-size:12.5px;color:var(--fg-body);">Orcs</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">or</span><span style="font-size:12.5px;color:var(--fg-body);">Elves</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">or</span><span style="font-size:12.5px;color:var(--fg-body);">Dwarves</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">or</span><span style="font-size:12.5px;color:var(--fg-body);">Wizards</span></span>
+        <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">One chip for the whole group, kind <b style="color:var(--fg-body);font-weight:600;">any of</b>, with a mono <i>or</i> between names. All-of stays as today: one <i>theme</i> chip each. On a row, the theme it fits best is lit and tagged <b style="color:var(--accent);font-weight:600;font-family:'IBM Plex Mono',monospace;font-size:10px;">SETS RANK</b>. Any others of the group it fits are dimmed, and ones it doesn’t fit aren’t shown.</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">2 · sets</span>
+        <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">printed in</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">HOB</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">or</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">HOC</span></span>
+        <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">On the chip, codes only. It’s what the player typed and what the Set panel rows carry, and it keeps the chip one width for one set or five. The full names are in the accessible name and in Change answers. Sets are always <i>or</i>, so there’s no join control. There’s no count beside it: the results print no total. On a row it’s a mono code tag after the pips.</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">3 · build from what I own</span>
+        <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);white-space:nowrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">the 99</span><span style="font-size:12.5px;color:var(--fg-body);">from cards you own</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">commander owned or not</span></span>
+        <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">It scopes the 99 and nothing else. Owned and unowned commanders stay listed together, and the tail says so. It never narrows the list or ranks it. On a row, the <b style="color:var(--fg-body);font-weight:600;">commander’s</b> mark and price come first, then <i>99 from your cards</i>. The budget then caps the commander only.</span>
+      </div>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+    <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1180px;">
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:960px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Help Me Choose Answers" scene="{{ sec.scene }}" theme="{{ theme }}" hint-size="1300px,960px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Help Me Choose Answers" scene="{{ sec.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const calls = [
+      { k: "1 · themes as any of", v: "An All / Any join beside Theme, drawn like the color control’s Any / Exactly and greyed until two themes are picked. Theme names joined by “or” in the words set Any. A result ranks by the theme it fits best, and SETS RANK marks that theme." },
+      { k: "2 · a set answer", v: "A Sets field that counts on its trigger (Sets 2, sized for Sets 9, as in #1050), with the chosen sets as chips beside it: code and name. The results chip shows codes only: printed in HOB or HOC. Set codes in the words are matched for free." },
+      { k: "3 · build from what I own", v: "Cards for the 99: Any cards / Only cards I own. When it’s on, the budget caps the commander only and its caption says so. Each row prices the commander on its own, then reads 99 from your cards." },
+    ];
+    const sections = [
+      { id: "A1", scene: "hugh", title: "Hugh’s query, read into three chips", note: "The words box, unchanged, holds Hugh’s sentence. On submit, the free match reads Orcs, Elves, Dwarves, or Wizards as one any-of group, HOB or HOC as a set answer, and using cards I own as the 99 answer. The commander can be one I have to buy says what already happens by default, so it’s taken in by the 99 chip’s tail and doesn’t show under Not used. The order line changes to Ordered by the theme each fits best. Each row’s commander carries its own mark and price, then its set code. Since the submit had words, the deeper-look offer shows as in R1." },
+      { id: "A2", scene: "hughform", title: "Change answers, set in the controls", note: "The same answers set with the controls. Theme holds four tags with the join on Any, and the caption states the rule. Sets counts on its trigger (the Set trigger’s count treatment, sized for Sets 9 so it never changes width) and names each set beside it: code, then name. Cards for the 99 is on Only cards I own, and the budget caption changes with it. If the words and a control disagree, the control wins, as in R1. The new fields sit between Theme and Budget." },
+      { id: "A3", scene: "hughnarrow", title: "Too narrow, with an any-of join", note: "Hugh’s query plus bracket 2. The bar is R1’s. Each option drops one answer, and the set answer is named by its codes, as on the chip. Engineering’s fix means no option ever offers a zero. Own-only is never offered as an option, since it never narrows the list. Fewer than four results, so no best-fit cards." },
+      { id: "A4", scene: "hughzero", title: "None fit, because all four were asked at once", note: "Four tribes picked in the control with the join left on All: four theme chips, as today. The lead option is the join itself, Any of the four themes, not all, following R1’s Any Red · Green, not exactly. Its reason line says why. Dropping the sets would still give zero, so it isn’t offered; the one option is followed by Or change your answers yourself." },
+    ];
+    return { theme, calls, sections };
+  }
+}
+</script>
+</body>
+</html>
