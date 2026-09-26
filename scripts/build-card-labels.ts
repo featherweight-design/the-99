@@ -55,6 +55,14 @@ const FLOOR = Number(process.env.LABEL_FLOOR ?? 0.95);
 /** Batch rates for `MODEL`, per million tokens — the canonical table, halved. */
 const RATES = { in: 1.5, out: 7.5 };
 
+/**
+ * The sample's measured cost per card, used ONLY to project before this run has measured
+ * anything of its own. After the first wave collects, the run's own rate replaces it — a
+ * projection that kept using the sample's figure could never notice a run costing more than
+ * the sample did, which is the one thing the projection is for.
+ */
+const SAMPLE_PER_CARD_USD = 0.001291;
+
 const dryRun = process.argv.includes("--dry-run");
 const client = new Anthropic();
 
@@ -121,10 +129,15 @@ async function collectInto(
   const resolve = faceResolver(asked);
   const byName = new Map<string, Job[]>();
   const rejected: string[] = [];
+  // MEASURED usage for this request, which is what the next wave is sized against.
+  let inTok = 0, outTok = 0, cacheW = 0, cacheR = 0;
   try {
     for await (const entry of await client.messages.batches.results(batchId)) {
       if (entry.custom_id !== customId) continue;
       if (entry.result.type !== "succeeded") continue;
+      const u = entry.result.message.usage;
+      inTok += u.input_tokens; outTok += u.output_tokens;
+      cacheW += u.cache_creation_input_tokens ?? 0; cacheR += u.cache_read_input_tokens ?? 0;
       const parsed = parseReply(
         entry.result.message.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
       );
@@ -164,7 +177,10 @@ async function collectInto(
     await db.insert(cardLabelsStaging).values(rows).onConflictDoNothing();
   }
   await db.update(cardLabelBatches)
-    .set({ status: "collected", batchId, collectedAt: new Date() })
+    .set({
+      status: "collected", batchId, collectedAt: new Date(),
+      inTokens: inTok, outTokens: outTok, cacheWriteTokens: cacheW, cacheReadTokens: cacheR,
+    })
     .where(eq(cardLabelBatches.intentKey, intentKey));
   if (rejected.length > 0) console.warn(`  ${customId}: dropped ${rejected.length} job(s)`);
   return "staged";
@@ -362,13 +378,22 @@ async function main(): Promise<void> {
   }
   const worst = worstCaseUsd(chunks.length, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES);
 
-  // Everything this run has already committed, so a resumed attempt cannot authorise the
-  // whole amount again on top of a partial run's spend.
-  const spentRows = await db.select({ n: sql<number>`count(*)::int` }).from(cardLabelBatches)
-    .where(and(eq(cardLabelBatches.runId, runId), sql`${cardLabelBatches.status} <> 'intended'`));
-  const alreadySpent = worstCaseUsd(
-    spentRows[0]?.n ?? 0, SYSTEM_TOKENS, PER_CARD_TOKENS, MAX_TOKENS_PER_BATCH, RATES,
-  );
+  // MEASURED spend, summed over the batches that have collected. Not the worst case of
+  // committed requests: that books ~$25 for a wave costing ~$6, so the budget would exhaust
+  // after one wave and leave 2,253 requests unsent (simulated over the real 2,653).
+  const [usage] = await db.select({
+    inTok: sql<number>`coalesce(sum(${cardLabelBatches.inTokens}), 0)::int`,
+    outTok: sql<number>`coalesce(sum(${cardLabelBatches.outTokens}), 0)::int`,
+    cacheW: sql<number>`coalesce(sum(${cardLabelBatches.cacheWriteTokens}), 0)::int`,
+    cacheR: sql<number>`coalesce(sum(${cardLabelBatches.cacheReadTokens}), 0)::int`,
+    cards: sql<number>`coalesce(sum(jsonb_array_length(${cardLabelBatches.asked})), 0)::int`,
+  }).from(cardLabelBatches)
+    .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.status, "collected")));
+
+  const alreadySpent = (usage.inTok * RATES.in + usage.outTok * RATES.out
+    + usage.cacheW * RATES.in * 1.25 + usage.cacheR * RATES.in * 0.1) / 1e6;
+  /** This run's own measured rate, which is what the projection must use once it has one. */
+  const measuredPerCard = usage.cards > 0 ? alreadySpent / usage.cards : SAMPLE_PER_CARD_USD;
 
   console.log(`  ${chunks.length} request(s) of ${CARDS_PER_REQUEST}  worst case $${worst.toFixed(2)}`
     + (alreadySpent > 0 ? `  (plus $${alreadySpent.toFixed(2)} already committed)` : ""));
@@ -396,14 +421,25 @@ async function main(): Promise<void> {
     + `measured rate; worst case if every wave returns its full ceiling `
     + `$${worst.toFixed(2)}`);
 
-  // Hugh's ruling: PAUSE and report past $50 rather than spending silently up to the stop.
-  // Measured against COMMITTED spend plus this wave, which is what the run is bound by — not
-  // against the whole run's worst case, which no single decision commits to.
-  if (alreadySpent + waveWorst > REPORT_AT_USD) {
-    console.error(`\nPAUSED: committing this wave would reach $${(alreadySpent + waveWorst).toFixed(2)}, `
-      + `past the $${REPORT_AT_USD.toFixed(2)} report line (cap $${CAP_USD.toFixed(2)}).`);
-    console.error(`Nothing has been submitted. Report the figure, then re-run with `
-      + `LABEL_REPORT_AT_USD=${CAP_USD} once it is approved.`);
+  // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's $55):
+  //
+  //   the CAP   each wave's worst case must fit `$55 − measured so far`, which is what makes
+  //             actual spend unable to pass $55 even if every remaining request maxes out.
+  //             Enforced by `waveSize` above and re-checked by `withinCap`.
+  //   the PAUSE  the PROJECTED total — measured plus the cards still to do at this run's own
+  //             measured rate — must stay under $50. This catches a run trending high long
+  //             before the cap does, which is the point: the cap stops a disaster, the pause
+  //             reports a surprise.
+  const remainingCards = cards.length - usage.cards;
+  const projected = alreadySpent + remainingCards * measuredPerCard;
+  console.log(`  projected total $${projected.toFixed(2)} `
+    + `(measured $${alreadySpent.toFixed(2)} + ${remainingCards} cards at `
+    + `$${measuredPerCard.toFixed(6)}${usage.cards === 0 ? ", the sample's rate" : ", this run's rate"})`);
+  if (projected > REPORT_AT_USD) {
+    console.error(`\nPAUSED: the projected total is $${projected.toFixed(2)}, past the `
+      + `$${REPORT_AT_USD.toFixed(2)} report line (cap $${CAP_USD.toFixed(2)}).`);
+    console.error(`Nothing further has been submitted. Report the figure and hold for Hugh; `
+      + `re-run with LABEL_REPORT_AT_USD=${CAP_USD} only once he has approved it.`);
     return;
   }
 

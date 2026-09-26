@@ -2045,6 +2045,25 @@ export const cardLabelBatches = pgTable("card_label_batches", {
   /** Null until `batches.create` returns, then SHARED by every chunk in that batch. */
   batchId: text("batch_id"),
   status: text("status").notNull().default("intended"),
+  /**
+   * MEASURED token usage, written when the batch collects. Null until then.
+   *
+   * These exist so the wave sizing can read what a run has ACTUALLY spent rather than what
+   * its committed requests could have cost. The difference decides whether the run can
+   * finish at all: over 2,653 requests, sizing waves against committed worst case exhausts
+   * the budget after the first wave (it books ~$25 against a real ~$6) and leaves 2,253
+   * requests unsent, while sizing against measured spend converges in seven waves on the
+   * $41 the sample projected.
+   *
+   * Deriving this from staged card counts at the sample's per-card rate was the alternative
+   * and is refused: the whole point of measuring between waves is to catch a run costing MORE
+   * than the sample predicted, and an estimate computed from the sample's own rate cannot
+   * disagree with the sample by construction.
+   */
+  inTokens: integer("in_tokens"),
+  outTokens: integer("out_tokens"),
+  cacheWriteTokens: integer("cache_write_tokens"),
+  cacheReadTokens: integer("cache_read_tokens"),
   intendedAt: timestamp("intended_at", { withTimezone: true }).notNull().defaultNow(),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   collectedAt: timestamp("collected_at", { withTimezone: true }),
