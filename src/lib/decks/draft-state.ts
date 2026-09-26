@@ -8,7 +8,7 @@
 // loader for the per-card detail only the review page draws, so the two never
 // repeat a read between them.
 
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks, deckVersionCards } from "../../db/schema";
 import {
@@ -128,6 +128,12 @@ export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
   );
 }
 
+/** `readSnapshot`'s owner check, apart so a test can render its SQL. */
+export function ownerCheck(q: Pick<typeof db, "select">, deckId: string, userId: string) {
+  return q.select({ id: decks.id }).from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+}
+
 /**
  * The newest version, its cards and the deck's own rows as of one instant.
  *
@@ -138,17 +144,21 @@ export function unfreeAdds(bucketed: DraftAdd[]): DraftAdd[] {
  * change. Under one snapshot that pairing cannot happen, which is a stronger
  * guarantee than re-reading the version id and retrying.
  *
- * A brew stops at the first query: with no version there is nothing to compare,
- * so the further reads are never issued.
+ * A brew stops after the owner check and the version read: with no version there
+ * is nothing to compare, so the further reads are never issued.
  *
  * The deck's live commander columns ARE the draft's commander, so they are read
  * in the same snapshot as the draft's cards — but only with
  * `CHANGE_COMMANDER_ENABLED` on. Off, nothing writes those columns after
- * creation, and the deck page pays for no fourth query.
+ * creation, and the deck page pays for no fifth query.
  */
-async function readSnapshot(deckId: string) {
+async function readSnapshot(deckId: string, userId: string) {
   return db.transaction(async (tx) => {
-    const version = await newestVersion(deckId, tx);
+    // OWNER FIRST, in the same snapshot: a deck the reader does not own reads as a deck with no
+    // version, and none of its rows are asked for. The deck page starts this read beside its own
+    // ownership guard rather than after it, and authorization has to come before data access.
+    const [owned] = await ownerCheck(tx, deckId, userId);
+    const version = owned ? await newestVersion(deckId, tx) : null;
     if (!version) {
       return { version, before: [] as CardQty[], draft: [] as CardQty[], live: null };
     }
@@ -242,7 +252,7 @@ async function readDraft(
   userId: string,
   detailed: boolean,
 ): Promise<DraftRead> {
-  const { version, before, draft, live } = await readSnapshot(deckId);
+  const { version, before, draft, live } = await readSnapshot(deckId, userId);
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [],
