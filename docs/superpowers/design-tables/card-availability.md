@@ -124,10 +124,10 @@ Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marke
 | 1.11 | `marker.hardMulti` | `0 free — across ${deckCount} decks` | CP:40 |
 | 1.12 | `marker.hardAria` | `no free copies; this one is in your ${deckName} deck` | CP:41 |
 | 1.13 | `marker.hardMultiAria` | `no free copies; they are on ${deckCount} of your committed decks` | CP:42–43 |
-| 1.14 | `marker.over` | `short ${shortBy}` | CP:46 |
-| 1.15 | `marker.overWithDemand` | `short ${shortBy} — ${deckCount} decks want it` | CP:47 |
+| 1.14 | `marker.over` | `short` at one copy, `short ${shortBy}` above one (**amended 2026-09-26**, Hugh: the figure is drawn only when it is over one; the same rule governs 1.15 and 1.17, and every aria string still speaks the count) | CP:46 |
+| 1.15 | `marker.overWithDemand` | `short, also in 1 deck` / `short, also in ${deckCount} decks` at one copy; `short ${shortBy}, also in …` above one (**amended 2026-09-26**, see 1.14; drawn originally as `short ${shortBy} — ${deckCount} decks want it`) | CP:47 |
 | 1.16 | `marker.overAria` | `${deckCount} of your committed decks include this card and you own ${shortBy} too few` | CP:48 |
-| 1.17 | `marker.overAlsoIn` | `short ${shortBy} — also in ${otherDeck}` | CP:49 |
+| 1.17 | `marker.overAlsoIn` | `short, also in ${otherDeck}` at one copy; `short ${shortBy}, also in ${otherDeck}` above one (**amended 2026-09-26**, see 1.14; drawn originally as `short ${shortBy} — also in ${otherDeck}`) | CP:49 |
 | 1.18 | `marker.overAlsoInAria` | `your ${otherDeck} deck also includes this card and you don’t own enough for both` | CP:50–51 |
 | 1.19 | `marker.tileInUse` | `in use — ${deckName}` | CP:54 |
 | 1.20 | `marker.tileOver` | `${deckCount} decks want it` | CP:55 |
@@ -187,7 +187,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.3 | Meta line — desktop | shipped mono | shipped | same append | no height change | seam over `#100D0A` | CV:797–830 |
 | 4.4 | free row | — | — | — | — | renders exactly the shipped row, byte-identical | RM:79–84 |
 | 4.5 | over row | — | container border tints `var(--avail-over-border)` | — | — | only state that touches the container | RM:98–118, **erratum 2026-09-16** |
-| 4.6 | over copy in own deck | — | `#E9917A` | — | — | **count-only** — `marker.over`, a bare `short 1`, in BOTH the All and Shopping views. Superseded by 4.10 (#354) | CP:46, A2RM:141–172, superseded #354 |
+| 4.6 | over copy in own deck | — | `#E9917A` | — | — | **count-only** — `marker.over`, a bare `short` (`short N` above one copy since 2026-09-26), in BOTH the All and Shopping views. Superseded by 4.10 (#354) | CP:46, A2RM:141–172, superseded #354 |
 
 ### 4.1 Named states
 

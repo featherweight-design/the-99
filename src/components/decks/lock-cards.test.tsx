@@ -620,16 +620,41 @@ describe("the Lock cards mode, through BuilderShell", () => {
     expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
   });
 
-  it("holds the key line OR the mode's line, never both", async () => {
+  // Both are laid in one grid cell so the slot never changes height (Hugh, 2026-09-26: entering the
+  // mode moved the list); the one not in force is `invisible`, which is visibility:hidden and so out
+  // of the tab order and the accessibility tree. jsdom computes no styles, so the class is the read.
+  it("draws the key line OR the mode's line, never both, in one slot", async () => {
     renderShell([{ ...sol, locked: true }, signet]);
-    const key = () => screen.queryByRole("group", { name: proxyCopy.key.regionAria });
-    expect(key()).not.toBeNull();
-    expect(within(key()!).getByText(lockedCardsCopy.mark.key)).toBeInTheDocument();
-    expect(screen.queryByTestId("lock-mode-line")).toBeNull();
+    const key = () => screen.getByRole("group", { name: proxyCopy.key.regionAria });
+    const line = () => screen.getByTestId("lock-mode-line");
+    const hidden = (el: HTMLElement) => el.parentElement!.className.includes("invisible");
+    expect(within(key()).getByText(lockedCardsCopy.mark.key)).toBeInTheDocument();
+    expect(hidden(key())).toBe(false);
+    expect(hidden(line())).toBe(true);
+    expect(key().parentElement!.parentElement).toBe(line().parentElement!.parentElement);
     await act(async () => lockButton()!.click());
-    expect(key()).toBeNull();
-    const line = screen.getByTestId("lock-mode-line");
-    expect(line.textContent).toBe(`${lockedCardsCopy.mode.line} ${lockedCardsCopy.mode.count(1)}`);
+    expect(hidden(key())).toBe(true);
+    expect(hidden(line())).toBe(false);
+    expect(line().textContent).toBe(`${lockedCardsCopy.mode.line} ${lockedCardsCopy.mode.count(1)}`);
+  });
+
+  // A deck with nothing to key (no lock, nothing to buy or print, no fact marks) still holds the
+  // slot, blank until the press, so the mode's line cannot push the list down when it appears.
+  it("holds the slot on a deck with no key, blank until the press", async () => {
+    renderShell([sol, signet]);
+    expect(screen.queryByRole("group", { name: proxyCopy.key.regionAria })).toBeNull();
+    const line = () => screen.getByTestId("lock-mode-line");
+    expect(line().parentElement!.className).toContain("invisible");
+    await act(async () => lockButton()!.click());
+    expect(line().parentElement!.className).not.toContain("invisible");
+  });
+
+  // Shopping has no mode, so it holds no slot for one: its key keeps its own size.
+  it("holds no mode slot under Shopping", async () => {
+    renderShell([sol, { ...signet, owned: false }]);
+    expect(screen.queryByTestId("lock-mode-line")).not.toBeNull();
+    await act(async () => screen.getAllByRole("button", { name: /^Shopping/ })[0].click());
+    expect(screen.queryByTestId("lock-mode-line")).toBeNull();
   });
 
   it("locks at once, holds the lock once the server agrees, and announces it", async () => {

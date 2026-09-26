@@ -35,7 +35,7 @@ describe("availabilityCopy", () => {
     expect(availabilityCopy.marker.tileOver(1)).toBe("also in 1 deck");
     expect(availabilityCopy.marker.tileOver(2)).toBe("also in 2 decks");
     expect(availabilityCopy.marker.overAlsoIn(1, "Atraxa")).toBe(
-      "short 1, also in Atraxa",
+      "short, also in Atraxa",
     );
   });
 
@@ -168,5 +168,21 @@ describe("availabilityCopy", () => {
   // decks-builder.ts. A second copy here is how the two drift apart.
   it("does not carry a second quick-add rowAria", () => {
     expect(availabilityCopy).not.toHaveProperty("rowAria");
+  });
+});
+
+// Hugh, 2026-09-26: one copy short reads `short`; the figure is drawn only when it is over one.
+// The aria strings keep the count, since a screen reader has no glyph to lean on.
+describe("the short marker's count", () => {
+  it("drops the count at one and keeps it above one, in every over string", () => {
+    expect(availabilityCopy.marker.over(1)).toBe("short");
+    expect(availabilityCopy.marker.over(2)).toBe("short 2");
+    expect(availabilityCopy.marker.overWithDemand(1, 2)).toBe("short, also in 2 decks");
+    expect(availabilityCopy.marker.overAlsoIn(3, "Atraxa")).toBe("short 3, also in Atraxa");
+  });
+
+  it("still speaks the count at one", () => {
+    expect(availabilityCopy.marker.overAriaCountOnly(1)).toContain("1 too few");
+    expect(availabilityCopy.marker.overAria(1, 1)).toContain("1 too few");
   });
 });

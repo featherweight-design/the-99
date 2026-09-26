@@ -69,8 +69,13 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
  */
 export function LockModeLine({ count }: { count: number }) {
   return (
-    <p className="m-0 text-[12.5px] leading-[1.5] text-fg-body" data-testid="lock-mode-line">
-      {lockedCardsCopy.mode.line}{" "}
+    // A 16px line, the key's own line height, so a one-line key and this line share a slot exactly
+    // (Hugh, 2026-09-26: at 1.5 leading, entering the mode shifted the page 2.75px). Flex rather
+    // than one line of text: a smaller mono span on a sans baseline grows a shared line box by a
+    // pixel, and as centered flex items each keeps its own (baseline alignment grows it again).
+    <p className="m-0 flex flex-wrap items-center gap-x-[4px] text-[12.5px] leading-[16px] text-fg-body" data-testid="lock-mode-line">
+      {/* The space rides the text, so the line still reads as one sentence to a screen reader. */}
+      <span>{lockedCardsCopy.mode.line}{" "}</span>
       <span className="font-mono text-[11px] text-fg-muted">{lockedCardsCopy.mode.count(count)}</span>
     </p>
   );
@@ -363,7 +368,25 @@ export function Decklist({
   // BOTH VIEWS since Locked 4b, and the mode is KEPT across List and Card (the addendum's rule):
   // every row's ✕ and every tile's ✕ column is the toggle while it runs. Only Shopping ends it,
   // in the shell.
-  const keyLine = lockMode ? (
+  //
+  // Entering or leaving the mode moves nothing (Hugh, 2026-09-26). Where the lock is on offer and
+  // there is a key to trade, both are laid in ONE grid cell and the hidden one keeps its box, so
+  // the slot is always the taller of the two: the key wraps to a second line on a busy phone, and
+  // a single swap then jumped the list. `invisible` is visibility:hidden, which also takes the
+  // hidden one out of the tab order and the accessibility tree, so still only one is read. A deck
+  // with no key at all holds the slot too, blank outside the mode: that is the one layout where
+  // the rule costs a line, and a list that jumps under the press is the defect being fixed.
+  // All only: Shopping has no Lock cards mode, so it keeps its own key and empty-state sizing.
+  const keyLine = onLockModeChange && filter === "all" ? (
+    <div className="grid">
+      <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
+        <MarkKey marks={markKey} regionAria={markKeyRegion} />
+      </div>
+      <div className={`[grid-area:1/1] ${lockMode ? "" : "invisible"}`}>
+        <LockModeLine count={lockedCardCount} />
+      </div>
+    </div>
+  ) : lockMode ? (
     <LockModeLine count={lockedCardCount} />
   ) : (
     <MarkKey marks={markKey} regionAria={markKeyRegion} />

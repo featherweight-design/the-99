@@ -251,7 +251,7 @@ describe("DecklistRow availability marker (#43)", () => {
       <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
 
-    expect(screen.getByText("short 1")).toBeInTheDocument();
+    expect(screen.getByText("short")).toBeInTheDocument();
     expect(document.querySelector("[data-deck-name]")).toBeNull();
   });
 
@@ -280,7 +280,7 @@ describe("DecklistRow availability marker (#43)", () => {
       <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }}  newestAsOf={null}/>,
     );
 
-    expect(screen.getByText("short 1")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("short")).toHaveAttribute("aria-hidden", "true");
   });
 
   // Nothing on this surface is ever gated on availability.
@@ -635,9 +635,36 @@ describe("DecklistRow cost pips (#350)", () => {
     renderRow(
       <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping  newestAsOf={null}/>,
     );
-    const line = screen.getByText(/edhrec/).closest("span.md\\:hidden")!;
+    // A Shopping row keeps the meta line up to lg, not md (Hugh, 2026-09-26).
+    const line = screen.getByText(/edhrec/).closest("span.lg\\:hidden")!;
     expect(line.textContent).toContain("edhrec");
     expect(line.querySelector("span[aria-hidden]")).not.toBeNull();
+  });
+});
+
+// Hugh, 2026-09-26: between md and lg a Shopping row is the phone's two lines, the pips under the
+// name, so the name keeps the row's width; `over $X` stacks with the buy tag as one group, and the
+// tag's figure hugs its word there.
+describe("DecklistRow in Shopping, md to lg", () => {
+  const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
+  const rowShell = () => document.querySelector(".group")!;
+
+  it("keeps the pips on the meta line under the name until lg, where the track takes them", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping newestAsOf={null} />,
+    );
+    const meta = screen.getByText(/edhrec/).closest("span.lg\\:hidden")!;
+    expect(meta.textContent).toContain(spokenManaCost("{2}{U}{B}"));
+    expect(document.querySelector(".hidden.lg\\:flex > span")).not.toBeNull();
+    expect(document.querySelector(".hidden.md\\:flex > span")).toBeNull();
+    expect(rowShell().className).toContain("lg:min-h-[34px]");
+    expect(rowShell().className).not.toContain("md:min-h-[34px]");
+  });
+
+  it("leaves the All tab's row on md", () => {
+    renderRow(<DecklistRow deckId="d1" card={withCost} newestAsOf={null} />);
+    expect(document.querySelector(".hidden.md\\:flex > span")).not.toBeNull();
+    expect(rowShell().className).toContain("md:min-h-[34px]");
   });
 });
 
