@@ -1938,36 +1938,55 @@ export const cardLabelsStaging = pgTable("card_labels_staging", {
 ]);
 
 /**
- * Batch ids a run has SUBMITTED, recorded before anything else happens.
+ * One INTENT to submit a batch, written before `batches.create` is called.
  *
- * The input-hash skip recovers cards whose labels are already committed and says nothing
- * about a batch that was submitted and never collected. A process that dies after
- * submission — or while a batch is still processing, which for 2,650 batches is most of a
- * run's life — leaves work in flight the next dispatch cannot see, so it submits those
- * requests again and PAYS TWICE.
+ * **Keyed on a key we choose, not on the provider's `batch_id`, and that is the whole
+ * point.** Anthropic assigns `batch_id` only when `create` RETURNS, so a row keyed on it
+ * cannot be written first — and a process that dies between a successful `create` and the
+ * insert leaves no durable trace at all. The next dispatch sees nothing in flight,
+ * re-submits the same work and PAYS TWICE, which is the exact failure this table exists to
+ * prevent. The plan says so in Task 2: reconcile INTENTS, not only reservations.
  *
- * In the database rather than a file, because the sample's `out/batches.json` does not
- * survive the CI runner that wrote it.
+ * `intent_key` is `{run_id}:{model}:{chunk}`, deterministic from the run's own plan, so a
+ * resumed run computes the same key for the same work and finds its own intent rather than
+ * creating a second one.
  *
- * `status` is the batch's last known state; `collected_at` is set when its results have
- * been read into staging, which is what stops a second collection re-charging nothing but
- * re-doing the work. An id whose results have EXPIRED (the batch API keeps them 29 days)
- * is marked and its cards re-submitted, which is a loss to record rather than hide.
+ * **An intent with a null `batch_id` is AMBIGUOUS, not empty.** The `create` may have
+ * succeeded with the id lost, so a resumed run must not simply re-submit: it lists the
+ * provider's recent batches and matches on the `custom_id`s it chose, which are derived
+ * from `intent_key`. Only an intent with no matching provider batch is re-submitted; one
+ * that cannot be resolved either way is marked `abandoned` and reported, because a silent
+ * re-submission is how the double charge happens.
+ *
+ * `asked` carries the card names the batch covers so a resumed run can reconcile returned
+ * names by face without re-deriving the chunking. In the database rather than a file,
+ * because `out/batches.json` does not survive the CI runner that wrote it.
  */
 export const cardLabelBatches = pgTable("card_label_batches", {
-  batchId: text("batch_id").primaryKey(),
+  intentKey: text("intent_key").primaryKey(),
   runId: text("run_id").notNull(),
   model: text("model").notNull(),
   /** The card names this batch asked about, so a resumed run can reconcile by face. */
   asked: jsonb("asked").$type<string[]>().notNull(),
-  status: text("status").notNull().default("submitted"),
-  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Null until `batches.create` returns — see the ambiguity note above. */
+  batchId: text("batch_id").unique(),
+  status: text("status").notNull().default("intended"),
+  intendedAt: timestamp("intended_at", { withTimezone: true }).notNull().defaultNow(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
   collectedAt: timestamp("collected_at", { withTimezone: true }),
 }, (t) => [
   index("card_label_batches_run_idx").on(t.runId),
   check(
     "card_label_batches_status_check",
-    sql`${t.status} in ('submitted', 'in_progress', 'collected', 'expired', 'failed')`,
+    sql`${t.status} in ('intended', 'submitted', 'in_progress', 'collected', 'expired', 'failed', 'abandoned')`,
+  ),
+  // A status past `intended` asserts the provider accepted the batch, so it MUST carry the
+  // id — otherwise a row could claim to be collected with nothing identifying what was
+  // collected. `abandoned` is exempt: it is precisely the case where the id was never
+  // learned.
+  check(
+    "card_label_batches_id_with_status_check",
+    sql`${t.status} in ('intended', 'abandoned') or ${t.batchId} is not null`,
   ),
 ]);
 
