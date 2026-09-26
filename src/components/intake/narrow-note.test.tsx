@@ -13,9 +13,9 @@ const p: ChooseParams = {
 const options = narrowOptions(
   {
     without: [
-      { answer: { kind: "theme", slug: "landfall" }, count: 24 },
-      { answer: { kind: "budget" }, count: 9 },
-      { answer: { kind: "colors" }, count: 0 },
+      { answers: [{ kind: "theme", slug: "landfall" }], count: 24 },
+      { answers: [{ kind: "budget" }], count: 9 },
+      { answers: [{ kind: "colors" }], count: 0 },
     ],
     widen: { count: 6 },
     cardOverBracket: null,

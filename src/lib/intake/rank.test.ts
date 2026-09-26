@@ -4,7 +4,7 @@ import { rankCandidates, withinBracket, withinBudget, type Answers, type Candida
 
 const none: Answers = { colors: [], match: "contains", themes: [], card: null, budgetDollars: null, bracket: null };
 const cmd = (over: Partial<Candidate> & { name: string }): Candidate => ({
-  oracleId: over.name, colorIdentity: ["G"], deckCount: 1000, tags: [],
+  oracleId: over.name, colorIdentity: ["G"], deckCount: 1000, tags: [], typeLine: null,
   owned: false, priceCents: 100, cardInclusion: null, combosWithCard: { combos: 0, loops: 0 }, ownedSupport: 0, supportTotal: 0,
   gameChanger: false, massLandDenial: false, extraTurn: false,
   ...over,
@@ -23,7 +23,7 @@ describe("the order", () => {
     ], { ...none, themes: ["dinos"] }, null);
     expect(r.order).toBe("fit");
     expect(names(r)).toEqual(["Best fit", "Owned lots"]);
-    expect(r.rows[0].themeFits).toEqual([{ slug: "dinos", share: 0.62 }]);
+    expect(r.rows[0].themeFits).toEqual([{ slug: "dinos", share: 0.62, typeLine: false }]);
   });
 
   it("orders several answers by the weakest figure, and returns every figure", () => {
@@ -120,11 +120,11 @@ describe("too narrow (ruling 8)", () => {
     const r = rankCandidates(pool, { ...none, colors: ["R"], themes: ["dinos"] }, null);
     expect(names(r)).toEqual(["Dino"]);
     expect(r.tooNarrow?.without).toEqual([
-      { answer: { kind: "colors" }, count: 1 },
-      { answer: { kind: "theme", slug: "dinos" }, count: 1 },
+      { answers: [{ kind: "colors" }], count: 1 },
+      { answers: [{ kind: "theme", slug: "dinos" }], count: 1 },
     ]);
     const r2 = rankCandidates(pool, { ...none, themes: ["dinos"], budgetDollars: 1, colors: ["G"] }, null);
-    expect(r2.tooNarrow?.without[0]).toEqual({ answer: { kind: "theme", slug: "dinos" }, count: 6 });
+    expect(r2.tooNarrow?.without[0]).toEqual({ answers: [{ kind: "theme", slug: "dinos" }], count: 6 });
   });
 
   it("drops the card from every test when the card is the answer removed", () => {
@@ -133,7 +133,7 @@ describe("too narrow (ruling 8)", () => {
     const r = rankCandidates(pool, { ...none, card: "gc", bracket: 2, budgetDollars: 10 },
       card({ oracleId: "gc", gameChanger: true, priceCents: 9_999 }));
     expect(r.rows).toEqual([]);
-    expect(r.tooNarrow?.without.find((w) => w.answer.kind === "card")?.count).toBe(pool.length);
+    expect(r.tooNarrow?.without.find((w) => w.answers.length === 1 && w.answers[0].kind === "card")?.count).toBe(pool.length);
   });
 
   it("offers to widen exact colors to any of them, with its count", () => {
@@ -155,5 +155,82 @@ describe("too narrow (ruling 8)", () => {
   it("is not raised when enough pass, or when nothing was asked", () => {
     expect(rankCandidates(pool, { ...none, themes: ["elves"] }, null).tooNarrow).toBeNull();
     expect(rankCandidates(pool.slice(0, 2), none, null).tooNarrow).toBeNull();
+  });
+});
+
+describe("the too-narrow note never offers a dead end (Hugh, 2026-09-27)", () => {
+  // Hugh's ask: four tribes at once. No commander backs all four, and dropping any ONE still
+  // leaves three, which none back either, so every single removal reads 0.
+  const tribes = ["orcs", "elves", "dwarves", "wizards"];
+  const backer = (name: string, ...slugs: string[]) => cmd({ name, tags: slugs.map((s) => tag(s, 400)) });
+  const pool = [
+    backer("Elf A", "elves"), backer("Elf B", "elves"), backer("Elf C", "elves"), backer("Elf D", "elves"), backer("Elf E", "elves"),
+    backer("Wizard A", "wizards"), backer("Wizard B", "wizards"), backer("Wizard C", "wizards"), backer("Wizard D", "wizards"),
+    backer("Orc A", "orcs"), backer("Dwarf A", "dwarves"),
+    backer("Orc Dwarf", "orcs", "dwarves"),
+  ];
+  const r = rankCandidates(pool, { ...none, themes: tribes }, null);
+
+  it("finds nothing for all four, and offers no removal that brings nothing back", () => {
+    expect(r.rows).toEqual([]);
+    expect(r.tooNarrow!.without.length).toBeGreaterThan(0);
+    expect(r.tooNarrow!.without.every((w) => w.count > 0)).toBe(true);
+  });
+
+  it("searches past single drops until a removal reaches enough, keeping the best first", () => {
+    const [best] = r.tooNarrow!.without;
+    // Dropping three and keeping Elves brings back the five Elves.
+    expect(best.answers.map((a) => (a.kind === "theme" ? a.slug : a.kind))).toEqual(["orcs", "dwarves", "wizards"]);
+    expect(best.count).toBe(5);
+    // The pair that leaves Orcs and Dwarves finds the one commander backing both.
+    expect(r.tooNarrow!.without.some((w) => w.answers.length === 2 && w.count === 1)).toBe(true);
+  });
+
+  it("stops at the first size that reaches the floor, never dropping every answer", () => {
+    expect(r.tooNarrow!.without.every((w) => w.answers.length < tribes.length)).toBe(true);
+    // Three themes where dropping one already reaches the floor: no pair is searched, although
+    // pairs exist that would bring back more.
+    const both = [1, 2, 3, 4].map((i) => backer(`Elf Wizard ${i}`, "elves", "wizards"));
+    const three = rankCandidates([...both, backer("Orc A", "orcs")], { ...none, themes: ["elves", "wizards", "orcs"] }, null);
+    expect(three.tooNarrow!.without).toEqual([{ answers: [{ kind: "theme", slug: "orcs" }], count: 4 }]);
+    const two = rankCandidates(pool, { ...none, themes: ["elves", "wizards"] }, null);
+    // Either single drop reaches the floor, so no pair is searched.
+    expect(two.tooNarrow!.without.map((w) => w.answers.length)).toEqual([1, 1]);
+  });
+
+  it("still drops a lone answer, as before", () => {
+    const one = rankCandidates(pool, { ...none, themes: ["orcs"] }, null);
+    expect(one.tooNarrow!.without).toEqual([{ answers: [{ kind: "theme", slug: "orcs" }], count: pool.length }]);
+  });
+});
+
+describe("a tribal theme is also backed by the type line", () => {
+  const tribes = new Map([["dwarves", ["dwarves", "dwarf", "dwarfe", "dwarve"]]]);
+  const measured = cmd({ name: "Measured", deckCount: 1000, tags: [tag("dwarves", 50)], typeLine: "Legendary Creature — Human Warrior" });
+  const thin = cmd({ name: "Thin Dwarf", deckCount: 10, tags: [tag("dwarves", 8)], typeLine: "Legendary Creature — Dwarf Warrior" });
+  const untagged = cmd({ name: "Untagged Dwarf", deckCount: 10, tags: [], typeLine: "Legendary Creature — Dwarf Noble" });
+  const notDwarf = cmd({ name: "Thin Human", deckCount: 10, tags: [tag("dwarves", 8)], typeLine: "Legendary Creature — Human" });
+
+  it("admits a thin commander whose type line is the tribe, and not one whose is not", () => {
+    const r = rankCandidates([measured, thin, notDwarf], { ...none, themes: ["dwarves"] }, null, tribes);
+    expect(names(r)).toEqual(["Measured", "Thin Dwarf"]);
+  });
+
+  it("ranks a measured backing above a type-line one, whatever the shares", () => {
+    // Thin Dwarf's raw share is 80%, Measured's 5%: the measure still leads.
+    const r = rankCandidates([thin, measured], { ...none, themes: ["dwarves"] }, null, tribes);
+    expect(names(r)).toEqual(["Measured", "Thin Dwarf"]);
+    expect(r.rows[1].themeFits[0]).toEqual({ slug: "dwarves", share: 0.8, typeLine: true });
+  });
+
+  it("never admits a type-line match whose figure would read 0%", () => {
+    expect(names(rankCandidates([untagged], { ...none, themes: ["dwarves"] }, null, tribes))).toEqual([]);
+    // 0.4% is a share, but it prints as 0%.
+    const trace = cmd({ name: "Trace Dwarf", deckCount: 1000, tags: [tag("dwarves", 4)], typeLine: "Legendary Creature \u2014 Dwarf" });
+    expect(names(rankCandidates([trace], { ...none, themes: ["dwarves"] }, null, tribes))).toEqual([]);
+  });
+
+  it("matches nothing on the type line for a theme that is not tribal", () => {
+    expect(names(rankCandidates([thin], { ...none, themes: ["dwarves"] }, null))).toEqual([]);
   });
 });

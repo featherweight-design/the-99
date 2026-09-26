@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { THIN_DECK_COUNT } from "../profile/fit";
-import { TOO_NARROW_BELOW, themeShare, themeVocabulary, type ThemeRow } from "./vocabulary";
+import { TOO_NARROW_BELOW, carriesSubtype, rawShare, themeShare, themeVocabulary, tribesFor, type ThemeRow } from "./vocabulary";
 
 const tag = (slug: string, count: number, label = slug) => ({ slug, label, count });
 const row = (deckCount: number | null, ...tags: ReturnType<typeof tag>[]): ThemeRow => ({ deckCount, tags });
@@ -49,5 +49,32 @@ describe("themeVocabulary", () => {
       { slug: "angels", label: "Angels", commanders: 5 },
       { slug: "zombies", label: "Zombies", commanders: 5 },
     ]);
+  });
+});
+
+describe("tribal themes", () => {
+  it("reads a creature subtype on any creature face, as a word, a phrase or a kindred type", () => {
+    expect(carriesSubtype("Legendary Creature — Dwarf Warrior", ["dwarf"])).toBe(true);
+    expect(carriesSubtype("Legendary Creature — Dwarfish Thing", ["dwarf"])).toBe(false);
+    expect(carriesSubtype("Legendary Creature — Time Lord Human", ["time lord"])).toBe(true);
+    expect(carriesSubtype("Kindred Enchantment — Elf Aura", ["elf"])).toBe(true);
+    expect(carriesSubtype("Land — Elf", ["elf"])).toBe(false);
+    expect(carriesSubtype("Instant // Legendary Creature — Orc Pirate", ["orc"])).toBe(true);
+  });
+
+  it("gives the raw share with no floor, and 0 when untagged", () => {
+    expect(rawShare(row(10, tag("dwarves", 8)), "dwarves")).toBeCloseTo(0.8);
+    expect(rawShare(row(10), "dwarves")).toBe(0);
+    expect(rawShare(row(null, tag("dwarves", 8)), "dwarves")).toBe(0);
+  });
+
+  it("takes the tribes from the catalog's creature-type labels, never a list of its own", () => {
+    const vocab = [
+      { slug: "dwarves", label: "Dwarves", commanders: 9 },
+      { slug: "landfall", label: "Landfall", commanders: 90 },
+    ];
+    const t = tribesFor(["dwarves", "landfall", "unknown"], vocab);
+    expect([...t.keys()]).toEqual(["dwarves"]);
+    expect(t.get("dwarves")).toContain("dwarf");
   });
 });

@@ -41,6 +41,15 @@ describe("loadHandOffAnswers", () => {
     expect((await loadHandOffAnswers("u", COMMANDER, ask())).themes[0].pct).toBeNull();
   });
 
+  it("prints a tribal theme's figure for a commander the results admitted by its type line", async () => {
+    stub.themes.mockResolvedValue([{ slug: "dwarves", label: "Dwarves", commanders: 22 }]);
+    stub.rows = [{ deck_count: 10, tags: [{ slug: "dwarves", label: "Dwarves", count: 8 }], type_line: "Legendary Creature \u2014 Dwarf Noble", card_inclusion: null }];
+    expect((await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dwarves"], card: null }))).themes[0].pct).toBe(80);
+    // The same thin commander without the type prints nothing, as the results would not list it.
+    stub.rows = [{ deck_count: 10, tags: [{ slug: "dwarves", label: "Dwarves", count: 8 }], type_line: "Legendary Creature \u2014 Human", card_inclusion: null }];
+    expect((await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dwarves"], card: null }))).themes[0].pct).toBeNull();
+  });
+
   it("keeps what the results keep: a slug no longer offered, labeled by its slug; and drops a card that is no card", async () => {
     stub.chip.mockResolvedValue(null);
     const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["retired-theme", "dinosaurs"] }));

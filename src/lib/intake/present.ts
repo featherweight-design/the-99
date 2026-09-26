@@ -2,8 +2,8 @@ import { colorNames } from "../copy/color-labels";
 import { BRACKET_NAMES } from "../copy/deck-analysis";
 import { helpMeChooseCopy as copy } from "../copy/help-me-choose";
 import type { Chip } from "./match";
-import type { ChooseParams } from "./params";
-import type { AnswerKey, SearchResult } from "./rank";
+import { answersOf, type ChooseParams } from "./params";
+import { answerKeys, type AnswerKey, type SearchResult } from "./rank";
 import type { ResultRow } from "./rows";
 
 /**
@@ -77,15 +77,24 @@ export type NarrowOption = {
 export const NARROW_OPTIONS = 3;
 
 export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p: ChooseParams, labels: Labels): NarrowOption[] {
-  const options: (NarrowOption & { n: number })[] = narrow.without.map(({ answer, count }) => ({
-    label: copy.narrow.drop(answerName(answer, p, labels)),
-    reason: answer.kind === "card" && narrow.cardOverBracket === "gameChanger" && labels.card && p.bracket !== null
-      ? copy.narrow.gameChanger(labels.card, p.bracket)
-      : null,
-    count: copy.narrow.count(count),
-    params: without(p, answer),
-    n: count,
-  }));
+  const asked = answerKeys(answersOf(p));
+  const options: (NarrowOption & { n: number })[] = narrow.without.map(({ answers, count }) => {
+    const kept = asked.filter((k) => !answers.some((d) => sameAnswer(d, k)));
+    // Dropping all but one answer reads as keeping that one, which is what the player does.
+    const label = answers.length > 1 && kept.length === 1
+      ? copy.narrow.keepOnly(answerName(kept[0], p, labels))
+      : copy.narrow.drop(answers.map((d) => answerName(d, p, labels)));
+    const card = answers.length === 1 && answers[0].kind === "card";
+    return {
+      label,
+      reason: card && narrow.cardOverBracket === "gameChanger" && labels.card && p.bracket !== null
+        ? copy.narrow.gameChanger(labels.card, p.bracket)
+        : null,
+      count: copy.narrow.count(count),
+      params: answers.reduce(without, p),
+      n: count,
+    };
+  });
   if (narrow.widen) {
     options.push({
       label: copy.narrow.widenColors(colorsPhrase(p.colors)),
@@ -101,6 +110,10 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
     .sort((a, b) => b.n - a.n)
     .slice(0, NARROW_OPTIONS)
     .map((o) => ({ label: o.label, reason: o.reason, count: o.count, params: o.params }));
+}
+
+function sameAnswer(x: AnswerKey, y: AnswerKey): boolean {
+  return x.kind === y.kind && (x.kind !== "theme" || (y.kind === "theme" && x.slug === y.slug));
 }
 
 function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {

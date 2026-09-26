@@ -1,6 +1,6 @@
 import { permitsFor, violationsFor } from "../bracket/rules";
 import { filterByColors, type JoinMode } from "../commanders/filter";
-import { TOO_NARROW_BELOW, themeShare, type ThemeRow } from "./vocabulary";
+import { TOO_NARROW_BELOW, carriesSubtype, rawShare, themeShare, type ThemeRow } from "./vocabulary";
 
 /**
  * Help me choose's search, as pure rules over facts a loader has already gathered (brief §2
@@ -25,8 +25,20 @@ import { TOO_NARROW_BELOW, themeShare, type ThemeRow } from "./vocabulary";
  * player owns, and the result says that is the order. Ties go to the commander with more decks,
  * then by name.
  *
- * TOO NARROW IS NAMED, NEVER LOOSENED (ruling 8): under `TOO_NARROW_BELOW` results, each answer is
- * removed in turn and the rest re-run, so the player sees which one to loosen. No fill runs.
+ * TOO NARROW IS NAMED, NEVER LOOSENED (ruling 8): under `TOO_NARROW_BELOW` results, answers are
+ * removed and the rest re-run, so the player sees which to loosen. No fill runs. Removals are
+ * searched by size, one answer first, then two, and so on, stopping at the first size where some
+ * removal reaches `TOO_NARROW_BELOW`. A removal that brings nothing back is never offered: four
+ * tribes asked at once back no commander between them, and dropping any one of them still left
+ * three, so every single removal read 0 and the note was a dead end (Hugh, 2026-09-27).
+ *
+ * A TRIBAL THEME ALSO MATCHES ON THE TYPE LINE. A theme whose label is a creature type (`tribes`,
+ * derived from the catalog by the loader) is backed by a commander whose type line carries that
+ * type, even when the index cannot measure the share: too few decks, or the tag under its floor.
+ * A MEASURED backing always ranks above a type-line one, which rank among themselves by the share
+ * they do have. The row shows that share, so a type-line match is admitted only when it rounds to
+ * 1% or more: the row has no way to draw a figure that is not a percentage, and "0% Dwarves"
+ * beside a Dwarf would contradict the very match it was admitted for.
  */
 export type Bracket = 1 | 2 | 3 | 4 | 5;
 
@@ -56,6 +68,8 @@ export type Candidate = ThemeRow & BracketFacts & {
   colorIdentity: string[];
   owned: boolean;
   priceCents: number | null;
+  /** The commander's printed type line, for a tribal theme's type-line match. */
+  typeLine: string | null;
   /** The share (0 to 1) of this commander's decks that run the build-around card; null when none. */
   cardInclusion: number | null;
   /** Two-card combos this commander completes with the build-around card, and how many loop turns. */
@@ -77,8 +91,8 @@ export type AnswerKey =
 
 export type Ranked = {
   candidate: Candidate;
-  /** Each theme's share, in the order asked. */
-  themeFits: { slug: string; share: number }[];
+  /** Each theme's share, in the order asked. `typeLine`: backed by the type line alone. */
+  themeFits: { slug: string; share: number; typeLine?: boolean }[];
   cardFit: number | null;
 };
 
@@ -87,7 +101,8 @@ export type SearchResult = {
   rows: Ranked[];
   /** Set when fewer than `TOO_NARROW_BELOW` commanders pass and some answer was given. */
   tooNarrow: {
-    without: { answer: AnswerKey; count: number }[];
+    /** Answers whose removal brings commanders back, each set with how many; never a count of 0. */
+    without: { answers: AnswerKey[]; count: number }[];
     /**
      * Colors asked for EXACTLY, and how many pass with the control's *Any* instead (every one of
      * them, other colors allowed). Null when it admits no more than the exact ask already does,
@@ -102,11 +117,31 @@ export type SearchResult = {
   } | null;
 };
 
-export function passes(c: Candidate, a: Answers, card: CardFacts | null, skip?: AnswerKey): boolean {
+/** A theme slug to the lower-cased singulars of its creature type, for the tribal themes asked. */
+export type Tribes = ReadonlyMap<string, readonly string[]>;
+
+const NO_TRIBES: Tribes = new Map();
+
+/**
+ * How `c` backs a theme: its measured share, or, for a tribal theme, its type line. Null when it
+ * does not back it. A type-line backing must round to 1% or more (see the header).
+ */
+export function backing(c: ThemeRow & { typeLine: string | null }, slug: string, tribes: Tribes = NO_TRIBES): { share: number; typeLine: boolean } | null {
+  const measured = themeShare(c, slug);
+  if (measured !== null) return { share: measured, typeLine: false };
+  const forms = tribes.get(slug);
+  if (!forms || !c.typeLine || !carriesSubtype(c.typeLine, forms)) return null;
+  const share = rawShare(c, slug);
+  return Math.round(share * 100) >= 1 ? { share, typeLine: true } : null;
+}
+
+export function passes(
+  c: Candidate, a: Answers, card: CardFacts | null, skip: readonly AnswerKey[] = [], tribes: Tribes = NO_TRIBES,
+): boolean {
   const skipping = (k: AnswerKey["kind"], slug?: string) =>
-    skip?.kind === k && (k !== "theme" || (skip.kind === "theme" && skip.slug === slug));
+    skip.some((s) => s.kind === k && (k !== "theme" || (s.kind === "theme" && s.slug === slug)));
   if (!skipping("colors") && filterByColors([c], a.colors, a.match).length === 0) return false;
-  for (const slug of a.themes) if (!skipping("theme", slug) && themeShare(c, slug) === null) return false;
+  for (const slug of a.themes) if (!skipping("theme", slug) && backing(c, slug, tribes) === null) return false;
   // With the card answer removed the card is gone from every test, not only its own: its flags
   // and its price no longer count against the bracket or the budget either.
   const withCard = a.card !== null && !skipping("card") ? card : null;
@@ -139,26 +174,29 @@ export function withinBudget(c: Candidate, card: CardFacts | null, dollars: numb
   return cost <= dollars * 100;
 }
 
-export function rankCandidates(candidates: readonly Candidate[], a: Answers, card: CardFacts | null): SearchResult {
+export function rankCandidates(
+  candidates: readonly Candidate[], a: Answers, card: CardFacts | null, tribes: Tribes = NO_TRIBES,
+): SearchResult {
   const order: SearchResult["order"] = a.themes.length > 0 || a.card !== null ? "fit" : "owned";
   const rows = candidates
-    .filter((c) => passes(c, a, card))
+    .filter((c) => passes(c, a, card, [], tribes))
     .map((c): Ranked => ({
       candidate: c,
-      themeFits: a.themes.map((slug) => ({ slug, share: themeShare(c, slug) ?? 0 })),
+      themeFits: a.themes.map((slug) => {
+        const b = backing(c, slug, tribes);
+        return { slug, share: b?.share ?? 0, typeLine: b?.typeLine ?? false };
+      }),
       cardFit: a.card === null ? null : c.cardInclusion,
     }))
-    .sort((x, y) => (order === "fit" ? fitKey(y) - fitKey(x) : y.candidate.ownedSupport - x.candidate.ownedSupport)
+    .sort((x, y) => (order === "fit" ? measuredFirst(x) - measuredFirst(y) || fitKey(y) - fitKey(x) : y.candidate.ownedSupport - x.candidate.ownedSupport)
       || (y.candidate.deckCount ?? 0) - (x.candidate.deckCount ?? 0)
       || x.candidate.name.localeCompare(y.candidate.name));
 
   const answers = answerKeys(a);
   const tooNarrow = rows.length < TOO_NARROW_BELOW && answers.length > 0
     ? {
-      without: answers
-        .map((answer) => ({ answer, count: candidates.filter((c) => passes(c, a, card, answer)).length }))
-        .sort((x, y) => y.count - x.count),
-      widen: widenCount(candidates, a, card, rows.length),
+      without: removals(candidates, a, card, answers, tribes),
+      widen: widenCount(candidates, a, card, rows.length, tribes),
       cardOverBracket: a.card !== null && card?.gameChanger === true && a.bracket !== null && a.bracket <= 2
         ? "gameChanger" as const
         : null,
@@ -167,10 +205,46 @@ export function rankCandidates(candidates: readonly Candidate[], a: Answers, car
   return { order, rows, tooNarrow };
 }
 
-function widenCount(candidates: readonly Candidate[], a: Answers, card: CardFacts | null, exact: number): { count: number } | null {
+function widenCount(
+  candidates: readonly Candidate[], a: Answers, card: CardFacts | null, exact: number, tribes: Tribes,
+): { count: number } | null {
   if (a.colors.length === 0 || a.match !== "exactly") return null;
-  const count = candidates.filter((c) => passes(c, { ...a, match: "contains" }, card)).length;
+  const count = candidates.filter((c) => passes(c, { ...a, match: "contains" }, card, [], tribes)).length;
   return count > exact ? { count } : null;
+}
+
+/**
+ * The removals worth offering: every set of answers whose removal brings commanders back, searched
+ * by size and stopped at the first size where one reaches `TOO_NARROW_BELOW`. At least one answer
+ * is always kept, so the note never offers "drop everything". Most commanders first; a tie keeps
+ * the smaller removal ahead.
+ */
+function removals(
+  candidates: readonly Candidate[], a: Answers, card: CardFacts | null, answers: readonly AnswerKey[], tribes: Tribes,
+): { answers: AnswerKey[]; count: number }[] {
+  const found: { answers: AnswerKey[]; count: number }[] = [];
+  for (let size = 1; size < answers.length || (size === 1 && answers.length === 1); size++) {
+    const atSize = subsets(answers, size)
+      .map((set) => ({ answers: set, count: candidates.filter((c) => passes(c, a, card, set, tribes)).length }))
+      .filter((r) => r.count > 0);
+    found.push(...atSize);
+    if (atSize.some((r) => r.count >= TOO_NARROW_BELOW)) break;
+  }
+  return found.sort((x, y) => y.count - x.count || x.answers.length - y.answers.length);
+}
+
+function subsets<T>(items: readonly T[], size: number): T[][] {
+  if (size === 0) return [[]];
+  const out: T[][] = [];
+  items.forEach((item, i) => {
+    for (const rest of subsets(items.slice(i + 1), size - 1)) out.push([item, ...rest]);
+  });
+  return out;
+}
+
+/** 0 when every theme is backed by a measure, 1 when any is backed by the type line alone. */
+function measuredFirst(r: Ranked): number {
+  return r.themeFits.some((t) => t.typeLine) ? 1 : 0;
 }
 
 /** The weakest of a row's figures: it fits only as well as its worst answer. */

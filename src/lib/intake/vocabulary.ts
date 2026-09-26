@@ -1,6 +1,7 @@
 import type { EdhrecTag } from "../edhrec/parse";
 import { themeFloorFor } from "../edhrec/gap-slot";
-import { FORMAT_LABELS } from "../edhrec/tag-kinds";
+import { FORMAT_LABELS, singularForms } from "../edhrec/tag-kinds";
+import { CREATURE_TYPE_LABELS } from "../edhrec/tag-kinds.generated";
 import { THIN_DECK_COUNT } from "../profile/fit";
 
 /**
@@ -35,6 +36,47 @@ export function themeShare(row: ThemeRow, slug: string): number | null {
   const tag = row.tags.find((t) => t.slug === slug);
   if (!tag || tag.count < themeFloorFor(row.deckCount) || tag.count <= 0) return null;
   return Math.min(1, tag.count / row.deckCount);
+}
+
+/**
+ * The share of this commander's decks tagged `slug`, with no floor: 0 when untagged or deckless.
+ * What a type-line match shows beside its theme, since the measured `themeShare` is null for it.
+ */
+export function rawShare(row: ThemeRow, slug: string): number {
+  const tag = row.tags.find((t) => t.slug === slug);
+  if (!tag || !row.deckCount || row.deckCount <= 0 || tag.count <= 0) return 0;
+  return Math.min(1, tag.count / row.deckCount);
+}
+
+/**
+ * Whether a type line carries one of `forms` as a creature subtype, on any face. `forms` are the
+ * lower-cased singulars of a tribal theme's label (`singularForms`), and a multi-word type (`time
+ * lord`) matches as a phrase. Only a face whose types can bear creature types counts, which is
+ * `creatureSubtypesFromTypeLines`'s rule.
+ */
+export function carriesSubtype(typeLine: string, forms: readonly string[]): boolean {
+  for (const face of typeLine.split("//")) {
+    const [types, subs] = face.split("\u2014");
+    if (!subs || !/creature|kindred|tribal/i.test(types)) continue;
+    const words = ` ${subs.trim().toLowerCase().split(/\s+/).join(" ")} `;
+    if (forms.some((f) => words.includes(` ${f} `))) return true;
+  }
+  return false;
+}
+
+/**
+ * The tribal themes among `slugs`, each with the lower-cased singulars its creature type is printed
+ * as (`Dwarves` to `dwarf`). Tribal is decided by the generated `CREATURE_TYPE_LABELS`, which is
+ * EDHREC's labels checked against the catalog's creature types, and the singulars by the same
+ * `singularForms` that check used. So nothing here is a hand-written list of tribes.
+ */
+export function tribesFor(slugs: readonly string[], vocabulary: readonly VocabularyTheme[]): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const slug of slugs) {
+    const label = vocabulary.find((t) => t.slug === slug)?.label;
+    if (label && CREATURE_TYPE_LABELS.includes(label)) out.set(slug, singularForms(label));
+  }
+  return out;
 }
 
 /** The tags the picker offers, most commanders first, then by label. */
