@@ -1,0 +1,27 @@
+{
+ "cards": 400,
+ "skipped": 0,
+ "sameJobs": 210,
+ "sameEverything": 137,
+ "jobTally": {
+  "both": 428,
+  "haikuOnly": 119,
+  "sonnetOnly": 164
+ },
+ "limitDisagree": {
+  "rampKind": 3,
+  "restrictedTo": 96,
+  "trigger": 33,
+  "recurrence": 24,
+  "threshold": 8,
+  "modal": 16
+ },
+ "limitCompared": {
+  "rampKind": 28,
+  "restrictedTo": 428,
+  "trigger": 428,
+  "recurrence": 428,
+  "threshold": 428,
+  "modal": 428
+ }
+}
