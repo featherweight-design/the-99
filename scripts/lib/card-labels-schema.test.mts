@@ -132,6 +132,26 @@ describe("the gold set", () => {
     expect(GOLD.filter((r) => r.jobs.length === 0).length).toBeGreaterThanOrEqual(4);
   });
 
+  // THE THREE DIVERGENCES from E1's classifier. The report claims each is "recorded in
+  // its own `why`", and that claim broke the first time it was made: the note went on
+  // `Weathered Wayfarer` and not on `Marshals' Pathcruiser`, its identical sibling.
+  //
+  // The list is hand-maintained rather than derived, deliberately. Deriving it needs
+  // `honestJobs` and a database, which would make this a probe rather than a unit
+  // test; the trade is that a FOURTH divergence would not be caught here. Measured
+  // 2026-09-26: `honestJobs` agrees with 22 of the 25 ramp-labelled cards, contradicts
+  // 0, and assigns no kind to exactly these three.
+  it("documents every card E1 assigns no ramp kind to", async () => {
+    const { GOLD } = await import("./card-labels-gold.mjs");
+    const diverging = ["Dora Milaje Elite", "Weathered Wayfarer", "Marshals' Pathcruiser"];
+    for (const name of diverging) {
+      const row = (GOLD as { name: string; why: string }[]).find((r) => r.name === name);
+      expect(row, `${name} is not in the gold set`).toBeTruthy();
+      expect(row!.why, `${name} does not record that E1 assigns it no kind`)
+        .toMatch(/E1 assigns (this card )?no (ramp job|kind)|E1 gives that card no ramp job/);
+    }
+  });
+
   it("covers all four ramp kinds, including the one it found", async () => {
     const { GOLD } = await import("./card-labels-gold.mjs");
     const kinds = new Set(

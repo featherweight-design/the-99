@@ -568,7 +568,7 @@ export const GOLD = [
   {
     name: "Marshals' Pathcruiser", klass: "fetchesLand",
     jobs: [j("role", "ramp", { rk: "fetchesLand", to: "land", tr: "etb", rec: "oneShot" }), j("theme", "counters", { tr: "activated", rec: "oneShot" })],
-    why: "Fetch to HAND, which still counts as fetchesLand by 2b's definition ('onto the battlefield or into the hand').",
+    why: "Fetch to HAND, which still counts as fetchesLand by 2b's written definition ('onto the battlefield or into the hand'). NOTE, the same divergence as `Weathered Wayfarer`: E1 assigns this card no kind, because its `FETCHES` rule requires `onto the battlefield`. The prose and the code disagree; this label follows the prose and the divergence is raised with 2b rather than settled here.",
   },
   {
     name: "Bant Panorama", klass: "fetchesLand",
