@@ -12,17 +12,33 @@
  * Request-scoped through `AsyncLocalStorage`, so a loader records without being handed anything
  * and without knowing whether its caller caches. Outside `watchSoftFailures` it does nothing.
  */
-import { AsyncLocalStorage } from "node:async_hooks";
+import type { AsyncLocalStorage } from "node:async_hooks";
 
-const scope = new AsyncLocalStorage<{ fellBack: boolean }>();
+type State = { fellBack: boolean };
+
+// The one Next puts on `globalThis` on the server, never an import of `node:async_hooks`: some
+// of the loaders that record also ship in client bundles (their types and pure helpers are
+// imported by components), and a browser chunk cannot carry a Node builtin. In a browser there
+// is no global, and recording is a no-op, which is right: nothing there caches a page.
+let scope: AsyncLocalStorage<State> | null | undefined;
+function current(): AsyncLocalStorage<State> | null {
+  if (scope === undefined) {
+    const Storage = (globalThis as { AsyncLocalStorage?: typeof AsyncLocalStorage }).AsyncLocalStorage;
+    scope = Storage ? new Storage<State>() : null;
+  }
+  return scope;
+}
 
 export function recordSoftFailure(): void {
-  const current = scope.getStore();
-  if (current) current.fellBack = true;
+  const state = current()?.getStore();
+  if (state) state.fellBack = true;
 }
 
 export async function watchSoftFailures<T>(run: () => Promise<T>): Promise<{ value: T; fellBack: boolean }> {
-  const state = { fellBack: false };
-  const value = await scope.run(state, run);
+  const state: State = { fellBack: false };
+  const storage = current();
+  // With no storage nothing can be heard, so nothing is claimed clean: the caller does not store.
+  if (!storage) return { value: await run(), fellBack: true };
+  const value = await storage.run(state, run);
   return { value, fellBack: state.fellBack };
 }

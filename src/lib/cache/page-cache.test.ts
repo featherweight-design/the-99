@@ -17,6 +17,11 @@ vi.mock("./user-data-stamp", () => ({ userDataStamp: vi.fn(async () => stamp.val
 import { cacheForUser } from "./user-lists";
 import { cachePageForUser } from "./page-cache";
 import { recordSoftFailure } from "./soft-failure";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+// Next puts this on `globalThis` on the server, and soft-failure.ts reads it from there (see
+// its header). These tests run outside Next, so they provide it.
+(globalThis as { AsyncLocalStorage?: typeof AsyncLocalStorage }).AsyncLocalStorage ??= AsyncLocalStorage;
 
 describe("cachePageForUser", () => {
   beforeEach(() => {
