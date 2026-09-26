@@ -374,8 +374,9 @@ export function Decklist({
   // the slot is always the taller of the two: the key wraps to a second line on a busy phone, and
   // a single swap then jumped the list. `invisible` is visibility:hidden, which also takes the
   // hidden one out of the tab order and the accessibility tree, so still only one is read. A deck
-  // with no key at all has no slot to hold, and the mode's line appears in one.
-  const keyLine = onLockModeChange && markKey.length > 0 ? (
+  // with no key at all holds the slot too, blank outside the mode: that is the one layout where
+  // the rule costs a line, and a list that jumps under the press is the defect being fixed.
+  const keyLine = onLockModeChange ? (
     <div className="grid">
       <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
         <MarkKey marks={markKey} regionAria={markKeyRegion} />

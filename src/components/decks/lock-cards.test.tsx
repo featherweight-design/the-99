@@ -638,6 +638,17 @@ describe("the Lock cards mode, through BuilderShell", () => {
     expect(line().textContent).toBe(`${lockedCardsCopy.mode.line} ${lockedCardsCopy.mode.count(1)}`);
   });
 
+  // A deck with nothing to key (no lock, nothing to buy or print, no fact marks) still holds the
+  // slot, blank until the press, so the mode's line cannot push the list down when it appears.
+  it("holds the slot on a deck with no key, blank until the press", async () => {
+    renderShell([sol, signet]);
+    expect(screen.queryByRole("group", { name: proxyCopy.key.regionAria })).toBeNull();
+    const line = () => screen.getByTestId("lock-mode-line");
+    expect(line().parentElement!.className).toContain("invisible");
+    await act(async () => lockButton()!.click());
+    expect(line().parentElement!.className).not.toContain("invisible");
+  });
+
   it("locks at once, holds the lock once the server agrees, and announces it", async () => {
     const write = deferred<DeckMutationResult>();
     setCardLocked.mockReturnValue(write.promise);
