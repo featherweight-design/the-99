@@ -64,32 +64,36 @@ export const swapToolsCopy = {
     jobColors: (colors: string) => `makes ${colors}`,
     /** `types` carries its own article: `an Island`, `a Mountain or Forest`. */
     jobFinds: (types: string) => `finds ${types} card`,
-    jobRole: (roles: string, mv: number) => `${roles} · mana value ${mv}`,
+    /** Stand-in row addendum (E2): a spell's job line, its type and mana value, then its jobs for this deck. Owed to /copy-review. */
+    jobSpell: (type: string, mv: number, jobs: string) => `${type} · mana value ${mv} · ${jobs}`,
     jobNoRole: "no role we can name",
     /** E1: every job the card does is limited to cards this deck does not play. Owed to /copy-review. */
     jobNotHere: "no job this deck uses",
-    givesUpNothing: "gives up nothing",
+    givesUpNothing: "loses nothing",
     // v2 D1 (ranking-rebuild addendum): ownership is on the row, so no lead says free copies come first; a
     // free copy wins only a tie (the addendum audit's ruling 2). Every lead below is owed to /copy-review.
     leadLands: (colors: string) =>
-      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each says what it gives up.`,
+      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each says what it loses.`,
     /** Hugh, 2026-09-24: every stand-in gives up the same thing, so the lead says it once. */
     leadLandsGivesUp: (colors: string, ability: string) =>
-      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each gives up ${ability}.`,
+      `Every land here makes ${colors}. Untapped lands come first, then tapped ones, then utility lands, and each loses ${ability}.`,
     leadFetchGivesUp: (types: string, ability: string) =>
-      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each gives up ${ability}.`,
+      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each loses ${ability}.`,
     leadFetch: (types: string) =>
-      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each says what it gives up.`,
+      `Every land here finds ${types}. Untapped lands come first, then tapped ones, then utility lands, and each says what it loses.`,
     /** The spells lead is three sentences, joined: what every card does, then the groups, then their order. */
-    leadSpellsJob: (roles: string, mv: number) => `Every card here is ${roles} at mana value ${mv} or less.`,
+    /**
+     * E2: the jobs are the original's for this deck (ramp by its kind), `or`-joined: a row keeps at least one.
+     * /copy-review, ratified by d9 (2026-09-26): the addendum's `, and each row says what it keeps, gains and
+     * loses against it` is cut, since the row's own tags say exactly that.
+     */
+    leadSpellsJob: (card: string, jobs: string) => `Every card here keeps at least one of ${card}’s jobs (${jobs}).`,
     /** Drawn only when both groups are. */
     leadSpellsTypes: (plural: string) => `${plural[0].toUpperCase()}${plural.slice(1)} come first, then other types.`,
     leadSpellsOrder: (card: string, commander: string) =>
       `In each group, cards that do more of ${card}’s work come first, then the ones ${commander} decks favor most over other decks of their colors.`,
     /** F14: the index lists nothing for this commander or pair, so the order names no commander. */
     leadSpellsOrderUnlisted: (card: string) => `In each group, cards that do more of ${card}’s work come first, then the cheapest.`,
-    /** D2: a job every stand-in lacks is said once here, not on every row (as `leadLandsGivesUp` does). */
-    leadSpellsGivesUp: (card: string, jobs: string) => `None of them has ${card}’s ${jobs}.`,
     /** Drawn when a staple is in the list: it sorts last in its group (addendum §1b). */
     leadSpellsStaples: "Staples every commander plays come last.",
     /** F5: a sold-out original lists free copies only. Owed to /copy-review. */
@@ -107,7 +111,6 @@ export const swapToolsCopy = {
     showAll: (n: number, noun: string) => `Show all ${n} ${noun}`,
     showFewer: "Show fewer",
     free: "free",
-    mv: (n: number) => `MV ${n}`,
     // v2 D2 (addendum §1a): a land row's mana line, in --fg-body, then its costs in --fg-muted.
     mana: {
       line: (colors: string, state: string) => `makes ${colors}, ${state}`,
@@ -124,8 +127,13 @@ export const swapToolsCopy = {
       once: (color: string) => `${color} once, by sacrificing it`,
       colorless: "colorless",
     },
-    // v2 D2 (addendum R1): a spell row names its jobs beyond the original's, and the original's it lacks.
-    also: (jobs: string) => `also ${jobs}`,
+    /**
+     * Stand-in row addendum 3a (E2): a spell row's comparison. The tags draw these uppercase, and each group
+     * carries the same word, visually hidden, for a screen reader. Owed to /copy-review.
+     */
+    compare: { keeps: "keeps", gains: "gains", loses: "loses", staple: "staple" },
+    /** E2: a lower mana value, written as the last gain so the budget drops it first. */
+    mvGain: (mv: number) => `mana value ${mv}`,
     /** Each theme and role as a row names it. Owed to /copy-review with the rest of D2. */
     job: {
       ramp: "ramp", draw: "draw", removal: "removal", wipes: "wipes",
@@ -137,10 +145,11 @@ export const swapToolsCopy = {
       deathTrigger: "death triggers", lifegain: "life gain", drain: "drain", spellslinger: "spells matter",
       landfall: "landfall", tribal: "tribal",
     },
-    /** Addendum §1: a staple's fact line ends here. No row draws a commander figure since v2 (Q2). */
-    stapleFact: "staple, any commander",
-    /** H3: what a stand-in for a utility land gives up, the ability named or quoted. Owed to /copy-review. */
-    givesUp: (ability: string) => `gives up ${ability}`,
+    /**
+     * H3: what a stand-in for a utility land gives up, the ability named or counted. E2 (d9, 2026-09-26): it reads
+     * `loses`, the spell rows' word, so both kinds of row share one vocabulary. Owed to /copy-review.
+     */
+    givesUp: (ability: string) => `loses ${ability}`,
     /** Close-out ruling 6: a row never quotes; the abilities no pattern names are counted instead. Owed to /copy-review. */
     otherAbilities: (n: number, afterNamed: boolean) =>
       afterNamed ? (n === 1 ? "one more" : `${n} more`) : n === 1 ? "an ability" : `${n} abilities`,

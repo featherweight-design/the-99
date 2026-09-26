@@ -42,32 +42,32 @@ describe("the stand-ins sheet's model", () => {
       [copy.groupSameType("instants"), copy.orderMostShared, "instants"],
       [copy.groupOtherTypes, copy.orderMostShared, copy.groupOtherTypes],
     ]);
-    // The lead names the job once, so a row names only what differs from the original.
-    expect(m.groups[0].rows[1]).toMatchObject({ body: [copy.mv(2)], muted: [] });
+    // Addendum 3a: a spell row is a comparison, not a facts line, and names no mana value it does not gain.
+    expect(m.groups[0].rows[1]).toMatchObject({ body: [], muted: [], compare: { type: null, keeps: [copy.job.removal], gains: [], loses: [] } });
     // An other-types row names its type first: its heading cannot.
-    expect(m.groups[1].rows[0]).toMatchObject({ body: ["sorcery", copy.mv(2)], muted: [] });
-    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
+    expect(m.groups[1].rows[0].compare).toMatchObject({ type: "sorcery", keeps: [copy.job.removal] });
+    expect(m.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsTypes("instants"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
     expect(m.foot).toBe(true);
   });
 
   it("drops the types sentence when only one group is drawn", () => {
     const m = sheetModel(read({ groups: [other([standIn("Chaos Warp", { synergy: 0.3 })])] }));
-    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
+    expect(m.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath")].join(" "));
   });
 
   it("says staples come last when one is listed, and keeps a staple's clause on its row", () => {
     const m = sheetModel(read({
       groups: [same([standIn("Path", { synergy: 0.1 }), standIn("Sol Ring", { isUniversal: true, free: true })])],
     }));
-    expect(m.groups[0].rows[1]).toMatchObject({ body: [copy.mv(2), copy.stapleFact], muted: [] });
-    expect(m.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrder("Anguished Unmaking", "Gishath"), copy.leadSpellsStaples].join(" "));
+    expect(m.groups[0].rows[1].compare).toMatchObject({ type: copy.compare.staple, keeps: [copy.job.removal] });
+    expect(m.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrder("Anguished Unmaking", "Gishath"), copy.leadSpellsStaples].join(" "));
   });
 
   it("names a pair as A + B by short name, and drops the commander from the order when nothing is listed (F14)", () => {
     const m = sheetModel(read({ commanders: ["Tymna the Weaver", "Thrasios, Triton Hero"], groups: [same([standIn("Chaos Warp", { synergy: 0.2 })])] }));
     expect(m.lead).toContain(copy.leadSpellsOrder("Anguished Unmaking", "Tymna the Weaver + Thrasios"));
     const unlisted = sheetModel(read({ groups: [same([standIn("Chaos Warp")])] }));
-    expect(unlisted.lead).toBe([copy.leadSpellsJob("removal", 2), copy.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "));
+    expect(unlisted.lead).toBe([copy.leadSpellsJob("Anguished Unmaking", "removal"), copy.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "));
   });
 
   it("gives a land its colors, drawbacks and what each stand-in gives up (H3)", () => {
@@ -131,12 +131,16 @@ describe("the stand-ins sheet's model", () => {
     expect(highlands).toMatchObject({ body: [copy.mana.line("red", copy.mana.tapped)], muted: [copy.mana.once("white")] });
   });
 
-  it("names every job all the stand-ins lack in the lead, uncapped", () => {
+  it("says every row's own losses, uncapped, and no longer in the lead (addendum 3a)", () => {
     const m = sheetModel(read({
       groups: [same([standIn("A", { synergy: 0.2, missing: ["castFree", "counters", "haste"] }), standIn("B", { missing: ["castFree", "counters", "haste"] })])],
     }));
-    expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", `${copy.job.castFree}, ${copy.job.counters} and ${copy.job.haste}`));
+    expect(m.lead).not.toContain("None of them");
+    expect(m.groups[0].rows.map((r) => r.compare?.loses)).toEqual([
+      [copy.job.castFree, copy.job.counters, copy.job.haste], [copy.job.castFree, copy.job.counters, copy.job.haste],
+    ]);
   });
+
 
   // Close-out ruling 6: a cost for only some of the line's colors still names them, and one-shot colors share a clause.
   it("names a cost's colors when it covers only some of the line's, and says every one-shot color in one clause", () => {
@@ -208,28 +212,39 @@ describe("the stand-ins sheet's model", () => {
     expect(m.groups[0].rows[0].body).toEqual([copy.mana.line("red", copy.mana.tapped)]);
   });
 
-  it("says a job every stand-in lacks once, in the lead, and not on each row", () => {
+  // Addendum 3a: keeps, gains and loses; a word in one group never repeats in another (READINESS E1).
+  it("sorts a spell's jobs into keeps, gains and loses, a word once across all three", () => {
     const m = sheetModel(read({
-      groups: [same([
-        standIn("A", { synergy: 0.2, missing: ["castFree", "counters"] }),
-        standIn("B", { missing: ["castFree"] }),
-      ])],
+      groups: [same([standIn("Mulldrifter-ish", {
+        card: card("Mulldrifter-ish", "Instant", "", 1),
+        shared: ["draw"], sharedThemes: [], extra: ["removal", "evasion", "blink"], missing: ["draw", "counters"],
+      })])],
+      job: { kind: "spell", roles: ["draw"], mv: 2 }, jobRoles: ["draw"],
     }));
-    expect(m.lead).toContain(copy.leadSpellsGivesUp("Anguished Unmaking", copy.job.castFree));
-    expect(m.groups[0].rows.map((r) => r.muted)).toEqual([[copy.givesUp(copy.job.counters)], []]);
-  });
-
-  // Addendum R1: a spell row's jobs beyond the original's (`also`), and the original's it lacks, two at most.
-  it("names a spell's extra jobs and what it gives up, a word once, two of each at most", () => {
-    const m = sheetModel(read({
-      // A second row that keeps the job, so the first row's give-up is its own rather than every row's.
-      groups: [same([standIn("Mulldrifter-ish", { extra: ["draw", "draw", "evasion", "blink"], missing: ["counters"] }), standIn("Keeps it")])],
-    }));
-    expect(m.groups[0].rows[0]).toMatchObject({
-      body: [copy.mv(2), copy.also(`${copy.job.draw} and ${copy.job.evasion}`)],
-      muted: [copy.givesUp(copy.job.counters)],
+    expect(m.groups[0].rows[0].compare).toEqual({
+      type: null,
+      keeps: [copy.job.draw],
+      // A lower mana value is the last gain.
+      gains: [copy.job.removal, copy.job.evasion, copy.job.blink, copy.mvGain(1)],
+      // `draw` is kept, so it is not also lost.
+      loses: [copy.job.counters],
     });
   });
+
+  it("fits a long comparison by dropping gains before keeps, and never a loss", () => {
+    const loses = ["castFree", "counters", "haste", "lifegain", "sacOutlet", "deathTrigger", "recursion"] as const;
+    const m = sheetModel(read({
+      groups: [other([standIn("Everything", {
+        card: card("Everything", "Sorcery", "", 1),
+        shared: ["removal"], sharedThemes: ["tokens", "mill"], extra: ["pump", "evasion", "blink", "landfall"], missing: [...loses],
+      })])],
+    }));
+    const c = m.groups[0].rows[0].compare!;
+    expect(c.loses).toEqual(loses.map((j) => copy.job[j]));
+    expect(c.gains).toEqual([]);
+    expect(c.keeps[0]).toBe(copy.job.removal);
+  });
+
 
   it("reads a fetch by the types it finds", () => {
     const m = sheetModel(read({

@@ -70,6 +70,22 @@ describe("StandInsSheet", () => {
     expect(screen.getByRole("status")).toHaveTextContent(swapToolsCopy.sheet.loadingSpells("removal"));
   });
 
+  // Stand-in row addendum 3a: the comparison's tags are for the eye; a screen reader hears the same word.
+  it("draws a spell row's comparison with hidden-for-sighted labels and aria-hidden tags", async () => {
+    loadStandInsAction.mockResolvedValue(READ);
+    await open();
+    const sheet = screen.getByTestId("stand-ins-sheet");
+    const row = within(sheet).getByText("Swords to Plowshares").closest("li")!;
+    const compare = row.querySelector("[data-compare]")!;
+    expect(compare).not.toBeNull();
+    const tag = compare.querySelector('[aria-hidden="true"]')!;
+    expect(tag.textContent).toBe(swapToolsCopy.sheet.compare.keeps);
+    expect(compare.querySelector(".sr-only")!.textContent).toBe(`${swapToolsCopy.sheet.compare.keeps} `);
+    expect(compare.textContent).toContain(swapToolsCopy.sheet.job.removal);
+    // No mana value on the row: the fixture's rows share the original's.
+    expect(compare.textContent).not.toMatch(/MV|mana value/);
+  });
+
   it("draws the list in its type group once read, ownership on the row, with the foot", async () => {
     loadStandInsAction.mockResolvedValue(READ);
     await open();
@@ -84,7 +100,7 @@ describe("StandInsSheet", () => {
     const swords = within(sheet).getByText("Swords to Plowshares").closest("li")!;
     expect(swords.textContent).toMatch(/1 in a draft/);
     expect(within(sheet).getByText("Chaos Warp").closest("li")!.textContent).not.toMatch(/in a draft/);
-    expect(within(sheet).getByText([swapToolsCopy.sheet.leadSpellsJob("removal", 2), swapToolsCopy.sheet.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "))).toBeInTheDocument();
+    expect(within(sheet).getByText([swapToolsCopy.sheet.leadSpellsJob("Anguished Unmaking", "removal"), swapToolsCopy.sheet.leadSpellsOrderUnlisted("Anguished Unmaking")].join(" "))).toBeInTheDocument();
     expect(within(sheet).getByText(/Cheapest printing of each, from ManaPool/)).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
   });
