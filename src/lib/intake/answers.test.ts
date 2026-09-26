@@ -19,7 +19,7 @@ describe("validateCreateAnswers", () => {
     expect(() => validateCreateAnswers({ ...ok, bracket: 2.5 })).toThrow("bracket");
     expect(() => validateCreateAnswers({ ...ok, cardOracleId: "not-a-uuid" })).toThrow("card");
     expect(() => validateCreateAnswers({ ...ok, themes: ["a\nb"] })).toThrow("themes");
-    expect(() => validateCreateAnswers({ ...ok, themeJoin: "some" as "any" })).toThrow("themes");
+    expect(() => validateCreateAnswers({ ...ok, themeJoin: "some" as unknown as "any" })).toThrow("themes");
     expect(() => validateCreateAnswers({ ...ok, themes: Array(9).fill("x") })).toThrow("themes");
     expect(() => validateCreateAnswers({ ...ok, themes: "Dinosaurs" as unknown as string[] })).toThrow("themes");
   });
