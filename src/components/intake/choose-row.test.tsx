@@ -110,6 +110,10 @@ describe("the set tag (three answers §2)", () => {
     expect(tags.length).toBeGreaterThan(0);
     expect(tags[0].getAttribute("title")).toBe("The Hobbit");
     expect(tags[0].textContent).toBe("Printed in The HobbitHOB");
+    // After the pips: the name, then its pips, then the tag, in one line.
+    const line = [...tags[0].parentElement!.children];
+    expect(line.indexOf(tags[0])).toBe(line.length - 1);
+    expect(line[line.length - 2].querySelector("[aria-label], svg, span")).not.toBeNull();
   });
 
   it("draws no tag when no set was asked", () => {

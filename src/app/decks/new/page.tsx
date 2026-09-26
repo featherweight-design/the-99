@@ -7,7 +7,7 @@ import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
-import { MAX_THEMES } from "../../../lib/intake/answers";
+import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
 import { serializeChooseParams } from "../../../lib/intake/params";
@@ -41,7 +41,8 @@ export default async function NewDeckPage({
           // block still lists every theme the player asked for.
           themes: answers.themes.slice(0, MAX_THEMES).map((t) => t.label),
           themeJoin: answers.themeJoin,
-          sets: answers.sets.map((s) => s.code),
+          // The first eight, as the themes are: they write the brief alone, bounded at that.
+          sets: answers.sets.slice(0, MAX_SETS).map((s) => s.code),
           // A card whose read failed is still the answer: `createDeck` checks it against the catalog.
           cardOracleId: answers.card?.oracleId ?? (answers.cardUnread ? asked.card : null),
           budgetDollars: answers.budgetDollars,

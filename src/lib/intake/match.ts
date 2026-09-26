@@ -22,10 +22,10 @@ import { singularForms } from "../edhrec/tag-kinds";
  * all of. There is one join for every theme, so a single "or" between any two makes it any. A clause
  * mark other than a comma, or any word that is not a stop word, ends the phrase.
  *
- * SETS (addendum §2): a set's NAME matches anywhere, under the card rule below (one word needs its
- * capital), after a theme or a card that shares its words. A set's CODE matches only typed in
- * capitals (`HOB`) or beside the word "set" or "sets" (`hob set`), because `all`, `big`, `one`,
- * `war`, `who`, `ice` and `mid` are all codes and "a big deck with all the wizards" names no set.
+ * SETS (addendum §2): a set's NAME matches anywhere, after a theme or a card sharing its words. A set's CODE matches only typed in
+ * capitals (`HOB`), or in lower case beside "set" or "sets" when it holds a digit (`m21 set`):
+ * `all`, `big`, `one`, `war`, `who`, `ice` and `mid` are all codes, and "a big deck from all sets"
+ * names no set. A set's name, at any length, needs a capital on one of its words.
  * The words "set" and "sets" beside a matched set are used, not left over.
  *
  * A ONE-WORD CARD NAME MATCHES ONLY WHEN TYPED WITH A CAPITAL. The catalog holds `Fog`, `Opt`,
@@ -198,7 +198,12 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
   for (let i = 0; i < words.length; i++) {
     for (let n = Math.min(index.maxWords, words.length - i); n >= 1; n--) {
       const key = words.slice(i, i + n).map((w) => w.word).join(" ");
-      const target = (index.targets.get(key) ?? []).find((t) => t.kind === "theme" || n > 1 || /^\p{Lu}/u.test(words[i].raw.replace(/^[^\p{L}\p{N}]+/u, "")));
+      const capitalAt = (k: number) => /^\p{Lu}/u.test(words[k].raw.replace(/^[^\p{L}\p{N}]+/u, ""));
+      const target = (index.targets.get(key) ?? []).find((t) =>
+        t.kind === "theme"
+        // A set is a proper name at any length: `game night` and `the list` are words, `Game
+        // Night` and `The List` are sets. Some word in the span must carry its capital.
+        || (t.kind === "set" ? Array.from({ length: n }, (_, d) => i + d).some(capitalAt) : n > 1 || capitalAt(i)));
       if (!target) continue;
       found.push({ at: words[i].at, chip: target });
       if (target.kind === "theme") themeSpans.push([i, i + n - 1]);
@@ -226,9 +231,16 @@ export function matchWords(text: string, index: PhraseIndex): MatchResult {
     if (!set) continue;
     const bare = words[k].raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
     const capitals = /^[A-Z0-9]+$/.test(bare) && /[A-Z]/.test(bare);
-    const after = nearSetWord(k, 1);
-    const before = after < 0 ? nearSetWord(k, -1) : -1;
+    // In lower case only a code no one would type as a word counts beside "set(s)": one with a
+    // digit (`m21 set`). A letters-only code is an English word as often as a set (`all sets`,
+    // `one set`, `the big set`), and a set read in error cuts the results to that one set.
+    const wordlike = /^[a-z]+$/.test(bare);
+    const after = capitals || wordlike ? -1 : nearSetWord(k, 1);
+    const before = capitals || wordlike || after >= 0 ? -1 : nearSetWord(k, -1);
     if (!capitals && after < 0 && before < 0) continue;
+    // Capitals: the word "set(s)" beside the codes is still theirs.
+    const own = capitals ? nearSetWord(k, 1) : -1;
+    if (own >= 0) consumed[own] = true;
     found.push({ at: words[k].at, chip: { kind: "set", code: set.code, name: set.name } });
     consumed[k] = true;
     for (const j of [after, before]) if (j >= 0) consumed[j] = true;

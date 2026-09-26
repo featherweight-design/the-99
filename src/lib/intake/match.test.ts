@@ -157,15 +157,24 @@ describe("sets (three-answers addendum §2)", () => {
     expect(sets("a big deck with all the wizards")).toEqual([]);
   });
 
-  it("reads a lower-case code beside set or sets", () => {
-    expect(sets("cards from the big set")).toEqual(["big"]);
-    expect(sets("hob and hoc sets")).toEqual(["hob", "hoc"]);
+  it("never reads a letters-only code in lower case, even beside set or sets", () => {
+    expect(sets("a commander from all sets")).toEqual([]);
+    expect(sets("cards from the big set")).toEqual([]);
+    expect(sets("hob and hoc sets")).toEqual([]);
   });
 
-  it("reads a set by name, the longest name first, and one word only with its capital", () => {
-    expect(sets("something from the hobbit commander set")).toEqual(["hoc"]);
+  it("reads a lower-case code with a digit beside set or sets", () => {
+    const digits = buildPhraseIndex(themes, cards, [{ code: "m21", name: "Core Set 2021" }]);
+    expect(matchWords("from the m21 set", digits).chips).toEqual([{ kind: "set", code: "m21", name: "Core Set 2021" }]);
+  });
+
+  it("reads a set by name, the longest first, and only with a capital on one of its words", () => {
+    expect(sets("something from the Hobbit Commander set")).toEqual(["hoc"]);
     expect(sets("Alliances please")).toEqual(["all"]);
     expect(sets("alliances please")).toEqual([]);
+    // A two-word name is words as often as a set: `the big score` is no set.
+    expect(sets("go for the big score")).toEqual([]);
+    expect(sets("The Big Score cards")).toEqual(["big"]);
   });
 
   it("keeps a theme over a set sharing its words", () => {

@@ -19,3 +19,12 @@ describe("the Sets field", () => {
     expect(onChange).toHaveBeenCalledWith(["hoc"]);
   });
 });
+
+describe("the Sets panel's options", () => {
+  it("speak a set's name and code, with no count", () => {
+    render(<SetsField sets={sets} value={[]} onChange={vi.fn()} wide />);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by printed-in set/ }));
+    const names = screen.getAllByRole("option").map((o) => o.getAttribute("aria-label") ?? o.textContent);
+    expect(names.some((n) => /commander/.test(n ?? ""))).toBe(false);
+  });
+});

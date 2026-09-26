@@ -20,6 +20,8 @@ const PANEL_COPY: FilterPanelCopy = {
   triggerCount: collectionFilterCopy.set.triggerCount,
   // The phone's sheet is titled as the field is, not as the lanes' control.
   sheetTitle: copy.sets,
+  // No counts here (`showCounts={false}`), so none is spoken: the lanes' own reads "0 commanders".
+  optionAria: (setName: string) => setName,
 };
 
 export function SetsField({

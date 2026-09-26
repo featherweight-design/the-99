@@ -98,7 +98,8 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
     db.execute(sql`
       select c.oracle_id, c.name, c.type_line from cards c where c.commander_legal
     `).then((r) => r.rows as { oracle_id: string; name: string; type_line: string }[]),
-    loadCommanderPrintings(),
+    // The sets are one answer among many: a failed read matches no set rather than every submit.
+    loadCommanderPrintings().catch(() => ({ sets: [] })),
   ]);
   return buildPhraseIndex(themes, cards
     .filter((c) => !isBasicLand(c.type_line))
