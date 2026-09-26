@@ -144,7 +144,7 @@ Out of scope: banner (2d/2i), stale/committed date forms, header chips, all shee
 | Margin | 22px 0 0 | 0 |
 | Live region | frame: `aria-live="polite"`; the loading heading is the live region | same |
 | 2a | `Five brackets. Your cards pick which.` | same |
-| 2b | `Reading your deck…` (U+2026) | same |
+| 2b | `Working out your bracket…` (U+2026) | same |
 | 2c | `We could not finish reading this deck.` | same |
 
 ### Body paragraph(s)
@@ -381,7 +381,7 @@ Out of scope: banner (2d/2i), stale/committed date forms, header chips, all shee
 | State | Triggering condition | Mobile (390) | Desktop (1300) |
 |---|---|---|---|
 | 2a idle | Never analyzed: no stored reading, nothing in flight | Ring at full ink, the idle heading, two body paragraphs, stretched Analyze, the opener below it, the mix | The same, ring left, Analyze and the opener side by side |
-| 2b loading, nothing held | Analyze pressed; request in flight; nothing held | Ring animating `at-wave` (still at full ink under reduced motion), `Reading your deck…` as the live region, one body, Analyze disabled | same |
+| 2b loading, nothing held | Analyze pressed; request in flight; nothing held | Ring animating `at-wave` (still at full ink under reduced motion), `Working out your bracket…` as the live region, one body, Analyze disabled | same |
 | 2c failed, nothing held | The read failed and no reading is held | Ring at 0.3 and still, the failure heading and body, Try again in bone, opener kept | same |
 | 2e range, asked | Reading permits a range, e.g. `[4,5]`, and nothing is declared | Two marks (the upper at 0.65), `Optimized or cEDH`, `analyzed {when}`, reason, two ask chips (44px, 2-col), population foot | The same in the right third; chips 36px |
 | 2f range, answered | Range, and the player has declared | One mark and the declared name, the range reason, `Declared {name} for version {n}. change` | same |
@@ -392,7 +392,7 @@ Out of scope: banner (2d/2i), stale/committed date forms, header chips, all shee
 | Property | Mobile (390) | Desktop (1300) |
 |---|---|---|
 | Settle announcement | once, on settle: `Analysis ready. Your cards permit {range}.` (STATES §E; string owed, audit §7) | same |
-| Loading | the heading `Reading your deck…` is the live region | same |
+| Loading | the heading `Working out your bracket…` is the live region | same |
 | Failure (2c) | the heading's own `role="alert"` | same |
 | Ring | `aria-hidden` | same |
 

@@ -9,8 +9,10 @@
 // Which path is walked is the server's to decide, by how long its stub takes: run the dev server
 // with SYNOPSIS_STUB_DELAY_MS=3000 and PROBE_HOLD=held, then with SYNOPSIS_STUB_DELAY_MS=30000 and
 // PROBE_HOLD=fallback. The stub spends nothing. The press writes a reading and an overview onto a
-// deck that had neither; both are deleted again in a `finally`, with the overview's ledger unit, so
-// the account keeps its credits. Point PROBE_TARGET_URL at a scratch branch or local-dev, never
+// legal, whole deck with no overview; both are deleted again in a `finally`, with the overview's
+// ledger unit, so the account keeps its credits. A reading the deck ALREADY had is held on disk
+// first (`profile-hold.mjs`) and put back in that `finally`: the only legal whole decks the
+// local-dev fixture account holds have one. Point PROBE_TARGET_URL at a scratch branch or local-dev, never
 // production.
 //
 //   PROBE_TARGET_URL=<local-dev> PROBE_EMAIL=<+clerk_test account> PROBE_HOLD=held \
@@ -23,6 +25,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { holdProfile } from "./lib/profile-hold.mjs";
 
 const { E2E_AUDIT_USER_EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const TARGET = process.env.PROBE_TARGET_URL;
@@ -35,7 +38,7 @@ if (MODE !== "held" && MODE !== "fallback") throw new Error("Set PROBE_HOLD to h
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 const HOLD_MS = 25_000;
-const READING = "Reading your deck…";
+const READING = "Working out your bracket…";
 const WRITING = "Writing the overview…";
 const sql = neon(TARGET);
 
@@ -144,21 +147,45 @@ async function run() {
   // Filled BEFORE the press each one covers: the deck, and the overview rows it held already.
   const created = new Map();
   let deck = null;
+  // Set once the deck's own reading is held on disk; called last in the `finally`.
+  let restoreProfile = null;
   try {
     for (const width of [1300, 390]) {
       const at = (s) => `${s} @ ${width}`;
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
       const userId = await signIn(page);
-      // A whole deck with no reading and no overview: the press is a first press that writes. Chosen
-      // once, and reset after each width, so both widths measure the same deck.
+      // A legal, whole deck with no overview: the press is a first press that writes, once its reading
+      // is held and cleared below. Chosen once, and reset after each width, so both widths measure the
+      // same deck.
       if (!deck) [deck] = await sql`
         select d.id, d.name from decks d where d.user_id = ${userId}
-          and not exists (select 1 from deck_profiles p where p.deck_id = d.id)
           and not exists (select 1 from deck_synopses s where s.deck_id = d.id)
-          and (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id) >= 98
+          -- WHOLE, exactly (\`deckLegality\`): 99 for a single commander, 98 for a pair. \`>= 98\` let a
+          -- single at 98 through, and the analysis reads such a deck as bracket-only.
+          and (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id)
+            = case when d.partner_oracle_id is null then 99 else 98 end
+          -- And LEGAL: no card the format bans or the commanders' identity excludes, the COMMANDERS
+          -- included. The first version picked "Version fixture - reads differently, single", led
+          -- by "Brims" Barone, which is not Commander-legal, so the analysis read it bracket-only.
+          and not exists (
+            select 1 from cards cm
+            where cm.oracle_id in (d.commander_oracle_id, d.partner_oracle_id) and not cm.commander_legal
+          )
+          and not exists (
+            select 1 from deck_cards c join cards k on k.oracle_id = c.oracle_id
+            where c.deck_id = d.id
+              and (not k.commander_legal or not (k.color_identity <@ (
+                select coalesce(array_agg(distinct ci), '{}') from cards cm, unnest(cm.color_identity) ci
+                where cm.oracle_id in (d.commander_oracle_id, d.partner_oracle_id)
+              )))
+          )
         order by d.name limit 1`;
-      if (!deck) throw new Error("The account has no whole deck without a reading and an overview.");
+      if (!deck) throw new Error("The account has no legal, whole deck without an overview.");
+      if (!restoreProfile) {
+        restoreProfile = await holdProfile(sql, deck.id);
+        await sql`delete from deck_profiles where deck_id = ${deck.id}`;
+      }
       if (!created.has(deck.id)) created.set(deck.id, (await sql`select id from deck_synopses where deck_id = ${deck.id}`).map((r) => r.id));
 
       await page.addInitScript(OBSERVE);
@@ -228,6 +255,15 @@ async function run() {
     // Each step on its own, so one failing cannot skip the rest.
     for (const [id, before] of created) await reset(id, before);
     console.log(`cleaned up ${created.size} deck(s)`);
+    // After the reset, which deletes whatever reading the run left: this puts the deck's own back.
+    if (restoreProfile) {
+      try {
+        await restoreProfile();
+      } catch (error) {
+        console.error(`cleanup: ${error.message}`);
+        process.exitCode = 1;
+      }
+    }
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   process.exitCode = failures === 0 ? 0 : 1;

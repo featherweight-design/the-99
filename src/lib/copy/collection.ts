@@ -213,7 +213,9 @@ export const collectionFilterCopy = {
   // shared: a partial block would make FilterPanelCopy optional for everyone.
   type: {
     triggerLabel: "Type",
-    triggerOne: (typeName: string) => `Type: ${typeName}`,
+    // Counts, as Set does (#1050; Hugh, 2026-09-27): a type's name grew the trigger and moved
+    // the row. The names live in the chip row.
+    triggerCount: (n: number) => (n <= 1 ? `Type ${n}` : `Types ${n}`),
     triggerAriaCollapsed: "Filter by type, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by type, ${count(n)} selected, collapsed`,
 
@@ -261,7 +263,9 @@ export const collectionFilterCopy = {
   // group strings) are inert here, exactly as they are in the `type` block.
   availability: {
     triggerLabel: availabilityCopy.collection.filterLabel,
-    triggerOne: (name: string) => `${availabilityCopy.collection.filterLabel}: ${name}`,
+    // Counts, as Set does. No plural: "Availabilities" names nothing a reader picks, and the
+    // figure counts the states on.
+    triggerCount: (n: number) => `${availabilityCopy.collection.filterLabel} ${n}`,
     triggerAriaCollapsed: "Filter by availability, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by availability, ${count(n)} selected, collapsed`,
 

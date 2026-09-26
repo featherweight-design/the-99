@@ -14,7 +14,7 @@ import { WorkPulse } from "./work-pulse";
  * - `failed` (2d): the re-read failed and the reading is from before the changes. `role="alert"`,
  *   which is what STATES:49 asks of a failure (the frames' `status` is conflict C4).
  * - `busy`: the press is in flight. The button disables in place and shows the work: the pulse and
- *   *Reading your deck…* replace its label, and the credit note goes, because the press already drew
+ *   *Working out your bracket…* replace its label, and the credit note goes, because the press already drew
  *   it (addendum_overview_loading 1a, which supersedes STATES:19's "keeps its label"). The reading
  *   under it stays. A failed-mode *Try again* runs the same read, so it takes the same form.
  * - `blocked`: the deck is not whole (ruling 1). The sentence becomes the reason and the button is

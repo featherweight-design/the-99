@@ -144,7 +144,7 @@ describe("AnalysisPanel", () => {
 
   // A press over a held reading: the button disables IN PLACE and the reading stays.
   // 1a, re-analysis (addendum_overview_loading): the button disables in place and shows the work,
-  // the pulse and *Reading your deck…* in place of its label, and the credit note goes.
+  // the pulse and *Working out your bracket…* in place of its label, and the credit note goes.
   it("keeps the reading while a re-read runs, the button disabled in place and working", () => {
     draw({ kind: "loading", held: reading({ fresh: false }) }, { pressNote: { analyze: null, reanalyze: "Also writes the overview, using a credit." } });
     const button = within(banner()!).getByRole("button", { name: deckAnalysisCopy.panel.loading.heading });

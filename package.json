@@ -80,6 +80,7 @@
     "probe:pending": "node scripts/probe-pending-banner.mjs",
     "probe:deck-menu-stack": "node scripts/probe-deck-menu-stack.mjs",
     "probe:fits-stack": "node scripts/probe-fits-stack.mjs",
+    "probe:banner-busy": "node scripts/probe-banner-busy.mjs",
     "probe:review": "node scripts/probe-review-changes.mjs",
     "probe:review-columns": "node scripts/probe-review-columns.mjs",
     "probe:set-chip": "node scripts/probe-set-chip.mjs",

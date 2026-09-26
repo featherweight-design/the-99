@@ -19,7 +19,7 @@ lands after its verdict. Hugh ruled that a first press holds the tab instead (A,
 | Rule | Build |
 |---|---|
 | A first Analyze that also writes holds the empty state's ring through the write | `staged` / `hold` in `builder-shell.tsx`; `AnalysisPanel` `hold` prop ✅ |
-| The heading steps through the stages | `Reading your deck…` while the bracket is read, then `panel.writing` (`Writing the overview…`, the slot's own wording per `/copy-review`) ✅ |
+| The heading steps through the stages | `Working out your bracket…` while the bracket is read, then `panel.writing` (`Writing the overview…`, the slot's own wording per `/copy-review`) ✅ |
 | Verdict, overview and Suggested changes paint together | Behind the loader the reading is mounted hidden while the overview is written, so Suggested changes reads then. Probe: one frame at both widths ✅ |
 | A failed or refused write releases at once | The write's promise `finally` ends the hold, so the slot draws 1d or 7h ✅ |
 | A time limit releases onto 1b | `OVERVIEW_HOLD_MS` = 25s. Probe: 25.0s at both widths ✅ |
@@ -30,7 +30,7 @@ lands after its verdict. Hugh ruled that a first press holds the tab instead (A,
 
 - **Two stages, not three.** Reading the deck and determining the bracket are one server call
   (`fetchDeckProfile`), so no third stage can be timed honestly. Stage one keeps the shipped
-  `Reading your deck…`; `/copy-review` settles its wording against Hugh's
+  `Working out your bracket…`; `/copy-review` settles its wording against Hugh's
   `Determining your bracket…`.
 - **The limit is 25s, not 15s.** Five live writes on Hugh's pulled decks each made one model call
   and took 17.0, 17.3, 17.9, 18.2 and 18.3s. At 15s every first press would fall back. A write
@@ -44,8 +44,8 @@ lands after its verdict. Hugh ruled that a first press holds the tab instead (A,
 
 | State | Trigger | Rendered | Build |
 |---|---|---|---|
-| 1a first press | profile loading, no reading | 2b ring, `Reading your deck…` | Unchanged ✅ |
-| 1a re-analysis | profile loading over a stale reading | Banner button disabled in place: pulse + `Reading your deck…`, no note; Overview untouched | `AnalysisBanner` busy form ✅ |
+| 1a first press | profile loading, no reading | 2b ring, `Working out your bracket…` | Unchanged ✅ |
+| 1a re-analysis | profile loading over a stale reading | Banner button disabled in place: pulse + `Working out your bracket…`, no note; Overview untouched | `AnalysisBanner` busy form ✅ |
 | 1b first press (fallback only, per the ruling) | `busy \|\| pending`, no synopsis | Status row: pulse + `Writing the overview…` | `overview-writing` ✅ |
 | 1b re-analysis | `busy \|\| pending` over a held synopsis | Label row: pulse + `writing a new one for your changes`; held paragraph whole; no ruling D row | `overview-writing-new` ✅ |
 | 1c | re-read after a write, current | Paragraph + `View full overview →`; `Overview ready.` once | Paragraph keyed on the synopsis id; `anim-overview-in` when it replaces a held one ✅ |
@@ -101,7 +101,7 @@ lands after its verdict. Hugh ruled that a first press holds the tab instead (A,
 | min-height | 44px | 36px | ✅ |
 | padding | 0 16px | 0 16px | `px-[16px]` while busy ✅ |
 | Fill / ink | `--elevated` / `--fg-faint` | Same | ✅ |
-| Content | pulse + `Reading your deck…`, gap 9px | Same | ✅ |
+| Content | pulse + `Working out your bracket…`, gap 9px | Same | ✅ |
 | Credit note | hidden while busy | Same | ✅ |
 
 ## Motion

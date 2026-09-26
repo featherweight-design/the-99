@@ -758,7 +758,7 @@ already custom and already right.
 | 3 · Open, with query | query matches ≥1 owned set | panel + `N matches` group + filtered list, no group split | `query`, filtered `options`, `announceMatches(n, query)` |
 | 4 · No results | query matches 0 owned sets | panel + empty state; footer dropped (desktop) | `query`, `onClearSearch`, `emptyTitle`, `emptyBody(query)` |
 | 5 · One selected | one set toggled on, panel dismissed | filter bar + 1 chip + `Set 1 ▾` | `selected=['blb']`, chip row given the new filter |
-| 6 · Many selected | 3 sets toggled on **with `Type: Instant` also active** | panel reopened with pinned `Selected · 3` group, filter-aware counts, ≥1 zero-count disabled row | `selected[]`, `options[].count` computed under the other filters, `options[].disabled` |
+| 6 · Many selected | 3 sets toggled on **with `Type 1` (Instant) also active** | panel reopened with pinned `Selected · 3` group, filter-aware counts, ≥1 zero-count disabled row | `selected[]`, `options[].count` computed under the other filters, `options[].disabled` |
 | 7 · Keyboard focus walk | keyboard-only operation, 4 ordered frames | trigger focus ring → panel with input focused → active row + toggle → trigger refocused | `aria-activedescendant`, focus-return ref on the trigger |
 | Row · default | option is enabled and unselected | `li[role=option][aria-selected=false]` | `option.label`, `option.count` |
 | Row · hover | pointer over the row (desktop) | `li` with `#221D16` fill | CSS only |
@@ -846,10 +846,10 @@ Two deliberately distinct brass rings:
 The decided half is not ambiguous. Decision 5, verbatim:
 
 > A count that ignores the rest of the bar promises results the list won't show. So the figure is
-> "cards you own from this set **that would survive your other filters**" — with `Type: Instant`
+> "cards you own from this set **that would survive your other filters**" — with Instant picked in `Type 1`
 > active, Bloomburrow reads `12`, not `142` (state 6).
 
-State 6 on the canvas is the proof: with `Type: Instant` active, `Bloomburrow` reads `12`,
+State 6 on the canvas is the proof: with Instant picked in `Type 1`, `Bloomburrow` reads `12`,
 `Modern Horizons 3` reads `7`, `Wilds of Eldraine` reads `9`, `Duskmourn` reads `8`, and
 `Adventures in the Forgotten Realms` reads `0` and is dimmed to `opacity .42` — where the same
 Bloomburrow row reads `142` in states 2 and 3 with no other filter active. Implementations must
