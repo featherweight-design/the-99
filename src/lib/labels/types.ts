@@ -26,9 +26,14 @@ import type { Role } from "../recs/roles";
 import type { Theme } from "../recs/themes";
 
 /**
- * The five job kinds in `role` space, tied to `Role` in src/lib/recs/roles.ts by
- * `satisfies` — so a role added there and not here is a compile error rather than a
- * silent third copy. The `.mjs` copy cannot have that tie; the test is what covers it.
+ * The five job kinds in `role` space, tied to `Role` in src/lib/recs/roles.ts.
+ *
+ * **`satisfies` alone is NOT enough, and the first version of this claimed otherwise.**
+ * It rejects a member that is not a `Role` and says nothing about a `Role` that is
+ * missing — so a role added to `roles.ts` would have left this array stale, the parity
+ * test would still have passed (both copies omitting it), and the validator would simply
+ * never accept the new role. `Missing` below is the other half: it resolves to `never`
+ * only when every `Role` is present, so an addition upstream is a compile error here.
  */
 export const ROLES = ["ramp", "draw", "removal", "wipes", "land"] as const satisfies readonly Role[];
 
@@ -42,6 +47,21 @@ export const THEMES = [
   "protection", "recursion", "blink", "finisher", "castFree", "mill", "sacOutlet",
   "deathTrigger", "lifegain", "drain", "spellslinger", "landfall", "tribal",
 ] as const satisfies readonly Theme[];
+
+/**
+ * EXHAUSTIVENESS, which `satisfies` does not give. Each of these is `never` when the
+ * local list covers its upstream union, and a union of the missing members otherwise —
+ * so adding a theme to `RULES` in src/lib/recs/themes.ts fails to compile here, naming
+ * the theme in the error rather than leaving a stale array nothing checks.
+ *
+ * The CONSTRAINT is what does the work, and the first version got this wrong: it declared
+ * `const _: Missing[] = []`, and an empty array is assignable to any array type, so
+ * adding a role upstream compiled cleanly. Passing the union through a parameter bounded
+ * by `never` is what actually fails. Proved by adding a role and watching it error.
+ */
+type Covers<Missing extends never> = Missing;
+type _EveryRoleIsListed = Covers<Exclude<Role, (typeof ROLES)[number]>>;
+type _EveryThemeIsListed = Covers<Exclude<Theme, (typeof THEMES)[number]>>;
 
 export const SPACES = ["role", "theme"] as const;
 
@@ -90,14 +110,22 @@ export type Threshold = { stat: ThresholdStat; op: ThresholdOp; value: number };
  * `modal` is true when this job is one option AMONG ALTERNATIVES rather than something
  * the card also does. Anything summing a card's jobs must not credit both halves of a
  * modal pair.
+ *
+ * **Discriminated on `space`**, because `kind: Role | Theme` did not encode the
+ * relationship the validator enforces: it accepted `{space: "role", kind: "tribal"}` and
+ * `{space: "theme", kind: "land"}`, both of which `validateJob` rejects — it picks the
+ * vocabulary BY space. A storage type that can represent what the wire contract calls
+ * invalid is a trap for the first writer to use it, and `rampKind` is the same rule one
+ * level down: it belongs to the ramp ROLE, so the theme arm forbids it outright.
  */
-export type Job = {
-  space: Space;
-  kind: Role | Theme;
-  rampKind?: RampKind | null;
+type Limits = {
   restrictedTo: string | null;
   trigger: Trigger;
   recurrence: Recurrence;
   threshold: Threshold | null;
   modal: boolean;
 };
+
+export type Job =
+  | (Limits & { space: "role"; kind: Role; rampKind?: RampKind | null })
+  | (Limits & { space: "theme"; kind: Theme; rampKind?: never });

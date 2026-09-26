@@ -72,3 +72,40 @@ describe("the stored label vocabulary is the one the validator enforces", () => 
     });
   }
 });
+
+/**
+ * The relationship `kind: Role | Theme` could not express. `validateJob` picks the
+ * vocabulary BY `space`, so a role kind in theme space is rejected at runtime — and used
+ * to typecheck. These are compile-time assertions with a runtime shell, because a type
+ * error is the whole point: `@ts-expect-error` fails the build if the line it guards
+ * starts compiling, which is what makes the union's collapse visible.
+ */
+describe("Job encodes the space-to-kind relationship the validator enforces", () => {
+  const limits = {
+    restrictedTo: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
+  } as const;
+
+  it("accepts a role kind in role space and a theme kind in theme space", () => {
+    const role: Job = { space: "role", kind: "ramp", rampKind: "tapsForMana", ...limits };
+    const theme: Job = { space: "theme", kind: "tribal", ...limits };
+    expect([role.kind, theme.kind]).toEqual(["ramp", "tribal"]);
+  });
+
+  it("rejects a theme kind in role space", () => {
+    // @ts-expect-error — `tribal` is a Theme, and this arm's kind is a Role
+    const bad: Job = { space: "role", kind: "tribal", ...limits };
+    expect(bad.space).toBe("role");
+  });
+
+  it("rejects a role kind in theme space", () => {
+    // @ts-expect-error — `land` is a Role, and this arm's kind is a Theme
+    const bad: Job = { space: "theme", kind: "land", ...limits };
+    expect(bad.space).toBe("theme");
+  });
+
+  it("rejects a rampKind on a theme job", () => {
+    // @ts-expect-error — rampKind belongs to the ramp role, not to theme space
+    const bad: Job = { space: "theme", kind: "treasure", rampKind: "makesTreasure", ...limits };
+    expect(bad.space).toBe("theme");
+  });
+});
