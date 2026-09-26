@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 /**
  * Refusing a pull from a deck that has locked the card (L2: Pull it never takes from a deck where
@@ -96,6 +97,7 @@ export async function lockedOracleIds(
     return new Set(result.rows.map((r) => r.oracle_id));
   } catch (err) {
     if (onError === "throw") throw err;
+    recordSoftFailure();
     return new Set<string>();
   }
 }

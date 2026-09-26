@@ -120,3 +120,38 @@ export function listCacheProblems(perUser = tablesRead().perUser, triggers = tri
   }
   return problems;
 }
+
+/** The text from `open` to its matching `close`, or to the end when unbalanced. */
+function balanced(source, start, open, close) {
+  let depth = 0;
+  for (let i = start; i < source.length; i++) {
+    if (source[i] === open) depth++;
+    else if (source[i] === close && --depth === 0) return source.slice(start, i + 1);
+  }
+  return source.slice(start);
+}
+
+/**
+ * Every `catch` on a cached page's path that neither records a fallback nor says why it is not
+ * one. A caught error that hands back something drawable (an empty map, the oracle art) is a
+ * FALLBACK, and a page payload built over one must not be stored: `recordSoftFailure()` is how
+ * the cache hears about it. A catch that rethrows, only loses a key, or makes the page
+ * uncacheable some other way says so with a `not a fallback:` comment in its body.
+ *
+ * Both forms are read: the statement's body up to its matching brace, and `.catch(...)` up to
+ * its matching parenthesis.
+ */
+export function unrecordedCatches(files = loaderFiles()) {
+  const out = [];
+  for (const file of files) {
+    const source = readFileSync(file, "utf8");
+    for (const m of source.matchAll(/\bcatch\s*(\([^)]*\))?\s*\{|\.catch\(/g)) {
+      const body = m[0].startsWith(".")
+        ? balanced(source, m.index + m[0].length - 1, "(", ")")
+        : balanced(source, m.index + m[0].length - 1, "{", "}");
+      if (/recordSoftFailure\(\)|not a fallback:/.test(body)) continue;
+      out.push(`UNRECORDED ${file}:${source.slice(0, m.index).split("\n").length} catches and falls back without recordSoftFailure()`);
+    }
+  }
+  return out;
+}

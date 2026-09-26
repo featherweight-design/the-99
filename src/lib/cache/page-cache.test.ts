@@ -16,6 +16,7 @@ vi.mock("./user-data-stamp", () => ({ userDataStamp: vi.fn(async () => stamp.val
 
 import { cacheForUser } from "./user-lists";
 import { cachePageForUser } from "./page-cache";
+import { recordSoftFailure } from "./soft-failure";
 
 describe("cachePageForUser", () => {
   beforeEach(() => {
@@ -53,6 +54,15 @@ describe("cachePageForUser", () => {
     expect(store.size).toBe(0);
     await cachePageForUser("u1", "home", [], load);
     expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("serves a load during which a read fell back, and stores nothing", async () => {
+    const load = vi.fn(async () => {
+      recordSoftFailure();
+      return { value: { inUse: [] }, store: true };
+    });
+    expect(await cachePageForUser("u1", "home", [], load)).toEqual({ inUse: [] });
+    expect(store.size).toBe(0);
   });
 
   it("caches nothing when the stamp cannot be read", async () => {

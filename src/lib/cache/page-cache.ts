@@ -14,7 +14,8 @@
  *
  * A `load` that returns `store: false` is served and not stored. That is how a degraded
  * ranking stays out of the cache: it recomputes on every visit by design, and a stored copy
- * would freeze it until the reader next writes something.
+ * would freeze it until the reader next writes something. A load during which any read fell
+ * back (`soft-failure.ts`) is not stored either, for the same reason.
  */
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
@@ -22,6 +23,7 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { noticesEnabled } from "../notices/flag";
 import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
+import { watchSoftFailures } from "./soft-failure";
 import { userDataStamp } from "./user-data-stamp";
 
 const DEPLOYMENT = process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
@@ -54,13 +56,14 @@ export async function cachePageForUser<T>(
   if (stamp === null) return (await load()).value;
   try {
     const text = await cacheForUser(userId, ["page", page, DEPLOYMENT, switches(), String(stamp), ...key], async () => {
-      const result = await load();
+      const { value: result, fellBack } = await watchSoftFailures(load);
       // Thrown rather than returned: the data cache stores whatever the function returns.
-      if (!result.store) throw new NotStored(result.value);
+      if (!result.store || fellBack) throw new NotStored(result.value);
       return encodePlain(result.value);
     });
     return decodePlain<T>(text);
   } catch (error) {
+    // not a fallback: a result carried out unstored, or the load's own error rethrown.
     if (error instanceof NotStored) return error.value as T;
     throw error;
   }

@@ -349,6 +349,7 @@ export async function loadScores(
     };
   } catch (err) {
     if (!isSchemaLagError(err)) throw err;
+    // not a fallback: an empty read is a miss, and the caller recomputes the whole list from source.
     return { items: [], degradedOracleIds: [] };
   }
 }
@@ -448,6 +449,7 @@ export async function findScoredCommander(
     return row ?? null;
   } catch (err) {
     if (!isSchemaLagError(err)) throw err;
+    // not a fallback: only the commander detail route asks for one rank, and it caches nothing.
     return null;
   }
 }

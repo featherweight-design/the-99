@@ -2,6 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { SCORE_WRITER_CURRENT } from "../../db/schema";
 import { READY_COUNT } from "./ready-to-build";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 /**
  * How many of each Ready-to-build candidate's themes none of the reader's decks play, which Home's
@@ -82,6 +83,7 @@ export async function loadUnplayedCounts(userId: string): Promise<Map<string, nu
     const { rows } = await db.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(userId));
     return new Map(rows.map((r) => [r.oracleId, r.unplayed]));
   } catch (error) {
+    recordSoftFailure();
     console.error("home novelty: unplayed counts failed; Home rotates without the lean", error);
     return null;
   }

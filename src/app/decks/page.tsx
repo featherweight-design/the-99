@@ -45,9 +45,6 @@ export default async function DecksPage({
   // The whole payload is cached for this reader, keyed on their data stamp: see page-cache.ts
   // for why that is correct after any write, from anywhere.
   const data = await cachePageForUser(userId, "decks", [], async () => {
-    // Set when a tolerated read fell back. The page still draws, and is not stored: a transient
-    // error would otherwise stand until the reader next writes something.
-    let fellBack = false;
     const [decks, shopping, folders] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move
       // under it. The server hands back this order and the client re-sorts from
@@ -68,7 +65,6 @@ export default async function DecksPage({
         includeBracket,
         // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
         includeNotice: includeBracket && noticesEnabled(),
-        onSoftFailure: () => { fellBack = true; },
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.
@@ -101,7 +97,7 @@ export default async function DecksPage({
         cards: stats?.totalCards ?? 0,
       },
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
-      store: !ranked?.degraded && !fellBack,
+      store: !ranked?.degraded,
     };
   });
 

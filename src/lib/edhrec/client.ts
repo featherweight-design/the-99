@@ -78,6 +78,7 @@ export async function resolveEdhrecData(
       });
     return { data: parseEdhrecPayload(payload), unreachable: false };
   } catch {
+    // not a fallback: an unreachable EDHREC is reported as degraded, which no page stores.
     // Network error, timeout, or 5xx. If we have any cache — even stale — the
     // user still gets synergy data, so we're not user-visibly degraded.
     if (cached) return { data: parseEdhrecPayload(cached.payload), unreachable: false };
@@ -128,6 +129,7 @@ export async function fetchEdhrecUncached(commanderName: string): Promise<Edhrec
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
     return { data: parseEdhrecPayload(await res.json()), unreachable: false };
   } catch {
+    // not a fallback: reported as unreachable, which makes the list degraded and unstored.
     return { data: null, unreachable: true };
   }
 }

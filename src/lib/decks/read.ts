@@ -47,6 +47,7 @@ import { isReachablePermits } from "../bracket/verdict-head";
 import { storedPermitsSql } from "../profile/stored-sql";
 import { noticeSummarySql, type NoticeSummary } from "../notices/summary-sql";
 import type { DeckSort } from "./sort";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 // ---------------------------------------------------------------------------
 // WUBRG bitmask helpers (tested)
@@ -334,9 +335,10 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   const ownedIds = cardRows.filter((r) => r.owned).map((r) => r.oracleId);
   const availability =
     ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
-          () => null,
-        )
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => {
+          recordSoftFailure();
+          return null;
+        })
       : null;
 
   // The printed name and the art both come from the player's own copy, which this
@@ -464,7 +466,10 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 export async function readNoteFlags(
   oracleIds: string[],
 ): Promise<Map<string, CardBracketFlags> | null> {
-  return loadBracketFlags(oracleIds).catch(() => null);
+  return loadBracketFlags(oracleIds).catch(() => {
+    recordSoftFailure();
+    return null;
+  });
 }
 
 /**
@@ -915,12 +920,6 @@ export async function listDecksWithStats(
      * a correlated subquery per deck on the list's hot path.
      */
     includeNotice?: boolean;
-    /**
-     * Told when a tolerated read failed and the list fell back (no in-use clause, or the status
-     * pill from ownership alone). A caller that caches the list must not store one of those: a
-     * transient error would otherwise stand for as long as the entry does.
-     */
-    onSoftFailure?: (read: "availability" | "buyRows") => void;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -1072,7 +1071,7 @@ export async function listDecksWithStats(
   const availability =
     opts.includeInUseElsewhere && rows.length > 0
       ? await loadAvailability(userId).catch(() => {
-          opts.onSoftFailure?.("availability");
+          recordSoftFailure();
           return null;
         })
       : null;
@@ -1119,7 +1118,7 @@ export async function listDecksWithStats(
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip
     ? await loadDeckBuyRows(userId).catch(() => {
-        opts.onSoftFailure?.("buyRows");
+        recordSoftFailure();
         return [];
       })
     : [];

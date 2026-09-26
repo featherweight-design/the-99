@@ -22,6 +22,7 @@ export async function userDataStamp(userId: string): Promise<number | null> {
     // No row means no write since the trigger shipped.
     return row?.stamp ?? 0;
   } catch {
+    // not a fallback: an unreadable stamp makes the caller render uncached.
     return null;
   }
 }

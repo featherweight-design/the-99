@@ -112,6 +112,7 @@ async function assemble(
   try {
     await persistScores(userId, recs.results, generation, indexGen);
   } catch {
+    // not a fallback: the list is already computed and correct; only its store for next time failed.
     // Next load recomputes.
   }
   return {

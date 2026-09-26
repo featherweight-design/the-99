@@ -18,6 +18,7 @@ import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
 import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
+import { recordSoftFailure } from "../lib/cache/soft-failure";
 
 /** What the signed-in Home draws, cached whole. First run draws none of it. */
 type HomePayload =
@@ -113,10 +114,6 @@ export default async function HomePage() {
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
   const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (): Promise<PageLoad<HomePayload>> => {
-    // Set when a tolerated read fell back. The page still draws, and is not stored: a transient
-    // error would otherwise stand until the reader next writes something.
-    let fellBack = false;
-    const onSoftFailure = () => { fellBack = true; };
     const [stats, decks] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
       // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
@@ -142,7 +139,6 @@ export default async function HomePage() {
         // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
         // `/decks` reads it under. 0.83ms on staging.
         includeBracket: analysisTabEnabled(),
-        onSoftFailure,
       })),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
@@ -185,15 +181,14 @@ export default async function HomePage() {
       commitments = commitmentFigures(availability.values());
     } catch {
       // Both consumers render nothing rather than a zero, which would be a claim.
-      fellBack = true;
+      // A fallback, so this render is served and not cached (see soft-failure.ts).
+      recordSoftFailure();
     }
-    // Null only when the read failed: the rotation then walks its plain shuffle.
-    if (unplayed === null) fellBack = true;
 
     return {
       value: { firstRun: false, stats, lastUpdated, ready, inUse, decks, commitments, shopping },
       // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
-      store: !ranked.degraded && !fellBack,
+      store: !ranked.degraded,
     };
   });
   if (data.firstRun) return <FirstRunChecklist />;

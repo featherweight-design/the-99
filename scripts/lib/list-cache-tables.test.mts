@@ -1,8 +1,11 @@
 // `check:list-cache`'s failure paths, each written as the shape that would let a stale page pass.
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  listCacheProblems, loaderFiles, schemaTables, tablesRead, triggeredTables,
+  listCacheProblems, loaderFiles, schemaTables, tablesRead, triggeredTables, unrecordedCatches,
 } from "./list-cache-tables.mjs";
 
 const create = (table: string, column: string, deferred = true) =>
@@ -58,6 +61,40 @@ describe("listCacheProblems", () => {
   });
 });
 
+describe("unrecordedCatches", () => {
+  const file = (source: string) => {
+    const path = join(mkdtempSync(join(tmpdir(), "list-cache-")), "loader.ts");
+    writeFileSync(path, source);
+    return path;
+  };
+
+  it("reports a .catch that hands back a value without recording it", () => {
+    expect(unrecordedCatches([file("const x = await read().catch(() => null);")])).toHaveLength(1);
+  });
+
+  it("reports a catch statement that falls back without recording it", () => {
+    expect(unrecordedCatches([file("try { a(); } catch (err) {\n  log(err);\n  return new Map();\n}")])).toHaveLength(1);
+  });
+
+  it("does not count a conditional rethrow as recording: the other branch still falls back", () => {
+    expect(unrecordedCatches([file("try { a(); } catch (err) {\n  if (strict) throw err;\n  return [];\n}")])).toHaveLength(1);
+  });
+
+  it("accepts a fallback that records itself, and a catch that says why it is not one", () => {
+    expect(unrecordedCatches([file([
+      "const x = await read().catch(() => {\n  recordSoftFailure();\n  return null;\n});",
+      "try { a(); } catch {\n  // not a fallback: the key alone is affected.\n  return KEY;\n}",
+    ].join("\n"))])).toEqual([]);
+  });
+
+  it("reads a catch body to its own closing brace, not past it", () => {
+    // The marker belongs to the SECOND catch; the first must still be reported.
+    expect(unrecordedCatches([file(
+      "try { a(); } catch { return null; }\ntry { b(); } catch {\n  // not a fallback: rethrown.\n  throw e;\n}",
+    )])).toHaveLength(1);
+  });
+});
+
 describe("the shipped tree", () => {
   it("follows the loaders and not the components", () => {
     const files = loaderFiles();
@@ -82,5 +119,9 @@ describe("the shipped tree", () => {
 
   it("has no table the pages read that the stamp does not cover", () => {
     expect(listCacheProblems()).toEqual([]);
+  });
+
+  it("has no fallback on the pages' path that the cache would store", () => {
+    expect(unrecordedCatches()).toEqual([]);
   });
 });
