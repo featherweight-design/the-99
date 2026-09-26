@@ -316,6 +316,52 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   code review's eyes and not in Next's. All three of the check's failure paths were run
   against it before it was believed: a dropped route, a wrong `dynamic` flag, and a stale
   route that no longer reads the collection.
+- **Home and `/decks` cache their whole payload per reader, keyed on a stamp the DATABASE
+  moves** (Performance PR 6). `user_data_stamps` holds one counter per reader, and every
+  per-user table those two pages read carries the `user_data_touch` constraint trigger, which
+  bumps it at COMMIT. `cachePageForUser` (`src/lib/cache/page-cache.ts`) reads the stamp fresh
+  on every request and puts it in the key, beside the catalog generation, the deployment, the
+  switches and, for Home, the UTC date the Ready-to-build pair rotates on. So a write
+  invalidates the pages by construction, whoever wrote it: an action, an `after()`, the render
+  path's own score write, a job or a script. Nothing has to remember to call anything, which
+  is the point: the tag approach had eleven actions writing those tables without clearing it.
+
+  **Deferred to commit, because an immediate stamp can deadlock.** A per-statement trigger
+  takes the reader's stamp row at the first statement and holds it, so two transactions for
+  one reader that also lock two rows in opposite order form a cycle through the stamp. At
+  commit it is the last lock a transaction takes, and nothing in this schema is deferrable, so
+  a transaction waiting on a stamp waits on one that is already committing.
+  `probe:list-stamp` shows both halves: the interleaving commits with the shipped trigger and
+  deadlocks with `set constraints ... immediate`.
+
+  A degraded ranking is served and never stored (`store: false`), because it recomputes on
+  every visit by design. A stamp that cannot be read (a preview deploy runs no migrations)
+  renders uncached rather than wrong.
+
+- `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
+  not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
+  (never `src/components`, which query nothing), and collects every table named by its
+  Drizzle binding or by name in raw SQL. The raw half is not optional: `card_assignments`,
+  `deck_locks`, `deck_proxies` and `pull_releases` are named only in the claim model's SQL,
+  and a binding-only scan passes a page that goes stale on a pull. A table is per-user when
+  its own columns carry `user_id`, `deck_id` or `version_id`. The triggers are read out of the
+  migrations in the order they apply, a later drop retiring an earlier create, and a trigger
+  that is not `DEFERRABLE INITIALLY DEFERRED` does not count. Its failure paths are pinned in
+  `scripts/lib/list-cache-tables.test.mts`, which also runs the whole check against the shipped
+  tree, so CI runs it inside `pnpm test`. Static, no server, no database.
+
+- `pnpm probe:list-stamp` proves the stamp against a real Postgres: every table the check
+  computes carries a deferred trigger keyed on the column it owns; an insert, an update and a
+  delete on each one move the stamp by exactly one, on the run's own fixture rows; a rollback
+  moves nothing, and an update of a whole collection moves it once; and the deadlock pair
+  above. `--timing` runs only its cost section: a collection replace and a commit at the
+  largest account's real sizes, median of 3, which is how the before figure is taken on a
+  database the migration has not reached. Measured on a `pull:staging` copy, the median of three
+  runs each with every trigger disabled and then enabled: a 3,250-row collection replace went
+  544ms to 587ms (about 13 microseconds for each of its ~6,500 row events), and a 96-row commit
+  377ms to 375ms, which is no measurable change. It writes a fixture under a per-run `user_id` and deletes it in a `finally`. Point it
+  at `local-dev` or a scratch branch, **never production**.
+
 - `pnpm pull:staging` copies a player's real decks and collection from **staging** into a local
   database, so a browser probe measures the decks that actually get played rather than a fixture
   built by a script that never buys, never commits and never finishes one. It is the answer to

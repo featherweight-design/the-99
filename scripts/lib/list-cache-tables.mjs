@@ -17,6 +17,7 @@ import { dirname, join, relative, resolve } from "node:path";
 
 export const CACHED_PAGES = ["src/app/page.tsx", "src/app/decks/page.tsx"];
 const OWNER_COLUMNS = ["user_id", "deck_id", "version_id"];
+export const STAMP_TABLE = "user_data_stamps";
 
 /** Every `pgTable` in the schema: binding → { name, owner column or null }. */
 export function schemaTables(source = readFileSync("src/db/schema.ts", "utf8")) {
@@ -77,6 +78,9 @@ export function tablesRead(files = loaderFiles(), tables = schemaTables()) {
       if (table) found.set(table.name, table);
     }
   }
+  // The stamp itself is read by every cached page and is the one table that must NOT carry the
+  // trigger: bumping the stamp would bump the stamp.
+  found.delete(STAMP_TABLE);
   const all = [...found.values()].sort((a, b) => a.name.localeCompare(b.name));
   return { perUser: all.filter((t) => t.owner), catalog: all.filter((t) => !t.owner) };
 }

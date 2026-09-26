@@ -75,6 +75,11 @@ describe("the shipped tree", () => {
     }
   });
 
+  it("reads the stamp, and never counts it as a table the stamp must cover", () => {
+    expect(loaderFiles()).toContain("src/lib/cache/user-data-stamp.ts");
+    expect(tablesRead().perUser.map((t) => t.name)).not.toContain("user_data_stamps");
+  });
+
   it("has no table the pages read that the stamp does not cover", () => {
     expect(listCacheProblems()).toEqual([]);
   });
