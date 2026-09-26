@@ -12,7 +12,7 @@ describe("the choose URL", () => {
 
   it("round-trips every answer", () => {
     const p: ChooseParams = {
-      words: "big lizards", colors: ["r", "g"], match: "exactly", themes: ["dinosaurs", "landfall"],
+      words: "big lizards", colors: ["r", "g"], match: "exactly", themes: ["dinosaurs", "landfall"], themeJoin: "any",
       card: CARD, budgetDollars: 150, bracket: 3, readId: null, notUsed: ["that stomp", "$200"], deeper: ["t:landfall", "b"], results: true,
     };
     expect(parse(serializeChooseParams(p).slice(1))).toEqual(p);

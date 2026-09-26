@@ -54,6 +54,7 @@ describe("narrowOptions", () => {
         { answers: [t("elves"), t("wizards")], count: 1 },
       ],
       widen: null,
+      anyOf: null,
       cardOverBracket: null,
     }, four, tribal);
     expect(opts.map((o) => [o.label, o.count])).toEqual([["Keep only Elves", "98 commanders"], ["Drop Elves and Wizards", "1 commander"]]);
@@ -71,6 +72,7 @@ describe("narrowOptions", () => {
       { answers: [{ kind: "bracket" as const }], count: 0 },
     ],
     widen: { count: 24 },
+    anyOf: null,
     cardOverBracket: "gameChanger" as const,
   };
 

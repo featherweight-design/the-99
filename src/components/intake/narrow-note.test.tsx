@@ -18,6 +18,7 @@ const options = narrowOptions(
       { answers: [{ kind: "colors" }], count: 0 },
     ],
     widen: { count: 6 },
+    anyOf: null,
     cardOverBracket: null,
   },
   p,

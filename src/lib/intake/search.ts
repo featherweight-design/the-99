@@ -47,15 +47,19 @@ type CatalogMemo = {
   /** Built on first ask, from the same themes: a page that needs only the labels never pays for it. */
   index: Promise<PhraseIndex> | null;
 };
-let memo: CatalogMemo | null = null;
+let memo: (CatalogMemo & { ticket: number }) | null = null;
+/** Counts reads in the order they START, which a clock cannot: two in one millisecond tie. */
+let tickets = 0;
 
 async function catalogMemo(now: number): Promise<CatalogMemo> {
+  const ticket = ++tickets;
   const generation = await catalogGeneration();
   if (memo && memo.generation === generation && now - memo.at < CATALOG_MEMO_MS) return memo;
-  const entry: CatalogMemo = { generation, at: now, themes: loadThemeVocabulary(), index: null };
+  const entry = { generation, at: now, ticket, themes: loadThemeVocabulary(), index: null };
   // A read that started earlier never replaces one that started later: around a catalog refresh
-  // an old-generation read can finish last, and must not roll the memo back to it.
-  if (memo && memo.at > now) return entry;
+  // an old-generation read can finish last, and must not roll the memo back to it. Ordered by
+  // the ticket taken before the await, never by `now`, which two reads can share.
+  if (memo && memo.ticket > ticket) return entry;
   memo = entry;
   // A failed read is not kept: the next request tries again.
   entry.themes.catch(() => { if (memo === entry) memo = null; });
