@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GameHistoryRow } from "./game-history-row";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
@@ -114,7 +114,52 @@ describe("GameHistoryRow", () => {
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmNo }));
     expect(deleteGame).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: gameLogCopy.history.confirmYes })).toBeNull();
     expect(screen.getByRole("button", { name: gameLogCopy.history.delete })).toBeInTheDocument();
+  });
+
+  it("sends one delete however fast the confirm is pressed twice", async () => {
+    let settle: (v: { ok: true }) => void = () => {};
+    deleteGame.mockImplementationOnce(() => new Promise((r) => (settle = r)));
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
+    const yes = screen.getByRole("button", { name: gameLogCopy.history.confirmYes });
+    // Both presses inside one act, so React cannot commit `isPending` and disable the button
+    // between them; `fireEvent` twice flushes a render in between and would prove nothing.
+    act(() => {
+      yes.click();
+      yes.click();
+    });
+    await waitFor(() => expect(deleteGame).toHaveBeenCalledTimes(1));
+    settle({ ok: true });
+    await waitFor(() => expect(deleteGame).toHaveBeenCalledTimes(1));
+  });
+
+  it("reads a request that never arrived as a refusal, in the pane", async () => {
+    deleteGame.mockRejectedValueOnce(new Error("offline"));
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmYes }));
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText(gameLogCopy.history.deleteRefused)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: gameLogCopy.history.confirmYes })).toBeEnabled(),
+    );
+  });
+
+  it("does not carry a refusal into the next confirm", async () => {
+    deleteGame.mockResolvedValueOnce({ ok: false, message: gameLogCopy.history.deleteRefused });
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmYes }));
+    await screen.findByRole("alert");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: gameLogCopy.history.confirmNo })).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmNo }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
+    expect(screen.getByRole("button", { name: gameLogCopy.history.confirmYes })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   // The row is not unmounted by its own delete — it lives until the route
@@ -128,6 +173,29 @@ describe("GameHistoryRow", () => {
     expect(screen.queryByText(gameLogCopy.history.confirm)).toBeNull();
   });
 
+  // Hugh, 2026-09-27: the deck delete's own pane, not an inline question. Its sentence is the one
+  // thing the inline confirm never said, so its presence is what tells the two apart.
+  it("asks in the deck delete's pane: heading, sentence, KEEP holding focus", () => {
+    mount();
+    const x = screen.getByRole("button", { name: gameLogCopy.history.delete });
+    fireEvent.click(x);
+    expect(x).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(gameLogCopy.history.confirmBody)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: gameLogCopy.history.confirmNo })).toHaveFocus();
+  });
+
+  it("returns focus to the × on KEEP, and on Escape", () => {
+    mount();
+    const x = screen.getByRole("button", { name: gameLogCopy.history.delete });
+    fireEvent.click(x);
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmNo }));
+    expect(x).toHaveFocus();
+    fireEvent.click(x);
+    fireEvent.keyDown(screen.getByRole("button", { name: gameLogCopy.history.confirmNo }), { key: "Escape" });
+    expect(screen.queryByText(gameLogCopy.history.confirmBody)).toBeNull();
+    expect(x).toHaveFocus();
+  });
+
   it("renders the refusal in the row and keeps the game", async () => {
     deleteGame.mockResolvedValueOnce({ ok: false, message: gameLogCopy.history.deleteRefused });
     mount();
@@ -135,6 +203,8 @@ describe("GameHistoryRow", () => {
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmYes }));
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(gameLogCopy.history.deleteRefused)).toBeInTheDocument();
+    // The pane stays up with the refusal in it, as the deck's does: nothing was deleted.
+    expect(screen.getByText(gameLogCopy.history.confirmBody)).toBeInTheDocument();
   });
 });
 

@@ -268,12 +268,16 @@ export const gameLogCopy = {
     noteSpoken: 'note:',
 
     delete: 'Delete this game',
-    // One inline confirm, in the row. §4 has no edit action, so
-    // delete-and-relog is the correction path and a stray tap loses the only
-    // copy of a game the player will not remember.
+    // One confirm, because §4 has no edit action, so delete-and-relog is the
+    // correction path and a stray tap loses the only copy of a game the player
+    // will not remember. Since 2026-09-27 it is the deck delete's own pane,
+    // floating under the ×, so every delete in the app reads the same (Hugh).
+    // The sentence follows the deck's shape: what goes, then what does not.
     confirm: 'Delete this game?',
-    confirmYes: 'Delete',
-    confirmNo: 'Keep',
+    confirmBody: 'Its result, its marks and its note go with it. The deck is unchanged.',
+    confirmYes: 'Delete game',
+    confirmNo: 'Keep it',
+    deleting: 'Deleting\u2026',
     deleteRefused: 'We couldn\u2019t delete that game. Nothing has changed.',
   },
 

@@ -1,14 +1,15 @@
 "use client";
 // One logged game. The row is also the only correction path — §4 has no edit
-// action — so the delete confirm lives inside the row rather than in a dialog.
+// action — so its × opens the app's one delete confirm, floating under it.
 
-import { useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { deleteGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckGame } from "../../lib/decks/games";
-import { MutationError } from "./mutation-error";
+import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
+import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 
 export interface GameHistoryRowProps {
   deckId: string;
@@ -39,6 +40,20 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // The synchronous guard, as the deck's pane keeps one: two presses can both land before React
+  // commits `isPending` and disables the button, and each would send its own delete.
+  const inFlight = useRef(false);
+  // The deck delete's own pane, floating under the × in the same panel (Hugh, 2026-09-27).
+  const { at, place, triggerRef, panelRef } = useAnchoredPanel({ open: confirming, width: DELETE_CONFIRM_WIDTH });
+  const panelId = useId();
+
+  // A refusal belongs to the pane that showed it: the row outlives the pane, so the error is
+  // cleared here or the next confirm would open with the last one's refusal already in it.
+  function keep() {
+    setConfirming(false);
+    setError(null);
+    triggerRef.current?.focus();
+  }
 
   // One pass over the vocabulary rather than concatenating the two lists:
   // grouping the marks by direction would break the row's reading order away
@@ -53,12 +68,23 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
   );
 
   function confirm() {
+    if (inFlight.current) return;
+    inFlight.current = true;
     startTransition(async () => {
       setError(null);
-      const outcome = await deleteGame(deckId, game.id);
+      let outcome: Awaited<ReturnType<typeof deleteGame>>;
+      try {
+        outcome = await deleteGame(deckId, game.id);
+      } catch {
+        // A request that never reached the server (offline, a dropped connection) deleted
+        // nothing either, so it reads as the same refusal rather than escaping to the page.
+        outcome = { ok: false, message: gameLogCopy.history.deleteRefused };
+      } finally {
+        inFlight.current = false;
+      }
       if (!outcome.ok) {
+        // The pane stays open and says so, as the deck's does: nothing was deleted.
         setError(outcome.message ?? gameLogCopy.history.deleteRefused);
-        setConfirming(false);
         return;
       }
       // The row lives until the route revalidates. Leaving it confirming would
@@ -142,42 +168,55 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
         )}
       </span>
 
-      {confirming ? (
-        <span className="ml-auto md:ml-0 flex-none flex items-center gap-[8px]">
-          <span className="text-[11.5px] text-fg-body">{gameLogCopy.history.confirm}</span>
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={confirm}
-            className="min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] border border-border-strong text-danger bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {gameLogCopy.history.confirmYes}
-          </button>
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={() => setConfirming(false)}
-            className="min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] border border-border text-fg-body bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {gameLogCopy.history.confirmNo}
-          </button>
-        </span>
-      ) : (
+      {/* The ×, and the deck delete's pane floating under it: one confirm, drawn the way every
+          delete in the app is drawn (`DeleteConfirm`), in the panel the deck ⋯ menu floats in. */}
+      {/* A div, not a span: it holds the pane's block-level panel, and a span around a div is
+          invalid nesting the HTML parser repairs before hydration. */}
+      <div className="relative ml-auto md:ml-0 flex-none">
         <button
+          ref={triggerRef}
           type="button"
           aria-label={gameLogCopy.history.delete}
-          onClick={() => setConfirming(true)}
-          className="ml-auto md:ml-0 flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer"
+          aria-expanded={confirming}
+          aria-controls={confirming ? panelId : undefined}
+          onClick={() => {
+            if (isPending) return;
+            if (!confirming) place();
+            setError(null);
+            setConfirming((c) => !c);
+          }}
+          className="flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer"
         >
           ×
         </button>
-      )}
+        {confirming && (
+          <div
+            id={panelId}
+            ref={panelRef}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && !isPending) keep();
+            }}
+            style={{
+              width: DELETE_CONFIRM_WIDTH,
+              ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0 } : {}),
+            }}
+            className={`absolute right-0 top-full mt-[6px] sm:mt-[4px] ${ANCHORED_PANEL_CLASS}`}
+          >
+            <DeleteConfirm
+              heading={gameLogCopy.history.confirm}
+              body={gameLogCopy.history.confirmBody}
+              cancelLabel={gameLogCopy.history.confirmNo}
+              confirmLabel={gameLogCopy.history.confirmYes}
+              pendingLabel={gameLogCopy.history.deleting}
+              pending={isPending}
+              error={error}
+              onCancel={keep}
+              onConfirm={confirm}
+            />
+          </div>
+        )}
+      </div>
 
-      {error && (
-        <span className="order-last w-full">
-          <MutationError message={error} />
-        </span>
-      )}
       </div>
 
       {/* The note line — deck-tuning.md §Note line. Rendered only when there is
