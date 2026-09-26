@@ -75,12 +75,32 @@ All seven are engineering's and none changes a drawing.
    13/13.5. That treatment applies only when the failure line heads the held paragraph. The
    standing ruling D state (no press, an older overview) is unchanged.
 
-## For Hugh (the orchestrator is asking)
+## Hugh's ruling on the layout move (2026-09-26)
 
-When a fresh Analyze lands the verdict first and the overview is written afterward, the slot
-grows from one line to the paragraph in place. The climb moves down once at 1300, and at 390 the
-bracket box does too. Focus doesn't move. The build waits on this ruling only if it changes what
-is drawn. Every other state is independent of it.
+Design flagged one cost for Hugh: when a fresh Analyze lands the verdict first and the overview is
+written afterward, the slot grows in place, and the climb moves down once (at 390 the bracket box
+does too). **Hugh ruled that the first press should not shift.**
+
+- **First Analyze:** one loader holds the tab until the verdict **and** the overview are both
+  ready, so nothing moves. Its line moves through stages: reading the deck, determining the
+  bracket, then writing the overview. The stage lines start from Hugh's *Determining your
+  bracket…* and *Writing your overview…* and are worded through `/copy-review`.
+- **Two safety valves:**
+  - **A failed or refused overview** releases the tab at once, onto the verdict and the overview's
+    failed state (1d) or the refusal (7h).
+  - **A time limit:** if the overview is still being written when the limit passes, the verdict is
+    released and the slot falls back to Design's 1b status line. Only a slow run then pays the
+    one-time growth. The limit starts near 15s and is tuned from live write timings on Hugh's
+    pulled decks.
+- **Re-analysis after edits** is unchanged from the addendum: the held overview stays, the label row
+  says a new one is being written, and nothing shifts.
+- **The announcement:** on the staged path everything lands together and is announced once,
+  combined. *Overview ready.* is kept for the fallback path, where the overview lands after the
+  verdict.
+
+So 1a and 1b are drawn as delivered only for re-analysis and for the fallback. The first press's 1a
+extends through the write, which needs no new drawing: it is 2b's ring with its heading stepping
+through the stages.
 
 ## Copy (owed to `/copy-review`)
 
