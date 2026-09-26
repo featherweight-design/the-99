@@ -36,6 +36,7 @@ import {
 import {
   buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, SYSTEM,
 } from "../src/lib/labels/prompt";
+import { publishRun, stampWave } from "../src/lib/labels/publish";
 import { validateJob } from "../src/lib/labels/schema";
 import type { Job } from "../src/lib/labels/types";
 
@@ -86,11 +87,10 @@ const die = (why: string): never => { console.error(`\nbuild-card-labels REFUSED
  */
 async function cardsNeedingLabels(): Promise<CardRow[]> {
   const rows = await db.execute<CardRow>(sql`
-    select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout
-      from cards c
-      left join card_labels l on l.oracle_id = c.oracle_id
-     where c.commander_legal = true
-     order by c.oracle_id
+    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
+      from cards
+     where commander_legal = true
+     order by oracle_id
   `);
   const all = rows.rows ?? (rows as unknown as CardRow[]);
   const stored = new Map(
@@ -236,25 +236,57 @@ async function collectBatch(
  *
  * Returns the intent keys whose work is DONE, so the caller plans only what is left.
  */
-async function reconcile(): Promise<{ done: Set<string>; waiting: number; abandoned: string[] }> {
+async function reconcile(): Promise<{
+  done: Set<string>; waiting: number; abandoned: string[]; askedByKey: Map<string, string[]>;
+}> {
+  // EVERY intent already collected for this run, from any earlier invocation. Seeding `done`
+  // from this process's work alone was a double charge: run 1 submits wave 1, run 2 collects it
+  // and submits wave 2, run 3 sees only wave 2 as open — so `done` held wave 2, `chunks` was
+  // everything-but-wave-2, and its first 400 entries were wave 1, ALREADY PAID FOR, handed
+  // straight back to `batches.create`. `submit` then reset those rows to `submitted`, dropping
+  // their measured tokens out of the `alreadySpent` sum and inflating the remaining budget, and
+  // the publish path became unreachable for any run of three or more invocations.
+  const already = await db.select({ key: cardLabelBatches.intentKey, asked: cardLabelBatches.asked })
+    .from(cardLabelBatches)
+    .where(and(eq(cardLabelBatches.runId, runId), eq(cardLabelBatches.status, "collected")));
+  const done = new Set(already.map((r) => r.key));
+  /** What each finished chunk ACTUALLY asked about, so a shifted plan can be detected. */
+  const askedByKey = new Map(already.map((r) => [r.key, r.asked]));
+
   const open = await db.select().from(cardLabelBatches)
     .where(and(eq(cardLabelBatches.runId, runId), sql`${cardLabelBatches.status} <> 'collected'`));
-  if (open.length === 0) return { done: new Set(), waiting: 0, abandoned: [] };
+  if (open.length === 0) return { done, waiting: 0, abandoned: [], askedByKey };
 
   console.log(`reconciling ${open.length} open intent(s) from ${runId}`);
-  // Listed ONCE, not per intent: the ambiguous branch needs the same page of batches for
-  // every one of them, and a list call per intent is a round trip per chunk.
+  // Listed ONCE, not per intent: the ambiguous branch needs the same page of batches for every
+  // one of them, and a list call per intent is a round trip per chunk.
+  //
+  // **Only ENDED batches are streamed, and a failure to stream one is survived.** `results()`
+  // calls `retrieve` and THROWS when `results_url` is null — so a batch still processing
+  // anywhere in the workspace, including this run's own, aborted the whole reconciliation
+  // before a single intent was resolved. The error carries no `.status`, so nothing classified
+  // it either. That left the one recovery path that prevents a double charge unable to run in
+  // exactly the situation it exists for: another batch in flight.
+  //
+  // The page is also bounded. `for await` over `list()` auto-paginates the entire account
+  // history, which grows without limit; a lost id is by definition recent, so one page is the
+  // right scope and a wider sweep is cost without evidence.
   const byCustomId = new Map<string, string>();
-  const needsLookup = open.some((o) => o.batchId === null);
-  if (needsLookup) {
-    for await (const batch of client.messages.batches.list({ limit: 100 })) {
-      for await (const r of await client.messages.batches.results(batch.id)) {
-        byCustomId.set(r.custom_id, batch.id);
+  if (open.some((o) => o.batchId === null)) {
+    const page = await client.messages.batches.list({ limit: 100 });
+    for (const batch of page.data) {
+      if (batch.processing_status !== "ended") continue;
+      try {
+        for await (const r of await client.messages.batches.results(batch.id)) {
+          byCustomId.set(r.custom_id, batch.id);
+        }
+      } catch (err) {
+        // One unreadable batch must not blind the lookup to the other ninety-nine.
+        console.warn(`  could not read ${batch.id}: ${(err as Error).message}`);
       }
     }
   }
 
-  const done = new Set<string>();
   const abandoned: string[] = [];
   let waiting = 0;
 
@@ -284,7 +316,7 @@ async function reconcile(): Promise<{ done: Set<string>; waiting: number; abando
   for (const [batchId, intents] of byBatch) {
     const batch = await client.messages.batches.retrieve(batchId);
     if (batch.processing_status !== "ended") {
-      waiting += intents.length;
+      waiting += intents.length; // chunks, not batches — named as such where it is printed
       await db.update(cardLabelBatches).set({ status: "in_progress", batchId })
         .where(inArray(cardLabelBatches.intentKey, intents.map((i) => i.intentKey)));
       continue;
@@ -299,7 +331,7 @@ async function reconcile(): Promise<{ done: Set<string>; waiting: number; abando
     for (const i of intents) done.add(i.intentKey);
   }
 
-  return { done, waiting, abandoned };
+  return { done, waiting, abandoned, askedByKey };
 }
 
 /**
@@ -339,41 +371,30 @@ async function submit(chunks: Chunk[]): Promise<void> {
 }
 
 /**
- * Publishes staging into `card_labels` in ONE transaction, or refuses.
+ * The input figures the WORST CASE is booked on, and both are CEILINGS rather than averages.
  *
- * `delete` + `insert ... select` rather than a per-row upsert, so a reader never sees a
- * mixture of two runs. Scoped to the oracle ids this run staged: a card the run did not
- * touch keeps its existing label, because the run labels what has MOVED and a card whose
- * inputs are unchanged was skipped rather than found wanting.
+ * This matters more than it looks: `waveSize` and `withinCap` bound Hugh's $55 hard stop on
+ * these numbers, so a figure that is merely typical makes the bound merely typical too.
+ *
+ * `SYSTEM_TOKENS` is the block as BILLED (1,215), not as `SYSTEM.length / 4` estimates it
+ * (1,084) — `prompt.ts` records both, and the billed one is the one the cap must respect.
+ *
+ * `PER_CARD_TOKENS` is the MAXIMUM a commander-legal card renders to, measured over all 31,830
+ * of them: 892 characters, so 223 tokens at four characters each. The mean is 51 and the 99th
+ * percentile 122, and booking either would mean a request of twelve wordy cards costs multiples
+ * of what the cap reserved for it. An average is the right basis for a projection and the wrong
+ * one for a ceiling, and these two are ceilings.
  */
-async function publish(): Promise<number> {
-  return db.transaction(async (tx) => {
-    const staged = await tx.select({ id: cardLabelsStaging.oracleId }).from(cardLabelsStaging)
-      .where(eq(cardLabelsStaging.runId, runId));
-    const ids = staged.map((r) => r.id);
-    if (ids.length === 0) return 0;
-    await tx.delete(cardLabels).where(inArray(cardLabels.oracleId, ids));
-    await tx.execute(sql`
-      insert into ${cardLabels} (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
-      select oracle_id, labels, model, prompt_version, input_hash, labelled_at
-        from ${cardLabelsStaging} where run_id = ${runId}
-    `);
-    await tx.delete(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
-    return ids.length;
-  });
-}
-
-/** Tokens the instruction block costs, and a card's rendered line, for the worst case. */
-const SYSTEM_TOKENS = Math.ceil(SYSTEM.length / 4);
-const PER_CARD_TOKENS = 60;
+const SYSTEM_TOKENS = 1215;
+const PER_CARD_TOKENS = 223;
 
 async function main(): Promise<void> {
   console.log(`run ${runId}  model ${MODEL}  cap $${CAP_USD.toFixed(2)}${dryRun ? "  (dry run)" : ""}`);
 
   // RECONCILE FIRST, always, before anything is planned or priced. An in-flight batch this
   // run cannot see is work it would submit again.
-  const { done, waiting, abandoned } = dryRun
-    ? { done: new Set<string>(), waiting: 0, abandoned: [] as string[] }
+  const { done, waiting, abandoned, askedByKey } = dryRun
+    ? { done: new Set<string>(), waiting: 0, abandoned: [] as string[], askedByKey: new Map<string, string[]>() }
     : await reconcile();
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);
@@ -383,7 +404,7 @@ async function main(): Promise<void> {
       + `accepting that the originals may already have been charged.`);
   }
   if (waiting > 0) {
-    console.log(`\n${waiting} batch(es) still processing. Nothing submitted, nothing published.`);
+    console.log(`\n${waiting} chunk(s) still processing. Nothing submitted, nothing published.`);
     console.log(`Re-run with LABEL_RUN_ID=${runId} to resume when they finish.`);
     return;
   }
@@ -392,6 +413,28 @@ async function main(): Promise<void> {
   console.log(`${cards.length} card(s) need labels (stored hash differs or absent)`);
 
   const planned = planChunks(runId, MODEL, cards.map((c) => c.name));
+
+  // **THE PLAN MUST NOT HAVE SHIFTED UNDER A RESUMED RUN.** `planChunks` is keyed on index, so
+  // a card entering or leaving the set between waves moves every later chunk's contents. A
+  // finished chunk would then be skipped as `done` while now naming DIFFERENT cards, and those
+  // cards would never be asked about — invisible except as an unexplained floor shortfall at the
+  // end. The catalog refreshes weekly and a seven-wave run can span days, so this is a matter of
+  // course rather than an edge case.
+  //
+  // Detected by comparing each finished chunk's planned names against the `asked` this run
+  // actually stored for it. A mismatch REFUSES: re-planning silently would relabel cards whose
+  // work is already paid for and skip cards nobody has asked about.
+  const shifted = planned.filter((c) => {
+    const asked = askedByKey.get(c.intentKey);
+    return asked !== undefined && asked.join("\u0000") !== c.names.join("\u0000");
+  });
+  if (shifted.length > 0) {
+    return die(`the card set has changed since this run started, so chunk indices no longer line `
+      + `up: ${shifted.length} finished chunk(s) now name different cards (first: `
+      + `${shifted[0].intentKey}). Re-planning would skip cards nobody asked about. Publish or `
+      + `abandon ${runId} and start a new run, which will chunk the current set from scratch.`);
+  }
+
   const chunks = planned.filter((c) => !done.has(c.intentKey));
 
   // NOTHING LEFT TO SUBMIT is the publish path, not an early exit. It is reached two ways: a
@@ -419,7 +462,7 @@ async function main(): Promise<void> {
         + `stated LABEL_FLOOR once you know why the shortfall is acceptable.`);
     }
     if (dryRun) { console.log("dry run — not publishing"); return; }
-    const published = await publish();
+    const published = await publishRun(db, runId);
     console.log(`published ${published} label(s) in one transaction`);
     return;
   }
@@ -464,9 +507,9 @@ async function main(): Promise<void> {
 
   console.log(`  this wave: ${wave.length} request(s), worst case $${waveWorst.toFixed(2)}`);
   console.log(`  ${chunks.length - wave.length} request(s) wait for a later wave`);
-  console.log(`  whole run expected ~$${(0.001291 * cards.length).toFixed(2)} at the sample's `
-    + `measured rate; worst case if every wave returns its full ceiling `
-    + `$${worst.toFixed(2)}`);
+  console.log(`  whole run expected ~$${(measuredPerCard * cards.length).toFixed(2)} at `
+    + `${usage.cards === 0 ? "the sample's" : "this run's"} measured rate; worst case if every `
+    + `request returns its full ceiling $${worst.toFixed(2)}`);
 
   // TWO BOUNDS, and they are different questions (d9's ruling on Hugh's $55):
   //

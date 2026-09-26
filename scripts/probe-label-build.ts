@@ -34,6 +34,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { meetsFloor, planChunks } from "../src/lib/labels/plan";
+import { publishRun, stampWave } from "../src/lib/labels/publish";
 import type { Job } from "../src/lib/labels/types";
 
 const db = drizzle(DATABASE_URL);
@@ -41,6 +42,10 @@ const runId = `probe-${randomUUID()}`;
 const otherRun = `probe-other-${randomUUID()}`;
 
 let failures = 0;
+/** Card `c`'s real label, captured before the fixture overwrites it, restored in the finally. */
+let restoreC: typeof cardLabels.$inferSelect | null = null;
+/** Card `c`'s oracle id, recorded so the cleanup can address it without re-querying. */
+let cOracleId: string | null = null;
 const report = (what: string, ok: boolean, detail = "") => {
   if (!ok) failures++;
   console.log(`  ${ok ? "ok  " : "FAIL"} ${what}${detail ? ` — ${detail}` : ""}`);
@@ -78,9 +83,9 @@ async function main(): Promise<void> {
     intentKey: stale, runId, model: "claude-sonnet-4-5",
     customId: `${runId.slice(0, 7)}-stale`, asked: [c.name],
   });
-  await db.update(cardLabelBatches)
-    .set({ batchId: "msgbatch_probe", status: "submitted", submittedAt: new Date() })
-    .where(inArray(cardLabelBatches.intentKey, chunks.map((ch) => ch.intentKey)));
+  // The REAL stamp, not a copy of it. An earlier version hand-wrote this scoping, so deleting
+  // the script's own left every check green — a probe asserting the shape of code nothing runs.
+  await stampWave(db, chunks.map((ch) => ch.intentKey), "msgbatch_probe");
   const [staleRow] = await db.select().from(cardLabelBatches)
     .where(eq(cardLabelBatches.intentKey, stale));
   report("the earlier wave's intent keeps its null id", staleRow?.batchId === null,
@@ -90,13 +95,22 @@ async function main(): Promise<void> {
   report("and this wave's intent got the id", stamped?.batchId === "msgbatch_probe");
 
   console.log("3. the publish is atomic and scoped to what this run staged");
-  // A pre-existing label on a card this run does NOT touch, which must survive.
+  // A pre-existing label on a card this run does NOT touch, which must survive the publish.
+  //
+  // CAPTURED BEFORE IT IS OVERWRITTEN, and restored in the `finally`. An earlier version
+  // upserted over whatever was there and then deleted every row whose hash was `untouched` —
+  // so pointed at a database holding a real label for that card, the probe destroyed it. The
+  // handle is populated before the write it covers, which is the rule `probe:review` learned
+  // the same way: a throw part-way through must not strand a loss.
+  const [priorC] = await db.select().from(cardLabels).where(eq(cardLabels.oracleId, c.oracleId));
+  restoreC = priorC ?? null;
+  cOracleId = c.oracleId;
   await db.insert(cardLabels).values({
     oracleId: c.oracleId, labels: [JOB], model: "older-model",
     promptVersion: "0", inputHash: "untouched",
   }).onConflictDoUpdate({
     target: cardLabels.oracleId,
-    set: { model: "older-model", inputHash: "untouched" },
+    set: { model: "older-model", promptVersion: "0", inputHash: "untouched", labels: [JOB] },
   });
   await db.insert(cardLabelsStaging).values([a, b].map((card) => ({
     runId, oracleId: card.oracleId, labels: [JOB],
@@ -105,15 +119,9 @@ async function main(): Promise<void> {
   const staged = await db.select().from(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
   report("staging holds this run's rows", staged.length === 2, `${staged.length}`);
 
-  await db.transaction(async (tx) => {
-    const ids = staged.map((r) => r.oracleId);
-    await tx.delete(cardLabels).where(inArray(cardLabels.oracleId, ids));
-    await tx.execute(sql`
-      insert into ${cardLabels} (oracle_id, labels, model, prompt_version, input_hash, labelled_at)
-      select oracle_id, labels, model, prompt_version, input_hash, labelled_at
-        from ${cardLabelsStaging} where run_id = ${runId}`);
-    await tx.delete(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
-  });
+  // The REAL publish, for the same reason.
+  const moved = await publishRun(db, runId);
+  report("the publish reports what it moved", moved === 2, `${moved}`);
   const published = await db.select().from(cardLabels)
     .where(inArray(cardLabels.oracleId, [a.oracleId, b.oracleId]));
   report("both staged cards are published", published.length === 2, `${published.length}`);
@@ -157,10 +165,25 @@ main()
     for (const step of [
       () => db.delete(cardLabelsStaging).where(inArray(cardLabelsStaging.runId, [runId, otherRun])),
       () => db.delete(cardLabelBatches).where(eq(cardLabelBatches.runId, runId)),
-      () => db.delete(cardLabels).where(and(
-        sql`${cardLabels.inputHash} in ('untouched', 'other')`,
-        sql`true`,
-      )),
+      // Card `c` is RESTORED to what it held, or removed if it held nothing. Never deleted by
+      // hash: `untouched` is this fixture's marker, and a blanket delete on it would take a
+      // real row with the same value.
+      async () => {
+        if (cOracleId === null) return;
+        if (restoreC === null) {
+          await db.delete(cardLabels).where(eq(cardLabels.oracleId, cOracleId));
+        } else {
+          await db.insert(cardLabels).values(restoreC).onConflictDoUpdate({
+            target: cardLabels.oracleId,
+            set: {
+              labels: restoreC.labels, model: restoreC.model,
+              promptVersion: restoreC.promptVersion, inputHash: restoreC.inputHash,
+            },
+          });
+        }
+      },
+      // The two cards this run published are the fixture's own: removed, since the run created
+      // their rows.
       () => db.delete(cardLabels).where(sql`${cardLabels.inputHash} like 'h-%'`),
     ]) {
       try { await step(); } catch (e) { console.error("cleanup step failed:", e); failures++; }
