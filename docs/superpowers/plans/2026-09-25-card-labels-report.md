@@ -106,16 +106,30 @@ Thresholds and modality are ties at 1.000 on all three — two limits that need 
 model choice at all, and that today's rules still get none of.
 
 **Sonnet 5 was run after the decision, on Hugh's request, and it does not reverse
-it.** It wins recall (0.888 against 0.834) and it is cheaper ($37.69 against
-$41.09), and it loses the restriction family, which is the family the bug was
-about: gating 0.727 against 0.864, and tribal 0.931 against a tie at 1.000 — the
-only score in the whole table where a model failed a limit that both others got
-perfect. Three caveats sit beside its figures:
+it.** It wins recall (0.888 against 0.834) and it is markedly cheaper ($25.13
+against $41.09), and it loses the restriction family, which is the family the bug
+was about: gating 0.727 against 0.864, and tribal 0.931 against a tie at 1.000 —
+the only score in the whole table where a model failed a limit that both others got
+perfect. **A model that is cheaper and finds more jobs still did not take it**,
+because what the pass is bought for is the limits. Four caveats sit beside its
+figures:
 
-- **Its dollars are a PROJECTION at Sonnet 4.5's published rates.** The cost and
-  usage endpoints need an Admin API key this repository does not have (measured:
-  both answer 401), so its TOKEN counts are exact and its dollars are an
-  assumption. The two 4.5-family columns are measured against published rates.
+- **Its sampling is NOT deterministic, and the others' is.** Sonnet 5 rejects
+  `temperature`, so it runs at the default while Haiku and Sonnet 4.5 are pinned at
+  0. Its column is therefore one draw from a distribution where theirs are
+  repeatable, and a re-run could move its figures. That cuts both ways and is the
+  reason not to read a 4-point gap either way as decisive — but it does not rescue
+  the tribal row, where it alone failed a limit the other two got perfect.
+- **Its dollars are RATE-DERIVED rather than billed.** The rates themselves are the
+  verified ones — `claude-sonnet-5` at $2/$10 per million, halved by the Batch API,
+  from `scripts/eval/lib/pricing.mts` — but the cost and usage endpoints need an
+  Admin API key this repository does not have (measured: both answer 401), so no
+  column here is a bill. Its TOKEN counts are exact.
+
+  This figure was **$37.69** in the first version of this section, computed at
+  Sonnet 4.5's rates, which overstated it by exactly 3/2. Review caught it, and it
+  mattered for more than the report: the same row feeds the ledger reservation, so
+  an opt-in run was being approved against a ceiling two thirds of its real one.
 - **It needed `thinking: {type: "disabled"}` to run at all.** Adaptive thinking is
   on by default and consumed 2,999 of a 3,000-token output ceiling, returning
   nothing; the first attempt cost **$1.0367 for zero labels**. Its figures come
@@ -147,12 +161,18 @@ Measured, at batch rates, over 508 cards (108 gold + 400 random):
 |---|---|---|---|---|
 | Haiku 4.5 | $0.2033 | $0.000400 | **$12.73** | $0.16 |
 | Sonnet 4.5 | $0.6556 | $0.001291 | **$41.09** | $0.50 |
-| Sonnet 5 | $0.6017 | $0.001184 | **$37.69** | $0.46 |
+| Sonnet 5 | $0.4011 | $0.000790 | **$25.13** | $0.31 |
 
-Sample total **$0.8589** against a $5 cap for the two-model run. The ledger records
-four runs against that cap and **$3.3432** of it spent: this one, $0.8459 for the
-first contaminated run (see below), and $1.0367 + $0.6017 for the two Sonnet 5
-attempts, the first of which returned nothing.
+Sample total **$0.8589** against a $5 cap for the two-model run. Four runs went against
+that cap and **$2.7971** of it was spent: this one, $0.8459 for the first contaminated
+run (see below), and $0.6911 + $0.4011 for the two Sonnet 5 attempts, the first of which
+returned nothing.
+
+The ledger on disk still records the Sonnet 5 pair as $1.0367 and $0.6017, because it
+stored what the superseded rates computed. Both restate EXACTLY rather than
+approximately — every rate in that row is two thirds of the one used, so every term
+scales alike — and the first attempt's own token counts were overwritten by the second
+run, which is why the restatement is arithmetic rather than a re-measurement.
 
 The ongoing cost is the part that settles it: a new set costs **50 cents** on
 Sonnet and 16 on Haiku. Either way keeping the labels current is free in practice,
@@ -263,11 +283,13 @@ both.
 
 ## What to watch if this ships
 
-- **`restrictedTo` is the weak limit**, for both models, and the reason for the
+- **`restrictedTo` is the weak limit**, for all three models, and the reason for the
   recommendation. Just under a quarter of the gating restrictions gold records are
-  missed by Haiku against about a seventh by Sonnet. If false matches survive the pass, this is the
-  first place to look, and re-scoring the gold subset is what tells you.
-- **Job recall runs 0.717 to 0.834**, so roughly a fifth of jobs are missed by every
+  missed by Haiku against about a seventh by Sonnet 4.5 — and over a quarter by
+  Sonnet 5, which is why the newest model did not take the decision. If false matches
+  survive the pass, this is the first place to look, and re-scoring the gold subset is
+  what tells you.
+- **Job recall runs 0.717 to 0.888**, so roughly an eighth of jobs are missed by every
   labeller including the models. The pass improves limits, not coverage.
 - **A second pass costs the same as the first.** At 16 cents a set there is no
   reason to treat the labels as immutable; re-running a set after a rule change is
@@ -355,7 +377,7 @@ batch, cannot quietly overwrite the evidence a merged report rests on.
 - `docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json` — measured tokens,
   cost per model, and the full-run and per-set projections with their basis
 
-The raw labels (296KB across both models) and the 711-row disagreement list stay in
+The raw labels (462KB across the three models) and the 711-row disagreement list stay in
 `out/` and are NOT committed: they are reproducible from the committed scripts for
 about 85 cents, and the figures derived from them are committed above. Re-run
 `label-cards-run` then `-collect`, `-score`, `-agree` to regenerate.

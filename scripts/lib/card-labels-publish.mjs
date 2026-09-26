@@ -9,8 +9,10 @@
 // Publishing is OPT-IN (`--publish`), because a run against a scratch database or a
 // half-collected batch must not silently overwrite the evidence a merged report
 // rests on.
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
+
+import { MODELS } from "./card-labels-pricing.mjs";
 
 /** Published under the date the sample was taken, not the date of the re-run. */
 export const PUBLISHED = {
@@ -19,6 +21,31 @@ export const PUBLISHED = {
   "out/cost.json": "docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json",
   "out/blind-sheet.md": "docs/superpowers/plans/2026-09-25-card-labels-blind-sheet.md",
 };
+
+/**
+ * Which model keys an artifact's own content covers, for the sources that say.
+ *
+ * The committed artifacts describe the DEFAULT two-model run, and every figure the report
+ * cites comes out of them. An opt-in subset writes to the same `out/` paths, so
+ * `LABEL_MODELS=sonnet5` followed by the documented `--publish` collector would replace
+ * the canonical cost artifact with a one-model total, and the scorer would add a fourth
+ * model to the canonical score artifact. Either silently invalidates the baseline the
+ * merged report rests on.
+ *
+ * The check lives HERE rather than in the four callers because a caller can forget it and
+ * this gate cannot be bypassed. `textRules` is not a model — it is the baseline every run
+ * scores against — so it is excluded rather than counted as an extra.
+ *
+ * @param {string} src
+ * @returns {string[] | null} the model keys, or null for an artifact that names none.
+ */
+function modelsCovered(src) {
+  if (!src.endsWith(".json")) return null;
+  const doc = JSON.parse(readFileSync(src, "utf8"));
+  const from = doc.perModel ?? doc.models;
+  if (from === undefined || from === null || typeof from !== "object") return null;
+  return Object.keys(from).filter((k) => k !== "textRules");
+}
 
 /**
  * @param {string[]} sources - the `out/` paths this script just wrote.
@@ -33,6 +60,16 @@ export function publishArtifacts(sources, publish) {
     const dest = PUBLISHED[src];
     if (!dest) throw new Error(`no committed path is declared for ${src}`);
     if (!existsSync(src)) throw new Error(`${src} was not written — refusing to publish a stale copy`);
+    const covered = modelsCovered(src);
+    const expected = Object.keys(MODELS).sort();
+    if (covered !== null && covered.sort().join(",") !== expected.join(",")) {
+      throw new Error(
+        `${src} covers ${covered.join(", ") || "no models"} but the committed artifact is the ` +
+        `default run (${expected.join(", ")}). Refusing to publish: a subset run would replace ` +
+        `the baseline every figure in the report is cited against. Publish an opt-in model's ` +
+        `figures to their own dated path instead, as the Sonnet 5 sample did.`,
+      );
+    }
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
     console.log(`published ${src} -> ${dest}`);

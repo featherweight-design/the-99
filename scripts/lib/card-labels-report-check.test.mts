@@ -51,6 +51,7 @@ const agree = JSON.parse(readFileSync(AGREE, "utf8")) as Agree;
 // still have to match the artifact that published them.
 const sonnet5 = JSON.parse(readFileSync(SONNET5, "utf8")) as {
   score: ModelScore; projection: { fullRunUsd: number; perSetUsd: number }; cost: Sample;
+  wastedUsd: number;
 };
 score.models.sonnet5 = sonnet5.score;
 cost.projections.sonnet5 = sonnet5.projection;
@@ -157,6 +158,18 @@ describe("the report agrees with the artifacts it cites", () => {
     }
   });
 
+  // A RANGE claim cannot be checked by membership, which is what the guards below do:
+  // reverting "0.717 to 0.888" to the pre-Sonnet-5 "0.717 to 0.834" passed everything,
+  // because 0.834 is a real figure — Sonnet 4.5's own recall — and a membership check
+  // only asks whether a number is recorded somewhere, never whether it is the right
+  // number in this sentence. So the two ENDS are computed across every scored model.
+  it("states the job-recall range across every model scored", () => {
+    const recalls = Object.values(score.models).map((m) => m.jobs.recall);
+    const lo = Math.min(...recalls), hi = Math.max(...recalls);
+    const prose = proseLines.join(" ").replace(/\s+/g, " ").replace(/\*\*/g, "");
+    expect(prose, "job-recall range").toContain(`Job recall runs ${lo} to ${hi}`);
+  });
+
   // The per-set figures are quoted in prose as WORDS ("50 cents", "16"), which carry no
   // `$` and so escape the dollar guard below entirely. Named, because the sentence is
   // the one the report's conclusion rests on. Read from the JOINED prose: the sentence
@@ -179,13 +192,16 @@ describe("the report agrees with the artifacts it cites", () => {
       ...Object.values(cost.projections).map((p) => p.fullRunUsd.toFixed(2)),
       ...Object.values(cost.projections).map((p) => p.perSetUsd.toFixed(2)),
       cost.totalUsd.toFixed(4), sonnet5.cost.usd.toFixed(4),
+      sonnet5.wastedUsd.toFixed(4), // the attempt that returned nothing
       // NAMED, with their provenance — the same treatment the report's 54% gets. Each
       // is a figure no artifact holds, and listing it here is what makes a NEW
       // unlisted figure a failure rather than noise.
       "5", "5.00", "55", "50", // the caps: the sample's $5 and the run plan's $50/$55
+      "2", "10", // claude-sonnet-5's published per-million rates, from scripts/eval/lib/pricing.mts
       "0.8459", // the first, contaminated run — ledger `out/spend.json`
-      "1.0367", "0.6017", // the two Sonnet 5 attempts — same ledger
-      "3.3432", // their sum, the whole spend against the sample cap
+      "1.0367", "0.6017", // what the LEDGER stored for Sonnet 5, at the superseded rates
+      "37.69", // the projection those rates produced, named as the corrected figure
+      "2.7971", // the whole spend against the sample cap, at verified rates
       "28.36", // Sonnet 4.5 minus Haiku on the full run
       "0.0854", "0.0784", // the caching measurement, quoted in Method as history
     ]);

@@ -19,9 +19,13 @@
 export const PRICING = {
   haiku: { in: 0.50, out: 2.50, cacheWrite: 0.625, cacheRead: 0.05, caches: false },
   sonnet: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
-  // Rates UNVERIFIED — see the note above MODELS. Tokens are measured; dollars are a
-  // projection at Sonnet 4.5's rates and are labelled as such wherever they appear.
-  sonnet5: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
+  // Sonnet 5 at the rates `scripts/eval/lib/pricing.mts` publishes — $2/$10 per million
+  // standard, halved by the Batch API — and `card-labels-pricing.test.mts` holds the two
+  // together. They were 4.5's $3/$15 here until review caught it, which UNDERSTATED the
+  // cap: the reservation is computed from this row, so an opt-in run could be approved
+  // below its real ceiling. It also overstated the projection by exactly 3/2, every term
+  // scaling alike.
+  sonnet5: { in: 1.00, out: 5.00, cacheWrite: 1.25, cacheRead: 0.10, caches: true },
 };
 
 /**

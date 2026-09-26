@@ -1,5 +1,5 @@
 {
- "_note": "The Sonnet 5 sample, run separately from the two-model run published in 2026-09-25-card-labels-{cost,score}.json. Same 508 cards, same prompt, same gold. Its DOLLAR figures are a PROJECTION at Sonnet 4.5's published rates: the cost and usage endpoints need an Admin API key this script does not have, so the token counts are exact and the dollars are not.",
+ "_note": "The Sonnet 5 sample, run separately from the two-model run published in 2026-09-25-card-labels-{cost,score}.json. Same 508 cards, same prompt, same gold. Rates are claude-sonnet-5's published $2/$10 per million, halved by the Batch API, per scripts/eval/lib/pricing.mts; card-labels-pricing.test.mts holds the two together. The CHARGED amount is still unobservable here (the cost and usage endpoints need an Admin API key, which this script does not have), so these are rate-derived figures, not a bill.",
  "measuredAt": "2026-09-26T07:05:55.044Z",
  "model": "claude-sonnet-5",
  "cost": {
@@ -12,19 +12,19 @@
    "cacheWrite": 1641,
    "cacheRead": 68922
   },
-  "usd": 0.6017,
-  "usdPerCard": 0.001184
+  "usd": 0.4011,
+  "usdPerCard": 0.00079
  },
  "projection": {
-  "fullRunUsd": 37.69,
-  "perSetUsd": 0.46,
+  "fullRunUsd": 25.13,
+  "perSetUsd": 0.31,
   "basis": {
    "commanderLegalCards": 31830,
    "avgRecentSetCards": 390
   }
  },
- "sampleUsd": 0.6017,
- "wastedUsd": 1.0367,
+ "sampleUsd": 0.4011,
+ "wastedUsd": 0.6911,
  "score": {
   "notReturned": 0,
   "spuriousRestrictions": 6,
@@ -167,5 +167,6 @@
     "fn": 2
    }
   ]
- }
+ },
+ "_wastedNote": "The first attempt, which returned no labels: adaptive thinking consumed 2,999 of a 3,000-token ceiling. Recorded as $1.0367 at the superseded 4.5 rates; restated exactly, because every rate is two thirds of what was used. Its token counts were overwritten by the second run."
 }
