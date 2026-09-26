@@ -19,10 +19,9 @@ import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 
 import { BrowseFigureBody } from "./browse-figure";
-import { AnchoredNumerals, KeyNumeral, first, withText } from "./numeral";
+import { KeyNumeral } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { ReadyToBuild } from "../home/ready-to-build";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
 import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
 import {
@@ -38,6 +37,7 @@ import {
   ReservationsFigureBody,
   ResumeFigureBody,
   ExportFigureBody,
+  ReadyToBuildFigureBody,
   VersionsFigureBody,
   ShoppingFigureBody,
   DeckImportFigureBody,
@@ -77,8 +77,6 @@ import {
   COMMITMENTS_TOTAL_CARDS,
   ROLE_COUNTS,
   SHOPPING,
-  READY_IN_USE,
-  READY_SLICE,
   SET_CELLS,
   SET_HEAD,
   FIT_DEGRADED,
@@ -653,21 +651,7 @@ function ReadyToBuildFigure({ width }: { width: AboutWidth }) {
           line and the way to the lane. The figure it replaces was three
           mark-and-meaning rows that NAMED two of those figures and showed
           neither, so the entry's three key lines had nothing to point at. */}
-      <AnchoredNumerals
-        gutter
-        marks={[
-          // 1: the top nine is a ranking, under the block's own heading.
-          { n: 1, find: withText("h2", refreshCopy.home.readyHeading), side: "after" },
-          // 2: the fit line and the in-use clause, on the first card's meta row.
-          { n: 2, find: first(".hero-footer > div"), side: "gutter" },
-          // 3: the pair, which changes daily: the first card.
-          { n: 3, find: first(".grid > *"), side: "gutter", align: "top" },
-          // 4: the `N more scored X or better` line.
-          { n: 4, find: withText("span", "more scored", true), side: "after" },
-        ]}
-      >
-        <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
-      </AnchoredNumerals>
+      <ReadyToBuildFigureBody />
     </Specimen>
   );
 }

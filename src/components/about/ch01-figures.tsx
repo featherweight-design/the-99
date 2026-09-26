@@ -54,6 +54,8 @@ import {
   CHOOSE,
   FITS,
   STAND_INS,
+  READY_IN_USE,
+  READY_SLICE,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -108,13 +110,15 @@ import {
   ParseErrorRowView,
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
-import { AnchoredNumerals, KeyNumeral, byAriaPrefix, first, leafMatching, visible, withText } from "./numeral";
+import { AnchoredNumerals, KeyNumeral, byAriaPrefix, first, leafMatching, nth, withText } from "./numeral";
 import { discoverCopy } from "../../lib/copy/lanes";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { ReadyToBuild } from "../home/ready-to-build";
 import { exportLinkOutCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -783,8 +787,8 @@ export function InformedBuildFigureBody() {
     <AnchoredNumerals
       marks={[
         // 1: the land cell, measured at 28. 2: the wipes cell, whose target of 0 is an answer.
-        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Land"), side: "inset-tr" },
-        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "inset-tr" },
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Land"), side: "below", mdSide: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "below", mdSide: "inset-tr" },
       ]}
     >
       <RoleCounterStrip
@@ -828,7 +832,7 @@ export function ComboAwarenessFigureBody() {
       marks={[
         // 1: the heading, which carries no count. 2: the list of every partner. 3: its last row,
         // the one you would have to buy, at the far end of the order. 4: Spellbook's marker.
-        { n: 1, find: withText("span", c.heading), side: "after" },
+        { n: 1, find: withText("span", c.heading), side: "gutter" },
         { n: 2, find: first("ul"), side: "gutter", align: "top" },
         { n: 3, find: first("ul > li:last-child"), side: "gutter" },
         { n: 4, find: first(`button[aria-label="${c.boundMarkerAria}"]`), side: "after" },
@@ -854,8 +858,8 @@ export function RolesFigureBody() {
     <AnchoredNumerals
       marks={[
         // 1: ramp over its recommendation, a surplus. 2: wipes short of it, with a shelf.
-        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Ramp"), side: "inset-tr" },
-        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "inset-tr" },
+        { n: 1, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Ramp"), side: "below", mdSide: "inset-tr" },
+        { n: 2, find: byAriaPrefix('section[aria-label="Recommended mix"]', "Wipes"), side: "below", mdSide: "inset-tr" },
       ]}
     >
       <RoleCounterStrip
@@ -1194,7 +1198,7 @@ export function VersionsFigureBody() {
       marks={[
         // 1: the older version's meta line, which carries its games on a wide screen. 2: the
         // newest version's note.
-        { n: 1, find: (r) => r.querySelectorAll("span.block.font-mono")[1] ?? null, side: "gutter" },
+        { n: 1, find: nth("span.block.font-mono", 1), side: "gutter" },
         { n: 2, find: withText("span", DECK_VERSIONS[0].note ?? "", true), side: "gutter" },
       ]}
     >
@@ -1235,7 +1239,7 @@ export function LogAGameFigureBody() {
           },
           side: "inset-tr",
         },
-        { n: 3, find: (r) => r.querySelectorAll("fieldset")[1] ?? null, side: "inset-tr" },
+        { n: 3, find: nth("fieldset", 1), side: "inset-tr" },
       ]}
     >
       <GameLogForm
@@ -1361,8 +1365,9 @@ export function ThemesFigureBody() {
       className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6"
       marks={[
         { n: 1, find: first("[data-theme-tile] [data-theme-short]"), side: "after" },
-        { n: 2, find: (r) => r.querySelectorAll("[data-theme-tile]")[1] ?? null, side: "inset-tl" },
-        { n: 3, find: first('[data-theme-tile="active"]'), side: "inset-tr" },
+        { n: 2, find: nth("[data-theme-tile]", 1), side: "inset-tl" },
+        // On the tile's name rather than its corner, where the miniature draws its own tick.
+        { n: 3, find: first('[data-theme-tile="active"] > span'), side: "after" },
       ]}
     >
       {THEMES.map((theme) => (
@@ -1490,7 +1495,7 @@ export function ReviewAndCommitFigureBody() {
       <AnchoredNumerals
         gutter
         marks={[
-          { n: 1, find: withText("span, p", deckVersioningCopy.review.groupInBreakdown(5, 3, 1)), side: "before", mdSide: "before" },
+          { n: 1, find: withText("span, p", deckVersioningCopy.review.groupInBreakdown(5, 3, 1)), side: "gutter", mdSide: "before" },
           { n: 2, find: withText("button", deckVersioningCopy.review.pull), side: "before" },
           { n: 3, find: withText("span", deckVersioningCopy.review.pullGuardTag), side: "before" },
         ]}
@@ -1558,7 +1563,7 @@ export function NewDeckFigureBody() {
         marks={[
           { n: 1, find: first("ul button[aria-pressed]"), side: "gutter", align: "top" },
           { n: 2, find: leafMatching("ul button[aria-pressed]", /\d+ cards$/), side: "after" },
-          { n: 3, find: visible("#picker-deck-name, #picker-deck-name-mobile"), side: "gutter" },
+          { n: 3, find: first("#picker-deck-name, #picker-deck-name-mobile"), side: "gutter", mdSide: "before" },
         ]}
       >
         <CreatePicker
@@ -1822,7 +1827,7 @@ export function StandInsFigureBody() {
           className="flex flex-col gap-[6px]"
           marks={[
             { n: 1, find: first('[data-testid="stand-in-limit"]'), side: "gutter" },
-            { n: 2, find: withText("button", "⇄", true), side: "before" },
+            { n: 2, find: withText("button", "⇄", true), side: "gutter" },
             { n: 4, find: first("[data-stand-in-group]"), side: "gutter", align: "top" },
           ]}
         >
@@ -1840,5 +1845,26 @@ export function StandInsFigureBody() {
         </AnchoredNumerals>
       </SwapToolsProvider>
     </CardDetailProvider>
+  );
+}
+
+/** `ready-to-build` — Home's own block, with its numerals measured onto the parts it draws. */
+export function ReadyToBuildFigureBody() {
+  return (
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the top nine is a ranking, under the block's own heading.
+        { n: 1, find: withText("h2", refreshCopy.home.readyHeading), side: "gutter" },
+        // 2: the fit line and the in-use clause, on the first card's meta row.
+        { n: 2, find: first(".hero-footer > div"), side: "gutter" },
+        // 3: the pair, which changes daily: the first card.
+        { n: 3, find: first(".grid > *"), side: "gutter", align: "top" },
+        // 4: the `N more scored X or better` line.
+        { n: 4, find: withText("span", "more scored", true), side: "after" },
+      ]}
+    >
+      <ReadyToBuild ready={READY_SLICE} inUse={READY_IN_USE} />
+    </AnchoredNumerals>
   );
 }

@@ -101,6 +101,7 @@
     "probe:build-from": "node scripts/probe-build-from.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:about": "node scripts/probe-about.mjs",
+    "probe:about-numerals": "node scripts/probe-about-numerals.mjs",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",
     "probe:delete-confirm": "node scripts/probe-delete-confirm.mjs",
     "probe:deck-locks": "node scripts/probe-deck-locks.mjs",

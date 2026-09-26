@@ -37,10 +37,10 @@ export function KeyNumeral({
  * Where an anchored numeral sits against the part it names:
  * - `gutter`: in the wrapper's left gutter, level with the part
  * - `before` / `after`: 6px to the part's left or right, centred on it
- * - `above`: centred over the part, just clear of its top
+ * - `above` / `below`: centred over or under the part, just clear of it
  * - `inset-tl` / `inset-tr`: 5px inside the part's top corner
  */
-export type NumeralSide = "gutter" | "before" | "after" | "above" | "inset-tl" | "inset-tr";
+export type NumeralSide = "gutter" | "before" | "after" | "above" | "below" | "inset-tl" | "inset-tr";
 
 export type NumeralAnchor = {
   n: number;
@@ -67,6 +67,8 @@ function place(side: NumeralSide, align: "center" | "top", t: DOMRect, r: DOMRec
       return { left: t.right - r.left + GAP, top: middle };
     case "above":
       return { left: t.left - r.left + t.width / 2 - SIZE / 2, top: t.top - r.top - SIZE - 2 };
+    case "below":
+      return { left: t.left - r.left + t.width / 2 - SIZE / 2, top: t.bottom - r.top + 2 };
     case "inset-tl":
       return { left: t.left - r.left + 5, top: t.top - r.top + 5 };
     case "inset-tr":
@@ -135,7 +137,7 @@ export function AnchoredNumerals({
           <KeyNumeral
             key={m.n}
             n={m.n}
-            className="pointer-events-none absolute z-10 bg-[color:var(--bg)]"
+            className="pointer-events-none absolute z-[60] bg-[color:var(--bg)]"
             style={at ? { left: at.left, top: at.top } : { left: 0, top: 0, visibility: "hidden" }}
           />
         );
@@ -144,37 +146,57 @@ export function AnchoredNumerals({
   );
 }
 
+/**
+ * The first element in `els` that is laid out, else the first at all. Many mounted components draw
+ * a phone and a desktop copy and hide one, and a hidden copy measures as a zero box at the origin.
+ */
+function laidOut(els: Iterable<Element>): Element | null {
+  let fallback: Element | null = null;
+  for (const el of els) {
+    if (el.getClientRects().length > 0) return el;
+    fallback ??= el;
+  }
+  return fallback;
+}
+
 /** A finder for the first `selector` whose text is `text`, or contains it with `contains`. */
 export function withText(selector: string, text: string, contains = false) {
   return (root: HTMLElement) =>
-    [...root.querySelectorAll(selector)].find((el) =>
-      contains ? (el.textContent ?? "").includes(text) : (el.textContent ?? "").trim() === text,
-    ) ?? null;
+    laidOut(
+      [...root.querySelectorAll(selector)].filter((el) =>
+        contains ? (el.textContent ?? "").includes(text) : (el.textContent ?? "").trim() === text,
+      ),
+    );
 }
 
-/** A finder for the first element matching `selector`. */
+/** A finder for the first laid-out element matching `selector`. */
 export function first(selector: string) {
-  return (root: HTMLElement) => root.querySelector(selector);
+  return (root: HTMLElement) => laidOut(root.querySelectorAll(selector));
+}
+
+/** A finder for the `n`th laid-out element matching `selector`, counting from 0. */
+export function nth(selector: string, n: number) {
+  return (root: HTMLElement) =>
+    [...root.querySelectorAll(selector)].filter((el) => el.getClientRects().length > 0)[n] ?? null;
 }
 
 /** A finder for the first element under `scope` whose `aria-label` starts with `prefix`. */
 export function byAriaPrefix(scope: string, prefix: string) {
   return (root: HTMLElement) =>
-    [...root.querySelectorAll(`${scope} [aria-label]`)].find((el) =>
-      (el.getAttribute("aria-label") ?? "").startsWith(prefix),
-    ) ?? null;
+    laidOut(
+      [...root.querySelectorAll(`${scope} [aria-label]`)].filter((el) =>
+        (el.getAttribute("aria-label") ?? "").startsWith(prefix),
+      ),
+    );
 }
 
-/** A finder for the first element matching `selector` that is laid out (not `display: none`). */
-export function visible(selector: string) {
-  return (root: HTMLElement) =>
-    [...root.querySelectorAll<HTMLElement>(selector)].find((el) => el.getClientRects().length > 0) ?? null;
-}
 
 /** A finder for the first leaf under the first `scope` whose whole text matches `pattern`. */
 export function leafMatching(scope: string, pattern: RegExp) {
   return (root: HTMLElement) =>
-    [...(root.querySelector(scope)?.querySelectorAll("*") ?? [])].find(
-      (el) => el.children.length === 0 && pattern.test((el.textContent ?? "").trim()),
-    ) ?? null;
+    laidOut(
+      [...(first(scope)(root)?.querySelectorAll("*") ?? [])].filter(
+        (el) => el.children.length === 0 && pattern.test((el.textContent ?? "").trim()),
+      ),
+    );
 }
