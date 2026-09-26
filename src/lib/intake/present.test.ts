@@ -217,3 +217,12 @@ describe("themes asked as any of", () => {
     expect(answerChips(four, tribal).map((c) => c.kind)).toEqual(["theme", "theme", "theme", "theme"]);
   });
 });
+
+describe("the join's reason", () => {
+  const tribal = { ...labels, theme: (s: string) => s[0].toUpperCase() + s.slice(1) };
+  it("is not given when some commander fits every theme asked", () => {
+    const [widen] = narrowOptions({ without: [], widen: null, anyOf: { count: 40, most: 4 }, cardOverBracket: null },
+      p({ themes: ["orcs", "elves", "dwarves", "wizards"] }), tribal);
+    expect(widen.reason).toBeNull();
+  });
+});

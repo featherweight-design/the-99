@@ -27,8 +27,8 @@ export function budgetLine(card: HandOffAnswers["card"], cardUnread = false): st
 
 export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffAnswers; changeHref: string }) {
   const { themes, themeJoin, card, cardUnread, budgetDollars, bracket } = answers;
-  // Any of is one row, its line the best figure among the themes, as the results row ranked it.
-  const best = themes.reduce<(typeof themes)[number] | null>((b, t) => (t.pct !== null && (b === null || t.pct > (b.pct ?? -1)) ? t : b), null);
+  // Any of is one row, its line the figure of the theme the results row ranked by.
+  const best = themes.find((t) => t.best) ?? null;
   return (
     <CardDetailProvider>
       <section

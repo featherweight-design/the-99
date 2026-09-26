@@ -317,3 +317,21 @@ describe("themes asked as any of (three-answers addendum §1)", () => {
     expect(r.tooNarrow!.anyOf).toBeNull();
   });
 });
+
+describe("the join and the other answers", () => {
+  it("with a join reaching the floor and another answer asked, still searches removals that include it", () => {
+    // Themes x and y asked with blue, exactly. Two blue commanders back each, so the join finds
+    // four and reaches the floor while no single drop does. Dropping blue and a theme finds the ten
+    // green y commanders: more than the join, so the search must not stop at single drops.
+    const pool = [
+      ...[1, 2].map((i) => cmd({ name: `x${i}`, colorIdentity: ["U"], tags: [tag("x", 400)] })),
+      ...[1, 2].map((i) => cmd({ name: `yu${i}`, colorIdentity: ["U"], tags: [tag("y", 400)] })),
+      ...Array.from({ length: 10 }, (_, i) => cmd({ name: `yg${i}`, colorIdentity: ["G"], tags: [tag("y", 400)] })),
+    ];
+    const r = rankCandidates(pool, { ...none, themes: ["x", "y"], colors: ["U"], match: "exactly" }, null);
+    expect(r.tooNarrow!.anyOf).toEqual({ count: 4, most: 1 });
+    const [best] = r.tooNarrow!.without;
+    expect(best.answers.map((k) => (k.kind === "theme" ? k.slug : k.kind)).sort()).toEqual(["colors", "x"]);
+    expect(best.count).toBe(12);
+  });
+});

@@ -161,7 +161,7 @@ export const helpMeChooseCopy = {
     loadingHead: "Finding commanders…",
     loadingSub: (by: string) => `Ordered by ${by} once they arrive.`,
     // eng: the `by` for the two orders that name no one answer.
-    loadingBy: { owned: "cards you already have", all: "fit to everything you asked" },
+    loadingBy: { owned: "cards you already have", all: "fit to everything you asked", bestTheme: "the theme each fits best" },
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
     more: "Show 12 more",
     moreNote: "The next 12 count what you own as they load.", // canvas

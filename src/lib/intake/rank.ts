@@ -219,9 +219,12 @@ export function rankCandidates(
   const anyOf = rows.length < TOO_NARROW_BELOW ? anyOfCount(candidates, a, card, rows.length, tribes) : null;
   const tooNarrow = rows.length < TOO_NARROW_BELOW && answers.length > 0
     ? {
-      // With the join alone reaching the floor, one drop at a time is all the note searches: the
-      // join leads, and the deeper removal sets it would outrank cost a rescan each.
-      without: removals(candidates, a, card, answers, tribes, anyOf !== null && anyOf.count >= TOO_NARROW_BELOW),
+      // When every answer is a theme, the join passes a superset of what any removal does (keeping
+      // some themes all of is narrower than any of all of them), so once it reaches the floor the
+      // deeper removal sets can never outrank it and are not searched. With another answer asked,
+      // dropping that answer can bring back more than the join, so the search runs as usual.
+      without: removals(candidates, a, card, answers, tribes,
+        anyOf !== null && anyOf.count >= TOO_NARROW_BELOW && answers.every((k) => k.kind === "theme")),
       widen: widenCount(candidates, a, card, rows.length, tribes),
       anyOf,
       cardOverBracket: a.card !== null && card?.gameChanger === true && a.bracket !== null && a.bracket <= 2
@@ -241,11 +244,17 @@ function themeFits(c: Candidate, a: Answers, tribes: Tribes): Ranked["themeFits"
     return [{ slug, share: b?.share ?? 0, typeLine: b?.typeLine ?? false }];
   });
   if (!isAnyOf(a)) return fits;
-  const backed = fits;
-  if (backed.length === 0) return [];
-  // The group's value is its highest figure, a measured one ahead of a type-line one as in the order.
-  const best = backed.reduce((x, y) => (Number(x.typeLine) - Number(y.typeLine) || y.share - x.share) > 0 ? y : x);
-  return backed.map((f) => (f === best ? { ...f, best: true } : f));
+  const best = bestFit(fits);
+  return fits.map((f) => (f === best ? { ...f, best: true } : f));
+}
+
+/**
+ * An any-of group's value: its highest figure, a measured one ahead of a type-line one as in the
+ * order, the first asked on a tie. Exported so the hand-off names the same theme the row ranked by.
+ */
+export function bestFit<T extends { share: number; typeLine?: boolean }>(fits: readonly T[]): T | null {
+  if (fits.length === 0) return null;
+  return fits.reduce((x, y) => (Number(x.typeLine ?? false) - Number(y.typeLine ?? false) || y.share - x.share) > 0 ? y : x);
 }
 
 function anyOfCount(

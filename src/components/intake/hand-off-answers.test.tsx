@@ -40,7 +40,7 @@ describe("Built from your answers", () => {
       themes: [
         { slug: "orcs", label: "Orcs", pct: null },
         { slug: "elves", label: "Elves", pct: 11 },
-        { slug: "wizards", label: "Wizards", pct: 44 },
+        { slug: "wizards", label: "Wizards", pct: 44, best: true },
       ],
     };
     render(<HandOffAnswersBlock answers={any} changeHref="/x" />);

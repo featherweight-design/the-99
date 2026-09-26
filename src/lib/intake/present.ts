@@ -110,8 +110,11 @@ export function narrowOptions(narrow: NonNullable<SearchResult["tooNarrow"]>, p:
     const names = p.themes.map(labels.theme);
     options.push({
       label: copy.narrow.widenThemes(p.themes.length),
-      // One commander backing one of them says nothing a reader could act on.
-      reason: narrow.anyOf.most >= 2 ? copy.narrow.widenThemesWhy(narrow.anyOf.most, names) : null,
+      // Said only when it explains the zero: at 1 it says nothing a reader could act on, and when
+      // some commander fits every one of them the few who do are why the note is up, not this.
+      reason: narrow.anyOf.most >= 2 && narrow.anyOf.most < p.themes.length
+        ? copy.narrow.widenThemesWhy(narrow.anyOf.most, names)
+        : null,
       count: copy.narrow.count(narrow.anyOf.count),
       params: { ...p, themeJoin: "any", readId: null, deeper: [] },
       n: narrow.anyOf.count,

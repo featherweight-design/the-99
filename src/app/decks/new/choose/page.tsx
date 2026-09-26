@@ -20,6 +20,7 @@ import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../lib/intake/present";
+import { isAnyOf } from "../../../../lib/intake/rank";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
@@ -96,8 +97,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);
   const ranking = [...p.themes.map(labels.theme), ...(card ? [card.name] : [])];
-  const by =
-    ranking.length === 0 ? copy.results.loadingBy.owned : ranking.length === 1 ? ranking[0] : copy.results.loadingBy.all;
+  // Said as the order line will say it: any of with no card ranks by the best-fitting theme.
+  const by = isAnyOf(p) && !card
+    ? copy.results.loadingBy.bestTheme
+    : ranking.length === 0 ? copy.results.loadingBy.owned : ranking.length === 1 ? ranking[0] : copy.results.loadingBy.all;
 
   return (
     <CardDetailProvider>
