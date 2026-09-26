@@ -237,6 +237,13 @@
           "goto": "/decks/new/choose?pool=own&b=150",
           "wait": "textarea",
           "settle": 1500
+        },
+        {
+          "clickRole": "radio",
+          "name": "Only cards I own"
+        },
+        {
+          "settle": 600
         }
       ]
     },
