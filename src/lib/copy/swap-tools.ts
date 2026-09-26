@@ -66,6 +66,8 @@ export const swapToolsCopy = {
     jobFinds: (types: string) => `finds ${types} card`,
     jobRole: (roles: string, mv: number) => `${roles} · mana value ${mv}`,
     jobNoRole: "no role we can name",
+    /** E1: every job the card does is limited to cards this deck does not play. Owed to /copy-review. */
+    jobNotHere: "no job this deck uses",
     givesUpNothing: "gives up nothing",
     // v2 D1 (ranking-rebuild addendum): ownership is on the row, so no lead says free copies come first; a
     // free copy wins only a tie (the addendum audit's ruling 2). Every lead below is owed to /copy-review.
@@ -127,6 +129,8 @@ export const swapToolsCopy = {
     /** Each theme and role as a row names it. Owed to /copy-review with the rest of D2. */
     job: {
       ramp: "ramp", draw: "draw", removal: "removal", wipes: "wipes",
+      // E1 ruling b: a row names ramp by its kind, since a stand-in keeps ramp only in a kind it shares.
+      tapsForMana: "taps for mana", fetchesLand: "fetches a land", makesTreasure: "makes Treasure", burstMana: "one-shot mana",
       counters: "+1/+1 counters", pump: "pumps", haste: "haste", evasion: "evasion", etbDraw: "draws on entering",
       tokens: "tokens", treasure: "Treasure", protection: "protection", recursion: "recursion", blink: "blink",
       finisher: "a finisher", castFree: "free casts", mill: "mill", sacOutlet: "a sacrifice outlet",
@@ -182,12 +186,16 @@ export const swapToolsCopy = {
       kept: (cut: string) => `${cut} is still in the deck, and nothing was changed.`,
     },
     retry: "Try again",
+    /** E1: the card's jobs reach only cards this deck does not play (a Wolf lord in a Dinosaur deck). */
+    noJobHere: (name: string) =>
+      `Everything ${name} does is limited to cards this deck doesn’t play, so there are no stand-ins for it.`,
     noRole: (name: string) =>
       `${name} does a job we can’t read from its text, so there are no stand-ins for it. We won’t guess at one.`,
     noRoleLand: (name: string) =>
       `${name}’s job is its own text, not a color it makes or a land it finds, so there are no stand-ins for it. We won’t guess at one.`,
-    nothingCheaper: (roles: string, mv: number, commander: string, price: string) =>
-      `Nothing cheaper does this job. All the other ${roles} at mana value ${mv} or less in ${commander}’s colors costs more than ${price}, and you have no free copy of any of it.`,
+    /** E1: `jobs` are the original's jobs as a stand-in must keep them (ramp by its kind), `or`-joined. Owed to /copy-review. */
+    nothingCheaper: (jobs: string, mv: number, commander: string, price: string) =>
+      `Nothing cheaper does this job (${jobs}) at mana value ${mv} or less in ${commander}’s colors. Every card that does costs more than ${price}, and you have no free copy of one.`,
     nothingCheaperLand: (colors: string, price: string) =>
       `Nothing cheaper makes ${colors}. Every land that does costs more than ${price}, and you have no free copy of one.`,
     /** F5: a sold-out original with no free stand-in. The nothingCheaper sentences cite a price it has not got. Owed to /copy-review. */

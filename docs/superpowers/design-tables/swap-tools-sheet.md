@@ -262,7 +262,9 @@ The handoff draws this line at two lines. Measured over every row the engine can
 to nine. Every way to hold two drops a fact, and `gives up` is the fact most often dropped, so the line
 keeps every fact and may run to three at 390. It is not clamped: a clamp hides the give-up. Desktop
 measures two lines at most everywhere (1300px, 418px line box) and is unchanged. Eight lines on three rare
-utility originals read four, named one by one in `scripts/lib/swap-lines-residue.mts`; the measure fails
+utility originals read four, and since E1 (ramp named by its kind) so do 32 (original, stand-in) spell pairs on Ugin, Eye of
+the Storms, Coveted Jewel and The Great Henge, to be re-measured with E2's row rewrite. All are named one
+by one in `scripts/lib/swap-lines-residue.mts`; the measure fails
 on any other four, on a stale entry, and on any five. A reviewer should not read three lines as a
 regression from the handoff's two.
 
@@ -353,7 +355,7 @@ The content rules that got there, each keeping the fact:
 | text-wrap | `pretty` |
 | Key, no-role spell | `sheet.noRole(name)` |
 | Key, no-role land (no color and no fetch) | `sheet.noRoleLand(name)` |
-| Key, nothing cheaper (spell) | `sheet.nothingCheaper(roles, mv, commander, price)`; price = the original's drawn figure |
+| Key, nothing cheaper (spell) | `sheet.nothingCheaper(jobs, mv, commander, price)`; jobs = the original's jobs as a stand-in must keep them, ramp by its kind (E1), `or`-joined; price = the original's drawn figure |
 | Key, nothing cheaper (land) | `sheet.nothingCheaperLand(colors, price)` |
 | Key, sold-out original with no free copy (F5) | a new price-free sentence (owed to /copy-review): `nothingCheaper*` cite a price the row cannot draw |
 
@@ -515,7 +517,8 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | `leadSpellsOrderUnlisted` in the lead, the type groups as Spells | pair name |
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |
 | No role (land) | land with no color and no fetch | sentence `noRoleLand(name)` | name |
-| Nothing cheaper (spell) | no same-role card at MV ≤ is cheaper, and no free copy | sentence `nothingCheaper(roles, mv, commander, price)` | roles, mv, commander, original price |
+| Nothing cheaper (spell) | no card keeping one of the original's jobs (ramp by kind, E1) at MV ≤ is cheaper, and no free copy | sentence `nothingCheaper(jobs, mv, commander, price)` | jobs, mv, commander, original price |
+| No job here (spell, E1) | every job the original does is limited to cards this deck doesn't play (a creature type not its key, a subtype it neither holds nor makes) | job line `jobNotHere`; sentence `noJobHere(name)`; no groups | original name |
 | Nothing cheaper (land) | no land making those colors is cheaper, and no free copy | sentence `nothingCheaperLand(colors, price)` | colors, original price |
 | Sold-out original (F5) | original's price state is sold out: never over, reached from the card modal | head with sold-out BuyTag and no over text; new free-only lead; the type groups, free rows only; foot | free stand-ins only |
 | Sold-out, no free copy (F5) | as above, no free stand-in | new price-free sentence | name, job |

@@ -152,6 +152,11 @@ export function sheetModel(read: StandInsRead): SheetModel {
   const soldOut = read.originalCents === null;
   const price = read.originalCents === null ? "" : formatCents(read.originalCents);
 
+  // E1: a spell whose every job is limited to cards this deck doesn't play has no job here. Its coarse
+  // roles would make the "nothing cheaper" sentence claim a job the deck was ruled unable to use.
+  if (job.kind === "spell" && read.jobRoles.length === 0) {
+    return { job: copy.jobNotHere, lead: null, groups: [], foot: false, sentence: copy.noJobHere(original.name) };
+  }
   if (job.kind === "none") {
     // The front face decides, as `jobOf` does: a spell with a land back face is a spell here.
     const land = isLandFace(original.typeLine);
@@ -267,7 +272,8 @@ export function sheetModel(read: StandInsRead): SheetModel {
   if (groups.length === 0) {
     const sentence =
       soldOut ? copy.soldOutNone(original.name)
-      : job.kind === "spell" ? copy.nothingCheaper(rolesText(job.roles), job.mv, commander, price)
+      // E1: the jobs a stand-in had to keep, ramp by its kind, so the sentence is true of what was ruled out.
+      : job.kind === "spell" ? copy.nothingCheaper(listWords([...new Set(read.jobRoles.map((j) => copy.job[j]))], "or"), job.mv, commander, price)
       : copy.nothingCheaperLand(colorsText(landColors), price);
     return { job: jobLine, lead: null, groups: [], sentence, foot: false };
   }

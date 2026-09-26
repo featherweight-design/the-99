@@ -13,7 +13,7 @@ const standIn = (name: string, over: Partial<StandIn> = {}): StandIn => ({
   synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], extra: [], missing: [], once: [], rung: null, drawbacks: [], givesUp: [], ...over,
 } as StandIn);
 const read = (over: Partial<StandInsRead>): StandInsRead => ({
-  job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
+  job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500, jobRoles: ["removal"],
   groups: [],
   original: card("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: new Date(), ...over,
 } as StandInsRead);
@@ -257,6 +257,14 @@ describe("the stand-ins sheet's model", () => {
 
   it("says nothing cheaper, citing the original's price, when every group is empty", () => {
     expect(sheetModel(read({})).sentence).toBe(copy.nothingCheaper("removal", 2, "Gishath", "$15.00"));
+    // E1: ramp is named by the kinds a stand-in had to keep, not as ramp.
+    const treasure = sheetModel(read({ job: { kind: "spell", roles: ["ramp"], mv: 2 }, jobRoles: ["makesTreasure", "draw"] }));
+    expect(treasure.sentence).toBe(copy.nothingCheaper("makes Treasure or draw", 2, "Gishath", "$15.00"));
+  });
+
+  it("says a card whose every job is limited to cards the deck doesn't play has no job here (E1)", () => {
+    const lord = sheetModel(read({ jobRoles: [], original: card("Wolf Lord", "Creature — Wolf") }));
+    expect(lord).toMatchObject({ job: copy.jobNotHere, lead: null, groups: [], foot: false, sentence: copy.noJobHere("Wolf Lord") });
     const land = sheetModel(read({ job: { kind: "land", colors: ["G"] }, original: card("Gaea's Cradle", "Legendary Land") }));
     expect(land.sentence).toBe(copy.nothingCheaperLand("green", "$15.00"));
   });

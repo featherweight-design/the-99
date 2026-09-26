@@ -13,7 +13,7 @@ const standIn = (name: string, free: boolean) => ({
   inclusion: null, synergy: null, isUniversal: false, shared: ["removal"], sharedThemes: [], extra: [], missing: [], once: [], rung: null, drawbacks: [], givesUp: [],
 });
 const READ = {
-  job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500,
+  job: { kind: "spell", roles: ["removal"], mv: 2 }, originalCents: 1500, jobRoles: ["removal"],
   groups: [{ same: true, type: "instant", rows: [{ ...standIn("Swords to Plowshares", true), soft: 1 }, standIn("Chaos Warp", false)], total: 2 }],
   original: cardRow("Anguished Unmaking"), commanders: ["Gishath"], newestAsOf: asOf,
 } as unknown as StandInsRead;
