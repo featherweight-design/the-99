@@ -518,6 +518,7 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |
 | No role (land) | land with no color and no fetch | sentence `noRoleLand(name)` | name |
 | Nothing cheaper (spell) | no card keeping one of the original's jobs (ramp by kind, E1) at MV ≤ is cheaper, and no free copy | sentence `nothingCheaper(jobs, mv, commander, price)` | jobs, mv, commander, original price |
+| No job here (spell, E1) | every job the original does is limited to cards this deck doesn't play (a creature type not its key, a subtype it neither holds nor makes) | job line `jobNotHere`; sentence `noJobHere(name)`; no groups | original name |
 | Nothing cheaper (land) | no land making those colors is cheaper, and no free copy | sentence `nothingCheaperLand(colors, price)` | colors, original price |
 | Sold-out original (F5) | original's price state is sold out: never over, reached from the card modal | head with sold-out BuyTag and no over text; new free-only lead; the type groups, free rows only; foot | free stand-ins only |
 | Sold-out, no free copy (F5) | as above, no free stand-in | new price-free sentence | name, job |

@@ -66,6 +66,8 @@ export const swapToolsCopy = {
     jobFinds: (types: string) => `finds ${types} card`,
     jobRole: (roles: string, mv: number) => `${roles} · mana value ${mv}`,
     jobNoRole: "no role we can name",
+    /** E1: every job the card does is limited to cards this deck does not play. Owed to /copy-review. */
+    jobNotHere: "no job this deck uses",
     givesUpNothing: "gives up nothing",
     // v2 D1 (ranking-rebuild addendum): ownership is on the row, so no lead says free copies come first; a
     // free copy wins only a tie (the addendum audit's ruling 2). Every lead below is owed to /copy-review.
@@ -184,6 +186,9 @@ export const swapToolsCopy = {
       kept: (cut: string) => `${cut} is still in the deck, and nothing was changed.`,
     },
     retry: "Try again",
+    /** E1: the card's jobs reach only cards this deck does not play (a Wolf lord in a Dinosaur deck). */
+    noJobHere: (name: string) =>
+      `Everything ${name} does is limited to cards this deck doesn’t play, so there are no stand-ins for it.`,
     noRole: (name: string) =>
       `${name} does a job we can’t read from its text, so there are no stand-ins for it. We won’t guess at one.`,
     noRoleLand: (name: string) =>
