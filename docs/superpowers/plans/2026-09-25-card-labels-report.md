@@ -125,7 +125,7 @@ perfect. Three caveats sit beside its figures:
   deciding difference, but it is the only run that produced an unparseable kind.
 
 **The job columns are the finding nobody expected — with one correction.** On
-PRECISION all three sit within 4 points (0.762 to 0.8), so a pass bought to find job
+PRECISION all four sit within 5 points (0.752 to 0.8), so a pass bought to find job
 KINDS more accurately would be close to a waste. On RECALL they do not: Sonnet finds
 0.834 against the rules' 0.717, which is 171 true jobs against 147 — a 16% relative
 gain, not a rounding difference. So the limits are where nearly

@@ -131,6 +131,18 @@ export const renderBody = (cards: CardForPrompt[]) =>
  * The output ceiling for one batch. EXPORTED because the spend estimate has to bind
  * on it: a hardcoded copy in the estimator means raising this doubles what the
  * requests permit while the cap still books the old figure.
+ *
+ * `LABEL_MAX_TOKENS` lowers it for a run whose PRICE is not known. The spend cap binds
+ * on the worst case -- this ceiling x batches x the output rate -- so with an unpriced
+ * model shrinking the ceiling is the only way to keep the cap meaningful.
+ *
+ * **4,000 is the working floor for a model with thinking enabled, and 3,000 is not.**
+ * Measured output is 125-136 tokens a card across the three models (Haiku 125, Sonnet
+ * 4.5 132, Sonnet 5 136), or ~1,650 a batch of 12, which makes 3,000 look like ample
+ * headroom and it is -- for the COMPLETION. It is not headroom for reasoning: Sonnet 5
+ * has adaptive thinking on by default and spent 2,999 of a 3,000 ceiling on it,
+ * returning no labels at all and costing $1.0367 for nothing. So a ceiling under 4,000
+ * is safe only with `thinking: {type: "disabled"}`, which `buildRequest` sets.
  */
 export const MAX_TOKENS_PER_BATCH = (() => {
   const raw = process.env.LABEL_MAX_TOKENS;
@@ -146,12 +158,6 @@ export const MAX_TOKENS_PER_BATCH = (() => {
 })();
 
 /**
- * `LABEL_MAX_TOKENS` lowers the ceiling for a run whose PRICE is not known. The spend
- * cap binds on the worst case, which is `MAX_TOKENS_PER_BATCH` x batches x the output
- * rate -- so with an unpriced model the only way to keep the cap meaningful is to
- * shrink the ceiling. Measured output is ~160 tokens a card, or ~1,920 a batch of 12,
- * so 3,000 leaves over 50% headroom while making the worst case affordable.
- *
  * Whether a model still accepts `temperature`. Measured, not guessed: Sonnet 5 answers
  * 400 with "`temperature` is deprecated for this model", while Haiku 4.5 and Sonnet 4.5
  * accept 0. A list rather than a pattern, so a new model is a deliberate addition.

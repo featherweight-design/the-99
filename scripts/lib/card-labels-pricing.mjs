@@ -24,7 +24,6 @@ export const PRICING = {
   sonnet5: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
 };
 
-/** @type {Record<ModelKey, string>} */
 /**
  * `sonnet5` is priced at SONNET 4.5's published rates, and that is an assumption this
  * file cannot discharge: the cost and usage endpoints need an Admin API key, which this
@@ -39,16 +38,42 @@ export const PRICING = {
  * advertising a bound it cannot hold. It is opt-in through `LABEL_MODELS=sonnet5`,
  * which is how the comparison run was made.
  */
+/** @type {Partial<Record<ModelKey, string>>} */
 export const MODELS = {
   haiku: "claude-haiku-4-5-20251001",
   sonnet: "claude-sonnet-4-5",
 };
 
-/** Every model the runner CAN submit, including opt-in ones. */
+/**
+ * Every model the runner CAN submit, including opt-in ones.
+ *
+ * THIS is the declaration that has to be exhaustive, and the annotation was on `MODELS`
+ * — which is deliberately a subset, so the annotation was false there and absent here.
+ * Nothing tied `ALL_MODELS`'s keys to `PRICING`, so adding an opt-in model and
+ * forgetting its rates would die at runtime in the preflight on `PRICING[m].caches`.
+ *
+ * Note it cannot be ENFORCED from here: `checkJs` is off, so no `.mjs` in this
+ * repository is type-checked and these annotations are documentation that editors read.
+ * `assertPriced` below is the runtime half, which is what actually holds.
+ */
+/** @type {Record<ModelKey, string>} */
 export const ALL_MODELS = {
   ...MODELS,
   sonnet5: "claude-sonnet-5",
 };
+
+/**
+ * Every submittable model must be priced, checked AT IMPORT rather than annotated.
+ *
+ * `checkJs` is off, so the `@type` annotations above are documentation an editor reads
+ * and nothing a build enforces. Without this, adding a model to `ALL_MODELS` and
+ * forgetting its rates typechecks, passes every test, and dies mid-run in the preflight
+ * on `PRICING[m].caches` — after the caller has already decided to spend money.
+ */
+const unpriced = Object.keys(ALL_MODELS).filter((m) => !PRICING[m]);
+if (unpriced.length > 0) {
+  throw new Error(`ALL_MODELS names a model with no PRICING entry: ${unpriced.join(", ")}`);
+}
 
 /**
  * Dollars for one model's usage. Absent terms are zero.
@@ -57,5 +82,6 @@ export const ALL_MODELS = {
  */
 export const costOf = (model, { i = 0, cr = 0, o = 0, cw = 0 }) => {
   const p = PRICING[model];
+  if (!p) throw new Error(`no PRICING entry for model "${model}"`);
   return (i * p.in + cr * p.cacheRead + o * p.out + cw * p.cacheWrite) / 1e6;
 };

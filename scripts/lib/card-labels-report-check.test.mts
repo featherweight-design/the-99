@@ -27,7 +27,12 @@ type ModelScore = {
   spuriousRestrictions: number;
 };
 type Score = { models: Record<string, ModelScore> };
-type Cost = { totalUsd: number; projections: Record<string, { fullRunUsd: number; perSetUsd: number }> };
+type Sample = { usd: number; usdPerCard: number };
+type Cost = {
+  totalUsd: number;
+  perModel: Record<string, Sample>;
+  projections: Record<string, { fullRunUsd: number; perSetUsd: number }>;
+};
 type Agree = {
   cards: number; sameJobs: number; sameEverything: number;
   jobTally: { both: number; haikuOnly: number; sonnetOnly: number };
@@ -45,7 +50,7 @@ const agree = JSON.parse(readFileSync(AGREE, "utf8")) as Agree;
 // Its dollars are a projection at 4.5's rates and the report says so; the figures
 // still have to match the artifact that published them.
 const sonnet5 = JSON.parse(readFileSync(SONNET5, "utf8")) as {
-  score: ModelScore; projection: { fullRunUsd: number; perSetUsd: number }; cost: { usd: number };
+  score: ModelScore; projection: { fullRunUsd: number; perSetUsd: number }; cost: Sample;
 };
 score.models.sonnet5 = sonnet5.score;
 cost.projections.sonnet5 = sonnet5.projection;
@@ -74,7 +79,10 @@ describe("the report agrees with the artifacts it cites", () => {
     ]);
   });
 
-  for (const limit of ["rampKind", "trigger", "recurrence"]) {
+  // `threshold` and `modal` are in here because they were asserted by NOBODY: the diff
+  // adds a cell to each and a 1.000 tie is exactly the sort of row that goes stale
+  // unnoticed, having never changed.
+  for (const limit of ["rampKind", "trigger", "recurrence", "threshold", "modal"]) {
     it(`states the ${limit} accuracy the artifact records`, () => {
       const cells = row(limit);
       for (const [i, m] of COLUMNS.entries()) {
@@ -112,14 +120,55 @@ describe("the report agrees with the artifacts it cites", () => {
     return line.split("|").slice(2, 6).map((c) => c.replace(/[*$]/g, "").trim());
   };
 
-  it("states the full-run projections the cost artifact records, in the table and in prose", () => {
-    for (const [m, label] of [["haiku", "Haiku 4.5"], ["sonnet", "Sonnet 4.5"], ["sonnet5", "Sonnet 5"]] as const) {
-      const full = cost.projections[m].fullRunUsd.toFixed(2);
-      // The table cell, positionally — a figure elsewhere on the page cannot satisfy it.
-      expect(costRow(label)[2], `full-run cell for ${m}`).toBe(full);
-      // And the figure has to appear in the prose too, so the two cannot diverge.
-      expect(report, `full-run cost for ${m}`).toContain(`$${full}`);
+  /** Every line that is not part of a table — where a stale figure actually hides. */
+  const proseLines = report.split("\n").filter((l) => !l.trimStart().startsWith("|"));
+
+  // EVERY cell, not just the projection. Three of the four were unpinned, and the
+  // mutation that proves it is cheap: `| Sonnet 5 | $0.9999 | $0.009999 | $37.69 | $9.99 |`
+  // passed while only cell 2 was asserted.
+  it("states every cost cell the artifacts record", () => {
+    for (const [m, label, sample] of [
+      ["haiku", "Haiku 4.5", cost.perModel.haiku],
+      ["sonnet", "Sonnet 4.5", cost.perModel.sonnet],
+      ["sonnet5", "Sonnet 5", sonnet5.cost],
+    ] as const) {
+      const cells = costRow(label);
+      expect(cells[0], `sample spend for ${m}`).toBe(sample.usd.toFixed(4));
+      expect(cells[1], `per card for ${m}`).toBe(sample.usdPerCard.toFixed(6));
+      expect(cells[2], `full-run cell for ${m}`).toBe(cost.projections[m].fullRunUsd.toFixed(2));
+      expect(cells[3], `per-set cell for ${m}`).toBe(cost.projections[m].perSetUsd.toFixed(2));
     }
+  });
+
+  // The projection has to appear in the PROSE too, and this is the check that was a
+  // tautology in its first version: `expect(report).toContain(...)` is satisfied by the
+  // table cell asserted one line above it, so rewriting a sentence to read
+  // "($41.09 against $41.09)" left 18 of 18 passing. It reads prose lines only now.
+  //
+  // The two models the ARGUMENT turns on, not all three. Haiku's $12.73 is quoted
+  // nowhere but the table — the prose carries it as the $28.36 difference instead —
+  // so demanding it here would fail a report that is correct. What stops a stale prose
+  // projection for any model is the dollar guard below, which admits only figures an
+  // artifact records.
+  it("quotes the deciding full-run projections in the prose, not only in the table", () => {
+    for (const m of ["sonnet", "sonnet5"] as const) {
+      const full = `$${cost.projections[m].fullRunUsd.toFixed(2)}`;
+      expect(proseLines.some((l) => l.includes(full)), `${full} (${m}) in prose`).toBe(true);
+    }
+  });
+
+  // The per-set figures are quoted in prose as WORDS ("50 cents", "16"), which carry no
+  // `$` and so escape the dollar guard below entirely. Named, because the sentence is
+  // the one the report's conclusion rests on. Read from the JOINED prose: the sentence
+  // wraps, and matching one line found "50 cents" with "16 on Haiku" on the next.
+  it("quotes the per-set costs the artifact records, in the sentence that turns on them", () => {
+    const prose = proseLines.join(" ").replace(/\s+/g, " ").replace(/\*\*/g, "");
+    const at = prose.indexOf("a new set costs");
+    if (at < 0) throw new Error(`no per-set sentence in ${REPORT}`);
+    const sentence = prose.slice(at, prose.indexOf(".", at) + 1);
+    const cents = (m: "haiku" | "sonnet") => String(Math.round(100 * cost.projections[m].perSetUsd));
+    expect(sentence, "Sonnet per set").toContain(`${cents("sonnet")} cents`);
+    expect(sentence, "Haiku per set").toContain(cents("haiku"));
   });
 
   // Every dollar figure in the PROSE must be one the ledger or the artifacts record.
