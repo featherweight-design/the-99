@@ -19,6 +19,9 @@
 // Needs a server with ANALYSIS_TAB_ENABLED=true and NOTICES_ENABLED=true.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
@@ -88,7 +91,24 @@ async function refuseSharedDatabase() {
   }
 }
 
-/** A deck of the account's with a single-mark reading, and one planted entry on a card it analyzed. */
+// What the run changes, HELD ON DISK before each write (the notices probes' rule): a run killed
+// before its `finally` leaves the file, and the next run puts the deck's read marks back and deletes
+// the entry before it plants anything. The entry carries this probe's mark too, so one whose seq
+// never reached the file is still found.
+const HOLD = path.join(os.tmpdir(), "the99-probe-notices-open-hold.json");
+
+async function restoreHeld() {
+  let prior;
+  try {
+    prior = JSON.parse(readFileSync(HOLD, "utf8"));
+  } catch {
+    return;
+  }
+  await resetReadMarks(prior);
+  rmSync(HOLD, { force: true });
+}
+
+/** A deck of the account's with a stored reading, and one planted entry on a card it analyzed. */
 async function buildFixture(userId) {
   const [deck] = await sql`
     select d.id, d.name, d.notices_legal_seen, p.notices_read_seq, p.analyzed_oracle_ids
@@ -96,6 +116,7 @@ async function buildFixture(userId) {
     where d.user_id = ${userId} and cardinality(p.analyzed_oracle_ids) > 0
     order by d.id limit 1`;
   if (!deck) return null;
+  writeFileSync(HOLD, JSON.stringify({ id: deck.id, notices_read_seq: deck.notices_read_seq, notices_legal_seen: deck.notices_legal_seen }));
   const [{ seq }] = await sql`
     insert into deck_data_changes (kind, direction, oracle_ids, detail)
     values ('gameChanger', 'added', array[${deck.analyzed_oracle_ids[0]}]::uuid[], ${JSON.stringify({ probe: PROBE_MARK })}::jsonb)
@@ -167,6 +188,7 @@ async function walk(page, width, fixture) {
 
 async function main() {
   await refuseSharedDatabase();
+  await restoreHeld();
   await sql`delete from deck_data_changes where detail->>'probe' = ${PROBE_MARK}`;
   await clerkSetup();
   const browser = await chromium.launch();
@@ -181,7 +203,9 @@ async function main() {
     if (!report("fixture", fixture !== null, fixture ? `${fixture.name}, entry ${fixture.seq}` : "no deck with an analyzed reading — NOT a pass")) return;
     for (const width of WIDTHS) await walk(page, width, fixture);
   } finally {
-    if (fixture) await resetReadMarks(fixture).catch((e) => { failures += 1; console.error(e); });
+    if (fixture) {
+      await resetReadMarks(fixture).then(() => rmSync(HOLD, { force: true })).catch((e) => { failures += 1; console.error(e); });
+    }
     await sql`delete from deck_data_changes where detail->>'probe' = ${PROBE_MARK}`.catch((e) => { failures += 1; console.error(e); });
     if (about) await restoreAboutSeen(about, sql).catch((e) => { failures += 1; console.error(e); });
     await browser.close();
