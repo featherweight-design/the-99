@@ -15,7 +15,7 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { BuyTag } from "../decks/buy-tag";
 import { StatusPillBadge } from "../decks/status-pill";
 import { SetCell } from "../sets/set-cell";
-import { RoleChips } from "../commanders/role-chips";
+import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 
 import { BrowseFigureBody } from "./browse-figure";
@@ -568,10 +568,24 @@ function CardDetailFigure({ width }: { width: AboutWidth }) {
 function RoleCoverageFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="role-coverage" width={width}>
-      {/* `RoleChips` is the commander page's own, and it colours a role that
-          is SHORT of its baseline — which is the entry's subject: a 1 of 3 on
-          wipes is what tells you what to fix before you commit. */}
-      <RoleChips roleCounts={ROLE_COUNTS} />
+      {/* The commander page's own group heads (`RoleGroupHeader`), desktop and phone forms at
+          their widths, one per role. Wipes is the entry's subject: 1 owned, 2 short of the
+          baseline, is what tells you what to fix before you start building. */}
+      <div className="flex flex-col gap-[10px]">
+        {(Object.keys(ROLE_COUNTS) as (keyof typeof ROLE_COUNTS)[]).map((role) => (
+          <div
+            key={role}
+            className="rounded-[10px] border border-solid border-[color:var(--border)] px-[14px] py-[11px]"
+          >
+            <div className="hidden md:block">
+              <RoleGroupHeader layout="desktop" role={role} count={ROLE_COUNTS[role]} listId={`about-role-${role}`} />
+            </div>
+            <div className="md:hidden">
+              <RoleGroupHeader layout="phone" role={role} count={ROLE_COUNTS[role]} listId={`about-role-${role}-phone`} />
+            </div>
+          </div>
+        ))}
+      </div>
     </Specimen>
   );
 }

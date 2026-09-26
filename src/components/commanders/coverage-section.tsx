@@ -121,6 +121,63 @@ function DotKey({
 
 // ── One role panel ─────────────────────────────────────────────────────────────
 
+/**
+ * A role group's head: its name, what the reader owns, and that count against the role's
+ * baseline. One component for both panels, so the About page's role-coverage figure can mount
+ * the page's own rather than a stand-in. At phone width the gap clause takes its own line,
+ * because a role name, a count and a full sentence do not fit on one.
+ */
+export function RoleGroupHeader({
+  layout,
+  role,
+  count,
+  listId,
+}: {
+  layout: "desktop" | "phone";
+  role: RoleName;
+  count: number;
+  listId: string;
+}): JSX.Element {
+  const target = ROLE_TARGETS[role];
+  const gap =
+    count > target
+      ? `Well past the ${target}-source baseline`
+      : count === target
+        ? `At the ${target}-source baseline`
+        : `${target - count} short of baseline`;
+  const name = (
+    <h3 id={`${listId}-name`} className="font-sans font-[600] m-0" style={{ fontSize: 15, color: "var(--fg)" }}>
+      {ROLE_LABELS[role]}
+    </h3>
+  );
+  if (layout === "desktop") {
+    return (
+      <div className="flex items-baseline gap-[12px]" style={{ marginBottom: 10 }}>
+        {name}
+        <span className="font-mono" style={{ fontSize: 12, color: "var(--success)" }}>
+          {count} owned
+        </span>
+        <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}>
+          {gap}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="flex items-baseline gap-[10px]">
+        {name}
+        <span className="font-mono" style={{ fontSize: 11.5, color: "var(--success)" }}>
+          {count} owned
+        </span>
+      </div>
+      <p className="font-mono m-0" style={{ fontSize: 10.5, color: "var(--fg-faint)", marginBottom: 9 }}>
+        {gap}
+      </p>
+    </>
+  );
+}
+
 function RolePanelDesktop({
   role,
   cards,
@@ -138,7 +195,6 @@ function RolePanelDesktop({
   onToggle: () => void;
   listId: string;
 }): JSX.Element {
-  const target = ROLE_TARGETS[role];
   const cap = COVERAGE_CAP.desktop;
   const siblings = cards.map((c) => c.oracleId);
   // The open list is a 320px scroll box, and closing it writes nothing to
@@ -179,25 +235,7 @@ function RolePanelDesktop({
       }}
     >
       {/* Header row */}
-      <div className="flex items-baseline gap-[12px]" style={{ marginBottom: 10 }}>
-        <h3
-          id={`${listId}-name`}
-          className="font-sans font-[600] m-0"
-          style={{ fontSize: 15, color: "var(--fg)" }}
-        >
-          {ROLE_LABELS[role]}
-        </h3>
-        <span className="font-mono" style={{ fontSize: 12, color: "var(--success)" }}>
-          {count} owned
-        </span>
-        <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}>
-          {count > target
-            ? `Well past the ${target}-source baseline`
-            : count === target
-              ? `At the ${target}-source baseline`
-              : `${target - count} short of baseline`}
-        </span>
-      </div>
+      <RoleGroupHeader layout="desktop" role={role} count={count} listId={listId} />
 
       {/* Card chips */}
       {cards.length === 0 ? (
@@ -267,7 +305,6 @@ function RolePanelPhone({
   onToggle: () => void;
   listId: string;
 }): JSX.Element {
-  const target = ROLE_TARGETS[role];
   const cap = COVERAGE_CAP.phone;
   const siblings = cards.map((c) => c.oracleId);
   // The open list is a 320px scroll box, and closing it writes nothing to
@@ -309,25 +346,7 @@ function RolePanelPhone({
     >
       {/* Header — the gap clause takes its own line here, because at phone width
           a role name, a count and a full sentence do not fit on one. */}
-      <div className="flex items-baseline gap-[10px]">
-        <h3
-          id={`${listId}-name`}
-          className="font-sans font-[600] m-0"
-          style={{ fontSize: 15, color: "var(--fg)" }}
-        >
-          {ROLE_LABELS[role]}
-        </h3>
-        <span className="font-mono" style={{ fontSize: 11.5, color: "var(--success)" }}>
-          {count} owned
-        </span>
-      </div>
-      <p className="font-mono m-0" style={{ fontSize: 10.5, color: "var(--fg-faint)", marginBottom: 9 }}>
-        {count > target
-          ? `Well past the ${target}-source baseline`
-          : count === target
-            ? `At the ${target}-source baseline`
-            : `${target - count} short of baseline`}
-      </p>
+      <RoleGroupHeader layout="phone" role={role} count={count} listId={listId} />
 
       {/* Rows */}
       <div

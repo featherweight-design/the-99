@@ -228,8 +228,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     id: 'buy-tag',
     chapter: '01',
     title: 'What a card costs to buy',
-    route: '/collection',
-    opens: 'opens the card detail',
+    route: '/decks',
+    opens: 'opens a deck',
     width: 'inset',
     caption:
       'Prices come from ManaPool and refresh weekly. The tag has four states and they are different claims: a figure, a foil-only figure, sold out (stocked, but unavailable today) and no figure at all, which is the feed having no price for that printing rather than a price of nothing. None of those is free.',
@@ -371,8 +371,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     id: 'partners',
     chapter: '02',
     title: 'Partners',
-    route: '/commanders',
-    opens: 'opens a commander',
+    route: '/decks/new',
     width: 'inset',
     caption:
       "When your commander has Partner we offer the partners you own, and a pasted list’s second legend arrives as a proposal you can change or remove. Two commanders take two of the hundred cards, so a pair deck’s 99 is 98, and every count and progress bar in the app measures against that.",
@@ -590,7 +589,6 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit.',
     keys: [
-      'the changes are reviewable before they land: every add and cut beside the committed list, with nothing counted twice.',
       'a version shows how many games it held, and each game in the log names its version, so you can tell whether a change helped.',
       'a deck you have never committed reads Draft once it holds a card, however many. Commit v1 and it takes the status its list earns.',
     ],
@@ -601,7 +599,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '03',
     title: 'What you would need to buy',
     route: '/decks',
-    opens: 'opens the shopping roll-up',
+    opens: 'opens a deck’s Shopping filter',
     // 'inset' at the canvas, where the figure was two legend rows. It draws
     // real Shopping-filter rows now, and a ~300px column truncated both card
     // names to `Dockside ...` and `R. —`.
@@ -616,7 +614,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '03',
     title: 'Cheaper stand-ins',
     route: '/decks',
-    opens: 'opens the shopping roll-up',
+    opens: 'opens a deck’s Shopping filter',
     width: 'plate',
     switch: 'SWAP_TOOLS_ENABLED',
     caption:
@@ -751,7 +749,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       // and nothing beside it. The figure below is that tab, so the claim had
       // nowhere to hide.
       'the Shopping list tab is the cards this deck has to buy, which includes one you own whose every copy another deck is already holding.',
-      "the link opens in a new tab and carries the list, nothing else. A card’s own link lands on every printing, because the app recommends a card rather than a printing.",
+      "the link opens in a new tab and carries the list, nothing else.",
       'Copy to clipboard reads Copied ✓ for a second and a half, then returns. It and Download .txt carry the same plain text, which Moxfield and Archidekt both read, and nothing here changes the deck.',
     ],
     since: 1,
@@ -847,12 +845,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     chapter: '04',
     title: 'Which deck gets a shared copy',
     route: '/decks',
-    opens: 'opens a deck',
+    opens: 'opens a deck’s review page',
     // 'inset' at the canvas, where the figure was a legend. Mounted,
     // the contested row draws two deck choices side by side with their stamps.
     width: 'plate',
     caption:
-      'When two decks want the same card and you own one, the deck that committed it first holds it by default, and you can override that, giving the copy to whichever deck you would rather sleeve it in. The other reads as short either way, which is why the diamond is on the card and not on the deck.',
+      'When two decks want the same card and you own one, the deck that committed it first holds it by default, and you can override that, giving the copy to whichever deck you would rather sleeve it in. The other reads as short either way.',
     keys: [],
     since: 1,
   },

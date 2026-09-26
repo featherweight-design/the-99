@@ -67,7 +67,8 @@ import { DecklistRow } from "../decks/decklist-row";
 import { useSyncExternalStore } from "react";
 import { QuickAddBar } from "../decks/quick-add-bar";
 import { GameLogForm } from "../decks/game-log-form";
-import { GameFindings } from "../decks/games-panel";
+import { GameFindings, GameHeadlineHeader } from "../decks/games-panel";
+import { deriveHeadline } from "../../lib/decks/game-headline";
 import { ProxyControl } from "../decks/proxy-control";
 import { Column } from "../decks/review-changes";
 import { CreatePicker } from "../decks/create-picker";
@@ -126,8 +127,6 @@ import { ChangeCommanderDoor } from "../decks/change-commander-door";
 import { CandidateGroupHeading, CandidateRow } from "../decks/change-commander-sheet";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
-const fmt = (n: number) => n.toLocaleString("en-US");
-
 export function ImportFigureBody() {
   return (
     // TRANSCRIBED from §3, not interpreted. Every value is read off the
@@ -177,12 +176,11 @@ export function ImportFigureBody() {
  * the decks that did not.
  */
 export function PostImportFigureBody() {
-  const { before, after, noLongerOwned, unaffectedDecks } = REPLACE_SUMMARY;
+  const { before, after, arrived, left } = REPLACE_SUMMARY;
   const c = cardAssignmentsCopy.summary;
   const heads: Record<string, string> = {
     cleared: c.sectionCleared(61),
     still: c.sectionStill(12),
-    short: c.sectionShort(2),
   };
   return (
     <div className="flex flex-col gap-[10px]">
@@ -193,17 +191,11 @@ export function PostImportFigureBody() {
         <span className="font-mono text-[10.5px] tracking-[0.1em] text-[color:var(--fg-faint)] uppercase">
           {c.eyebrow}
         </span>
-        <span className="text-[12.5px] text-[color:var(--fg)]">
-          {fmt(before)} → {fmt(after)} cards
-        </span>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {noLongerOwned} no longer owned
-        </span>
-        {/* Decks nothing happened to are COUNTED, never listed — the summary
-            is what changed, not an inventory. The fixture carried the figure
-            and the rebuild into sections dropped the line that drew it. */}
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-          {unaffectedDecks} other decks unaffected
+        {/* The route's own heading and lede: the after figure, then the before one beside
+            what arrived and what left. Earlier versions drew figures the summary never prints. */}
+        <span className="text-[12.5px] text-[color:var(--fg)]">{c.heading(after)}</span>
+        <span className="basis-full text-[11.5px] leading-[1.45] text-[color:var(--fg-muted)]">
+          {c.lede(before, arrived, left)}
         </span>
       </div>
 
@@ -251,6 +243,10 @@ export function PostImportFigureBody() {
       <div className="flex items-start gap-[8px]">
         <KeyNumeral n={4} className="mt-[3px]" />
         <div className="min-w-0 flex-1">
+          {/* Still short, as the route draws it: the section's head, then the contested row. */}
+          <span className="font-mono text-[10px] tracking-[0.12em] text-[color:var(--fg-body)] uppercase">
+            {c.sectionShort(2)}
+          </span>
           <ContestedCardRow card={CONTESTED_ARRIVAL} />
         </div>
       </div>
@@ -796,6 +792,8 @@ export function ComboAwarenessFigureBody() {
           comboPartners: COMBO_SPECIMEN,
         } as never
       }
+      // Open, because key 4 names the Spellbook marker, which the block draws only open.
+      initiallyExpanded
     />
   );
 }
@@ -1318,7 +1316,15 @@ export function ThemesFigureBody() {
  * announcements and a history, and none of them reach into this block.
  */
 export function LogFindingsFigureBody() {
-  return <GameFindings summary={GAME_SUMMARY} />;
+  // The tab's own heading above the findings, because key 1 is about the heading: without it
+  // the key named a thing the figure did not draw.
+  const headline = deriveHeadline(GAME_SUMMARY);
+  return (
+    <div>
+      {headline && <GameHeadlineHeader headline={headline} count={GAME_SUMMARY.count} />}
+      <GameFindings summary={GAME_SUMMARY} />
+    </div>
+  );
 }
 
 /**

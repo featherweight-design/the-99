@@ -16,7 +16,9 @@ import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { spokenFullManaCost, spokenManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
-import { COSTS } from "../../lib/about/fixtures";
+import { COSTS, GAME_SUMMARY } from "../../lib/about/fixtures";
+import { deriveHeadline } from "../../lib/decks/game-headline";
+import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { DECK_GROUPING_LABELS, deckSortOrderLabel } from "../../lib/copy/deck-sort";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -1267,9 +1269,12 @@ describe("what each chapter 01 figure actually draws", () => {
       expect(el.textContent).toContain(row.deck);
     }
 
-    // Both figures of the eyebrow line survive the section rewrite.
-    expect(el.textContent).toContain(`${REPLACE_SUMMARY.noLongerOwned} no longer owned`);
-    expect(el.textContent).toContain(`${REPLACE_SUMMARY.unaffectedDecks} other decks unaffected`);
+    // The route's own heading and lede, never figures the summary does not print.
+    const s = cardAssignmentsCopy.summary;
+    expect(el.textContent).toContain(s.heading(REPLACE_SUMMARY.after));
+    expect(el.textContent).toContain(s.lede(REPLACE_SUMMARY.before, REPLACE_SUMMARY.arrived, REPLACE_SUMMARY.left));
+    expect(el.textContent).not.toContain("no longer owned");
+    expect(el.textContent).not.toContain("other decks unaffected");
 
     // THE CHOOSER. It was missing entirely, and it is the only thing on the
     // summary a reader can act on. Both committed decks are named, because a
@@ -1647,5 +1652,36 @@ describe("the vocabulary on /about", () => {
     for (const word of ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"]) {
       expect(within(figure as HTMLElement).getByText(word), word).toBeInTheDocument();
     }
+  });
+});
+
+// The four figures the About audit found contradicting their own key lines (2026-09-26): each
+// now mounts the surface's own part, so each is asserted by the words that surface prints.
+describe("figures that draw what their keys name", () => {
+  const specimen = (c: HTMLElement, label: string) => c.querySelector<HTMLElement>(`[data-specimen="${label}"]`)!;
+
+  it("role-coverage draws the commander page's group heads, not the retired chips", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const el = specimen(container, "role-coverage");
+    // Wipes: 1 owned against a baseline of 3. Both layouts are mounted, so the text is doubled.
+    expect(el.textContent).toContain("1 owned");
+    expect(el.textContent).toContain("2 short of baseline");
+    expect(el.textContent).not.toMatch(/\b1\/3\b/);
+  });
+
+  it("log-findings draws the heading its first key describes", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const heading = deriveHeadline(GAME_SUMMARY)!.heading;
+    expect(specimen(container, "log-findings").querySelector("h3")?.textContent).toBe(heading);
+  });
+
+  it("combo-awareness is drawn open, so the source marker its key names is there", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    expect(specimen(container, "combo-awareness").textContent).toContain(comboAwarenessCopy.modal.qualifier);
+  });
+
+  it("post-import's Still short is the contested row, with no receipt row under it", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    expect(specimen(container, "post-import").textContent).not.toContain("2 decks want 1 copy");
   });
 });
