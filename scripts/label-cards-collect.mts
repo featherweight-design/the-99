@@ -92,9 +92,14 @@ for (const [key, id] of Object.entries(submitted)) {
     // The SDK's content blocks are a union; only a text block carries `text`. Narrowing by
     // the discriminant rather than reaching for `.text` on every block, which no longer
     // typechecks and never described a tool-use or thinking block correctly.
-    const parsed = "message" in entry.result
-      ? parseReply(entry.result.message.content.map((c) => (c.type === "text" ? c.text : "")).join(""))
-      : null;
+    //
+    // No guard on `entry.result` here: the `!== "succeeded"` continue above has already
+    // narrowed it, which is why `.message.usage` reads cleanly on the line after it. A
+    // second `"message" in entry.result` check was always true and its fallback arm
+    // unreachable — dead code wearing a safety check's clothes.
+    const parsed = parseReply(
+      entry.result.message.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+    );
     if (!Array.isArray(parsed)) { malformed.push(`${entry.custom_id}: unparseable`); markMissing(entry.custom_id); continue; }
 
     // A TWO-FACED CARD'S NAME. Sonnet returned `Soulcipher Board` and

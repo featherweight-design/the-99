@@ -1,7 +1,7 @@
 // ONE pricing table, imported by the estimate and by the measurement.
 //
 // It was duplicated verbatim across `label-cards-run.mts` and
-// `label-cards-collect.mjs`, which is the worst place for a copy: a rate changed in
+// `label-cards-collect.mts`, which is the worst place for a copy: a rate changed in
 // one leaves the estimate and the measured cost priced differently, and the
 // measured figure is what the report's full-run extrapolation rests on.
 //

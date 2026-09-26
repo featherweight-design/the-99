@@ -304,7 +304,7 @@ both.
 ## Method, and what would make it wrong
 
 - **Gold set**: 108 cards, hand-labelled against oracle text with reasoning
-  recorded per row, in `scripts/lib/card-labels-gold.mjs`. Weighted to 2b's list of
+  recorded per row, in `scripts/lib/card-labels-gold.mts`. Weighted to 2b's list of
   what the text rules get wrong — restricted counters, tribal statics, conditional
   mana, thresholds, modal cards, two-faced cards, lands, land fetches — plus an
   `easy` tail so over-labelling is visible, and **4 hard negatives** where the
@@ -349,15 +349,15 @@ both.
 
 ## Files
 
-- `scripts/lib/card-labels-schema.mjs` — the schema, and the four ramp kinds
+- `src/lib/labels/types.ts` and `src/lib/labels/schema.ts` — the vocabulary (with the four ramp kinds) and the validator that enforces it, shared with the app
 - `scripts/lib/card-labels-schema.test.mts` — vocabulary drift guard, 14 tests
-- `scripts/lib/card-labels-gold.mjs` — the 108-card gold set with reasoning
+- `scripts/lib/card-labels-gold.mts` — the 108-card gold set with reasoning
 - `scripts/lib/card-labels-prompt.mts` — the shared instruction block
 - `scripts/label-cards-select.mjs` — hard-class candidate selection
 - `scripts/label-cards-run.mts` — batch submission, with the spend cap
 - `scripts/label-cards-collect.mts` — collection, measured cost, face reconciliation
 - `scripts/label-cards-score.mts` — precision, recall, the non-default split
-- `scripts/lib/card-labels-pairing.mjs` — which prediction answers which gold job when a card has two of a kind, with its own tests (6)
+- `scripts/lib/card-labels-pairing.mts` — which prediction answers which gold job when a card has two of a kind, with its own tests (6)
 - `scripts/label-cards-agree.mts` — Haiku against Sonnet on the random 400
 - `scripts/label-cards-blindsheet.mts` — the blind sheet below
 ### Committed evidence
