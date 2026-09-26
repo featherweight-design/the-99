@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
 import { MoveMode } from "./deck-move-mode";
 import { DeleteMode } from "./deck-delete-mode";
+import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
+import { DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
+
+/** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
+const MENU_WIDTH = 186;
 import { folderCopy } from "../../lib/copy/folders";
 
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
@@ -86,91 +91,18 @@ export function DeckCardOverflow({
   // reason.
   const [busy, setBusy] = useState(false);
   /**
-   * Viewport coordinates for the panel, and the reason it is not simply
-   * `absolute`.
-   *
-   * This panel lives inside `data-deck-art`, which is `overflow-hidden` and
-   * `h-[168px]` at the three-column band (roughly 640–1062px, where each cell
-   * falls under the tile's own `@min-[330px]` query). An absolutely positioned
-   * popover inside a clipping ancestor is CUT BY IT — and the menu's last row is
-   * `Delete`, so at that band the reader could see 13px of it and reach none.
-   * Confirmed on screen 2026-09-16. A fixed box escapes every clipping ancestor;
-   * `shelf-menu.tsx` records the same trap and the same fix.
-   *
-   * Null only before the first open. `place()` runs in the same batch as
-   * `setOpen`, so there is no paint with `at === null` and the absolute classes
-   * below are a fallback for nothing but a `buttonRef` that has gone — they are
-   * kept because a fixed box with no coordinates would draw at the viewport's
-   * top-left, which is worse than a clipped one.
+   * Viewport coordinates for the panel, fixed rather than `absolute`, clamped, flipped near the
+   * fold and kept clear of the phone's tab bar: `useAnchoredPanel`, which was lifted out of this
+   * file so the game log's delete confirm floats the same way. The delete pane is wider than the
+   * menu (Hugh, 2026-09-27), so the width follows the mode and the panel is re-placed with it.
    */
-  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const { at, place, triggerRef: buttonRef, panelRef } = useAnchoredPanel({
+    open,
+    width: mode === "delete" ? DELETE_CONFIRM_WIDTH : MENU_WIDTH,
+    remeasure: mode,
+  });
   // Every deck card renders one of these, so the id has to be per-instance.
   const panelId = useId();
-
-  /**
-   * CLAMPED TO THE VIEWPORT, the same way `shelf-menu.tsx` clamps: right-aligning
-   * to the trigger alone puts the panel's left edge off-screen where the trigger
-   * sits near the left margin, so it is placed FROM the left and pushed back
-   * inside the margin when there is not room.
-   *
-   * THE GAP IS ARITHMETIC HERE, not a margin. `top` is the trigger's bottom plus
-   * `gap`, and the inline style zeroes `margin-top` — because a flipped panel
-   * needs the gap ABOVE it, where a margin-top would instead push it down into
-   * its own trigger. The `mt-[6px] sm:mt-[4px]` classes remain for the absolute
-   * fallback only, and `gap` reproduces their 6/4 step at the same 640px
-   * breakpoint. Do not add the gap in both places.
-   */
-  function place() {
-    const box = buttonRef.current?.getBoundingClientRect();
-    if (!box) return;
-    const width = 186;
-    const margin = 8;
-    // The gap the shipped panel draws under its trigger, as a number rather than
-    // the `mt-[6px] sm:mt-[4px]` classes: a flipped panel needs it ABOVE, and a
-    // margin-top would push it down into the trigger instead. 640 is Tailwind's
-    // `sm`.
-    const gap = window.innerWidth >= 640 ? 4 : 6;
-    const height = panelRef.current?.offsetHeight ?? 0;
-
-    const wanted = box.right - width;
-    const left = Math.min(Math.max(margin, wanted), window.innerWidth - width - margin);
-
-    // The tab bar is FIXED at z-40 across the bottom below `md`, and this panel
-    // does not outrank it: `position: fixed` escapes a clipping ancestor but NOT
-    // a stacking context, and the tile's own `relative z-10` wrapper is one — so
-    // the panel's `z-50` is resolved inside it and the bar paints over anything
-    // that reaches under it. Treat those pixels as unavailable rather than
-    // raising z-indexes across two components.
-    const tabbar =
-      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabbar-h")) || 0;
-    const floor = window.innerHeight - (window.innerWidth < 768 ? tabbar : 0);
-
-    // FLIP WHEN THERE IS NO ROOM BELOW. A fixed box cannot be scrolled into view
-    // — scrolling re-runs this and carries the panel along with its trigger — so
-    // a panel hanging past the fold is not merely awkward, it is UNREACHABLE. A
-    // tile in the grid's last visible row is the common case, not the edge one:
-    // measured at 900x900, the four-row menu drew 821→975 and both `Move` and
-    // `Delete` were below the fold with no scroll that would reveal them.
-    //
-    // `height` is 0 on the very first placement, before the panel has rendered;
-    // the layout effect below re-places once it can be measured, and again
-    // whenever the mode changes the panel's height.
-    const below = box.bottom + gap;
-    const fitsBelow = height === 0 || below + height + margin <= floor;
-    const above = box.top - gap - height;
-    const top = fitsBelow
-      ? below
-      : above >= margin
-        ? above
-        : // Neither side has room — a viewport shorter than the panel. Pin to the
-          // top margin so the panel's HEAD is readable and the reader can at
-          // least see what they opened.
-          margin;
-
-    setAt({ top, left });
-  }
 
   function handleToggle(e: React.MouseEvent) {
     e.preventDefault();
@@ -266,7 +198,7 @@ export function DeckCardOverflow({
       else onMoved({ refused: false });
     });
     return () => cancelAnimationFrame(frame);
-  }, [closeAfterCreate, keepsFocus, onMoved]);
+  }, [buttonRef, closeAfterCreate, keepsFocus, onMoved]);
 
   useEffect(() => {
     if (mode !== "menu" || !wantsMoveRowFocus.current) return;
@@ -279,63 +211,6 @@ export function DeckCardOverflow({
     wantsDeleteRowFocus.current = false;
     deleteRow.current?.focus();
   }, [mode]);
-
-  // A fixed box does not travel with the page, so its coordinates go stale the
-  // moment anything moves. Capture phase, because the scroll that matters may be
-  // a container's rather than the window's.
-  useEffect(() => {
-    if (!open) return;
-    // Resize only. Scrolling and any other movement of the anchor are covered by
-    // the frame loop below, which catches what a scroll listener cannot.
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [open]);
-
-  // Re-place once the panel can be MEASURED, and then whenever anything moves it.
-  //
-  // A layout effect rather than an effect: this runs before paint, so a panel
-  // that has to flip never draws once in the wrong place.
-  //
-  // THREE things move it, and a scroll listener sees only one:
-  //  - the panel RESIZES without opening or changing mode — the delete pane grows
-  //    a `role="alert"` line when the action fails, which can push a pane that
-  //    fitted below its trigger past the fold. `ResizeObserver`.
-  //  - the page SCROLLS, which a fixed box does not follow.
-  //  - the ANCHOR MOVES UNDER A STILL PAGE. Changing the deck sort or filter
-  //    reorders `shown.map(… key={deck.id})`, so this very instance slides to a
-  //    new row with no scroll and no resize, and the panel would sit at the old
-  //    coordinates pointing at another deck's tile.
-  //
-  // A frame loop covers the last two together, and costs a rect read per frame
-  // only while a menu is open.
-  useLayoutEffect(() => {
-    const node = panelRef.current;
-    if (!open || !node) return;
-    place();
-    const observer = new ResizeObserver(place);
-    observer.observe(node);
-
-    let frame = 0;
-    let previous = "";
-    const track = () => {
-      const box = buttonRef.current?.getBoundingClientRect();
-      if (box) {
-        const key = `${Math.round(box.top)}:${Math.round(box.left)}`;
-        if (key !== previous) {
-          previous = key;
-          place();
-        }
-      }
-      frame = requestAnimationFrame(track);
-    };
-    frame = requestAnimationFrame(track);
-
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode]);
 
   function handleClose() {
     if (busy) return;
@@ -406,10 +281,12 @@ export function DeckCardOverflow({
           // `marginTop: 0` because the gap moved into `place()`: the classes below
           // still carry `mt-[6px] sm:mt-[4px]` for the absolute fallback, and a
           // flipped panel must not be pushed back down into its own trigger.
-          style={
-            at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0 } : undefined
-          }
-          className="absolute right-0 top-full z-50 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
+          // The width is inline because it follows the mode: the delete pane is wider.
+          style={{
+            width: mode === "delete" ? DELETE_CONFIRM_WIDTH : MENU_WIDTH,
+            ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0 } : {}),
+          }}
+          className={`absolute right-0 top-full mt-[6px] sm:mt-[4px] ${ANCHORED_PANEL_CLASS}`}
           // Propagation only: the deck-card Link overlay beneath fires on
           // bubbling, so stopping the bubble is the whole fix. preventDefault
           // here would also cancel the browser default for clicks inside the

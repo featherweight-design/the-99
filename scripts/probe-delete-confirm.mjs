@@ -1,10 +1,12 @@
-// Gate for the deck-delete confirm — the pane that replaced `window.confirm`.
+// Gate for the delete confirm — the pane that replaced `window.confirm`, and since
+// 2026-09-27 the ONE pane every delete in the app draws (Hugh: "our UI is
+// consistent; re-use this UI").
 //
 // Three of its rulings are facts about laid-out geometry rather than markup, so
-// the component test cannot reach them. The panel is 186px in every other mode
-// and the confirm pane is the folder pane, which the folders handoff specifies
-// inside a 248px panel: whether its two side-by-side buttons hold their labels
-// at that width is a question for a layout engine. And the panel is anchored
+// the component test cannot reach them. The panel is 186px as a menu and
+// `DELETE_CONFIRM_WIDTH` (224px) while confirming, the width Hugh asked for
+// after 186 read "slightly too narrow": whether its two side-by-side buttons
+// hold their labels is a question for a layout engine. And the panel is anchored
 // `right-0`, so widening it extends LEFT — on a 390px phone, past the card's
 // own left edge if the card is narrow enough.
 //
@@ -15,6 +17,13 @@
 // single handle: a `deckId` reassigned at the top of the second width would
 // leave the first width's deck behind whenever its delete check failed, which is
 // exactly the run on which cleanup matters.
+//
+// Its last block, at 390 and 1300 only, opens the pane from all three doors (a
+// deck tile's ⋯, the selected shelf's ⋯ and a logged game's ×) and asserts they
+// draw IDENTICAL markup: a door that drew its own copy of the pane, however
+// close, differs somewhere, and that is the check a screenshot cannot make. It
+// writes a folder, a deck filed in it and a game for that block, closes every
+// door with its cancel, and deletes the folder and the deck (the game cascades).
 //
 //   node scripts/probe-delete-confirm.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -55,6 +64,10 @@ const DECK_NAME = "probe · delete confirm";
 // past the panel's content box, and the panel clips its own overflow — so the
 // deck the pane is asking about is the one thing it fails to show.
 const LONG_NAME = `probe${"x".repeat(114)}`;
+
+// `DELETE_CONFIRM_WIDTH` in src/components/ui/delete-confirm.tsx, and the menu's own width.
+const CONFIRM_WIDTH = 224;
+const MENU_WIDTH = 186;
 
 const failures = [];
 const note = (line) => console.log(`  ${line}`);
@@ -192,7 +205,13 @@ async function openConfirm(page, name = DECK_NAME) {
   // The trigger TOGGLES, so opening an already-open menu closes it and leaves no
   // `aria-controls` to find. Close first and open from a known state.
   if ((await trigger.getAttribute("aria-expanded")) === "true") await trigger.click();
-  await trigger.click();
+  // A press that lands before hydration does nothing, and the page is read at
+  // `domcontentloaded`. Wait for the open to take, pressing again if it did not.
+  const opened = onPage(page, `button[aria-label="Actions for ${name}"][aria-expanded="true"]`);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await trigger.click();
+    if (await opened.waitFor({ timeout: 2_000 }).then(() => true, () => false)) break;
+  }
   const panelId = await trigger.getAttribute("aria-controls");
   if (!panelId) throw new Error("The trigger names no panel; the menu did not open.");
   // An attribute selector, not `#id`: React's `useId` emits colons, which are
@@ -201,12 +220,113 @@ async function openConfirm(page, name = DECK_NAME) {
   return panel;
 }
 
+/**
+ * Reads the pane whose cancel button is `keep`: the classes of its heading, sentence and two
+ * buttons, the floating panel's box around it, and whether the cancel holds focus.
+ */
+async function readPane(page, keep) {
+  await keep.waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(250);
+  return keep.evaluate((button) => {
+    const pane = button.parentElement.parentElement;
+    const ps = [...pane.querySelectorAll(":scope > p")];
+    const buttons = [...pane.querySelectorAll(":scope > div > button")];
+    let panel = pane.parentElement;
+    while (panel && getComputedStyle(panel).position !== "fixed") panel = panel.parentElement;
+    const box = (panel ?? pane).getBoundingClientRect();
+    const tabbar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tabbar-h")) || 0;
+    return {
+      shape: [pane.className, ...ps.map((p) => p.className), ...buttons.map((b) => b.className)].join(" | "),
+      fixed: Boolean(panel),
+      width: box.width,
+      inside: box.left >= 7.5 && box.right <= window.innerWidth - 7.5,
+      clear: box.bottom <= window.innerHeight - (window.innerWidth < 768 ? tabbar : 0) + 0.5,
+      focused: document.activeElement === button,
+      heading: ps[0]?.textContent ?? "",
+    };
+  });
+}
+
+/**
+ * The three doors to a delete: a deck tile's ⋯, the selected shelf's ⋯, and a logged game's ×.
+ * Each is PRESSED, read, and closed with its cancel; nothing is deleted through the UI here.
+ */
+async function threeDoors(page, userId, width, written, shelves) {
+  const stamp = Date.now().toString(36);
+  const deckName = `probe · doors ${stamp}`;
+  const folderName = `probe · shelf ${stamp}`;
+  const commander = await pool.query(
+    `select oracle_id from cards where type_line ilike '%Legendary Creature%' order by oracle_id limit 1`,
+  );
+  const folderId = (await pool.query(
+    `insert into deck_folders (user_id, name) values ($1, $2) returning id`, [userId, folderName],
+  )).rows[0].id;
+  shelves.add(folderId);
+  const deckId = (await pool.query(
+    `insert into decks (user_id, name, commander_oracle_id, folder_id) values ($1, $2, $3, $4) returning id`,
+    [userId, deckName, commander.rows[0].oracle_id, folderId],
+  )).rows[0].id;
+  written.add(deckId);
+  await pool.query(
+    `insert into deck_games (deck_id, user_id, result, pod_size, played_at) values ($1, $2, 'win', 4, now())`,
+    [deckId, userId],
+  );
+
+  const panes = {};
+  await page.goto(`${BASE}/decks?folder=${folderId}`, { waitUntil: "networkidle" });
+  const deckPanel = await openConfirm(page, deckName);
+  await deckPanel.getByRole("button", { name: "Delete", exact: true }).click();
+  const keepDeck = deckPanel.getByRole("button", { name: "Keep it", exact: true });
+  panes.deck = await readPane(page, keepDeck);
+  await keepDeck.click();
+
+  await onPage(page, `button[aria-label="Actions for ${folderName}"]`).first().click();
+  const shelf = page.getByRole("dialog", { name: /Actions for|Delete/ });
+  await shelf.getByRole("button", { name: /^Delete$/ }).click();
+  // The folder's cancel reads `Cancel` where the deck's reads `Keep it`: the labels are copy,
+  // and copy is /copy-review's. The pane is the same either way.
+  const keepShelf = page.getByRole("dialog").getByRole("button", { name: /^(Keep|Cancel)/ });
+  panes.shelf = await readPane(page, keepShelf);
+  await keepShelf.click();
+
+  await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "networkidle" });
+  await onPage(page, `[role="tab"]:has-text("Games")`).first().click({ timeout: 60_000 });
+  await onPage(page, `button[aria-label="Delete this game"]`).click({ timeout: 30_000 });
+  const keepGame = onPage(page, `button:has-text("Keep it")`);
+  panes.game = await readPane(page, keepGame);
+  await keepGame.click();
+
+  for (const [door, p] of Object.entries(panes)) {
+    check(p.focused, `${door}: the cancel holds focus (${p.heading})`);
+    check(p.fixed && p.inside && p.clear,
+      `${door}: the panel floats inside the margins and clear of the tab bar (fixed ${p.fixed}, inside ${p.inside}, clear ${p.clear})`);
+  }
+  for (const door of ["deck", "game"]) {
+    check(Math.abs(panes[door].width - CONFIRM_WIDTH) < 0.5,
+      `${door}: the panel is ${CONFIRM_WIDTH}px (${panes[door].width})`);
+  }
+  // The shelf's panel keeps its own 248px (ruling Q3), wider than the pane needs.
+  check(panes.shelf.width >= CONFIRM_WIDTH, `shelf: its panel is no narrower than ${CONFIRM_WIDTH}px (${panes.shelf.width})`);
+  check(
+    panes.deck.shape === panes.shelf.shape && panes.deck.shape === panes.game.shape,
+    panes.deck.shape === panes.shelf.shape && panes.deck.shape === panes.game.shape
+      ? "one pane: the deck, shelf and game deletes draw identical markup"
+      : `one pane: the doors differ at ${width}\n      deck  ${panes.deck.shape}\n      shelf ${panes.shelf.shape}\n      game  ${panes.game.shape}`,
+  );
+
+  await pool.query(`delete from decks where id = $1`, [deckId]);
+  written.delete(deckId);
+  await pool.query(`delete from deck_folders where id = $1`, [folderId]);
+  shelves.delete(folderId);
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
   // Populated the instant a deck exists, never at the end of a block: a throw
   // part-way through must not strand a row.
   const written = new Set();
+  const shelves = new Set();
   try {
     for (const width of WIDTHS) {
       console.log(`\n${width}px`);
@@ -220,6 +340,9 @@ async function run() {
 
       await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
       const panel = await openConfirm(page);
+      // Read before Delete is pressed, so the widening can be judged against it below.
+      await page.waitForTimeout(250);
+      const menuOpen = await panel.boundingBox();
 
       // EVERY ROW OF THE MENU, before anything is pressed, and HIT-TESTED rather
       // than measured — see `reach()` for why rect arithmetic is wrong at both of
@@ -341,21 +464,34 @@ async function run() {
       );
 
       const box = await panel.boundingBox();
-      // The panel keeps its own 186px in every mode. The pane was ported from the
-      // folder menu, which the folders handoff specifies inside a 248px panel, and
-      // widening for it looked necessary — two buttons side by side in a 186px
-      // panel reads as too little for `Delete deck`. A mode-dependent 248px was
-      // written, and then MEASURED against this script rather than reasoned about:
-      // at 186px both labels sit on one line with room to spare and the paragraph
-      // settles at 176px tall, so the widening was dropped. The figures are below
-      // in this run's own output; nothing here restates them, because the estimate
-      // that justified the widening was itself arithmetic written from memory.
-      // This check pins the outcome: a panel that changes width when it changes
-      // mode has regained the mechanism.
+      // The panel widens to 224px while confirming and returns to 186px as a menu
+      // (Hugh, 2026-09-27: the confirm was "slightly too narrow" at 186). At 186
+      // both labels fit on one line, so the width is a reading ruling rather than
+      // a fit one; this check pins it both ways, with the menu-mode check below.
       check(
-        Math.round(box.width) === 186,
-        `panel keeps its 186px while confirming (${Math.round(box.width)})`,
+        Math.round(box.width) === CONFIRM_WIDTH,
+        `panel is ${CONFIRM_WIDTH}px while confirming (${Math.round(box.width)})`,
       );
+      // The widening GROWS FROM THE ANCHORED EDGE (d9, 2026-09-27: Hugh asked for "slightly
+      // wider", not for a resize). The panel is right-aligned to its trigger, so the 38px go out
+      // of the LEFT edge while the right edge, and the edge that hangs off the trigger, stay put.
+      // The one exception is the left margin: a trigger within 232px of it clamps the wider
+      // pane there (and within 194px, the menu too), so the pane grows RIGHTWARD from the margin
+      // and its right edge may only move out, never back past where the menu's left edge was.
+      // Anything else reads as a jump.
+      const clampedLeft = Math.abs(box.x - 8) < 0.5;
+      const heldX = clampedLeft
+        ? box.x <= menuOpen.x + 0.5 && box.x + box.width >= menuOpen.x + menuOpen.width - 0.5
+        : Math.abs(box.x + box.width - (menuOpen.x + menuOpen.width)) < 0.5;
+      check(
+        heldX,
+        `the widening holds the ${clampedLeft ? "left (clamped)" : "right"} edge (menu ${Math.round(menuOpen.x)}–${Math.round(menuOpen.x + menuOpen.width)}, confirm ${Math.round(box.x)}–${Math.round(box.x + box.width)})`,
+      );
+      // Hung below the trigger its top holds; flipped above it, its bottom does.
+      const heldY =
+        Math.abs(box.y - menuOpen.y) < 0.5 ||
+        Math.abs(box.y + box.height - (menuOpen.y + menuOpen.height)) < 0.5;
+      check(heldY, `the pane grows away from its trigger (menu top ${Math.round(menuOpen.y)}, confirm top ${Math.round(box.y)})`);
       check(box.x >= 0, `panel stays inside the viewport (left edge ${Math.round(box.x)})`);
       check(box.x + box.width <= width + 1, "panel does not overflow right");
       // The pane is a paragraph, and a narrow panel makes it a tall one. A
@@ -401,8 +537,8 @@ async function run() {
       );
       const menuBox = await panel.boundingBox();
       check(
-        Math.round(menuBox.width) === 186,
-        `panel is still 186px back in menu mode (${Math.round(menuBox.width)})`,
+        Math.round(menuBox.width) === MENU_WIDTH,
+        `panel is ${MENU_WIDTH}px back in menu mode (${Math.round(menuBox.width)})`,
       );
       const kept = await pool.query(`select 1 from decks where id = $1`, [deckId]);
       check(kept.rows.length === 1, "Keep it keeps the deck");
@@ -470,11 +606,16 @@ async function run() {
       await pool.query(`delete from decks where id = $1`, [longId]);
       written.delete(longId);
 
+      if (width !== 900) await threeDoors(page, userId, width, written, shelves);
+
       await context.close();
     }
   } finally {
     for (const id of written) {
       await pool.query(`delete from decks where id = $1`, [id]).catch(() => {});
+    }
+    for (const id of shelves) {
+      await pool.query(`delete from deck_folders where id = $1`, [id]).catch(() => {});
     }
     await browser.close();
     await pool.end();

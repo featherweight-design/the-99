@@ -1358,7 +1358,16 @@ Component note: Em dash mono `--fg-locked` in the chip slot. Absence, not a gap.
 ## Component: Delete affordance
 
 Component note: 30px `×` (44px phone), `1px --border`, glyph `--fg-locked`, `--danger` on hover.
-**One inline confirm** in the row: `Delete this game?` · `Delete` / `Keep`.
+**One confirm**, since 2026-09-27 the deck delete's own pane (`DeleteConfirm`, `ui/delete-confirm.tsx`)
+floating under the × in the deck ⋯ menu's panel (`useAnchoredPanel`), 224px wide (Hugh: "our UI is
+consistent; re-use this UI"). Heading `history.confirm` (`Delete this game?`), sentence
+`history.confirmBody`, `history.confirmNo` (`Keep it`, focused on open) and `history.confirmYes`
+(`Delete game`, `--danger`), `history.deleting` in flight. A refusal stays in the pane as its alert.
+Escape and KEEP return focus to the ×. The inline `Delete this game?` · `Delete` / `Keep` row it
+replaced is retired. `probe:delete-confirm` presses all three doors (deck ⋯, shelf ⋯, game ×) at 390
+and 1300 and proves they draw identical markup, that the deck and game panels are 224px and float
+inside the margins clear of the tab bar, that the cancel holds focus, and that the deck panel's
+186→224 widening holds its trigger-side edge.
 
 ### Button — rest
 
@@ -1392,17 +1401,19 @@ Component note: 30px `×` (44px phone), `1px --border`, glyph `--fg-locked`, `--
 |----------|--------|---------|
 | outline | global `:focus-visible` 2px brass at +2px | same |
 
-### Inline confirm (replaces the row's trailing content)
+### Confirm pane (since 2026-09-27; the inline confirm is retired)
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| placement | **inline, in the row** — no dialog, no toast, no tray | same |
-| prompt copy key | `history.confirm` | `history.confirm` |
-| confirm copy key | `history.confirmYes` | `history.confirmYes` |
-| dismiss copy key | `history.confirmNo` | `history.confirmNo` |
-| destructive action colour | `--danger` (`#C6533F`) on the `Delete` control | same |
-| target size | 44 minimum | shipped ghost-button geometry |
-| refusal | `history.deleteRefused` via shipped `MutationError` | same |
+| placement | `DeleteConfirm` in a fixed panel anchored under the × (`useAnchoredPanel`), not a dialog | same |
+| width | 224 (`DELETE_CONFIRM_WIDTH`) | 224 |
+| heading copy key | `history.confirm` | `history.confirm` |
+| sentence copy key | `history.confirmBody` | `history.confirmBody` |
+| confirm copy key | `history.confirmYes`, `history.deleting` in flight | same |
+| dismiss copy key | `history.confirmNo`, focused on open | same |
+| destructive action colour | `--danger` fill on the confirm | same |
+| button height | 32, the deck pane's | 32 |
+| refusal | `history.deleteRefused` as the pane's own `role="alert"`, cleared when the pane closes | same |
 
 ### Behaviour
 

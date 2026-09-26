@@ -17,6 +17,7 @@ import { TextField } from "@/components/ui/text-field";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { folderCopy } from "../../lib/copy/folders";
 import { deleteFolderAction, renameFolderAction } from "../../app/decks/folder-actions";
+import { DeleteConfirm } from "../ui/delete-confirm";
 import { FOLDER_NAME_MAX } from "../../lib/decks/folder-name";
 import { stripControlChars } from "./folder-create-dialog";
 
@@ -427,40 +428,15 @@ function DeleteFolder({
   }
 
   return (
-    <div className="flex flex-col gap-[10px] p-[12px]">
-      <p className="m-0 font-display text-[14px] font-semibold text-[color:var(--fg)]">
-        {folderCopy.del.heading(name)}
-      </p>
-      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
-        {deckCount > 0 ? folderCopy.del.body(deckCount) : folderCopy.del.bodyEmpty}
-      </p>
-      {error && (
-        <p role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
-          {error}
-        </p>
-      )}
-      <div className="flex gap-[8px]">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onCancel}
-          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-transparent font-sans text-[12.5px] text-[color:var(--fg-body)]"
-        >
-          {folderCopy.del.cancel}
-        </button>
-        {/* `--danger`, unlike the keep-all confirm that was amended away from
-            it: that one destroyed nothing, and this destroys a thing the player
-            named, with no undo. What is safe is the decks, and the sentence
-            above is what says so. */}
-        <button
-          type="button"
-          disabled={pending}
-          onClick={confirm}
-          className="h-[32px] flex-1 cursor-pointer rounded-[6px] border-none bg-[color:var(--danger)] font-sans text-[12.5px] font-semibold text-[color:var(--bg)]"
-        >
-          {folderCopy.del.confirm}
-        </button>
-      </div>
-    </div>
+    <DeleteConfirm
+      heading={folderCopy.del.heading(name)}
+      body={deckCount > 0 ? folderCopy.del.body(deckCount) : folderCopy.del.bodyEmpty}
+      cancelLabel={folderCopy.del.cancel}
+      confirmLabel={folderCopy.del.confirm}
+      pending={pending}
+      error={error}
+      onCancel={onCancel}
+      onConfirm={confirm}
+    />
   );
 }
