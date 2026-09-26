@@ -22,9 +22,10 @@ import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/comma
 import type { PriceFact } from "../../lib/decks/price";
 import { tradeShape, type TradeShape } from "../../lib/commander-change/pending";
 import { useChangeCommander } from "./change-commander-context";
+import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 
-/** Show more's step, and To buy's first screen (handoff §2.5). */
-const STEP = 8;
+/** Each group's first screen, the swap sheet's own (Hugh's staging walk, 2026-09-25). */
+const GROUP_SHOWN = 5;
 
 /** The name a sentence uses: the part before a comma or a face separator. */
 export function shortName(name: string): string {
@@ -64,7 +65,7 @@ export function ChangeCommanderSheet({
   // A half-trade's answer to "which one stays", per candidate, so Back and Choose again keep it.
   const [staysBy, setStaysBy] = useState<Record<string, string>>({});
   // Back to the list restores it as it was: the list stays mounted behind the confirm (its open
-  // row and Show more count survive), and the scroll offset is put back by hand, because the
+  // row and each group's Show all survive), and the scroll offset is put back by hand, because the
   // confirm's height moved it.
   const listScroll = useRef<number | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -157,8 +158,9 @@ function Loading({ pair }: { pair: boolean }) {
     <div role="status" className="flex flex-col">
       <Lede pair={pair} />
       <p
-        className="mt-[16px] pb-[8px] font-mono text-[10.5px]"
-        style={{ color: "var(--fg-faint)", borderBottom: "1px solid var(--elevated)" }}
+        // Its rule sits where the group heading's will, so it takes that rule: 6px and `--border`.
+        className="mt-[16px] pb-[6px] font-mono text-[10.5px] border-b border-[color:var(--border)]"
+        style={{ color: "var(--fg-faint)" }}
       >
         {copy.sheet.loading}
       </p>
@@ -203,21 +205,13 @@ function Failed({ pair, onRetry }: { pair: boolean; onRetry: () => void }) {
 
 function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean; onChoose: (c: Candidate) => void }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const [shown, setShown] = useState(STEP);
-  const buyGroup = useRef<HTMLElement>(null);
-  const focusFrom = useRef<number | null>(null);
-
-  // Show more moves focus to the first row it added (handoff §2.5), onto that row's Choose.
-  useEffect(() => {
-    if (focusFrom.current === null) return;
-    const rows = buyGroup.current?.querySelectorAll<HTMLElement>("[data-testid=change-commander-row]");
-    rows?.[focusFrom.current]?.querySelector<HTMLButtonElement>("[data-choose]")?.focus();
-    focusFrom.current = null;
-  }, [shown]);
-
-  const toBuy = data.toBuy.slice(0, shown);
-  const left = data.toBuy.length - toBuy.length;
-  const siblings = [...data.yours, ...toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
+  const [allYours, setAllYours] = useState(false);
+  const [allBuy, setAllBuy] = useState(false);
+  const firstScreen = (rows: Candidate[], all: boolean) => (all ? rows : rows.slice(0, GROUP_SHOWN));
+  const yours = firstScreen(data.yours, allYours);
+  const toBuy = firstScreen(data.toBuy, allBuy);
+  // The card modal's Prev/Next walks every candidate, folded or not, as the swap sheet's does.
+  const siblings = [...data.yours, ...data.toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
   const current = {
     cmc: data.current.reduce((n, c) => n + c.cmc, 0),
     name: joinShort(data.current.map((c) => c.name)),
@@ -239,7 +233,7 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
     );
   }
 
-  const row = (c: Candidate, i: number) => (
+  const row = (c: Candidate) => (
     <CandidateRow
       key={c.key}
       candidate={c}
@@ -257,51 +251,45 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
     <>
       <Lede pair={pair} counted={data.counted} />
       {data.yours.length > 0 ? (
-        <section>
+        <section className="flex flex-col" aria-label={copy.sheet.groupYours(data.yours.length)}>
           <CandidateGroupHeading label={copy.sheet.groupYours(data.yours.length)} note={copy.sheet.groupNote} />
-          {data.yours.map((c, i) => row(c, i))}
+          {yours.map(row)}
+          <GroupToggle total={data.yours.length} all={allYours} onToggle={() => setAllYours((v) => !v)} />
         </section>
       ) : (
         <p className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{copy.sheet.ownsNone}</p>
       )}
       {data.toBuy.length > 0 ? (
-        <section ref={buyGroup}>
+        <section className="flex flex-col" aria-label={copy.sheet.groupBuy(data.toBuy.length)}>
           <CandidateGroupHeading
             label={copy.sheet.groupBuy(data.toBuy.length)}
             note={pair ? copy.sheet.groupNotePairBuy : copy.sheet.groupNote}
           />
-          {toBuy.map((c, i) => row(c, i))}
-          {left > 0 ? (
-            <div className="flex min-h-[44px] items-center gap-[8px]">
-              <button
-                type="button"
-                className="min-h-[44px] font-mono text-[11px] text-[color:var(--accent)]"
-                onClick={() => { focusFrom.current = shown; setShown((n) => n + STEP); }}
-              >
-                <span style={{ borderBottom: "1px dotted var(--accent)" }}>{copy.sheet.more(Math.min(STEP, left))}</span>
-              </button>
-              <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{copy.sheet.moreLeft(left)}</span>
-            </div>
-          ) : null}
+          {toBuy.map(row)}
+          <GroupToggle total={data.toBuy.length} all={allBuy} onToggle={() => setAllBuy((v) => !v)} />
         </section>
       ) : null}
     </>
   );
 }
 
+/** The swap sheet's toggle, indented to the rows' name column: the 56px thumb plus the row's 12px gap. */
+function GroupToggle({ total, all, onToggle }: { total: number; all: boolean; onToggle: () => void }) {
+  if (total <= GROUP_SHOWN) return null;
+  return (
+    <SheetGroupToggle
+      all={all}
+      onToggle={onToggle}
+      label={copy.sheet.showAll(total)}
+      fewer={copy.sheet.showFewer}
+      className="pl-[68px]"
+    />
+  );
+}
+
 // Exported for the About page's Change commander figure (E2), which mounts it without the sheet's read.
 export function CandidateGroupHeading({ label, note }: { label: string; note: string }) {
-  return (
-    <div
-      className="flex items-baseline justify-between gap-[10px] pb-[8px]"
-      style={{ borderBottom: "1px solid var(--elevated)" }}
-    >
-      <h3 className="font-mono text-[10.5px] tracking-[0.16em] uppercase" style={{ color: "var(--fg-faint)" }}>
-        {label}
-      </h3>
-      <span className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>{note}</span>
-    </div>
-  );
+  return <SheetGroupHeading as="h3" label={label} note={note} />;
 }
 
 function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | null }) {
@@ -327,7 +315,9 @@ function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | nu
       </span>
     );
   }
-  return <AvailabilityMarker availability={half.availability} density="row" />;
+  // Row density sets no type of its own and rides its host; here the host is the row's sans, so the
+  // marker is given the mono 10.5px every other mark on this line carries (table §4.4).
+  return <AvailabilityMarker availability={half.availability} density="row" className="flex-none font-mono text-[10.5px]" />;
 }
 
 function Thumb({ halves }: { halves: CandidateHalf[] }) {

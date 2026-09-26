@@ -169,6 +169,46 @@ async function buildFixture(userId, { trade = false } = {}) {
   return { deckId: deck.id, lead: lead.oracle_id, target: target.oracle_id };
 }
 
+/**
+ * Makes one of Yours HELD: reads a free candidate's name off the sheet and sleeves every copy the
+ * account owns into a committed deck, which is the only way a row reaches the held marker. By name
+ * off the page rather than by re-deriving the candidate list in SQL, which drifts from the real one.
+ */
+async function holdOneYours(page, userId, fixture) {
+  await page.setViewportSize(WIDTHS[0].viewport);
+  await page.goto(`${BASE}/decks/${fixture.deckId}`, { waitUntil: "domcontentloaded" });
+  const door = onPage(page, '[data-testid="change-commander-door"]').filter({ visible: true });
+  await door.getByRole("button", { name: "Change commander" }).click();
+  const dialog = page.getByRole("dialog", { name: "Change commander" });
+  const yours = dialog.locator('section[aria-label^="Yours"]');
+  await yours.locator('[data-testid="change-commander-row"]').first().waitFor({ state: "visible", timeout: 30_000 });
+  // textContent runs the name into the mark (`Treefree4`), so the match is a substring, not a word.
+  // Past the first screen too: the free rows need not rank in the first 5.
+  const all = yours.getByRole("button", { name: /^Show all \d+/ });
+  if (await all.count()) await all.click();
+  const freeRow = yours.locator('[data-testid="change-commander-row"]').filter({ hasText: "free" }).filter({ hasNotText: "none free" }).first();
+  const label = (await freeRow.count()) ? await freeRow.locator("[data-choose]").getAttribute("aria-label") : null;
+  await page.keyboard.press("Escape");
+  if (!report("held fixture", label !== null, label ?? "no free row in Yours to hold")) return null;
+  // The label carries the SHORT name (`shortName`: cut at a comma or ` // `), so the lookup matches
+  // either the whole name or one that starts with it and a cut.
+  const name = label.replace(/^Choose /, "");
+  const [card] = await sql`
+    select c.oracle_id, sum(ci.quantity)::int as owned from cards c
+    join collection_items ci on ci.oracle_id = c.oracle_id and ci.user_id = ${userId}
+    where (c.name = ${name} or c.name like ${name + ",%"} or c.name like ${name + " // %"})
+    group by c.oracle_id order by c.oracle_id limit 1`;
+  if (!report("held fixture owned", card !== undefined, name)) return null;
+  const [holder] = await sql`
+    insert into decks (user_id, name, commander_oracle_id)
+    values (${userId}, 'probe:held', ${fixture.lead}) returning id`;
+  made.push(holder.id);
+  const [v] = await sql`insert into deck_versions (deck_id, number, commander_oracle_id) values (${holder.id}, 1, ${fixture.lead}) returning id`;
+  await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${holder.id}, ${card.oracle_id}, ${card.owned})`;
+  await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${v.id}, ${card.oracle_id}, ${card.owned})`;
+  return name;
+}
+
 const rect = (locator) => locator.evaluate((el) => {
   const r = el.getBoundingClientRect();
   return { w: r.width, h: r.height, top: r.top, left: r.left };
@@ -209,6 +249,52 @@ async function walk(page, width, fixture) {
   report(`rows ${tag}`, count > 0, `${count} row(s)`);
   const thumb = await rect(rows.first().locator("span[aria-hidden=true]").first());
   report(`thumb ${tag}`, Math.round(thumb.w) === 56 && Math.round(thumb.h) === 41, `${thumb.w}x${thumb.h}px`);
+
+  // Each group draws its first 5, then the swap sheet's toggle (Hugh's walk, 2026-09-25): 44px on a
+  // phone, 34px from md, and pressing it draws the whole group and then folds it back. Read per group,
+  // by pressing, because a class that did not compile leaves the markup identical.
+  let toggled = 0;
+  for (const group of await dialog.locator("section[aria-label]").all()) {
+    const name = await group.getAttribute("aria-label");
+    const total = Number(/· (\d+)$/.exec(name ?? "")?.[1] ?? NaN);
+    const inGroup = group.locator('[data-testid="change-commander-row"]');
+    report(`${name}: first screen ${tag}`, (await inGroup.count()) === Math.min(5, total), `${await inGroup.count()} of ${total} drawn`);
+    // The heading takes the swap sheet's type, resolved.
+    const h = await group.locator("h3").first().evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { size: cs.fontSize, spacing: cs.letterSpacing, family: cs.fontFamily, rule: getComputedStyle(el.parentElement).borderBottomColor };
+    });
+    report(`${name}: heading type ${tag}`, h.size === "9.5px" && h.spacing === "1.14px" && /mono/i.test(h.family), JSON.stringify(h));
+    const toggle = group.locator("button[aria-expanded]").filter({ hasText: /^Show all \d+/ });
+    if (total <= 5) {
+      report(`${name}: no toggle ${tag}`, (await toggle.count()) === 0, `${await toggle.count()} toggle(s)`);
+      continue;
+    }
+    toggled += 1;
+    const b = await rect(toggle);
+    report(`${name}: toggle height ${tag}`, Math.round(b.h) === (width.label === 1300 ? 34 : 44), `${b.h}px`);
+    await toggle.click();
+    const fewer = group.locator("button[aria-expanded=true]").filter({ hasText: "Show fewer" });
+    report(`${name}: Show all ${tag}`, (await inGroup.count()) === total && (await fewer.count()) === 1, `${await inGroup.count()} drawn`);
+    await fewer.click();
+    report(`${name}: Show fewer ${tag}`, (await inGroup.count()) === 5, `${await inGroup.count()} drawn`);
+  }
+  report(`a group long enough to fold ${tag}`, toggled > 0, `${toggled} group(s) folded — none means the toggle went unmeasured`);
+
+  // The held marker takes the mono 10.5px of every mark on the line (table §4.4). The fixture's held
+  // card is found BY ITS NAME rather than by a marker count, so a run that lost it fails.
+  if (fixture.held) {
+    await dialog.getByRole("button", { name: /^Show all \d+/ }).first().click().catch(() => {});
+    const heldRow = rows.filter({ has: page.getByRole("button", { name: `Choose ${fixture.held}`, exact: true }) });
+    const mark = heldRow.locator("span", { hasText: /^none free/ }).first();
+    const m = (await mark.count()) === 0 ? null : await mark.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { size: cs.fontSize, family: cs.fontFamily };
+    });
+    report(`held marker type ${tag}`, m !== null && m.size === "10.5px" && /mono/i.test(m.family), m ? JSON.stringify(m) : `no marker on ${fixture.held}`);
+    const fewer = dialog.getByRole("button", { name: "Show fewer" });
+    if (await fewer.count()) await fewer.first().click();
+  }
 
   // The row's pip run is laid out as a run: a className that replaced CostPips' own would leave
   // an inline span with the pips touching, and every markup assertion would still pass.
@@ -273,6 +359,7 @@ async function main() {
     const page = await browser.newPage();
     const userId = await signIn(page);
     fixture = await buildFixture(userId);
+    fixture.held = await holdOneYours(page, userId, fixture);
     for (const width of WIDTHS) await walk(page, width, fixture);
 
     // The write, once, at desktop: the live commander moves, and the header says so.
