@@ -101,8 +101,66 @@ export default async function DeckBuilderPage({
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
 
-  const detail = await perf.timed("getDeckDetail", () => getDeckDetail(id, userId));
+  // STAGE A: every read the next wave waits on starts NOW, beside the ownership guard rather than
+  // after it. Each is owner-scoped in its own SQL — `getDeckDetail`, the draft's snapshot, the fill
+  // passes, the versions, the games and the suggestions' `requireDeck` all refuse a deck the reader
+  // does not own — so a stranger's deck id has no data read against it, and the guard below only
+  // decides what to RENDER. The page used to take these after the guard, in series: 418ms of `getDeckDetail`
+  // before a wave whose longest read was 330ms, on the deck `measure:load` walks.
+  //
+  // Each early read is marked handled at once, because on a deck the reader does not own the
+  // page leaves through `notFound()` before awaiting them, and a rejection nobody listens for is
+  // fatal in Node. The marking does not swallow anything: the promise itself still rejects for
+  // the `Promise.all` that awaits it.
+  const early = <T,>(p: Promise<T>): Promise<T> => { p.catch(() => {}); return p; };
+  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId)));
+  // A 60-second cached read shared by both cached payloads below, resolved once rather than
+  // per entry, and chained into the suggestions rather than awaited on its own.
+  const indexGenRead = early(perf.timed("indexGeneration", () => indexGeneration()));
+  const suggestionsRead = early(indexGenRead.then((indexGen) =>
+    perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
+      loadDeckSuggestions(id, userId),
+    ))));
+  // The move-card picker lists every other deck by name, as it always has.
+  const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
+  const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
+  // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
+  // ornament; a ledger that quietly vanished would tell the player their passes are gone, which is
+  // a lie about deck state.
+  const fillPassesRead = early(perf.timed("fillPasses", () => readFillPasses(id, userId)));
+  // Not swallowed either, and for the stronger version of the same reason: a failed read would
+  // take the banner away, and a deck with pending changes and no banner offers no route to a
+  // commit at all.
+  const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
+  // The rail rides the deck's own `Versions` tab, so its rows are part of this page.
+  const versionsRead = early(perf.timed("versions", () => listVersions(id, userId)));
+  const detail = await detailRead;
   if (!detail) notFound();
+
+  // STAGE A IS BOUNDED TO THE CRITICAL PATH. These three are awaited only at the very end, behind
+  // the last wave's ~450ms, so starting them after the guard costs nothing — and starting them at
+  // t0 put eleven reads in flight against pg's ten-connection pool, which measured as the page's
+  // first byte arriving ~120ms later than before this reordering.
+  // The header's bracket chip, from the analysis already stored for this deck. It computes nothing
+  // (see `readStoredPermits`), and a failed read draws no chip, which is what an unread deck draws
+  // anyway.
+  const storedPermits = analysisTabEnabled()
+    ? perf.timed("storedPermits", () => readStoredPermits(id, userId)).catch(() => null)
+    : Promise.resolve(null);
+  // The header's notice tag, read WITH the page so it paints with the header rather than arriving
+  // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
+  // after mount in that case.
+  const showNotices = analysisTabEnabled() && noticesEnabled();
+  const initialNotices = showNotices
+    ? perf.timed("notices", () => loadDeckNotices(id, userId)).catch(() => null)
+    : Promise.resolve(null);
+  // The swap tools read the flag once, here, and reach every surface through one provider: a row
+  // that finds no provider draws nothing of them.
+  const swapTools = swapToolsEnabled();
+  const shoppingLimitRead = swapTools
+    ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
+    : Promise.resolve(null);
+
 
   // `total`, not `built`, and the same figure the strip is measured against:
   // unresolved lines hold the slots they arrived on, so a deck whose only gap
@@ -118,24 +176,6 @@ export default async function DeckBuilderPage({
     ]),
   ];
 
-  // Resolved before the wave rather than inside it: it is a 60-second cached read shared by
-  // both cached payloads below, and awaiting it per-entry would serialise them.
-  const indexGen = await perf.timed("indexGeneration", () => indexGeneration());
-
-  // The header's bracket chip, from the analysis already stored for this deck, started beside the
-  // wave rather than inside it. It computes nothing (see `readStoredPermits`), and a failed read
-  // draws no chip, which is what an unread deck draws anyway.
-  const storedPermits = analysisTabEnabled()
-    ? perf.timed("storedPermits", () => readStoredPermits(id, userId)).catch(() => null)
-    : Promise.resolve(null);
-  // The header's notice tag, read WITH the page so it paints with the header rather than arriving
-  // after it. Started here beside the bracket, and awaited at the end. A failed read draws no tag,
-  // as a deck with no notices does; the shell reads again after mount in that case.
-  const showNotices = analysisTabEnabled() && noticesEnabled();
-  const initialNotices = showNotices
-    ? perf.timed("notices", () => loadDeckNotices(id, userId)).catch(() => null)
-    : Promise.resolve(null);
-
   const [
     { suggestions, degraded, shoppingFigures, mix },
     allDecks,
@@ -145,17 +185,14 @@ export default async function DeckBuilderPage({
     draft,
     versions,
   ] = await Promise.all([
-      perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
-        loadDeckSuggestions(id, userId),
-      )),
-      // The move-card picker lists every other deck by name, as it always has.
-      perf.timed("listDecks", () => listDecksWithStats(userId, "name")),
-      // Read the ranked support list only when the strip can render. A completed
-      // deck (openSlots ≤ 0) would never show the strip, so the query would be
-      // pure waste — skipping it saves a join on every committed-deck page load.
-      // The in-deck filter belongs to listLastSlotsCandidates, not here: passing
-      // detail.cards as coveredOracleIds would apply the role-coverage exclusion
-      // to them, which is a different exclusion with a different meaning.
+      suggestionsRead,
+      allDecksRead,
+      // The one read in this wave that needs the detail: the commander ids key it. Read the ranked
+      // support list only when the strip can render. A completed deck (openSlots ≤ 0) would never
+      // show the strip, so the query would be pure waste — skipping it saves a join on every
+      // committed-deck page load. The in-deck filter belongs to listLastSlotsCandidates, not here:
+      // passing detail.cards as coveredOracleIds would apply the role-coverage exclusion to them,
+      // which is a different exclusion with a different meaning.
       openSlots > 0
         ? perf.timed("synergy", () => cacheForUser(
             userId,
@@ -175,20 +212,10 @@ export default async function DeckBuilderPage({
             ),
           ))
         : [],
-      perf.timed("games", () => listDeckGames(id, userId)),
-      // Not swallowed, unlike the price and availability reads below. Those
-      // degrade to a missing ornament; a ledger that quietly vanished would tell
-      // the player their passes are gone, which is a lie about deck state.
-      perf.timed("fillPasses", () => readFillPasses(id)),
-      // Not swallowed either, and for the stronger version of the same reason: a
-      // failed read would take the banner away, and a deck with pending changes
-      // and no banner offers no route to a commit at all.
-      perf.timed("draft", () => loadDraftState(id, userId)),
-      // The rail rides the deck's own `Versions` tab, so its rows are part of
-      // this page. `getDeckDetail` above already refused a deck this reader does
-      // not own; `listVersions` reads by deck id alone and has no guard of its
-      // own.
-      perf.timed("versions", () => listVersions(id)),
+      gamesRead,
+      fillPassesRead,
+      draftRead,
+      versionsRead,
     ]);
 
   // The figures the version held, for the `was n` line in the mix cells. Read
@@ -365,10 +392,8 @@ export default async function DeckBuilderPage({
   const analysisEnabled = analysisTabEnabled();
   const storedBracket = await storedPermits;
   const notices = await initialNotices;
-  // The swap tools read the flag once, here, and reach every surface through one provider: a row
-  // that finds no provider draws nothing of them.
-  const swapTools = swapToolsEnabled();
-  const shoppingLimit = swapTools ? await perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)) : null;
+  // Started in stage A; see `swapTools` there.
+  const shoppingLimit = await shoppingLimitRead;
   // WHAT THIS DECK IS COMPARED TO, taken off the suggestions payload rather than resolved
   // again here. `loadDeckSuggestions` already ran in the first wave above and already built
   // this exact mix for its own shelf headers, so reading it back costs nothing and makes the

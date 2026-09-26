@@ -382,6 +382,15 @@ export type VersionSummary = DeckVersion & {
   permits?: Bracket[] | null;
 };
 
+/** The owner-scoped first read of `listVersions`, apart so a test can render its SQL. */
+export function versionsQuery(deckId: string, userId: string) {
+  return db.select({ version: deckVersions })
+    .from(deckVersions)
+    .innerJoin(decks, eq(decks.id, deckVersions.deckId))
+    .where(and(eq(deckVersions.deckId, deckId), eq(decks.userId, userId)))
+    .orderBy(desc(deckVersions.number));
+}
+
 /**
  * Every version of a deck, newest first.
  *
@@ -391,14 +400,13 @@ export type VersionSummary = DeckVersion & {
  * `averageManaValue`, the same two functions the review page folds — so the rail
  * and the review page cannot disagree about what a change is.
  *
- * Takes no `userId`: it reads by deck id alone, so every caller owes its own
- * ownership guard.
+ * OWNER-SCOPED IN ITS OWN SQL: the first read joins `decks` on the reader, so a deck they
+ * do not own reads as no versions and nothing further is asked. The deck page starts this
+ * beside its ownership guard rather than after it, and authorization has to come before data
+ * access either way.
  */
-export async function listVersions(deckId: string): Promise<VersionSummary[]> {
-  const versions = await db.select()
-    .from(deckVersions)
-    .where(eq(deckVersions.deckId, deckId))
-    .orderBy(desc(deckVersions.number));
+export async function listVersions(deckId: string, userId: string): Promise<VersionSummary[]> {
+  const versions = (await versionsQuery(deckId, userId)).map((r) => r.version);
   if (versions.length === 0) return [];
   const ids = versions.map((v) => v.id);
 

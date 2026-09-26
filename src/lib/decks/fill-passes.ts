@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { deckCards, fillPassCards, fillPasses } from "../../db/schema";
+import { deckCards, decks, fillPassCards, fillPasses } from "../../db/schema";
 
 /** The transaction handle every caller here already holds. Taken as a parameter
  *  rather than reaching for `db`, because a pass must be recorded in the same
@@ -183,19 +183,30 @@ export async function recordFillPass(tx: Tx, args: {
   return pass.id;
 }
 
-/** The ledger's lines for one deck, oldest first, passes with no live cards
-    already dropped. Reads only — nothing in this feature writes to a pass after
-    it is created. */
-export async function readFillPasses(deckId: string): Promise<FillPassSummary[]> {
-  const passes = await db.select({
+/** The owner-scoped first read of `readFillPasses`, apart so a test can render its SQL. */
+export function fillPassesQuery(deckId: string, userId: string) {
+  return db.select({
     id: fillPasses.id,
     kind: fillPasses.kind,
     ordinal: fillPasses.ordinal,
     openSlots: fillPasses.openSlots,
     createdAt: fillPasses.createdAt,
   }).from(fillPasses)
-    .where(eq(fillPasses.deckId, deckId))
+    .innerJoin(decks, eq(decks.id, fillPasses.deckId))
+    .where(and(eq(fillPasses.deckId, deckId), eq(decks.userId, userId)))
     .orderBy(asc(fillPasses.createdAt), asc(fillPasses.ordinal));
+}
+
+/** The ledger's lines for one deck, oldest first, passes with no live cards
+    already dropped. Reads only — nothing in this feature writes to a pass after
+    it is created.
+
+    OWNER-SCOPED IN ITS OWN SQL: the first read joins `decks` on the reader, so a
+    deck they do not own reads as no passes and nothing further is asked. The deck
+    page starts this beside its ownership guard rather than after it, and
+    authorization has to come before data access either way. */
+export async function readFillPasses(deckId: string, userId: string): Promise<FillPassSummary[]> {
+  const passes = await fillPassesQuery(deckId, userId);
   if (passes.length === 0) return [];
 
   const [members, rows] = await Promise.all([
