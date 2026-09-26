@@ -1818,6 +1818,7 @@ const NO_TAKE = { onTake: null, taking: false, busy: false, refused: null, error
 
 export function StandInsFigureBody() {
   const siblings = STAND_INS.group.rows.map((r) => r.oracleId);
+  const spellSiblings = STAND_INS.spell.group.rows.map((r) => r.oracleId);
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <SwapToolsProvider deckId="about-figure" deckName={STAND_INS.deckName} storedLimitCents={null}>
@@ -1828,12 +1829,23 @@ export function StandInsFigureBody() {
           marks={[
             { n: 1, find: first('[data-testid="stand-in-limit"]'), side: "gutter" },
             { n: 2, find: withText("button", "⇄", true), side: "gutter" },
+            { n: 3, find: first("[data-stand-in-spells]"), side: "gutter", align: "top" },
             { n: 4, find: first("[data-stand-in-group]"), side: "gutter", align: "top" },
           ]}
         >
           <StandInLimit shoppingCount={STAND_INS.shoppingCount} overCount={STAND_INS.overCount} />
           <div className="mt-[6px] border-t border-solid border-[color:var(--border)]">
             <DecklistRow deckId="about-figure" card={PLATEAU} siblings={[]} inShopping newestAsOf={PRICES[0].fact.asOf} />
+          </div>
+          {/* A spell's stand-ins: the sheet's own lead for the card, then its group, each row
+              comparing itself as keeps / gains / loses. Key 3. */}
+          <div data-stand-in-spells className="mt-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[12px] pt-[10px]">
+            <p className="m-0 mb-[8px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">
+              {swapToolsCopy.sheet.leadSpellsJob(STAND_INS.spell.card, STAND_INS.spell.jobs)}
+            </p>
+            <StandInGroup group={STAND_INS.spell.group} keep={null}>
+              {(row) => <StandInRow key={row.oracleId} row={row} newestAsOf={PRICES[0].fact.asOf} take={NO_TAKE} siblings={spellSiblings} />}
+            </StandInGroup>
           </div>
           {/* The sheet's own group, in the box the canvas draws it in. No title: the sheet's shipped
               one is "Cheaper stand-ins", which is this entry's own title one line up. */}

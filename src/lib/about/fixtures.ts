@@ -1899,4 +1899,23 @@ export const STAND_INS = {
       { name: "Needle Spires", free: false, cents: 25, body: [sheet.mana.line(WR, sheet.mana.tapped)], muted: [] },
     ].map((r, i) => ({ oracleId: `about-stand-in-${i}`, imageUri: null, soft: 0, foilOnly: false, ...r })),
   } satisfies SheetGroup,
+  /**
+   * A SPELL's group beside the land one, because stand-ins key 3 is about spells and a lands-only
+   * figure left it pointing at nothing (the About audit, 2026-09-26). Smothering Tithe is a ramp
+   * enchantment; its stand-ins keep that job and each row compares itself against it, in the
+   * keeps / gains / loses form #1046 shipped: `compare` set, `body` and `muted` empty.
+   */
+  spell: {
+    card: "Smothering Tithe",
+    jobs: "ramp",
+    group: {
+      heading: sheet.groupSameType("enchantments"),
+      order: sheet.orderMostShared,
+      noun: "enchantments",
+      rows: [
+        { name: "Wild Growth", free: false, cents: 25, compare: { type: null, keeps: ["ramp"], gains: ["mana value 1"], loses: ["taxes opponents"] } },
+        { name: "Utopia Sprawl", free: false, cents: 40, compare: { type: null, keeps: ["ramp"], gains: ["mana value 1"], loses: ["taxes opponents"] } },
+      ].map((r, i) => ({ oracleId: `about-stand-in-spell-${i}`, imageUri: null, soft: 0, foilOnly: false, body: [], muted: [], ...r })),
+    } satisfies SheetGroup,
+  },
 };

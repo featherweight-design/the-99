@@ -614,9 +614,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'The line under the price strip is this deck\'s limit per card. Until you set your own, it says it is the default.',
       "A row over the limit is marked, and its ⇄ opens the stand-ins. Any card on Shopping that isn't locked links to its stand-ins from its details too.",
-      // Audit R2-A4-1: "each says what it gives up" is about every row, so it moves here. The order
-      // within a group is the shipped lead's: shared work, then this commander's favor, staples last.
-      "A spell's stand-ins do its job at its mana value or less. In each group, the cards that share more of its work lead, then the ones this commander's decks favor, and staples come last. Each says what it gives up, and a few show until you ask for all.",
+      // #1046's spell rows: each keeps one of the card's jobs and compares itself as keeps / gains /
+      // loses. What a row gives up is its `loses`, so the older "gives up" wording is gone.
+      "A spell's stand-ins each keep at least one of its jobs, and every row says what it keeps, gains and loses against it. A few show until you ask for all.",
       // r2 said a once-only color "doesn't count as making it"; the shipped ladder (`landRung`) counts it,
       // on the last rung.
       "Lands are ordered by their mana: untapped first, then ones that cost life or come in untapped only on a condition, then tapped ones, then utility lands that make a color only by paying for it, for a narrow use, or once.",
