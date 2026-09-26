@@ -41,10 +41,13 @@ describe("planCopy", () => {
 
   // A source labelled against a newer catalog always carries cards the target has never heard of.
   // That is not a mismatch — there is nothing to describe — so it is skipped silently.
-  it("skips a card the target's catalog does not hold", () => {
+  // Counted, not silent. A source generated against a newer catalog always carries some of these,
+  // and the count is what distinguishes that from the target's catalog refresh having stopped.
+  it("counts a card the target's catalog does not hold, and does not call it a mismatch", () => {
     const p = planCopy([row("ghost", "h")], [], new Set());
     expect(p.install).toEqual([]);
     expect(p.mismatched).toEqual([]);
+    expect(p.notInTargetCatalog).toEqual(["ghost"]);
   });
 
   it("never deletes: a card the source has not labelled is reported and left alone", () => {
@@ -60,6 +63,6 @@ describe("planCopy", () => {
 
   it("plans nothing from an empty source", () => {
     const p = planCopy([], [{ oracleId: "a", inputHash: "h" }], new Set());
-    expect(p).toEqual({ install: [], mismatched: [], absentFromSource: [] });
+    expect(p).toEqual({ install: [], mismatched: [], notInTargetCatalog: [], absentFromSource: [] });
   });
 });

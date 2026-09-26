@@ -31,6 +31,15 @@ export type CopyPlan = {
   mismatched: string[];
   /** Cards the target holds and the source has not labelled. Left alone; never deleted. */
   absentFromSource: string[];
+  /**
+   * Cards the source has labelled that the target's catalog does not hold at all.
+   *
+   * COUNTED rather than silent. There is nothing for the label to describe, so it is not a
+   * mismatch — but silence is how a real gap hides, and this figure being normally non-zero is
+   * fine as long as it is visible. A source generated against a newer catalog always carries some;
+   * a figure suddenly in the thousands means the target's catalog refresh has stopped running.
+   */
+  notInTargetCatalog: string[];
 };
 
 /**
@@ -58,13 +67,15 @@ export function planCopy(
   const wantByCard = new Map(targetHashes.map((t) => [t.oracleId, t.inputHash]));
   const install: SourceLabel[] = [];
   const mismatched: string[] = [];
+  const notInTargetCatalog: string[] = [];
 
   for (const row of source) {
     const want = wantByCard.get(row.oracleId);
     // A card the target's catalog does not hold at all is not a mismatch — there is nothing to
-    // describe. Skipped silently, because a source labelled against a newer catalog will always
-    // carry rows the target has never heard of.
-    if (want === undefined) continue;
+    // describe. Recorded rather than skipped silently: a source labelled against a newer catalog
+    // always carries some of these, and the count is what tells a reader the difference between
+    // that and the target's catalog refresh having stopped.
+    if (want === undefined) { notInTargetCatalog.push(row.oracleId); continue; }
     if (want === row.inputHash) install.push(row);
     else mismatched.push(row.oracleId);
   }
@@ -73,6 +84,7 @@ export function planCopy(
   return {
     install,
     mismatched,
+    notInTargetCatalog,
     absentFromSource: [...targetHasLabel].filter((id) => !labelled.has(id)),
   };
 }

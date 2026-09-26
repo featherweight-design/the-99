@@ -76,3 +76,31 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:labels | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # PRODUCTION IS NOT UPDATED BY THIS WORKFLOW, and that is a gap rather than a design.
+      #
+      # Under pay-once the labels are generated here and carried to production by
+      # `db:copy:labels`, which costs nothing. Automating that needs BOTH database URLs in one
+      # job, and no environment has both: `catalog-staging` and `catalog-production` each hold
+      # only their own `CATALOG_DATABASE_URL`, and the only repository-level secret is
+      # `ANTHROPIC_API_KEY`. Two jobs cannot share a secret either.
+      #
+      # So it needs ONE new secret — staging's URL, readable from the production job — which is a
+      # credential decision rather than a code one. `db:copy:prose` has the same shape and is run
+      # by hand for the same reason; this workflow's summary says so on every run rather than
+      # leaving production quietly stale.
+      - name: Note what production still needs
+        shell: bash
+        run: |
+          {
+            echo ""
+            echo "**Production is not updated by this run.** These labels are on"
+            echo "\`catalog-staging\`. Carrying them to production costs nothing but needs both"
+            echo "database URLs in one job, and no environment holds both — so it is a manual"
+            echo "step until a secret with staging's URL exists:"
+            echo ""
+            echo '```'
+            echo "LABEL_COPY_SOURCE_URL=<catalog-staging> \"
+            echo "LABEL_COPY_TARGET_URL=<catalog-production> pnpm db:copy:labels"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

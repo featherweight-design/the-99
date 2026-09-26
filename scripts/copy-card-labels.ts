@@ -73,6 +73,9 @@ async function main(): Promise<void> {
   console.log(`  install ${plan.install.length}`);
   console.log(`  mismatched ${plan.mismatched.length} — the source's label describes a different `
     + `catalog state, so it is NOT installed and NOT rebuilt`);
+  console.log(`  ${plan.notInTargetCatalog.length} skipped: not in the target catalog — normal for a `
+    + `source generated against a newer catalog; a large figure means the target's catalog `
+    + `refresh has stopped running`);
   console.log(`  already on the target and absent from the source: ${plan.absentFromSource.length} `
     + `(left alone; this never deletes)`);
   if (plan.mismatched.length > 0) {
