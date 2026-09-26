@@ -971,6 +971,20 @@ async function pullReleaseSection() {
     `);
     await commitVersion(source, null);
     await both("when the source commits the card again, the asker is short", asking, -1, 1);
+
+    // 5. TWO ASKERS, BOTH TOLD. The same card pulled from the same source for two decks is two
+    //    rows, and the discard hands BOTH back, read under the restore's own lock. One row keyed on
+    //    the source and card alone kept only the last asker, and the first was never refreshed.
+    const second = await mk("Pull second asker", cmdB, false);
+    await pull(source, asking);
+    await db.transaction((tx) => writePullRelease(tx, {
+      userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: second,
+    }));
+    check("two askers are two release rows", await releases(source), 2);
+    let told: string[] = [];
+    await restoreDraftFromVersion(source, await newestId(source), (ids) => { told = ids; });
+    check("the discard names both askers", [...told].sort().join(","), [asking, second].sort().join(","));
+    check("and clears both rows", await releases(source), 0);
   } finally {
     await fixture.execute(sql`delete from card_assignments where user_id = ${USER_P}`);
     await fixture.execute(sql`delete from decks where user_id = ${USER_P}`);

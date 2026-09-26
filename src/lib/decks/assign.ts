@@ -108,8 +108,9 @@ export async function assignCopyFor(
     // Less any copy a pull released, bounded exactly as the claim model bounds it (`all_claims`):
     // never more than the version lists beyond what the draft still holds. A deck whose only copy
     // was pulled claims nothing, and reserving for it would hand a copy to a deck that gave it up.
+    // Summed: a card pulled for two asking decks is two rows.
     const [released] = await tx.select({
-      copies: pullReleases.copies,
+      copies: sql<number>`coalesce(sum(${pullReleases.copies}), 0)::int`,
       draft: sql<number>`coalesce((
         select sum(dc.quantity) from deck_cards dc
         where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
@@ -118,9 +119,7 @@ export async function assignCopyFor(
       .from(pullReleases)
       .where(and(eq(pullReleases.sourceDeckId, deckId), eq(pullReleases.oracleId, oracleId)));
     const versionQuantity = listCard?.quantity ?? 0;
-    const releasedCopies = released
-      ? Math.min(released.copies, Math.max(versionQuantity - released.draft, 0))
-      : 0;
+    const releasedCopies = Math.min(released?.copies ?? 0, Math.max(versionQuantity - (released?.draft ?? 0), 0));
     const listQuantity = versionQuantity - releasedCopies;
     const commanderCopies =
       (newest.commanderOracleId === oracleId ? 1 : 0)

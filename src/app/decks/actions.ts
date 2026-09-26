@@ -13,7 +13,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import {
   cards, collectionItems, deckCards, deckGameAxes, deckGames, decks,
-  deckUnresolvedRows, deckVersions, fillPassCards, fillPasses, pullReleases,
+  deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
@@ -1746,15 +1746,12 @@ export async function discardDeckDraft(
   }
   await requireDeck(deckId, userId);
   // The decks this draft's pulls freed a copy for. The discard deletes those releases, so their buy
-  // tags return and their pages are refreshed with this one. Read before the write: after it the
-  // rows are gone, and a pull landing in between only means one refresh too few, never a wrong row.
-  const askers = await db.selectDistinct({ id: pullReleases.askingDeckId })
-    .from(pullReleases).where(eq(pullReleases.sourceDeckId, deckId));
-  const outcome = await restoreDraftFromVersion(deckId, expectedVersionId);
+  // tags return and their pages are refreshed with this one. Handed back by the restore from the
+  // delete it ran under its own lock, so a pull landing just before it is never missed.
+  let askers: string[] = [];
+  const outcome = await restoreDraftFromVersion(deckId, expectedVersionId, (ids) => { askers = ids; });
   revalidateClaims(deckId, userId);
-  if (outcome === "restored") {
-    for (const { id } of askers) if (id) revalidateClaims(id, userId);
-  }
+  for (const id of askers) revalidateClaims(id, userId);
   if (outcome === "moved") {
     return { ok: false, message: "We couldn't discard those changes. Nothing has changed." };
   }

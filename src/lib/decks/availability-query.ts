@@ -112,7 +112,12 @@ const claimModel = (userId: string) => sql`
     select nv.deck_id, vc.oracle_id, vc.quantity - rel.copies as quantity, vc.since, false as is_commander
     from newest_version nv
     join deck_version_cards vc on vc.version_id = nv.version_id
-    left join pull_releases pr on pr.source_deck_id = nv.deck_id and pr.oracle_id = vc.oracle_id
+    -- Summed, because a card pulled for two asking decks is two rows.
+    left join (
+      select source_deck_id, oracle_id, sum(copies)::int as copies
+      from pull_releases where user_id = ${userId}
+      group by source_deck_id, oracle_id
+    ) pr on pr.source_deck_id = nv.deck_id and pr.oracle_id = vc.oracle_id
     cross join lateral (
       select case when pr.copies is null then 0 else least(pr.copies, greatest(vc.quantity - coalesce((
         select sum(dc.quantity) from deck_cards dc

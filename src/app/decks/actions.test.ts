@@ -55,8 +55,6 @@ const stub = vi.hoisted(() => {
     // differ, so a stub that hands both decks the same rows cannot express the
     // case. Any deck with no entry here falls back to `deckRows`.
     deckRowsByDeck: {} as Record<string, { oracleId: string; quantity: number }[]>,
-    // The asking decks a discard reads off `pull_releases` before it restores (`selectDistinct`).
-    pullAskers: [] as { id: string | null }[],
     // What an in-transaction `update(...).returning()` hands back. Empty means
     // the guarded decrement matched nothing, which is how a caller learns the
     // row was down to its last copy and must be deleted instead.
@@ -354,8 +352,6 @@ const stub = vi.hoisted(() => {
   const db = {
     select: () => makeSelectBuilder(),
     selectDistinctOn: () => makeSelectBuilder(),
-    // Only the discard's read of the decks its pulls were for goes through here.
-    selectDistinct: () => ({ from: () => ({ where: async () => state.pullAskers }) }),
     insert: (table: unknown) => makeInsertBuilder(table),
     delete: (table: unknown) => makeDeleteBuilder(table),
     // Raw reads go through here — the proxy readers among them. `{ rows: [] }`
@@ -1631,7 +1627,6 @@ describe("discardDeckDraft", () => {
     vi.clearAllMocks();
     stub.state.revalidated.length = 0;
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
-    stub.state.pullAskers = [];
     vi.mocked(restoreDraftFromVersion).mockResolvedValue("restored");
   });
 
@@ -1639,25 +1634,20 @@ describe("discardDeckDraft", () => {
   // is short again and its buy tag has to come back.
   it("revalidates every deck this draft's pulls were for", async () => {
     const ASKER = "66666666-6666-4666-8666-666666666666";
-    stub.state.pullAskers = [{ id: ASKER }, { id: null }];
+    vi.mocked(restoreDraftFromVersion).mockImplementation(async (_d, _v, onReleased) => {
+      onReleased?.([ASKER]);
+      return "restored";
+    });
     const result = await discardDeckDraft(DECK_ID, VERSION_ID);
     expect(result.ok).toBe(true);
     expect(stub.state.revalidated).toContain(`/decks/${ASKER}`);
   });
 
-  // A refused restore put nothing back, so the askers' figures have not moved.
-  it("leaves the askers alone when the restore refuses", async () => {
-    const ASKER = "66666666-6666-4666-8666-666666666666";
-    stub.state.pullAskers = [{ id: ASKER }];
-    vi.mocked(restoreDraftFromVersion).mockResolvedValue("moved");
-    await discardDeckDraft(DECK_ID, VERSION_ID);
-    expect(stub.state.revalidated).not.toContain(`/decks/${ASKER}`);
-  });
 
   it("restores the version the caller named and revalidates", async () => {
     const result = await discardDeckDraft(DECK_ID, VERSION_ID);
     expect(result.ok).toBe(true);
-    expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID);
+    expect(restoreDraftFromVersion).toHaveBeenCalledWith(DECK_ID, VERSION_ID, expect.any(Function));
     expect(stub.state.revalidated).toContain(`/decks/${DECK_ID}`);
   });
 

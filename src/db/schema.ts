@@ -916,13 +916,17 @@ export const pullReleases = pgTable("pull_releases", {
   userId: text("user_id").notNull(),
   sourceDeckId: uuid("source_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
-  /** The deck the copy was pulled for. A record of who asked, not part of the arithmetic. */
-  askingDeckId: uuid("asking_deck_id").references(() => decks.id, { onDelete: "set null" }),
+  /** The deck the copy was pulled for, which is who has to be told when the release is undone.
+   *  Deleting that deck deletes the release: the copy stays out of the source's draft, and the
+   *  source's version claims it again, as for any removal nobody has committed. */
+  askingDeckId: uuid("asking_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   copies: integer("copies").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
-  // One row per card per source: a second pull of the same card from the same deck adds a copy.
-  primaryKey({ columns: [t.sourceDeckId, t.oracleId] }),
+  // One row per card per source PER ASKER, so undoing the release can tell every deck it freed a
+  // copy for. A second pull of the same card for the same deck adds a copy to that row; the claim
+  // model sums the rows.
+  primaryKey({ columns: [t.sourceDeckId, t.oracleId, t.askingDeckId] }),
   // The claim model reads every release a player holds.
   index("pull_releases_user_idx").on(t.userId),
   check("pull_releases_copies_positive", sql`${t.copies} > 0`),

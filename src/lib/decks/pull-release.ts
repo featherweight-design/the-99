@@ -17,9 +17,10 @@ export async function writePullRelease(
   release: { userId: string; sourceDeckId: string; oracleId: string; askingDeckId: string },
 ): Promise<void> {
   await tx.insert(pullReleases).values({ ...release, copies: 1 }).onConflictDoUpdate({
-    target: [pullReleases.sourceDeckId, pullReleases.oracleId],
-    // A second pull of the same card from the same draft takes one more copy.
-    set: { copies: sql`${pullReleases.copies} + 1`, askingDeckId: release.askingDeckId },
+    target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
+    // A second pull of the same card from the same draft for the same deck takes one more copy.
+    // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
+    set: { copies: sql`${pullReleases.copies} + 1` },
   });
 }
 
@@ -33,7 +34,7 @@ export async function clearPullReleases(tx: Tx, sourceDeckId: string): Promise<s
   const gone = await tx.delete(pullReleases)
     .where(eq(pullReleases.sourceDeckId, sourceDeckId))
     .returning({ askingDeckId: pullReleases.askingDeckId });
-  return [...new Set(gone.map((r) => r.askingDeckId).filter((id): id is string => id !== null))];
+  return [...new Set(gone.map((r) => r.askingDeckId))];
 }
 
 /**
@@ -48,5 +49,5 @@ export async function takeBackPullRelease(
   const gone = await tx.delete(pullReleases)
     .where(and(eq(pullReleases.sourceDeckId, sourceDeckId), eq(pullReleases.oracleId, oracleId)))
     .returning({ askingDeckId: pullReleases.askingDeckId });
-  return gone.map((r) => r.askingDeckId).filter((id): id is string => id !== null);
+  return [...new Set(gone.map((r) => r.askingDeckId))];
 }

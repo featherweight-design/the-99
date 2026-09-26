@@ -1,5 +1,5 @@
 {
-  "id": "96910cc3-7df4-4267-acda-3550abff29c1",
+  "id": "9159fb56-77a0-4a90-927a-8d16093d8896",
   "prevId": "c8d7f810-3cf3-45fb-87b2-4a64e0e032ee",
   "version": "7",
   "dialect": "postgresql",
@@ -4835,7 +4835,7 @@
           "name": "asking_deck_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "copies": {
           "name": "copies",
@@ -4906,16 +4906,17 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "pull_releases_source_deck_id_oracle_id_pk": {
-          "name": "pull_releases_source_deck_id_oracle_id_pk",
+        "pull_releases_source_deck_id_oracle_id_asking_deck_id_pk": {
+          "name": "pull_releases_source_deck_id_oracle_id_asking_deck_id_pk",
           "columns": [
             "source_deck_id",
-            "oracle_id"
+            "oracle_id",
+            "asking_deck_id"
           ]
         }
       },

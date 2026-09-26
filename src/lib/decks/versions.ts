@@ -274,6 +274,9 @@ async function commitVersionIn(
 export async function restoreDraftFromVersion(
   deckId: string,
   versionId: string,
+  /** Told which decks the discarded draft's pulls were for, read under this function's own lock,
+   *  so a pull landing just before the restore is still among them. Only on "restored". */
+  onReleased?: (askingDeckIds: string[]) => void,
 ): Promise<"restored" | "moved"> {
   return db.transaction(async (tx) => {
     // The same `for update` commitVersion takes, and for the same reason: this
@@ -348,7 +351,8 @@ export async function restoreDraftFromVersion(
     await touchDeck(tx, deckId);
     // The pulled cards are back in the draft, so their copies are claimed again: a discard undoes the
     // pull, release included (Hugh, 2026-09-27), and the deck they were pulled for buys again.
-    await clearPullReleases(tx, deckId);
+    const askers = await clearPullReleases(tx, deckId);
+    onReleased?.(askers);
     return "restored";
   });
 }
