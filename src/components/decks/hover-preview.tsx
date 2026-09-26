@@ -93,8 +93,8 @@ type PreviewApi = {
   /** Hover began on a row, at the pointer. Null `imageUri` is a no-op — see
    *  `usePreviewRow`. */
   open: (imageUri: string | null | undefined, x: number, y: number, overSheet?: boolean) => void;
-  /** The pointer moved while a row is hovered. */
-  move: (x: number, y: number) => void;
+  /** The pointer moved while a row is hovered: the row's card rides along for `waitForMove`'s arming move. */
+  move: (x: number, y: number, imageUri?: string | null, overSheet?: boolean) => void;
   close: () => void;
 };
 
@@ -282,8 +282,11 @@ export function HoverPreviewProvider({
         if (isOpen.current) show();
         else timer.current = setTimeout(show, OPEN_DELAY);
       },
-      move: (x, y) => {
+      move: (x, y, imageUri, overSheet = false) => {
         if (!armed.current) {
+          // The move names its own row: a leave the browser fires when the sheet's layout settles can
+          // clear `hovered` before any move, and the arming move must still open the row it is on.
+          if (imageUri !== undefined) hovered.current = { imageUri, overSheet };
           // The move that arms the box opens it for the row the pointer is on, as an entry would.
           if (intent(x, y) && hovered.current) api.open(hovered.current.imageUri, x, y, hovered.current.overSheet);
           return;
@@ -358,8 +361,9 @@ export function usePreviewRow(imageUri: string | null | undefined) {
   // provider coalesces them to one write per frame — the handler itself does no
   // work beyond recording where the pointer is.
   const onMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => api?.move(e.clientX, e.clientY),
-    [api],
+    (e: React.MouseEvent<HTMLElement>) =>
+      api?.move(e.clientX, e.clientY, imageUri, e.currentTarget.closest('[role="dialog"]') !== null),
+    [api, imageUri],
   );
   const onMouseLeave = useCallback(() => api?.close(), [api]);
   if (!api) return {};

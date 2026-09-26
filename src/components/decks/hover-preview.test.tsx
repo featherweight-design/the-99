@@ -143,6 +143,16 @@ describe("HoverPreviewProvider", () => {
       expect(preview()).not.toBeNull();
     });
 
+    it("opens on the arming move even when a leave cleared the row first", () => {
+      render(<Harness waitForMove rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
+      fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
+      // The browser's own leave as the sheet's layout settles under a still pointer.
+      fireEvent.mouseLeave(screen.getByTestId("a"));
+      fireEvent.mouseMove(screen.getByTestId("a"), { clientX: 106, clientY: 100 });
+      act(() => void vi.advanceTimersByTime(240));
+      expect(preview()).not.toBeNull();
+    });
+
     it("leaves a provider without it previewing on entry, as the decklist always has", () => {
       render(<Harness rows={[{ name: "a", imageUri: ART, box: LEFT_COLUMN }]} />);
       fireEvent.mouseEnter(screen.getByTestId("a"), { clientX: 100, clientY: 100 });
