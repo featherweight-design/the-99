@@ -340,70 +340,88 @@ export const loadCardDetail = cache(async function loadCardDetail(
   /** The deck the modal was opened from, if any. See `withComboPartners`. */
   deckOracleIds?: readonly string[],
 ): Promise<BrowseCard | null> {
-  const owned = aggregateCollection(await selectCollectionRows(userId, oracleId));
-  // Only for a card the user owns: the availability query is driven by the collection, so
-  // an unowned card has no row there and nothing to report.
-  if (owned.length > 0) {
-    // The import is inside the guard so an unowned card never pays for it, and inside the
-    // catch because a module that fails to resolve is as quiet a failure as a query that
-    // fails to run — either way the modal omits the block rather than losing the card.
-    // Started together, not one after the other: the two reads share nothing, and
-    // this whole path runs on a click, so a serial pair would put both round trips
-    // between the reader pressing a card and the modal filling in. Each still
-    // fails on its own — `Promise.all` over two already-caught promises settles
-    // with a null in the failed slot rather than rejecting the pair.
-    const [availability, prices, proxiedBy, gate] = await Promise.all([
-      (async () => {
-        const { loadAvailability } = await import("../decks/availability-query");
-        return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
-      })().catch(() => null),
-      pricesFor(oracleId),
-      proxyingDecks(userId, oracleId),
-      fitsGate(userId, oracleId),
-    ]);
-    return withComboPartners(
-      await withBracketFacts({ ...owned[0], availability, prices, proxiedBy, ...gate }),
-      userId,
-      deckOracleIds,
-    );
-  }
-
+  // TWO STAGES, and never more. Every read below is keyed on (reader, oracle id) alone, so none
+  // waits on another's answer. They used to run in serial stages, each a round trip to the
+  // database between a press and the modal filling in: four for an owned card (collection, then
+  // availability with the three side reads, then the bracket flags, then the combo partners) and
+  // five for an unowned one (collection, then the `cards` row, then printings with the three side
+  // reads, then the flags, then the partners). Stage 1 is the two reads that decide
+  // WHICH card this is and whether it exists at all; stage 2 is everything else, together.
+  //
+  // Stage 1 carries both branches' first read so an unknown id stops after two queries and
+  // fires nothing else: a missing card is rare, and it is the one case where the fan-out would
+  // be all waste.
   const { db } = await import("../../db");
   const { cards, printings, sets } = await import("../../db/schema");
   const { eq } = await import("drizzle-orm");
-  const [card] = await db
-    .select({
-      oracleId: cards.oracleId,
-      scryfallId: cards.scryfallId,
-      name: cards.name,
-      typeLine: cards.typeLine,
-      cmc: cards.cmc,
-      manaCost: cards.manaCost,
-      oracleText: cards.oracleText,
-      keywords: cards.keywords,
-      gameChanger: cards.gameChanger,
-      rarity: cards.rarity,
-      colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
-      layout: cards.layout,
-      backImageUri: cards.backImageUri,
-    })
-    .from(cards)
-    .where(eq(cards.oracleId, oracleId));
-  if (!card) return null;
+  // Both started now; only the collection is awaited before branching. An owned card never
+  // reads the catalog row, so it must not wait on it either — a slow catalog read would
+  // otherwise hold every owned card's modal. `settle` keeps the abandoned read from rejecting
+  // with nothing listening.
+  //
+  // A DELIBERATE SPECULATIVE READ. An owned card pays for a `cards` lookup it discards: one
+  // primary-key query and, for its length, one more pool connection (seven at most, of pg's ten).
+  // Started only after the collection answered, the unowned path — every card the reader does not
+  // hold, the commonest open — would take three round trips instead of two. One cheap read on the
+  // owned path buys a round trip on the other one.
+  const catalog = settle(() => db
+      .select({
+        oracleId: cards.oracleId,
+        scryfallId: cards.scryfallId,
+        name: cards.name,
+        typeLine: cards.typeLine,
+        cmc: cards.cmc,
+        manaCost: cards.manaCost,
+        oracleText: cards.oracleText,
+        keywords: cards.keywords,
+        gameChanger: cards.gameChanger,
+        rarity: cards.rarity,
+        colorIdentity: cards.colorIdentity,
+        imageUri: cards.imageUri,
+        layout: cards.layout,
+        backImageUri: cards.backImageUri,
+      })
+      .from(cards)
+      .where(eq(cards.oracleId, oracleId)));
+  const owned = aggregateCollection(await selectCollectionRows(userId, oracleId));
+  // The catalog row is the UNOWNED branch's card. An owned card is built from the collection's
+  // own join and never reads it, so a failed catalog read there costs nothing; only the branch
+  // that needs it fails with it, exactly as it did when it was the only one reading it.
+  const card = owned.length === 0 ? unwrap(await catalog)[0] : undefined;
+  if (owned.length === 0 && !card) return null;
 
-  // Started before the printings query is awaited: it depends on the oracle id
-  // alone, and this path serves every unowned card and every deck row, so a serial
-  // pair would add a whole round trip to the commonest open. Kicked off only after
-  // the card is known to exist, so a miss costs no query at all.
+  // Stage 2. Each read fails on its own: every one is already caught (`pricesFor`,
+  // `proxyingDecks`, `fitsGate`, the availability read) or settled here (the flags and the
+  // partners, whose assembly functions own their own catch), so `Promise.all` never rejects
+  // for one of them and a failed read costs the reader a block, never the card.
   const prices = pricesFor(oracleId);
-  // Started here too, not only on the owned branch. A card the player owns no
-  // copy of is the COMMONEST proxy — the Ozolith case the spec is written
-  // around — so a receipt that could only list printing decks for owned cards
-  // would miss every one that matters.
+  // Both branches, not only the owned one: a card the player owns no copy of is the
+  // COMMONEST proxy — the Ozolith case the spec is written around.
   const proxiedBy = proxyingDecks(userId, oracleId);
   const gate = fitsGate(userId, oracleId);
-  const printingRows = await db
+  const flags = settle(async () => (await import("../bracket/flags-read")).loadBracketFlags([oracleId]));
+  const partners = settle(async () =>
+    (await import("../combos/near-miss")).loadCardComboPartners({ userId, oracleId, deckOracleIds }),
+  );
+  const assemble = async (base: BrowseCard) =>
+    withComboPartners(await withBracketFacts(base, () => unsettle(flags)), userId, deckOracleIds, () => unsettle(partners));
+
+  if (owned.length > 0) {
+    // Only for a card the user owns: the availability query is driven by the collection, so
+    // an unowned card has no row there and nothing to report. The import is inside the catch
+    // because a module that fails to resolve is as quiet a failure as a query that fails to
+    // run — either way the modal omits the block rather than losing the card.
+    const availability = (async () => {
+      const { loadAvailability } = await import("../decks/availability-query");
+      return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
+    })().catch(() => null);
+    const [a, p, pb, g] = await Promise.all([availability, prices, proxiedBy, gate]);
+    return assemble({ ...owned[0], availability: a, prices: p, proxiedBy: pb, ...g });
+  }
+
+  // `card` is known here: stage 1 returned when the unowned branch found none.
+  const found = card!;
+  const printingRows = db
     .select({
       scryfallId: printings.scryfallId,
       setCode: printings.setCode,
@@ -417,26 +435,45 @@ export const loadCardDetail = cache(async function loadCardDetail(
     .from(printings)
     // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
     .leftJoin(sets, eq(sets.code, printings.setCode))
-    .where(eq(printings.oracleId, oracleId));
+    .where(eq(printings.oracleId, oracleId))
+    // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
+    // catalog row alone, where a rejection here would have lost the card.
+    .catch(() => []);
+  const [pr, p, pb, g] = await Promise.all([printingRows, prices, proxiedBy, gate]);
   // The unowned branch synthesises its card from the catalog, so `gameChanger` comes off
   // the `cards` row rather than from an aggregation — and without this the block never drew
   // for an unowned Game Changer at all.
-  // BOTH BRANCHES, and the unowned one is the branch that matters most here. This block's
-  // `you don't own it` state is by definition about cards the reader does not have — and a
-  // reader following a partner into its own modal lands on exactly such a card. Enriching
-  // only the owned branch left the block silently absent on the commonest open it has.
-  return withComboPartners(
-    await withBracketFacts({
-      ...catalogCard(card, printingRows, await prices),
-      facts: card.gameChanger ? ["gameChanger"] : undefined,
-      prices: await prices,
-      proxiedBy: await proxiedBy,
-      ...(await gate),
-    }),
-    userId,
-    deckOracleIds,
-  );
+  // BOTH BRANCHES get the bracket facts and the partners, and the unowned one is the branch
+  // that matters most for the partners: their `you don't own it` state is by definition about
+  // cards the reader does not have — and a reader following a partner into its own modal lands
+  // on exactly such a card.
+  return assemble({
+    ...catalogCard(found, pr, p),
+    facts: found.gameChanger ? ["gameChanger"] : undefined,
+    prices: p,
+    proxiedBy: pb,
+    ...g,
+  });
 });
+
+/**
+ * A read started now and awaited later, held as a result rather than a promise that may reject
+ * with nothing listening: a rejection that lands before anyone awaits it is an unhandled one,
+ * which Node treats as fatal.
+ */
+type Result<T> = { ok: true; value: T } | { ok: false; error: unknown };
+function settle<T>(read: () => PromiseLike<T>): Promise<Result<T>> {
+  return Promise.resolve()
+    .then(read)
+    .then((value) => ({ ok: true as const, value }), (error) => ({ ok: false as const, error }));
+}
+function unwrap<T>(r: Result<T>): T {
+  if (!r.ok) throw r.error;
+  return r.value;
+}
+async function unsettle<T>(held: Promise<Result<T>>): Promise<T> {
+  return unwrap(await held);
+}
 
 /**
  * The card's prices, or null. Swallowed for the same reason the availability read

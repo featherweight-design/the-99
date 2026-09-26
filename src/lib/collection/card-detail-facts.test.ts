@@ -65,6 +65,10 @@ describe("withBracketFacts", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(join(here, "card-detail.ts"), "utf8");
     const body = src.slice(src.indexOf("export const loadCardDetail"));
-    expect(body.match(/withBracketFacts\(/g) ?? []).toHaveLength(2);
+    // Both branches return through ONE `assemble`, which is where the call lives: two returns
+    // through it, and the call inside it once.
+    expect(body.match(/return assemble\(/g) ?? []).toHaveLength(2);
+    const assemble = body.slice(body.indexOf("const assemble ="), body.indexOf("if (owned.length > 0)"));
+    expect(assemble.match(/withBracketFacts\(/g) ?? []).toHaveLength(1);
   });
 });
