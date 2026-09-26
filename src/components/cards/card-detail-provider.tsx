@@ -472,6 +472,10 @@ export function CardDetailProvider({
   // the read starts is compared against the count when it lands: a read from the wrong
   // side of a write is dropped rather than filed as the current answer.
   const evictions = useRef(new Map<string, number>());
+  // How many reads a press has settled for each card, whatever they answered: a card, or none.
+  // A prefetch notes the count when it starts and is neither filed nor joined once it has moved,
+  // because a press answered meanwhile, and that answer (a missing card included) is newer.
+  const answers = useRef(new Map<string, number>());
   // The card the reader has asked for, for `evict` to compare against without being rebuilt
   // every time that changes — it is handed to every trigger through the context. Written
   // through `load` and `show` rather than read off `card`, both because a ref must not be
@@ -505,6 +509,7 @@ export function CardDetailProvider({
     oracleId: string;
     scope: readonly string[] | undefined;
     evictedAt: number;
+    answeredAt: number;
     read: Promise<BrowseCard | null | undefined>;
   } | null>(null);
   const show = useCallback((next: BrowseCard | null) => {
@@ -605,12 +610,13 @@ export function CardDetailProvider({
           // it does not (a cold route, or a failure), the press reads for itself through the
           // action, and that answer is the one shown: the prefetch may still fill the cache, but it
           // never paints while the press's action is pending. See the header for why that rule.
-          // Never over a filed answer: that came from a read the prefetch did not see finish, and
-          // is newer than anything the prefetch can bring back.
+          // Never after a press has settled this card since the prefetch started: that answer is
+          // newer than anything the prefetch can bring back.
           const ahead = prefetching.current;
           const joined =
             attempt === 0 && ahead && ahead.oracleId === oracleId && ahead.scope === comboScope &&
-            ahead.evictedAt === evictedAtStart && !cache.current.has(oracleId)
+            ahead.evictedAt === evictedAtStart &&
+            ahead.answeredAt === (answers.current.get(oracleId) ?? 0)
               ? await withinWait(ahead.read)
               : undefined;
           if (latest.current !== request) return;
@@ -625,6 +631,7 @@ export function CardDetailProvider({
           giveUp();
           return;
         }
+        answers.current.set(oracleId, (answers.current.get(oracleId) ?? 0) + 1);
         if (next) {
           cache.current.set(oracleId, next);
           if (arrival) setDoor(arrival.door);
@@ -798,19 +805,21 @@ export function CardDetailProvider({
       if (art) preloadCardArt(art);
       const evictedAt = evictions.current.get(oracleId) ?? 0;
       const scope = comboScope;
+      const answeredAt = answers.current.get(oracleId) ?? 0;
       const entry = {
         oracleId,
         scope,
         evictedAt,
+        answeredAt,
         read: prefetchCard(oracleId, scope).then(
           (next) => {
             // Filed only if nothing moved under it: an eviction since it started means a write
             // it may have read the wrong side of, and a new scope means a different question.
-            // Nor over an entry filed meanwhile: that is a press's action that outran the wait,
-            // and its answer is newer than this one.
+            // Nor once a press has settled the card meanwhile: its action outran the wait, and
+            // its answer is newer than this one, a card found missing included.
             if (
               next &&
-              !cache.current.has(oracleId) &&
+              (answers.current.get(oracleId) ?? 0) === answeredAt &&
               (evictions.current.get(oracleId) ?? 0) === evictedAt &&
               scope === comboScopeRef.current
             ) {

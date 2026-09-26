@@ -1227,6 +1227,22 @@ describe("CardDetailProvider prefetch on intent", () => {
     expect(screen.getByRole("dialog")).toHaveAccessibleName(SIGNET_AFTER_WRITE.name);
   });
 
+  it("never files a late prefetch over a press that found the card missing", async () => {
+    const guess = deferred();
+    const fetchCard = vi.fn().mockResolvedValueOnce(null).mockReturnValue(new Promise(() => {}));
+    mountSplit(() => guess.promise, fetchCard);
+    fireEvent.focus(trigger("Arcane Signet"));
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    await pause(PREFETCH_WAIT_MS + 50);
+    expect(fetchCard).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The older prefetch lands with a card; the next press must not paint it from the cache.
+    await act(async () => { guess.resolve(SIGNET); });
+    await act(async () => { fireEvent.click(trigger("Arcane Signet")); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(fetchCard).toHaveBeenCalledTimes(2);
+  });
+
   it("reads for itself at once when the prefetch fails", async () => {
     const fetchCard = vi.fn(async (_id: string) => SIGNET);
     mountSplit(async () => { throw new Error("route down"); }, fetchCard);
