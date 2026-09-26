@@ -2,7 +2,7 @@
 //
 // Property table: docs/superpowers/design-tables/ui-refresh-home.md
 // §ReadyToBuild. The threshold Design's READINESS blocks on is `readySlice`'s
-// (plan ruling 1): a RANK cut at nine, never a score cut. Nothing here invents
+// (plan ruling 1): a RANK cut (`READY_COUNT`, two weeks deep), never a score cut. Nothing here invents
 // one, and nothing here re-derives `moreCount` or `floor` from the shown pair.
 //
 // Placement inside the two-column §HomeBody belongs to the layout task; this

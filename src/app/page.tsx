@@ -11,6 +11,7 @@ import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summar
 import { getRankedList } from "../lib/recs/ranked-list";
 import { withOwnedCardArt } from "../lib/collection/owned-printings";
 import { readySlice } from "../lib/recs/ready-to-build";
+import { loadUnplayedCounts } from "../lib/recs/home-novelty";
 import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
@@ -126,10 +127,14 @@ export default async function HomePage() {
     return <FirstRunChecklist />;
   }
 
-  const [lastUpdated, ranked, shopping] = await Promise.all([
+  const [lastUpdated, ranked, shopping, unplayed] = await Promise.all([
     perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
     perf.timed("rankedList", () => getRankedList(userId)),
     perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+    // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
+    // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
+    // failure, which walks the plain shuffle.
+    perf.timed("unplayedCounts", () => loadUnplayedCounts(userId)),
   ]);
 
   // ONE clock for the whole render. The rotation's day boundary and the
@@ -138,11 +143,11 @@ export default async function HomePage() {
   // figure stamped today. Read here rather than inside the slice because a helper
   // reading the clock itself could not be tested.
   const now = new Date();
-  // The slice FIRST, then the printings — nine rows rather than every commander the
+  // The slice FIRST, then the printings — the two shown rather than every commander the
   // player could build. `getRankedList` deliberately does not resolve art itself: this
   // page draws two of its rows on the desktop hero and the rest never reach a screen,
   // and the lookup is a join over `collection_items × printings × sets`.
-  const slice = readySlice(ranked.items, { userId, now });
+  const slice = readySlice(ranked.items, { userId, now, unplayed });
   const ready = { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) };
 
   // One availability read between the in-use clause and the Commitments card.

@@ -19,10 +19,10 @@
  * whatever index falls out. That is independent sampling, not a rotation, so it
  * streaks: simulated over 3,000 accounts × 365 days, a nine-commander pool left one
  * commander unseen for **15 consecutive days** at worst, which is the complaint this
- * exists to answer. Walking a cycle gives every commander a fixed beat — 4.5 days
- * on average across a set of nine — a full tour within five days, since the pair
- * turns over once per UTC day, and two fresh cards each day at the sizes named
- * below. Read the next paragraph before quoting any of those three: each one has
+ * exists to answer. Walking a cycle gives every commander a fixed beat — a full tour
+ * every `size / 2` days, since the pair turns over once per UTC day (four and a half
+ * days at the nine this was written for, two weeks at the 28 the set holds since
+ * 2026-09-27) — and two fresh cards each day at the sizes named below. Read the next paragraph before quoting any of those three: each one has
  * a condition, and this sentence used to claim all three unconditionally.
  *
  * WHERE "TWO FRESH CARDS" STOPS BEING TRUE, precisely: consecutive days are disjoint
@@ -30,12 +30,12 @@
  * the one reachable exception is a set of exactly three, where two cards a day out of
  * three must repeat one — pigeonhole, not a defect, and no scheduling fixes it. Sets
  * of 0, 1 and 2 return early and do not rotate at all. So the guarantee reads: a full
- * set of nine never repeats, an account with three ranked commanders repeats exactly
+ * set never repeats on consecutive days, an account with three ranked commanders repeats exactly
  * one card a day, and `ready-to-build.test.ts` sweeps every size between.
  *
  * WHY THE CYCLE WALKS A SHUFFLE. Walking the set in RANK order pairs adjacent
- * ranks — ranks 1&2, then 3&4, then 5&6, then 7&8 — so once every 4.5 days Home
- * draws the two weakest commanders of the nine together, and the reader watches the
+ * ranks — ranks 1&2, then 3&4, then 5&6, then 7&8 — so once every tour Home
+ * draws the two weakest commanders of the set together, and the reader watches the
  * pair march down the list. Measured the same way: 22.2% of days put both cards in
  * the set's bottom three, against 8.5% for a shuffled walk, which is the random
  * baseline (3/36). Shuffling once per account costs a few lines and removes the
@@ -108,17 +108,23 @@ const DAY_MS = 86_400_000;
  * Returns the whole set, in its own order, when it holds no more than `count`:
  * there is nothing to rotate between, and rotating the ORDER of two cards that are
  * both always drawn would be motion without information.
+ *
+ * `novelty`, when given, is what the cycle LEANS on (Hugh, 2026-09-27: "I've seen the same
+ * few rotate in and out"). It changes the order the cycle walks and nothing about the walk:
+ * see `noveltyOrder`. Without it the walk is the per-account shuffle, as it always was.
  */
 export function dailyPicks<T>(
   set: readonly T[],
   userId: string,
   now: Date,
   count: number,
+  novelty?: (item: T) => number,
 ): T[] {
   if (set.length <= count) return [...set];
 
   const size = set.length;
-  const order = permutation(size, userId);
+  const shuffled = permutation(size, userId);
+  const order = novelty ? noveltyOrder(shuffled, (i) => novelty(set[i])) : shuffled;
   const day = Math.floor(now.getTime() / DAY_MS);
 
   // No per-account phase offset here, deliberately. One was written and removed:
@@ -132,4 +138,32 @@ export function dailyPicks<T>(
   // one commander twice. Consecutive DAYS are a stronger condition and need
   // `2 * count <= size`; see the header for the one size where that fails.
   return Array.from({ length: count }, (_, i) => set[order[(day * count + i) % size]]);
+}
+
+/**
+ * The shuffle, re-ordered to lean on the new: positions sorted by how new each commander is
+ * (the themes it plays that none of the reader's decks do, most first), then the newer half
+ * INTERLEAVED with the rest, so the cycle's `(day * count + i)` walk puts one card from each
+ * half on every day at `count` 2 when the set's size is EVEN (a full set of 28 is). An odd set
+ * has one more in the newer half, so the day the walk wraps draws two from it; the cycle's own
+ * guarantees (no repeat in a tour, none on consecutive days) hold at every size either way. Every guarantee in the header still holds, because only the
+ * order moved and the walk did not.
+ *
+ * Ties keep the shuffle's order (Array.prototype.sort is stable), so two readers whose pools
+ * are equally new still walk their own sequences, and the rank-neighbourhood clustering the
+ * shuffle exists to break stays broken: novelty is not rank.
+ */
+export function noveltyOrder(shuffled: readonly number[], novelty: (index: number) => number): number[] {
+  // Nothing to lean on (a pool with no new themes, or a map the read could not fill): the shuffle
+  // exactly. Interleaving halves of a list sorted by nothing would only be a second shuffle.
+  const first = shuffled.length ? novelty(shuffled[0]) : 0;
+  if (shuffled.every((i) => novelty(i) === first)) return [...shuffled];
+  const byNew = [...shuffled].sort((a, b) => novelty(b) - novelty(a));
+  const half = Math.ceil(byNew.length / 2);
+  const out: number[] = [];
+  for (let i = 0; i < half; i += 1) {
+    out.push(byNew[i]);
+    if (i + half < byNew.length) out.push(byNew[i + half]);
+  }
+  return out;
 }

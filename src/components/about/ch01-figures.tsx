@@ -1866,7 +1866,7 @@ export function ReadyToBuildFigureBody() {
     <AnchoredNumerals
       gutter
       marks={[
-        // 1: the top nine is a ranking, under the block's own heading.
+        // 1: the top 28 is a ranking, under the block's own heading.
         { n: 1, find: withText("h2", refreshCopy.home.readyHeading), side: "gutter" },
         // 2: the fit line and the in-use clause, on the first card's meta row.
         { n: 2, find: first(".hero-footer > div"), side: "gutter" },

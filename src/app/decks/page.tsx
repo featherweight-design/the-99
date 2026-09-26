@@ -11,9 +11,11 @@ import { selectParamSuffix } from "../../lib/decks/selection-param";
 import { DEFAULT_DECK_SORT } from "../../lib/decks/sort";
 import { getCollectionStats } from "../../lib/home/summary";
 import { getRankedList } from "../../lib/recs/ranked-list";
-import { READY_COUNT } from "../../lib/recs/ready-to-build";
 import { noticesEnabled } from "../../lib/notices/flag";
 import { DecksView } from "../../components/decks/decks-view";
+
+/** The /decks zero state counts buildable commanders up to nine: Home's old set size, kept here on purpose. */
+const DECKS_ZERO_BUILDABLE = 9;
 
 export default async function DecksPage({
   searchParams,
@@ -85,9 +87,10 @@ export default async function DecksPage({
       decks={decks}
       folders={folders}
       shopping={shopping}
-      // The same nine as Home's Ready to build, clamped by what actually
-      // scored. Not a second threshold.
-      buildable={Math.min(READY_COUNT, ranked?.items.length ?? 0)}
+      // Nine, clamped by what actually scored. Not a second threshold. It was
+      // Home's Ready to build set until that grew to two weeks deep (2026-09-27);
+      // this zero state deliberately did not move with it (d9, for Hugh).
+      buildable={Math.min(DECKS_ZERO_BUILDABLE, ranked?.items.length ?? 0)}
       // Copies owned, not distinct names: `1,284 cards` is what a player has.
       cards={stats?.totalCards ?? 0}
       // One clock for the whole page, read on the server. Every relative date
