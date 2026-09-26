@@ -188,15 +188,13 @@ export function passes(
   } else {
     for (const slug of a.themes) if (!skipping("theme", slug) && backing(c, slug, tribes) === null) return false;
   }
-  // Under own-only the budget caps the commander alone (three answers §3), so the card's price is
-  // left out of it; the card still counts against the bracket.
   // With the card answer removed the card is gone from every test, not only its own: its flags
   // and its price no longer count against the bracket or the budget either.
   if ((a.sets?.length ?? 0) > 0 && !skipping("sets") && c.inSets === false) return false;
   const withCard = a.card !== null && !skipping("card") ? card : null;
   if (withCard !== null && !(c.cardInclusion !== null && c.cardInclusion > 0)) return false;
   if (a.bracket !== null && !skipping("bracket") && !withinBracket(c, withCard, a.bracket)) return false;
-  if (a.budgetDollars !== null && !skipping("budget") && !withinBudget(c, a.pool === "own" ? null : withCard, a.budgetDollars)) return false;
+  if (a.budgetDollars !== null && !skipping("budget") && !withinBudget(c, withCard, a.budgetDollars)) return false;
   return true;
 }
 

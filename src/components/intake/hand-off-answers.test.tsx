@@ -78,6 +78,7 @@ describe("Built from your answers", () => {
     // Own-only: nothing is bought for the 99, unless the card is the one buy.
     expect(budgetLine(null, false, true)).toBe("The fill buys nothing for the 99.");
     expect(budgetLine(card({ owned: true }), false, true)).toBe("The fill buys nothing for the 99.");
-    expect(budgetLine(card(), false, true)).toBe("The fill buys nothing else for the 99.");
+    expect(budgetLine(card(), false, true)).toBe("Regisaur Alpha takes $1.10 of it. The fill buys nothing else for the 99.");
+    expect(budgetLine(card({ price: { kind: "absent" } }), false, true)).toMatch(/^Regisaur Alpha has no price on record.*nothing else/);
   });
 });

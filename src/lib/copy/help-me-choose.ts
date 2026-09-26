@@ -57,7 +57,8 @@ export const helpMeChooseCopy = {
     poolOwn: "Only cards I own",
     poolCaptionAny: "Owned or not. The budget caps what you’d buy.",
     poolCaptionOwn: "The 99 comes from your collection. The commander can still be one you’d buy, and it’s priced on its own.",
-    budgetCaptionOwn: "With the 99 from your cards, this caps the commander only. It never ranks.",
+    // Audit 8: an unowned card asked for is priced with the commander, so the addendum's "commander only" names it.
+    budgetCaptionOwn: "With the 99 from your cards, this caps the commander and any card you ask for that you don’t own. It never ranks.",
     // Three-answers addendum §2: the Sets answer.
     sets: "Sets",
     setsCaption: "Only commanders printed in one of these. Leave it empty for every set.",
@@ -230,8 +231,11 @@ export const helpMeChooseCopy = {
     budgetAlone: "The fill buys in its own order while the price fits, and finishes with basics.",
     /** Own-only: the pool row says where the 99 comes from, so this says only that nothing is bought for it. */
     budgetOwn: "The fill buys nothing for the 99.",
-    /** Own-only with an unowned build-around card: that card, priced on the row above, is the one buy. */
-    budgetOwnCard: "The fill buys nothing else for the 99.",
+    /** Own-only with an unowned build-around card: the budget charges it (audit 8), and it is the one buy. */
+    budgetOwnCard: (card: string, price: string | null) =>
+      price === null
+        ? `${card} has no price on record, so the budget can’t count it. The fill buys nothing else for the 99.`
+        : `${card} takes ${price} of it. The fill buys nothing else for the 99.`,
     poolValue: "From cards you own",
     poolLine: "It takes only cards with a copy free, and finishes with basics.",
     bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas
