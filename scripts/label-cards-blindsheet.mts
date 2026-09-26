@@ -11,18 +11,20 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
+import type { Job } from "../src/lib/labels/types.js";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 
 const h = JSON.parse(readFileSync("out/labels-haiku.json", "utf8"));
 const s = JSON.parse(readFileSync("out/labels-sonnet.json", "utf8"));
-const LIMS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"];
-const agree = (x, y) => LIMS.filter((f) => limOf(x, f) === limOf(y, f)).length;
-const limOf = (j, f) => f === "threshold"
+const LIMS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"] as const;
+type Lim = (typeof LIMS)[number];
+const agree = (x: Job, y: Job) => LIMS.filter((f) => limOf(x, f) === limOf(y, f)).length;
+const limOf = (j: Job, f: Lim) => f === "threshold"
   ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
   : String(j[f] ?? "none");
-const NON_GATING = new Set(["creature", "permanent", "spell", "player", "none", null]);
-const kindKey = (j) => `${j.space}:${j.kind}`;
-const show = (j) => {
+const NON_GATING = new Set<string | null>(["creature", "permanent", "spell", "player", "none", null]);
+const kindKey = (j: Job) => `${j.space}:${j.kind}`;
+const show = (j: Job | undefined) => {
   if (!j) return "— (no such job)";
   const bits = [kindKey(j)];
   if (j.rampKind !== undefined) bits.push(`kind=${j.rampKind}`);

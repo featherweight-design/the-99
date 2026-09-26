@@ -25,6 +25,11 @@
 import type { Role } from "../recs/roles";
 import type { Theme } from "../recs/themes";
 
+// Re-exported because a label's `kind` IS one of these, so any consumer typing a job needs
+// them — and importing them from two places would invite a third copy, which is the whole
+// thing this module exists to prevent.
+export type { Role, Theme };
+
 /**
  * The five job kinds in `role` space, tied to `Role` in src/lib/recs/roles.ts.
  *

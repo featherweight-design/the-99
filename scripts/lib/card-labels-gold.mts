@@ -23,14 +23,22 @@
 //   - `ramp` is never a land's job. `classifyRoles` gives a land the `land` role
 //     and skips ramp entirely (`!isLand`), so a land that taps for mana is `land`.
 //     That is the role's intent -- every deck plays lands -- not a rule artefact.
-import { validateJob } from "./card-labels-schema.mjs";
+import { validateJob } from "../../src/lib/labels/schema.js";
+import type {
+  Job, RampKind, Recurrence, Role, Space, Theme, Threshold, ThresholdOp, Trigger,
+} from "../../src/lib/labels/types.js";
 
 /**
  * One job. `tr` trigger, `rec` recurrence, `to` restrictedTo, `th` threshold,
  * `rk` rampKind (required on role:ramp, may be null meaning no kind fits).
  */
-const j = (space, kind, o = {}) => {
-  const job = {
+type Opts = {
+  to?: string | null; tr?: Trigger; rec?: Recurrence;
+  th?: Threshold | null; modal?: boolean; rk?: RampKind | null;
+};
+
+const j = (space: Space, kind: Role | Theme, o: Opts = {}): Job => {
+  const base = {
     space, kind,
     restrictedTo: o.to ?? null,
     trigger: o.tr ?? "none",
@@ -38,10 +46,15 @@ const j = (space, kind, o = {}) => {
     threshold: o.th ?? null,
     modal: o.modal ?? false,
   };
-  if ("rk" in o) job.rampKind = o.rk;
-  return job;
+  // `rk` is ABSENT rather than null when not given, which is the wire rule the validator
+  // enforces off the ramp role. The assertion is narrow and deliberate: `space` and `kind`
+  // are independent parameters here, so TypeScript cannot see which arm of `Job` this is,
+  // and `validateGold` below is what actually proves every fixture — it must keep
+  // REPORTING a bad fixture rather than throwing at import, so this cannot narrow through
+  // `isJob` without changing what the test on it can observe.
+  return ("rk" in o ? { ...base, rampKind: o.rk } : base) as Job;
 };
-const mv = (n, op = ">=") => ({ stat: "mv", op, value: n });
+const mv = (n: number, op: ThresholdOp = ">="): Threshold => ({ stat: "mv", op, value: n });
 
 export const GOLD = [
   // ---- the cards the brief names -------------------------------------------

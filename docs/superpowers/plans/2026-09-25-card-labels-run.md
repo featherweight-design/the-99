@@ -45,7 +45,7 @@ kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
   key this repo does not have). **If the projection moves past $50 once real batches
   report their tokens, PAUSE and report rather than continuing.** A hard `--max-usd`
   flag REFUSES rather than truncating. The sample's estimator is the model
-  (`scripts/label-cards-run.mjs`), including its refusal path.
+  (`scripts/label-cards-run.mts`), including its refusal path.
 - `ANTHROPIC_API_KEY` through `scripts/lib/env.mjs`. Never printed, never logged.
 - **The job vocabulary is 2b's** (`src/lib/recs/roles.ts`, `src/lib/recs/themes.ts`)
   and the four ramp kinds are d9's ruling. Asserted against those files by

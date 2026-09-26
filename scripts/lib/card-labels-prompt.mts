@@ -23,7 +23,7 @@
 // listed jobs by hand would drift from the thing it is scored against, and the
 // drift would read as model error.
 import { castFaceText } from "../../src/lib/cards/facet";
-import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "./card-labels-schema.mjs";
+import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "../../src/lib/labels/types.js";
 
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
 

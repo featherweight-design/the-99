@@ -32,15 +32,16 @@ describe("the label pricing is the canonical table at batch rates", () => {
   });
 
   for (const [key, id] of Object.entries(CANONICAL) as [keyof typeof PRICING, string][]) {
-    // Sonnet 4.5 is deliberately absent from RATES — that table carries the models the
-    // eval harness runs. A key with no canonical row is reported, not skipped, so the
-    // absence is a decision someone reads rather than a gap that hides a wrong rate.
+    // EVERY model is asserted, and a missing canonical row FAILS rather than skipping.
+    //
+    // It used to skip, and the model it skipped was Sonnet 4.5 — the one the full run
+    // actually pays with, whose $41.09 projection and $55 hard stop are both computed from
+    // this table. A skip there is the same silent gap that let Sonnet 5 carry the wrong
+    // rates: nothing fails, and the cap is computed from a figure nothing checks.
     const canonical = RATES[id];
-    if (!canonical) {
-      it.skip(`${key} (${id}) has no row in the canonical table`, () => {});
-      continue;
-    }
     it(`${key} matches ${id} at batch rates`, () => {
+      expect(canonical, `${id} has no row in the canonical table`).toBeDefined();
+      if (!canonical) return;
       const p = PRICING[key];
       expect(p.in, "input").toBeCloseTo(canonical.input * BATCH_DISCOUNT, 6);
       expect(p.out, "output").toBeCloseTo(canonical.output * BATCH_DISCOUNT, 6);

@@ -11,7 +11,8 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { ROLES, THEMES, validateJob, jobKey } from "./card-labels-schema.mjs";
+import { jobKey, validateJob } from "../../src/lib/labels/schema.js";
+import { ROLES, THEMES, type Job } from "../../src/lib/labels/types.js";
 
 /** The union in the source file is the authority, not the RULES table beside it. */
 const unionMembers = (file: string, decl: string) => {
@@ -34,7 +35,8 @@ describe("the label vocabulary is 2b's", () => {
   // ever stops being true the space field may be removable -- but silently
   // merging the two would make a role hit indistinguishable from a theme hit.
   it("still has the collision the space field exists for", () => {
-    expect(ROLES.filter((r) => THEMES.includes(r))).toEqual(["draw"]);
+    const themes: readonly string[] = THEMES;
+    expect(ROLES.filter((r) => themes.includes(r))).toEqual(["draw"]);
   });
 });
 
@@ -94,8 +96,8 @@ describe("validateJob", () => {
 });
 
 describe("jobKey", () => {
-  const base = {
-    space: "role" as const, kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+  const base: Job = {
+    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
     trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
   };
 
@@ -107,8 +109,11 @@ describe("jobKey", () => {
   });
 
   it("separates a Wolf-restricted counter from an unrestricted one", () => {
-    const anyone = jobKey({ ...base, kind: "counters", space: "theme", rampKind: undefined });
-    const wolves = jobKey({ ...base, kind: "counters", space: "theme", rampKind: undefined, restrictedTo: "Wolf" });
+    // `rampKind` is DROPPED rather than set to undefined: the union forbids it on a theme
+    // job, and the shared type is what makes that visible here.
+    const { rampKind: _drop, ...limits } = base;
+    const anyone = jobKey({ ...limits, kind: "counters", space: "theme" });
+    const wolves = jobKey({ ...limits, kind: "counters", space: "theme", restrictedTo: "Wolf" });
     expect(anyone).not.toBe(wolves);
   });
 
@@ -175,7 +180,8 @@ describe("the gold set", () => {
   // `src/lib/recs/roles.ts` by the first test in this file, so the derivation is held
   // at both ends.
   const COARSE = ROLES.filter((r) => r !== "land" && r !== "ramp");
-  const isRampKind = (role: string) => !COARSE.includes(role);
+  const coarse: readonly string[] = COARSE;
+  const isRampKind = (role: string) => !coarse.includes(role);
 
   // TITLE SAYS THREE FIXTURES, because that is all this test visits.
   //
