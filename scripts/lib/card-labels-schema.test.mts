@@ -167,7 +167,15 @@ describe("the gold set", () => {
     },
   ] as const;
 
-  const RAMP_KIND_NAMES = ["tapsForMana", "fetchesLand", "makesTreasure", "burstMana"];
+  // Derived from E1's TYPE ALGEBRA, not from a copy of its kind names.
+  // `SwapRole = Exclude<Role, "land" | "ramp"> | RampKind`, so anything `honestJobs`
+  // returns that is NOT a coarse role IS a ramp kind — whatever it is called. A copied
+  // list of four names would go stale the moment E1 added a fifth, and the test would
+  // stay green while a divergence had actually closed. `ROLES` is itself pinned to
+  // `src/lib/recs/roles.ts` by the first test in this file, so the derivation is held
+  // at both ends.
+  const COARSE = ROLES.filter((r) => r !== "land" && r !== "ramp");
+  const isRampKind = (role: string) => !COARSE.includes(role);
 
   it("documents every card E1 assigns no ramp kind to", async () => {
     const { honestJobs } = await import("../../src/lib/swaps/honest");
@@ -179,7 +187,7 @@ describe("the gold set", () => {
         () => false,
         null,
       );
-      const kinds = (jobs.roles as string[]).filter((r) => RAMP_KIND_NAMES.includes(r));
+      const kinds = (jobs.roles as string[]).filter(isRampKind);
       expect(kinds, `E1 now assigns ${fixture.name} a ramp kind — the divergence has closed, so the gold row and the report's 22/0/3 both need revisiting`).toEqual([]);
 
       const row = (GOLD as { name: string; why: string; jobs: { space: string; kind: string; rampKind?: string }[] }[])

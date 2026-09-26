@@ -148,6 +148,31 @@ describe("the report agrees with the artifacts it cites", () => {
     }
   });
 
+  // THE ANSWER PARAGRAPH, checked BY ATTRIBUTION rather than by existence.
+  //
+  // The scan below asks only whether a percentage appears somewhere in the union of
+  // artifact values, so SWAPPING Haiku's and Sonnet's recurrence figures leaves both in
+  // the set and passes. That paragraph is the most-read claim in the report and its
+  // whole point is which model is better, so a swap there is the worst drift the guard
+  // could miss. Each pair is asserted in the order the sentence states it.
+  it("attributes the answer paragraph's percentages to the right models", () => {
+    const pct = (v: number | null) => `${(100 * (v ?? 0)).toFixed(1)}%`;
+    const s = score.models.sonnet.limits;
+    const h = score.models.haiku.limits;
+    for (const [limit, label] of [
+      ["restrictedTo(gating)", "gating restrictions"],
+      ["trigger", "triggers"],
+      ["recurrence", "recurrences"],
+    ] as const) {
+      const sonnet = pct(s[limit].informativeAccuracy);
+      const haiku = pct(h[limit].informativeAccuracy);
+      // "86.4% of gating restrictions against Haiku's 76.7%" — Sonnet first, then Haiku.
+      const wanted = new RegExp(`${sonnet.replace(".", "\\.")}\\s+of\\s+${label}\\s+against\\s+(?:Haiku's\\s+)?${haiku.replace(".", "\\.")}`);
+      expect(plain.replace(/\n/g, " "), `${label}: expected "${sonnet} of ${label} against ... ${haiku}"`)
+        .toMatch(wanted);
+    }
+  });
+
   // PERCENTAGE-SHAPED prose figures. The scan below reads `0.NNN`, and the answer
   // paragraph states the same accuracies as `NN.N%` -- so every figure in the report's
   // most-read section was uncovered. PROVED uncovered: reinstating the two pre-fix
