@@ -1908,6 +1908,114 @@ export const deckVersionSynopses = pgTable("deck_version_synopses", {
 });
 
 /**
+ * Where a label run accumulates before it is allowed to publish.
+ *
+ * **The staging table is what makes REFUSING possible.** A run must leave the previous
+ * labels standing and exit non-zero when its returned-card count falls below the floor —
+ * and that is unachievable if each batch upserts into `card_labels` as it lands, because a
+ * floor failure at batch 2,600 would have already published 2,599 batches while the plan
+ * claims the previous set is untouched. This is the shape #704 arrived at for the printings
+ * denominators, after a refused run there blanked every set's `base_set_size` behind a
+ * green job.
+ *
+ * The publish is then `delete` + `insert ... select` in ONE transaction rather than a
+ * per-row upsert, so a reader never sees a mixture of two runs.
+ *
+ * Rows are scoped by `run_id` and are not a cache: a finished run's rows are the evidence
+ * of what it published, and the next run clears its own id before staging into it.
+ */
+export const cardLabelsStaging = pgTable("card_labels_staging", {
+  runId: text("run_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId, { onDelete: "cascade" }),
+  labels: jsonb("labels").$type<Job[]>().notNull(),
+  model: text("model").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  inputHash: text("input_hash").notNull(),
+  labelledAt: timestamp("labelled_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.runId, t.oracleId] }),
+  index("card_labels_staging_run_idx").on(t.runId),
+]);
+
+/**
+ * One INTENT to submit a chunk of cards, written before `batches.create` is called.
+ *
+ * **Keyed on a key we choose, not on the provider's `batch_id`, and that is the whole
+ * point.** Anthropic assigns `batch_id` only when `create` RETURNS, so a row keyed on it
+ * cannot be written first — and a process that dies between a successful `create` and the
+ * insert leaves no durable trace at all. The next dispatch sees nothing in flight,
+ * re-submits the same work and PAYS TWICE, which is the exact failure this table exists to
+ * prevent. The plan says so in Task 2: reconcile INTENTS, not only reservations.
+ *
+ * **One provider batch holds MANY chunks.** `batches.create({ requests })` takes every
+ * chunk for a model at once and returns a single `batch_id` for all of them, so the id is
+ * SHARED down the rows of that model's run and cannot be globally unique. `custom_id`
+ * carries that role instead: it identifies one request, across every batch AND every run.
+ * An earlier version of this table put a global `unique` on `batch_id`, which would have
+ * rejected every chunk row after the first and made this table unusable by the submitter it
+ * exists for.
+ *
+ * The row stays per CHUNK rather than per provider batch, because reconciliation is per
+ * request: a returned `custom_id` has to map back to the card names that request asked
+ * about, and a batch can have some requests succeed while others fail.
+ *
+ * `intent_key` is `{run_id}:{model}:{chunk}`, deterministic from the run's own plan, so a
+ * resumed run computes the same key for the same work and finds its own intent rather than
+ * creating a second one.
+ *
+ * **An intent with a null `batch_id` is AMBIGUOUS, not empty.** The `create` may have
+ * succeeded with the id lost, so a resumed run must not simply re-submit: it lists the
+ * provider's recent batches and matches on the `custom_id`s it chose, which are recorded
+ * here and are globally unique precisely so that match cannot be ambiguous. Only a chunk with no matching provider request is re-submitted; one that cannot be
+ * resolved either way is marked `abandoned` and reported, because a silent re-submission is
+ * how the double charge happens.
+ *
+ * In the database rather than a file, because `out/batches.json` does not survive the CI
+ * runner that wrote it.
+ */
+export const cardLabelBatches = pgTable("card_label_batches", {
+  intentKey: text("intent_key").primaryKey(),
+  runId: text("run_id").notNull(),
+  model: text("model").notNull(),
+  /**
+  * This request's id, as SENT — what a returned result is matched on.
+  *
+  * **Globally unique, which means it must embed a run token.** The sample sends
+  * `${modelKey}-${chunk}` (`sonnet-0`, `sonnet-1`), reused by every run — so a recovery
+  * that lists the provider's batches looking for `sonnet-0` finds it in as many batches as
+  * there have been runs, and may adopt an older run's result as this run's or re-submit a
+  * chunk already paid for. That defeats the double-charge protection this table exists for,
+  * so the uniqueness is declared here and 3b must generate ids that satisfy it.
+  *
+  * Kept SHORT — a run token rather than the full run id, which is a 29-character timestamp
+  * — because the provider caps this field's length.
+  */
+  customId: text("custom_id").notNull().unique(),
+  /** The card names this chunk asked about, so a resumed run can reconcile by face. */
+  asked: jsonb("asked").$type<string[]>().notNull(),
+  /** Null until `batches.create` returns, then SHARED by every chunk in that batch. */
+  batchId: text("batch_id"),
+  status: text("status").notNull().default("intended"),
+  intendedAt: timestamp("intended_at", { withTimezone: true }).notNull().defaultNow(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  collectedAt: timestamp("collected_at", { withTimezone: true }),
+}, (t) => [
+  index("card_label_batches_run_idx").on(t.runId),
+  check(
+    "card_label_batches_status_check",
+    sql`${t.status} in ('intended', 'submitted', 'in_progress', 'collected', 'expired', 'failed', 'abandoned')`,
+  ),
+  // A status past `intended` asserts the provider accepted the batch, so it MUST carry the
+  // id — otherwise a row could claim to be collected with nothing identifying what was
+  // collected. `abandoned` is exempt: it is precisely the case where the id was never
+  // learned.
+  check(
+    "card_label_batches_id_with_status_check",
+    sql`${t.status} in ('intended', 'abandoned') or ${t.batchId} is not null`,
+  ),
+]);
+
+/**
  * What a card DOES, and the limits on each job.
  *
  * NOTHING writes or reads this yet. The build that fills it is Task 2 of
@@ -1921,8 +2029,10 @@ export const deckVersionSynopses = pgTable("deck_version_synopses", {
  * `src/lib/scryfall/seed.ts` upserts on `cards.oracle_id` and has no deletion path,
  * so a refresh cannot cascade labels away.
  *
- * `input_hash` mirrors `proseInputHash`: sha256 over the oracle id, name, type line,
- * oracle text, prompt version AND MODEL. The name and type line are in it because a
+ * `input_hash` is `labelInputHash` in `src/lib/labels/prompt.ts`: sha256 over the oracle id,
+ * the card AS RENDERED FOR THE MODEL, the prompt version and the model. Derived from
+ * `renderCard` rather than listed beside it, so no field the model is sent can be left out
+ * of the freshness check. The name and type line are in it because a
  * card errata'd under its existing oracle id leaves a stored label describing something
  * else; the model is in it so switching models relabels rather than silently mixing two
  * models' output in one table. A row whose hash still matches its inputs is skipped, so

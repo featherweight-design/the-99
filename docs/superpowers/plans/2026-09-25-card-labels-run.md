@@ -81,12 +81,23 @@ card_labels
   the printing; the catalog has 31,830 Commander-legal rows and 31,830 distinct
   oracle ids today, so there is no dedup saving, but a future reprint must not need
   relabelling.
-- **`input_hash` mirrors `proseInputHash`** (`src/lib/prose/prompt.ts`): sha256 over
-  `[oracleId, name, typeLine, oracleText, LABEL_PROMPT_VERSION, model]`. The name and
-  type line are in it because a card renamed or errata'd under its existing oracle
-  id leaves a stored label describing something else — the case the prose hash
-  records for the same reason. **The model is in it** too, so switching models
-  relabels rather than silently mixing two models' output in one table.
+- **`input_hash` mirrors `proseInputHash`** (`src/lib/prose/prompt.ts`), and is
+  `labelInputHash` in `src/lib/labels/prompt.ts` as SHIPPED in PR 3a: sha256 over
+  `[oracleId, renderCard(card), LABEL_PROMPT_VERSION, model]`. A card renamed or
+  errata'd under its existing oracle id leaves a stored label describing something
+  else — the case the prose hash records for the same reason — and **the model is in
+  it** too, so switching models relabels rather than silently mixing two models'
+  output in one table.
+
+  **It hashes `renderCard`'s OUTPUT rather than a hand-listed set of fields, and that
+  is load-bearing.** This bullet originally read
+  `[oracleId, name, typeLine, oracleText, …]`, which omits `mana_cost` — a field
+  `renderCard` sends and from which an `mv` threshold is derived, so a cost corrected
+  under the same oracle id would hash identically, skip, and keep a `mv >= 5` from the
+  OLD cost for ever. Hashing the rendered card makes the payload exactly what the
+  model is sent, so no field can be forgotten. It also hashes the CAST FACE, because
+  that is what `renderCard` applies: hashing both faces would mark a row stale
+  whenever a back face changed without changing anything the label was derived from.
 - **No `on delete set null`**: a card leaving the catalog takes its label with it.
 - Steps: write the migration; add the table to `schema.ts`; `pnpm db:generate` and
   confirm the generated SQL matches; `drizzle-kit check`; commit.
@@ -98,12 +109,15 @@ card_labels
 
 Promote the sample's four scripts into the app's own modules. `card-labels-schema.mjs`
 (DONE in PR 2: it is now `src/lib/labels/schema.ts`, and every consumer imports it)
-and `card-labels-prompt.mjs` move under `src/lib/labels/` so the READER and the
+and `card-labels-prompt.mjs` move under `src/lib/labels/` (BOTH DONE: schema in PR 2, prompt in PR 3a) so the READER and the
 writer share one definition of a job; the sample's copies then import from there and
 stop being a second source of truth.
 
 - **Input-hash skip**, exactly as `db:build:prose`: a row whose stored `input_hash`
-  equals the hash its current inputs produce is skipped and costs nothing. This is
+  equals `labelInputHash(card, model)` is skipped and costs nothing. Call that
+  function rather than recomputing a payload — the payload is deliberately
+  `renderCard`'s output so nothing the model is sent can be left out, and a second
+  hand-listed copy is how `mana_cost` went missing the first time. This is
   what makes the weekly hook nearly free and an interrupted run resumable by being
   dispatched again.
 - **Resume on interrupt: the hash skip is NOT sufficient on its own.** It recovers
