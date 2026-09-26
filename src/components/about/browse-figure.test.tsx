@@ -111,7 +111,7 @@ describe("the browse figure", () => {
     // The wide form's own controls, read from the route's copy so a rename
     // reaches the figure without anyone editing it.
     expect(screen.getByText(collectionFilterCopy.type.triggerLabel)).toBeInTheDocument();
-    expect(screen.getByText(collectionFilterCopy.set.triggerOne("The Hobbit"))).toBeInTheDocument();
+    expect(screen.getByText(collectionFilterCopy.set.triggerCount!(1))).toBeInTheDocument();
     expect(
       screen.getByText(collectionFilterCopy.sort.triggerOne("Name · A–Z")),
     ).toBeInTheDocument();

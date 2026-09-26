@@ -85,7 +85,7 @@ shipped `<select>` it replaces — same size, same position, same single tab sto
 | Property | Mobile | Desktop |
 |---|---|---|
 | Element | `<button>` | `<button>` |
-| Label | `Set ▾` | `Set ▾` |
+| Label | no trigger: below 1000px the set row lives in the filter sheet and reads `Any set` | `Set 0 ▾` (the counting trigger draws its figure at none, too) |
 | Font | Plex Sans 13px / 500 | Plex Sans 13px / 500 |
 | Color | `#EDE6D8` | `#EDE6D8` |
 | Background | `#2A241D` | `#2A241D` |
@@ -146,21 +146,21 @@ by the colour pips."
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Label | `Set: Bloomburrow ▾` | `Set: Bloomburrow ▾` |
-| Copy key | `triggerOne(setName)` | `triggerOne(setName)` |
+| Label | the sheet's set row reads the set's name | `Set 1 ▾` |
+| Copy key | the sheet row's `collectionChassisCopy.chip.sets(n, name)`, unchanged | `triggerCount(n)`: `Set 0`, `Set 1`, `Sets 2` (2026-09-26, Hugh's staging walk: the name grew the trigger and moved the row) |
 | Border | `1px solid #C9A24B` | `1px solid #C9A24B` |
-| `max-width` | `170px` (phone frame) | `230px` |
-| Overflow | `hidden` · `text-overflow: ellipsis` · `white-space: nowrap` | same |
+| Width | the sheet row is full width, so nothing moves | held at the widest one-digit label (`Sets 9`) by a hidden sizer, so a pick moves nothing beside it |
+| Overflow | the sheet row truncates the name, as before | none: a count cannot run long, so nothing truncates |
 | Accessible name | `Filter by set, Bloomburrow, collapsed` | `Filter by set, Bloomburrow, collapsed` |
 
-The README fixes truncation at `230px`; the phone frame draws `170px` because the bar is
-horizontally scrollable there. Both are recorded; `230px` is the spec value.
+The README fixed truncation at `230px` (and the phone frame drew `170px`) while the label named
+the set. It counts now (2026-09-26), so there is no name to truncate and no cap.
 
 ### Many selected (≥2)
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Label | `Set` + pip + `▾` | `Set` + pip + `▾` |
+| Label | the sheet's set row reads `N sets` | `Sets N ▾`, no pip |
 | Layout | `display: inline-flex` · `align-items: center` · `gap: 8px` | same |
 | Border | `1px solid #C9A24B` | `1px solid #C9A24B` |
 | Names in label | never — they live in the chip row | never |
@@ -168,9 +168,13 @@ horizontally scrollable there. Both are recorded; `230px` is the spec value.
 
 ### Count pip
 
+Retired for the Set trigger on 2026-09-26: its label counts (`Sets N`), so a pip beside it would
+print the figure twice. The pip below is still what `FilterPanel` draws for a trigger without
+`triggerCount`.
+
 | Property | Mobile | Desktop |
 |---|---|---|
-| Shown at | ≥2 selections | ≥2 selections |
+| Shown at | never, for Set; ≥2 selections on a trigger that names its pick | same |
 | Font | Plex Mono 11px / 600 | Plex Mono 11px / 600 |
 | Color | `#14110E` | `#14110E` |
 | Background | `#C9A24B` | `#C9A24B` |
@@ -727,8 +731,8 @@ already custom and already right.
 | Footer left status text | desktop always; mobile only when nothing is selected | mobile with ≥1 selected (`Clear` takes the slot) |
 | Footer `Clear` (brass) | ≥1 selected | nothing selected (desktop shows it inert `#4A4033`; mobile omits) |
 | Footer `Done` | mobile, all sheet states | desktop |
-| Trigger name in label | exactly 1 selected | 0 or ≥2 |
-| Trigger count pip | ≥2 selected | 0 or 1 |
+| Trigger name in label | never, for Set: it counts (`Set 0`, `Set 1`, `Sets N`) | always |
+| Trigger count pip | never, for Set: the label carries the figure | always |
 | Trigger brass border | ≥1 selected, or the panel is open | nothing selected and closed |
 | Sheet title pip | ≥1 selected | nothing selected |
 | Set chip in the chip row | one per selected set | nothing selected |
@@ -746,14 +750,14 @@ already custom and already right.
 | Trigger · focus-visible | keyboard focus reaches the trigger | trigger `<button>:focus-visible` | CSS only |
 | Trigger · open | `↵`/`␣`/`↓`/click on the trigger | trigger + popover **or** sheet | `open=true`, `aria-expanded=true`, `isDesktop` from `matchMedia` |
 | Trigger · active | ≥1 selected, panel closed | trigger `<button>` with brass border | `selected.length >= 1` |
-| Trigger · one selected | `selected.length === 1` | trigger with `triggerOne(setName)` label | `selected`, `options` (to resolve the name) |
-| Trigger · many selected | `selected.length >= 2` | trigger + count pip | `selected.length` |
+| Trigger · one selected | `selected.length === 1` | trigger reading `Set 1`; the name is in the chip row | `selected.length` |
+| Trigger · many selected | `selected.length >= 2` | trigger reading `Sets N`, no count pip | `selected.length` |
 | Trigger · disabled | empty collection | trigger `<button disabled>` | `disabled` |
 | 1 · Closed | panel dismissed, no set filter | filter bar only | `open=false`, `selected=[]` |
 | 2 · Open, empty search | panel opened, no query, nothing selected | popover (desktop) / sheet (mobile) + `Newest first` group + 254 options | `options[]`, `selected=[]`, `query=""`, `onToggle`, `onClear` |
 | 3 · Open, with query | query matches ≥1 owned set | panel + `N matches` group + filtered list, no group split | `query`, filtered `options`, `announceMatches(n, query)` |
 | 4 · No results | query matches 0 owned sets | panel + empty state; footer dropped (desktop) | `query`, `onClearSearch`, `emptyTitle`, `emptyBody(query)` |
-| 5 · One selected | one set toggled on, panel dismissed | filter bar + 1 chip + `Set: Bloomburrow ▾` | `selected=['blb']`, chip row given the new filter |
+| 5 · One selected | one set toggled on, panel dismissed | filter bar + 1 chip + `Set 1 ▾` | `selected=['blb']`, chip row given the new filter |
 | 6 · Many selected | 3 sets toggled on **with `Type: Instant` also active** | panel reopened with pinned `Selected · 3` group, filter-aware counts, ≥1 zero-count disabled row | `selected[]`, `options[].count` computed under the other filters, `options[].disabled` |
 | 7 · Keyboard focus walk | keyboard-only operation, 4 ordered frames | trigger focus ring → panel with input focused → active row + toggle → trigger refocused | `aria-activedescendant`, focus-return ref on the trigger |
 | Row · default | option is enabled and unselected | `li[role=option][aria-selected=false]` | `option.label`, `option.count` |
