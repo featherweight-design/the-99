@@ -49,7 +49,7 @@ kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
 
 ```
 card_labels
-  oracle_id      text primary key references cards(oracle_id) on delete cascade
+  oracle_id      uuid primary key references cards(oracle_id) on delete cascade
   labels         jsonb not null            -- the jobs array, schema-validated
   model          text not null             -- e.g. claude-haiku-4-5-20251001
   prompt_version text not null             -- LABEL_PROMPT_VERSION
@@ -57,6 +57,9 @@ card_labels
   labelled_at    timestamptz not null default now()
 ```
 
+- **`uuid`, not `text`.** `cards.oracle_id` is `uuid("oracle_id")`
+  (`src/db/schema.ts:33`), and Postgres requires compatible types either side of a
+  foreign key — a `text` column here makes the migration invalid, not merely untidy.
 - **Keyed on `oracle_id`, not `scryfall_id`.** A label is a fact about the CARD, not
   the printing; the catalog has 31,830 Commander-legal rows and 31,830 distinct
   oracle ids today, so there is no dedup saving, but a future reprint must not need
@@ -85,10 +88,24 @@ stop being a second source of truth.
   equals the hash its current inputs produce is skipped and costs nothing. This is
   what makes the weekly hook nearly free and an interrupted run resumable by being
   dispatched again.
-- **Resume on interrupt:** the skip IS the resume. No cursor, no state file — a
-  re-dispatch re-derives what is missing. The sample's run took one submission;
-  31,830 cards is ~2,650 batches of 12, so a run WILL be interrupted at some point
-  and must not restart from zero.
+- **Resume on interrupt: the hash skip is NOT sufficient on its own.** It recovers
+  cards whose labels are already COMMITTED, and says nothing about a batch that was
+  submitted and never collected. A process that dies after submission — or while a
+  batch is still processing, which for 2,650 batches is most of the run's life —
+  leaves work in flight that the next dispatch cannot see, so it submits those
+  requests again and pays twice for them.
+
+  So submitted batch ids are PERSISTED before anything else happens and reconciled
+  before any new submission: for each recorded id, retrieve it, collect what
+  succeeded into staging, and only then decide what is still missing. The sample
+  already writes `out/batches.json` at submission for exactly this reason; the full
+  run needs it in the database rather than a file, because a file in a CI runner's
+  workspace does not survive the run that wrote it.
+
+  Two consequences worth stating: an id that has EXPIRED (the batch API keeps
+  results 29 days) is dropped with a warning and its cards re-submitted, and a run
+  that finds ids still `in_progress` waits or exits cleanly rather than duplicating
+  them.
 - **Face reconciliation, or the run silently loses every two-faced card.** Measured
   in the sample: Sonnet returned `Soulcipher Board` and `Cipherbound Spirit` as
   separate entries where the catalog name is `Soulcipher Board // Cipherbound
@@ -98,10 +115,25 @@ stop being a second source of truth.
 - **A job the schema rejects is DROPPED and RECORDED, never repaired.** A repaired
   label stores the repair rather than the model's answer, and the next re-score
   measures the repair.
-- **Refuse rather than publish a partial pass.** A run whose returned-card count
-  falls below a floor (say 95% of those asked) leaves the previous labels standing
-  and exits non-zero, as `db:build:staples` does. A half-labelled table is
-  indistinguishable from a complete one to every reader.
+- **Refuse rather than publish a partial pass, and STAGE so that refusing is
+  possible.** A run whose returned-card count falls below a floor (say 95% of those
+  asked) must leave the previous labels standing and exit non-zero, as
+  `db:build:staples` does.
+
+  **That is unachievable if each batch upserts into `card_labels` as it lands** — a
+  floor failure at batch 2,600 would leave 2,599 batches published while the plan
+  claims the previous set is untouched. So accepted output goes to a run-scoped
+  staging table (`card_labels_staging`, same shape plus a `run_id`), the floor is
+  evaluated against what staging holds, and the publish is ONE transaction that
+  clears and fills. This is the shape #704 arrived at for the printings
+  denominators, and for the same reason: a refused run there used to blank every
+  set's `base_set_size` behind a green job.
+
+  The publish is `delete` + `insert ... select` inside one transaction rather than a
+  per-row upsert, so a reader never sees a mixture. A card in the previous set and
+  absent from this run keeps its old label rather than vanishing — the run labels
+  what the catalog holds now, and a card that left the catalog is removed by the
+  foreign key's cascade instead.
 - Steps per module: write the test first (schema validation, hash stability, face
   reconciliation, the refusal floor), run it red, implement, run green, commit.
 
@@ -146,7 +178,25 @@ so the next reader does not "fix" it back.
 
 ## Task 5 — consumers: how E1 reads the labels
 
-**Files:** modify `src/lib/swaps/stand-ins.ts`; create `src/lib/labels/read.ts`.
+**Files:** modify `src/lib/swaps/gather.ts` and `src/lib/swaps/stand-ins.ts`; create
+`src/lib/labels/read.ts`.
+
+**The boundary has to move, and that is the bulk of this PR.** `loadStandIns`
+(`gather.ts:110`) does the database work and calls `rankStandIns`
+(`stand-ins.ts:238`), which today receives `original`, `candidates`, `priced` and
+the catalog's creature subtypes — **neither the labels nor any deck context**. The
+`restrictedTo` rule below needs the deck's key creature type, which is deck context.
+So:
+
+- `loadStandIns` additionally reads the label rows for the original and every
+  candidate (one query, keyed on the oracle ids it already has), and derives the
+  deck's key creature type from the deck it already loaded.
+- `rankStandIns` takes two new inputs: a `Map<oracleId, Job[]>` and the deck's key
+  creature type (nullable — a deck with no tribal lean restricts nothing).
+- It stays PURE, so every rule below is unit-testable without a database, which is
+  what makes the fallback behaviour assertable at all.
+
+Without that, PR 5 cannot consume the labels no matter what the matching rules say.
 
 A stand-in currently matches on a job KIND. With labels it must agree on the limits
 too, in this order of strictness:
