@@ -1908,8 +1908,12 @@ export const deckVersionSynopses = pgTable("deck_version_synopses", {
 });
 
 /**
- * What a card DOES, and the limits on each job — written once per card by
- * `db:build:labels` and read by the stand-in matcher.
+ * What a card DOES, and the limits on each job.
+ *
+ * NOTHING writes or reads this yet. The build that fills it is Task 2 of
+ * `docs/superpowers/plans/2026-09-25-card-labels-run.md` and the stand-in matcher that
+ * consumes it is Task 5; the table lands first so the storage can be reviewed alone,
+ * and an unused table costs nothing.
  *
  * Keyed on ORACLE ID, not `scryfall_id`: a label is a fact about the card, not the
  * printing, so a reprint must not need relabelling. `on delete cascade` rather than
