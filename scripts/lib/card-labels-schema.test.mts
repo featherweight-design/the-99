@@ -120,6 +120,28 @@ describe("jobKey", () => {
   it("is equal for two jobs that genuinely agree", () => {
     expect(jobKey(base)).toBe(jobKey({ ...base }));
   });
+
+  // INJECTIVITY. The joined form rendered `restrictedTo: null` and the literal string "-"
+  // identically, and a value containing the `|` separator could shift the field
+  // boundaries — either way two different labels produced one key and would have been
+  // reported as agreeing. Neither shape occurs in the gold set, which is why nothing
+  // caught it.
+  it("separates a null restriction from the literal string that used to render the same", () => {
+    expect(jobKey(base)).not.toBe(jobKey({ ...base, restrictedTo: "-" }));
+  });
+
+  it("does not let a restriction containing the old separator shift the fields", () => {
+    const piped = jobKey({ ...base, restrictedTo: "a|b" });
+    const shifted = jobKey({ ...base, restrictedTo: "a", trigger: "b" as typeof base.trigger });
+    expect(piped).not.toBe(shifted);
+  });
+
+  // The one collapse that is DELIBERATE: an absent `rampKind` and an explicit null are the
+  // same label, which is the rule `validateJob` applies too.
+  it("treats an absent rampKind and an explicit null as one label", () => {
+    const { rampKind: _drop, ...noKind } = base;
+    expect(jobKey({ ...noKind, rampKind: null })).toBe(jobKey(noKind as typeof base));
+  });
 });
 
 describe("the gold set", () => {

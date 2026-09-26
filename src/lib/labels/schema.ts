@@ -89,12 +89,23 @@ export const isJob = (job: unknown): job is Job => validateJob(job).length === 0
  * How two labels are compared for equality — every field, so a match on `kind` alone is
  * never mistaken for agreement. The limits are what the pass is bought for, so a key that
  * omitted one would report two different labels as the same.
+ *
+ * **JSON-encoded rather than joined on a separator, because the joined form was not
+ * injective.** `restrictedTo: null` and the literal string `"-"` both rendered as `-`, and
+ * any value containing the `|` separator could shift the field boundaries — so two
+ * different labels could produce one key and be reported as agreeing. Nothing in the gold
+ * set collides (27 distinct restrictions, none `-`, none containing `|`) and this function
+ * has no caller outside its own test today, so the fix moves no published figure; it is
+ * here so the matcher that will use it cannot inherit the bug.
+ *
+ * `null` and `undefined` are folded together deliberately: an absent `rampKind` and an
+ * explicit null are the same label, which is the rule `validateJob` applies too.
  */
 export function jobKey(job: Job): string {
-  return [
-    job.space, job.kind, job.rampKind ?? "-",
-    job.restrictedTo ?? "-", job.trigger, job.recurrence,
-    job.threshold ? `${job.threshold.stat}${job.threshold.op}${job.threshold.value}` : "-",
-    job.modal ? "modal" : "-",
-  ].join("|");
+  return JSON.stringify([
+    job.space, job.kind, job.rampKind ?? null,
+    job.restrictedTo ?? null, job.trigger, job.recurrence,
+    job.threshold ? [job.threshold.stat, job.threshold.op, job.threshold.value] : null,
+    job.modal,
+  ]);
 }

@@ -21,12 +21,15 @@ describe("Job's fields are the wire format's fields", () => {
   // `Object.keys` reads the FIXTURE, not the type, so this catches a field added to or
   // dropped from `JOB_FIELDS`. The other direction — a field added to `Job` — is caught by
   // `pnpm typecheck` with TS2741 on the `Required<Job>` literal. Both were run.
-  it("gives Job exactly the fields the wire format names", () => {
+  it("gives Job exactly the fields the wire format names, IN ORDER", () => {
+    // Written in wire order, and compared WITHOUT sorting. Sorting both sides made the
+    // assertion blind to a reorder of `JOB_FIELDS` — which is explicitly the wire key
+    // order, so a reorder is the one change it exists to catch.
     const job: Required<Job> = {
       space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
       trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
     };
-    expect(Object.keys(job).sort()).toEqual([...JOB_FIELDS].sort());
+    expect(Object.keys(job)).toEqual([...JOB_FIELDS]);
   });
 });
 
