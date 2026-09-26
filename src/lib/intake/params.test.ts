@@ -76,3 +76,25 @@ describe("resolveWords", () => {
     expect(r).toMatchObject({ budgetDollars: 100, bracket: 3, notUsed: ["$300"] });
   });
 });
+
+describe("the themes' join", () => {
+  it("writes tj=any only with two or more themes, and reads it back", () => {
+    const two = { ...emptyParams(), themes: ["orcs", "elves"], themeJoin: "any" as const };
+    expect(serializeChooseParams(two)).toContain("tj=any");
+    expect(parseChooseParams(new URLSearchParams(serializeChooseParams(two).slice(1))).themeJoin).toBe("any");
+    expect(serializeChooseParams({ ...two, themes: ["orcs"] })).not.toContain("tj");
+    expect(serializeChooseParams({ ...two, themeJoin: "all" })).not.toContain("tj");
+    expect(parseChooseParams(new URLSearchParams("t=orcs,elves&tj=nonsense")).themeJoin).toBe("all");
+  });
+
+  it("takes the control's join from two themes, and the words' below that", () => {
+    const orcs = { kind: "theme" as const, slug: "orcs", label: "Orcs" };
+    const elves = { kind: "theme" as const, slug: "elves", label: "Elves" };
+    const base = { budgetDollars: null, bracket: null };
+    // The control holds two themes: its All beats the words' or.
+    expect(resolveWords([orcs, elves], { ...base, themes: ["orcs", "elves"], themeJoin: "all" }, "any").themeJoin).toBe("all");
+    expect(resolveWords([], { ...base, themes: ["orcs", "elves"], themeJoin: "any" }, "all").themeJoin).toBe("any");
+    // One theme picked cannot be joined: the words decide, for every theme.
+    expect(resolveWords([orcs, elves], { ...base, themes: ["wizards"], themeJoin: "all" }, "any").themeJoin).toBe("any");
+  });
+});

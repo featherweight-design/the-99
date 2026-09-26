@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardValue } from "./read-as-bar";
-import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { helpMeChooseCopy, orList } from "../../lib/copy/help-me-choose";
 import { formatCents } from "../../lib/decks/price";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 
@@ -26,7 +26,9 @@ export function budgetLine(card: HandOffAnswers["card"], cardUnread = false): st
 }
 
 export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffAnswers; changeHref: string }) {
-  const { themes, card, cardUnread, budgetDollars, bracket } = answers;
+  const { themes, themeJoin, card, cardUnread, budgetDollars, bracket } = answers;
+  // Any of is one row, its line the best figure among the themes, as the results row ranked it.
+  const best = themes.reduce<(typeof themes)[number] | null>((b, t) => (t.pct !== null && (b === null || t.pct > (b.pct ?? -1)) ? t : b), null);
   return (
     <CardDetailProvider>
       <section
@@ -51,7 +53,11 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
             {copy.change}
           </Link>
         </div>
-        {themes.map((t) => (
+        {themeJoin === "any" ? (
+          <Row k={copy.keys.anyOf} line={best?.pct == null ? null : copy.themeFig(best.pct, best.label)}>
+            <span>{orList(themes.map((t) => t.label))}</span>
+          </Row>
+        ) : themes.map((t) => (
           <Row key={`t:${t.slug}`} k={copy.keys.theme} line={t.pct === null ? null : copy.themeFig(t.pct, t.label)}>
             <span>{t.label}</span>
           </Row>

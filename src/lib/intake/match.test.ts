@@ -7,6 +7,10 @@ const themes = [
   { slug: "plus-1-plus-1-counters", label: "+1/+1 Counters" },
   { slug: "seasons", label: "Seasons" },
   { slug: "landfall", label: "Landfall" },
+  { slug: "orcs", label: "Orcs" },
+  { slug: "elves", label: "Elves" },
+  { slug: "dwarves", label: "Dwarves" },
+  { slug: "wizards", label: "Wizards" },
 ];
 const cards = [
   { oracleId: "ds", name: "Doubling Season" },
@@ -108,5 +112,27 @@ describe("the leftover phrases", () => {
 
   it("gives no phrase for words that are all stop words", () => {
     expect(match("I want a deck with Dinosaurs").phrases).toEqual([]);
+  });
+});
+
+describe("the themes' join (three-answers addendum §1)", () => {
+  it("reads Hugh's tribes, joined by or, as any of", () => {
+    const m = match("I want a deck from the HOB or HOC sets. Tribal options are Orcs, Elves, Dwarves, or Wizards.");
+    expect(m.chips.filter((c) => c.kind === "theme").map((c) => c.kind === "theme" && c.slug)).toEqual(["orcs", "elves", "dwarves", "wizards"]);
+    expect(m.themeJoin).toBe("any");
+  });
+
+  it("reads commas and and as all of", () => {
+    expect(match("orcs, elves and wizards").themeJoin).toBe("all");
+    expect(match("orcs elves").themeJoin).toBe("all");
+  });
+
+  it("reads or as any of only between two themes in one phrase", () => {
+    expect(match("elves or wizards").themeJoin).toBe("any");
+    // A sentence break, or a word that says something, ends the phrase.
+    expect(match("elves. Or wizards").themeJoin).toBe("all");
+    expect(match("elves or big wizards").themeJoin).toBe("all");
+    // An or with a single theme joins nothing.
+    expect(match("elves or something").themeJoin).toBe("all");
   });
 });

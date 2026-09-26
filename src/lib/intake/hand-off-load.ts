@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { ChooseParams } from "./params";
-import { backing, type Bracket } from "./rank";
+import { backing, isAnyOf, type Bracket } from "./rank";
 import { loadCardChip, type CardChip } from "./rows";
 import { loadIntakeThemes } from "./search";
 import { tribesFor, type ThemeRow } from "./vocabulary";
@@ -14,6 +14,8 @@ import { tribesFor, type ThemeRow } from "./vocabulary";
 export type HandOffAnswers = {
   /** In the order asked. `pct` is null where the results would print no figure either. */
   themes: { slug: string; label: string; pct: number | null }[];
+  /** Any of: one row for the group, its line the best figure, as the results row ranked it. */
+  themeJoin: "all" | "any";
   /** Null when none was asked, or when it is not one the search would have applied. */
   card: (CardChip & { pct: number | null }) | null;
   /** The card's read FAILED, which says nothing about the card: the block draws no row it cannot
@@ -54,6 +56,7 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
     // `inclusion` is stored as EDHREC publishes it, a percentage (`search.ts`).
     card: card ? { ...card, pct: row?.card_inclusion == null ? null : Math.round(row.card_inclusion) } : null,
     cardUnread: card === undefined,
+    themeJoin: isAnyOf(p) ? "any" : "all",
     budgetDollars: p.budgetDollars,
     bracket: p.bracket,
   };

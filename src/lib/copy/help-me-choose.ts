@@ -199,7 +199,7 @@ export const helpMeChooseCopy = {
     block: "Built from your answers",
     change: "Change",
     changeAria: "Change your answers",
-    keys: { theme: "Theme", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
+    keys: { theme: "Theme", anyOf: "Any of", card: "Built around", budget: "Budget", bracket: "Bracket" }, // canvas
     themeFig: (pct: number, t: string) => `${pct}% of its decks are ${t}.`, // canvas
     placed: "Placed in the deck because you asked for it.",
     cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas

@@ -8,7 +8,8 @@ const UUID = "6ad8011d-3471-4369-9d68-b264cc027487";
 describe("validateCreateAnswers", () => {
   it("passes a well-formed set, trimming theme labels", () => {
     expect(validateCreateAnswers({ ...ok, themes: [" Dinosaurs "], cardOracleId: UUID }))
-      .toEqual({ themes: ["Dinosaurs"], cardOracleId: UUID, budgetDollars: 150, bracket: 3 });
+      .toEqual({ themes: ["Dinosaurs"], themeJoin: "all", cardOracleId: UUID, budgetDollars: 150, bracket: 3 });
+    expect(validateCreateAnswers({ ...ok, themes: ["Orcs", "Elves"], themeJoin: "any" }).themeJoin).toBe("any");
   });
 
   it("refuses what a crafted request could carry", () => {
@@ -18,6 +19,7 @@ describe("validateCreateAnswers", () => {
     expect(() => validateCreateAnswers({ ...ok, bracket: 2.5 })).toThrow("bracket");
     expect(() => validateCreateAnswers({ ...ok, cardOracleId: "not-a-uuid" })).toThrow("card");
     expect(() => validateCreateAnswers({ ...ok, themes: ["a\nb"] })).toThrow("themes");
+    expect(() => validateCreateAnswers({ ...ok, themeJoin: "some" as "any" })).toThrow("themes");
     expect(() => validateCreateAnswers({ ...ok, themes: Array(9).fill("x") })).toThrow("themes");
     expect(() => validateCreateAnswers({ ...ok, themes: "Dinosaurs" as unknown as string[] })).toThrow("themes");
   });
