@@ -1,6 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { printingPrices, printings } from "../../db/schema";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { fetchManapoolSingles } from "./client";
 import { parseManapoolPayload, type PriceRow } from "./parse";
 
@@ -96,6 +97,11 @@ export async function seedPrices(): Promise<SeedPricesResult> {
       upserted += Math.min(BATCH_SIZE, rows.length - i);
     }
   });
+  // Every cached list payload that draws a shopping cost priced it from this table, and the
+  // catalog generation in their key is what retires them. After the commit, like every other
+  // ingest's stamp: a reader who misses it by a moment gets one more minute of the old payload
+  // rather than a new generation over half-written prices. See `catalog-generation.ts`.
+  await stampCatalogRefresh();
 
   return {
     upserted, skippedOrphan,

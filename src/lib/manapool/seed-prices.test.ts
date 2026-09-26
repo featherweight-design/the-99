@@ -1,9 +1,17 @@
-import { expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
+const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown>, order: [] as string[] }));
 vi.mock("../../db", () => ({ db: stub.db }));
+vi.mock("./client", () => ({ fetchManapoolSingles: vi.fn(async () => ({})) }));
+vi.mock("./parse", () => ({
+  parseManapoolPayload: vi.fn(() => ({ rows: [row("a")], collapsedDuplicates: 0, asOf: new Date(0) })),
+}));
+vi.mock("../cache/stamp-catalog", () => ({
+  stampCatalogRefresh: vi.fn(async () => { stub.order.push("stamp"); }),
+}));
 
-import { filterKnownPrintings } from "./seed-prices";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
+import { filterKnownPrintings, seedPrices } from "./seed-prices";
 
 const row = (scryfallId: string) => ({
   scryfallId, priceCents: 100, priceCentsNm: null,
@@ -28,4 +36,29 @@ it("keeps everything when every id is known", () => {
   const { rows, skippedOrphan } = filterKnownPrintings([row("a")], new Set(["a"]));
   expect(rows).toHaveLength(1);
   expect(skippedOrphan).toBe(0);
+});
+
+describe("seedPrices", () => {
+  beforeEach(() => {
+    stub.order.length = 0;
+    vi.mocked(stampCatalogRefresh).mockClear();
+    stub.db.select = () => ({ from: () => ({ where: async () => [{ scryfallId: "a" }] }) });
+  });
+
+  it("stamps the catalog generation once the prices have committed", async () => {
+    // Every cached shopping cost is keyed on that generation; without the stamp a weekly
+    // refresh leaves readers on last week's prices until the hour ceiling.
+    stub.db.transaction = async (run: (tx: unknown) => Promise<void>) => {
+      await run({ insert: () => ({ values: () => ({ onConflictDoUpdate: async () => {} }) }) });
+      stub.order.push("commit");
+    };
+    await seedPrices();
+    expect(stub.order).toEqual(["commit", "stamp"]);
+  });
+
+  it("stamps nothing when the write fails", async () => {
+    stub.db.transaction = async () => { throw new Error("write failed"); };
+    await expect(seedPrices()).rejects.toThrow("write failed");
+    expect(stampCatalogRefresh).not.toHaveBeenCalled();
+  });
 });

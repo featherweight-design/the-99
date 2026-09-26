@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq } from "drizzle-orm";
 import ws from "ws";
 import * as schema from "../src/db/schema";
-import { cards, commanderSupport } from "../src/db/schema";
+import { CATALOG_ROW_ID, catalogRefreshes, cards, commanderSupport } from "../src/db/schema";
 import { copyCommanderProse, type ProseSource } from "../src/lib/prose/copy";
 import { requireEnv } from "./lib/env.mjs";
 
@@ -57,6 +57,8 @@ const loadTarget = () =>
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId));
 
+// Counted as each row lands, so a copy that dies part-way still stamps what it installed.
+let written = 0;
 const write = async (row: ProseSource) => {
   if (dryRun) return;
   await target.update(commanderSupport)
@@ -66,6 +68,25 @@ const write = async (row: ProseSource) => {
       prosePromptVersion: row.prosePromptVersion,
     })
     .where(eq(commanderSupport.commanderOracleId, row.oracleId));
+  written += 1;
+};
+
+// The TARGET's catalog generation, stamped once the copy has written anything: `/commanders`
+// caches its rankings, sentences included, keyed on it, so without the stamp a payload cached
+// before the copy keeps its null sentences for up to the hour ceiling. The same write as
+// `stampCatalogRefresh`, which cannot be used here because it writes through `src/db`.
+// Like that function, a failed stamp warns rather than failing a copy that succeeded.
+const stamp = async () => {
+  try {
+    await target.insert(catalogRefreshes)
+      .values({ id: CATALOG_ROW_ID, refreshedAt: new Date() })
+      .onConflictDoUpdate({ target: catalogRefreshes.id, set: { refreshedAt: new Date() } });
+  } catch (error) {
+    console.warn(
+      "catalog generation not stamped — readers keep their cached lists until the hour "
+      + `ceiling expires: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 };
 
 copyCommanderProse({ loadSource, loadTarget, write })
@@ -91,4 +112,9 @@ copyCommanderProse({ loadSource, loadTarget, write })
   // Both pools hold open sockets that would keep the process alive past its work. Settled
   // rather than all: teardown runs after the copy has already been done and reported, so a
   // socket that refuses to close is not a reason to fail a run that succeeded.
-  .finally(() => Promise.allSettled([source.$client.end(), target.$client.end()]));
+  // The stamp first, in the `finally`, so a copy that failed after installing some rows still
+  // retires the payloads those rows changed.
+  .finally(async () => {
+    if (written > 0) await stamp();
+    await Promise.allSettled([source.$client.end(), target.$client.end()]);
+  });
