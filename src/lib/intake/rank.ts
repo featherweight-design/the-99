@@ -223,14 +223,33 @@ function removals(
   candidates: readonly Candidate[], a: Answers, card: CardFacts | null, answers: readonly AnswerKey[], tribes: Tribes,
 ): { answers: AnswerKey[]; count: number }[] {
   const found: { answers: AnswerKey[]; count: number }[] = [];
-  for (let size = 1; size < answers.length || (size === 1 && answers.length === 1); size++) {
-    const atSize = subsets(answers, size)
-      .map((set) => ({ answers: set, count: candidates.filter((c) => passes(c, a, card, set, tribes)).length }))
-      .filter((r) => r.count > 0);
+  const count = (set: AnswerKey[]) => ({ answers: set, count: candidates.filter((c) => passes(c, a, card, set, tribes)).length });
+  const last = Math.max(1, answers.length - 1);
+  for (let size = 1; size <= last; size++) {
+    // BOUNDED: a size past the first whose subsets outnumber `REMOVAL_SETS_MAX` is not searched, and
+    // the search goes straight to keeping one answer. The answers are uncapped (a URL can carry any
+    // number of themes), and every set rescans every candidate, so an unbounded search is
+    // exponential in them; this one is linear in the answers plus a constant.
+    if (size > 1 && size < last && choose(answers.length, size) > REMOVAL_SETS_MAX) {
+      if (answers.length <= REMOVAL_SETS_MAX) {
+        found.push(...subsets(answers, last).map(count).filter((r) => r.count > 0));
+      }
+      break;
+    }
+    const atSize = subsets(answers, size).map(count).filter((r) => r.count > 0);
     found.push(...atSize);
     if (atSize.some((r) => r.count >= TOO_NARROW_BELOW)) break;
   }
   return found.sort((x, y) => y.count - x.count || x.answers.length - y.answers.length);
+}
+
+/** The most removal sets searched at any size past the first (see `removals`). */
+export const REMOVAL_SETS_MAX = 64;
+
+function choose(n: number, k: number): number {
+  let r = 1;
+  for (let i = 0; i < k; i++) r = (r * (n - i)) / (i + 1);
+  return Math.round(r);
 }
 
 function subsets<T>(items: readonly T[], size: number): T[][] {

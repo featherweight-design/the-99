@@ -234,3 +234,25 @@ describe("a tribal theme is also backed by the type line", () => {
     expect(names(rankCandidates([thin], { ...none, themes: ["dwarves"] }, null))).toEqual([]);
   });
 });
+
+describe("the removal search is bounded", () => {
+  it("searches single drops and then keeps one answer, skipping sizes too large to search", () => {
+    // Twelve themes nobody backs together: 66 pairs is over the limit, so no pair is searched.
+    const slugs = Array.from({ length: 12 }, (_, i) => `t${i}`);
+    // One commander backs ten of them, so an unbounded search would offer the pair drop that
+    // reaches it; the bounded one never searches pairs here.
+    const wide = cmd({ name: "Wide", tags: slugs.slice(0, 10).map((s) => tag(s, 400)) });
+    const pool = [wide, ...slugs.flatMap((s) => [1, 2, 3, 4].map((i) => cmd({ name: `${s}-${i}`, tags: [tag(s, 400)] })))];
+    const r = rankCandidates(pool, { ...none, themes: slugs }, null);
+    expect(r.rows).toEqual([]);
+    expect(new Set(r.tooNarrow!.without.map((w) => w.answers.length))).toEqual(new Set([11]));
+    expect(r.tooNarrow!.without[0].count).toBe(5);
+  });
+
+  it("gives up rather than searching when even keeping one would be too many sets", () => {
+    const slugs = Array.from({ length: 70 }, (_, i) => `t${i}`);
+    const pool = [cmd({ name: "One", tags: [tag("t0", 400)] })];
+    const r = rankCandidates(pool, { ...none, themes: slugs }, null);
+    expect(r.tooNarrow!.without).toEqual([]);
+  });
+});
