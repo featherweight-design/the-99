@@ -34,6 +34,8 @@ import { listVersions } from "../../../lib/decks/versions";
 import { computeRoleCounts } from "../../../lib/decks/mix";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
+import { loadDeckNotices } from "../../../lib/notices/read";
+import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
@@ -122,6 +124,13 @@ export default async function DeckBuilderPage({
   // draws no chip, which is what an unread deck draws anyway.
   const storedPermits = analysisTabEnabled()
     ? readStoredPermits(id, userId).catch(() => null)
+    : Promise.resolve(null);
+  // The header's notice tag, read WITH the page so it paints with the header rather than arriving
+  // after it. Started here beside the bracket, and awaited at the end. A failed read draws no tag,
+  // as a deck with no notices does; the shell reads again after mount in that case.
+  const showNotices = analysisTabEnabled() && noticesEnabled();
+  const initialNotices = showNotices
+    ? loadDeckNotices(id, userId).catch(() => null)
     : Promise.resolve(null);
 
   const [
@@ -352,6 +361,7 @@ export default async function DeckBuilderPage({
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
   const storedBracket = await storedPermits;
+  const notices = await initialNotices;
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.
   const swapTools = swapToolsEnabled();
@@ -405,6 +415,10 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       noticesEnabled={noticesEnabled()}
+      initialNotices={notices}
+      // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips
+      // the parameter, so a refresh lands on the deck alone.
+      openNoticesOnArrival={showNotices && readNoticesArrival(query[NOTICES_PARAM])}
       // Locked (PR 4a): off, no lock control, mark or key entry draws, and the page is main's.
       neverCut={neverCutEnabled()}
       // Help me choose: the credit lines name its deeper looks only where the feature is drawn.

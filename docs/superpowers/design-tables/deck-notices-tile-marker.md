@@ -91,12 +91,12 @@ tile only** (README). No About entry (README; RA "About entry: none new").
 |---|---|---|---|
 | Problem | the tile `<Link>` overlays the footer (`absolute inset-0`, last in DOM), so the mark gets no pointer | same | README §2; F19 |
 | Wrapper stacking | lifted above the overlay: `relative z-10` | same | README §2 |
-| Wrapper element | a second `Link` to the tile's same href | same | F19 (supersedes README's `router.push`) |
+| Wrapper element | a second `Link` to the same deck, with `?notices=1` (`noticesHref`) | same | F19 (supersedes README's `router.push`); Hugh's staging walk, 2026-09-26 |
 | `tabIndex` | `-1` | `-1` | F19 |
 | `aria-hidden` | `true` | `true` | F19 |
 | `role` | — (none added) | — | README §2 "no role"; CV §5 "Mark" |
 | Focus stop | — (none) | — | CV §2, §5 |
-| Click / tap | opens the deck, as the tile does, including cmd-click and middle-click to a new tab | same | CV §2; F19 |
+| Click / tap | opens the deck WITH its Notices sheet open, on a cold load and on client navigation; the deck page strips the parameter with `history.replaceState` once it has opened, so a refresh lands on the deck alone. Cmd-click and middle-click still open a new tab | same | CV §2; F19; Hugh's staging walk, 2026-09-26 (the mark used to land on the deck with no word of its notices) |
 | Hover | — (no tooltip; tooltip is pointer-fine only) | opens the tooltip (§2) | README §2 |
 | Hover visual on the mark | not specified | not specified (see §1.2 canvas outline note) | — |
 
