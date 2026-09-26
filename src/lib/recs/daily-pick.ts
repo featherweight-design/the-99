@@ -108,17 +108,23 @@ const DAY_MS = 86_400_000;
  * Returns the whole set, in its own order, when it holds no more than `count`:
  * there is nothing to rotate between, and rotating the ORDER of two cards that are
  * both always drawn would be motion without information.
+ *
+ * `novelty`, when given, is what the cycle LEANS on (Hugh, 2026-09-27: "I've seen the same
+ * few rotate in and out"). It changes the order the cycle walks and nothing about the walk:
+ * see `noveltyOrder`. Without it the walk is the per-account shuffle, as it always was.
  */
 export function dailyPicks<T>(
   set: readonly T[],
   userId: string,
   now: Date,
   count: number,
+  novelty?: (item: T) => number,
 ): T[] {
   if (set.length <= count) return [...set];
 
   const size = set.length;
-  const order = permutation(size, userId);
+  const shuffled = permutation(size, userId);
+  const order = novelty ? noveltyOrder(shuffled, (i) => novelty(set[i])) : shuffled;
   const day = Math.floor(now.getTime() / DAY_MS);
 
   // No per-account phase offset here, deliberately. One was written and removed:
@@ -132,4 +138,30 @@ export function dailyPicks<T>(
   // one commander twice. Consecutive DAYS are a stronger condition and need
   // `2 * count <= size`; see the header for the one size where that fails.
   return Array.from({ length: count }, (_, i) => set[order[(day * count + i) % size]]);
+}
+
+/**
+ * The shuffle, re-ordered to lean on the new: positions sorted by how new each commander is
+ * (the themes it plays that none of the reader's decks do, most first), then the newer half
+ * INTERLEAVED with the rest, so the cycle's `(day * count + i)` walk puts one card from each
+ * half on every day at `count` 2. Every guarantee in the header still holds, because only the
+ * order moved and the walk did not.
+ *
+ * Ties keep the shuffle's order (Array.prototype.sort is stable), so two readers whose pools
+ * are equally new still walk their own sequences, and the rank-neighbourhood clustering the
+ * shuffle exists to break stays broken: novelty is not rank.
+ */
+export function noveltyOrder(shuffled: readonly number[], novelty: (index: number) => number): number[] {
+  // Nothing to lean on (a pool with no new themes, or a map the read could not fill): the shuffle
+  // exactly. Interleaving halves of a list sorted by nothing would only be a second shuffle.
+  const first = shuffled.length ? novelty(shuffled[0]) : 0;
+  if (shuffled.every((i) => novelty(i) === first)) return [...shuffled];
+  const byNew = [...shuffled].sort((a, b) => novelty(b) - novelty(a));
+  const half = Math.ceil(byNew.length / 2);
+  const out: number[] = [];
+  for (let i = 0; i < half; i += 1) {
+    out.push(byNew[i]);
+    if (i + half < byNew.length) out.push(byNew[i + half]);
+  }
+  return out;
 }

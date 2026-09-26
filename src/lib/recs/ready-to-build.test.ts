@@ -1,48 +1,47 @@
 import { describe, expect, it } from "vitest";
 import { readySlice, READY_COUNT, READY_SHOWN } from "./ready-to-build";
 
-const list = (...scores: number[]) => scores.map((rankScore, i) => ({ rankScore, id: `c${i}` }));
+const list = (...scores: number[]) => scores.map((rankScore, i) => ({ rankScore, oracleId: `c${i}` }));
 
 // The rotation is a fact about the reader and the UTC day; every assertion about
 // the SET and its figures has to hold whichever pair those two produce, so the
 // helper pins them and the set-level tests read through it.
 const AT = { userId: "user-a", now: new Date("2026-09-16T09:00:00Z") };
-const slice = (items: ReturnType<typeof list>, at = AT) => readySlice(items, at);
+const slice = (items: ReturnType<typeof list>, at: Parameters<typeof readySlice>[1] = AT) => readySlice(items, at);
 
 const on = (iso: string, userId = "user-a") => ({ userId, now: new Date(iso) });
 
 describe("readySlice — the set and its figures", () => {
-  it("counts the rest of the top nine, with the ninth as the floor", () => {
-    // 74, 71, then seven more down to 70 — the drawn frame.
-    const s = slice(list(74, 71, 71, 70, 70, 70, 70, 70, 70, 68, 41));
+  it("counts the rest of the set, with its last commander as the floor", () => {
+    // Two weeks deep (READY_COUNT), then whatever ranks below it.
+    const s = slice(list(...Array.from({ length: READY_COUNT + 2 }, (_, i) => 100 - i)));
     expect(s.shown).toHaveLength(READY_SHOWN);
     expect(s.moreCount).toBe(READY_COUNT - READY_SHOWN);
-    expect(s.moreCount).toBe(7);
-    expect(s.floor).toBe(70);
+    expect(s.floor).toBe(100 - (READY_COUNT - 1));
   });
 
-  // The figures are facts about the NINE, not about the two, which is what lets
+  // The figures are facts about the SET, not about the two, which is what lets
   // the pair rotate without touching either of them.
   it("keeps moreCount and floor whatever the rotation draws", () => {
-    const items = list(74, 71, 71, 70, 70, 70, 70, 70, 70, 68, 41);
+    const items = list(...Array.from({ length: READY_COUNT + 2 }, (_, i) => 100 - i));
     for (let d = 1; d <= 20; d += 1) {
       const s = slice(items, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
-      expect(s.moreCount).toBe(7);
-      expect(s.floor).toBe(70);
+      expect(s.moreCount).toBe(READY_COUNT - READY_SHOWN);
+      expect(s.floor).toBe(100 - (READY_COUNT - 1));
     }
   });
 
-  it("never reaches past the top nine, however long the list", () => {
+  it("never reaches past the set, however long the list", () => {
     const items = list(...Array.from({ length: 400 }, (_, i) => 100 - i));
     const s = slice(items);
-    expect(s.moreCount).toBe(7);
+    expect(s.moreCount).toBe(READY_COUNT - READY_SHOWN);
     expect(s.floor).toBe(100 - (READY_COUNT - 1));
     // The whole point of a rank cut: a rotation that could reach rank 40 would be
     // showing Home a commander the ranking does not stand behind.
     for (const card of s.shown) expect(card.rankScore).toBeGreaterThanOrEqual(s.floor as number);
   });
 
-  it("truncates the set when fewer than nine commanders are ranked", () => {
+  it("truncates the set when fewer commanders are ranked than it holds", () => {
     const s = slice(list(80, 60, 50, 40));
     expect(s.shown).toHaveLength(2);
     expect(s.moreCount).toBe(2);
@@ -74,7 +73,7 @@ describe("readySlice — the rotation", () => {
   const nine = list(74, 71, 71, 70, 70, 70, 70, 70, 70);
   const ids = (at: { userId: string; now: Date }) =>
     slice(nine, at)
-      .shown.map((c) => c.id)
+      .shown.map((c) => c.oracleId)
       .join();
 
   it("holds the same pair across a whole UTC day", () => {
@@ -88,7 +87,7 @@ describe("readySlice — the rotation", () => {
     for (let d = 1; d < 31; d += 1) {
       const today = slice(nine, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
       const tomorrow = slice(nine, on(`2026-10-${String(d + 1).padStart(2, "0")}T09:00:00Z`));
-      const overlap = today.shown.filter((c) => tomorrow.shown.some((o) => o.id === c.id));
+      const overlap = today.shown.filter((c) => tomorrow.shown.some((o) => o.oracleId === c.oracleId));
       expect(overlap).toEqual([]);
     }
   });
@@ -96,7 +95,7 @@ describe("readySlice — the rotation", () => {
   it("draws two different commanders on any single day", () => {
     for (let d = 1; d <= 31; d += 1) {
       const s = slice(nine, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
-      expect(new Set(s.shown.map((c) => c.id)).size).toBe(2);
+      expect(new Set(s.shown.map((c) => c.oracleId)).size).toBe(2);
     }
   });
 
@@ -108,10 +107,10 @@ describe("readySlice — the rotation", () => {
       const seen = new Set<string>();
       for (let d = 1; d <= 5; d += 1) {
         for (const card of slice(nine, on(`2026-10-0${d}T09:00:00Z`, userId)).shown) {
-          seen.add(card.id);
+          seen.add(card.oracleId);
         }
       }
-      expect(seen.size).toBe(READY_COUNT);
+      expect(seen.size).toBe(nine.length);
     }
   });
 
@@ -122,11 +121,11 @@ describe("readySlice — the rotation", () => {
   // build, because a rank-order cycle rotates perfectly well; this is the one
   // that fails.
   it("does not pair commanders by their rank neighbourhood", () => {
-    const rank = new Map(nine.map((c, i) => [c.id, i]));
+    const rank = new Map(nine.map((c, i) => [c.oracleId, i]));
     let nonAdjacent = 0;
     for (let d = 1; d <= 30; d += 1) {
       const s = slice(nine, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
-      const [a, b] = s.shown.map((c) => rank.get(c.id) as number);
+      const [a, b] = s.shown.map((c) => rank.get(c.oracleId) as number);
       // Cyclically adjacent, so the walk's wrap pair is not miscounted as a win.
       const gap = Math.abs(a - b);
       if (gap !== 1 && gap !== nine.length - 1) nonAdjacent += 1;
@@ -143,7 +142,7 @@ describe("readySlice — the rotation", () => {
       for (let d = 1; d <= 20; d += 1) {
         const s = slice(set, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
         expect(s.shown).toHaveLength(READY_SHOWN);
-        expect(new Set(s.shown.map((c) => c.id)).size).toBe(READY_SHOWN);
+        expect(new Set(s.shown.map((c) => c.oracleId)).size).toBe(READY_SHOWN);
       }
     }
   });
@@ -159,7 +158,7 @@ describe("readySlice — the rotation", () => {
       for (let d = 1; d < 20; d += 1) {
         const today = slice(set, on(`2026-10-${String(d).padStart(2, "0")}T09:00:00Z`));
         const next = slice(set, on(`2026-10-${String(d + 1).padStart(2, "0")}T09:00:00Z`));
-        const shared = today.shown.filter((c) => next.shown.some((o) => o.id === c.id)).length;
+        const shared = today.shown.filter((c) => next.shown.some((o) => o.oracleId === c.oracleId)).length;
         expect(shared).toBe(size === 3 ? 1 : 0);
       }
     }
@@ -188,7 +187,7 @@ describe("readySlice — the rotation", () => {
       const tour: string[] = [];
       for (let d = 1; d <= 5; d += 1) {
         for (const c of slice(nine, on(`2026-10-0${d}T09:00:00Z`, `acct-${u}`)).shown) {
-          tour.push(c.id);
+          tour.push(c.oracleId);
         }
       }
       tours.add(tour.join(","));
@@ -200,9 +199,68 @@ describe("readySlice — the rotation", () => {
   // and swapping which side they sit on would be motion carrying no information.
   it("leaves a set it cannot rotate exactly where it is", () => {
     const pair = list(80, 60);
-    const first = slice(pair, on("2026-10-01T09:00:00Z")).shown.map((c) => c.id);
-    const second = slice(pair, on("2026-10-02T09:00:00Z")).shown.map((c) => c.id);
+    const first = slice(pair, on("2026-10-01T09:00:00Z")).shown.map((c) => c.oracleId);
+    const second = slice(pair, on("2026-10-02T09:00:00Z")).shown.map((c) => c.oracleId);
     expect(first).toEqual(["c0", "c1"]);
     expect(second).toEqual(["c0", "c1"]);
+  });
+});
+
+// Hugh, 2026-09-27: "I've seen the same few rotate in and out over the last couple of weeks."
+// Nine at two a day repeated every four and a half days. The set is two weeks deep now, and the
+// walk leans on what the reader has not played.
+describe("readySlice — two weeks without a repeat, leaning on the new", () => {
+  const deep = list(...Array.from({ length: 400 }, (_, i) => 100 - i / 10));
+  const fortnight = (at: (d: number) => Parameters<typeof readySlice>[1]) => {
+    const seen = new Map<string, number>();
+    for (let d = 1; d <= 14; d += 1) {
+      for (const c of slice(deep, at(d)).shown) seen.set(c.oracleId, (seen.get(c.oracleId) ?? 0) + 1);
+    }
+    return seen;
+  };
+  const day = (d: number) => `2026-10-${String(d).padStart(2, "0")}T09:00:00Z`;
+
+  it("shows 28 different commanders over 14 days, each once", () => {
+    const seen = fortnight((d) => on(day(d)));
+    expect(seen.size).toBe(28);
+    expect([...seen.values()].every((n) => n === 1)).toBe(true);
+  });
+
+  // Novelty for the set: the ten newest are c20..c29 (outside the top twenty), the rest 0.
+  const unplayed = new Map(Array.from({ length: 28 }, (_, i) => [`c${i}`, i >= 18 ? 30 - i : 0] as const));
+
+  it("still shows each of the 28 once over 14 days with the lean", () => {
+    const seen = fortnight((d) => ({ ...on(day(d)), unplayed }));
+    expect(seen.size).toBe(28);
+    expect([...seen.values()].every((n) => n === 1)).toBe(true);
+  });
+
+  // Exactly fourteen of the 28 have themes the reader has not played, so the newer half IS those
+  // fourteen: every day must draw exactly one of them. A walk that ignored novelty draws zero or two
+  // on some days, which is what this catches (the ten-of-28 form of this test passed without it).
+  it("draws exactly one of the newer half on every day", () => {
+    const fourteen = new Map(Array.from({ length: 28 }, (_, i) => [`c${i}`, i % 2 === 0 ? 1 + i : 0] as const));
+    const newer = new Set<string>([...fourteen.entries()].filter(([, n]) => n > 0).map(([id]) => id));
+    for (let d = 1; d <= 28; d += 1) {
+      const shown = slice(deep, { ...on(`2026-11-${String(d).padStart(2, "0")}T09:00:00Z`), unplayed: fourteen }).shown;
+      expect(shown.filter((c) => newer.has(c.oracleId))).toHaveLength(1);
+    }
+  });
+
+  it("never repeats a card on consecutive days with the lean", () => {
+    for (let d = 1; d < 28; d += 1) {
+      const a = slice(deep, { ...on(`2026-11-${String(d).padStart(2, "0")}T09:00:00Z`), unplayed }).shown;
+      const b = slice(deep, { ...on(`2026-11-${String(d + 1).padStart(2, "0")}T09:00:00Z`), unplayed }).shown;
+      expect(a.filter((c) => b.some((o) => o.oracleId === c.oracleId))).toEqual([]);
+    }
+  });
+
+  // A failed novelty read costs the lean, never the section: no map is exactly today's shuffle.
+  it("walks the plain shuffle when there is no novelty to lean on", () => {
+    for (let d = 1; d <= 14; d += 1) {
+      const plain = slice(deep, on(day(d))).shown.map((c) => c.oracleId);
+      expect(slice(deep, { ...on(day(d)), unplayed: null }).shown.map((c) => c.oracleId)).toEqual(plain);
+      expect(slice(deep, { ...on(day(d)), unplayed: new Map() }).shown.map((c) => c.oracleId)).toEqual(plain);
+    }
   });
 });
