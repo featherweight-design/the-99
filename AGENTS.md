@@ -1521,6 +1521,27 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   probe that writes the column and fails one that does not call it, and pins the ids it reads
   out of `about.ts` against `aboutEntries`.
 
+- `pnpm probe:about-numerals` walks every keyed figure on `/about` at 390x844 and 1300x900 and
+  proves each key line's numeral is PLACED on its figure: one per line, measured onto its part,
+  inside the figure's box, not on another numeral, and painted on top. `about-page.test.tsx`
+  counts the numerals in jsdom, and that count cannot tell a placed numeral from one that never
+  found its part, because every numeral is in the document from the first render.
+
+  Numerals on a MOUNTED app component are placed by `AnchoredNumerals` (`about/numeral.tsx`),
+  which finds each part after layout and measures against its box rather than a fixed offset.
+  The offsets it replaced were right at one width and wrong at the other. Its finders prefer a
+  laid-out match, because many components draw a phone and a desktop copy and hide one, and a
+  hidden copy measures as a zero box at the origin: three figures read "outside" until that
+  rule went in.
+
+  **The painted-on-top check is the one a count cannot replace.** The export figure's numerals
+  measured placed and inside while sitting under the dialog's own layer; with the numeral's
+  `z-[60]` put back to `z-10` the check fails at both widths. It reads through the figure's
+  `inert` and `pointer-events: none` for that one hit test, since both hide an element from
+  `elementFromPoint`. It writes the account's About row through `clearAboutSheet`, captured and
+  restored with `captureAboutSeen`. Needs a server with every About switch on. Point it at
+  `local-dev`, **never production**.
+
 - `pnpm probe:scroll-lock` presses every overlay the app draws over a scrim — the filter
   sheets on `/collection`, `/commanders`, `/discover`, `/decks` and a set page, the
   `FilterPanel` sort sheet, and the card modal — and proves the page behind each one does
