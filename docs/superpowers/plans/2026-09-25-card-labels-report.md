@@ -6,7 +6,7 @@ not been run.** Nothing here writes to any database, and nothing runs per reques
 
 ## The answer
 
-**Yes, and on Sonnet 4.5 — about $40.30.**
+**Yes, and on Sonnet 4.5 — about $41.09.**
 
 The pass buys exactly one thing, and it is the thing that is broken: the LIMITS on
 a job. Today's text rules score **0 on every limit** — not poorly, zero, by
@@ -27,12 +27,13 @@ that decides a match. The one-time difference is **$27.60**.
 > number was wrong, and it was wrong in the direction that flattered the cheaper
 > model.
 >
-> **Every figure in this report is now emitted by a committed script into one of
-> three committed artifacts** — the scores, the agreement figures and the costs. That
-> was not true of the second draft either: the entire cost table lived only in a
-> script's stdout, so a reader following this report's own instruction to check the
-> tables against the artifacts could not reproduce the recommendation's dollar
-> figure. `out/cost.json` is now written and committed.
+> **Every figure in this report is emitted by a committed script and published by
+> that same script into a committed artifact** — the scores, the agreement figures
+> and the costs. Two earlier drafts failed that in different ways: the cost table
+> lived only in a script's stdout, and the committed snapshots were then copied by
+> hand, so re-running the documented commands could not regenerate the checked-in
+> evidence and the two could drift silently. Each script now takes `--publish` and
+> writes its own committed path; without the flag it says so and writes only `out/`.
 
 ## The two limits that caused the bug
 
@@ -42,12 +43,14 @@ on a **Wolf** and the deck was Dinosaurs; and on `ramp`, where the Warg makes a
 
 | | tribal restriction | gating restriction | ramp kind | spurious invented |
 |---|---|---|---|---|
-| **Haiku 4.5** | 0.964 (27/28) | 0.725 (29/40) | **0.955** (21/22) | 6 |
-| **Sonnet 4.5** | **1.000** (30/30) | **0.857** (36/42) | 0.875 (21/24) | **2** |
+| **Haiku 4.5** | 1.000 (29/29) | 0.767 (33/43) | **0.957** (22/23) | 7 |
+| **Sonnet 4.5** | 1.000 (30/30) | **0.864** (38/44) | 0.917 (22/24) | **5** |
 | today's text rules | **0** (0/25) | **0** (0/35) | **0** (0/21) | 0 |
 
-**Restrictions are the larger half of the bug and Sonnet wins them; the ramp kind
-is the smaller half and Haiku wins it.** Both are far above nothing.
+**The tribal restriction — the Warg's Wolf clause — is now a tie at 1.000.** Either
+model solves the half of the bug the brief leads with. The choice therefore turns on
+the WIDER gating set (card types a deck may simply not play), where Sonnet leads by
+9.7 points, and on `trigger`, where it leads by 7.5. Haiku keeps the ramp kind.
 
 - **tribal** is gold restricting to a named CREATURE TYPE — Wolf, Dinosaur, Pirate
   — checked against the catalog's own creature subtypes. The Warg case exactly. An
@@ -73,20 +76,21 @@ on the jobs it got right, did it get the limits right.
 
 | | Haiku | Sonnet | text rules |
 |---|---|---|---|
-| JOB precision | **0.781** | 0.760 | 0.736 |
-| JOB recall | 0.732 | **0.820** | 0.722 |
-| rampKind | **0.955** | 0.875 | 0 |
-| restrictedTo, tribal | 0.964 | **1.000** | 0 |
-| restrictedTo, gating | 0.725 | **0.857** | 0 |
-| trigger | **0.938** | 0.921 | 0 |
-| recurrence | 0.781 | **0.853** | 0 |
+| JOB precision | **0.800** | 0.784 | 0.742 |
+| JOB recall | 0.761 | **0.834** | 0.717 |
+| rampKind | **0.957** | 0.917 | 0 |
+| restrictedTo, tribal | 1.000 | 1.000 | 0 |
+| restrictedTo, gating | 0.767 | **0.864** | 0 |
+| trigger | 0.867 | **0.942** | 0 |
+| recurrence | 0.788 | **0.857** | 0 |
 | threshold | 1.000 | 1.000 | 0 |
 | modal | 1.000 | 1.000 | 0 |
-| spurious restrictions invented | 6 | **2** | 0 |
+| spurious restrictions invented | 7 | **5** | 0 |
 
-Sonnet takes job recall, both restriction columns, recurrence and the spurious
-count. Haiku takes the ramp kind, and precision and trigger by margins inside the
-noise of a 108-card set.
+Sonnet takes job recall, the gating restrictions, trigger, recurrence and the
+spurious count. Haiku takes the ramp kind and job precision. Tribal restrictions,
+thresholds and modality are ties at 1.000 — three limits that need no model choice
+at all, and that today's rules still get none of.
 
 **The job columns are the finding nobody expected — with one correction.** On
 PRECISION all three sit within 4.5 points (0.736 to 0.781), so a pass bought to
@@ -109,15 +113,14 @@ Measured, at batch rates, over 508 cards (108 gold + 400 random):
 
 | | sample | per card | full run (31,830) | per new set (~390) |
 |---|---|---|---|---|
-| Haiku 4.5 | $0.2027 | $0.000399 | **$12.70** | $0.16 |
-| Sonnet 4.5 | $0.6432 | $0.001266 | **$40.30** | $0.49 |
+| Haiku 4.5 | $0.2033 | $0.000400 | **$12.73** | $0.16 |
+| Sonnet 4.5 | $0.6556 | $0.001291 | **$41.09** | $0.50 |
 
-Sample total **$0.8459** against a $5 cap.
+Sample total **$0.8589** against a $5 cap (plus $0.8459 for the first, contaminated run — see below — so $1.70 of the cap is used).
 
-The ongoing cost is the part that settles it: a new set costs **49 cents** on
+The ongoing cost is the part that settles it: a new set costs **50 cents** on
 Sonnet and 16 on Haiku. Either way keeping the labels current is free in practice,
-so the only real decision is the one-time backfill — **$27.60** between the two,
-for half the error rate on the limit family that caused the bug.
+so the only real decision is the one-time backfill — **$28.36** between the two.
 
 ## Agreement on the random 400
 
@@ -125,10 +128,10 @@ Where there is no gold label, agreement bounds the disputed fraction. It is not
 accuracy: two models can agree and both be wrong.
 
 - Same job set exactly: **52.5%** (210/400)
-- Same jobs and every limit: **31.0%** (124/400)
-- Job instances: 423 both, 120 Haiku only, 164 Sonnet only
-- Limit disagreement where both found the job: restrictedTo **23.6%** (100/423),
-  recurrence 9.0%, trigger 5.7%, threshold 5.0%, modal 2.4%, rampKind 13.3% (4/30)
+- Same jobs and every limit: **34.3%** (137/400)
+- Job instances: 428 both, 119 Haiku only, 164 Sonnet only
+- Limit disagreement where both found the job: restrictedTo **22.4%** (96/428),
+  trigger 7.7%, recurrence 5.6%, modal 3.7%, threshold 1.9%, rampKind 10.7% (3/28)
 
 > These figures were quoted from a pre-fix run in the first two drafts. The
 > agreement script compared each card's job kinds as a SET, so a card with two jobs
@@ -138,19 +141,43 @@ accuracy: two models can agree and both be wrong.
 
 `restrictedTo` is where they part company, and the gold scoring says why: it is the
 hardest limit for both, and the one that separates them. On the GATING subset Haiku
-is 0.725 and Sonnet 0.857.
+is 0.767 and Sonnet 0.864.
 
-**Read that as recall, not precision.** The subset keys on GOLD's value, so 0.725
-means a quarter of the restrictions that GOLD records are got wrong — it says
+**Read that as recall, not precision.** The subset keys on GOLD's value, so 0.767
+means about a quarter of the restrictions that GOLD records are got wrong — it says
 nothing about restrictions a model invents. That direction is counted separately:
 Haiku invents 6 and Sonnet 2. The two failures cost different things. A MISSED
 restriction is the original bug returning (a card matched in a deck it is dead in);
 an INVENTED one refuses a stand-in that would have been fine. Sonnet is better on
 both.
 
-## Four things the sample found that were not in the brief
+## Six things the sample found that were not in the brief
 
-0. **The first draft of this report recommended the wrong model.** Its
+1. **The first sample was contaminated, and the whole thing was re-run.**
+   `cards.oracle_text` stores BOTH FACES of a two-faced card, joined by `\n//\n`.
+   The prompt sent that column whole, so the model was shown
+   `Strength of the Harvest`'s land back — `{T}: Add {G} or {W}` — and asked to
+   label it against gold that is front-face-only. It read the land ability as ramp
+   and was marked wrong for believing the text it was given.
+
+   **The same defect hit the baseline from the other side.** The scorer passed the
+   raw column to `classifyRoles`, but `src/lib/swaps/stand-ins.ts:47` — the exact
+   consumer this lane exists for — already calls it with `frontFaceOracle`. The
+   comparison was therefore against a WORSE version of the text rules than the ones
+   that actually run.
+
+   It touched 10 of the 108 gold cards, which is the entire `twoFaced` class: the
+   one built to test this. A patched sample where 15 cards used one prompt and 493
+   used another is not interpretable, so the whole sample was re-run for $0.8589.
+
+   **It changed conclusions, not just digits.** Both models now score 1.000 on
+   tribal restrictions (Haiku was 0.964), and `trigger` FLIPPED from Haiku to
+   Sonnet, 0.942 against 0.867. The prompt now uses the repository's own
+   `castFaceText`, which keeps both halves of a split or adventure card because both
+   are castable, and the baseline uses `frontFaceOracle` because that is what the
+   consumer does. Neither is reimplemented here.
+
+2. **The first draft of this report recommended the wrong model.** Its
    tribal-restriction figure came from an uncommitted ad-hoc command using the
    naive same-kind job pairing that `label-cards-score.mts` already documents as a
    defect, and it understated the gap between the models by half. Recorded here
@@ -160,7 +187,7 @@ both.
    and the pre-open review caught this by checking the tables against the JSON
    rather than against the prose.
 
-1. **A gap in the ramp kinds, found by hand-labelling.** Generator Servant's
+3. **A gap in the ramp kinds, found by hand-labelling.** Generator Servant's
    `{T}, Sacrifice this creature: Add {C}{C}` fits none of E1's three kinds: not
    `tapsForMana` (gone after one use), not `fetchesLand`, not `makesTreasure` (no
    token — the mana is added directly). `Blood Pet`, the Eldrazi Scion tokens and
@@ -171,7 +198,7 @@ both.
    accuracy over ALL 22 and 24 paired ramp jobs; nothing committed reports
    per-kind accuracy, so there is no separate `burstMana` figure to quote.)
 
-2. **Caching the instructions cost more than it saved.** d9 asked for cached
+4. **Caching the instructions cost more than it saved.** d9 asked for cached
    instructions. Measured: Sonnet wrote the cache 37 times and read it 6, because
    43 batch requests run in parallel and nearly every one arrives before any cache
    is warm. At 1.25x to write and 0.1x to read, that is **$0.0854 against $0.0784**
@@ -181,13 +208,13 @@ both.
    calls. **For the full run, either drop the breakpoint or batch sequentially
    enough that reads dominate.**
 
-3. **The batch API is not reachable through this repo's proxy.** `ANTHROPIC_BASE_URL`
+5. **The batch API is not reachable through this repo's proxy.** `ANTHROPIC_BASE_URL`
    points at `127.0.0.1:8787`, which forwards `/v1/messages` and answers
    `cave_route_not_found` for `/v1/messages/batches`. Batches go direct to
    `api.anthropic.com`; the key still comes from the `scripts/.env` convention.
    Without this the sample would have cost double.
 
-4. **The two models disagree about what a two-faced card is called.** Sonnet
+6. **The two models disagree about what a two-faced card is called.** Sonnet
    returned `Soulcipher Board` and `Cipherbound Spirit` as separate entries where
    the catalog name is `Soulcipher Board // Cipherbound Spirit`; Haiku kept the
    joined name. Unreconciled, three cards read as "not returned" while the model
@@ -198,8 +225,8 @@ both.
 ## What to watch if this ships
 
 - **`restrictedTo` is the weak limit**, for both models, and the reason for the
-  recommendation. A quarter of the gating restrictions gold records are missed by
-  Haiku against a seventh by Sonnet. If false matches survive the pass, this is the
+  recommendation. Just under a quarter of the gating restrictions gold records are
+  missed by Haiku against about a seventh by Sonnet. If false matches survive the pass, this is the
   first place to look, and re-scoring the gold subset is what tells you.
 - **Job recall is ~0.73–0.82**, so roughly a fifth of jobs are missed by every
   labeller including the models. The pass improves limits, not coverage.
@@ -240,14 +267,26 @@ both.
 - `scripts/lib/card-labels-schema.mjs` — the schema, and the four ramp kinds
 - `scripts/lib/card-labels-schema.test.mts` — vocabulary drift guard, 14 tests
 - `scripts/lib/card-labels-gold.mjs` — the 108-card gold set with reasoning
-- `scripts/lib/card-labels-prompt.mjs` — the shared instruction block
+- `scripts/lib/card-labels-prompt.mts` — the shared instruction block
 - `scripts/label-cards-select.mjs` — hard-class candidate selection
-- `scripts/label-cards-run.mjs` — batch submission, with the spend cap
+- `scripts/label-cards-run.mts` — batch submission, with the spend cap
 - `scripts/label-cards-collect.mjs` — collection, measured cost, face reconciliation
 - `scripts/label-cards-score.mts` — precision, recall, the non-default split
 - `scripts/label-cards-agree.mjs` — Haiku against Sonnet on the random 400
 - `scripts/label-cards-blindsheet.mjs` — the blind sheet below
 ### Committed evidence
+
+Regenerate and republish with:
+
+```
+npx tsx scripts/label-cards-score.mts --publish
+node scripts/label-cards-agree.mjs --publish
+node scripts/label-cards-blindsheet.mjs --publish
+```
+
+`--publish` is opt-in so a run against a scratch database, or a half-collected
+batch, cannot quietly overwrite the evidence a merged report rests on.
+
 
 - `docs/superpowers/plans/2026-09-25-card-labels-blind-sheet.md` — **15 telling
   disagreements, columns unlabelled**, gold in a key beneath them

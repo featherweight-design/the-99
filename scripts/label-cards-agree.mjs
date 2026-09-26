@@ -6,6 +6,8 @@
 // decides whether the cheaper model is safe to run alone.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
+import { publishArtifacts } from "./lib/card-labels-publish.mjs";
+
 const h = JSON.parse(readFileSync("out/labels-haiku.json", "utf8"));
 const s = JSON.parse(readFileSync("out/labels-sonnet.json", "utf8"));
 const gold = new Set((await import("./lib/card-labels-gold.mjs")).GOLD.map((r) => r.name));
@@ -86,3 +88,5 @@ mkdirSync("out", { recursive: true });
 writeFileSync("out/agreement.json", JSON.stringify({ cards, skipped, sameJobs, sameEverything, jobTally, limitDisagree, limitCompared }, null, 1));
 writeFileSync("out/agreement-disagreeing-cards.json", JSON.stringify(disagreeing, null, 1));
 console.log(`  ${disagreeing.length} cards differ -> out/agreement-disagreeing-cards.json`);
+
+publishArtifacts(["out/agreement.json"], process.argv.includes("--publish"));

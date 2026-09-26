@@ -2,26 +2,26 @@
  "cards": 400,
  "skipped": 0,
  "sameJobs": 210,
- "sameEverything": 124,
+ "sameEverything": 137,
  "jobTally": {
-  "both": 423,
-  "haikuOnly": 120,
+  "both": 428,
+  "haikuOnly": 119,
   "sonnetOnly": 164
  },
  "limitDisagree": {
-  "rampKind": 4,
-  "restrictedTo": 100,
-  "trigger": 24,
-  "recurrence": 38,
-  "threshold": 21,
-  "modal": 10
+  "rampKind": 3,
+  "restrictedTo": 96,
+  "trigger": 33,
+  "recurrence": 24,
+  "threshold": 8,
+  "modal": 16
  },
  "limitCompared": {
-  "rampKind": 30,
-  "restrictedTo": 423,
-  "trigger": 423,
-  "recurrence": 423,
-  "threshold": 423,
-  "modal": 423
+  "rampKind": 28,
+  "restrictedTo": 428,
+  "trigger": 428,
+  "recurrence": 428,
+  "threshold": 428,
+  "modal": 428
  }
 }

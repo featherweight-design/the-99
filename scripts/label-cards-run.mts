@@ -26,30 +26,37 @@ const RANDOM_N = Number(process.env.RANDOM_N ?? 400);
 
 const dryRun = process.argv.includes("--dry-run");
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL!);
 
-const chunk = (xs, n) => xs.reduce((a, x, i) => (i % n ? a[a.length - 1].push(x) : a.push([x]), a), []);
+const chunk = <T,>(xs: T[], n: number): T[][] =>
+  xs.reduce<T[][]>((a, x, i) => (i % n ? a[a.length - 1].push(x) : a.push([x]), a), []);
 
 /** Rough token estimate. Deliberately GENEROUS: an under-estimate spends money. */
-const estTokens = (text) => Math.ceil(text.length / 3.3);
+const estTokens = (text: string) => Math.ceil(text.length / 3.3);
 
 const goldNames = GOLD.map((r) => r.name);
-const goldCards = await sql`
-  select name, mana_cost, type_line, oracle_text from cards where name = any(${goldNames})`;
+type CatalogCard = { name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string };
+
+const goldCards = (await sql`
+  select name, mana_cost, type_line, oracle_text, layout from cards where name = any(${goldNames})`) as CatalogCard[];
 if (goldCards.length !== goldNames.length) {
   throw new Error(`gold set: ${goldNames.length} names, ${goldCards.length} resolved — refusing to run a partial set`);
 }
 // Keep the gold order stable so batch N always holds the same cards.
 const byName = new Map(goldCards.map((c) => [c.name, c]));
-const gold = goldNames.map((n) => byName.get(n));
+const gold = goldNames.map((n) => {
+  const row = byName.get(n);
+  if (!row) throw new Error(`gold card not in the catalog: ${n}`);
+  return row;
+});
 
 // The random set is drawn deterministically so two runs compare like with like,
 // and EXCLUDES the gold cards -- a card in both would let a model's gold answer
 // inflate the agreement rate.
-const random = await sql`
-  select name, mana_cost, type_line, oracle_text from cards
+const random = (await sql`
+  select name, mana_cost, type_line, oracle_text, layout from cards
   where commander_legal and oracle_text is not null and name <> all(${goldNames})
-  order by md5(name || 'label-sample') limit ${RANDOM_N}`;
+  order by md5(name || 'label-sample') limit ${RANDOM_N}`) as CatalogCard[];
 
 const all = [...gold, ...random];
 const batches = chunk(all, CARDS_PER_BATCH);
@@ -88,11 +95,14 @@ const estOutWorst = batches.length * MAX_TOKENS_PER_BATCH;
 
 let estTotal = 0, worstTotal = 0;
 const lines = [];
-for (const m of Object.keys(MODELS)) {
+for (const m of /** @type {const} */ (Object.keys(MODELS)) as (keyof typeof MODELS)[]) {
   // A model that does not cache pays full input for the instruction block on
   // EVERY batch; there is no cache read to discount.
+  // `estIn` ALREADY holds one system block for every non-read batch, so subtracting
+  // another here dropped a full-price block from the Sonnet estimate. The write is
+  // booked ON TOP, at the write rate, rather than carved out of the inputs.
   const usage = PRICING[m].caches
-    ? { i: estIn - sysTokens, cw: sysTokens, cr: estCacheRead, o: estOut }
+    ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOut }
     : { i: estIn + estCacheRead, o: estOut };
   const c = costOf(m, usage);
   const w = costOf(m, { ...usage, o: estOutWorst });
@@ -121,7 +131,7 @@ console.log(`  already spent by earlier runs: $${spentBefore.toFixed(4)}  (cap $
 // requests permit.
 if (worstTotal + spentBefore > CAP_USD) {
   console.error(`\nREFUSING: worst case $${worstTotal.toFixed(2)} + $${spentBefore.toFixed(2)} already spent exceeds the $${CAP_USD} cap.`);
-  console.error(`Lower RANDOM_N, or lower max_tokens in card-labels-prompt.mjs, and re-run.`);
+  console.error(`Lower RANDOM_N, or lower max_tokens in card-labels-prompt.mts, and re-run.`);
   process.exit(1);
 }
 if (dryRun) {
@@ -148,19 +158,21 @@ mkdirSync("out", { recursive: true });
 // submissions leaves the hole it exists to close: a process that dies between
 // haiku's `create` and sonnet's has spent Haiku's money and recorded nothing, so
 // the next invocation reads $0 and authorises the whole run again.
-const perModelWorst = Object.fromEntries(Object.keys(MODELS).map((m) => [m,
+const perModelWorst = Object.fromEntries((Object.keys(MODELS) as (keyof typeof MODELS)[]).map((m) => [m,
   costOf(m, PRICING[m].caches
-    ? { i: estIn - sysTokens, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
+    ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
     : { i: estIn + estCacheRead, o: estOutWorst })]));
 
-const submitted = {};
+const submitted: Record<string, string> = {};
 let charged = spentBefore;
-for (const [key, model] of Object.entries(MODELS)) {
+for (const [key, model] of Object.entries(MODELS) as [keyof typeof MODELS, string][]) {
   const requests = batches.map((cards, i) => buildRequest(`${key}-${i}`, model, cards));
   const batch = await client.messages.batches.create({ requests });
   submitted[key] = batch.id;
   charged += perModelWorst[key];
-  writeFileSync(LEDGER, JSON.stringify({ totalUsd: charged, submitted, reconciled: false }, null, 1));
+  // `reservedUsd` is what THIS run booked, so `collect` can swap exactly it for the
+  // measured figure and leave every earlier run's spend standing.
+  writeFileSync(LEDGER, JSON.stringify({ totalUsd: +charged.toFixed(4), reservedUsd: +(charged - spentBefore).toFixed(4), submitted, reconciled: false }, null, 1));
   console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests), ledger now $${charged.toFixed(4)}`);
 }
 writeFileSync("out/batches.json", JSON.stringify({ submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));

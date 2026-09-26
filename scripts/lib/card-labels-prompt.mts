@@ -19,6 +19,7 @@
 // change 2b makes reaches the prompt and the scorer together. A prompt that
 // listed jobs by hand would drift from the thing it is scored against, and the
 // drift would read as model error.
+import { castFaceText } from "../../src/lib/cards/facet";
 import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "./card-labels-schema.mjs";
 
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
@@ -90,13 +91,33 @@ Omit "rampKind" entirely on any job that is not a role "ramp" job (a null is
 accepted there too).
 A card with no job in the vocabulary gets "jobs": []. No prose, no markdown fence.`;
 
-/** One card as the model sees it. Front face only, as the text rules read. */
-/** The user turn exactly as sent, so the estimate can measure the real thing. */
-export const renderBody = (cards) =>
-  `Label these ${cards.length} cards.\n\n${cards.map(renderCard).join("\n\n---\n\n")}`;
+type CardForPrompt = {
+  name: string; mana_cost: string | null; type_line: string;
+  oracle_text: string | null; layout?: string;
+};
 
-export const renderCard = (c) =>
-  `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${c.oracle_text ?? "(no text)"}`;
+/**
+ * One card as the model sees it.
+ *
+ * `cards.oracle_text` stores BOTH FACES of a two-faced card, joined by "\n//\n" --
+ * `Strength of the Harvest // Haven of the Harvest` carries its land back's
+ * "{T}: Add {G} or {W}" in the same string as its Aura front. Sent whole, the model
+ * is asked about abilities the card cannot use from the front, against gold labels
+ * that are front-face-only: it reads that land ability as ramp and is marked wrong
+ * for believing the text it was given.
+ *
+ * `castFaceText` is this repository's own rule for the cut and is reused rather
+ * than reimplemented. It drops the back face for `modal_dfc` and `transform`, which
+ * are cast as their front, and keeps BOTH halves for split, adventure and prepare,
+ * where both are genuinely castable. The gold set agrees: `Ettercap // Web Shot` is
+ * labelled with the removal that lives on its adventure half.
+ */
+export const renderCard = (c: CardForPrompt) =>
+  `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${castFaceText(c.oracle_text ?? null, c.layout ?? "normal") ?? "(no text)"}`;
+
+/** The user turn exactly as sent, so the estimate can measure the real thing. */
+export const renderBody = (cards: CardForPrompt[]) =>
+  `Label these ${cards.length} cards.\n\n${cards.map(renderCard).join("\n\n---\n\n")}`;
 
 /**
  * One batch request. `cache_control` sits on the LAST system block so everything
@@ -110,7 +131,7 @@ export const renderCard = (c) =>
  */
 export const MAX_TOKENS_PER_BATCH = 8000;
 
-export const buildRequest = (customId, model, cards) => ({
+export const buildRequest = (customId: string, model: string, cards: CardForPrompt[]) => ({
   custom_id: customId,
   params: {
     model,
@@ -118,7 +139,7 @@ export const buildRequest = (customId, model, cards) => ({
     // Deterministic, so a re-run of the same batch is comparable. A sampled run
     // would make the Haiku/Sonnet difference partly noise.
     temperature: 0,
-    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: renderBody(cards) }],
+    system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
+    messages: [{ role: "user" as const, content: renderBody(cards) }],
   },
 });

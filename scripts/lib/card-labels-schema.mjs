@@ -117,6 +117,12 @@ export const JOB_FIELDS = ["space", "kind", "rampKind", "restrictedTo", "trigger
 /** Validates ONE job. Returns a list of complaints, empty when it is well formed. */
 export function validateJob(job) {
   const bad = [];
+  // A model can return `null` or a string in the jobs array. The collector's
+  // contract is to DROP and RECORD a malformed job, which it cannot do if reading
+  // `job.space` throws first -- one bad item would abort the whole collection.
+  if (job === null || typeof job !== "object" || Array.isArray(job)) {
+    return [`not an object: ${JSON.stringify(job)}`];
+  }
   if (!SPACES.includes(job.space)) bad.push(`space "${job.space}"`);
   const vocab = job.space === "role" ? ROLES : THEMES;
   if (!vocab.includes(job.kind)) bad.push(`kind "${job.kind}" is not in ${job.space}`);
@@ -134,7 +140,12 @@ export function validateJob(job) {
   if (!RECURRENCE.includes(job.recurrence)) bad.push(`recurrence "${job.recurrence}"`);
   if (job.restrictedTo !== null && typeof job.restrictedTo !== "string") bad.push(`restrictedTo`);
   if (typeof job.modal !== "boolean") bad.push(`modal`);
-  if (job.threshold !== null && job.threshold !== undefined) {
+  // `undefined` is NOT equivalent to `null` here. The prompt requires the key, and
+  // `limitValue` renders a missing threshold as "none" -- the default -- so letting
+  // it through credits an incomplete answer with the commonest correct value.
+  if (job.threshold === undefined) {
+    bad.push("threshold is missing; it must be an object or null");
+  } else if (job.threshold !== null) {
     if (!THRESHOLD_STATS.includes(job.threshold.stat)) bad.push(`threshold.stat "${job.threshold?.stat}"`);
     if (!THRESHOLD_OPS.includes(job.threshold.op)) bad.push(`threshold.op "${job.threshold?.op}"`);
     if (typeof job.threshold.value !== "number") bad.push(`threshold.value`);

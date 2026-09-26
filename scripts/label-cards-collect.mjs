@@ -8,6 +8,7 @@ import "./lib/env.mjs";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { costOf } from "./lib/card-labels-pricing.mjs";
+import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { validateJob } from "./lib/card-labels-schema.mjs";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
@@ -40,8 +41,19 @@ for (const [key, id] of Object.entries(submitted)) {
   const malformed = [];
   let inTok = 0, outTok = 0, cacheW = 0, cacheR = 0, errored = 0;
 
+  /** Every card in a request we cannot read is a MISS, recorded rather than absent. */
+  const markMissing = (customId) => {
+    const idx = Number(customId.split("-")[1]);
+    for (const name of batches[idx] ?? []) if (!(name in labels)) labels[name] = null;
+  };
+
   for await (const entry of await client.messages.batches.results(id)) {
-    if (entry.result.type !== "succeeded") { errored++; continue; }
+    // A failed request used to `continue` before the backfill below, so its cards
+    // were absent from `labels` entirely. `score` counts an absent card as missing,
+    // but `label-cards-agree` iterates one model's keys and silently drops them --
+    // so a partial failure in ONE model quietly shrinks the agreement denominator
+    // and makes agreement look better than it was.
+    if (entry.result.type !== "succeeded") { errored++; markMissing(entry.custom_id); continue; }
     const u = entry.result.message.usage;
     inTok += u.input_tokens; outTok += u.output_tokens;
     cacheW += u.cache_creation_input_tokens ?? 0; cacheR += u.cache_read_input_tokens ?? 0;
@@ -49,7 +61,7 @@ for (const [key, id] of Object.entries(submitted)) {
     const idx = Number(entry.custom_id.split("-")[1]);
     const asked = batches[idx];
     const parsed = parseReply(entry.result.message.content.map((c) => c.text ?? "").join(""));
-    if (!Array.isArray(parsed)) { malformed.push(`${entry.custom_id}: unparseable`); continue; }
+    if (!Array.isArray(parsed)) { malformed.push(`${entry.custom_id}: unparseable`); markMissing(entry.custom_id); continue; }
 
     // A TWO-FACED CARD'S NAME. Sonnet returned `Soulcipher Board` and
     // `Cipherbound Spirit` as separate entries where the catalog name is
@@ -123,9 +135,20 @@ if (grandTotal) {
   // back money still in flight.
   const ended = Object.keys(submitted).length === collected;
   if (ended) {
-    writeFileSync(LEDGER, JSON.stringify({ totalUsd: grandTotal, submitted, reconciled: true }, null, 1));
-    console.log(`ledger reconciled to the measured figure ($${grandTotal.toFixed(4)})`);
+    // Replace only THIS run's reservation, never the running total. Overwriting
+    // `totalUsd` with `grandTotal` credits back every earlier run's spend, so the
+    // next invocation is authorised against a cap that has already been used.
+    let prior = 0;
+    try {
+      const led = JSON.parse(readFileSync(LEDGER, "utf8"));
+      prior = (led.totalUsd ?? 0) - (led.reservedUsd ?? 0);
+    } catch { /* no ledger: this run is the first */ }
+    const total = prior + grandTotal;
+    writeFileSync(LEDGER, JSON.stringify({ totalUsd: +total.toFixed(4), reservedUsd: 0, submitted, reconciled: true }, null, 1));
+    console.log(`ledger reconciled: $${prior.toFixed(4)} earlier + $${grandTotal.toFixed(4)} measured = $${total.toFixed(4)}`);
   } else {
     console.log(`ledger left at the worst case: ${collected} of ${Object.keys(submitted).length} batches ended`);
   }
 }
+
+publishArtifacts(["out/cost.json"], process.argv.includes("--publish"));

@@ -9,6 +9,7 @@
 // the key, because a sheet where nobody can check the answer settles nothing.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
+import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 
 const h = JSON.parse(readFileSync("out/labels-haiku.json", "utf8"));
@@ -90,3 +91,5 @@ mkdirSync("out", { recursive: true });
 writeFileSync("out/blind-sheet.md", lines.join("\n"));
 console.log(`${rows.length} gating disagreements, ${sheet.filter((r) => r.decisive).length} of the top 15 decisive`);
 console.log(lines.slice(6, 24).join("\n"));
+
+publishArtifacts(["out/blind-sheet.md"], process.argv.includes("--publish"));

@@ -18,9 +18,11 @@ import "./lib/env.mjs";
 
 import { neon } from "@neondatabase/serverless";
 
+import { frontFaceOracle } from "../src/lib/recs/faces";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { cardThemes } from "../src/lib/recs/themes";
 import { GOLD } from "./lib/card-labels-gold.mjs";
+import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 
 type Job = {
   space: string; kind: string; rampKind?: string | null;
@@ -31,8 +33,8 @@ type Job = {
 const sql = neon(process.env.DATABASE_URL!);
 const goldNames = GOLD.map((r) => r.name);
 const cards = await sql`
-  select name, mana_cost, type_line, oracle_text, keywords from cards where name = any(${goldNames})`;
-type CardRow = { name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; keywords: string[] | null };
+  select name, mana_cost, type_line, oracle_text, keywords, layout from cards where name = any(${goldNames})`;
+type CardRow = { name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; keywords: string[] | null; layout: string };
 const byName = new Map((cards as CardRow[]).map((c) => [c.name, c]));
 
 // `cardThemes` needs the catalog's own creature subtypes, because the word before
@@ -69,7 +71,15 @@ const mustGet = (name: string): CardRow => {
 };
 
 const textRuleJobs = (card: CardRow): Job[] => {
-  const roles = classifyRoles({ typeLine: card.type_line, oracleText: card.oracle_text, keywords: card.keywords ?? [] });
+  // EXACTLY as the stand-ins consumer runs them. `src/lib/swaps/stand-ins.ts:47`
+  // calls `classifyRoles({ ...card, oracleText: frontFaceOracle(card.oracleText) })`,
+  // and `cardThemes` applies `frontFaceOracle` internally. Passing the raw column
+  // instead -- which this did -- hands the rules BOTH FACES of a two-faced card, so
+  // a land back's "{T}: Add" scores `ramp` for a card whose front is an Aura. That
+  // understated the baseline against the very consumer this lane is about: the
+  // comparison has to be with the rules as they actually run, not with a worse
+  // version of them.
+  const roles = classifyRoles({ typeLine: card.type_line, oracleText: frontFaceOracle(card.oracle_text), keywords: card.keywords ?? [] });
   const themes = cardThemes({ typeLine: card.type_line, oracleText: card.oracle_text }, isCreatureType);
   // The rules produce a KIND and nothing else. Every limit is filled with the
   // value the rules implicitly assume, which is "no limit" — that is precisely
@@ -272,3 +282,5 @@ for (const [m, r] of Object.entries(report.models)) {
   }
 }
 console.log(`\n${disagreements.length} disagreements -> out/disagreements.json`);
+
+publishArtifacts(["out/score.json"], process.argv.includes("--publish"));
