@@ -97,10 +97,10 @@ thresholds and modality are ties at 1.000 — three limits that need no model ch
 at all, and that today's rules still get none of.
 
 **The job columns are the finding nobody expected — with one correction.** On
-PRECISION all three sit within 4.5 points (0.736 to 0.781), so a pass bought to
-find job KINDS more accurately would be close to a waste. On RECALL they do not:
-Sonnet finds 0.820 against the rules' 0.722, which is 168 true jobs against 148 —
-a 13.5% relative gain, not a rounding difference. So the limits are where nearly
+PRECISION all three sit within 4 points (0.762 to 0.8), so a pass bought to find job
+KINDS more accurately would be close to a waste. On RECALL they do not: Sonnet finds
+0.834 against the rules' 0.717, which is 171 true jobs against 147 — a 16% relative
+gain, not a rounding difference. So the limits are where nearly
 all the value is, and Sonnet additionally finds about one job in eight that the
 rules miss.
 
@@ -175,7 +175,8 @@ both.
    used another is not interpretable, so the whole sample was re-run for $0.8589.
 
    **It changed conclusions, not just digits.** Both models now score 1.000 on
-   tribal restrictions (Haiku was 0.964), and `trigger` FLIPPED from Haiku to
+   tribal restrictions, where Haiku had previously missed one, and `trigger`
+   FLIPPED from Haiku to
    Sonnet, 0.942 against 0.867. The prompt now uses the repository's own
    `castFaceText`, which keeps both halves of a split or adventure card because both
    are castable, and the baseline uses `frontFaceOracle` because that is what the
@@ -198,9 +199,9 @@ both.
    every sacrifice-for-mana land are the same shape. Forcing it into
    `makesTreasure` would have recreated the very false match the kinds exist to
    prevent, both being "one-time mana". Raised with 2b, ruled by d9: a fourth
-   kind, `burstMana`. Seven gold jobs carry it. (The 0.955 / 0.875 above is
-   accuracy over ALL 22 and 24 paired ramp jobs; nothing committed reports
-   per-kind accuracy, so there is no separate `burstMana` figure to quote.)
+   kind, `burstMana`. Seven gold jobs carry it. (The rampKind row above is
+   accuracy over ALL paired ramp jobs; nothing committed reports per-kind accuracy,
+   so there is no separate `burstMana` figure to quote.)
 
 4. **Caching the instructions cost more than it saved.** d9 asked for cached
    instructions. Measured: Sonnet wrote the cache 37 times and read it 6, because

@@ -30,18 +30,6 @@ const report = readFileSync(REPORT, "utf8");
 const score = JSON.parse(readFileSync(SCORE, "utf8")) as Score;
 const cost = JSON.parse(readFileSync(COST, "utf8")) as Cost;
 
-/** Every figure the report states, with where it comes from. */
-const claims = () => {
-  const out: { what: string; value: string }[] = [];
-  const add = (what: string, v: number | string, digits = 3) =>
-    out.push({ what, value: typeof v === "number" ? v.toFixed(digits) : v });
-  for (const [m, r] of Object.entries(score.models)) {
-    add(`${m} job precision`, r.jobs.precision);
-    add(`${m} job recall`, r.jobs.recall);
-  }
-  return out;
-};
-
 describe("the report agrees with the artifacts it cites", () => {
   // The full-scores table, read as a table rather than by regex over the prose: a
   // row is `| label | haiku | sonnet | rules |`.
@@ -105,16 +93,33 @@ describe("the report agrees with the artifacts it cites", () => {
     expect(report).toContain(`$${cost.totalUsd.toFixed(4)}`);
   });
 
-  // A figure that appears nowhere in the artifacts is the failure mode that started
-  // this: the first draft's headline came from an uncommitted command.
-  it("quotes no job precision or recall that the artifact does not contain", () => {
-    for (const { what, value } of claims()) {
-      // Only checks that the stated value EXISTS somewhere in the artifact set, which
-      // is weaker than the table checks above and catches a stale duplicate in prose.
-      expect([
-        ...Object.values(score.models).map((r) => String(r.jobs.precision)),
-        ...Object.values(score.models).map((r) => String(r.jobs.recall)),
-      ], what).toContain(String(Number(value)));
+  // THE PROSE, not just the tables. The checks above read table ROWS, so a stale
+  // figure in a sentence — which is where three of this branch's drift findings
+  // actually lived — passes all of them.
+  //
+  // An earlier version of this test was worse than useless: it read the values out of
+  // the score artifact and then asserted them against the score artifact, so it was a
+  // tautology that passed over the very stale prose it was written to catch. Caught in
+  // review, which is the right outcome and an uncomfortable one for a test whose whole
+  // job is to stop things reaching review.
+  it("quotes no accuracy-shaped figure the artifacts do not contain", () => {
+    const known = new Set<string>();
+    for (const r of Object.values(score.models)) {
+      known.add(String(r.jobs.precision));
+      known.add(String(r.jobs.recall));
+      for (const v of Object.values(r.limits)) {
+        if (v.informativeAccuracy !== null) known.add(String(v.informativeAccuracy));
+      }
     }
+    // `0.NNN` is the shape every accuracy in this report takes. Table rows are
+    // excluded because the checks above already compare them cell by cell, and a
+    // ratio written as a fraction or a percentage is not this shape.
+    const prose = report.split("\n").filter((l) => !l.trimStart().startsWith("|"));
+    const seen = new Set<string>();
+    for (const line of prose) {
+      for (const m of line.matchAll(/(?<![\d.])0\.\d{3}(?![\d])/g)) seen.add(m[0]);
+    }
+    const unknown = [...seen].filter((v) => !known.has(v) && !known.has(String(Number(v))));
+    expect(unknown, `figures in prose that no artifact records: ${unknown.join(", ")}`).toEqual([]);
   });
 });
