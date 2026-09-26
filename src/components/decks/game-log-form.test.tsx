@@ -238,6 +238,30 @@ describe("GameLogForm", () => {
     expect(mana()[0]).toBeChecked();
   });
 
+  // Hugh, 2026-09-27: a FIRST game's save holds the saving state rather than collapsing, so the
+  // empty state never paints again in the beat before the revalidated game arrives.
+  it("holds a first game's save in its saving state rather than collapsing", async () => {
+    logGame.mockResolvedValueOnce({ ok: true });
+    const onSaved = vi.fn();
+    render(<GameLogForm deckId="deck_1" isFirstGame onSaved={onSaved} onAnnounce={vi.fn()} />);
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+    fireEvent.click(save());
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(true, "win"));
+    const saving = screen.getByRole("button", { name: gameLogCopy.form.saving });
+    expect(saving).toBeDisabled();
+    expect(screen.queryByRole("button", { name: gameLogCopy.form.open })).toBeNull();
+  });
+
+  it("collapses after any later game's save", async () => {
+    logGame.mockResolvedValueOnce({ ok: true });
+    mount();
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+    fireEvent.click(save());
+    expect(await screen.findByRole("button", { name: gameLogCopy.form.open })).toBeInTheDocument();
+  });
+
   // State 13.
   it("cancels without a confirm", () => {
     mount();

@@ -86,6 +86,7 @@
     "probe:review-locks": "node scripts/probe-review-locks.mjs",
     "probe:versions": "node scripts/probe-version-history.mjs",
     "probe:games-empty": "node scripts/probe-games-empty.mjs",
+    "probe:games-log": "node scripts/probe-games-log.mjs",
     "probe:home": "node scripts/probe-refresh-home.mjs",
     "probe:colour-box": "node scripts/probe-chassis-colour.mjs",
     "probe:scroll-lock": "node scripts/probe-scroll-lock.mjs",

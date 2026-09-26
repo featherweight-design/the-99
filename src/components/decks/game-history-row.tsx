@@ -108,7 +108,10 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
           : deckVersioningCopy.stamp.value(game.versionNumber)}
       </span>
 
-      <span className="flex-1 min-w-0 flex flex-wrap gap-[6px]">
+      {/* The handoff's phone row: result and meta on line one, the chips wrapping on line two
+          (64px minimum). `order-last` with a full basis is what moves them down there; sharing line
+          one, they were squeezed into what the meta, stamp and delete left over (Hugh, 2026-09-27). */}
+      <span data-marks className="order-last basis-full md:order-none md:basis-auto flex-1 min-w-0 flex flex-wrap gap-[6px]">
         {marks.length === 0 ? (
           <span className="font-mono text-[10.5px] text-fg-locked">{gameLogCopy.history.noMarks}</span>
         ) : (
@@ -140,7 +143,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
       </span>
 
       {confirming ? (
-        <span className="flex-none flex items-center gap-[8px]">
+        <span className="ml-auto md:ml-0 flex-none flex items-center gap-[8px]">
           <span className="text-[11.5px] text-fg-body">{gameLogCopy.history.confirm}</span>
           <button
             type="button"
@@ -164,14 +167,14 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
           type="button"
           aria-label={gameLogCopy.history.delete}
           onClick={() => setConfirming(true)}
-          className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer"
+          className="ml-auto md:ml-0 flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer"
         >
           ×
         </button>
       )}
 
       {error && (
-        <span className="w-full">
+        <span className="order-last w-full">
           <MutationError message={error} />
         </span>
       )}

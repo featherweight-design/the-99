@@ -135,6 +135,12 @@ export function GameLogForm({
   const describedById = `${noteId}-desc`;
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // A FIRST game's save holds the form in its saving state until the game is on the page (Hugh,
+  // 2026-09-27). The action's revalidated payload lands a beat after the transition resolves, and
+  // collapsing on resolve painted the empty state's pitch again under a collapsed CTA in that beat.
+  // The empty state unmounts this form when the game arrives, so nothing ever releases the hold.
+  const [holding, setHolding] = useState(false);
+  const busy = isPending || holding;
   const openButton = useRef<HTMLButtonElement>(null);
   const movedTimer = useRef<number | null>(null);
   const resultRoving = useRoving(RESULT_VALUES, setResult);
@@ -232,7 +238,7 @@ export function GameLogForm({
   const [prefix, dateWord] = dateParts(dateLabel);
 
   function submit() {
-    if (!result || isPending || dateUnusable) return;
+    if (!result || busy || dateUnusable) return;
     startTransition(async () => {
       setError(null);
       const outcome = await logGame(deckId, {
@@ -254,7 +260,8 @@ export function GameLogForm({
         return;
       }
       onSaved(isFirstGame, result);
-      collapse();
+      if (isFirstGame) setHolding(true);
+      else collapse();
     });
   }
 
@@ -300,7 +307,7 @@ export function GameLogForm({
             autoFocus
             value={playedAt}
             max={todayKey}
-            disabled={isPending}
+            disabled={busy}
             // The same sentence the button shows, so the field's name follows
             // the value rather than claiming every date is today's.
             aria-label={dateLabel}
@@ -310,7 +317,7 @@ export function GameLogForm({
         ) : (
           <button
             type="button"
-            disabled={isPending}
+            disabled={busy}
             onClick={() => setDateOpen(true)}
             className="font-mono text-[10px] md:text-[11px] text-fg-faint border-b border-dashed border-border-dashed cursor-pointer"
           >
@@ -345,7 +352,7 @@ export function GameLogForm({
                   // stop, because a group where every option is skipped would
                   // have none.
                   tabIndex={on || (result === null && i === 0) ? 0 : -1}
-                  disabled={isPending}
+                  disabled={busy}
                   onKeyDown={resultRoving.onKeyDown(i)}
                   onClick={() => setResult(r.value)}
                   className={
@@ -386,7 +393,7 @@ export function GameLogForm({
                   role="radio"
                   aria-checked={on}
                   tabIndex={on ? 0 : -1}
-                  disabled={isPending}
+                  disabled={busy}
                   onKeyDown={podRoving.onKeyDown(i)}
                   onClick={() => setPodSize(n)}
                   className={
@@ -412,7 +419,7 @@ export function GameLogForm({
           column="worked"
           selected={worked}
           moved={moved}
-          disabled={isPending}
+          disabled={busy}
           onToggle={toggle}
         />
         <AxisColumn
@@ -421,7 +428,7 @@ export function GameLogForm({
           column="hurt"
           selected={hurt}
           moved={moved}
-          disabled={isPending}
+          disabled={busy}
           onToggle={toggle}
         />
       </div>
@@ -470,7 +477,7 @@ export function GameLogForm({
           type="text"
           value={note}
           maxLength={deckTuningCopy.note.maxLength}
-          disabled={isPending}
+          disabled={busy}
           onChange={(e) => {
             setNote(e.target.value);
             setNoteTouched(true);
@@ -496,18 +503,18 @@ export function GameLogForm({
         <button
           type="button"
           onClick={submit}
-          disabled={!result || isPending || dateUnusable}
+          disabled={!result || busy || dateUnusable}
           // The one filled button on this rendered screen, and bone: accent
           // means "in use / to buy" and is not available as an action fill.
           // R3 §1.
           className={`w-full md:w-auto h-[48px] md:h-auto md:px-[20px] md:py-[11px] rounded-[8px] text-[14.5px] md:text-[14px] font-semibold cursor-pointer ${PRIMARY} disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          {isPending ? gameLogCopy.form.saving : gameLogCopy.form.save}
+          {busy ? gameLogCopy.form.saving : gameLogCopy.form.save}
         </button>
         <button
           type="button"
           onClick={collapse}
-          disabled={isPending}
+          disabled={busy}
           className="w-full md:w-auto h-[44px] md:h-auto md:px-[18px] md:py-[11px] rounded-[8px] text-[13.5px] font-medium bg-transparent border border-border-strong text-fg-muted cursor-pointer"
         >
           {gameLogCopy.form.cancel}
