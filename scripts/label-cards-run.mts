@@ -149,7 +149,7 @@ const pending = unreconciled(ledger);
 if (pending.length > 0 && !process.argv.includes("--force")) {
   console.error(`\nREFUSING: ${pending.length} earlier run(s) submitted batches that were never collected:`);
   for (const [key, r] of pending) console.error(`  ${key}  reserved $${(r.reservedUsd ?? 0).toFixed(4)}`);
-  console.error("Run `node scripts/label-cards-collect.mjs` to reconcile them, or pass --force if you know they are dead.");
+  console.error("Run `pnpm tsx scripts/label-cards-collect.mts` to reconcile them, or pass --force if you know they are dead.");
   process.exit(1);
 }
 
@@ -216,4 +216,4 @@ for (const [key, model] of Object.entries(chosen) as [keyof typeof MODELS, strin
   writeFileSync("out/batches.json", JSON.stringify({ runId, submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
   console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests)`);
 }
-console.log("\nbatch ids written to out/batches.json — poll with `node scripts/label-cards-collect.mjs`");
+console.log("\nbatch ids written to out/batches.json — poll with `pnpm tsx scripts/label-cards-collect.mts`");

@@ -26,12 +26,12 @@ import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
+import type { Job } from "../src/lib/labels/types.js";
 
-type Job = {
-  space: string; kind: string; rampKind?: string | null;
-  restrictedTo: string | null; trigger: string; recurrence: string;
-  threshold: { stat: string; op: string; value: number } | null; modal: boolean;
-};
+// The SHARED `Job`, not a local one. This file declared its own — a fourth description of
+// a job, beside the validator's, the stored type's and the pairing module's — and two of
+// those disagreed about whether a limit could be absent. `src/lib/labels` is now the one
+// definition, which is what the plan's PR 2 is for.
 
 const die = (why: string): never => { console.error(why); process.exit(1); };
 

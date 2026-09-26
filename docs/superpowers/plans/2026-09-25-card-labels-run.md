@@ -45,7 +45,7 @@ kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
   key this repo does not have). **If the projection moves past $50 once real batches
   report their tokens, PAUSE and report rather than continuing.** A hard `--max-usd`
   flag REFUSES rather than truncating. The sample's estimator is the model
-  (`scripts/label-cards-run.mjs`), including its refusal path.
+  (`scripts/label-cards-run.mts`), including its refusal path.
 - `ANTHROPIC_API_KEY` through `scripts/lib/env.mjs`. Never printed, never logged.
 - **The job vocabulary is 2b's** (`src/lib/recs/roles.ts`, `src/lib/recs/themes.ts`)
   and the four ramp kinds are d9's ruling. Asserted against those files by
@@ -97,6 +97,7 @@ card_labels
 `src/lib/labels/{schema,prompt,parse}.ts`; modify `package.json`.
 
 Promote the sample's four scripts into the app's own modules. `card-labels-schema.mjs`
+(DONE in PR 2: it is now `src/lib/labels/schema.ts`, and every consumer imports it)
 and `card-labels-prompt.mjs` move under `src/lib/labels/` so the READER and the
 writer share one definition of a job; the sample's copies then import from there and
 stop being a second source of truth.
@@ -315,7 +316,7 @@ what tells you whether the stored labels or the matching rule is at fault.
 **Files:** create `scripts/check-card-labels.mts`.
 
 After the run, score the STORED labels for the 108 gold cards against
-`card-labels-gold.mjs`, using the sample's scorer, and compare to the sample's
+`card-labels-gold.mts`, using the sample's scorer, and compare to the sample's
 figures:
 
 | | sample (Sonnet) | after the run |

@@ -8,12 +8,24 @@ import "./lib/env.mjs";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { writeMeasured } from "./lib/card-labels-ledger.mjs";
-import { costOf } from "./lib/card-labels-pricing.mjs";
+import { costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
-import { validateJob } from "./lib/card-labels-schema.mjs";
+import { validateJob } from "../src/lib/labels/schema.js";
+import type { Job } from "../src/lib/labels/types.js";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
-const { runId, submitted, batches } = JSON.parse(readFileSync("out/batches.json", "utf8"));
+/**
+ * What the runner wrote at submission: the run it belongs to, the batch id per model, and
+ * the card names each request asked about, indexed by the request's own number.
+ *
+ * Typed rather than left as `any` because `batches[idx]` is how a returned name is matched
+ * back to the card it was asked about — the reconciliation the two-faced-card handling
+ * below depends on — so an index that silently yields `undefined` is the failure that turns
+ * a returned label into a phantom miss.
+ */
+type BatchFile = { runId: string; submitted: Record<string, string>; batches: string[][] };
+const { runId, submitted, batches }: BatchFile =
+  JSON.parse(readFileSync("out/batches.json", "utf8"));
 if (!runId) throw new Error("out/batches.json has no runId — it predates the run-id ledger; re-run the submission");
 let collected = 0;
 /** Publication is gated on THIS run having ended every batch it submitted. */
@@ -21,7 +33,7 @@ let allEnded = false;
 mkdirSync("out", { recursive: true });
 
 /** A model may fence its JSON however it likes; the reply is data, not code. */
-const parseReply = (text) => {
+const parseReply = (text: string): unknown => {
   const t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
   try { return JSON.parse(t); } catch { /* fall through to the bracket scan */ }
   const a = t.indexOf("["), b = t.lastIndexOf("]");
@@ -30,8 +42,20 @@ const parseReply = (text) => {
 };
 
 let grandTotal = 0;
-/** Written out so the report's dollar figures come from an artifact, not prose. */
-const measured = {};
+/**
+ * Written out so the report's dollar figures come from an artifact, not prose.
+ *
+ * Typed, because the projections below multiply `usdPerCard` and
+ * `card-labels-report-check.test.mts` asserts that the artifact's figures are exactly this
+ * arithmetic — `usdPerCard` is ROUNDED before the multiply, which is the reproducibility
+ * rule that check exists to pin.
+ */
+type Measured = {
+  cards: number; notReturned: number; rejectedJobs: number;
+  tokens: { in: number; out: number; cacheWrite: number; cacheRead: number };
+  usd: number; usdPerCard: number;
+};
+const measured: Record<string, Measured> = {};
 for (const [key, id] of Object.entries(submitted)) {
   const batch = await client.messages.batches.retrieve(id);
   if (batch.processing_status === "ended") collected++;
@@ -40,14 +64,14 @@ for (const [key, id] of Object.entries(submitted)) {
     continue;
   }
 
-  const labels = {};
-  const malformed = [];
+  const labels: Record<string, Job[] | null> = {};
+  const malformed: string[] = [];
   /** Names the model returned that this batch never asked about. */
-  const unexpected = [];
+  const unexpected: string[] = [];
   let inTok = 0, outTok = 0, cacheW = 0, cacheR = 0, errored = 0;
 
   /** Every card in a request we cannot read is a MISS, recorded rather than absent. */
-  const markMissing = (customId) => {
+  const markMissing = (customId: string) => {
     const idx = Number(customId.split("-")[1]);
     for (const name of batches[idx] ?? []) if (!(name in labels)) labels[name] = null;
   };
@@ -65,7 +89,17 @@ for (const [key, id] of Object.entries(submitted)) {
 
     const idx = Number(entry.custom_id.split("-")[1]);
     const asked = batches[idx];
-    const parsed = parseReply(entry.result.message.content.map((c) => c.text ?? "").join(""));
+    // The SDK's content blocks are a union; only a text block carries `text`. Narrowing by
+    // the discriminant rather than reaching for `.text` on every block, which no longer
+    // typechecks and never described a tool-use or thinking block correctly.
+    //
+    // No guard on `entry.result` here: the `!== "succeeded"` continue above has already
+    // narrowed it, which is why `.message.usage` reads cleanly on the line after it. A
+    // second `"message" in entry.result` check was always true and its fallback arm
+    // unreachable — dead code wearing a safety check's clothes.
+    const parsed = parseReply(
+      entry.result.message.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+    );
     if (!Array.isArray(parsed)) { malformed.push(`${entry.custom_id}: unparseable`); markMissing(entry.custom_id); continue; }
 
     // A TWO-FACED CARD'S NAME. Sonnet returned `Soulcipher Board` and
@@ -84,7 +118,7 @@ for (const [key, id] of Object.entries(submitted)) {
     // accepted here enters `labels`, and `label-cards-agree` iterates one model's
     // keys, so a hallucination returned by both models would count as an agreeing
     // random card and move the denominator.
-    const resolveName = (n) => (asked.includes(n) ? n : faceOf.get(n) ?? null);
+    const resolveName = (n: string) => (asked.includes(n) ? n : faceOf.get(n) ?? null);
 
     for (const card of parsed) {
       if (!card?.name) continue;
@@ -120,7 +154,10 @@ for (const [key, id] of Object.entries(submitted)) {
     for (const name of asked) if (!(name in labels)) labels[name] = labels[name] ?? null;
   }
 
-  const cost = costOf(key, { i: inTok, o: outTok, cw: cacheW, cr: cacheR });
+  // `key` comes from the batches file, so it is a string as far as the type system knows.
+  // `costOf` throws on a model it has no rates for, which is the check that matters and is
+  // stricter than the cast — a wrong key fails loudly rather than pricing at zero.
+  const cost = costOf(key as ModelKey, { i: inTok, o: outTok, cw: cacheW, cr: cacheR });
   grandTotal += cost;
 
   const missing = Object.entries(labels).filter(([, v]) => v === null).length;

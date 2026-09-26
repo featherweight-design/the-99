@@ -6,14 +6,13 @@
 // this algorithm were wrong, and none of them moved a published figure, so the
 // aggregate scores could never have caught them. Only direct tests can.
 
-/**
- * @typedef {{ space: string, kind: string, rampKind?: string|null,
- *   restrictedTo: string|null, trigger: string, recurrence: string,
- *   threshold: { stat: string, op: string, value: number }|null, modal: boolean }} PairJob
- */
+// Jobs here are the SHARED `Job`, not a local shape. This module used to declare its own
+// loose `PairJob` typedef — a third description of a job beside the validator's and the
+// stored type's — which is exactly the duplication this module's neighbours were promoted
+// into `src/lib/labels/` to end.
+import type { Job } from "../../src/lib/labels/types.js";
 
-/** @param {PairJob} j */
-const kindKey = (j) => `${j.space}:${j.kind}`;
+const kindKey = (j: Job) => `${j.space}:${j.kind}`;
 
 /**
  * Pairs gold jobs with predicted jobs of the SAME KIND, maximising total limit
@@ -41,22 +40,24 @@ const kindKey = (j) => `${j.space}:${j.kind}`;
  */
 const PERMUTATION_LIMIT = 6;
 /**
- * @param {PairJob[]} gold
- * @param {PairJob[]} predicted
- * @param {(a: PairJob, b: PairJob) => number} agreement
- * @returns {[PairJob, PairJob][]}
+ * @param gold
+ * @param predicted
+ * @param agreement how well two jobs' limits agree; higher is better
+ * @returns each gold job paired with the predicted job assigned to it
  */
-export function bestPairing(gold, predicted, agreement) {
-  /** @type {[PairJob, PairJob][]} */
-  const pairs = [];
-  /** @type {Map<string, PairJob[]>} */
-  const byKind = new Map();
+export function bestPairing(
+  gold: Job[],
+  predicted: Job[],
+  agreement: (a: Job, b: Job) => number,
+): [Job, Job][] {
+  const pairs: [Job, Job][] = [];
+  const byKind = new Map<string, Job[]>();
   for (const g of gold) {
     const k = kindKey(g);
     byKind.set(k, [...(byKind.get(k) ?? []), g]);
   }
   for (const [kind, golds] of byKind) {
-    const cands = predicted.filter((q) => kindKey(q) === kind);
+    const cands = predicted.filter((q: Job) => kindKey(q) === kind);
     if (cands.length === 0) continue;
 
     if (golds.length > PERMUTATION_LIMIT || cands.length > PERMUTATION_LIMIT) {
@@ -77,23 +78,23 @@ export function bestPairing(gold, predicted, agreement) {
     // each gets. `k` is how many pairs are possible at all.
     const k = Math.min(golds.length, cands.length);
     let bestTotal = -1;
-    /** @type {[PairJob, PairJob][]} */
-    let bestPairs = [];
-    /** @type {number[][]} */
-    const goldSubsets = [];
-    const chooseGold = (/** @type {number} */ start, /** @type {number[]} */ picked) => {
+      let bestPairs: [Job, Job][] = [];
+    const goldSubsets: number[][] = [];
+    const chooseGold = (start: number, picked: number[]): void => {
       if (picked.length === k) { goldSubsets.push([...picked]); return; }
       for (let i = start; i < golds.length; i++) chooseGold(i + 1, [...picked, i]);
     };
     chooseGold(0, []);
 
     for (const gsub of goldSubsets) {
-      const walk = (/** @type {number[]} */ chosen, /** @type {number[]} */ left) => {
+      const walk = (chosen: number[], left: number[]): void => {
         if (chosen.length === k) {
-          const total = chosen.reduce((a, ci, n) => a + agreement(golds[gsub[n]], cands[ci]), 0);
+          const total = chosen.reduce(
+            (a: number, ci: number, n: number) => a + agreement(golds[gsub[n]], cands[ci]), 0,
+          );
           if (total > bestTotal) {
             bestTotal = total;
-            bestPairs = chosen.map((ci, n) => [golds[gsub[n]], cands[ci]]);
+            bestPairs = chosen.map((ci, n): [Job, Job] => [golds[gsub[n]], cands[ci]]);
           }
           return;
         }

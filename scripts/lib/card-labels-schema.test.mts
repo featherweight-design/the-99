@@ -11,7 +11,8 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { ROLES, THEMES, validateJob, jobKey } from "./card-labels-schema.mjs";
+import { jobKey, validateJob } from "../../src/lib/labels/schema.js";
+import { ROLES, THEMES, type Job } from "../../src/lib/labels/types.js";
 
 /** The union in the source file is the authority, not the RULES table beside it. */
 const unionMembers = (file: string, decl: string) => {
@@ -34,7 +35,8 @@ describe("the label vocabulary is 2b's", () => {
   // ever stops being true the space field may be removable -- but silently
   // merging the two would make a role hit indistinguishable from a theme hit.
   it("still has the collision the space field exists for", () => {
-    expect(ROLES.filter((r) => THEMES.includes(r))).toEqual(["draw"]);
+    const themes: readonly string[] = THEMES;
+    expect(ROLES.filter((r) => themes.includes(r))).toEqual(["draw"]);
   });
 });
 
@@ -94,8 +96,8 @@ describe("validateJob", () => {
 });
 
 describe("jobKey", () => {
-  const base = {
-    space: "role" as const, kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
+  const base: Job = {
+    space: "role", kind: "ramp", rampKind: "tapsForMana", restrictedTo: null,
     trigger: "none", recurrence: "repeatable", threshold: null, modal: false,
   };
 
@@ -107,13 +109,38 @@ describe("jobKey", () => {
   });
 
   it("separates a Wolf-restricted counter from an unrestricted one", () => {
-    const anyone = jobKey({ ...base, kind: "counters", space: "theme", rampKind: undefined });
-    const wolves = jobKey({ ...base, kind: "counters", space: "theme", rampKind: undefined, restrictedTo: "Wolf" });
+    // `rampKind` is DROPPED rather than set to undefined: the union forbids it on a theme
+    // job, and the shared type is what makes that visible here.
+    const { rampKind: _drop, ...limits } = base;
+    const anyone = jobKey({ ...limits, kind: "counters", space: "theme" });
+    const wolves = jobKey({ ...limits, kind: "counters", space: "theme", restrictedTo: "Wolf" });
     expect(anyone).not.toBe(wolves);
   });
 
   it("is equal for two jobs that genuinely agree", () => {
     expect(jobKey(base)).toBe(jobKey({ ...base }));
+  });
+
+  // INJECTIVITY. The joined form rendered `restrictedTo: null` and the literal string "-"
+  // identically, and a value containing the `|` separator could shift the field
+  // boundaries — either way two different labels produced one key and would have been
+  // reported as agreeing. Neither shape occurs in the gold set, which is why nothing
+  // caught it.
+  it("separates a null restriction from the literal string that used to render the same", () => {
+    expect(jobKey(base)).not.toBe(jobKey({ ...base, restrictedTo: "-" }));
+  });
+
+  it("does not let a restriction containing the old separator shift the fields", () => {
+    const piped = jobKey({ ...base, restrictedTo: "a|b" });
+    const shifted = jobKey({ ...base, restrictedTo: "a", trigger: "b" as typeof base.trigger });
+    expect(piped).not.toBe(shifted);
+  });
+
+  // The one collapse that is DELIBERATE: an absent `rampKind` and an explicit null are the
+  // same label, which is the rule `validateJob` applies too.
+  it("treats an absent rampKind and an explicit null as one label", () => {
+    const { rampKind: _drop, ...noKind } = base;
+    expect(jobKey({ ...noKind, rampKind: null })).toBe(jobKey(noKind as typeof base));
   });
 });
 
@@ -175,7 +202,8 @@ describe("the gold set", () => {
   // `src/lib/recs/roles.ts` by the first test in this file, so the derivation is held
   // at both ends.
   const COARSE = ROLES.filter((r) => r !== "land" && r !== "ramp");
-  const isRampKind = (role: string) => !COARSE.includes(role);
+  const coarse: readonly string[] = COARSE;
+  const isRampKind = (role: string) => !coarse.includes(role);
 
   // TITLE SAYS THREE FIXTURES, because that is all this test visits.
   //

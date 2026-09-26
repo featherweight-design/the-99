@@ -6,24 +6,24 @@
  * the stand-in matcher; `card_labels` exists ahead of both so the storage can be
  * reviewed on its own.
  *
- * **Why the vocabulary is in two files, and why a guard rather than one source.** The
- * runtime validator the model's output is checked against is
- * `scripts/lib/card-labels-schema.mjs`, and the single-source fix — import these
- * constants from it, or make it `.mts` and import them from here — does not work today
- * in either direction. A literal union cannot be derived from a plain `.js` array
- * without restating the literals in JSDoc, which is the same duplication; and the
- * module cannot become `.mts`, because `label-cards-collect.mjs` and
- * `card-labels-gold.mjs` import it and are invoked with `pnpm node`, which cannot load
- * a TypeScript module at all (measured: `ERR_MODULE_NOT_FOUND`). Converting it means
- * converting those and re-pointing their documented invocations, which is Task 2's job.
+ * The vocabulary is CANONICAL here, and `schema.ts` beside it is the validator that
+ * enforces it. There is one copy: `scripts/lib/card-labels-schema.mjs` held a second for
+ * one PR, because the sample's collector ran under bare `node` and could not load
+ * TypeScript, and a parity test held the two together. That whole graph is `.mts` now and
+ * the duplicate is deleted, so nothing here needs a guard.
  *
- * So `types.test.ts` holds the two together until then, and PR 2 of that plan retires
- * BOTH the duplicate and the guard — a guard over one source is a tautology and should
- * be deleted rather than left asserting nothing.
+ * `Role` and `Theme` come from `src/lib/recs`, tied by `satisfies` AND by an exhaustiveness
+ * assertion — `satisfies` alone rejects a member that is not a `Role` and says nothing
+ * about one that is missing.
  */
 
 import type { Role } from "../recs/roles";
 import type { Theme } from "../recs/themes";
+
+// Re-exported because a label's `kind` IS one of these, so any consumer typing a job needs
+// them — and importing them from two places would invite a third copy, which is the whole
+// thing this module exists to prevent.
+export type { Role, Theme };
 
 /**
  * The five job kinds in `role` space, tied to `Role` in src/lib/recs/roles.ts.

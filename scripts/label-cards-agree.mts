@@ -8,16 +8,18 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
+import type { Job } from "../src/lib/labels/types.js";
 
 const h = JSON.parse(readFileSync("out/labels-haiku.json", "utf8"));
 const s = JSON.parse(readFileSync("out/labels-sonnet.json", "utf8"));
 const gold = new Set((await import("./lib/card-labels-gold.mjs")).GOLD.map((r) => r.name));
 
-const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"];
-const kindKey = (j) => `${j.space}:${j.kind}`;
-const agree = (x, y) => LIMITS.filter((f) => lim(x, f) === lim(y, f)).length;
+const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"] as const;
+type Limit = (typeof LIMITS)[number];
+const kindKey = (j: Job) => `${j.space}:${j.kind}`;
+const agree = (x: Job, y: Job) => LIMITS.filter((f) => lim(x, f) === lim(y, f)).length;
 
-const lim = (j, f) => f === "threshold"
+const lim = (j: Job, f: Limit) => f === "threshold"
   ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
   : String(j[f] ?? "none");
 
@@ -76,7 +78,7 @@ for (const name of Object.keys(h)) {
   else disagreeing.push({ name, haiku: ak.join(","), sonnet: bk.join(",") });
 }
 
-const pct = (n, d) => d ? `${((100 * n) / d).toFixed(1)}%` : "-";
+const pct = (n: number, d: number) => d ? `${((100 * n) / d).toFixed(1)}%` : "-";
 console.log(`random cards compared: ${cards}${skipped ? ` (${skipped} skipped: returned by one model only)` : ""}`);
 console.log(`  same job SET exactly:        ${sameJobs} (${pct(sameJobs, cards)})`);
 console.log(`  same jobs AND all limits:    ${sameEverything} (${pct(sameEverything, cards)})`);
