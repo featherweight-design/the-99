@@ -17,6 +17,8 @@ const REPORT = "docs/superpowers/plans/2026-09-25-card-labels-report.md";
 const SCORE = "docs/superpowers/benchmarks/2026-09-25-card-labels-score.json";
 const COST = "docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json";
 const AGREE = "docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json";
+/** The Sonnet 5 sample, run separately and published on its own — see its `_note`. */
+const SONNET5 = "docs/superpowers/benchmarks/2026-09-26-card-labels-sonnet5.json";
 
 /** The shapes these artifacts actually have, so the checks read them without casts. */
 type ModelScore = {
@@ -25,7 +27,7 @@ type ModelScore = {
   spuriousRestrictions: number;
 };
 type Score = { models: Record<string, ModelScore> };
-type Cost = { totalUsd: number; projections: Record<string, { fullRunUsd: number }> };
+type Cost = { totalUsd: number; projections: Record<string, { fullRunUsd: number; perSetUsd: number }> };
 type Agree = {
   cards: number; sameJobs: number; sameEverything: number;
   jobTally: { both: number; haikuOnly: number; sonnetOnly: number };
@@ -38,6 +40,18 @@ const plain = report.replace(/\*\*/g, "");
 const score = JSON.parse(readFileSync(SCORE, "utf8")) as Score;
 const cost = JSON.parse(readFileSync(COST, "utf8")) as Cost;
 const agree = JSON.parse(readFileSync(AGREE, "utf8")) as Agree;
+// Sonnet 5 lands in the SAME structures the other two are read from, so every check
+// below widens by naming it in a model list rather than by growing a parallel branch.
+// Its dollars are a projection at 4.5's rates and the report says so; the figures
+// still have to match the artifact that published them.
+const sonnet5 = JSON.parse(readFileSync(SONNET5, "utf8")) as {
+  score: ModelScore; projection: { fullRunUsd: number; perSetUsd: number }; cost: { usd: number };
+};
+score.models.sonnet5 = sonnet5.score;
+cost.projections.sonnet5 = sonnet5.projection;
+
+/** Every model column in the tables, in the order they are drawn. */
+const COLUMNS = ["haiku", "sonnet", "sonnet5", "textRules"] as const;
 
 describe("the report agrees with the artifacts it cites", () => {
   // The full-scores table, read as a table rather than by regex over the prose: a
@@ -45,29 +59,25 @@ describe("the report agrees with the artifacts it cites", () => {
   const row = (label: string) => {
     const line = report.split("\n").find((l) => l.startsWith(`| ${label} `));
     if (!line) throw new Error(`no table row for "${label}" in ${REPORT}`);
-    return line.split("|").slice(2, 5).map((c) => c.replace(/\*/g, "").trim());
+    return line.split("|").slice(2, 2 + COLUMNS.length).map((c) => c.replace(/\*/g, "").trim());
   };
 
   it("states the job precision the artifact records", () => {
     expect(row("JOB precision")).toEqual([
-      String(score.models.haiku.jobs.precision),
-      String(score.models.sonnet.jobs.precision),
-      String(score.models.textRules.jobs.precision),
+      ...COLUMNS.map((m) => String(score.models[m].jobs.precision)),
     ]);
   });
 
   it("states the job recall the artifact records", () => {
     expect(row("JOB recall")).toEqual([
-      String(score.models.haiku.jobs.recall),
-      String(score.models.sonnet.jobs.recall),
-      String(score.models.textRules.jobs.recall),
+      ...COLUMNS.map((m) => String(score.models[m].jobs.recall)),
     ]);
   });
 
   for (const limit of ["rampKind", "trigger", "recurrence"]) {
     it(`states the ${limit} accuracy the artifact records`, () => {
       const cells = row(limit);
-      for (const [i, m] of ["haiku", "sonnet", "textRules"].entries()) {
+      for (const [i, m] of COLUMNS.entries()) {
         const want = score.models[m].limits[limit].informativeAccuracy;
         expect(Number(cells[i]), `${limit} for ${m}`).toBe(want);
       }
@@ -77,7 +87,7 @@ describe("the report agrees with the artifacts it cites", () => {
   for (const [label, key] of [["restrictedTo, tribal", "restrictedTo(tribal)"], ["restrictedTo, gating", "restrictedTo(gating)"]] as const) {
     it(`states the ${key} accuracy the artifact records`, () => {
       const cells = row(label);
-      for (const [i, m] of ["haiku", "sonnet", "textRules"].entries()) {
+      for (const [i, m] of COLUMNS.entries()) {
         expect(Number(cells[i]), `${key} for ${m}`).toBe(score.models[m].limits[key].informativeAccuracy);
       }
     });
@@ -85,17 +95,54 @@ describe("the report agrees with the artifacts it cites", () => {
 
   it("states the spurious counts the artifact records", () => {
     const cells = row("spurious restrictions invented");
-    for (const [i, m] of ["haiku", "sonnet", "textRules"].entries()) {
+    for (const [i, m] of COLUMNS.entries()) {
       expect(Number(cells[i]), `spurious for ${m}`).toBe(score.models[m].spuriousRestrictions);
     }
   });
 
   // The COST table is the one that had no artifact at all for two drafts.
-  it("states the full-run projections the cost artifact records", () => {
-    for (const m of ["haiku", "sonnet"]) {
+  //
+  // Read as a ROW rather than with `toContain`, and that is the third time this file
+  // has had to learn the same lesson: a `toContain` passes on ANY occurrence, so a
+  // figure quoted in both the table and a sentence goes stale in one of them
+  // invisibly. Caught by mutating $37.69 in the prose, which failed nothing.
+  const costRow = (label: string) => {
+    const line = report.split("\n").find((l) => l.startsWith(`| ${label} |`));
+    if (!line) throw new Error(`no cost row for "${label}" in ${REPORT}`);
+    return line.split("|").slice(2, 6).map((c) => c.replace(/[*$]/g, "").trim());
+  };
+
+  it("states the full-run projections the cost artifact records, in the table and in prose", () => {
+    for (const [m, label] of [["haiku", "Haiku 4.5"], ["sonnet", "Sonnet 4.5"], ["sonnet5", "Sonnet 5"]] as const) {
       const full = cost.projections[m].fullRunUsd.toFixed(2);
+      // The table cell, positionally — a figure elsewhere on the page cannot satisfy it.
+      expect(costRow(label)[2], `full-run cell for ${m}`).toBe(full);
+      // And the figure has to appear in the prose too, so the two cannot diverge.
       expect(report, `full-run cost for ${m}`).toContain(`$${full}`);
     }
+  });
+
+  // Every dollar figure in the PROSE must be one the ledger or the artifacts record.
+  // Without this, the check above passes while a sentence invents a projection.
+  it("quotes no dollar figure in prose that no artifact records", () => {
+    const known = new Set<string>([
+      // DERIVED from the artifacts, so these cannot go stale silently.
+      ...Object.values(cost.projections).map((p) => p.fullRunUsd.toFixed(2)),
+      ...Object.values(cost.projections).map((p) => p.perSetUsd.toFixed(2)),
+      cost.totalUsd.toFixed(4), sonnet5.cost.usd.toFixed(4),
+      // NAMED, with their provenance — the same treatment the report's 54% gets. Each
+      // is a figure no artifact holds, and listing it here is what makes a NEW
+      // unlisted figure a failure rather than noise.
+      "5", "5.00", "55", "50", // the caps: the sample's $5 and the run plan's $50/$55
+      "0.8459", // the first, contaminated run — ledger `out/spend.json`
+      "1.0367", "0.6017", // the two Sonnet 5 attempts — same ledger
+      "3.3432", // their sum, the whole spend against the sample cap
+      "28.36", // Sonnet 4.5 minus Haiku on the full run
+      "0.0854", "0.0784", // the caching measurement, quoted in Method as history
+    ]);
+    const prose = report.split("\n").filter((l) => !l.startsWith("| ")).join("\n");
+    const unknown = [...prose.matchAll(/\$(\d+(?:\.\d+)?)/g)].map((m) => m[1]).filter((v) => !known.has(v));
+    expect(unknown, `dollar figures in prose no artifact records: ${unknown.join(", ")}`).toEqual([]);
   });
 
   it("states the measured sample total the cost artifact records", () => {

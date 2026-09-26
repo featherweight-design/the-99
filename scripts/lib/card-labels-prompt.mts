@@ -132,16 +132,63 @@ export const renderBody = (cards: CardForPrompt[]) =>
  * on it: a hardcoded copy in the estimator means raising this doubles what the
  * requests permit while the cap still books the old figure.
  */
-export const MAX_TOKENS_PER_BATCH = 8000;
+export const MAX_TOKENS_PER_BATCH = (() => {
+  const raw = process.env.LABEL_MAX_TOKENS;
+  if (raw === undefined || raw === "") return 8000;
+  const n = Number(raw);
+  // NaN is the dangerous case, not the obvious one: it makes `worstTotal` NaN, and
+  // `NaN > CAP_USD` is FALSE, so the spend guard waves the run through and the request
+  // carries an invalid `max_tokens`. A bad ceiling has to refuse before submission.
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`LABEL_MAX_TOKENS must be a positive whole number of tokens, got "${raw}"`);
+  }
+  return n;
+})();
+
+/**
+ * `LABEL_MAX_TOKENS` lowers the ceiling for a run whose PRICE is not known. The spend
+ * cap binds on the worst case, which is `MAX_TOKENS_PER_BATCH` x batches x the output
+ * rate -- so with an unpriced model the only way to keep the cap meaningful is to
+ * shrink the ceiling. Measured output is ~160 tokens a card, or ~1,920 a batch of 12,
+ * so 3,000 leaves over 50% headroom while making the worst case affordable.
+ *
+ * Whether a model still accepts `temperature`. Measured, not guessed: Sonnet 5 answers
+ * 400 with "`temperature` is deprecated for this model", while Haiku 4.5 and Sonnet 4.5
+ * accept 0. A list rather than a pattern, so a new model is a deliberate addition.
+ */
+export const acceptsTemperature = (model: string) => model !== "claude-sonnet-5";
+
+/**
+ * Models whose thinking must be turned OFF explicitly, and why it is not optional here.
+ *
+ * Sonnet 5 thinks ADAPTIVELY by default. Measured 2026-09-26: a trivial prompt used 0
+ * thinking tokens, and this labelling prompt used 2,999 of a 3,000 output budget and
+ * emitted a single `thinking` block with no text at all — 42 of 43 batch requests hit
+ * `max_tokens` and the run produced 5 card objects out of 508. That cost $1.0367 for
+ * nothing.
+ *
+ * Disabling it is also what makes the comparison fair: neither Haiku 4.5 nor Sonnet 4.5
+ * thinks, so a thinking Sonnet 5 would be a different kind of run, not a faster one.
+ * `{type:"enabled", budget_tokens}` is rejected for this model — it wants
+ * `adaptive` with `output_config.effort` — so `disabled` is the only way to match.
+ */
+export const needsThinkingDisabled = (model: string) => model === "claude-sonnet-5";
 
 export const buildRequest = (customId: string, model: string, cards: CardForPrompt[]) => ({
   custom_id: customId,
   params: {
     model,
     max_tokens: MAX_TOKENS_PER_BATCH,
-    // Deterministic, so a re-run of the same batch is comparable. A sampled run
-    // would make the Haiku/Sonnet difference partly noise.
-    temperature: 0,
+    // Deterministic WHERE THE MODEL ACCEPTS IT, so a re-run of the same batch is
+    // comparable and the difference between models is not partly sampling noise.
+    //
+    // `claude-sonnet-5` REJECTS the parameter -- "`temperature` is deprecated for this
+    // model", HTTP 400, measured 2026-09-26 -- so it is omitted there and that model
+    // runs at its default sampling. The consequence is stated wherever its figures
+    // are: the comparison is matched on prompt, batching and scorer but NOT on
+    // temperature, which is a real caveat rather than a formality.
+    ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
+    ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
     system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
     messages: [{ role: "user" as const, content: renderBody(cards) }],
   },
