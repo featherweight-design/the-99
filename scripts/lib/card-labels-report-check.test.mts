@@ -21,7 +21,7 @@ const AGREE = "docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json
 /** The shapes these artifacts actually have, so the checks read them without casts. */
 type ModelScore = {
   jobs: { precision: number; recall: number; tp: number; fp: number; fn: number };
-  limits: Record<string, { informativeAccuracy: number | null }>;
+  limits: Record<string, { accuracy: number | null; informativeAccuracy: number | null }>;
   spuriousRestrictions: number;
 };
 type Score = { models: Record<string, ModelScore> };
@@ -157,7 +157,27 @@ describe("the report agrees with the artifacts it cites", () => {
   // bare integers, `N.N points`, and now `NN.N%`. The honest statement is that the
   // guard covers the shapes it has been taught, which is what the report's own
   // provenance note says.
-  it("quotes no percentage the artifacts do not contain", () => {
+  // THE DEFAULT-INCLUSIVE accuracies, quoted as whole percentages. These are the ones
+  // the report uses to make its central point -- that a labeller emitting no limits
+  // scores well on the default-inclusive figure -- so they are the integers most worth
+  // pinning. Found live drift on its first run: the report said 93% of thresholds
+  // where the artifact records 0.939.
+  it("states the default-inclusive text-rule accuracies the artifact records", () => {
+    const t = score.models.textRules.limits;
+    for (const [limit, v] of [["thresholds", t.threshold], ["modality", t.modal]] as const) {
+      expect(v.accuracy, `${limit} has no default-inclusive accuracy`).not.toBeNull();
+      const want = Math.round(100 * (v.accuracy ?? 0));
+      expect(plain, `${limit} default-inclusive accuracy`).toContain(`${want}% of ${limit}`);
+    }
+  });
+
+  // ONE-DECIMAL percentages only, and the name says so. Integer percentages elsewhere
+  // in the report are either DERIVED (a 16% relative job gain, from 171 against 147)
+  // or HYPOTHETICAL (a second labeller disagreeing with 10% of the set) -- neither is
+  // an artifact value, and teaching this check to tell them apart from a quoted
+  // accuracy is the shape-chasing this guard has already done four times. The
+  // artifact-backed integers are pinned by the test above instead.
+  it("quotes no one-decimal percentage the artifacts do not contain", () => {
     const known = new Set<string>();
     for (const r of Object.values(score.models)) {
       for (const v of [r.jobs.precision, r.jobs.recall]) known.add((100 * v).toFixed(1));

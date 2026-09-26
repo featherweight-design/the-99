@@ -110,7 +110,7 @@ all the value is, and Sonnet additionally finds about one job in eight that the
 rules miss.
 
 **Read the limit rows as NON-DEFAULT accuracy.** Scored naively, the text rules
-appear to get 93% of thresholds and 86% of modality right — while emitting no
+appear to get 94% of thresholds and 86% of modality right — while emitting no
 limits at all. They score by always guessing the default, and the default is
 usually right. Every limit is therefore scored on the subset where the true answer
 is NOT the default, the only cases where a limit changes a match. That is the
@@ -256,6 +256,14 @@ both.
   correct answer is no jobs at all (a Saga's lore counter, an artifact's charge
   counter). Without those the set cannot measure over-labelling, which is the
   failure that produced the bug.
+- **The ramp kinds agree with E1's shipped classifier**, measured rather than
+  asserted: over the 25 ramp-labelled gold cards, `honestJobs` from
+  `src/lib/swaps/honest.ts` **agrees on 22, contradicts 0, and assigns no kind to 3**.
+  The three are places the gold is deliberately WIDER than E1, each recorded in its
+  own `why` and raised with 2b: `Dora Milaje Elite`, whose only mana is a token's
+  reminder text that `usableText` strips; and `Weathered Wayfarer` and
+  `Marshals' Pathcruiser`, which fetch to HAND where E1's rule requires the
+  battlefield and 2b's written definition allows either.
 - **The vocabulary is 2b's**, asserted against `src/lib/recs/roles.ts` and
   `src/lib/recs/themes.ts` by a test rather than copied. A drifted copy would give
   a score that reads fine while a dropped theme is never measured.

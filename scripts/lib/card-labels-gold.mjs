@@ -289,7 +289,7 @@ export const GOLD = [
   {
     name: "Dora Milaje Elite", klass: "conditionalMana",
     jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "etb" })],
-    why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. The Vibranium token reads `{T}: Add {C}` — a repeatable tap, nothing consumed — which is the POWERSTONE shape and therefore `tapsForMana` under E1's kinds, not a burst. Labelled `burstMana`/`oneShot` at first and corrected 2026-09-26 in the same sweep as The Mana Rig; it was the sibling that sweep missed on its first pass.",
+    why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. The Vibranium token reads `{T}: Add {C}` — a repeatable tap, nothing consumed — which is the POWERSTONE shape, so `tapsForMana` rather than a burst. Labelled `burstMana`/`oneShot` at first and corrected 2026-09-26 in the same sweep as The Mana Rig; it was the sibling that sweep missed. **E1 assigns this card no ramp job at all**, because `usableText` strips a mana token's reminder text and the Vibranium ability lives only there — so this label is a judgement about what the CARD does, not a reading of the classifier, and it is one of three rows where the gold set is deliberately wider than E1. Raised with 2b.",
   },
   {
     name: "Gatewatch Beacon", klass: "conditionalMana",
@@ -558,7 +558,7 @@ export const GOLD = [
   {
     name: "Weathered Wayfarer", klass: "fetchesLand",
     jobs: [j("role", "ramp", { rk: "fetchesLand", to: "land", tr: "activated" })],
-    why: "REPEATABLE fetch, but to HAND and only while an opponent has more lands. Repeatable and conditional at once; a Treasure-versus-tap reading misses both.",
+    why: "REPEATABLE fetch, but to HAND and only while an opponent has more lands. Repeatable and conditional at once; a Treasure-versus-tap reading misses both. NOTE: E1 assigns no kind here — its `FETCHES` rule requires `onto the battlefield` — while 2b's written definition says \"onto the battlefield or into the hand\". The prose and the code disagree; this label follows the prose and the divergence is raised with 2b rather than settled here.",
   },
   {
     name: "Silver Deputy", klass: "fetchesLand",
