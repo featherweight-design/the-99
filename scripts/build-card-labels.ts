@@ -111,37 +111,57 @@ const parseReply = (text: string): unknown => {
 };
 
 /**
- * Reads ONE request's results into staging, and returns what happened.
+ * Reads ONE PROVIDER BATCH's results into staging, distributing them to the intents that
+ * asked for them, and returns what happened.
  *
- * Three rules, all of them the sample's, measured there and not re-litigated here:
+ * One stream per batch rather than one per chunk: a wave's 400 requests live in a single
+ * provider batch, so streaming per chunk would re-read the whole result set 400 times.
  *
+ * Four rules, all the sample's, measured there and not re-litigated here:
+ *
+ * - Results are attributed by `custom_id` to the intent that sent it. A result whose id
+ *   belongs to no intent of this run is IGNORED rather than attributed to the nearest one.
  * - A job the schema REJECTS is dropped and recorded, never repaired: a repaired label
  *   stores the repair and the next re-score measures the repair.
  * - A missing or non-array `jobs` is NOT an empty answer. The gold set has hard negatives
  *   where `[]` is correct, so coercing malformed output to `[]` credits it as right on
  *   exactly the cards designed to catch over-labelling.
- * - A returned name is resolved by FACE against what this request asked for, and a name
- *   that is neither is refused rather than inserted.
+ * - A returned name is resolved by FACE against what that request asked for, and a name that
+ *   is neither is refused rather than inserted.
  */
-async function collectInto(
-  intentKey: string, batchId: string, customId: string, asked: string[],
+async function collectBatch(
+  batchId: string, intents: { intentKey: string; customId: string; asked: string[] }[],
 ): Promise<"staged" | "expired"> {
-  const resolve = faceResolver(asked);
-  const byName = new Map<string, Job[]>();
+  const byCustom = new Map(intents.map((i) => [i.customId, i]));
+  /** Per intent: the cards it got back, and the usage its request reported. */
+  const got = new Map<string, {
+    byName: Map<string, Job[]>; inTok: number; outTok: number; cacheW: number; cacheR: number;
+  }>();
+  const slot = (customId: string) => {
+    const existing = got.get(customId);
+    if (existing) return existing;
+    const fresh = { byName: new Map<string, Job[]>(), inTok: 0, outTok: 0, cacheW: 0, cacheR: 0 };
+    got.set(customId, fresh);
+    return fresh;
+  };
   const rejected: string[] = [];
-  // MEASURED usage for this request, which is what the next wave is sized against.
-  let inTok = 0, outTok = 0, cacheW = 0, cacheR = 0;
+
   try {
     for await (const entry of await client.messages.batches.results(batchId)) {
-      if (entry.custom_id !== customId) continue;
+      const intent = byCustom.get(entry.custom_id);
+      if (intent === undefined) continue; // not this run's request
       if (entry.result.type !== "succeeded") continue;
+      const here = slot(entry.custom_id);
       const u = entry.result.message.usage;
-      inTok += u.input_tokens; outTok += u.output_tokens;
-      cacheW += u.cache_creation_input_tokens ?? 0; cacheR += u.cache_read_input_tokens ?? 0;
+      here.inTok += u.input_tokens; here.outTok += u.output_tokens;
+      here.cacheW += u.cache_creation_input_tokens ?? 0;
+      here.cacheR += u.cache_read_input_tokens ?? 0;
+
       const parsed = parseReply(
         entry.result.message.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
       );
-      if (!Array.isArray(parsed)) continue;
+      if (!Array.isArray(parsed)) { rejected.push(`${entry.custom_id}: unparseable`); continue; }
+      const resolve = faceResolver(intent.asked);
       for (const card of parsed as { name?: string; jobs?: unknown }[]) {
         if (!card?.name) continue;
         const name = resolve(card.name);
@@ -152,7 +172,7 @@ async function collectInto(
           if (bad.length) rejected.push(`${name}: ${bad.join(", ")}`);
           return bad.length === 0;
         }) as Job[];
-        byName.set(name, [...(byName.get(name) ?? []), ...kept]);
+        here.byName.set(name, [...(here.byName.get(name) ?? []), ...kept]);
       }
     }
   } catch (err) {
@@ -162,27 +182,39 @@ async function collectInto(
     throw err;
   }
 
-  const cards = await db.execute<CardRow>(sql`
+  // One catalog read for the whole batch, then one staging insert per intent so a row carries
+  // the hash of the card as it is NOW rather than as the request rendered it.
+  const allNames = [...got.values()].flatMap((g) => [...g.byName.keys()]);
+  const cards = allNames.length === 0 ? { rows: [] as CardRow[] } : await db.execute<CardRow>(sql`
     select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards where name = any(${[...byName.keys()]})
-  `);
-  const rows = (cards.rows ?? (cards as unknown as CardRow[]))
-    .map((c) => ({
-      runId, oracleId: c.oracleId, labels: byName.get(c.name) ?? [],
-      model: MODEL, promptVersion: LABEL_PROMPT_VERSION, inputHash: labelInputHash(c, MODEL),
-    }));
-  if (rows.length > 0) {
-    // Staged, never published: the floor is evaluated against the whole run, so nothing
-    // reaches `card_labels` until every batch is in and the share is known.
-    await db.insert(cardLabelsStaging).values(rows).onConflictDoNothing();
+      from cards where name = any(${allNames})`);
+  const byName = new Map(
+    ((cards as { rows?: CardRow[] }).rows ?? (cards as unknown as CardRow[])).map((c) => [c.name, c]),
+  );
+
+  for (const intent of intents) {
+    const here = got.get(intent.customId);
+    const rows = [...(here?.byName.keys() ?? [])]
+      .map((n) => byName.get(n))
+      .filter((c): c is CardRow => c !== undefined)
+      .map((c) => ({
+        runId, oracleId: c.oracleId, labels: here?.byName.get(c.name) ?? [],
+        model: MODEL, promptVersion: LABEL_PROMPT_VERSION, inputHash: labelInputHash(c, MODEL),
+      }));
+    if (rows.length > 0) {
+      // Staged, never published: the floor is evaluated over the whole run, so nothing reaches
+      // `card_labels` until every batch is in and the share is known.
+      await db.insert(cardLabelsStaging).values(rows).onConflictDoNothing();
+    }
+    await db.update(cardLabelBatches)
+      .set({
+        status: "collected", batchId, collectedAt: new Date(),
+        inTokens: here?.inTok ?? 0, outTokens: here?.outTok ?? 0,
+        cacheWriteTokens: here?.cacheW ?? 0, cacheReadTokens: here?.cacheR ?? 0,
+      })
+      .where(eq(cardLabelBatches.intentKey, intent.intentKey));
   }
-  await db.update(cardLabelBatches)
-    .set({
-      status: "collected", batchId, collectedAt: new Date(),
-      inTokens: inTok, outTokens: outTok, cacheWriteTokens: cacheW, cacheReadTokens: cacheR,
-    })
-    .where(eq(cardLabelBatches.intentKey, intentKey));
-  if (rejected.length > 0) console.warn(`  ${customId}: dropped ${rejected.length} job(s)`);
+  if (rejected.length > 0) console.warn(`  ${batchId}: dropped ${rejected.length} item(s)`);
   return "staged";
 }
 
@@ -226,37 +258,47 @@ async function reconcile(): Promise<{ done: Set<string>; waiting: number; abando
   const abandoned: string[] = [];
   let waiting = 0;
 
+  // Intents whose id is still unknown after the lookup above. Resolved by AGE, not by
+  // guessing: a batch the provider would still list is recent, so a young unresolved intent
+  // is simply re-planned (omitted from `done`), while an old one is `abandoned` and reported
+  // rather than silently re-submitted.
+  for (const intent of open.filter((o) => (o.batchId ?? byCustomId.get(o.customId) ?? null) === null)) {
+    if (Date.now() - intent.intendedAt.getTime() < 60 * 60 * 1000) continue;
+    await db.update(cardLabelBatches).set({ status: "abandoned" })
+      .where(eq(cardLabelBatches.intentKey, intent.intentKey));
+    abandoned.push(intent.intentKey);
+  }
+
+  // GROUPED BY BATCH, and that is not tidiness. One provider batch holds every chunk of a
+  // model's wave, so collecting per intent would `retrieve` the same batch once per chunk and
+  // stream its whole result set once per chunk — 400 API calls and 160,000 result reads for a
+  // 400-request wave, where 1 and 400 will do. Each batch is retrieved once and streamed once,
+  // and its results are distributed to the intents that asked for them.
+  const byBatch = new Map<string, typeof open>();
   for (const intent of open) {
     const id = intent.batchId ?? byCustomId.get(intent.customId) ?? null;
-    if (id === null) {
-      // The create never landed, OR it landed and the provider no longer lists it. The first
-      // is safe to re-plan; the second would double charge. Told apart by AGE: a batch the
-      // provider would still list is recent, so an old unresolved intent is abandoned rather
-      // than guessed at.
-      const ageMs = Date.now() - intent.intendedAt.getTime();
-      if (ageMs < 60 * 60 * 1000) continue; // re-planned by omission from `done`
-      await db.update(cardLabelBatches).set({ status: "abandoned" })
-        .where(eq(cardLabelBatches.intentKey, intent.intentKey));
-      abandoned.push(intent.intentKey);
-      continue;
-    }
-
-    const batch = await client.messages.batches.retrieve(id);
-    if (batch.processing_status !== "ended") {
-      waiting++;
-      await db.update(cardLabelBatches).set({ status: "in_progress", batchId: id })
-        .where(eq(cardLabelBatches.intentKey, intent.intentKey));
-      continue;
-    }
-    const staged = await collectInto(intent.intentKey, id, intent.customId, intent.asked);
-    if (staged === "expired") {
-      await db.update(cardLabelBatches).set({ status: "expired", batchId: id })
-        .where(eq(cardLabelBatches.intentKey, intent.intentKey));
-      console.warn(`  ${intent.customId}: results expired — its cards will be re-submitted`);
-      continue;
-    }
-    done.add(intent.intentKey);
+    if (id === null) continue;
+    byBatch.set(id, [...(byBatch.get(id) ?? []), intent]);
   }
+
+  for (const [batchId, intents] of byBatch) {
+    const batch = await client.messages.batches.retrieve(batchId);
+    if (batch.processing_status !== "ended") {
+      waiting += intents.length;
+      await db.update(cardLabelBatches).set({ status: "in_progress", batchId })
+        .where(inArray(cardLabelBatches.intentKey, intents.map((i) => i.intentKey)));
+      continue;
+    }
+    const collected = await collectBatch(batchId, intents);
+    if (collected === "expired") {
+      await db.update(cardLabelBatches).set({ status: "expired", batchId })
+        .where(inArray(cardLabelBatches.intentKey, intents.map((i) => i.intentKey)));
+      console.warn(`  ${batchId}: results expired — its ${intents.length} chunk(s) will be re-submitted`);
+      continue;
+    }
+    for (const i of intents) done.add(i.intentKey);
+  }
+
   return { done, waiting, abandoned };
 }
 
