@@ -391,9 +391,9 @@ export async function createDeck(
       ],
       selectedSet,
       asked === null ? {} : {
-        answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
+        answers: { budgetCents: asked.pool === "own" ? null : answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
         // Only cards I own (three answers §3): the 99 from what the collection can supply. Nothing
-        // is bought for it, so the budget has only the placed card to charge.
+        // is bought for it, and the budget capped the commander alone, so the fill gets no budget.
         ...(asked.pool === "own" ? { pool: "sleeveable" as const } : {}),
       },
     );
@@ -702,7 +702,8 @@ export async function fillDeck(deckId: string): Promise<void> {
   // to what was asked: the same budget and bracket gates, and the build-around card placed first,
   // exactly as the create would have placed it.
   const buildAround = deck.answerCardOracleId ?? null;
-  const budgetCents = deck.answerBudgetCents ?? null;
+  // Under own-only the budget capped the commander alone, so the fill carries none (as at the create).
+  const budgetCents = deck.answerOwnedOnly ? null : deck.answerBudgetCents ?? null;
   const bracket = bracketOf(deck.answerBracket ?? null);
   const answers: DeckAnswers | null = budgetCents === null && bracket === null && buildAround === null
     ? null

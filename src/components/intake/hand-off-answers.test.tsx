@@ -75,5 +75,9 @@ describe("Built from your answers", () => {
     expect(budgetLine(null)).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
     // The card's read failed: the create still pays for it first, so no line is true yet.
     expect(budgetLine(null, true)).toBeNull();
+    // Own-only: nothing is bought for the 99, unless the card is the one buy.
+    expect(budgetLine(null, false, true)).toBe("The fill buys nothing for the 99.");
+    expect(budgetLine(card({ owned: true }), false, true)).toBe("The fill buys nothing for the 99.");
+    expect(budgetLine(card(), false, true)).toBe("The fill buys nothing else for the 99.");
   });
 });

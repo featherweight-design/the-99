@@ -230,6 +230,8 @@ export const helpMeChooseCopy = {
     budgetAlone: "The fill buys in its own order while the price fits, and finishes with basics.",
     /** Own-only: the pool row says where the 99 comes from, so this says only that nothing is bought for it. */
     budgetOwn: "The fill buys nothing for the 99.",
+    /** Own-only with an unowned build-around card: that card, priced on the row above, is the one buy. */
+    budgetOwnCard: "The fill buys nothing else for the 99.",
     poolValue: "From cards you own",
     poolLine: "It takes only cards with a copy free, and finishes with basics.",
     bracketValue: (n: 1 | 2 | 3 | 4 | 5) => `${n} · ${BRACKET_NAMES[n]}`, // canvas

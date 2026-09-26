@@ -289,7 +289,7 @@ function OwnershipLine({
             <Mark mark={mark} />
           </Segment>
           {ready && ownOnly ? (
-            // The 99 buys nothing here, so no figure to buy: where it comes from, and how much of
+            // The fill buys nothing here, so no figure to buy: where the 99 comes from, and how much of
             // its usual 99 (the ordinary fill's, `trialFill`) the player already owns.
             <>
               <Segment>{copy.results.rowOwn}</Segment>

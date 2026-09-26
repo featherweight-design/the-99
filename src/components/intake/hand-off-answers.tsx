@@ -20,8 +20,8 @@ const copy = helpMeChooseCopy.handOff;
  */
 export function budgetLine(card: HandOffAnswers["card"], cardUnread = false, ownOnly = false): string | null {
   if (cardUnread) return null;
-  // Own-only: nothing is bought for the 99, and the card's own price is said on its row.
-  if (ownOnly) return copy.budgetOwn;
+  // Own-only: the fill buys nothing. An unowned card is the one purchase, priced on its own row.
+  if (ownOnly) return card !== null && !card.owned ? copy.budgetOwnCard : copy.budgetOwn;
   // An owned card costs the budget nothing, so it is not paid for first.
   if (card === null || card.owned) return copy.budgetAlone;
   return card.price.kind === "priced" ? copy.budgetFirst(card.name, formatCents(card.price.cents)) : copy.budgetUnknown(card.name);

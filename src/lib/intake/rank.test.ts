@@ -108,6 +108,14 @@ describe("withinBudget: the commander's price and an unowned card's", () => {
   it("passes a price that was never stocked, which it cannot test", () => {
     expect(withinBudget(cmd({ name: "C", priceCents: null }), null, 1)).toBe(true);
   });
+
+  it("caps the commander alone under own-only, leaving an unowned card out of it", () => {
+    const c = cmd({ name: "C", priceCents: 6000, cardInclusion: 30 });
+    const asked: Answers = { ...none, card: "x", budgetDollars: 100 };
+    expect(passes(c, asked, card({ priceCents: 5000 }))).toBe(false);
+    expect(passes(c, { ...asked, pool: "own" }, card({ priceCents: 5000 }))).toBe(true);
+    expect(passes(c, { ...asked, pool: "own", budgetDollars: 59 }, card({ priceCents: 5000 }))).toBe(false);
+  });
 });
 
 describe("too narrow (ruling 8)", () => {
