@@ -11,27 +11,39 @@
 //
 // Four paths, one resolver. Deck import and "Update from a list" both run `buildDeckImport` over
 // `loadMatchInputs({ detailed: true })`; the collection CSV runs `matchRows` over the plain read.
-// Both reads are exercised. The unresolved-row picker and quick-add search `commander_legal`
-// cards only, so what keeps these objects out of them is a fact about the catalog, asserted
-// last: none of them is commander-legal on the database this runs against.
+// Both reads are exercised.
+//
+// Search is the other half. The unresolved-row picker and quick-add share `searchCards`, which
+// reads commander-legal cards only, and Scryfall marks Unfinity's sticker sheets commander-legal.
+// So the last section signs in and TYPES a sticker sheet's name into a deck's quick-add, with
+// `Owned only` off, in a real browser: a server action behind Clerk is out of reach of a script,
+// and the rendered list is the thing a player sees. A control search for Sol Ring must list a
+// row, or the empty sticker search proved nothing. Needs a dev server on this worktree
+// (PROBE_BASE, default http://localhost:3000) and `E2E_AUDIT_USER_EMAIL` in the .env.
 //
 // It writes two sentinel rows into `skipped_printings`, under ids no printing can have, and
-// deletes them in a `finally`. Point it at local-dev or a scratch branch, NEVER production.
+// deletes them in a `finally`; the browser half writes only the account's About row, as every
+// probe that clears the gate does. Point it at local-dev or a scratch branch, NEVER production.
 //
-// Run: `pnpm tsx scripts/probe-non-game.ts`
+// Run: `pnpm probe:non-game`
 // First, and on its own line: src/db reads DATABASE_URL at module scope, so the .env has to be
 // loaded before the import below reaches it.
 import { requireEnv } from "./lib/env.mjs";
 import { randomUUID } from "node:crypto";
+import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { chromium, type Page } from "playwright";
+import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { onPage, onPageRole } from "./lib/surface.mjs";
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { NON_GAME_LAYOUTS } from "../src/lib/cards/game-card";
 import { loadMatchInputs } from "../src/lib/collection/import";
 import { matchRows } from "../src/lib/collection/match";
 import { buildDeckImport } from "../src/lib/decks/import";
 import type { CollectionRow } from "../src/lib/manabox/parse";
 
-requireEnv(["DATABASE_URL"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["DATABASE_URL", "E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD ?? "";
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail: string) => {
@@ -102,15 +114,85 @@ async function main() {
   check("Sol Ring still matches", result.matched.some((m) => m.row.line === 6),
     `${result.matched.length} matched`);
 
-  // ── The picker and quick-add: both search commander-legal cards only ───
-  const { rows: legal } = await db.execute<{ n: number }>(sql`
-    select count(*)::int as n from cards
-    where commander_legal
-      and (layout in (${sql.join([...NON_GAME_LAYOUTS].map((l) => sql`${l}`), sql`, `)})
-        or btrim(type_line) in ('Card', 'Card // Card'))
+  // ── The picker and quick-add: one search, commander-legal cards only ───
+  // A commander-legal sticker sheet is the subject; without one the check below has nothing to
+  // refuse, so its absence fails the run rather than passing it.
+  const { rows: sheets } = await db.execute<{ name: string }>(sql`
+    select name from cards where commander_legal and btrim(type_line) = 'Stickers' order by name limit 1
   `);
-  check("no non-game object is commander-legal, so search cannot offer one", legal[0].n === 0,
-    `${legal[0].n} commander-legal`);
+  if (!sheets[0]) throw new Error("no commander-legal sticker sheet in this catalog");
+  await searchInBrowser(sheets[0].name);
+}
+
+async function signIn(page: Page): Promise<string> {
+  await setupClerkTestingToken({ page });
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => (window as unknown as { Clerk?: { loaded: boolean } }).Clerk?.loaded, null, { timeout: 60_000 });
+  const failure = await page.evaluate(async ([email, password]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Clerk's browser global is untyped here.
+    const clerk = (window as any).Clerk;
+    try {
+      let attempt = email.includes("+clerk_test")
+        ? await clerk.client.signIn.create({ identifier: email })
+        : await clerk.client.signIn.create({ identifier: email, password });
+      if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as above.
+        const factor = attempt.supportedFirstFactors?.find((f: any) => f.strategy === "email_code");
+        if (!factor?.emailAddressId) return `${email} offers no email_code first factor.`;
+        await clerk.client.signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: factor.emailAddressId });
+        attempt = await clerk.client.signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
+      }
+      if (attempt.status !== "complete") return `sign-in status: ${attempt.status}`;
+      await clerk.setActive({ session: attempt.createdSessionId });
+      return null;
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as above.
+      return (error as any)?.errors?.[0]?.longMessage ?? String(error);
+    }
+  }, [EMAIL, PASSWORD]);
+  if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as above.
+  const userId = await page.evaluate(() => (window as any).Clerk.user.id as string);
+  await clearAboutSheet(page, userId);
+  return userId;
+}
+
+/** Types `query` into the deck's quick-add with `Owned only` off and returns the listed names. */
+async function quickAdd(page: Page, query: string): Promise<string[]> {
+  const bar = onPage(page, 'input[role="combobox"]').first();
+  await bar.focus();
+  const owned = onPageRole(page, "checkbox", /only cards you own/i).first();
+  // `force`: the input is the visually hidden peer of the drawn switch, which intercepts a pointer.
+  if ((await owned.count()) > 0) await owned.setChecked(false, { force: true });
+  await bar.fill(query);
+  await onPage(page, '[role="option"]').first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
+  await page.waitForTimeout(1_000);
+  return onPage(page, '[role="option"]').allInnerTexts();
+}
+
+async function searchInBrowser(sheet: string) {
+  await clerkSetup();
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1300, height: 900 } });
+    const userId = await signIn(page);
+    const { rows: decks } = await db.execute<{ id: string }>(sql`
+      select id from decks where user_id = ${userId} order by created_at limit 1
+    `);
+    if (!decks[0]) throw new Error("the probe account owns no deck to open quick-add on");
+    await page.goto(`${BASE}/decks/${decks[0].id}`, { waitUntil: "networkidle" });
+    const deckTab = onPage(page, "#tab-deck").first();
+    if ((await deckTab.count()) > 0) await deckTab.click();
+
+    const control = await quickAdd(page, "Sol Ring");
+    check("quick-add lists Sol Ring, so an empty search below means something",
+      control.some((t) => t.includes("Sol Ring")), `${control.length} row(s)`);
+    const offered = await quickAdd(page, sheet);
+    check(`quick-add does not offer the sticker sheet "${sheet}"`,
+      !offered.some((t) => t.includes(sheet)), `${offered.length} row(s): ${JSON.stringify(offered.slice(0, 3))}`);
+  } finally {
+    await browser.close();
+  }
 }
 
 main()

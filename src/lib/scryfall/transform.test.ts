@@ -153,6 +153,12 @@ describe("toCardRow", () => {
       expect(toCardRow({ ...solRing, layout })).toBeNull();
     }
   });
+
+  // `normal` in layout: the Experience counter, and an Unfinity sticker sheet.
+  it("skips a normal object whose type line names no card type", () => {
+    expect(toCardRow({ ...solRing, type_line: "Card" })).toBeNull();
+    expect(toCardRow({ ...solRing, type_line: "Stickers" })).toBeNull();
+  });
 });
 
 describe("a two-sided card's back-face cost", () => {

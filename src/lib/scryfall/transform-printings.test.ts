@@ -144,6 +144,15 @@ describe("classifyPrinting", () => {
     }
   });
 
+  it("routes a normal printing whose type line names no card type to the skipped ledger", () => {
+    for (const type_line of ["Card", "Stickers"]) {
+      expect(classifyPrinting({ ...plains, layout: "normal", type_line })).toEqual({
+        kind: "skipped-layout",
+        row: { scryfallId: plains.id, layout: "normal", name: "Plains" },
+      });
+    }
+  });
+
   // The shape of Scryfall's `sld/2214` — Hugh's foil, and the printing this layout used to
   // deny the catalog. Its top level carries no oracle id, no art and no flavor name; all
   // three sit on the faces, and the front face's name is the one printed on the card.

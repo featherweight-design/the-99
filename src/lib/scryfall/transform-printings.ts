@@ -1,4 +1,4 @@
-import { NON_GAME_LAYOUTS } from "../cards/game-card";
+import { isGameCard } from "../cards/game-card";
 
 // Explicit shapes (kept in sync with the printings / skipped_printings tables) rather than
 // schema imports: pure lib code stays free of DB imports, which is what keeps it unit-testable.
@@ -93,11 +93,13 @@ function isVariant(raw: Raw): boolean {
 export function classifyPrinting(raw: Raw): PrintingClassification {
   const layout = typeof raw.layout === "string" ? raw.layout : "";
 
-  // The layouts the oracle transform excludes from `cards`, so a printing of one has no FK target.
-  if (NON_GAME_LAYOUTS.has(layout)) {
+  // What the oracle transform excludes from `cards` (`isGameCard`), so a printing of one has no
+  // FK target.
+  const typeLine = typeof raw.type_line === "string" ? raw.type_line : null;
+  if (!isGameCard({ layout, typeLine })) {
     // Not a card, but recorded. An upload row carrying one of the TOKEN_LAYOUTS says "token"
-    // instead of "unmatched"; the rest (a theme front, a plane) read as unresolved, which
-    // `loadMatchInputs` decides by filtering this table on its layout.
+    // instead of "unmatched"; the rest (a theme front, a plane, a sticker sheet) read as
+    // unresolved, which `loadMatchInputs` decides by filtering this table on its layout.
     return {
       kind: "skipped-layout",
       row: {

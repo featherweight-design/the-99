@@ -5,7 +5,8 @@
  * Jumpstart and Secret Lair FRONT cards named for a theme ("Lands", "Artifacts", "Cats"),
  * Planechase planes, Archenemy schemes, Vanguard avatars, Unstable hosts and augments, and a
  * handful of `normal` objects whose whole type line is `Card` (the Experience and Poison
- * counters, "Red Mana"). The ingest used to skip only tokens, emblems and art series, so the
+ * counters, "Red Mana"), and Unfinity's sticker sheets, which are commander-legal on Scryfall but
+ * never one of the 99. The ingest used to skip only tokens, emblems and art series, so the
  * rest reached `cards`, and a pasted section header then resolved to one by exact name: "Lands"
  * sat in a deck as a card (Hugh's staging walk, 2026-09-25).
  *
@@ -41,8 +42,12 @@ export const NON_GAME_LAYOUTS: ReadonlySet<string> = new Set([
   "augment",
 ]);
 
-/** Type lines that name no card type at all: Scryfall's `Card`, and its two-faced form. */
-const NON_GAME_TYPE_LINES: ReadonlySet<string> = new Set(["Card", "Card // Card"]);
+/**
+ * Type lines of `normal` objects that are not cards: Scryfall's bare `Card` and its two-faced
+ * form, and `Stickers` (Hugh, 2026-09-25: a sticker sheet is never one of the 99, so it is
+ * neither matched nor offered). Compared whole, never as a prefix.
+ */
+export const NON_GAME_TYPE_LINES: ReadonlySet<string> = new Set(["Card", "Card // Card", "Stickers"]);
 
 export function isGameCard(card: { layout: string | null; typeLine: string | null }): boolean {
   if (card.layout !== null && NON_GAME_LAYOUTS.has(card.layout)) return false;

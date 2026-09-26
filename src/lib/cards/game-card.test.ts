@@ -21,3 +21,10 @@ describe("isGameCard", () => {
     expect(isGameCard({ layout: "normal", typeLine: "Artifact Creature — Card" })).toBe(true);
   });
 });
+
+// Scryfall marks Unfinity's sticker sheets commander-legal; they are never one of the 99.
+describe("isGameCard and sticker sheets", () => {
+  it("refuses a sticker sheet", () => {
+    expect(isGameCard({ layout: "normal", typeLine: "Stickers" })).toBe(false);
+  });
+});
