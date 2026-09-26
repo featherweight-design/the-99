@@ -122,7 +122,7 @@ async function readNoncreatureSubtypes(): Promise<Set<string>> {
   const subtypes = sql.raw(`unnest(regexp_split_to_array(trim(split_part(split_part(type_line, ' // ', 1), ' — ', 2)), '\\s+'))`);
   const rows = await db.execute<{ t: string }>(sql`
     select distinct t from cards, ${subtypes} as t
-    where ${front} ~* '\\m(land|artifact|enchantment)\\M' and ${front} !~* '\\m(creature|kindred|tribal)\\M' and t <> ''
+    where commander_legal and ${front} ~* '\\m(land|artifact|enchantment)\\M' and ${front} !~* '\\m(creature|kindred|tribal)\\M' and t <> ''
   `);
   return new Set(rows.rows.map((r) => r.t));
 }

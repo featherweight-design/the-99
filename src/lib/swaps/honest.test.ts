@@ -61,6 +61,12 @@ describe("honestJobs (E1)", () => {
     expect(offTypeLine("Other Elves you control get +1/+1.", isType, lens("Elf"))).toBe(false);
     // A token the line MAKES limits nothing.
     expect(offTypeLine("Create a 1/1 green Elf Warrior creature token.", isType, lens("Dinosaur"))).toBe(false);
+    // A list is usable when any item is (review, round 2).
+    // `each` has no trailing "you control" to catch the second item, so only a list read keeps it.
+    expect(offTypeLine("Put a +1/+1 counter on each Wolf or Dinosaur.", isType, lens("Dinosaur"))).toBe(false);
+    expect(offTypeLine("Other Elves, Goblins, and Wolves you control get +1/+1.", isType, lens("Dinosaur"))).toBe(true);
+    expect(offTypeLine("Sacrifice a Food or Treasure you control: Draw a card.", isType, lens("Dinosaur", ["Treasure"]))).toBe(false);
+    expect(offTypeLine("Sacrifice a Food or Treasure you control: Draw a card.", isType, lens("Dinosaur", ["Gate"]))).toBe(true);
     // No key type: the deck plays no type in numbers, so a typed line does it no job.
     expect(offTypeLine("Other Elves you control get +1/+1.", isType, lens(null))).toBe(true);
   });
@@ -78,8 +84,9 @@ describe("honestJobs (E1)", () => {
       { typeLine: "Land — Gate // Land", oracleText: null },
       // A sentence-initial "Create", as Warg's own mode reads.
       { typeLine: "Instant", oracleText: "Create a Food token." },
+      { typeLine: "Sorcery", oracleText: "Create a Clue, Food, or Treasure token." },
     ]);
-    expect([...held].sort()).toEqual(["Equipment", "Food", "Gate", "Goblin", "Pirate", "Treasure"]);
+    expect([...held].sort()).toEqual(["Clue", "Equipment", "Food", "Gate", "Goblin", "Pirate", "Treasure"]);
   });
 
   it("reads ramp as its kind (ruling b)", () => {

@@ -58,15 +58,23 @@ export type DeckLens = {
 const stripManaTokenReminders = (text: string) =>
   text.replace(/\([^)]*\)/g, (r) => (/\badd\b/i.test(r) && /\b(token|artifact with)\b/i.test(r) ? "" : r));
 
+/**
+ * A capitalized word, or a LIST of them: `Wolf or Dinosaur`, `Elves, Goblins, and Dinosaurs`. A line limited to
+ * a list is usable when any item in it is (review, #1037 round 2: a single word read `target Wolf or Dinosaur
+ * you control` as Wolf alone).
+ */
+const LIST = String.raw`([A-Z][a-z]+(?:(?:,? (?:or|and) |, )[A-Z][a-z]+)*)`;
+const items = (list: string) => list.split(/,? (?:or|and) |, /);
+
 /** The words a line limits itself to, in the card's own case: `target Wolf you control`, `Other Elves`. */
 const RESTRICTING = [
-  /\b([A-Z][a-z]+) you control\b/g,
-  /\btarget ([A-Z][a-z]+)\b/g,
-  /\b[Oo]ther ([A-Z][a-z]+)\b/g,
-  /\b[Ee]ach (?:other )?([A-Z][a-z]+)\b/g,
-  /\b([A-Z][a-z]+) spells?\b/g,
+  new RegExp(String.raw`\b${LIST} you control\b`, "g"),
+  new RegExp(String.raw`\btarget ${LIST}\b`, "g"),
+  new RegExp(String.raw`\b[Oo]ther ${LIST}\b`, "g"),
+  new RegExp(String.raw`\b[Ee]ach (?:other )?${LIST}\b`, "g"),
+  new RegExp(String.raw`\b${LIST} spells?\b`, "g"),
   // `Elf Warrior creature token` is what a line MAKES, not what it is limited to.
-  /\b([A-Z][a-z]+) creatures?\b(?! tokens?\b)/g,
+  new RegExp(String.raw`\b${LIST} creatures?\b(?! tokens?\b)`, "g"),
 ];
 
 /** The singulars a captured word may be, for a type list of singulars (`Elves` is `Elf`). */
@@ -85,18 +93,19 @@ export function offTypeLine(line: string, isCreatureType: (word: string) => bool
   const named = new Set<string>();
   for (const pattern of RESTRICTING) {
     for (const m of line.matchAll(pattern)) {
-      const words = singulars(m[1]);
-      const type = words.find(isCreatureType);
-      if (type) { named.add(type); continue; }
-      const subtype = deck && words.find(deck.isSubtype);
-      if (subtype && !deck.held.has(subtype)) return true;
+      const words = items(m[1]);
+      const types = words.flatMap((w) => singulars(w).find(isCreatureType) ?? []);
+      if (types.length > 0) { for (const t of types) named.add(t); continue; }
+      // A subtype list does its job when the deck holds or makes any one of them.
+      const subtypes = deck ? words.flatMap((w) => singulars(w).find(deck.isSubtype) ?? []) : [];
+      if (subtypes.length > 0 && !subtypes.some((s) => deck!.held.has(s))) return true;
     }
   }
   return named.size > 0 && (!deck?.keyType || !named.has(deck.keyType));
 }
 
-/** A token a line makes: `create a Treasure token`, `create X Food tokens`. */
-const MAKES_TOKEN = /\b[Cc]reates? [^.]*?\b([A-Z][a-z]+) (?:artifact )?tokens?\b/g;
+/** A token a line makes: `create a Treasure token`, `create X Food tokens`, `a Clue, Food, or Treasure token`. */
+const MAKES_TOKEN = new RegExp(String.raw`\b[Cc]reates? [^.]*?\b${LIST} (?:artifact )?tokens?\b`, "g");
 
 /** The noncreature subtypes a set of cards holds on their front faces or makes as tokens. */
 export function heldSubtypes(cards: readonly { typeLine: string; oracleText: string | null }[]): Set<string> {
@@ -104,7 +113,7 @@ export function heldSubtypes(cards: readonly { typeLine: string; oracleText: str
   for (const c of cards) {
     const sub = c.typeLine.split(" // ")[0].split(" — ")[1];
     for (const w of sub ? sub.trim().split(/\s+/) : []) held.add(w);
-    for (const m of stripManaTokenReminders(frontFaceOracle(c.oracleText)).matchAll(MAKES_TOKEN)) held.add(m[1]);
+    for (const m of stripManaTokenReminders(frontFaceOracle(c.oracleText)).matchAll(MAKES_TOKEN)) for (const w of items(m[1])) held.add(w);
 
   }
   return held;
