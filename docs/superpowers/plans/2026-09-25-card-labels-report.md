@@ -362,7 +362,8 @@ both.
 - `scripts/label-cards-blindsheet.mjs` — the blind sheet below
 ### Committed evidence
 
-Regenerate and republish with:
+Regenerate and republish with — the DEFAULT two models, no environment set, which is the
+only set these paths publish:
 
 ```
 pnpm tsx scripts/label-cards-score.mts --publish
@@ -386,6 +387,14 @@ batch, cannot quietly overwrite the evidence a merged report rests on.
 The raw labels (462KB across the three models) and the 711-row disagreement list stay in
 `out/` and are NOT committed: they are reproducible from the committed scripts for about
 85 cents for the default two, or **$1.26** with Sonnet 5, and the figures derived from
-them are committed above. Re-run `label-cards-run` then `-collect`, `-score`, `-agree`
-to regenerate; Sonnet 5 needs `LABEL_MODELS=sonnet5`, and publishing that run is refused
-rather than allowed to replace the two-model artifacts.
+them are committed above.
+
+To regenerate the committed evidence, run `label-cards-run` then `-collect`, `-score`,
+`-agree`, `-blindsheet`, with no environment set — that is the DEFAULT two-model workflow,
+and it is the only one those last two support: `-agree` and `-blindsheet` compare Haiku
+against Sonnet by construction and read exactly those two labels files.
+
+`LABEL_MODELS=sonnet5` applies to `-run`, `-collect` and `-score` alone, which is the whole
+opt-in path: it produces the standalone Sonnet 5 figures and nothing else. Publishing that
+run is refused rather than allowed to replace the two-model artifacts, so its column is
+updated by hand from the scorer's output, as it was.
