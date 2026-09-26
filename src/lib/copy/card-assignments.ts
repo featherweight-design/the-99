@@ -11,7 +11,7 @@
  *
  *   Pull it — takes the card out of another deck's list, leaving that deck a draft with the
  *             card going out (`pullCardFromDeck`; Hugh, 2026-09-27). Undone in that
- *             deck: by discarding its draft, or by putting the card back.
+ *             deck: by discarding its draft, or by putting the card back into it.
  *   Giving  — writes one `card_assignments` row. No list is edited, no version is cut, and the
  *             losing deck still bills the purchase. One tap back.
  *

@@ -907,16 +907,16 @@ export const cardAssignments = pgTable("card_assignments", {
  *
  * It lives exactly as long as the source's draft does. The source's COMMIT deletes it (the new
  * version no longer lists the card, so there is nothing left to subtract from); its DISCARD deletes
- * it (the card is back, so the copy is claimed again and the asking deck's buy tag returns); and
- * `Put back` deletes it too. Any other path that returns the card to the source's draft leaves
- * the row, and that is safe: `all_claims` never subtracts more than the version lists beyond the
- * draft, so a returned card cancels its own release there.
+ * it (the card is back, so the copy is claimed again and the asking deck's buy tag returns). No
+ * add deletes it, Put back included: `all_claims` never subtracts more than the version lists
+ * beyond the draft, so a card back in the draft cancels its own release there, and removing it
+ * again before the commit makes the release count once more.
  */
 export const pullReleases = pgTable("pull_releases", {
   userId: text("user_id").notNull(),
   sourceDeckId: uuid("source_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
-  /** The deck the copy was pulled for, which is who has to be told when the release is undone.
+  /** The deck the copy was pulled for, which is who has to be told when the release changes.
    *  Deleting that deck deletes the release: the copy stays out of the source's draft, and the
    *  source's version claims it again, as for any removal nobody has committed. */
   askingDeckId: uuid("asking_deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),

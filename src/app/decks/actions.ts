@@ -2022,6 +2022,13 @@ export async function pullCardFromDeck(
 
     const version = await newestVersion(sourceDeckId, tx);
     if (!version) return { ok: false, message: "That deck isn't sleeved yet." };
+    // The VERSION's commander too, not only the live columns checked above: with a commander change
+    // pending, the card can sit in the draft's list while the version still leads with it. A
+    // release subtracts from the version's LIST claim only, so that pull would empty the draft and
+    // leave the asking deck exactly as short as it was.
+    if (version.commanderOracleId === oracleId || version.partnerOracleId === oracleId) {
+      return { ok: false, message: "That card is that deck's commander." };
+    }
 
     const before = await versionCards(version.id, tx);
     // `for update`: the deck row's lock does not stop an edit to `deck_cards`, and the decrement

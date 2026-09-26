@@ -13,7 +13,7 @@ import { deckAddRejectionMessage, type DeckMutationResult } from "./mutation-res
 import { requireDeck } from "./read";
 import { deckSurfaces } from "./revalidate";
 import { revalidateClaims } from "./revalidate-claims";
-import { takeBackPullRelease } from "./pull-release";
+import { releaseAskers } from "./pull-release";
 import { touchDeck } from "./touch";
 import { validateCardForDeck, type DeckContextForValidation } from "./add-validation";
 
@@ -54,7 +54,7 @@ export async function deckValidationContext(
 export type AddOutcome = {
   result: DeckMutationResult;
   wrote: "held" | "added" | "refused";
-  /** Decks a pull from this one had freed this card for: the add took it back, so they buy again. */
+  /** Decks a pull from this one had freed this card for: the card is back, so they buy again. */
   released?: string[];
 };
 
@@ -142,9 +142,10 @@ export async function addCardToDeckFor(
       if (inserted.length === 0) return "held" as const;
       await touchDeck(tx, deckId);
     }
-    // The card is back in this draft, so a pull that had released it is undone (Put back is this
-    // path): the copy is claimed again and the deck it was pulled for buys it again.
-    released = await takeBackPullRelease(tx, deckId, oracleId);
+    // The card is back in this draft, so a release a pull wrote for it no longer subtracts
+    // (`all_claims` limits it by what the draft lacks), and the decks it was pulled for buy again.
+    // Read rather than deleted: the release stands until this deck commits or discards.
+    released = await releaseAskers(tx, deckId, oracleId);
     return null;
   });
   if (rejection === "held") return { result: { ok: true }, wrote: "held" };

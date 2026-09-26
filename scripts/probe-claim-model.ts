@@ -946,14 +946,24 @@ async function pullReleaseSection() {
     await both("and still the asker is short again", asking, -1, 1);
     await fixture.execute(sql`delete from pull_releases where source_deck_id = ${source}`);
 
-    // 3. PUT BACK TAKES IT BACK. Pull again, then the real add returns the card to the source.
+    // 3. PUT BACK UNDOES IT, THROUGH THE LIMIT. Pull again, then the real add returns the card to
+    //    the source. No add deletes a release: the row stands, and the card back in the draft is
+    //    what stops it subtracting. The add still names the asker, whose buy tag has to come back.
     await pull(source, asking);
     await both("after a second pull, the asker is covered", asking, 0, 0);
     const back = await addCardToDeckFor(USER_P, source, card, { relock: false });
     check("put back writes the card", back.wrote, "added");
-    check("and names the asker whose copy it took back", back.released?.[0], asking);
-    check("its release is gone", await releases(source), 0);
+    check("and names the asker whose figures moved", back.released?.[0], asking);
+    check("its release row stands", await releases(source), 1);
     await both("after put back, the asker is short again", asking, -1, 1);
+    // Cut again before any commit and the release counts once more: the pull was never undone,
+    // only matched by a copy that has left again.
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${source} and oracle_id = ${card}`);
+    await both("cut again, the asker is covered again", asking, 0, 0);
+    await fixture.execute(sql`delete from pull_releases where source_deck_id = ${source}`);
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${source}, ${card}, 1)
+    `);
 
     // 4. COMMIT KEEPS IT. Pull again and commit the source: its new version lists no card, so the
     //    copy stays the asker's, and the release has nothing left to subtract from and is gone.
@@ -981,19 +991,10 @@ async function pullReleaseSection() {
       userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: second,
     }));
     check("two askers are two release rows", await releases(source), 2);
-    // A repeat pull for the FIRST asker makes its row the newest again, whatever order the rows
-    // were first written in.
-    await db.transaction((tx) => writePullRelease(tx, {
-      userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: asking,
-    }));
-    // Put back returns ONE copy, so it takes back one release: the newest, and only its asker.
+    // Put back names BOTH askers (either could be the one now short) and deletes neither row.
     const one = await addCardToDeckFor(USER_P, source, card, { relock: false });
-    check("put back takes back only the newest release", (one.released ?? []).join(","), asking);
-    check("and leaves the other standing", await releases(source), 2);
-    await fixture.execute(sql`delete from deck_cards where deck_id = ${source} and oracle_id = ${card}`);
-    await db.transaction((tx) => writePullRelease(tx, {
-      userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: second,
-    }));
+    check("put back names both askers", [...(one.released ?? [])].sort().join(","), [asking, second].sort().join(","));
+    check("and deletes neither row", await releases(source), 2);
     let told: string[] = [];
     await restoreDraftFromVersion(source, await newestId(source), (ids) => { told = ids; });
     check("the discard names both askers", [...told].sort().join(","), [asking, second].sort().join(","));

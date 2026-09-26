@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { pullReleases } from "../../db/schema";
 
@@ -20,8 +20,7 @@ export async function writePullRelease(
     target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
     // A second pull of the same card from the same draft for the same deck takes one more copy.
     // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
-    // The stamp moves too: Put back takes back from the NEWEST pull, which this one now is.
-    set: { copies: sql`${pullReleases.copies} + 1`, createdAt: sql`now()` },
+    set: { copies: sql`${pullReleases.copies} + 1` },
   });
 }
 
@@ -39,31 +38,19 @@ export async function clearPullReleases(tx: Tx, sourceDeckId: string): Promise<s
 }
 
 /**
- * ONE copy is back in the source's draft (Put back, or any add of it), so ONE released copy is
- * claimed again: the newest release gives up a copy, and its row goes when it reaches none. Only
- * that release's asking deck sees its buy tag return; a card pulled twice keeps its other copy out.
+ * The decks a pull from this source freed this card for. Read, never deleted: a card back in the
+ * source's draft already cancels its own release in `all_claims`, whose limit never subtracts more
+ * than the version lists beyond the draft, so an add only has to tell those decks their figures
+ * moved. Every path that returns the card behaves the same way, Put back included, and only the
+ * source's commit or discard deletes a release.
  */
-export async function takeBackPullRelease(
+export async function releaseAskers(
   tx: Tx,
   sourceDeckId: string,
   oracleId: string,
 ): Promise<string[]> {
-  const [newest] = await tx.select({ askingDeckId: pullReleases.askingDeckId, copies: pullReleases.copies })
+  const rows = await tx.selectDistinct({ askingDeckId: pullReleases.askingDeckId })
     .from(pullReleases)
-    .where(and(eq(pullReleases.sourceDeckId, sourceDeckId), eq(pullReleases.oracleId, oracleId)))
-    .orderBy(desc(pullReleases.createdAt), desc(pullReleases.askingDeckId))
-    .limit(1)
-    .for("update");
-  if (!newest) return [];
-  const row = and(
-    eq(pullReleases.sourceDeckId, sourceDeckId),
-    eq(pullReleases.oracleId, oracleId),
-    eq(pullReleases.askingDeckId, newest.askingDeckId),
-  );
-  if (newest.copies > 1) {
-    await tx.update(pullReleases).set({ copies: sql`${pullReleases.copies} - 1` }).where(row);
-  } else {
-    await tx.delete(pullReleases).where(row);
-  }
-  return [newest.askingDeckId];
+    .where(and(eq(pullReleases.sourceDeckId, sourceDeckId), eq(pullReleases.oracleId, oracleId)));
+  return rows.map((r) => r.askingDeckId);
 }

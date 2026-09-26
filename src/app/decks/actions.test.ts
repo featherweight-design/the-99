@@ -440,7 +440,7 @@ vi.mock("../../lib/decks/availability-query", () => ({
 // what the action owns is that a pull writes one for the right pair of decks.
 vi.mock("../../lib/decks/pull-release", () => ({
   writePullRelease: vi.fn(),
-  takeBackPullRelease: vi.fn(async () => []),
+  releaseAskers: vi.fn(async () => []),
 }));
 // The asking deck's position after a pull. Mocked rather than driven off the db
 // stub because the reader assembles a snapshot transaction, a diff, a claim read
@@ -2151,6 +2151,19 @@ describe("pullCardFromDeck", () => {
     const result = await pullCardFromDeck(SOURCE_ID, CMD, ASKING_ID);
     expect(result).toEqual({ ok: false, message: expect.stringContaining("commander") });
     expect(commitVersion).not.toHaveBeenCalled();
+  });
+
+  // A commander change pending on the source: its live commander moved away and the card sits in
+  // the draft's list, but the VERSION still leads with it. A release subtracts from the version's
+  // list claim only, so the pull would empty the draft and cover nothing.
+  it("refuses a card the source's version still has as its commander", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([]);
+    vi.mocked(newestVersion).mockImplementation(async (deckId) =>
+      deckId === ASKING_ID ? null : { ...aVersion(), commanderOracleId: CARD_A });
+    const result = await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(result).toEqual({ ok: false, message: expect.stringContaining("commander") });
+    expect(writePullRelease).not.toHaveBeenCalled();
   });
 
   // The ruling (Hugh, 2026-09-27): the card leaves the source's DRAFT, no version is cut, and a
