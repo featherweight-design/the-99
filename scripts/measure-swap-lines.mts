@@ -69,7 +69,7 @@ const NO_PRICES = { newestAsOf: new Date(), prices: new Map() };
 
 /** Every row a sold-out original's sheet would draw, as the text its facts line carries. */
 function rowsFor(original: CardRow, pool: Candidate[], isCreatureType: (w: string) => boolean, mode: Mode): SheetRow[] {
-  const ranked = rankStandIns(original, pool, NO_PRICES as never, isCreatureType, null);
+  const ranked = rankStandIns(original, pool, NO_PRICES as never, isCreatureType, null, null);
   const read = { ...ranked, originalCents: mode === "priced" ? 100_000 : null, original, commanders: ["Kenrith"], newestAsOf: new Date() } as StandInsRead;
   return sheetModel(read).groups.flatMap((g) => g.rows);
 }
@@ -285,7 +285,7 @@ try {
   }
   if (process.env.MEASURE_DUMP) {
     const { writeFileSync } = await import("node:fs");
-    writeFileSync(process.env.MEASURE_DUMP, JSON.stringify(longest.map((l, i) => ({ text: l.text, from: l.from, originalId: l.originalId, standInId: l.row.oracleId, lines: measured[i].lines, body: l.row.body, muted: l.row.muted }))));
+    writeFileSync(process.env.MEASURE_DUMP, JSON.stringify(longest.map((l, i) => ({ text: l.text, from: l.from, originalId: l.originalId, standInId: l.row.oracleId, lines: measured[i].lines, body: l.row.body, muted: l.row.muted, pairs: l.pairs }))));
   }
   const worst = longest.map((l, i) => ({ ...l, ...measured[i] })).sort((a, b) => b.lines - a.lines || b.text.length - a.text.length);
   console.log(`rendered ${worst.length} longest lines at ${WIDTH} in a ${worst[0]?.width}px line box:`);

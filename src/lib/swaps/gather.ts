@@ -20,7 +20,9 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices } from "../decks/price-query";
+import { keyCreatureType } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
+import { heldSubtypes } from "./honest";
 import { jobOf, rankStandIns, STAND_IN_GROUP_CAP, type Candidate, type CardRow, type SpellRole, type StandInGroups } from "./stand-ins";
 
 /** How many of the cheapest unlisted spells are read before roles are checked. */
@@ -76,17 +78,26 @@ export type StandInsRead = StandInGroups & {
  * theme's vocabulary, read from the Commander-legal catalog so a new set's type arrives with the weekly
  * refresh. The regex escapes are doubled: a template literal cooks `\m` to `m`, and `sql` sends the cooked text.
  */
-let creatureTypesMemo: { at: number; types: Promise<Set<string>> } | null = null;
-/** An hour: the list moves only with the weekly catalog refresh, and the read costs ~200ms. */
-const CREATURE_TYPES_TTL_MS = 60 * 60 * 1000;
+export const loadCreatureTypes = hourly(readCreatureTypes);
+/**
+ * Every noncreature subtype the catalog prints on an artifact, enchantment or land front face (Equipment,
+ * Vehicle, Aura, Gate, Treasure): the words a swap reads as limiting a line to cards the deck may not hold
+ * (E1, d9's N = 1 ruling). Planeswalker subtypes are names, not a kind of card a deck collects, so not here.
+ */
+export const loadNoncreatureSubtypes = hourly(readNoncreatureSubtypes);
 
-export function loadCreatureTypes(): Promise<Set<string>> {
-  if (creatureTypesMemo && Date.now() - creatureTypesMemo.at < CREATURE_TYPES_TTL_MS) return creatureTypesMemo.types;
-  const types = readCreatureTypes();
-  creatureTypesMemo = { at: Date.now(), types };
-  // A failed read is not kept: the next caller reads again.
-  types.catch(() => { if (creatureTypesMemo?.types === types) creatureTypesMemo = null; });
-  return types;
+/** An hour: a type list moves only with the weekly catalog refresh, and a read costs ~200ms. */
+const TYPE_LIST_TTL_MS = 60 * 60 * 1000;
+function hourly(read: () => Promise<Set<string>>): () => Promise<Set<string>> {
+  let memo: { at: number; types: Promise<Set<string>> } | null = null;
+  return () => {
+    if (memo && Date.now() - memo.at < TYPE_LIST_TTL_MS) return memo.types;
+    const types = read();
+    memo = { at: Date.now(), types };
+    // A failed read is not kept: the next caller reads again.
+    types.catch(() => { if (memo?.types === types) memo = null; });
+    return types;
+  };
 }
 
 async function readCreatureTypes(): Promise<Set<string>> {
@@ -106,6 +117,16 @@ async function readCreatureTypes(): Promise<Set<string>> {
   return new Set(rows.rows.map((r) => r.t));
 }
 
+async function readNoncreatureSubtypes(): Promise<Set<string>> {
+  const front = sql.raw(`split_part(type_line, ' // ', 1)`);
+  const subtypes = sql.raw(`unnest(regexp_split_to_array(trim(split_part(split_part(type_line, ' // ', 1), ' — ', 2)), '\\s+'))`);
+  const rows = await db.execute<{ t: string }>(sql`
+    select distinct t from cards, ${subtypes} as t
+    where ${front} ~* '\\m(land|artifact|enchantment)\\M' and ${front} !~* '\\m(creature|kindred|tribal)\\M' and t <> ''
+  `);
+  return new Set(rows.rows.map((r) => r.t));
+}
+
 /** Null when the deck is not this reader's, or the card is not in the catalog. */
 /** `full` reads every stand-in of every group, for `Show all` on a group the first read capped. */
 export async function loadStandIns(deckId: string, userId: string, cutOracleId: string, full: boolean): Promise<StandInsRead | null> {
@@ -120,10 +141,14 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   // Read first, because the spell pool admits every staple by id (H4): one the commander's list
   // does not carry, and the price slice does not reach, would otherwise never be ranked at all.
   const [cmdrRows, draftRows, originalRows, staples] = await Promise.all([
-    db.execute<{ oracle_id: string; name: string; color_identity: string[] }>(sql`
-      select oracle_id, name, color_identity from cards where oracle_id = any(${sql.param(commanderIds)}::uuid[])
+    db.execute<{ oracle_id: string; name: string; color_identity: string[]; type_line: string; oracle_text: string | null }>(sql`
+      select oracle_id, name, color_identity, type_line, oracle_text from cards where oracle_id = any(${sql.param(commanderIds)}::uuid[])
     `),
-    db.execute<{ oracle_id: string }>(sql`select oracle_id from deck_cards where deck_id = ${deckId}`),
+    // Type lines, text and copies too, for the deck's key creature type and the subtypes it holds (E1).
+    db.execute<{ oracle_id: string; type_line: string; oracle_text: string | null; quantity: number }>(sql`
+      select dc.oracle_id, c.type_line, c.oracle_text, dc.quantity from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
+      where dc.deck_id = ${deckId}
+    `),
     db.execute<Row>(sql`
       select oracle_id, name, type_line, oracle_text, keywords, cmc, image_uri, null::real as inclusion, null::real as synergy, null::int as owned
       from cards where oracle_id = ${cutOracleId}
@@ -140,7 +165,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const draft = sql.param([...new Set([...draftRows.rows.map((r) => r.oracle_id), ...commanderIds])]);
 
   const job = jobOf(original);
-  const [candidates, creatureTypes] = await Promise.all([
+  const [candidates, creatureTypes, noncreatureSubtypes] = await Promise.all([
     job.kind === "none" ? [] : db.execute<Row>(
       job.kind === "spell"
         ? spellPool({ deck, userId, identity, draft, mv: job.mv, roles: job.roles, cut: cutOracleId, staples: sql.param([...staples]) })
@@ -148,6 +173,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
     ).then((r) => r.rows),
     // Only a spell is matched on themes, so only a spell needs the tribal theme's type list.
     job.kind === "spell" ? loadCreatureTypes() : new Set<string>(),
+    job.kind === "spell" ? loadNoncreatureSubtypes() : new Set<string>(),
   ]);
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
@@ -170,7 +196,13 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   });
 
   return {
-    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP),
+    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP, {
+      keyType: keyCreatureType(draftRows.rows.map((r) => ({ typeLine: r.type_line, quantity: Number(r.quantity) })), cmdrRows.rows.map((r) => r.type_line)),
+      isSubtype: (w) => noncreatureSubtypes.has(w),
+      // The card being replaced is leaving, so what it holds does not count (d9).
+      held: heldSubtypes([...draftRows.rows, ...cmdrRows.rows].filter((r) => r.oracle_id !== cutOracleId)
+        .map((r) => ({ typeLine: r.type_line, oracleText: r.oracle_text }))),
+    }),
     original,
     commanders,
     newestAsOf: priced.newestAsOf,

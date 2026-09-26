@@ -127,6 +127,8 @@ export const swapToolsCopy = {
     /** Each theme and role as a row names it. Owed to /copy-review with the rest of D2. */
     job: {
       ramp: "ramp", draw: "draw", removal: "removal", wipes: "wipes",
+      // E1 ruling b: a row names ramp by its kind, since a stand-in keeps ramp only in a kind it shares.
+      tapsForMana: "taps for mana", fetchesLand: "fetches a land", makesTreasure: "makes Treasure", burstMana: "one-shot mana",
       counters: "+1/+1 counters", pump: "pumps", haste: "haste", evasion: "evasion", etbDraw: "draws on entering",
       tokens: "tokens", treasure: "Treasure", protection: "protection", recursion: "recursion", blink: "blink",
       finisher: "a finisher", castFree: "free casts", mill: "mill", sacOutlet: "a sacrifice outlet",
@@ -186,8 +188,9 @@ export const swapToolsCopy = {
       `${name} does a job we can’t read from its text, so there are no stand-ins for it. We won’t guess at one.`,
     noRoleLand: (name: string) =>
       `${name}’s job is its own text, not a color it makes or a land it finds, so there are no stand-ins for it. We won’t guess at one.`,
-    nothingCheaper: (roles: string, mv: number, commander: string, price: string) =>
-      `Nothing cheaper does this job. All the other ${roles} at mana value ${mv} or less in ${commander}’s colors costs more than ${price}, and you have no free copy of any of it.`,
+    /** E1: `jobs` are the original's jobs as a stand-in must keep them (ramp by its kind), `or`-joined. Owed to /copy-review. */
+    nothingCheaper: (jobs: string, mv: number, commander: string, price: string) =>
+      `Nothing cheaper does this job (${jobs}) at mana value ${mv} or less in ${commander}’s colors. Every card that does costs more than ${price}, and you have no free copy of one.`,
     nothingCheaperLand: (colors: string, price: string) =>
       `Nothing cheaper makes ${colors}. Every land that does costs more than ${price}, and you have no free copy of one.`,
     /** F5: a sold-out original with no free stand-in. The nothingCheaper sentences cite a price it has not got. Owed to /copy-review. */

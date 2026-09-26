@@ -20,7 +20,7 @@ import ws from "ws";
 import { commitVersion } from "../src/lib/decks/versions";
 import { isLandFace } from "../src/lib/cards/facet";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
-import { loadCreatureTypes, loadStandIns, type StandInsRead } from "../src/lib/swaps/gather";
+import { loadCreatureTypes, loadNoncreatureSubtypes, loadStandIns, type StandInsRead } from "../src/lib/swaps/gather";
 import { fetchFinds, landColors, landColorsOnce } from "../src/lib/swaps/land";
 import { jobOf, mainType, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
@@ -206,6 +206,11 @@ async function main() {
   check("themes: the catalog's creature types, and only creature types",
     types.size > 250 && types.has("Elf") && types.has("Dinosaur") && !types.has("Forest") && !types.has("Dino"),
     `${types.size} types; Elf ${types.has("Elf")}, Dinosaur ${types.has("Dinosaur")}, Forest ${types.has("Forest")}`);
+  // The noncreature subtypes a limited line names (E1): read by the same kind of query, so the same trap.
+  const subtypes = await loadNoncreatureSubtypes();
+  check("themes: the catalog's noncreature subtypes, and no creature type",
+    ["Equipment", "Vehicle", "Aura", "Gate", "Treasure"].every((t) => subtypes.has(t)) && !subtypes.has("Elf") && !subtypes.has("Dinosaur"),
+    `${subtypes.size} subtypes; Equipment ${subtypes.has("Equipment")}, Gate ${subtypes.has("Gate")}, Elf ${subtypes.has("Elf")}`);
 
   // 5. No job: no stand-in and no guess.
   const none = await loadStandIns(deckId, USER, roleless.oracle_id, false);

@@ -267,7 +267,10 @@ export function sheetModel(read: StandInsRead): SheetModel {
   if (groups.length === 0) {
     const sentence =
       soldOut ? copy.soldOutNone(original.name)
-      : job.kind === "spell" ? copy.nothingCheaper(rolesText(job.roles), job.mv, commander, price)
+      // E1: the jobs a stand-in had to keep, ramp by its kind, so the sentence is true of what was ruled out.
+      : job.kind === "spell" ? copy.nothingCheaper(
+        read.jobRoles.length ? listWords([...new Set(read.jobRoles.map((j) => copy.job[j]))], "or") : rolesText(job.roles),
+        job.mv, commander, price)
       : copy.nothingCheaperLand(colorsText(landColors), price);
     return { job: jobLine, lead: null, groups: [], sentence, foot: false };
   }

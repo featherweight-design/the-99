@@ -10,7 +10,8 @@ import { isLandFace } from "../cards/facet";
 import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { frontFaceOracle } from "../recs/faces";
 import { classifyRoles, type Role } from "../recs/roles";
-import { cardThemes, type Theme } from "../recs/themes";
+import { type Theme } from "../recs/themes";
+import { honestJobs, type DeckLens, type SwapRole } from "./honest";
 import {
   colorSource, drawbacks, fetchFinds, givesUp, landCatch, landColors, landColorsOnce, type BasicType, type Color, type Drawback, type Finds, type GivenUp,
 } from "./land";
@@ -131,13 +132,14 @@ export type StandIn = {
   inclusion: number | null;
   synergy: number | null;
   isUniversal: boolean;
-  shared: SpellRole[];
-  /** The themes it shares with the original (`cardThemes`): a spell's second match, beside its roles (Q6). */
+  /** The roles it shares with the original, ramp read as its kind (`honestJobs`, E1). */
+  shared: SwapRole[];
+  /** The themes it shares with the original (`honestJobs`): a spell's second match, beside its roles (Q6). */
   sharedThemes: Theme[];
   /** A spell's jobs beyond the original's, roles then themes: the row's `also …` (addendum R1). */
-  extra: (SpellRole | Theme)[];
+  extra: (SwapRole | Theme)[];
   /** The original's jobs this spell does not do, roles then themes: the row's `gives up …` (R1). */
-  missing: (SpellRole | Theme)[];
+  missing: (SwapRole | Theme)[];
   /** The job's colors this land makes only once, by sacrificing itself; its row names them. */
   once: Color[];
   /** A land's rung on the ladder (`landRung`); null for a spell. Orders the sheet, never drawn in B. */
@@ -164,6 +166,8 @@ export type StandInGroups = {
   originalCents: number | null;
   /** `same` first, then `other`; a group with no rows is left out. */
   groups: StandInGroup[];
+  /** The original's jobs as a stand-in must keep them (`honestJobs`, ramp by kind); empty for a land. */
+  jobRoles: SwapRole[];
 };
 
 type Priced = { prices: Map<string, PriceFact>; newestAsOf: Date | null };
@@ -254,12 +258,20 @@ export function rankStandIns(
   isCreatureType: (word: string) => boolean,
   /** `STAND_IN_GROUP_CAP` for the sheet's first read; null for the whole group, which `Show all` asks for. */
   cap: number | null,
+  /**
+   * What the deck plays (`DeckLens`), or null for no deck. A spell's ability limited to a creature type or
+   * subtype the deck does not play does no job for it (E1), so it neither matches nor counts as kept,
+   * gained or given up.
+   */
+  deck: DeckLens | null,
 ): StandInGroups {
   const job = jobOf(original);
-  const originalThemes = job.kind === "spell" ? cardThemes(original, isCreatureType) : [];
-  const originalRoles = job.kind === "spell" ? spellRoles(original) : [];
+  // E1: a spell is matched on what it does for THIS deck, ramp read as its kind (`honestJobs`).
+  const originalJobs = job.kind === "spell" ? honestJobs(original, isCreatureType, deck) : { roles: [], themes: [] };
+  const originalThemes = originalJobs.themes;
+  const originalRoles = originalJobs.roles;
   const originalPrice = stocked(original.oracleId, priced);
-  const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [] };
+  const read: StandInGroups = { job, originalCents: originalPrice?.cents ?? null, groups: [], jobRoles: originalRoles };
   if (job.kind === "none") return read;
 
   const isLand = job.kind !== "spell";
@@ -270,11 +282,16 @@ export function rankStandIns(
     if (c.oracleId === original.oracleId) continue;
     const match = sameJob(job, c);
     if (!match) continue;
+    const jobs = isLand ? { roles: [], themes: [] } : honestJobs(c, isCreatureType, deck);
+    // Sharing a coarse role is not enough: a stand-in keeps a job only when it does it for this deck,
+    // and a ramp only in the same kind. One that keeps no role is not offered (E1 ruling d: Warg).
+    const shared: SwapRole[] = isLand ? [] : jobs.roles.filter((r) => originalRoles.includes(r));
+    if (!isLand && shared.length === 0) continue;
     const price = stocked(c.oracleId, priced);
     const free = freeAfterTake(c, c.owned, c.free);
     if (!free && !(price && originalPrice && price.cents < originalPrice.cents)) continue;
-    const roles = isLand ? [] : spellRoles(c);
-    const themes = originalThemes.length > 0 || !isLand ? cardThemes(c, isCreatureType) : [];
+    const roles = jobs.roles;
+    const themes = jobs.themes;
     const row: StandIn = {
       card: c,
       free,
@@ -284,7 +301,7 @@ export function rankStandIns(
       inclusion: c.inclusion,
       synergy: c.synergy,
       isUniversal: c.isUniversal,
-      shared: match.shared,
+      shared,
       sharedThemes: themes.filter((t) => originalThemes.includes(t)),
       extra: [...roles.filter((r) => !originalRoles.includes(r)), ...themes.filter((t) => !originalThemes.includes(t))],
       missing: isLand ? [] : [
