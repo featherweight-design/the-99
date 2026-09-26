@@ -79,7 +79,6 @@ export const helpMeChooseCopy = {
     kinds: { colors: "colors", exactly: "exactly", theme: "theme", anyOf: "any of", card: "card", budget: "budget", bracket: "bracket" }, // canvas
     /** Between the names on an any-of chip, drawn apart from them. */
     joiner: "or",
-    anyOfAria: (names: readonly string[]) => `Any of ${orList(names)}`,
     /** After a deeper look: what even it could not place. */
     stillNotUsed: "Still not used",
     /** The tag on a chip the deeper look added. */

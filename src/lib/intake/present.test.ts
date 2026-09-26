@@ -210,7 +210,7 @@ describe("themes asked as any of", () => {
   it("draws one chip for the group, its names apart and its spoken name whole", () => {
     expect(answerChips(anyFour, tribal)).toEqual([{
       kind: "any of",
-      value: "Any of Orcs, Elves, Dwarves or Wizards",
+      value: "Orcs, Elves, Dwarves or Wizards",
       names: ["Orcs", "Elves", "Dwarves", "Wizards"],
       deeper: false,
     }]);

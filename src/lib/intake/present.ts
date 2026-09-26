@@ -238,7 +238,9 @@ export function answerChips(p: ChooseParams, labels: Labels, deeper: readonly st
     ...(isAnyOf(p)
       ? [{
         kind: k.anyOf,
-        value: copy.readAs.anyOfAria(p.themes.map(labels.theme)),
+        // The chip's kind, `any of`, is read before it, so the value is the names alone: with the
+        // full name here the group was spoken as "any of Any of Orcs, …".
+        value: orList(p.themes.map(labels.theme)),
         names: p.themes.map(labels.theme),
         deeper: p.themes.some((s) => marked(`t:${s}`)),
       }]

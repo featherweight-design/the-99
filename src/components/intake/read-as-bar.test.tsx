@@ -111,7 +111,9 @@ describe("an any-of chip", () => {
     );
     const [only] = screen.getAllByTestId("answer-chip");
     const names = within(only).getByTestId("any-of-names");
-    expect(within(names).getByText("Any of Orcs, Elves or Wizards").className).toContain("sr-only");
+    expect(within(names).getByText("Orcs, Elves or Wizards").className).toContain("sr-only");
+    // Spoken once: the kind, then the names, with nothing else read.
+    expect(only.textContent?.replace(names.querySelector("[aria-hidden]")!.textContent!, "")).toBe("any ofOrcs, Elves or Wizards");
     expect(names.querySelector("[aria-hidden]")?.textContent).toBe("Orcs or Elves or Wizards");
     expect(only.textContent?.startsWith("any of")).toBe(true);
   });
