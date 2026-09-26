@@ -104,6 +104,10 @@ export async function buildFillPlan(
     /** What Help me choose was asked (F1): the budget and bracket become a gate on the fill.
      *  Absent on every other path, which then fills exactly as before. */
     answers?: DeckAnswers;
+    /** Only cards I own (three answers §3): the sleeveable pool is the PROMISE, so a failed claim
+     *  read throws rather than widening the pool to copies another deck may hold. The create reads
+     *  that throw as a failed fill and leaves its retry. Every other sleeveable caller degrades. */
+    failClosed?: boolean;
   } = {},
 ): Promise<FillPlan> {
   const commander = commanders[0];
@@ -184,12 +188,13 @@ export async function buildFillPlan(
   //
   // The predicate is `canSeed`'s rather than a second one written from memory: owned, and free
   // unless nothing is known about it. Degraded rather than fatal — without the read the pool
-  // is as wide as it was before.
+  // is as wide as it was before — except under own-only, where it fails closed (`failClosed`).
   if (sleeveableOnly && pool.length > 0) {
-    const seen = await loadAvailability(userId, {
+    const read = loadAvailability(userId, {
       oracleIds: pool.map((c) => c.oracleId),
       excludeDeckId: options.excludeDeckId,
-    }).catch(() => null);
+    });
+    const seen = options.failClosed ? await read : await read.catch(() => null);
     if (seen) {
       pool = pool.filter((c) => {
         const a = seen.get(c.oracleId);
@@ -394,7 +399,7 @@ export async function createDeck(
         answers: { budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket, cardOracleId: card?.oracleId ?? null },
         // Only cards I own (three answers §3): the 99 from what the collection can supply. Nothing
         // is bought for it, so the budget has only the placed card to charge.
-        ...(asked.pool === "own" ? { pool: "sleeveable" as const } : {}),
+        ...(asked.pool === "own" ? { pool: "sleeveable" as const, failClosed: true } : {}),
       },
     );
     deckId = await db.transaction(async (tx) => {
@@ -714,7 +719,7 @@ export async function fillDeck(deckId: string): Promise<void> {
     {
       ...(answers === null ? {} : { answers }),
       // The retry fills the way the create was asked to: from the player's own cards.
-      ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, excludeDeckId: deck.id } : {}),
+      ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, failClosed: true, excludeDeckId: deck.id } : {}),
     },
   );
   // The card first, then as much of the plan as fits: the plan fills a whole body on its own, so

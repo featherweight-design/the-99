@@ -160,10 +160,11 @@ export function buildPhraseIndex(
 
 /**
  * The 99 from cards the player owns (addendum §3): a fixed list of phrasings, engineering's to
- * keep. Matched before the word scan, like the figures, so their words never reach it.
+ * keep. Matched before the word scan, like the figures, so their words never reach it. A phrase
+ * followed by a buying clause (*what I have to buy*) is the opposite ask, so it never matches.
  */
 const OWN_ONLY =
-  /\b(?:(?:only|just|using|with|from)\s+)?(?:(?:the\s+)?cards?\s+(?:that\s+)?i\s+(?:already\s+)?(?:own|have)|(?:from\s+)?my\s+(?:own\s+)?(?:collection|cards)|what\s+i\s+(?:already\s+)?(?:own|have))\b/gi;
+  /\b(?:(?:only|just|using|with|from)\s+)?(?:(?:the\s+)?cards?\s+(?:that\s+)?i\s+(?:already\s+)?(?:own|have)|(?:from\s+)?my\s+(?:own\s+)?(?:collection|cards)|what\s+i\s+(?:already\s+)?(?:own|have))\b(?!\s+to\s+(?:buy|purchase|get|order|pick\s+up)\b)/gi;
 /**
  * Said beside own-only, and already the default: the commander is listed owned or not. Absorbed,
  * so it is neither an answer nor under *Not used*.

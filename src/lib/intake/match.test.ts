@@ -194,6 +194,12 @@ describe("the 99 from cards you own (three-answers addendum §3)", () => {
     expect(own("dinosaurs")).toBe(0);
   });
 
+  it("never reads a buying clause as own-only", () => {
+    expect(own("cards I have to buy")).toBe(0);
+    expect(own("what I have to purchase first")).toBe(0);
+    expect(own("the cards I own to buy around")).toBe(0);
+  });
+
   it("absorbs the commander-may-be-bought line, leaving nothing under Not used", () => {
     const r = match("Using cards I own. The commander can be one I have to buy.");
     expect(r.chips).toEqual([{ kind: "pool" }]);
