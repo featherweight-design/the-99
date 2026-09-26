@@ -602,8 +602,8 @@ export function DecklistRow({
             // into — the name is its own button — so the marker speaks for
             // itself. Design 17.5 is written for this surface specifically.
             spoken
-            // Count-only in BOTH views (#354). A bare `short 1`, never
-            // `short 1 — also in Atraxa`. The clause's prefix is ~120px and
+            // Count-only in BOTH views (#354). A bare `short` (or `short N` above one copy), never
+            // `short, also in Atraxa`. The clause's prefix is ~120px and
             // never truncates by contract, but the name after it does: this row
             // also carries the EDHREC figure, the tag and a 44px ✕, so at 390px
             // and inside the 2-up desktop grid the name loses its tail and

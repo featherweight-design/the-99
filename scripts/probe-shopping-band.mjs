@@ -8,7 +8,7 @@
 //   4. the availability marker reads `short` and draws the count only above one.
 // Every one of those is a fact about laid-out geometry, which jsdom has none of, so this reads it:
 //   - no drawn name narrower than 40px, at every width;
-//   - the page does not scroll sideways, measured with one name stretched to 124 characters (the
+//   - the page does not scroll sideways, measured with one name stretched to 126 characters (the
 //     `sideways` rule from probe:deck-locks: whether a fixture has a long name is a fact about data);
 //   - below 1024 every row's pips sit on a line under its name, and from 1024 beside it;
 //   - below 1024 an `over $X` sits directly above its row's buy tag, and the figure hugs the word;
@@ -209,7 +209,7 @@ async function run() {
           : `${rows.length} rows; narrowest ${narrowest.nameWidth.toFixed(1)}px is ${narrowest.name}, its whole name`);
       report(`${width}px · the page does not scroll sideways`, scrollWidth <= clientWidth, `${scrollWidth} / ${clientWidth}`);
       const s = await sideways(page);
-      report(`${width}px · nor with a 124-character name`, s.stretched && s.scrollWidth <= s.clientWidth, JSON.stringify(s));
+      report(`${width}px · nor with a 126-character name`, s.stretched && s.scrollWidth <= s.clientWidth, JSON.stringify(s));
 
       const withPips = rows.filter((r) => r.pipTop !== null);
       if (withPips.length === 0) {

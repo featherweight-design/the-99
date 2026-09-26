@@ -69,7 +69,7 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
  */
 export function LockModeLine({ count }: { count: number }) {
   return (
-    // A 16px line, the mark key's own height, so trading one for the other moves nothing below it
+    // A 16px line, the key's own line height, so a one-line key and this line share a slot exactly
     // (Hugh, 2026-09-26: at 1.5 leading, entering the mode shifted the page 2.75px). Flex rather
     // than one line of text: a smaller mono span on a sans baseline grows a shared line box by a
     // pixel, and as centered flex items each keeps its own (baseline alignment grows it again).
@@ -368,7 +368,23 @@ export function Decklist({
   // BOTH VIEWS since Locked 4b, and the mode is KEPT across List and Card (the addendum's rule):
   // every row's ✕ and every tile's ✕ column is the toggle while it runs. Only Shopping ends it,
   // in the shell.
-  const keyLine = lockMode ? (
+  //
+  // Entering or leaving the mode moves nothing (Hugh, 2026-09-26). Where the lock is on offer and
+  // there is a key to trade, both are laid in ONE grid cell and the hidden one keeps its box, so
+  // the slot is always the taller of the two: the key wraps to a second line on a busy phone, and
+  // a single swap then jumped the list. `invisible` is visibility:hidden, which also takes the
+  // hidden one out of the tab order and the accessibility tree, so still only one is read. A deck
+  // with no key at all has no slot to hold, and the mode's line appears in one.
+  const keyLine = onLockModeChange && markKey.length > 0 ? (
+    <div className="grid">
+      <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
+        <MarkKey marks={markKey} regionAria={markKeyRegion} />
+      </div>
+      <div className={`[grid-area:1/1] ${lockMode ? "" : "invisible"}`}>
+        <LockModeLine count={lockedCardCount} />
+      </div>
+    </div>
+  ) : lockMode ? (
     <LockModeLine count={lockedCardCount} />
   ) : (
     <MarkKey marks={markKey} regionAria={markKeyRegion} />
