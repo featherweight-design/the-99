@@ -102,3 +102,18 @@ describe("a result row", () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("the set tag (three answers §2)", () => {
+  it("draws the code after the pips, titled and spoken with the set's name, and nothing with no set", () => {
+    draw(row({ set: { code: "hob", name: "The Hobbit" } }));
+    const tags = screen.getAllByTestId("row-set");
+    expect(tags.length).toBeGreaterThan(0);
+    expect(tags[0].getAttribute("title")).toBe("The Hobbit");
+    expect(tags[0].textContent).toBe("Printed in The HobbitHOB");
+  });
+
+  it("draws no tag when no set was asked", () => {
+    draw(row());
+    expect(screen.queryAllByTestId("row-set")).toHaveLength(0);
+  });
+});
