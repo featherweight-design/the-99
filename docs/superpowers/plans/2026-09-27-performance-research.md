@@ -10,7 +10,7 @@ loading or JavaScript:
 1. **The server and the database are on opposite coasts.** Every Vercel function runs in
    **iad1** (Washington, DC); the Neon database is in **us-west-2** (Oregon). Every database round
    trip crosses the continent. A page makes six to nine of them in sequence, and the card details
-   press makes five.
+   press makes four for an owned card (five for one the player does not own).
 2. **One query, the claim model, is expensive and runs three times on Home and on `/decks`.** It
    costs 266ms of database time on Hugh's real collection, 174ms of which is one correlated
    subquery re-scanning a CTE 1,500 times.
@@ -94,20 +94,31 @@ What these say:
 ### Card details (the priority)
 
 `getCardDetail` → `loadCardDetail` (`src/lib/collection/card-detail.ts:337`) makes **four serial
-round trips for an owned card and five for an unowned one**:
+round trips for an owned card and five for an unowned one**.
+
+Owned:
 1. `selectCollectionRows`;
 2. availability, prices, proxies and the Fits gate, in parallel;
 3. bracket flags;
-4. combo partners;
-5. (unowned) the `cards` row, then printings.
+4. combo partners.
 
-Database execution is only **89ms** of it, of which 52ms is the claim model narrowed to one card.
+Unowned:
+1. `selectCollectionRows` (it finds nothing);
+2. the `cards` row;
+3. printings, with prices, proxies and the gate started beside it (no availability read);
+4. bracket flags;
+5. combo partners.
+
+Database execution is only **89ms** of it (from `pg_stat_statements` across one press of an owned
+card), of which 52ms is the claim model narrowed to that card. The same read run standalone
+under `EXPLAIN ANALYZE`, for a card the account does not hold, executes in 43ms (the `/decks` part of this section).
 The rest is round trips and auth. At 33ms a trip that comes to ~200ms here. At the estimated
 production round trip it is ~400–500ms, which fits "feels slower on initial load".
 
 - Bracket flags and combo partners need only the oracle id, the user and the deck ids. They wait
   on step 1 for no reason. Prices, proxies and the gate could start before step 1 too. On the
-  unowned path, `cards` and `printings` are independent. **Five serial levels can become two.**
+  unowned path, `cards` and `printings` are independent. **Four or five serial levels can become
+  two.**
 - The provider already keeps a per-mount `Map` (`card-detail-provider.tsx:350`), which is why a
   second press takes 38ms. **Nothing fills it before the first press.** The only prefetch is the
   art (`preloadCardArt`, #998), and that is why art and dialog arrive together.
@@ -130,22 +141,28 @@ The page also runs serial awaits that do not depend on each other (`app/decks/[i
 - Six of wave 1's seven reads could start with `getDeckDetail`; only the synergy read needs it.
 - `loadVersionShape` (`:192`) could join wave 2.
 - `readShoppingLimit` (`:358`) runs alone at the end.
-- **This PR's notices read** (#1043) was placed beside the stored bracket read, so it adds no
-  level.
+- The notices read #1043 adds (not yet on the base this was measured on) starts beside the
+  stored bracket read, so it adds no level.
 
 ### `/decks` (0.8s warm, 860ms of database time) and Home (1.1s warm, 656ms)
 
-The same statement dominates both: the claim model.
-- `loadShoppingRollup` → `loadDeckBuyRows` runs it user-wide (2 calls, 478 rows, 515–643ms).
-- `listDecksWithStats` → `loadAvailability` runs it again (1 call, 2,799 rows, 78–142ms).
+The same statement dominates both: the claim model, reached from three call sites.
+- `loadDeckBuyRows`, user-wide, **twice** per request (2 calls, 478 rows, 515–643ms together):
+  once from `loadShoppingRollup` (`lib/decks/shopping-rollup.ts:74`), and once from
+  `listDecksWithStats` (`lib/decks/read.ts:1111`), which reads it only when some deck can flip
+  (`canFlip`), true on this account.
+- `loadAvailability`, user-wide, once (2,799 rows, 78–142ms): on `/decks` from
+  `listDecksWithStats` (`read.ts:1068`, only with `includeInUseElsewhere`, which `/decks` passes);
+  on Home from its own step 5 (`app/page.tsx:156`), since Home does not pass that option.
 
 `EXPLAIN (ANALYZE, BUFFERS)` on the real call, against Hugh's snapshot:
 - **266ms** execution for `loadDeckBuyRows`, of which **174ms** is one node: `Aggregate` over
   `CTE Scan on claim_decks_all senior_1`, **1,500 loops**. That is the "senior claims" figure,
   computed per (deck, card) row by re-scanning the unindexed CTE. The work is O(n²), and it grows
   with the number of decks.
-- ~42ms is the `owned` CTE, which hash-joins a **sequential scan of all 35,558 `cards`** to reach
-  3,015 collection rows.
+- ~42ms is the `owned` CTE, which hash-joins a **sequential scan of all 35,558 `cards`** against
+  the collection. The join returns 3,015 rows (the snapshot's 3,235 collection rows are before
+  that join).
 - Even the one-card read the card modal uses executes in **43ms**, because the claim model is
   built user-wide before it is narrowed.
 
@@ -185,9 +202,9 @@ Wins are for **production** unless marked "measured".
 
 | Rank | Option | Effort | Expected win |
 |---|---|---|---|
-| **1** | **Run the functions next to the database.** Set the Vercel function region to `pdx1` (Portland), beside Neon's us-west-2, via `regions` in `vercel.json` or the project setting, on both projects. Alternatively move Neon east, which is a data migration and far more work | **Config only** | Each round trip drops from ~60–70ms (estimated) to a few ms. **Card details: ~250–300ms saved** (5 serial trips). **Deck page and Home: ~400–500ms each** (6–9 serial levels). Every route gains. Hugh's requests already enter at `sfo1`, so pdx1 is also closer to him than iad1. **Measure first**: PR 1 adds the `Server-Timing` needed to confirm the round-trip figure on staging before and after |
+| **1** | **Run the functions next to the database.** Set the Vercel function region to `pdx1` (Portland), beside Neon's us-west-2, via `regions` in `vercel.json` or the project setting, on both projects. Alternatively move Neon east, which is a data migration and far more work | **Config only** | Each round trip drops from ~60–70ms (estimated) to a few ms. **Card details: ~200–250ms saved** for an owned card (4 serial trips), ~250–300ms for an unowned one (5). **Deck page and Home: ~400–500ms each** (6–9 serial levels). Every route gains. Hugh's requests already enter at `sfo1`, so pdx1 is also closer to him than iad1. **Measure first**: PR 1 adds the `Server-Timing` needed to confirm the round-trip figure on staging before and after |
 | **2** | **Prefetch card details on intent.** On `pointerenter` (desktop, ~100ms debounce) and on press-start (`pointerdown`, touch), call the existing `fetchCard` and file the answer in the provider's `Map`, so the press finds it. No new cache, and no `staleTimes` | Small (provider only) | **Measured: a cold press of 250–330ms becomes the warm path's ~40ms** whenever the pointer rests 250ms+ before the press. `pointerdown` saves ~60–100ms on touch. **Risk:** Next runs server actions **one at a time per client**, so a hover prefetch could queue in front of a real action. Serve the prefetch from a route handler (`GET`) instead of the action, or cap it at one in flight and drop stale requests |
-| **3** | **Rewrite the claim model's senior-claims figure as a window function**, over `claim_decks_all` partitioned by oracle id, ordered by `since`. It is O(n log n), where the correlated aggregate is O(n²). Give the `owned` CTE an index path instead of the 35k-row `cards` scan | Medium (one SQL module, but the most probe-covered one in the repo: `probe:claims` has eight mutation cases to keep green) | **Measured basis:** 174ms of 266ms per call is the correlated node, and ~40ms is the scan. Expect ~200ms off each call. Home and `/decks` each run it three times (two of them in parallel), so **~300–400ms of database time per request**, **~40ms per card press**, and every write that re-reads claims gets faster too. The cost grows with deck count, so it only gets worse as Hugh builds decks |
+| **3** | **Rewrite the claim model's senior-claims figure as a window function**, over `claim_decks_all` partitioned by oracle id, ordered by `since`. It is O(n log n), where the correlated aggregate is O(n²). Give the `owned` CTE an index path instead of the 35k-row `cards` scan | Medium (one SQL module, but the most probe-covered one in the repo: `probe:claims` has eight mutation cases to keep green) | **Measured basis:** 174ms of 266ms per call is the correlated node, and ~40ms is the scan. Expect ~200ms off each user-wide call. Home and `/decks` each run it three times (see section 3 for the call sites), so **~300–400ms of database time per request**. On a card press the narrowed read (43–52ms) keeps its cost only where the user-wide build remains, so the expected win there is **up to ~40ms**, and every write that re-reads claims gets faster too. The cost grows with deck count, so it only gets worse as Hugh builds decks |
 | 4 | **Collapse `loadCardDetail`'s serial levels from 5 to 2**: start bracket flags, combo partners, prices, proxies and the gate at the top; pair `cards` with `printings` | Small | 3 round trips: ~100ms here (measured RTT), ~200ms in production today, a few ms after option 1. **Do it anyway**; it is small and removes the dependence on region |
 | 5 | **Deck page: the combo reads.** EXPLAIN and index `candidate-facts.ts`'s `two_card` (399ms) and `near-miss.ts`'s `pair` (173ms), or cache both per (deck list fingerprint, index generation) with `cacheForUser`, as suggestions already are | Medium | ~570ms of database time per deck-page load, which is **~40% of that page's database time**. With the other reads in parallel, the visible win is ~200–400ms |
 | 6 | **Deck page and Home: remove the independent serial awaits** listed in section 3 | Small | One to three round trips per page: ~33–100ms here, ~70–200ms in production today |
@@ -224,7 +241,7 @@ PRs 1–4 are small and between them carry most of the win for card details. PRs
 - Local timings use a 33ms database round trip. Production's is estimated, not measured, and PR 1
   exists to measure it.
 - The snapshot is 19 decks (staging has 20). The claim model's cost grows with deck count, so
-  production's figure is at least this one.
+  staging's figure is at least this one. Production's deck count was not read.
 - Server caches were warm in every timing here. A cold `cacheForUser` entry (the first visit
   after a write, or after a catalog refresh) costs more.
 - No write was made outside the scratch branch. The branch can be deleted when this PR is read.
