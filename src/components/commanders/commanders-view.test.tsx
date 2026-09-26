@@ -46,7 +46,11 @@ const replaceState = vi
   });
 const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
-vi.mock("../../app/commanders/actions", () => ({ retryRecs: vi.fn() }));
+const rememberCommandersAvail = vi.fn();
+vi.mock("../../app/commanders/actions", () => ({
+  retryRecs: vi.fn(),
+  rememberCommandersAvail: (...a: unknown[]) => rememberCommandersAvail(...a),
+}));
 
 function results(n: number, colorIdentity: string[] = ["R"]): CommanderRowItem[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -79,6 +83,10 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderRowItem[]
 
 type Over = {
   avail?: AvailMode;
+  /** The reader's saved mode, which the page sends beside the URL. */
+  savedAvail?: AvailMode;
+  /** An explicit `a=` on the URL, where a test needs one the saved mode does not imply. */
+  urlAvail?: AvailMode;
   freeItems?: CommanderRowItem[] | null;
   availOk?: boolean;
   degraded?: boolean;
@@ -88,7 +96,7 @@ type Over = {
 // The mode is the URL's alone now, so a test that opens in `free` says so by
 // setting the parameter the reader's own flip would have written.
 function el(list: CommanderRowItem[], over: Over = {}) {
-  const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
+  const { avail = "all", freeItems = null, availOk = true, degraded = false, savedAvail, urlAvail } = over;
   // Through the URL, because that is where the view reads the lane from: it
   // compares against `window.location` and uses the hook only to re-render.
   // `replaceState` is spied above and feeds the write back into `params`, so
@@ -97,7 +105,8 @@ function el(list: CommanderRowItem[], over: Over = {}) {
   // Only the one key it owns, leaving anything a test put there beside it — the
   // same rule the mirror itself follows.
   const live = new URLSearchParams(window.location.search);
-  if (avail === "free") live.set("a", "free");
+  if (urlAvail) live.set("a", urlAvail);
+  else if (avail === "free" && savedAvail !== "free") live.set("a", "free");
   else live.delete("a");
   const qs = live.toString();
   window.history.replaceState(null, "", qs ? `/commanders?${qs}` : "/commanders");
@@ -114,6 +123,7 @@ function el(list: CommanderRowItem[], over: Over = {}) {
       freeRanking={freeItems ? toFreeDelta(list, freeItems) : null}
       availOk={availOk}
       printedIn={over.printedIn}
+      savedAvail={savedAvail}
     />
   );
 }
@@ -457,6 +467,79 @@ describe("CommandersView ranking toggle", () => {
   const segments = (name: string) => screen.getAllByRole("radio", { name });
   const ALL = "All my cards";
   const FREE = "Free cards only";
+
+  describe("the saved mode (Hugh, 2026-09-27)", () => {
+    beforeEach(() => rememberCommandersAvail.mockClear());
+
+    it("opens in the saved mode when the URL names none, and writes no a=", () => {
+      view(results(3), { savedAvail: "free", freeItems: results(3) });
+      for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+      expect(window.location.search).not.toContain("a=");
+      expect(rememberCommandersAvail).not.toHaveBeenCalled();
+    });
+
+    it("lets an explicit a=all win over a saved free", () => {
+      view(results(3), { savedAvail: "free", urlAvail: "all", freeItems: results(3) });
+      for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    });
+
+    it("remembers the reader's flip, and writes a= only where it differs from the saved mode", () => {
+      view(results(3), { savedAvail: "free", freeItems: results(3) });
+      fireEvent.click(segments(ALL)[0]);
+      expect(rememberCommandersAvail).toHaveBeenCalledWith("all");
+      expect(urls().at(-1)).toBe("/commanders?a=all");
+      fireEvent.click(segments(FREE)[0]);
+      expect(rememberCommandersAvail).toHaveBeenLastCalledWith("free");
+      expect(urls().at(-1)).toBe("/commanders");
+    });
+
+    // Round 1 of #1068: a same-route navigation to a bare /commanders after a flip must read the
+    // NEW choice, before any fresh payload arrives with it.
+    it("reads a bare URL against the choice just made, not the payload's", () => {
+      const list = results(3);
+      const { again } = view(list, { freeItems: list });
+      fireEvent.click(segments(FREE)[0]);
+      // `again` re-renders with the SAME payload (saved `all`) at a bare /commanders.
+      again(list, { freeItems: list });
+      expect(window.location.search).not.toContain("a=");
+      for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    });
+
+    // Round 3 of #1068: after a flip moved the client's baseline, an address that names a mode
+    // keeps naming it, and a bare one stays bare.
+    it("keeps an explicit a=all after a flip, and leaves a bare address bare", () => {
+      const list = results(3);
+      const { again } = view(list, { freeItems: list });
+      fireEvent.click(segments(FREE)[0]);
+      again(list, { freeItems: list, urlAvail: "all" });
+      for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+      expect(window.location.search).toContain("a=all");
+      again(list, { freeItems: list });
+      expect(window.location.search).not.toContain("a=");
+    });
+
+    it("remembers nothing when no flip happened", () => {
+      view(results(3, ["R"]), { freeItems: results(3, ["R"]) });
+      fireEvent.click(screen.getByRole("switch", { name: "Red" }));
+      expect(rememberCommandersAvail).not.toHaveBeenCalled();
+    });
+
+    it("does not save the climb-down when a saved free cannot be served, nor pin it in the URL", () => {
+      view(results(3), { savedAvail: "free", availOk: false });
+      for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+      expect(rememberCommandersAvail).not.toHaveBeenCalled();
+      expect(window.location.search).not.toContain("a=");
+    });
+
+    // Availability is inside Clear's scope in the chassis (badge, chips and Clear share one
+    // counter), so a Clear that resets it is a choice, and is saved.
+    it("saves All when Clear resets a saved Free", () => {
+      view(results(3, ["R"]), { savedAvail: "free", freeItems: results(3, ["R"]) });
+      fireEvent.click(screen.getByRole("switch", { name: "Red" }));
+      fireEvent.click(screen.getAllByRole("button", { name: /^Clear/ })[0]);
+      expect(rememberCommandersAvail).toHaveBeenCalledWith("all");
+    });
+  });
 
   it("opens on the mode the URL asked for", () => {
     view(results(3), { avail: "free", freeItems: results(3) });

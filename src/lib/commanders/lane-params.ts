@@ -63,7 +63,16 @@ function read(sp: URLSearchParams, key: keyof typeof LEGACY): string | null {
   return sp.get(key) ?? sp.get(LEGACY[key]);
 }
 
-export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
+/**
+ * `saved` is the mode the reader last chose on the owned lane, stored per account (Hugh,
+ * 2026-09-27: open in the mode they last picked). The URL always wins over it — `a=free` and
+ * `a=all` are both explicit — and it answers only when the URL says nothing.
+ */
+export function parseLaneParams(
+  sp: URLSearchParams,
+  lane: Lane,
+  saved: Avail = "all",
+): LaneParams {
   const base = defaultParams(lane);
   // `parseColors` is the app-wide reader for `?c=`, and going through it is what
   // keeps a link portable: it takes the collection browser's letter run (`c=bg`)
@@ -82,7 +91,7 @@ export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
     q: sp.get("q") ?? "",
     colors,
     match: read(sp, "m") === "exact" ? "exactly" : "contains",
-    avail: lane === "owned" && read(sp, "a") === "free" ? "free" : "all",
+    avail: lane === "owned" ? readAvail(read(sp, "a")) ?? saved : "all",
     order,
     // Unknown codes are kept rather than validated: a set that stops existing matches nothing,
     // and the empty state names the control to drop.
@@ -90,12 +99,20 @@ export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
   };
 }
 
-export function serializeLaneParams(p: LaneParams, lane: Lane): string {
+function readAvail(raw: string | null): Avail | null {
+  return raw === "free" || raw === "all" ? raw : null;
+}
+
+/**
+ * `a` is written only where the mode differs from `saved`, the one the page opens in without
+ * it, so a URL carries `a=all` only for a reader whose saved mode is `free`.
+ */
+export function serializeLaneParams(p: LaneParams, lane: Lane, saved: Avail = "all"): string {
   const sp = new URLSearchParams();
   if (p.q) sp.set("q", p.q);
   if (p.colors.length > 0) sp.set("c", p.colors.join(","));
   if (p.match === "exactly") sp.set("m", "exact");
-  if (lane === "owned" && p.avail === "free") sp.set("a", "free");
+  if (lane === "owned" && p.avail !== saved) sp.set("a", p.avail);
   if (p.order !== ORDERS[lane][0]) sp.set("o", p.order);
   if (p.printedIn.length > 0) sp.set("p", normalizeSetCodes(p.printedIn).join(","));
   const qs = sp.toString();
@@ -113,11 +130,16 @@ const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s", "p"];
  * own exactly as the live URL had it. Foreign keys lead, in the order they were
  * already in; the lane's own keys follow in `serializeLaneParams` order.
  */
-export function laneQuery(live: URLSearchParams, p: LaneParams, lane: Lane): string {
+export function laneQuery(
+  live: URLSearchParams,
+  p: LaneParams,
+  lane: Lane,
+  saved: Avail = "all",
+): string {
   const kept = new URLSearchParams(live);
   for (const key of LANE_KEYS) kept.delete(key);
   for (const [key, value] of new URLSearchParams(
-    serializeLaneParams(p, lane).slice(1),
+    serializeLaneParams(p, lane, saved).slice(1),
   )) {
     kept.set(key, value);
   }

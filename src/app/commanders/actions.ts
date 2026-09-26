@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { isAvail, writeCommandersAvail } from "../../lib/commanders/avail-pref";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { loadBuiltCommanderIds, loadNameMatches } from "../../lib/discovery/candidates";
 import { classifyMatches, type ExcludedMatch } from "../../lib/discovery/excluded-match";
@@ -66,4 +67,22 @@ export async function findExcludedMatches(
   ]);
 
   return matches === null ? null : classifyMatches(matches, { sort: opts.sort, builtOracleIds });
+}
+
+/**
+ * Remember the mode the reader just chose on `/commanders`, so the page opens in it next time its
+ * URL names none (Hugh, 2026-09-27). Called on the reader's own flip or Clear (the chassis puts
+ * the mode inside Clear's scope), never on a render-time climb-down, so only a choice is saved.
+ *
+ * The write runs IN the action, not in `after()`. Next runs a page's server actions one at a
+ * time, so two quick flips write in the order they were made; two `after()` callbacks carry no
+ * such order, and the older choice could land last. Nothing waits on the answer either way (the
+ * view fires and forgets), and nothing is revalidated, since the page reads the mode fresh on
+ * each request and a render in this action's run would only ship the page back in its reply. A
+ * value that is not a mode is dropped at this boundary; the column's check refuses it too.
+ */
+export async function rememberCommandersAvail(avail: unknown): Promise<void> {
+  if (!isAvail(avail)) return;
+  const userId = await requireUserId();
+  await writeCommandersAvail(userId, avail);
 }

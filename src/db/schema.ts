@@ -1458,11 +1458,23 @@ export const deckDataChanges = pgTable("deck_data_changes", {
  * it, switch A on later, and A must still read as new. `about_version_seen` stays the
  * floor for every entry with no switch, so no row needs a backfill.
  */
-export const userPrefs = pgTable("user_prefs", {
-  userId: text("user_id").primaryKey(),
-  aboutVersionSeen: integer("about_version_seen").notNull().default(0),
-  aboutSeenIds: text("about_seen_ids").array().notNull().default(sql`'{}'::text[]`),
-});
+export const userPrefs = pgTable(
+  "user_prefs",
+  {
+    userId: text("user_id").primaryKey(),
+    aboutVersionSeen: integer("about_version_seen").notNull().default(0),
+    aboutSeenIds: text("about_seen_ids").array().notNull().default(sql`'{}'::text[]`),
+    /**
+     * The mode `/commanders` last opened in by the reader's own choice: `all` (All my cards) or
+     * `free` (Free cards only). Null until they first choose, which reads as `all`. Kept per
+     * account rather than per browser (Hugh, 2026-09-27), and never backfilled.
+     */
+    commandersAvail: text("commanders_avail"),
+  },
+  (t) => [
+    check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),
+  ],
+);
 
 /**
  * Commander Spellbook's combo index, projected to what a bracket verdict needs.
