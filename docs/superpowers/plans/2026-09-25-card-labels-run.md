@@ -262,8 +262,25 @@ call to produce and nothing to move.
   `pull:staging` learned: "not the source" is not the same as "safe to write to".
 - **Installs a row only when the hash the source stored equals the hash the TARGET'S
   own inputs produce.** A label describing an oracle text the target no longer holds is
-  never written; those rows keep their absence and are picked up by the next
-  `db:build:labels` against that target, which is the run to do afterwards.
+  never written; those rows keep their absence.
+
+  **A mismatch is REPORTED, with its count, and nothing is queued.** This bullet used to
+  end "and are picked up by the next `db:build:labels` against that target, which is the
+  run to do afterwards" — which would run the MODEL against production, the exact thing
+  pay-once exists to prevent, for labels that already exist on the source and are merely
+  describing a different catalog state. The copy says how many differ and lets a human
+  decide; the cheap fix is almost always to re-run the catalog refresh so the two agree,
+  not to buy the labels a second time.
+
+  **A card the target's catalog does not hold at all is COUNTED, not treated as a mismatch:**
+  there is nothing for the label to describe, and a source generated against a newer catalog
+  always carries rows the target has never heard of — so the figure is normally non-zero, and
+  a large one means the target's catalog refresh has stopped running. Silence is how a real
+  gap hides.
+
+  **A row generated under a different prompt version is counted separately too**, and named as
+  such: the version is in the hash, so such a row can never match, but that is not a catalog
+  difference and reporting it as one sends a reader to re-run a refresh that cannot fix it.
 - Carries `model` and `prompt_version` across unchanged, so a copied row says which
   model produced it and a later audit can tell copied rows from generated ones.
 - Never deletes. A card the source has not labelled leaves the target's row alone.
@@ -271,7 +288,21 @@ call to produce and nothing to move.
 ### Task 4c — the production copy is a JOB, never a probe
 
 Writing to production happens through the workflow or the job, exactly as
-`db:build:prose` does, and never from a probe or a local invocation. d9 must be told
+`db:build:prose` does, and never from a probe or a local invocation.
+
+**NOT YET SATISFIABLE, and deliberately left unsatisfied rather than worked around** (PR 4).
+A copy job needs BOTH database URLs at once and no environment has both: `catalog-staging` and
+`catalog-production` each hold only their own `CATALOG_DATABASE_URL`, the only repository-level
+secret is `ANTHROPIC_API_KEY`, and two jobs cannot share a secret. So the job needs one new
+secret holding staging's URL, readable from a production job — a credential decision rather
+than a code change. A third environment is the alternative and `commander-prose.yml` already
+rejects it: "one more thing to keep in sync for no benefit."
+
+Until then production carries NO labels, which this task's own second paragraph makes harmless:
+nothing player-visible reads them until a consumer PR does, and that is behind
+`SWAP_TOOLS_ENABLED`. The weekly workflow says so in every run's summary rather than leaving it
+to be discovered. Running the copy locally to fill the gap is what this task forbids, so it is
+not the workaround. d9 must be told
 BEFORE the production copy runs, so Hugh can confirm that the first real consumer —
 E1's matching — is ready or behind a switch.
 

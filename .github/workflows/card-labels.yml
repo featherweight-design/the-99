@@ -1,0 +1,163 @@
+name: Card labels
+
+# Labels new or changed cards' jobs and their limits, weekly.
+#
+# SHIPS DISABLED. `CARD_LABELS_ENABLED` must be set to 'true' for the schedule to fire, and
+# that flip is Hugh's: this is the first job in the repository that SPENDS MONEY on a cron, and
+# he approved a one-time backfill rather than a standing weekly charge. Until he switches it on,
+# only a manual dispatch runs.
+#
+# STAGING ONLY, with no matrix. Every other refresh job here fans out over both catalog
+# environments; this one must not, because a label costs a model call to produce and nothing to
+# move — so `db:copy:labels` carries the result to production and the fan-out would double the
+# bill for an identical outcome. Hugh's pay-once ruling, 2026-09-26. The exception is about money
+# rather than correctness, which is why it reads as one beside its siblings.
+on:
+  schedule:
+    # DAILY at 14:00 UTC, with a run id keyed to the ISO WEEK — and the daily cadence is what makes
+    # a timeout recoverable rather than abandoned.
+    #
+    # Monday's run is the one that finds work: it is after `Catalog refresh` (09:00) and `Combo
+    # refresh` (13:00), because a card the catalog has not ingested cannot be labelled. Every other
+    # day is a no-op costing one query, because the hash skip finds nothing to do.
+    #
+    # The reason it is not weekly: batches can take up to the provider's 24-hour ceiling, and a job
+    # that times out mid-run leaves intents recorded under that week's id. Weekly, the next
+    # invocation would be seven days later under a NEW id — so the old batch's results would never
+    # be collected and its cards would be submitted again, paid for twice. Daily, tomorrow's run
+    # computes the same ISO-week id, finds those intents and collects them.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    # Kill switch for the cron; a manual dispatch always runs.
+    if: vars.CARD_LABELS_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    concurrency:
+      # ONE group for the whole workflow, not per target, because there is no target: staging is
+      # the only database this writes. The group exists so two runs cannot put two batch streams
+      # on the API or race the same staging table. Never cancel in progress — an abort between
+      # submitting a batch and recording its intent is the one window that costs money twice.
+      group: card-labels
+      cancel-in-progress: false
+    # Batches are asynchronous and this job POLLS until they are collected and published, so the
+    # window has to cover the provider's turnaround. Measured on the sample: a 43-request batch
+    # ended within minutes, but the API's stated ceiling is 24 hours and a set week is ~75
+    # requests. Three hours is generous for the real case and still bounded; a run that times out
+    # leaves its intents recorded, and the next invocation with the same run id resumes rather
+    # than re-submitting.
+    timeout-minutes: 180
+    environment: catalog-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Label new and changed cards
+        # `shell: bash` expands to `bash -eo pipefail`. WITHOUT IT the script's exit code is
+        # swallowed by `tee`, and the job reports green over a refused run — which would make the
+        # spend cap and the publish floor, the two guards this job has, invisible in the only
+        # place anyone looks.
+        shell: bash
+        env:
+          # CATALOG_DATABASE_URL is the only database secret the catalog-* environments carry;
+          # `secrets.DATABASE_URL` is empty there and `requireEnv` would refuse.
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # A PER-RUN CAP sized to a release week, not to the backfill's $55.
+          #
+          # Measured over recent sets on the real catalog: a single set brings 65-616
+          # Commander-legal cards (median 193), and a release WEEK can bring several — 2026-06-26
+          # brought 897 across two, which is 75 requests and a worst case of $5.85. $9 covers that
+          # with room and still refuses anything resembling a backfill, which would be $208.
+          #
+          # WHAT THIS ACTUALLY DOES, measured rather than asserted — an earlier version of this
+          # comment claimed 1,200 cards would "refuse and report", and that is false:
+          #
+          #    897 cards  ( 75 req)  worst $5.85   submits in full   projection $1.16
+          #  1,200 cards  (100 req)  worst $7.80   submits in full   projection $1.55
+          #  1,368 cards  (114 req)  worst $8.89   submits in full   projection $1.77
+          #  2,000 cards  (167 req)  worst $13.02  wave TRUNCATES to 115 requests
+          #  3,900 cards  (325 req)  worst $25.34  PAUSES on the projection
+          #
+          # So the cap truncates above ~1,368 cards and the projection is what refuses, at
+          # ~3,900. That is the right shape for a weekly job: a heavy release week goes through,
+          # a backfill-sized surprise stops and reports. It is NOT a hard refusal at 1,200, and
+          # saying so would have left somebody trusting a bound that does not exist.
+          LABEL_CAP_USD: '9'
+          # The projection line, which is what actually refuses: about four times the measured
+          # weekly expectation of $1.20.
+          LABEL_REPORT_AT_USD: '5'
+        run: |
+          # A STABLE RUN ID, and a LOOP that branches on the script's EXIT CODE.
+          #
+          # The id first: `db:build:labels` submits a wave and exits, because batches are
+          # asynchronous — so collection happens on a LATER invocation, and the intent ledger,
+          # `alreadySpent` and the publish are all scoped to `LABEL_RUN_ID`. With a fresh timestamp
+          # per run and no re-invocation, a scheduled run submitted a wave, exited, and its results
+          # were never collected: the same cards were PAID FOR AGAIN every week while nothing was
+          # ever published. The id is derived from the ISO week, so today's run resumes this week's.
+          #
+          # And the branching is on the CODE, not on the output. Reading stdout produced three
+          # findings in three rounds — `published` also matched "nothing published" on the waiting
+          # line, and "nothing to do" also meant "every stale card is unlabelable" — each fixed
+          # with a better pattern, which was treating the symptom. Every message the script printed
+          # was load-bearing for this loop's control flow. Now:
+          #
+          #    0   done, published or nothing stale
+          #   75   more work: a wave went out, or batches are still processing — call again
+          #    *   stop and look: refused, paused, or nothing labelable
+          export LABEL_RUN_ID="weekly-$(date -u +%G-W%V)"
+          echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          for attempt in $(seq 1 40); do
+            echo "--- pass $attempt ---" | tee -a "$GITHUB_STEP_SUMMARY"
+            # `set +e` around the call only: the script's code is the signal, and `-e` would abort
+            # the loop on the 75 that means "call me again".
+            set +e
+            pnpm --silent db:build:labels 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+            code=${PIPESTATUS[0]}
+            set -e
+            case "$code" in
+              0)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              75) ;;  # more work; fall through to the sleep
+              *)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit "$code" ;;
+            esac
+            # Batches are minutes rather than seconds.
+            sleep 120
+          done
+          {
+            echo "gave up after 40 passes (~80 minutes). Intents are recorded under"
+            echo "$LABEL_RUN_ID, and TOMORROW'S scheduled run computes the same ISO-week id,"
+            echo "finds them and resumes — no dispatch needed, and nothing is re-submitted."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Note that production is not updated by this run
+        shell: bash
+        # A quoted heredoc: the previous version escaped a quote inside a double-quoted `echo` and
+        # left the string open, so `bash -n` failed and every run went red AFTER the model spend.
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'NOTE'
+
+          **These labels are on `catalog-staging` only.** Production is not updated by this run
+          and currently has no labels.
+
+          That is harmless today: Task 4c notes the labels change nothing player-visible until a
+          consumer reads them, and the first consumer is behind `SWAP_TOOLS_ENABLED`. So
+          production can wait.
+
+          It cannot be automated yet. `db:copy:labels` needs BOTH database URLs in one job, and
+          neither `catalog-staging` nor `catalog-production` holds the other's — so it needs one
+          new secret with staging's URL, readable from a production job. **Task 4c forbids running
+          the copy from a local invocation**, so this is deliberately NOT a manual workaround: the
+          copy waits for the job, and the job waits for the secret.
+          NOTE

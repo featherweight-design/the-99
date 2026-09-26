@@ -132,6 +132,7 @@
     "measure:load": "node scripts/measure-load.mjs",
     "check:constraints": "node scripts/check-constraints.mjs",
     "db:build:labels": "tsx scripts/build-card-labels.ts",
+    "db:copy:labels": "tsx scripts/copy-card-labels.ts",
     "db:build:staples": "tsx scripts/build-staples.ts",
     "measure:tutors": "tsx scripts/measure-tutor-targets.mts",
     "measure:swap-lines": "tsx scripts/measure-swap-lines.mts",
