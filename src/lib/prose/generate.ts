@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderSupport } from "../../db/schema";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import type { EdhrecTag } from "../edhrec/parse";
 import { checkProse, type ProseRejection } from "./accept";
 import {
@@ -24,6 +25,13 @@ export type GenerateOptions = {
   complete: (prompt: string) => Promise<string | null>;
   loadCandidates?: () => PromiseLike<ProseCandidate[]>;
   write?: (oracleId: string, prose: string, hash: string) => Promise<void>;
+  /**
+   * Retires every cached list built from the catalog, once the run has written anything.
+   * `/commanders` caches its rankings, sentences included, keyed on the catalog generation,
+   * and this job runs after `Commander index` has already stamped: without its own stamp, a
+   * payload cached in between keeps its null sentences for up to the hour ceiling.
+   */
+  stamp?: () => Promise<void>;
   suppressed?: (oracleId: string) => boolean;
   /** Attempts per commander before it is left with its null. */
   attempts?: number;
@@ -81,6 +89,7 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
   const write = opts.write ?? writeToDb;
   const suppressed = opts.suppressed ?? isSuppressed;
   const attempts = opts.attempts ?? DEFAULT_ATTEMPTS;
+  const stamp = opts.stamp ?? stampCatalogRefresh;
 
   const candidates = await load();
   const r: GenerateResult = {
@@ -92,57 +101,62 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
     rejectedBy: { length: 0, sentences: 0, "front-loading": 0, hedge: 0 },
   };
 
-  for (const c of candidates) {
-    // Consulted before generation, not after: a suppressed commander is never asked for.
-    if (suppressed(c.oracleId)) { r.suppressed++; continue; }
+  // In a `finally`, so a run that dies part-way still retires the payloads its writes changed.
+  try {
+    for (const c of candidates) {
+      // Consulted before generation, not after: a suppressed commander is never asked for.
+      if (suppressed(c.oracleId)) { r.suppressed++; continue; }
 
-    const hash = proseInputHash(c.oracleId, c.name, c.tags);
-    if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
+      const hash = proseInputHash(c.oracleId, c.name, c.tags);
+      if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
 
-    let accepted: string | null = null;
-    let called = false;
-    // Carried between attempts so a retry can be told which rule it broke. Null until the
-    // first rejection, and the last real rejection then stands until a newer one replaces
-    // it — a call that returned nothing produces no sentence to feed back, and the rule the
-    // attempt before it broke is still the most useful thing to say.
-    let last: { text: string; reason: ProseRejection } | null = null;
-    for (let i = 0; i < attempts && accepted === null; i++) {
-      const prompt =
-        last === null
-          ? buildProsePrompt(c.name, c.tags)
-          : buildProseRetryPrompt(c.name, c.tags, last.text, last.reason);
-      // A model client that throws is failing the same way the documented `null` names,
-      // and one commander's timeout is not a reason to abandon the rest of the batch.
-      // Narrow on purpose: only the call is guarded, so a bug in the accept contract
-      // below still surfaces as a crash rather than a silently failed attempt.
-      let reply: string | null;
-      try {
-        reply = await opts.complete(prompt);
-      } catch (err) {
-        console.warn(`prose: request failed for ${c.name}: ${String(err)}`);
+      let accepted: string | null = null;
+      let called = false;
+      // Carried between attempts so a retry can be told which rule it broke. Null until the
+      // first rejection, and the last real rejection then stands until a newer one replaces
+      // it — a call that returned nothing produces no sentence to feed back, and the rule the
+      // attempt before it broke is still the most useful thing to say.
+      let last: { text: string; reason: ProseRejection } | null = null;
+      for (let i = 0; i < attempts && accepted === null; i++) {
+        const prompt =
+          last === null
+            ? buildProsePrompt(c.name, c.tags)
+            : buildProseRetryPrompt(c.name, c.tags, last.text, last.reason);
+        // A model client that throws is failing the same way the documented `null` names,
+        // and one commander's timeout is not a reason to abandon the rest of the batch.
+        // Narrow on purpose: only the call is guarded, so a bug in the accept contract
+        // below still surfaces as a crash rather than a silently failed attempt.
+        let reply: string | null;
+        try {
+          reply = await opts.complete(prompt);
+        } catch (err) {
+          console.warn(`prose: request failed for ${c.name}: ${String(err)}`);
+          continue;
+        }
+        if (reply === null) continue;
+        called = true;
+        const trimmed = reply.trim();
+        const reason = checkProse(trimmed);
+        if (reason === null) {
+          accepted = trimmed;
+        } else {
+          r.rejectedBy[reason]++;
+          last = { text: trimmed, reason };
+          console.warn(
+            `prose: rejected for ${c.name} (${reason}, ${trimmed.length} chars): ${trimmed}`,
+          );
+        }
+      }
+
+      if (accepted === null) {
+        if (called) r.rejected++; else r.failed++;
         continue;
       }
-      if (reply === null) continue;
-      called = true;
-      const trimmed = reply.trim();
-      const reason = checkProse(trimmed);
-      if (reason === null) {
-        accepted = trimmed;
-      } else {
-        r.rejectedBy[reason]++;
-        last = { text: trimmed, reason };
-        console.warn(
-          `prose: rejected for ${c.name} (${reason}, ${trimmed.length} chars): ${trimmed}`,
-        );
-      }
+      await write(c.oracleId, accepted, hash);
+      r.written++;
     }
-
-    if (accepted === null) {
-      if (called) r.rejected++; else r.failed++;
-      continue;
-    }
-    await write(c.oracleId, accepted, hash);
-    r.written++;
+  } finally {
+    if (r.written > 0) await stamp();
   }
 
   return r;

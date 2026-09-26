@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq } from "drizzle-orm";
 import ws from "ws";
 import * as schema from "../src/db/schema";
-import { cards, commanderSupport } from "../src/db/schema";
+import { CATALOG_ROW_ID, catalogRefreshes, cards, commanderSupport } from "../src/db/schema";
 import { copyCommanderProse, type ProseSource } from "../src/lib/prose/copy";
 import { requireEnv } from "./lib/env.mjs";
 
@@ -68,8 +68,27 @@ const write = async (row: ProseSource) => {
     .where(eq(commanderSupport.commanderOracleId, row.oracleId));
 };
 
+// The TARGET's catalog generation, stamped once the copy has written anything: `/commanders`
+// caches its rankings, sentences included, keyed on it, so without the stamp a payload cached
+// before the copy keeps its null sentences for up to the hour ceiling. The same write as
+// `stampCatalogRefresh`, which cannot be used here because it writes through `src/db`.
+// Like that function, a failed stamp warns rather than failing a copy that succeeded.
+const stamp = async () => {
+  try {
+    await target.insert(catalogRefreshes)
+      .values({ id: CATALOG_ROW_ID, refreshedAt: new Date() })
+      .onConflictDoUpdate({ target: catalogRefreshes.id, set: { refreshedAt: new Date() } });
+  } catch (error) {
+    console.warn(
+      "catalog generation not stamped — readers keep their cached lists until the hour "
+      + `ceiling expires: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+};
+
 copyCommanderProse({ loadSource, loadTarget, write })
-  .then((r) => {
+  .then(async (r) => {
+    if (!dryRun && r.installed > 0) await stamp();
     console.log(
       `${dryRun ? "Would install" : "Installed"} ${r.installed} sentences; ${r.fresh} already ` +
       `current, ${r.suppressed} suppressed, ${r.missing} absent from the source, ${r.drifted} ` +

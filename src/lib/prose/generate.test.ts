@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
+vi.mock("../cache/stamp-catalog", () => ({ stampCatalogRefresh: vi.fn(async () => {}) }));
 
 import { generateCommanderProse, type ProseCandidate } from "./generate";
 import { proseInputHash } from "./prompt";
@@ -209,5 +210,44 @@ describe("generateCommanderProse", () => {
       write: async () => {},
     });
     expect(r).toMatchObject({ written: 1, fresh: 0 });
+  });
+
+  describe("the catalog stamp", () => {
+    // `/commanders` caches its rankings, sentences included, on the catalog generation, and this
+    // job runs after the index has stamped: its own writes need their own stamp.
+    it("stamps once, after the writes, when anything was written", async () => {
+      const order: string[] = [];
+      const r = await generateCommanderProse({
+        complete: async () => ACCEPTED,
+        loadCandidates: async () => [candidate(), candidate({ oracleId: "oracle-two" })],
+        write: async (id) => { order.push(`write ${id}`); },
+        stamp: async () => { order.push("stamp"); },
+      });
+      expect(r.written).toBe(2);
+      expect(order).toEqual(["write oracle-kess", "write oracle-two", "stamp"]);
+    });
+
+    it("stamps nothing when nothing was written", async () => {
+      const stamp = vi.fn(async () => {});
+      await generateCommanderProse({
+        complete: async () => ACCEPTED,
+        loadCandidates: async () => [candidate({ prose: ACCEPTED, proseInputHash: proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS) })],
+        write: async () => {},
+        stamp,
+      });
+      expect(stamp).not.toHaveBeenCalled();
+    });
+
+    it("still stamps what it wrote when the run dies part-way", async () => {
+      const stamp = vi.fn(async () => {});
+      let writes = 0;
+      await expect(generateCommanderProse({
+        complete: async () => ACCEPTED,
+        loadCandidates: async () => [candidate(), candidate({ oracleId: "oracle-two" })],
+        write: async () => { if (++writes === 2) throw new Error("connection lost"); },
+        stamp,
+      })).rejects.toThrow("connection lost");
+      expect(stamp).toHaveBeenCalledTimes(1);
+    });
   });
 });
