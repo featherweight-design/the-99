@@ -24,6 +24,7 @@
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
 import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL", "ANTHROPIC_API_KEY"]);
+import { ALL_MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
 import Anthropic from "@anthropic-ai/sdk";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -57,8 +58,26 @@ const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REP
 /** 95% of the cards asked about, per the plan. Below it the run refuses and publishes nothing. */
 const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);
 
-/** Batch rates for `MODEL`, per million tokens — the canonical table, halved. */
-const RATES = { in: 1.5, out: 7.5 };
+/**
+ * Batch rates for the model actually selected, and a REFUSAL for one this repository has no
+ * canonical rate for.
+ *
+ * `LABEL_MODEL` is configurable and the rates were hardcoded to Sonnet 4.5's, so selecting Haiku
+ * produced projections and wave sizes computed from a model three times its price — and an
+ * unknown model would have been priced as Sonnet 4.5 and invalidated the cap outright. The rates
+ * come from `card-labels-pricing.mjs`, which `card-labels-pricing.test.mts` ties to
+ * `scripts/eval/lib/pricing.mts` at batch rates, so there is no third copy of a price here.
+ */
+const MODEL_KEY = (Object.entries(ALL_MODELS) as [keyof typeof PRICING, string][])
+  .find(([, id]) => id === MODEL)?.[0];
+if (MODEL_KEY === undefined) {
+  throw new Error(
+    `LABEL_MODEL="${MODEL}" has no canonical rate. Known: ${Object.values(ALL_MODELS).join(", ")}. `
+    + `Refusing rather than pricing an unknown model at another model's rates, which would make `
+    + `the $${CAP_USD} cap meaningless.`,
+  );
+}
+const RATES = { in: PRICING[MODEL_KEY].in, out: PRICING[MODEL_KEY].out };
 
 /**
  * The sample's measured cost per card, used ONLY to project before this run has measured

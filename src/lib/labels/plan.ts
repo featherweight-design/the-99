@@ -33,6 +33,13 @@ export const runToken = (runId: string): string =>
   // though the weak one would almost certainly have held.
   createHash("sha256").update(runId).digest("hex").slice(0, 12);
 
+/**
+ * A short stable token for a model id, for the same reason `runToken` exists: `custom_id` is
+ * length-capped, and the ids are long and share a prefix.
+ */
+export const modelToken = (model: string): string =>
+  createHash("sha256").update(model).digest("hex").slice(0, 4);
+
 /** One request: the id sent to the provider, and the cards it asks about. */
 export type Chunk = { customId: string; intentKey: string; names: string[] };
 
@@ -49,9 +56,14 @@ export function planChunks(runId: string, model: string, names: readonly string[
   const chunks: Chunk[] = [];
   for (let i = 0; i * CARDS_PER_REQUEST < names.length; i++) {
     chunks.push({
-      // Short by construction: token + model initial + index. `m` disambiguates two models
-      // in one run, whose chunk indices both start at 0.
-      customId: `${token}-${model.slice(0, 1)}${i}`,
+      // Short by construction: run token + MODEL token + index.
+      //
+      // `model.slice(0, 1)` was the first version and it does not disambiguate: every Anthropic
+      // id starts `claude-`, so `claude-sonnet-4-5` and `claude-sonnet-5` both reduced to `c`.
+      // Two models in one run would then produce identical `custom_id`s, which the global unique
+      // constraint rejects — and the insert is a claim, so the second model's chunks would be
+      // unclaimed while the request still went out, or a recovery could not tell the two apart.
+      customId: `${token}-${modelToken(model)}${i}`,
       intentKey: `${runId}:${model}:${i}`,
       names: names.slice(i * CARDS_PER_REQUEST, (i + 1) * CARDS_PER_REQUEST),
     });

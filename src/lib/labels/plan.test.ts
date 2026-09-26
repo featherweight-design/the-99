@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, planChunks, runToken, waveSize, withinCap,
+  boundedNumber, CARDS_PER_REQUEST, meetsFloor, modelToken, planChunks, runToken, waveSize,
+  withinCap,
   worstCaseUsd,
 } from "./plan";
 
@@ -221,5 +222,25 @@ describe("worstCaseUsd counts the request body's own wrapper", () => {
   it("feeds the wave sizing too, so a wave cannot be planned above the budget", () => {
     const n = waveSize(1, 0, 0, 0, rates, 400, 1_000_000);
     expect(worstCaseUsd(n, 0, 0, 0, rates, 1_000_000)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("modelToken", () => {
+  // `model.slice(0, 1)` gave every Anthropic id the same token, because they all start `claude-`.
+  // Two models in one run then produce identical custom ids, which the unique constraint rejects —
+  // and the insert is a claim, so the second model's chunks go unclaimed while the request is sent.
+  it("distinguishes models that share a long prefix", () => {
+    const ids = ["claude-sonnet-4-5", "claude-sonnet-5", "claude-haiku-4-5-20251001"];
+    expect(new Set(ids.map(modelToken)).size).toBe(ids.length);
+  });
+
+  it("is stable, so a resumed run reproduces its own ids", () => {
+    expect(modelToken("claude-sonnet-4-5")).toBe(modelToken("claude-sonnet-4-5"));
+  });
+
+  it("keeps two models' chunk ids apart at the same index", () => {
+    const a = planChunks("r", "claude-sonnet-4-5", names(12))[0].customId;
+    const b = planChunks("r", "claude-sonnet-5", names(12))[0].customId;
+    expect(a).not.toBe(b);
   });
 });
