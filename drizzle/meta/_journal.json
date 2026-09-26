@@ -505,6 +505,13 @@
       "when": 1790450875580,
       "tag": "0071_card_label_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1790458991127,
+      "tag": "0072_answer_owned_only",
+      "breakpoints": true
     }
   ]
 }
