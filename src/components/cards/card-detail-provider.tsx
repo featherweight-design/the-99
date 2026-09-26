@@ -545,6 +545,9 @@ export function CardDetailProvider({
   const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
   const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks ? () => setFitsFor(c) : null);
 
+  // The card a sheet lifted out of the live slot (see `registerSheet`), read by `close`.
+  const heldRef = useRef<Held | null>(null);
+
   // Bumping `latest` is what abandons an in-flight fetch: without it, a card
   // requested before the close lands afterwards and re-opens the modal.
   // `failed` is cleared too, or the live region keeps announcing a failure the
@@ -560,7 +563,10 @@ export function CardDetailProvider({
     setPendingOracleId(null);
     setFailed(false);
     setDoor(false);
-    setFitsFor(null);
+    // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
+    // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
+    // nothing held (the picker's own card going) takes the picker with it.
+    if (heldRef.current === null) setFitsFor(null);
   }, [show, setFitsFor]);
 
   // The card a sheet opened OVER (the door's stand-ins sheet): lifted out of the live slot while the
@@ -570,7 +576,6 @@ export function CardDetailProvider({
   useEffect(() => {
     live.current = { card, siblings, openAt, door };
   });
-  const heldRef = useRef<Held | null>(null);
   const registerSheet = useCallback((label?: string, footer?: SheetFooter, overCard = false) => {
     const token = {};
     setSheets((list) => [...list, { token, label, footer }]);
@@ -746,6 +751,9 @@ export function CardDetailProvider({
           }
         />
       ) : null}
+      {/* Before the third layer in the document, so a card opened from the picker paints over it:
+          both are fixed at z-50, and the later one wins. */}
+      {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
       {held && card ? (
         <CardModal
@@ -792,7 +800,6 @@ export function CardDetailProvider({
           }
         />
       ) : null}
-      {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
     </CardDetailContext.Provider>
   );
 }

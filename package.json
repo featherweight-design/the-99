@@ -77,6 +77,7 @@
     "probe:touched": "tsx scripts/probe-touched.ts",
     "probe:non-game": "tsx scripts/probe-non-game.ts",
     "probe:pending": "node scripts/probe-pending-banner.mjs",
+    "probe:fits-stack": "node scripts/probe-fits-stack.mjs",
     "probe:review": "node scripts/probe-review-changes.mjs",
     "probe:review-columns": "node scripts/probe-review-columns.mjs",
     "probe:review-locks": "node scripts/probe-review-locks.mjs",
