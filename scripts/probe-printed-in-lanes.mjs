@@ -117,6 +117,7 @@ async function busiestOption(options) {
   return best;
 }
 
+/** Ticks the busiest set and returns its promised count. The caller reads WHICH set off `?p=`. */
 async function pickSet(page, wide) {
   if (wide) {
     const trigger = onPage(page, '[data-testid="printed-in"] button').first();
@@ -125,10 +126,9 @@ async function pickSet(page, wide) {
     await listbox.waitFor({ state: "visible", timeout: 5_000 });
     const best = await busiestOption(listbox.locator('[role="option"]'));
     if (!best) return null;
-    const code = (best.text.match(/\(([A-Z0-9]+)\)|\b([A-Z0-9]{3,5})\b/) ?? [])[1] ?? null;
     await best.option.click();
     await page.keyboard.press("Escape");
-    return { code, count: best.count };
+    return { count: best.count };
   }
   const sheet = await openSheet(page);
   if (!sheet) return null;
@@ -146,7 +146,7 @@ async function pickSet(page, wide) {
   const stillOpen = await sheet.isVisible();
   check("Done closes the set list and leaves the sheet up", stillOpen, `sheet visible=${stillOpen}`);
   await sheet.getByRole("button", { name: /^Show / }).click();
-  return { code: null, count: best.count };
+  return { count: best.count };
 }
 
 async function walk(browser, storage, lane, vp) {
@@ -185,6 +185,21 @@ async function walk(browser, storage, lane, vp) {
 }
 
 /**
+ * A `goto` the lane's own client navigation can abort: the rack writes the URL by `router.replace`,
+ * and one still in flight cancels the document load (net::ERR_ABORTED). Retried once, after the
+ * page settles; anything else is thrown.
+ */
+async function gotoSettled(page, url) {
+  try {
+    await page.goto(url, { waitUntil: "networkidle" });
+  } catch (err) {
+    if (!String(err).includes("ERR_ABORTED")) throw err;
+    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.goto(url, { waitUntil: "networkidle" });
+  }
+}
+
+/**
  * The owned lane's one fix, with Printed in as one candidate: find a pip that, with the busiest
  * set, empties the lane, and read the sentence's promise against what its button returns.
  */
@@ -194,6 +209,12 @@ async function zeroState(browser, storage, vp) {
   try {
     await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
     const picked = await pickSet(page, vp.wide);
+    // The tick writes `?p=` by a client navigation. A `goto` fired while it is in flight is
+    // aborted by it (net::ERR_ABORTED), so let it land first.
+    if (picked) {
+      await page.waitForURL(/[?&]p=/, { timeout: 10_000 }).catch(() => {});
+      await page.waitForLoadState("networkidle");
+    }
     const code = new URLSearchParams(new URL(page.url()).search).get("p");
     if (!picked || !code) {
       check(`zero state @${vp.label}`, false, "no set to start from");
@@ -201,7 +222,7 @@ async function zeroState(browser, storage, vp) {
     }
     let found = false;
     for (const colors of ["w,u,b,r,g", "w,u,b,r", "u,b,r,g", "w,b,r,g", "w,u,r,g", "w,u,b,g"]) {
-      await page.goto(`${BASE}/commanders?c=${colors}&m=exact&p=${code}`, { waitUntil: "networkidle" });
+      await gotoSettled(page, `${BASE}/commanders?c=${colors}&m=exact&p=${code}`);
       const drop = onPage(page, 'button:has-text("Drop ")').first();
       if (!(await drop.isVisible().catch(() => false))) continue;
       found = true;

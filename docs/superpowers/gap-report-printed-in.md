@@ -4,7 +4,7 @@ design-review for PR 2 of `docs/superpowers/plans/2026-09-27-printed-in.md`, aga
 decision 9 and the chassis rules it lands in (`README.md`, `STATES-filter-chassis.md`, the copy
 strings' `printedIn` block, and `docs/superpowers/readiness-filter-chassis.md`, whose errata win).
 
-Enumerate and verify ran as one agent over 21 rows. It returned 6 gaps. Three are fixed, and three
+Enumerate and verify ran as one agent over 21 rows. It returned 7 gaps. Four are fixed, and three
 follow the shipped `/collection` `Set ▾` precedent on purpose.
 
 ## Fixed
