@@ -150,7 +150,9 @@ function network(reqs, t0) {
 /** The `[perf]` lines the server logged since `from` (a byte offset into its log). */
 function serverSpans(from) {
   if (!SERVER_LOG) return null;
-  const text = readFileSync(SERVER_LOG, "utf8").slice(from);
+  // `from` is a byte offset, so the slice is taken on the bytes before decoding: a string
+  // slice counts UTF-16 units and lands mid-line after any non-ASCII output.
+  const text = readFileSync(SERVER_LOG).subarray(from).toString("utf8");
   return text.split("\n").filter((l) => l.startsWith("[perf] ")).map((l) => l.slice(7));
 }
 const logSize = () => (SERVER_LOG ? statSync(SERVER_LOG).size : 0);
@@ -188,6 +190,7 @@ async function cardPress(page, cap) {
   const out = {};
   for (const [key, index] of [["cold", 0], ["warm", 0], ["coldOther", 3]]) {
     cap.reset();
+    const from = logSize();
     const pressed = Date.now();
     await triggers.nth(index).click();
     await dialog.waitFor({ state: "visible", timeout: 30_000 });
@@ -197,7 +200,8 @@ async function cardPress(page, cap) {
       return Boolean(d && [...d.querySelectorAll("*")].some((el) => /scryfall/.test(getComputedStyle(el).backgroundImage)));
     }, null, { timeout: 30_000, polling: 16 }).then(() => Date.now() - pressed, () => null);
     await page.waitForTimeout(400);
-    out[key] = { dialog: dialogMs, art, action: network(cap.all(), 0).actionMs };
+    // The action logs its spans in `after()`, once it has answered; the 400ms above covers that.
+    out[key] = { dialog: dialogMs, art, action: network(cap.all(), 0).actionMs, spans: serverSpans(from) };
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
   }
@@ -232,11 +236,13 @@ async function one(browser, state, width, routes, sql) {
       const pressed = Date.now();
       await page.evaluate((u) => window.next.router.push(u), route.path);
       await page.waitForURL((u) => u.pathname === route.path.split("?")[0], { timeout: 60_000 });
-      await page.waitForFunction(() => {
+      // A route that never leaves its loading screen records null, never the 60s it waited.
+      const drew = await page.waitForFunction(() => {
         const main = document.querySelector("main");
         return main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40;
-      }, null, { timeout: 60_000, polling: 16 }).catch(() => {});
-      (result.soft[route.label] ??= {})[pass] = Date.now() - pressed;
+      }, null, { timeout: 60_000, polling: 16 }).then(() => true, () => false);
+      (result.soft[route.label] ??= {})[pass] = drew ? Date.now() - pressed : null;
+      if (!drew) console.warn(`soft ${pass} ${route.path}: no content frame within 60s`);
       await page.waitForLoadState("networkidle").catch(() => {});
     }
   }
@@ -268,10 +274,14 @@ function table(runs, routes) {
 }
 
 async function main() {
-  await refuseShared(DATABASE_URL, null);
+  const serverBranch = await refuseShared(DATABASE_URL, null);
   const sql = DB_URL ? neon(DB_URL) : null;
   if (sql) {
     if (!DB_BRANCH) throw new Error("MEASURE_DB_URL needs MEASURE_DB_BRANCH naming the scratch branch it is expected to be.");
+    // The statements counted must be the server's own, so the two URLs have to name one branch.
+    if (DB_BRANCH !== serverBranch) {
+      throw new Error(`MEASURE_DB_BRANCH is ${DB_BRANCH}, but DATABASE_URL (the server's database) reports ${serverBranch}.`);
+    }
     await refuseShared(DB_URL, DB_BRANCH);
     await sql`create extension if not exists pg_stat_statements`;
   }
