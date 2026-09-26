@@ -214,6 +214,11 @@ describe("nameAbility: one case per pattern", () => {
     expect(new Set(cases.map(([, label]) => label))).toEqual(new Set(GIVES_UP_PATTERNS.map(([, label]) => label)));
   });
 
+  it("names only the land's OWN attack trigger as becoming a creature", () => {
+    expect(nameAbility("whenever a creature deals combat damage to you, that creature's controller gains control of this land.", "Contested War Zone"))
+      .not.toEqual({ kind: "named", label: "becoming a creature" });
+  });
+
   it.each(cases)("%s → %s", (sentence, label) => {
     expect(nameAbility(sentence, "This Land")).toEqual({ kind: "named", label });
   });
