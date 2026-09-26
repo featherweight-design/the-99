@@ -336,6 +336,15 @@ try {
     process.exitCode = 1;
   }
 } finally {
-  if (aboutPrior) await restoreAboutSeen(aboutPrior).catch((error) => console.error(`could not restore the About row: ${error?.message ?? error}`));
+  // A restore that fails leaves the account's About state changed, so the run fails with it rather
+  // than reading as a clean sheet over a dirty account. The browser still closes.
+  if (aboutPrior) {
+    try {
+      await restoreAboutSeen(aboutPrior);
+    } catch (error) {
+      console.error("COULD NOT RESTORE the About row; the account's About state is changed:", error);
+      process.exitCode = 1;
+    }
+  }
   await browser.close();
 }
