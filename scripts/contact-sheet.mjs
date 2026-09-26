@@ -27,6 +27,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Optional, exactly as `audit-sweep.mjs` has it: a `+clerk_test` address takes the
@@ -229,6 +230,8 @@ for (const row of inventory.rows) {
 
 const shots = [];
 const browser = await chromium.launch();
+/** The account's About columns as the run found them, when an inventory clears the gate. */
+let aboutPrior = null;
 try {
   await clerkSetup();
   for (const size of WIDTHS) {
@@ -238,6 +241,17 @@ try {
     });
     const page = await context.newPage();
     await signIn(page);
+    // `"clearAbout": true` marks the About gate seen before the first row, through the one helper every
+    // probe uses, so the first load photographs the surface rather than `/about` (swap tools close-out:
+    // the first row of every width failed on the redirect). Opt-in, because the /about inventory
+    // photographs the gate itself. Both About columns are captured first and put back in the `finally`
+    // (the ids `clearAboutSheet` adds included), once, from the first width's capture.
+    if (inventory.clearAbout) {
+      const userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
+      if (!userId) throw new Error("clearAbout: signed in, but Clerk reports no user.");
+      aboutPrior ??= await captureAboutSeen(userId);
+      await clearAboutSheet(page, userId);
+    }
     for (const row of inventory.rows) {
       // A surface that only EXISTS at one width says so, and the other width is
       // not a failed cell. `/collection`'s filter sheet is the case: below 1000px
@@ -322,5 +336,15 @@ try {
     process.exitCode = 1;
   }
 } finally {
+  // A restore that fails leaves the account's About state changed, so the run fails with it rather
+  // than reading as a clean sheet over a dirty account. The browser still closes.
+  if (aboutPrior) {
+    try {
+      await restoreAboutSeen(aboutPrior);
+    } catch (error) {
+      console.error("COULD NOT RESTORE the About row; the account's About state is changed:", error);
+      process.exitCode = 1;
+    }
+  }
   await browser.close();
 }

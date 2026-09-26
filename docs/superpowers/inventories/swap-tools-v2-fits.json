@@ -1,0 +1,57 @@
+{
+  "feature": "Swap tools v2 (sub-project 4): Find a deck for it, from both doors",
+  "clearAbout": true,
+  "note": "Needs a server with SWAP_TOOLS_ENABLED=true, signed in as the swaptools-v2 account on local-dev, with About marked seen. FITS_CARD is Blasphemous Act (7a2484a9-04fd-41a0-8224-610c1c07ed10), owned by that account and in HD - Gishath's list; FITS_CARD_NAME is its name and FITS_HOLDER is HD - Gishath (904fdc61-e190-4ba5-8e34-2b18fa0584f2). A separate inventory from swap-tools-v2.json because check:shared holds every row to one binding: the sheet rows render StandInsSheet through decklist.tsx, and the picker is rendered by card-detail-provider.tsx from either door.",
+  "shares": {
+    "module": "src/components/cards/fits-picker.tsx",
+    "binding": "FitsPicker",
+    "note": "One picker for both doors: the card modal draws it whether the card was opened from /collection or from a deck, through the one provider."
+  },
+  "rows": [
+    {
+      "id": "fits-collection",
+      "label": "/collection: the card's `Find a deck for it` door and the picker over the card: reasons, the need, and the decks that already hold it",
+      "view": "src/components/cards/card-detail-provider.tsx",
+      "steps": [
+        {
+          "goto": "/collection?card=${FITS_CARD}",
+          "wait": "[data-testid='fits-door']:visible",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='fits-row']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "fits-deck",
+      "label": "/decks/[id]: the same card opened from a deck's list, the same door and the same picker",
+      "view": "src/components/cards/card-detail-provider.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${FITS_HOLDER}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${FITS_CARD_NAME}",
+          "settle": 800
+        },
+        {
+          "click": "[data-testid='fits-door']:visible",
+          "settle": 400
+        },
+        {
+          "wait": "[data-testid='fits-row']",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
