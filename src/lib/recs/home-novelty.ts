@@ -15,10 +15,11 @@ import { READY_COUNT } from "./ready-to-build";
  * ranked list orders them (`rank_score desc, oracle_id`, built commanders out), with a margin past
  * the set in case the two disagree about a tie. A commander it did not cover counts 0.
  *
- * It also condemns a stale set the way `loadScores` does: one row carrying the `rank_score`
- * sentinel or an old `writer_version` means the ranked list is about to be recomputed, so this
- * returns NO candidates and the rotation walks its plain shuffle for that render, rather than
- * leaning on an order the ranking no longer holds.
+ * It also condemns every set `getRankedList` would not serve: one row carrying the `rank_score`
+ * sentinel or an old `writer_version` (`loadScores`), or one VISIBLE row whose synergy is
+ * `degraded` (`assemble`, which exempts built commanders exactly as this does). Any of those means
+ * the ranked list is recomputed this render, so this returns NO candidates and the rotation walks
+ * its plain shuffle, rather than leaning on an order the ranking no longer holds.
  *
  * Measured on staging, Hugh's account: 4.0ms, returning 40 integers.
  */
@@ -45,6 +46,16 @@ export function unplayedCountsSql(userId: string, limit = NOVELTY_CANDIDATES): S
           select 1 from commander_scores stale
           where stale.user_id = ${userId}
             and (stale.rank_score < 0 or stale.writer_version < ${SCORE_WRITER_CURRENT})
+        )
+        and not exists (
+          select 1 from commander_scores dg
+          where dg.user_id = ${userId}
+            and dg.synergy_state = 'degraded'
+            and not exists (
+              select 1 from decks dgd
+              where dgd.user_id = ${userId}
+                and (dgd.commander_oracle_id = dg.oracle_id or dgd.partner_oracle_id = dg.oracle_id)
+            )
         )
         and not exists (
           select 1 from decks bd

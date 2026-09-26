@@ -11,7 +11,7 @@ describe("unplayedCountsSql", () => {
   const { sql, params } = new PgDialect().sqlToQuery(unplayedCountsSql("user_1"));
 
   it("scopes every read to the reader, and reaches past the set", () => {
-    expect(params.filter((p) => p === "user_1")).toHaveLength(4);
+    expect(params.filter((p) => p === "user_1")).toHaveLength(6);
     expect(params).toContain(NOVELTY_CANDIDATES);
     expect(NOVELTY_CANDIDATES).toBeGreaterThan(READY_COUNT);
   });
@@ -28,6 +28,12 @@ describe("unplayedCountsSql", () => {
     const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
     expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <");
     expect(params).toContain(SCORE_WRITER_CURRENT);
+  });
+
+  // `assemble` also recomputes on a visible degraded row; a built commander's does not count.
+  it("condemns a set with a visible degraded row, exempting built commanders", () => {
+    expect(sql).toContain("dg.synergy_state = 'degraded'");
+    expect(sql).toContain("dgd.commander_oracle_id = dg.oracle_id or dgd.partner_oracle_id = dg.oracle_id");
   });
 
   // A deck plays the tags of BOTH its commanders, as `loadPlayedTags` reads them for Something new.
