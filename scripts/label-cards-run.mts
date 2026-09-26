@@ -176,8 +176,14 @@ const perModelWorst = Object.fromEntries((Object.keys(MODELS) as (keyof typeof M
     ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
     : { i: estIn + estCacheRead, o: estOutWorst })]));
 
+// One id for this run, chosen before anything is submitted, so every ledger write
+// lands on the same entry however far the loop gets.
+const runId = `run-${new Date().toISOString().replace(/[:.]/g, "-")}`;
 const submitted: Record<string, string> = {};
-let charged = spentBefore;
+// The WHOLE run's worst case is reserved up front. A death mid-loop then leaves the
+// cap over-charged rather than under-charged, and there is no second key to orphan.
+writeReservation(runId, worstTotal);
+console.log(`reserved $${worstTotal.toFixed(4)} for ${runId}`);
 for (const [key, model] of Object.entries(MODELS) as [keyof typeof MODELS, string][]) {
   const requests = batches.map((cards, i) => buildRequest(`${key}-${i}`, model, cards));
   // The intent goes down BEFORE the call. A process exit between `create` returning
@@ -188,16 +194,15 @@ for (const [key, model] of Object.entries(MODELS) as [keyof typeof MODELS, strin
   const intentKey = writeIntent(key, perModelWorst[key]);
   const batch = await client.messages.batches.create({ requests });
   submitted[key] = batch.id;
-  charged += perModelWorst[key];
-  // `reservedUsd` is what THIS run booked, so `collect` can swap exactly it for the
-  // measured figure and leave every earlier run's spend standing.
-  writeReservation(submitted, charged - spentBefore);
+  // Fills the id onto the run's EXISTING entry. The whole run's worst case was
+  // reserved before the loop, so there is nothing to add here and no second key.
+  writeReservation(runId, worstTotal, { ...submitted });
   clearIntent(intentKey);
   // `batches.json` is written HERE, not after the loop. The collector reads it to
   // know which ids exist, so a process dying between the first and second model used
   // to strand a submitted batch: the ledger held its id, the collector never saw it,
   // and the next run submitted that model again.
-  writeFileSync("out/batches.json", JSON.stringify({ submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
-  console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests), ledger now $${charged.toFixed(4)}`);
+  writeFileSync("out/batches.json", JSON.stringify({ runId, submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
+  console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests)`);
 }
 console.log("\nbatch ids written to out/batches.json — poll with `node scripts/label-cards-collect.mjs`");

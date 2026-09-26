@@ -17,8 +17,18 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 const PATH = "out/spend.json";
 
-/** A run is identified by the batch ids it submitted, order-independent. */
-export const runKey = (submitted) => Object.values(submitted).slice().sort().join("+");
+/**
+ * A run is identified by a RUN ID chosen once, before anything is submitted.
+ *
+ * It used to be derived from the batch ids -- `Object.values(submitted).sort()` --
+ * which changes as `submitted` grows. Reserving after each model therefore wrote one
+ * entry under `H` and a second under `H+S`, so the first was orphaned under a key
+ * nothing would ever reconcile: the total read $3.60 for a $2.70 run, and
+ * `unreconciled` reported a phantom pending run FOREVER, which the runner's
+ * refuse-if-pending guard would then use to block every future run. Measured before
+ * fixing.
+ */
+export const runKey = (runId) => runId;
 
 export function readLedger() {
   // ABSENCE is the only state that means "nothing spent". Every other unreadable
@@ -93,18 +103,27 @@ export function clearIntent(key) {
   writeFileSync(PATH, JSON.stringify(led, null, 1));
 }
 
-export function writeReservation(submitted, reservedUsd) {
+/**
+ * Reserves a run's WORST CASE under its run id, before any submission.
+ *
+ * Up front and once, rather than incrementally per model: over-reserving until
+ * reconciliation is the fail-safe direction, and it removes the growing-key problem
+ * entirely. `submitted` is then filled in as ids arrive, on the same entry.
+ */
+export function writeReservation(runId, reservedUsd, submitted = {}) {
   const led = readLedger();
-  led.runs[runKey(submitted)] = { submitted, reservedUsd: +reservedUsd.toFixed(4), at: new Date().toISOString() };
+  led.runs[runKey(runId)] = {
+    ...led.runs[runKey(runId)],
+    submitted, reservedUsd: +reservedUsd.toFixed(4), at: new Date().toISOString(),
+  };
   writeFileSync(PATH, JSON.stringify(led, null, 1));
   return ledgerTotal(led);
 }
 
-export function writeMeasured(submitted, measuredUsd) {
+export function writeMeasured(runId, measuredUsd) {
   const led = readLedger();
-  const key = runKey(submitted);
-  const existing = led.runs[key] ?? { submitted };
-  led.runs[key] = { ...existing, measuredUsd: +measuredUsd.toFixed(4) };
+  const key = runKey(runId);
+  led.runs[key] = { ...(led.runs[key] ?? {}), measuredUsd: +measuredUsd.toFixed(4) };
   writeFileSync(PATH, JSON.stringify(led, null, 1));
   return ledgerTotal(led);
 }

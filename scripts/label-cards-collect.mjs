@@ -13,7 +13,8 @@ import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { validateJob } from "./lib/card-labels-schema.mjs";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
-const { submitted, batches } = JSON.parse(readFileSync("out/batches.json", "utf8"));
+const { runId, submitted, batches } = JSON.parse(readFileSync("out/batches.json", "utf8"));
+if (!runId) throw new Error("out/batches.json has no runId — it predates the run-id ledger; re-run the submission");
 let collected = 0;
 /** Publication is gated on THIS run having ended every batch it submitted. */
 let allEnded = false;
@@ -151,7 +152,7 @@ if (grandTotal) {
     // Keyed on this run's batch ids, so a repeat collect REPLACES its entry rather
     // than charging the cap again. Measured: the flat-total version turned $1.7048
     // into $2.5637 on a second collect over the same batches.
-    const total = writeMeasured(submitted, grandTotal);
+    const total = writeMeasured(runId, grandTotal);
     console.log(`ledger: this run measured $${grandTotal.toFixed(4)}; total committed $${total.toFixed(4)}`);
   } else {
     console.log(`ledger left at the worst case: ${collected} of ${Object.keys(submitted).length} batches ended`);
