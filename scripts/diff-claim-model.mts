@@ -8,19 +8,27 @@
 // one total would make a figure look stronger than the check behind it. Today's rewrite is in
 // `loadDeckBuyRows` alone, so its line is the one that tests it; the other is a control.
 //
-// The old version is main's module, copied beside the new one as an untracked file so its relative
-// imports resolve:
-//   git show origin/main:src/lib/decks/availability-query.ts > src/lib/decks/.availability-query.old.ts
+// The old version is read out of git at DIFF_BASE (default: the commit this rewrite was made on,
+// so the script still runs after the rewrite lands) and written beside the new module for the run
+// so its relative imports resolve, then removed again.
 // It also prints each version's median time over 5 runs and, with DIFF_EXPLAIN=1, the
 // EXPLAIN ANALYZE of loadDeckBuyRows for each. Read-only. Point it at a scratch branch holding
 // a `pull:staging` copy; it refuses production and staging.
+import { execFileSync } from "node:child_process";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const { db } = await import("../src/db");
 const NEW = await import("../src/lib/decks/availability-query");
-const OLD = await import("../src/lib/decks/.availability-query.old");
+const DIFF_BASE = process.env.DIFF_BASE ?? "2c117877a";
+const oldPath = fileURLToPath(new URL("../src/lib/decks/.availability-query.old.ts", import.meta.url));
+if (existsSync(oldPath)) throw new Error(`${oldPath} already exists; remove it first`);
+writeFileSync(oldPath, execFileSync("git", ["show", `${DIFF_BASE}:src/lib/decks/availability-query.ts`]));
+process.on("exit", () => rmSync(oldPath, { force: true }));
+const OLD = (await import(pathToFileURL(oldPath).href)) as typeof NEW;
 
 const [{ branch }] = (await db.execute<{ branch: string }>(sql`select current_setting('neon.branch_id', true) as branch`)).rows;
 if (!branch || branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {
