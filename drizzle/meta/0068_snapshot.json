@@ -1,5 +1,5 @@
 {
-  "id": "8936599f-9e3d-432a-9cb7-fdb6552d9cab",
+  "id": "c8d7f810-3cf3-45fb-87b2-4a64e0e032ee",
   "prevId": "bc2a1147-d89f-4af9-80a1-a284d0a44b8f",
   "version": "7",
   "dialect": "postgresql",
@@ -352,11 +352,10 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "card_label_batches_batch_request_unique": {
-          "name": "card_label_batches_batch_request_unique",
+        "card_label_batches_custom_id_unique": {
+          "name": "card_label_batches_custom_id_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "batch_id",
             "custom_id"
           ]
         }

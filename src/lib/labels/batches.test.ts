@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { cardLabelBatches, cardLabelsStaging } from "../../db/schema";
 
-const MIGRATION = "drizzle/0068_petite_power_pack.sql";
+const MIGRATION = "drizzle/0068_fine_cerise.sql";
 
 /**
  * The batch-intent table's SHAPE, asserted because the crash window it exists to close is
@@ -52,12 +52,20 @@ describe("the generated migration carries the constraints the comments claim", (
   // asserted nothing, because that object is not renderable SQL.
   const sql = readFileSync(MIGRATION, "utf8");
 
-  // The constraint that made the table UNUSABLE when it was wrong: `batches.create` takes
-  // every chunk for a model at once and returns ONE id for all of them, so a global unique
-  // on `batch_id` rejects every chunk row after the first. The pair is what is unique.
-  it("makes the batch id unique per REQUEST, not globally", () => {
-    expect(sql).toContain('UNIQUE("batch_id","custom_id")');
-    expect(sql).not.toMatch(/CONSTRAINT "[^"]*batch_id_unique" UNIQUE\("batch_id"\)/);
+  // `batches.create` takes every chunk for a model at once and returns ONE id for all of
+  // them, so a global unique on `batch_id` would reject every chunk row after the first and
+  // make the table unusable by its only writer.
+  it("does not make the batch id globally unique", () => {
+    expect(sql).not.toMatch(/UNIQUE\("batch_id"\)/);
+  });
+
+  // `custom_id` carries uniqueness instead, and GLOBALLY — not merely within a batch. The
+  // sample sends `sonnet-0`, reused every run, so a recovery listing the provider's batches
+  // for `sonnet-0` finds one per run and may adopt an older result or re-submit a chunk
+  // already paid for. That is the double charge this table exists to prevent, arriving
+  // through the recovery path instead of the submit path.
+  it("makes the request id unique across every batch and every run", () => {
+    expect(sql).toContain('UNIQUE("custom_id")');
   });
 
   // Per-chunk granularity: a returned `custom_id` has to map back to the cards that request
