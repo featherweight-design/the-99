@@ -96,53 +96,41 @@ jobs:
           # weekly expectation of $1.20.
           LABEL_REPORT_AT_USD: '5'
         run: |
-          # A STABLE RUN ID, and a LOOP until there is nothing left to do.
+          # A STABLE RUN ID, and a LOOP that branches on the script's EXIT CODE.
           #
-          # Both are required and neither was here. `db:build:labels` submits a wave and exits —
-          # batches are asynchronous, so collection happens on a LATER invocation, and every
-          # figure the run depends on (the intent ledger, `alreadySpent`, the publish) is scoped
-          # to `LABEL_RUN_ID`. With a fresh timestamp per run and no re-invocation, a scheduled
-          # run submitted a wave, exited, and its results were never collected: `publishRun`
-          # was unreachable, the cards still failed the hash check next Monday, and the same
-          # work was PAID FOR AGAIN every week while nothing was ever published. A recurring
-          # charge producing no labels at all.
+          # The id first: `db:build:labels` submits a wave and exits, because batches are
+          # asynchronous — so collection happens on a LATER invocation, and the intent ledger,
+          # `alreadySpent` and the publish are all scoped to `LABEL_RUN_ID`. With a fresh timestamp
+          # per run and no re-invocation, a scheduled run submitted a wave, exited, and its results
+          # were never collected: the same cards were PAID FOR AGAIN every week while nothing was
+          # ever published. The id is derived from the ISO week, so today's run resumes this week's.
           #
-          # The id is derived from the ISO week, so a re-dispatch inside the same week resumes
-          # that week's run rather than starting a second one beside it.
+          # And the branching is on the CODE, not on the output. Reading stdout produced three
+          # findings in three rounds — `published` also matched "nothing published" on the waiting
+          # line, and "nothing to do" also meant "every stale card is unlabelable" — each fixed
+          # with a better pattern, which was treating the symptom. Every message the script printed
+          # was load-bearing for this loop's control flow. Now:
+          #
+          #    0   done, published or nothing stale
+          #   75   more work: a wave went out, or batches are still processing — call again
+          #    *   stop and look: refused, paused, or nothing labelable
           export LABEL_RUN_ID="weekly-$(date -u +%G-W%V)"
           echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           for attempt in $(seq 1 40); do
             echo "--- pass $attempt ---" | tee -a "$GITHUB_STEP_SUMMARY"
-            out=$(pnpm --silent db:build:labels 2>&1) || status=$?
-            printf '%s\n' "$out" | tee -a "$GITHUB_STEP_SUMMARY"
-            # A refusal or a pause is terminal: the script has already said why, and re-running
-            # it would either refuse identically or spend past a line somebody set.
-            if [ "${status:-0}" -ne 0 ]; then
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-              exit "$status"
-            fi
-            case "$out" in
-              # A pause is a hold awaiting a decision, so it is a failure rather than a quiet stop.
-              *"PAUSED"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 1 ;;
-              # Published, or there was nothing stale to label: done either way.
-              #
-              # Matched on the SPECIFIC success line, not the bare word. `*"published"*` also
-              # matched the WAITING line — "N chunk(s) still processing. Nothing submitted, nothing
-              # published." — so the loop exited 0 on its second pass while a batch was still
-              # running, reporting success over a run that had published nothing. The poll loop
-              # existed to prevent exactly that and this pattern undid it.
-              *"label(s) in one transaction"*|*"nothing to do — every Commander-legal card"*)
-                echo '```' >> "$GITHUB_STEP_SUMMARY"
-                exit 0 ;;
-              # TERMINAL AND NOT SUCCESS: every request came back and nothing valid was staged.
-              # Sleeping on this looped all 40 passes and failed ~80 minutes later, hiding the one
-              # line that says what happened and what to do about it.
-              *"nothing staged and nothing left to submit"*)
-                echo '```' >> "$GITHUB_STEP_SUMMARY"
-                exit 1 ;;
+            # `set +e` around the call only: the script's code is the signal, and `-e` would abort
+            # the loop on the 75 that means "call me again".
+            set +e
+            pnpm --silent db:build:labels 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+            code=${PIPESTATUS[0]}
+            set -e
+            case "$code" in
+              0)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              75) ;;  # more work; fall through to the sleep
+              *)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit "$code" ;;
             esac
-            # Still processing, or a wave just went out. Batches are minutes rather than seconds.
+            # Batches are minutes rather than seconds.
             sleep 120
           done
           {
@@ -153,18 +141,6 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
-      # PRODUCTION IS NOT UPDATED BY THIS WORKFLOW, and that is a gap rather than a design.
-      #
-      # Under pay-once the labels are generated here and carried to production by
-      # `db:copy:labels`, which costs nothing. Automating that needs BOTH database URLs in one
-      # job, and no environment has both: `catalog-staging` and `catalog-production` each hold
-      # only their own `CATALOG_DATABASE_URL`, and the only repository-level secret is
-      # `ANTHROPIC_API_KEY`. Two jobs cannot share a secret either.
-      #
-      # So it needs ONE new secret — staging's URL, readable from the production job — which is a
-      # credential decision rather than a code one. `db:copy:prose` has the same shape and is run
-      # by hand for the same reason; this workflow's summary says so on every run rather than
-      # leaving production quietly stale.
       - name: Note that production is not updated by this run
         shell: bash
         # A quoted heredoc: the previous version escaped a quote inside a double-quoted `echo` and

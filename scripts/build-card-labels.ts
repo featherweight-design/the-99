@@ -110,6 +110,24 @@ type CardRow = {
 const die = (why: string): never => { console.error(`\nbuild-card-labels REFUSED: ${why}`); process.exit(1); };
 
 /**
+ * EXIT CODES, because a caller must not have to read prose to know what happened.
+ *
+ * The weekly workflow polls this script, and it decided success by pattern-matching stdout — which
+ * produced three separate findings in three rounds: `*"published"*` also matched "nothing
+ * published" on the waiting line, and "nothing to do" also meant "every stale card is unlabelable".
+ * Each fix was a better pattern, which is treating the symptom: the coupling itself is the defect,
+ * because every message this script prints is then load-bearing for a caller's control flow.
+ *
+ *   0   done — published, or nothing was stale
+ *   75  MORE WORK: a wave went out, or batches are still processing. Call again with the same
+ *       LABEL_RUN_ID. (75 is EX_TEMPFAIL — "try again", not a failure.)
+ *   1   stop and look: refused, paused, or nothing labelable
+ */
+const EXIT_DONE = 0;
+const EXIT_MORE_WORK = 75;
+const EXIT_STOP = 1;
+
+/**
  * Cards that need labelling: Commander-legal, and whose stored hash does not match what
  * their current inputs produce.
  *
@@ -517,6 +535,7 @@ async function main(): Promise<void> {
   if (waiting > 0) {
     console.log(`\n${waiting} chunk(s) still processing. Nothing submitted, nothing published.`);
     console.log(`Re-run with LABEL_RUN_ID=${runId} to resume when they finish.`);
+    process.exitCode = EXIT_MORE_WORK;
     return;
   }
 
@@ -589,12 +608,13 @@ async function main(): Promise<void> {
           + `another oracle row, and the model's reply could not be attributed to one of them. `
           + `Nothing was submitted and nothing is stale-but-doable. These cards stay unlabelled `
           + `until the duplicate names are resolved — this is NOT a no-op.`);
-        process.exitCode = 1;
+        process.exitCode = EXIT_STOP;
         return;
       }
       console.log(asked === 0
         ? "nothing to do — every Commander-legal card's label matches its inputs"
         : "nothing staged and nothing left to submit — re-run to plan these cards afresh");
+      if (asked > 0) process.exitCode = EXIT_STOP;
       return;
     }
 
@@ -699,7 +719,7 @@ async function main(): Promise<void> {
     // would have shown a GREEN step — and the workflow's own comment claims the two guards are
     // visible "in the only place anyone looks". A pause is a hold awaiting a decision, which is
     // not success.
-    process.exitCode = 1;
+    process.exitCode = EXIT_STOP;
     return;
   }
 
@@ -711,6 +731,7 @@ async function main(): Promise<void> {
   await submit(wave);
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);
+  process.exitCode = EXIT_MORE_WORK;
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });
