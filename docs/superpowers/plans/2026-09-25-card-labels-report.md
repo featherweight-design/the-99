@@ -271,7 +271,9 @@ both.
   records the divergence — so a divergence closing, or one of those labels regressing,
   fails it by name. The 22 agreements were MEASURED once and are not mechanically
   held: enumerating them needs a database, which makes it a probe rather than a unit
-  test, and that is a gap rather than a decision to be proud of.
+  test, and that is a gap rather than a decision to be proud of. **A fourth divergence
+  appearing would not be caught** — the test visits the three known fixtures by name and
+  its title says so.
 - **The vocabulary is 2b's**, asserted against `src/lib/recs/roles.ts` and
   `src/lib/recs/themes.ts` by a test rather than copied. A drifted copy would give
   a score that reads fine while a dropped theme is never measured.

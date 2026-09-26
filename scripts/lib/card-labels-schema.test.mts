@@ -177,7 +177,16 @@ describe("the gold set", () => {
   const COARSE = ROLES.filter((r) => r !== "land" && r !== "ramp");
   const isRampKind = (role: string) => !COARSE.includes(role);
 
-  it("documents every card E1 assigns no ramp kind to", async () => {
+  // TITLE SAYS THREE FIXTURES, because that is all this test visits.
+  //
+  // It cannot verify the report's 22/0/3 partition: doing that means running
+  // `honestJobs` over all 25 ramp-labelled gold rows, which needs their oracle text,
+  // which needs the catalog — a probe, not a unit test. So a FOURTH divergence
+  // appearing, or an unlisted row's kind changing, leaves this green while that
+  // measurement goes stale. The report says as much rather than implying coverage it
+  // does not have, and an earlier title here ("every card E1 assigns no ramp kind to")
+  // claimed exactly the completeness this does not establish.
+  it("holds the three known divergences: E1 silent, label expected, note present", async () => {
     const { honestJobs } = await import("../../src/lib/swaps/honest");
     const { GOLD } = await import("./card-labels-gold.mjs");
 
