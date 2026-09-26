@@ -3,8 +3,9 @@ import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
-import { discoveryKey, loadDiscovery } from "../../lib/discovery/list";
+import { discoveryKey, loadDiscoveryWithIds } from "../../lib/discovery/list";
 import { encodeDiscovery } from "../../lib/discovery/encode";
+import { lanePrintedInFor } from "../../lib/sets/lane-printed-in";
 import { cacheForUser } from "../../lib/cache/user-lists";
 import { discoverSort, parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
@@ -72,14 +73,22 @@ export default async function DiscoverPage({
   // view wants. Encoding here rather than inside `loadDiscovery` keeps the list
   // a list for every other reader of it — slug resolution and the tests read
   // `DiscoveryItem`s, not tuples.
-  const encoded = await cacheForUser(userId, discoveryKey(sort), async () =>
-    encodeDiscovery(await loadDiscovery(userId, { sort })),
-  );
+  //
+  // The row ids ride in the same entry, because `Printed in ▾`'s index is aligned to the rows by
+  // POSITION: the encoded rows carry no oracle id. The index itself is crossed with them OUTSIDE
+  // the entry, per request: its read can fail, and a failure filed here would hide the control
+  // for the entry's whole life. `loadCommanderPrintings` is memoised per catalog generation, so
+  // the per-request cost is the crossing, not the read.
+  const { encoded, oracleIds } = await cacheForUser(userId, discoveryKey(sort), async () => {
+    const { list, oracleIds } = await loadDiscoveryWithIds(userId, { sort });
+    return { encoded: encodeDiscovery(list), oracleIds };
+  });
+  const printedIn = await lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId })));
 
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={encoded} chooseLink={helpMeChooseEnabled()} />
+      <DiscoveryView encoded={encoded} printedIn={printedIn} chooseLink={helpMeChooseEnabled()} />
     </section>
   );
 }

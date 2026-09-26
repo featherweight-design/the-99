@@ -108,7 +108,20 @@ export function FilterPanel({
   selectionOrnament = true,
   showCounts = true,
   onAnnounce,
+  note,
+  desktopTriggerHeightPx,
 }: {
+  /**
+   * Pins the wide trigger's height. The commander rack holds every control at the chassis's 34px
+   * rhythm, and the trigger's own padding draws about 38. The compact trigger keeps its 44px.
+   */
+  desktopTriggerHeightPx?: number;
+  /**
+   * One quiet line in the panel's head, under the search field. `Printed in ▾` carries one
+   * because its rows match printings the reader does not own, which is the opposite of what
+   * `/collection`'s `Set ▾` does one route away.
+   */
+  note?: string;
   copy: FilterPanelCopy;
   options: FilterPanelOption[];
   selected: string[];
@@ -867,6 +880,13 @@ export function FilterPanel({
             }
           />
         )}
+        {note && (
+          <p
+            className={`m-0 font-sans text-[color:var(--fg-muted)] ${bp("mx-[12px] mb-[6px] text-[12px]", "mx-[16px] mb-[8px] text-[12.5px]")}`}
+          >
+            {note}
+          </p>
+        )}
         {noResults ? renderEmptyState() : renderList()}
         {/* Desktop drops the footer entirely in the no-results state — a
             "254 sets owned" bar under "no matches" contradicts itself. The sheet
@@ -924,6 +944,7 @@ export function FilterPanel({
         // same guard the search input applies to `listId` above.
         aria-controls={open ? panelId : undefined}
         aria-label={triggerAria}
+        style={isDesktop && desktopTriggerHeightPx ? { height: desktopTriggerHeightPx, paddingBlock: 0 } : undefined}
         onClick={() => (open ? close() : openPanel(false))}
         onKeyDown={(e) => {
           if (!open && e.key === "ArrowDown") {

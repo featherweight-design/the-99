@@ -6,6 +6,8 @@
 
 // The locale is pinned, as in commanders-plane.ts: an unpinned toLocaleString() renders "3.301"
 // or "3 301" for a reader whose machine is not on en-US, and the FIGURE ships as written.
+import type { FilterPanelCopy } from "./collection";
+
 const n = (v: number) => v.toLocaleString("en-US");
 
 export const filterCopy = {
@@ -48,7 +50,73 @@ export const filterCopy = {
     title: "Filters",
     dismiss: (shown: number) => `Show ${n(shown)} ${shown === 1 ? "commander" : "commanders"}`,
   },
+
+  // Filter-chassis decision 9, from that handoff's `printedIn` block. "Printed in", never "Set":
+  // the control matches ANY printing of the commander, and the row draws whatever art the card
+  // resolves to, so a name claiming to describe the thing on screen would be a visible
+  // contradiction. `/collection`'s `Set ▾` keeps its own name (decision 10): it answers "sets I
+  // hold cards from", a different question with a different count behind it.
+  printedIn: {
+    legend: "Printed in",
+    one: (code: string) => `Printed in ${code.toUpperCase()}`,
+    many: (codes: readonly string[]) => `Printed in ${codes.map((c) => c.toUpperCase()).join(", ")}`,
+    manyShort: (count: number) => `Printed in ${count} sets`,
+    // Shown once in the panel head. It is the whole reason the control is not called Set.
+    hint: "Matches any printing, including ones you don't own.",
+    removeAria: "Clear the printed-in filter",
+    // The sheet's row, which says what is CHOSEN; the legend above it names the dimension.
+    rowAny: "Any set",
+    // The phone's set list, the second layer over the filter sheet.
+    listNone: "No sets to filter by.",
+    listEmpty: (query: string) => `No set matches “${query}”.`,
+    listShown: (shown: number) => `${n(shown)} ${shown === 1 ? "commander" : "commanders"} shown`,
+  },
 } as const;
+
+const commanders = (v: number) => `${n(v)} ${v === 1 ? "commander" : "commanders"}`;
+
+/**
+ * `Printed in ▾` as `FilterPanel` reads it (the wide popover and the phone sheet's own panel),
+ * and as the shared set list reads it. Counts here are commanders, not cards.
+ */
+export const printedInPanelCopy: FilterPanelCopy = {
+  triggerLabel: filterCopy.printedIn.legend,
+  // Counted, like `/collection`'s Set: set names are long and varied, and a count keeps the
+  // trigger one width from nothing chosen to many. The names live in the chip.
+  triggerCount: (count: number) => (count === 0 ? "Printed in" : `Printed in ${count}`),
+  triggerAriaCollapsed: "Filter by printed-in set, collapsed",
+  triggerAriaWithSelection: (count: number) => `Filter by printed-in set, ${n(count)} selected, collapsed`,
+  panelAriaLabel: "Filter by printed-in set",
+  sheetTitle: "Printed in",
+  searchPlaceholder: "Search sets",
+  searchAriaLabel: "Search sets",
+  clearSearch: "Clear search",
+  groupDefault: "Newest first",
+  groupSelected: (count: number) => `Selected · ${n(count)}`,
+  groupMatches: (count: number) => (count === 1 ? "1 match" : `${n(count)} matches`),
+  optionAria: (setName: string, count: number) => `${setName}, ${commanders(count)}`,
+  optionAriaUnavailable: (setName: string) => `${setName}, no commanders match your other filters`,
+  footerTotal: (total: number) => `${n(total)} ${total === 1 ? "set" : "sets"}`,
+  footerSelected: (count: number, total: number) => `${n(count)} of ${n(total)} selected`,
+  clear: "Clear",
+  done: "Done",
+  closeLabel: "Close",
+  emptyTitle: "No set by that name",
+  emptyBody: (query: string) => ({
+    before: "No set matches ",
+    query: `“${query}”`,
+    after: ".",
+  }),
+  announceMatches: (count: number, query: string) =>
+    count === 0 ? `No sets match ${query}` : `${n(count)} ${count === 1 ? "set matches" : "sets match"} ${query}`,
+  announceAdded: (setName: string, sets: number, shown: number, total: number) =>
+    `${setName} added. ${n(sets)} ${sets === 1 ? "set" : "sets"}, ${n(shown)} of ${commanders(total)} shown.`,
+  announceRemoved: (setName: string, sets: number, shown: number, total: number) =>
+    sets === 0
+      ? `${setName} removed. No set filter, ${commanders(shown)} shown.`
+      : `${setName} removed. ${n(sets)} ${sets === 1 ? "set" : "sets"}, ${n(shown)} of ${commanders(total)} shown.`,
+  announceCleared: (shown: number) => `Printed-in filter cleared. ${commanders(shown)} shown.`,
+};
 
 export const commandersCopy = {
   title: "Commanders",
@@ -106,10 +174,12 @@ export const commandersCopy = {
   empty: {
     heading: "Nothing in the pile matches",
     // One control named, one row count promised. Only when a single control fixes it.
-    bodyOneFix: (name: string, control: string, rows: number) =>
-      `${name} is in your commanders, but ${control} excludes it. Drop the color and you get ${
-        rows === 1 ? "one row" : `${rows} rows`
-      } back.`,
+    // `kind` says which control is named, because the sentence says what to drop: a color is
+    // one pip, and Printed in is one control however many sets it names.
+    bodyOneFix: (name: string, control: string, rows: number, kind: "color" | "sets" = "color") =>
+      `${name} is in your commanders, but ${control} excludes it. Drop the ${
+        kind === "sets" ? "set filter" : "color"
+      } and you get ${rows === 1 ? "one row" : `${rows} rows`} back.`,
     bodyMode: (q: string, control: string) =>
       `Two commanders match "${q}", but ${control} rules both out.`,
     bodyNoSingleFix: "No single filter is doing this. Several are overlapping.",

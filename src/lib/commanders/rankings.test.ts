@@ -215,13 +215,13 @@ describe("loadCommanderRankings · the owned printing", () => {
 describe("the list caches' payload versions", () => {
   it("pins both, so a pair bumped half-way fails", () => {
     expect(commanderRankingsKey).toEqual(["commander-rankings", "v11"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v8"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9"]);
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
     expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v8");
+    expect(discoveryKey("new")).toContain("v9");
   });
 });

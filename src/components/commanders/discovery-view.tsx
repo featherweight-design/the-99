@@ -30,6 +30,9 @@ import type { DiscoveryItem } from "../../lib/discovery/list";
 // value for the same reason the clause above is not — `encode.ts` imports
 // nothing but types from `list.ts`, so the database module never comes with it.
 import { decodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
+import { filePrintedIn, isPrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
+import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
+import { printedInLabel } from "./rack/chip-line";
 import { FilterRack } from "./rack/filter-rack";
 import { PageHeader } from "./page-header";
 import { CommanderRow } from "./commander-row";
@@ -64,6 +67,8 @@ const emptyCopy = discoveryCopy.empty;
 // One frozen array, so "the server has said nothing about this query" is the
 // same value every render and the report memo below does not re-run for it.
 const EMPTY_MATCHES: ExcludedMatch[] = [];
+/** One empty selection, so a memo reading it holds still across renders. */
+const NO_SETS: string[] = [];
 
 // `filterByColors` matches against `colorIdentity`, which is upper-case
 // throughout the catalog; `lane-params` writes the URL in lower case. The lift
@@ -132,9 +137,13 @@ function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
  */
 export function DiscoveryView({
   encoded,
+  printedIn,
   chooseLink = false,
 }: {
   encoded: EncodedDiscovery;
+  /** `Printed in ▾`'s index for `encoded`'s rows, aligned by position. Absent when the read
+      failed, and then the control is not drawn and a `?p=` is not applied. */
+  printedIn?: LanePrintedIn;
   /** Help me choose's link on the result line; the route passes the feature's flag. */
   chooseLink?: boolean;
 }) {
@@ -148,6 +157,20 @@ export function DiscoveryView({
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
   const { view: discovery, serve } = useDiscoveryCache(served);
+  // Each row's sets, keyed by slug (a discover row ships no oracle id). Filed from every payload
+  // this visit has seen rather than replaced: a card's printings do not depend on which ranking
+  // shipped it, and a cached ranking has no index of its own when it comes back. Adjusted during
+  // render, like the ranking cache, so no frame shows rows without their sets.
+  const [filedFrom, setFiledFrom] = useState<LanePrintedIn | undefined>(undefined);
+  const [codesBySlug, setCodesBySlug] = useState<Map<string, string[]> | null>(null);
+  const [knownSets, setKnownSets] = useState<PrintedInSet[]>([]);
+  if (printedIn !== filedFrom) {
+    setFiledFrom(printedIn);
+    if (printedIn) {
+      setCodesBySlug((m) => filePrintedIn(new Map(m ?? []), served.items.map((r) => r.slug), printedIn));
+      setKnownSets((known) => mergeSets(printedIn.sets, known));
+    }
+  }
   const search = useSearchParams();
   const router = useRouter();
   // #338's contract: a control whose flip is a server round-trip says so for the
@@ -251,9 +274,44 @@ export function DiscoveryView({
     return discovery.items.filter((r) => r.name.toLowerCase().includes(q));
   }, [discovery.items, params.q]);
 
+  // `Printed in` (decision 9). With no index the selection is not applied: there is nothing to
+  // apply it against, and the control is not drawn either.
+  const setCodes = codesBySlug ? params.printedIn : NO_SETS;
+  // With no index the selection filters nothing, so the rack must not draw its chip or count it on
+  // the badge either: a chip over an unfiltered list says the list was narrowed when it was not.
+  const rackParams = useMemo(
+    () => (codesBySlug || params.printedIn.length === 0 ? params : { ...params, printedIn: NO_SETS }),
+    [codesBySlug, params],
+  );
+  const inSets = useCallback(
+    <T extends { slug: string }>(rows: T[]): T[] =>
+      setCodes.length === 0 || !codesBySlug
+        ? rows
+        : rows.filter((r) => isPrintedIn(codesBySlug, r.slug, setCodes)),
+    [codesBySlug, setCodes],
+  );
+  // Search, then sets, then colour, so each figure below answers for the control it names.
+  const narrowed = useMemo(() => inSets(searched), [inSets, searched]);
+
   const filtered = useMemo(
-    () => ordered(filterByColors(searched, colors, params.match), params.order),
-    [searched, colors, params.match, params.order],
+    () => ordered(filterByColors(narrowed, colors, params.match), params.order),
+    [narrowed, colors, params.match, params.order],
+  );
+
+  // The panel's rows: the sets this ranking's rows were printed in, each counting the rows the
+  // OTHER controls leave. Search is not one of them, as on /collection's Set.
+  const setOptions = useMemo(
+    () =>
+      codesBySlug
+        ? printedInOptions(
+            knownSets,
+            codesBySlug,
+            discovery.items.map((r) => r.slug),
+            filterByColors(discovery.items, colors, params.match).map((r) => r.slug),
+            setCodes,
+          )
+        : undefined,
+    [codesBySlug, knownSets, discovery.items, colors, params.match, setCodes],
   );
 
   // What `Exactly` costs against `Any`, counted over the SAME searched list on
@@ -263,10 +321,10 @@ export function DiscoveryView({
   // no pip is lit, or when the two modes agree — a "0 excluded" aside is noise.
   const excludedByExactly = useMemo(() => {
     if (params.match !== "exactly" || colors.length === 0) return null;
-    const loose = filterByColors(searched, colors, "contains").length;
-    const diff = loose - filterByColors(searched, colors, "exactly").length;
+    const loose = filterByColors(narrowed, colors, "contains").length;
+    const diff = loose - filterByColors(narrowed, colors, "exactly").length;
     return diff > 0 ? diff : null;
-  }, [searched, colors, params.match]);
+  }, [narrowed, colors, params.match]);
 
   const [announcement, setAnnouncement] = useState("");
   // The re-rank happens on the server, so the message names the count that came
@@ -419,8 +477,8 @@ export function DiscoveryView({
   // cause rather than the selection.
   const colourExcluded = useMemo<ColourExcludedMatch[]>(() => {
     if (trimmedQuery === "" || colors.length === 0) return [];
-    const kept = new Set(filterByColors(searched, colors, params.match).map((r) => r.slug));
-    return searched
+    const kept = new Set(filterByColors(narrowed, colors, params.match).map((r) => r.slug));
+    return narrowed
       .filter((r) => !kept.has(r.slug))
       .map((r) => ({
         name: r.name,
@@ -429,7 +487,7 @@ export function DiscoveryView({
           params.match === "exactly" &&
           filterByColors([r], colors, "contains").length === 1,
       }));
-  }, [searched, trimmedQuery, colors, params.match]);
+  }, [narrowed, trimmedQuery, colors, params.match]);
 
   const report = useMemo(
     () =>
@@ -479,8 +537,23 @@ export function DiscoveryView({
     !showSearchEmpty &&
     !pending &&
     (trimmedQuery === "" || nameMatchesAny) &&
-    colors.length > 0 &&
+    (colors.length > 0 || setCodes.length > 0) &&
     filtered.length === 0;
+
+  // What the filtered-zero state says, and which control its primary clears. With one kind of
+  // filter lit, that filter emptied the list. With both lit it is the COMBINATION, so the body
+  // names both, and the primary clears whichever gives back more rows on its own (a tie keeps
+  // the colors, as before there was a second control). Where neither gives any back on its own,
+  // clearing one would only land on a second empty state, so the primary clears both.
+  const filteredFix = useMemo((): "colors" | "sets" | "both" => {
+    if (setCodes.length === 0) return "colors";
+    if (colors.length === 0) return "sets";
+    const withoutSets = filterByColors(searched, colors, params.match).length;
+    const withoutColors = narrowed.length;
+    if (withoutSets === 0 && withoutColors === 0) return "both";
+    return withoutSets > withoutColors ? "sets" : "colors";
+  }, [setCodes.length, colors, searched, narrowed.length, params.match]);
+  const bothLit = colors.length > 0 && setCodes.length > 0;
   // The list is empty, the reader is owed a sentence, and the index cannot
   // supply one. It gets written about the list alone.
   const showUnknownEmpty =
@@ -499,9 +572,10 @@ export function DiscoveryView({
   const line = useMemo(
     () =>
       resolveExclusionLine({
+        // Over the rows the set filter left, so the clause answers for the colors alone.
         colorExcluded:
-          discovery.items.length -
-          filterByColors(discovery.items, colors, params.match).length,
+          inSets(discovery.items).length -
+          filterByColors(inSets(discovery.items), colors, params.match).length,
         colors,
         join: params.match,
         floorExcluded: discovery.floorExcluded,
@@ -509,7 +583,7 @@ export function DiscoveryView({
         bestPct: discovery.bestPct,
         sort: discovery.sort,
       }),
-    [discovery, colors, params.match],
+    [discovery, inSets, colors, params.match],
   );
 
   // Where the owned lane's copy of this search lives. The `scope` cause is the
@@ -542,7 +616,10 @@ export function DiscoveryView({
   // would have been in THIS filtered list had they been unbuilt, so it has to be
   // answered by the same test the list was narrowed with.
   const builtClause = useMemo(() => {
-    if (!showFilteredEmpty) return null;
+    // Colors only: a built deck has no printing, so "these are where those went" cannot be said
+    // of a set.
+    // Colors alone: a built deck has no printing, so the clause cannot account for a set.
+    if (!showFilteredEmpty || setCodes.length > 0) return null;
     const matching = filterByColors(
       discovery.deckIdentities.map((colorIdentity) => ({ colorIdentity })),
       colors,
@@ -554,7 +631,7 @@ export function DiscoveryView({
       discovery.deckIdentities.length,
       guildLabel(colors),
     );
-  }, [showFilteredEmpty, discovery.deckIdentities, colors, params.match]);
+  }, [showFilteredEmpty, setCodes.length, discovery.deckIdentities, colors, params.match]);
 
   // Ranks come from the server, over every item this list carries, so filtering
   // never renumbers — the same invariant CommandersView holds, reached differently.
@@ -566,7 +643,7 @@ export function DiscoveryView({
           difference. Discover mounts five orders and no availability control —
           not a greyed stand-in for one. */}
       <FilterRack
-        params={params}
+        params={rackParams}
         lane="discover"
         onChange={update}
         shown={filtered.length}
@@ -574,6 +651,7 @@ export function DiscoveryView({
         orderPending={navPending}
         excludedByExactly={excludedByExactly}
         chooseLink={chooseLink}
+        printedInOptions={setOptions}
       />
 
       {/* The inset the owned lane draws its list in, and for the same reason:
@@ -649,7 +727,13 @@ export function DiscoveryView({
           />
         ) : showFilteredEmpty ? (
           <ZeroState
-            heading={emptyCopy.filteredHeading}
+            heading={
+              bothLit
+                ? emptyCopy.filteredTogetherHeading
+                : setCodes.length > 0
+                  ? emptyCopy.filteredSetsHeading
+                  : emptyCopy.filteredHeading
+            }
             // The ranked count: "the N you have not built" names the list the
             // filter just emptied, and under `sort="new"` the candidate count is
             // the larger pre-exclusion figure the reader never saw a row of.
@@ -657,7 +741,11 @@ export function DiscoveryView({
             // discovery, so the whole clause is marked rather than a phrase inside it.
             body={
               <>
-                {emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
+                {bothLit
+                  ? emptyCopy.filteredTogetherBody(colorWords(colors), printedInLabel(setCodes), discovery.items.length)
+                  : setCodes.length > 0
+                    ? emptyCopy.filteredSetsBody(printedInLabel(setCodes), discovery.items.length)
+                    : emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
                 {builtClause ? (
                   <>
                     {" "}
@@ -670,10 +758,22 @@ export function DiscoveryView({
             }
             primary={
               <PrimaryButton
-                onClick={() => update({ ...params, colors: [], match: "contains" })}
+                onClick={() =>
+                  update(
+                    filteredFix === "sets"
+                      ? { ...params, printedIn: [] }
+                      : filteredFix === "colors"
+                        ? { ...params, colors: [], match: "contains" }
+                        : { ...params, colors: [], match: "contains", printedIn: [] },
+                  )
+                }
                 className={ZERO_PRIMARY}
               >
-                {emptyCopy.filteredCta}
+                {filteredFix === "sets"
+                  ? emptyCopy.filteredSetsCta
+                  : filteredFix === "colors"
+                    ? emptyCopy.filteredCta
+                    : emptyCopy.filteredBothCta}
               </PrimaryButton>
             }
             // The other lane, reached the way D5 reaches it: a route, so a link.

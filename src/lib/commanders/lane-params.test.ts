@@ -182,21 +182,26 @@ describe("activeControlCount", () => {
     ).toBe(2);
   });
 
-  // Colours and match on both lanes, plus availability on owned. Search and
-  // order never count, and discover has no third control to count.
-  it("ceilings at 3 on owned and 2 on discover", () => {
+  // Colours, match and Printed in on both lanes, plus availability on owned.
+  // Search and order never count.
+  it("counts a Printed in selection as one control, however many sets it names", () => {
+    expect(activeControlCount({ ...defaultParams("owned"), printedIn: ["hob", "hoc"] }, "owned")).toBe(1);
+    expect(activeControlCount({ ...defaultParams("discover"), printedIn: ["hob"] }, "discover")).toBe(1);
+  });
+
+  it("ceilings at 4 on owned and 3 on discover", () => {
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", printedIn: [] },
+        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", printedIn: ["hob"] },
         "owned",
       ),
-    ).toBe(3);
+    ).toBe(4);
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent", printedIn: [] },
+        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent", printedIn: ["hob"] },
         "discover",
       ),
-    ).toBe(2);
+    ).toBe(3);
   });
 
   // The rankings are orders like any other now, so picking one lights no badge

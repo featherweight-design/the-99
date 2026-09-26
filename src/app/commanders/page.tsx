@@ -9,6 +9,7 @@ import { PageHeader } from "../../components/commanders/page-header";
 import { scopeRedirectTarget } from "./scope-redirect";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
+import { lanePrintedInFor, loadCommanderPrintings } from "../../lib/sets/lane-printed-in";
 import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
 import {
@@ -61,12 +62,18 @@ export default async function CommandersPage({
 
   // Fetch recommendations and recent decks in parallel.
   // decks is used only for the firstRun flag (no confirmed deck yet).
+  // Started now so it runs beside the rankings; a failure is handled where it is read.
+  const printings = loadCommanderPrintings();
+  printings.catch(() => {});
   const [rankings, decks] = await Promise.all([
     cacheForUser(userId, commanderRankingsKey, () => loadCommanderRankings(userId)),
     listRecentDecks(userId, 1),
   ]);
 
   const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
+  // `Printed in ▾`'s index, aligned to these rows. The free ranking re-orders the same
+  // commanders, so one index covers both lists.
+  const printedIn = await lanePrintedInFor(items, printings);
 
   // No commander candidates in the collection.
   if (candidateCount === 0) {
@@ -217,6 +224,7 @@ export default async function CommandersPage({
         firstRun={firstRun}
         freeRanking={freeRanking}
         availOk={availOk}
+        printedIn={printedIn}
       />
     </section>
   );

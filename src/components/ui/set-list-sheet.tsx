@@ -59,6 +59,7 @@ export type SetListSheetCopy = {
  */
 export function SetListSheet({
   copy,
+  note,
   onDismiss,
   options,
   selected,
@@ -70,6 +71,9 @@ export function SetListSheet({
   /** A module-level constant, never a literal built in render: two effects depend on it, and a
       fresh object each render would restart their 300ms announcement timers. */
   copy: SetListSheetCopy;
+  /** One quiet line under the search field. `Printed in` carries its hint here, since its rows
+      match printings the reader does not own. */
+  note?: string;
   onDismiss: () => void;
   options: SetListOption[];
   selected: readonly string[];
@@ -176,6 +180,10 @@ export function SetListSheet({
           containerClassName="shrink-0 gap-[8px] px-[12px] py-[9px] min-h-[44px]"
           className="text-[14px]"
         />
+
+        {note && (
+          <p className="m-0 shrink-0 font-sans text-[12.5px] text-[color:var(--fg-muted)]">{note}</p>
+        )}
 
 
         {/* THE ONLY FLEXIBLE ROW. `min-h-0` is load-bearing: a flex child's

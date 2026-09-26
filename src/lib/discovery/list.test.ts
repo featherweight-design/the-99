@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildPoolRollup } from "../recs/pool-rollup";
 import type { PoolCard } from "../recs/score";
-import { assembleDiscovery, discoveryKey } from "./list";
+import { assembleDiscovery, assembleDiscoveryWithIds, discoveryKey } from "./list";
 
 // `collectionSupport` defaults to `ownedSupport` — the two are equal for every
 // ranking except a free-pool one, so a test that says nothing about the pool gets
@@ -327,9 +327,32 @@ describe("assembleDiscovery", () => {
 // that only drops on the reader's own writes — so the key carries the version of
 // the code that produced it. Without the bump, a cached page kept offering a
 // commander the player had already built with as a partner.
+describe("assembleDiscoveryWithIds", () => {
+  // Printed in's index is aligned to the rows by POSITION, so the ids have to come out in the
+  // order the rows do, which the sort decides, not the order the candidates arrived in.
+  it("hands back each row's oracle id in row order", () => {
+    const { list, oracleIds } = assembleDiscoveryWithIds({
+      candidates: [
+        candidate({ oracleId: "low", name: "Low", ownedSupport: 10 }),
+        candidate({ oracleId: "high", name: "High", ownedSupport: 90 }),
+      ],
+      playedTags: [],
+      prices: new Map(),
+      rollup: buildPoolRollup([], new Map()),
+      cardsRead: 2805,
+      freePoolSize: 2805,
+      availOk: true,
+      priceOk: true,
+      sort: "fit",
+    });
+    expect(list.items.map((i) => i.name)).toEqual(["High", "Low"]);
+    expect(oracleIds).toEqual(["high", "low"]);
+  });
+});
+
 describe("discoveryKey", () => {
   it("files a payload under its sort and its version", () => {
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v8"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9"]);
   });
 
   it("keeps two sorts apart", () => {

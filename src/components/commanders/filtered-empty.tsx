@@ -119,7 +119,7 @@ export function FilteredEmpty({
   onDrop,
   onClearAll,
 }: {
-  nearest: { name: string; control: string; rows: number } | null;
+  nearest: { name: string; control: string; rows: number; kind?: "color" | "sets" } | null;
   onDrop: () => void;
   onClearAll: () => void;
 }) {
@@ -129,7 +129,7 @@ export function FilteredEmpty({
       body={
         nearest
           ? markPhrases(
-              commandersCopy.empty.bodyOneFix(nearest.name, nearest.control, nearest.rows),
+              commandersCopy.empty.bodyOneFix(nearest.name, nearest.control, nearest.rows, nearest.kind),
               nearest.name,
               nearest.control,
             )

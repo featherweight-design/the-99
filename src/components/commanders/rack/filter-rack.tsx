@@ -33,6 +33,8 @@ import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../../ui/fi
 import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
+import { PrintedInControl } from "./printed-in-control";
+import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
 import { ORDER_OPTIONS } from "./order-options";
 import { resultLineWithAside } from "./result-line";
 import { SearchControl } from "./search-control";
@@ -48,7 +50,12 @@ export function FilterRack({
   orderPending = false,
   forceWide,
   chooseLink = false,
+  printedInOptions,
 }: {
+  /** `Printed in ▾`'s rows: the sets this lane's rows were printed in, counted under the other
+      controls. Absent where the lane shipped no index (`/about`'s specimens), and then the
+      control is not drawn at all rather than drawn empty. */
+  printedInOptions?: PrintedInOption[];
   params: LaneParams;
   lane: Lane;
   onChange: (next: LaneParams) => void;
@@ -229,6 +236,18 @@ export function FilterRack({
             onMatchChange={(match) => onChange({ ...params, match })}
             wide
           />
+          {/* Before score-against: the owned lane reads search · colour · printed-in ·
+              score-against (STATES, the dimension list per route). */}
+          {printedInOptions && (
+            <PrintedInControl
+              form="wide"
+              options={printedInOptions}
+              selected={params.printedIn}
+              onChange={(printedIn) => onChange({ ...params, printedIn })}
+              shown={shown}
+              total={total}
+            />
+          )}
           {/* The owned lane's own control, and its only one. Discover mounts
               nothing here — not a greyed stand-in. */}
           {lane === "owned" && (
@@ -263,7 +282,9 @@ export function FilterRack({
               lane={lane}
               onChange={onChange}
               shown={shown}
+              total={total}
               resultLine={resultLine}
+              printedInOptions={printedInOptions}
             />
           )}
         </>

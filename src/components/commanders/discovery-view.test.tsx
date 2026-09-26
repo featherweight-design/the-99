@@ -1010,3 +1010,77 @@ describe("DiscoveryView", () => {
     ).toHaveLength(1);
   });
 });
+
+describe("DiscoveryView Printed in", () => {
+  beforeEach(() => {
+    stubWidth(true);
+    findExcluded.mockReset();
+    findExcluded.mockResolvedValue([]);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const items = [
+    item({ slug: "a", name: "Alpha", colorIdentity: ["G"] }),
+    item({ slug: "b", name: "Beta", colorIdentity: ["G"], rank: 2 }),
+    item({ slug: "c", name: "Gamma", colorIdentity: ["R"], rank: 3 }),
+  ];
+  // Aligned to the rows by position: Alpha and Beta in HOB, Gamma in CMM.
+  const printedIn = {
+    sets: [
+      { code: "hob", name: "The Hobbit" },
+      { code: "cmm", name: "Commander Masters" },
+    ],
+    rows: [[0], [0], [1]],
+  };
+  const shown = () => ["Alpha", "Beta", "Gamma"].filter((n) => screen.queryByText(n) !== null);
+
+  it("keeps the commanders printed in the chosen set", () => {
+    window.history.replaceState(null, "", "/discover?p=hob");
+    render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
+    expect(shown()).toEqual(["Alpha", "Beta"]);
+  });
+
+  it("applies nothing, and draws no chip, when the page shipped no index", () => {
+    window.history.replaceState(null, "", "/discover?p=hob");
+    render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} />);
+    expect(shown()).toEqual(["Alpha", "Beta", "Gamma"]);
+    expect(screen.queryByRole("button", { name: /Printed in HOB/ })).not.toBeInTheDocument();
+  });
+
+  it("names the set filter when it alone emptied the list", () => {
+    window.history.replaceState(null, "", "/discover?p=zzz");
+    render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
+    expect(screen.getByText(discoveryCopy.empty.filteredSetsHeading)).toBeInTheDocument();
+    expect(screen.getByText(discoveryCopy.empty.filteredSetsBody("Printed in ZZZ", 3))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: discoveryCopy.empty.filteredSetsCta }));
+    expect(shown()).toEqual(["Alpha", "Beta", "Gamma"]);
+  });
+
+  // Green with CMM leaves nothing, though each alone keeps rows: the body names the pair rather
+  // than blaming either, and the primary clears CMM, which gives back two where green gives one.
+  it("names both when the combination emptied the list, and clears the one that gives back more", () => {
+    window.history.replaceState(null, "", "/discover?c=g&p=cmm");
+    render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
+    expect(screen.getByText(discoveryCopy.empty.filteredTogetherHeading)).toBeInTheDocument();
+    expect(screen.getByText("None of the 3 you don't own is green and printed in CMM.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: discoveryCopy.empty.filteredSetsCta }));
+    expect(shown()).toEqual(["Alpha", "Beta"]);
+  });
+
+  // Red with HOB: dropping red gives back two, dropping HOB one.
+  it("clears the colors when dropping them gives back more", () => {
+    window.history.replaceState(null, "", "/discover?c=r&p=hob");
+    render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
+    fireEvent.click(screen.getByRole("button", { name: discoveryCopy.empty.filteredCta }));
+    expect(shown()).toEqual(["Alpha", "Beta"]);
+  });
+
+  // Black with a set nobody here was printed in: neither alone gives anything back, so clearing
+  // one would land on a second empty state. The primary clears both.
+  it("clears both when neither alone gives anything back", () => {
+    window.history.replaceState(null, "", "/discover?c=b&p=zzz");
+    render(<DiscoveryView encoded={list({ items, candidateCount: 3 })} printedIn={printedIn} />);
+    fireEvent.click(screen.getByRole("button", { name: discoveryCopy.empty.filteredBothCta }));
+    expect(shown()).toEqual(["Alpha", "Beta", "Gamma"]);
+  });
+});

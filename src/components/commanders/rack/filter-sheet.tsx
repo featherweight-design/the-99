@@ -33,6 +33,8 @@ import { useBackDismiss, useScrollLock } from "../../../lib/a11y/dialog";
 import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
+import { PrintedInControl } from "./printed-in-control";
+import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
 import { ColourControl } from "./colour-control";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
@@ -46,8 +48,14 @@ export function FilterSheet({
   lane,
   onChange,
   shown,
+  total,
   resultLine,
+  printedInOptions,
 }: {
+  /** The lane's whole list, for the set layer's announcement. Defaults to `shown`. */
+  total?: number;
+  /** `Printed in ▾`'s rows; absent where the lane shipped no index. */
+  printedInOptions?: PrintedInOption[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   params: LaneParams;
@@ -78,6 +86,8 @@ export function FilterSheet({
   // every opening silent by construction, and the two stamps that were tracking
   // that by hand are gone with it.
   const [announcement, setAnnouncement] = useState("");
+  // The Printed in layer is up: this sheet goes inert under it, and the layer owns the keys.
+  const [layered, setLayered] = useState(false);
   const dragStartY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   // The count as last announced. Null means "not announced yet this opening",
@@ -207,6 +217,7 @@ export function FilterSheet({
         tabIndex={-1}
         aria-label={filterCopy.sheet.title}
         onKeyDown={onKeyDown}
+        inert={layered}
         className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
         // The drag offset is per-pixel and only exists mid-gesture, so it cannot
         // be a class. Not colour or border — the inline-style rule is about
@@ -246,8 +257,21 @@ export function FilterSheet({
             pushing the footer off the bottom of the sheet. */}
         <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-[16px] py-[6px]">
           {colour}
-          {/* The control draws its own legend and its own explainer, so the
-              section only has to name itself for AT. */}
+          {/* Before Build from, whose explainer is a hint line: sheet order rule 4 puts a
+              control carrying a hint last, and Printed in's hint lives in its own layer. */}
+          {printedInOptions && (
+            <PrintedInControl
+              form="sheet"
+              options={printedInOptions}
+              selected={params.printedIn}
+              onChange={(printedIn) => onChange({ ...params, printedIn })}
+              shown={shown}
+              total={total ?? shown}
+              onLayerChange={setLayered}
+            />
+          )}
+          {/* Last, carrying its hint line (rule 4). The control draws its own legend and
+              its own explainer, so the section only has to name itself for AT. */}
           {lane === "owned" && (
             <Section legend={commandersCopy.availability.legend} showLegend={false}>
               <AvailabilityControl
