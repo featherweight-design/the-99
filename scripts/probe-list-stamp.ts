@@ -103,15 +103,16 @@ async function main() {
   if (!template) throw new Error("the sizing account has no deck");
   console.log(`branch ${branch} · fixture ${USER} · ${items.length} collection rows · a ${template.n}-row deck`);
 
-  const deck = await one<{ id: string }>(
-    `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe list stamp', $2) returning id`,
-    [USER, template.commander_oracle_id],
-  );
-  const other = await one<{ id: string }>(
-    `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe list stamp 2', $2) returning id`,
-    [USER, template.commander_oracle_id],
-  );
+  // Inside the `try`, so a failure between the two inserts still reaches the cleanup below.
   try {
+    const deck = await one<{ id: string }>(
+      `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe list stamp', $2) returning id`,
+      [USER, template.commander_oracle_id],
+    );
+    const other = await one<{ id: string }>(
+      `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe list stamp 2', $2) returning id`,
+      [USER, template.commander_oracle_id],
+    );
     await pool.query(
       `insert into deck_cards (deck_id, oracle_id, quantity)
          select $1, oracle_id, quantity from deck_cards where deck_id = $2`, [deck.id, template.id],
