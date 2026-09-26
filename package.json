@@ -67,6 +67,7 @@
     "probe:swap-fits": "tsx scripts/probe-swap-fits.ts",
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
+    "diff:claim-model": "tsx scripts/diff-claim-model.mts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",
     "probe:locks": "tsx scripts/probe-locks.ts",
     "probe:sets": "node scripts/probe-sets.mjs",

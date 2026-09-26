@@ -734,41 +734,69 @@ export async function loadDeckBuyRows(
     -- Every decklist claim, beside the supply and the copies the decks ahead of
     -- it have already taken. A card owned in no copies has no owned row at all
     -- and falls through as zero, which is the other half of the shopping list.
+    -- Each claim's SENIOR figure, for every claimant of a card at once: the unreserved part
+    -- of every sleeved claim ahead of it in seniority order. Written as a window over the
+    -- claimants partitioned by card, where it used to be a correlated sum re-scanning
+    -- claim_decks_all once per list claim (1,500 loops on a 19-deck account, ~170 of the
+    -- query's ~280ms). The window reproduces the row comparison it replaced exactly:
+    --
+    --   (senior.since, senior.deck_id) < (mine.since, lc.deck_id)
+    --
+    -- orders by since then deck id, which is the window's order; a senior with a NULL since
+    -- never compares true, and NULLS LAST keeps every such row out of "ahead" for a claim
+    -- whose own since is set. A claim with no since, or a list card with no claim row at all
+    -- (mine absent: the deck does not hold the card in its own version), counts every sleeved
+    -- claimant but itself: the whole partition less its own row. (That subtraction translates the
+    -- old deck_id <> lc.deck_id and is kept for it, though nothing measured reaches it: a claim
+    -- whose since is null is not sleeved, so its own hard part is 0. A mutation dropping it
+    -- changed neither probe:claims nor a row of the differential.) hard is the UNRESERVED part
+    -- of a sleeved claim, for the reason senior_hard takes the same shape: a senior deck's
+    -- reserved copies are counted by reserved_others, and counting them twice would bill this
+    -- deck for a copy once too often.
+    senior_ranks as (
+      select
+        h.oracle_id,
+        h.deck_id,
+        h.hard,
+        coalesce(sum(h.hard) over (
+          partition by h.oracle_id
+          order by h.since nulls last, h.deck_id
+          rows between unbounded preceding and 1 preceding
+        ), 0)::int as ahead,
+        sum(h.hard) over (partition by h.oracle_id)::int as every_hard
+      from (
+        select
+          ca.oracle_id,
+          ca.deck_id,
+          ca.since,
+          case when ca.sleeved then greatest(ca.quantity - coalesce(srv.granted, 0), 0) else 0 end
+            as hard
+        from claim_decks_all ca
+        left join reservations srv
+          on srv.oracle_id = ca.oracle_id and srv.deck_id = ca.deck_id
+      ) h
+    ),
+    senior_totals as (
+      select oracle_id, max(every_hard)::int as every_hard
+      from senior_ranks
+      group by oracle_id
+    ),
     supply as (
       select
         lc.deck_id,
         lc.oracle_id,
         lc.quantity,
         coalesce(o.owned, 0)::int as owned,
-        -- Reservations held by every OTHER deck. Gone from this deck's supply
-        -- whatever the seniority order says.
-        coalesce((
-          select sum(rv.granted)
-          from reservations rv
-          where rv.oracle_id = lc.oracle_id and rv.deck_id <> lc.deck_id
-        ), 0)::int as reserved_others,
-        coalesce((select rt.granted_total from reserved_totals rt
-                  where rt.oracle_id = lc.oracle_id), 0)::int as granted_total,
-        coalesce((
-          -- The UNRESERVED part of each senior claim, for the reason senior_hard
-          -- takes the same shape: a senior deck's reserved copies are counted by
-          -- reserved_others, and counting them twice would bill this deck for a copy
-          -- once too often.
-          select sum(greatest(senior.quantity - coalesce(srv.granted, 0), 0))
-          from claim_decks_all senior
-          left join reservations srv
-            on srv.oracle_id = senior.oracle_id and srv.deck_id = senior.deck_id
-          where senior.oracle_id = lc.oracle_id
-            and senior.sleeved
-            and senior.deck_id <> lc.deck_id
-            -- Mirrors senior_hard exactly: a deck that does not hold this card
-            -- in its own version — mine absent — sits behind every sleeved
-            -- claim.
-            and (
-              mine.since is null
-              or (senior.since, senior.deck_id) < (mine.since, lc.deck_id)
-            )
-        ), 0)::int as senior
+        -- Reservations held by every OTHER deck. Gone from this deck's supply whatever the
+        -- seniority order says. The card's total less this deck's own grant, in place of a
+        -- correlated sum per list claim.
+        (coalesce(rt.granted_total, 0) - coalesce(own_rv.granted, 0))::int as reserved_others,
+        coalesce(rt.granted_total, 0)::int as granted_total,
+        coalesce(
+          case when mine.since is not null then sr.ahead
+               else st.every_hard - coalesce(sr.hard, 0) end,
+          0
+        )::int as senior
       from list_claims lc
       join cards c on c.oracle_id = lc.oracle_id
       left join owned o on o.oracle_id = lc.oracle_id
@@ -778,6 +806,12 @@ export async function loadDeckBuyRows(
       -- the player commits against.
       left join claim_decks_all mine
         on mine.deck_id = lc.deck_id and mine.oracle_id = lc.oracle_id
+      left join senior_ranks sr
+        on sr.deck_id = lc.deck_id and sr.oracle_id = lc.oracle_id
+      left join senior_totals st on st.oracle_id = lc.oracle_id
+      left join reserved_totals rt on rt.oracle_id = lc.oracle_id
+      left join reservations own_rv
+        on own_rv.oracle_id = lc.oracle_id and own_rv.deck_id = lc.deck_id
       where c.type_line !~ '\\mBasic\\M'
     ),
     -- What this deck can actually draw on: the supply, less every copy reserved
