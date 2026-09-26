@@ -460,7 +460,10 @@ reader through `dock.retiredAnnounce` on open.
 
 ## Component: Keep-all inline confirm (`clear-auto.tsx` → `ClearAutoButton`)
 
-Pattern is `game-history-row.tsx`'s inline confirm **verbatim, minus the danger ink**.
+Pattern was `game-history-row.tsx`'s inline confirm **verbatim, minus the danger ink**. That inline
+confirm was retired on 2026-09-27, when a game's delete moved onto the shared `DeleteConfirm` pane
+(`ui/delete-confirm.tsx`); this table records the shape the Keep-all confirm was built to, and it is
+unchanged.
 
 ### At rest — the two bulk controls (unchanged)
 

@@ -134,7 +134,8 @@ export const folderCopy = {
      * act that did not happen rather than borrow create's.
      */
     failed: 'That folder was not deleted. Try again.',
-    cancel: 'Cancel',
+    /** The shared delete pane's KEEP, the same label the deck's and the game's panes carry (2026-09-27). */
+    cancel: 'Keep it',
   },
 
   // ── Move — on the deck, in the menu it already has ────────────────────
