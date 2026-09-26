@@ -283,9 +283,8 @@ async function threeDoors(page, userId, width, written, shelves) {
   await onPage(page, `button[aria-label="Actions for ${folderName}"]`).first().click();
   const shelf = page.getByRole("dialog", { name: /Actions for|Delete/ });
   await shelf.getByRole("button", { name: /^Delete$/ }).click();
-  // The folder's cancel reads `Cancel` where the deck's reads `Keep it`: the labels are copy,
-  // and copy is /copy-review's. The pane is the same either way.
-  const keepShelf = page.getByRole("dialog").getByRole("button", { name: /^(Keep|Cancel)/ });
+  // Every door's cancel reads `Keep it` since the folder's was renamed to match (2026-09-27).
+  const keepShelf = page.getByRole("dialog").getByRole("button", { name: "Keep it", exact: true });
   panes.shelf = await readPane(page, keepShelf);
   await keepShelf.click();
 

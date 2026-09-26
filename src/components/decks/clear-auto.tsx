@@ -44,10 +44,12 @@ export const BULK_BUTTON_BASE =
  *  `Done` without two text colours on one element fighting over the cascade. */
 export const BULK_BUTTON_CLASS = `${BULK_BUTTON_BASE} text-fg-body border-border-strong`;
 
-/** The confirm's two answers, taking `game-history-row.tsx`'s inline confirm
- *  verbatim minus its danger ink — this app's only confirm vocabulary, and it
- *  is a toolbar question here for the same reason it is a row question there.
- *  The caller appends the one border colour that separates the two answers. */
+/** The confirm's two answers, built to `game-history-row.tsx`'s inline confirm
+ *  minus its danger ink. That inline confirm was retired on 2026-09-27, when a
+ *  game's delete moved onto the shared `DeleteConfirm` pane; this toolbar
+ *  question keeps the shape it was built to, because it confirms a bulk edit in
+ *  place rather than a delete. The caller appends the one border colour that
+ *  separates the two answers. */
 const CONFIRM_BUTTON_CLASS =
   "flex-1 md:flex-none flex md:inline-flex items-center justify-center min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] text-fg-body bg-transparent border cursor-pointer disabled:cursor-not-allowed disabled:opacity-50";
 
