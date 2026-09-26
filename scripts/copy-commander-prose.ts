@@ -57,6 +57,8 @@ const loadTarget = () =>
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId));
 
+// Counted as each row lands, so a copy that dies part-way still stamps what it installed.
+let written = 0;
 const write = async (row: ProseSource) => {
   if (dryRun) return;
   await target.update(commanderSupport)
@@ -66,6 +68,7 @@ const write = async (row: ProseSource) => {
       prosePromptVersion: row.prosePromptVersion,
     })
     .where(eq(commanderSupport.commanderOracleId, row.oracleId));
+  written += 1;
 };
 
 // The TARGET's catalog generation, stamped once the copy has written anything: `/commanders`
@@ -87,8 +90,7 @@ const stamp = async () => {
 };
 
 copyCommanderProse({ loadSource, loadTarget, write })
-  .then(async (r) => {
-    if (!dryRun && r.installed > 0) await stamp();
+  .then((r) => {
     console.log(
       `${dryRun ? "Would install" : "Installed"} ${r.installed} sentences; ${r.fresh} already ` +
       `current, ${r.suppressed} suppressed, ${r.missing} absent from the source, ${r.drifted} ` +
@@ -110,4 +112,9 @@ copyCommanderProse({ loadSource, loadTarget, write })
   // Both pools hold open sockets that would keep the process alive past its work. Settled
   // rather than all: teardown runs after the copy has already been done and reported, so a
   // socket that refuses to close is not a reason to fail a run that succeeded.
-  .finally(() => Promise.allSettled([source.$client.end(), target.$client.end()]));
+  // The stamp first, in the `finally`, so a copy that failed after installing some rows still
+  // retires the payloads those rows changed.
+  .finally(async () => {
+    if (written > 0) await stamp();
+    await Promise.allSettled([source.$client.end(), target.$client.end()]);
+  });
