@@ -1,15 +1,15 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { ChooseParams } from "./params";
-import type { Bracket } from "./rank";
+import { backing, type Bracket } from "./rank";
 import { loadCardChip, type CardChip } from "./rows";
 import { loadIntakeThemes } from "./search";
-import { themeShare, type ThemeRow } from "./vocabulary";
+import { tribesFor, type ThemeRow } from "./vocabulary";
 
 /**
  * What the create page's *Built from your answers* block says (HANDOFF §6), for the commander the
  * player pressed. Each figure is the same one the results row printed beside that commander, read
- * the same way (`themeShare`, the card's inclusion), so the two screens never disagree about it.
+ * the same way (`backing`, the card's inclusion), so the two screens never disagree about it.
  */
 export type HandOffAnswers = {
   /** In the order asked. `pct` is null where the results would print no figure either. */
@@ -34,19 +34,23 @@ export async function loadHandOffAnswers(userId: string, commanderId: string, p:
     // `undefined` when the read failed; `null` when it says there is no such card.
     p.card ? loadCardChip(userId, p.card).catch(() => undefined) : Promise.resolve(null),
     db.execute(sql`
-      select cs.deck_count, cs.tags,
+      select cs.deck_count, cs.tags, c.type_line,
         ${p.card ? sql`(select csc.inclusion from commander_support_cards csc
           where csc.commander_oracle_id = cs.commander_oracle_id and csc.oracle_id = ${p.card}::uuid)` : sql`null::real`} as card_inclusion
-      from commander_support cs where cs.commander_oracle_id = ${commanderId}::uuid
-    `).then((r) => r.rows as { deck_count: number | null; tags: ThemeRow["tags"]; card_inclusion: number | null }[]).catch(() => []),
+      from commander_support cs join cards c on c.oracle_id = cs.commander_oracle_id
+      where cs.commander_oracle_id = ${commanderId}::uuid
+    `).then((r) => r.rows as { deck_count: number | null; tags: ThemeRow["tags"]; type_line: string | null; card_inclusion: number | null }[]).catch(() => []),
   ]);
   const labels = new Map(vocabulary.map((t) => [t.slug, t.label]));
-  const themeRow: ThemeRow | null = row ? { deckCount: row.deck_count, tags: row.tags ?? [] } : null;
+  const themeRow = row ? { deckCount: row.deck_count, tags: row.tags ?? [], typeLine: row.type_line } : null;
+  // The results' own backing, a tribal theme's type line included, so a row admitted that way
+  // shows the same figure here as it did there.
+  const tribes = tribesFor(p.themes, vocabulary);
   const pct = (share: number | null) => (share === null ? null : Math.round(share * 100));
   return {
     // Every theme asked is a row. One the vocabulary no longer offers is labeled by its slug,
     // exactly as the results page labels it, so no answer is lost between the two screens.
-    themes: p.themes.map((slug) => ({ slug, label: labels.get(slug) ?? slug, pct: pct(themeRow ? themeShare(themeRow, slug) : null) })),
+    themes: p.themes.map((slug) => ({ slug, label: labels.get(slug) ?? slug, pct: pct(themeRow ? backing(themeRow, slug, tribes)?.share ?? null : null) })),
     // `inclusion` is stored as EDHREC publishes it, a percentage (`search.ts`).
     card: card ? { ...card, pct: row?.card_inclusion == null ? null : Math.round(row.card_inclusion) } : null,
     cardUnread: card === undefined,

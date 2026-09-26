@@ -10,8 +10,8 @@ import { loadPrices } from "../discovery/price";
 import type { EdhrecTag } from "../edhrec/parse";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
 import { buildPhraseIndex, type PhraseIndex } from "./match";
-import { rankCandidates, type Answers, type Candidate, type CardFacts, type SearchResult } from "./rank";
-import { themeVocabulary, type VocabularyTheme } from "./vocabulary";
+import { rankCandidates, type Answers, type Candidate, type CardFacts, type SearchResult, type Tribes } from "./rank";
+import { themeVocabulary, tribesFor, type VocabularyTheme } from "./vocabulary";
 
 /**
  * Help me choose's reads: every fact `rankCandidates` rules on, gathered here and nowhere else.
@@ -97,6 +97,15 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
 export type SearchOutcome = SearchResult & { card: CardFacts | null };
 
 export async function searchCommanders(userId: string, asked: Answers): Promise<SearchOutcome> {
+  const facts = await loadSearchFacts(userId, asked);
+  return { ...rankCandidates(facts.candidates, facts.answers, facts.card, facts.tribes), card: facts.card };
+}
+
+/** What the search ranks, gathered: the answers it actually runs, the candidates, the card, the tribes. */
+export type SearchFacts = { answers: Answers; candidates: Candidate[]; card: CardFacts | null; tribes: Tribes };
+
+/** Exported so `measure-intake-tribes` ranks exactly what the search does, twice, from one read. */
+export async function loadSearchFacts(userId: string, asked: Answers): Promise<SearchFacts> {
   // The card is resolved FIRST. A card id that parses but names no card any more (a stale link), or
   // one the intake could never have offered (a basic, a banned card), is dropped, as every invalid
   // answer is, and the search then runs as if no card were asked: every read below, the owned
@@ -109,7 +118,7 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
   const needOwnedSupport = answers.themes.length === 0 && card === null;
 
   const rows = (await db.execute(sql`
-    select cs.commander_oracle_id as id, c.name, c.color_identity, cs.deck_count, c.game_changer,
+    select cs.commander_oracle_id as id, c.name, c.color_identity, c.type_line, cs.deck_count, c.game_changer,
       coalesce((select jsonb_agg(t) from jsonb_array_elements(cs.tags) t
                 where t->>'slug' = any(${sql.param(answers.themes)}::text[])), '[]'::jsonb) as tags,
       exists (select 1 from collection_items ci
@@ -134,7 +143,7 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
     join cards c on c.oracle_id = cs.commander_oracle_id
     where ${isCandidate(userId)}
   `)).rows as {
-    id: string; name: string; color_identity: string[]; deck_count: number | null; game_changer: boolean;
+    id: string; name: string; color_identity: string[]; type_line: string | null; deck_count: number | null; game_changer: boolean;
     tags: EdhrecTag[]; owned: boolean; card_inclusion: number | null; owned_support: number; support_total: number;
   }[];
 
@@ -150,6 +159,7 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
     oracleId: r.id,
     name: r.name,
     colorIdentity: r.color_identity,
+    typeLine: r.type_line,
     deckCount: r.deck_count,
     tags: r.tags,
     owned: r.owned,
@@ -174,7 +184,9 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
     massLandDenial: flags.get(card)?.massLandDenial ?? false,
     extraTurn: flags.get(card)?.extraTurn ?? false,
   };
-  return { ...rankCandidates(candidates, answers, cardFacts), card: cardFacts };
+  // Only the vocabulary's labels are read, from the memo every page already warms.
+  const tribes: Tribes = answers.themes.length === 0 ? new Map() : tribesFor(answers.themes, await loadIntakeThemes());
+  return { answers, candidates, card: cardFacts, tribes };
 }
 
 /**

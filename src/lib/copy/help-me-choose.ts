@@ -13,7 +13,7 @@
 // Never the words AI, model or LLM: the deeper read is "a deeper look" (audit wording rule).
 
 import { availabilityCopy } from "./availability";
-import { BRACKET_NAMES } from "./deck-analysis";
+import { BRACKET_NAMES, nameList } from "./deck-analysis";
 
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
@@ -147,11 +147,18 @@ export const helpMeChooseCopy = {
   },
   narrow: {
     few: (n: number) => (n === 1 ? "Only one commander fits all of that" : `Only ${n} commanders fit all of that`),
+    /**
+     * Quoted verbatim in the merged handoff, so kept. Since 2026-09-27 an offer can drop two answers
+     * or keep only one, where "one answer" no longer holds: owed to the Design addendum.
+     */
     fewLead: "Loosen one answer to see more:",
     none: "No commander fits all of that",
     noneLead: "Each of these would bring some back. Pick one and we’ll search again.",
     count: (n: number) => plural(n, "commander", "commanders"),
-    drop: (answer: string) => `Drop ${answer}`,
+    /** One answer, or several at once when no single one brings a commander back. */
+    drop: (answers: readonly string[]) => `Drop ${nameList(answers)}`,
+    /** Every answer but one dropped: said as the one that stays. */
+    keepOnly: (answer: string) => `Keep only ${answer}`,
     widenColors: (names: string) => `Any ${names}, not exactly`,
     gameChanger: (card: string, bracket: number) => `${card} is a Game Changer, and bracket ${bracket} allows none.`,
     yourself: "Or change your answers yourself.",

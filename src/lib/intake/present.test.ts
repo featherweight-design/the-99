@@ -44,13 +44,31 @@ describe("figures", () => {
 });
 
 describe("narrowOptions", () => {
+  it("names a several-answer removal as the drops, or as the one answer it keeps", () => {
+    const four = p({ themes: ["orcs", "elves", "dwarves", "wizards"] });
+    const tribal = { ...labels, theme: (s: string) => s[0].toUpperCase() + s.slice(1) };
+    const t = (slug: string) => ({ kind: "theme" as const, slug });
+    const opts = narrowOptions({
+      without: [
+        { answers: [t("orcs"), t("dwarves"), t("wizards")], count: 98 },
+        { answers: [t("elves"), t("wizards")], count: 1 },
+      ],
+      widen: null,
+      cardOverBracket: null,
+    }, four, tribal);
+    expect(opts.map((o) => [o.label, o.count])).toEqual([["Keep only Elves", "98 commanders"], ["Drop Elves and Wizards", "1 commander"]]);
+    // Each goes to the answers it names: every dropped theme gone, the rest kept, the read cleared.
+    expect(opts[0].params.themes).toEqual(["elves"]);
+    expect(opts[1].params.themes).toEqual(["orcs", "dwarves"]);
+  });
+
   const ask = p({ colors: ["r", "g"], match: "exactly", themes: ["dinos"], card: "c", bracket: 2 });
   const narrow = {
     without: [
-      { answer: { kind: "card" as const }, count: 40 },
-      { answer: { kind: "theme" as const, slug: "dinos" }, count: 12 },
-      { answer: { kind: "colors" as const }, count: 9 },
-      { answer: { kind: "bracket" as const }, count: 0 },
+      { answers: [{ kind: "card" as const }], count: 40 },
+      { answers: [{ kind: "theme" as const, slug: "dinos" }], count: 12 },
+      { answers: [{ kind: "colors" as const }], count: 9 },
+      { answers: [{ kind: "bracket" as const }], count: 0 },
     ],
     widen: { count: 24 },
     cardOverBracket: "gameChanger" as const,
@@ -60,7 +78,7 @@ describe("narrowOptions", () => {
     const READ = "0000aaaa-0000-4000-8000-0000000000aa";
     // The look added the budget; dropping it must not hash back to the look's own ask.
     const after = p({ ...ask, budgetDollars: 150, readId: READ, deeper: ["b"] });
-    for (const o of narrowOptions({ ...narrow, without: [...narrow.without, { answer: { kind: "budget" as const }, count: 30 }] }, after, labels)) {
+    for (const o of narrowOptions({ ...narrow, without: [...narrow.without, { answers: [{ kind: "budget" as const }], count: 30 }] }, after, labels)) {
       expect([o.params.readId, o.params.deeper]).toEqual([null, []]);
     }
   });

@@ -53,6 +53,7 @@
     "probe:notices-sheet": "tsx scripts/probe-notices-sheet.mjs",
     "probe:notices-tile": "node scripts/probe-notices-tile.mjs",
     "probe:synopsis": "tsx scripts/probe-synopsis.ts",
+    "measure:intake-tribes": "tsx scripts/measure-intake-tribes.mts",
     "probe:overview-hold": "node scripts/probe-overview-hold.mjs",
     "probe:swap-engine": "tsx scripts/probe-swap-engine.ts",
     "probe:swap-take": "tsx scripts/probe-swap-take.ts",
