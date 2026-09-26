@@ -25,7 +25,7 @@
 import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL", "ANTHROPIC_API_KEY"]);
 import Anthropic from "@anthropic-ai/sdk";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
@@ -285,9 +285,14 @@ async function submit(chunks: Chunk[]): Promise<void> {
   ));
 
   const batch = await client.messages.batches.create({ requests });
+  // Scoped to THIS WAVE's intent keys, not to "every null batch id in this run". An earlier
+  // wave can legitimately have left a null id behind — that is the ambiguous state `reconcile`
+  // resolves against the provider — and stamping this batch's id onto it would assert that a
+  // request belongs to a batch that never contained it, corrupting the one lookup the resume
+  // path depends on.
   await db.update(cardLabelBatches)
     .set({ batchId: batch.id, status: "submitted", submittedAt: new Date() })
-    .where(and(eq(cardLabelBatches.runId, runId), isNull(cardLabelBatches.batchId)));
+    .where(inArray(cardLabelBatches.intentKey, chunks.map((c) => c.intentKey)));
   console.log(`submitted ${requests.length} request(s) as ${batch.id}`);
 }
 

@@ -127,12 +127,32 @@ stop being a second source of truth.
   leaves work in flight that the next dispatch cannot see, so it submits those
   requests again and pays twice for them.
 
-  So submitted batch ids are PERSISTED before anything else happens and reconciled
-  before any new submission: for each recorded id, retrieve it, collect what
-  succeeded into staging, and only then decide what is still missing. The sample
-  already writes `out/batches.json` at submission for exactly this reason; the full
-  run needs it in the database rather than a file, because a file in a CI runner's
-  workspace does not survive the run that wrote it.
+  So an INTENT is persisted before anything else happens, and reconciled before any new
+  submission. Not the batch id: Anthropic assigns `batch_id` only when `batches.create`
+  RETURNS, so nothing can record it first, and a process dying between a successful
+  `create` and the write leaves no trace at all. The intent goes down with a NULL id,
+  the id is stamped on afterwards, and a null id is treated as AMBIGUOUS rather than
+  absent — the provider's recent batches are listed and matched on the `custom_id`s this
+  run chose. Only a request with no match is re-submitted; an unresolvable one is marked
+  `abandoned` and reported, because a silent re-submission is how the double charge
+  happens.
+
+  (This paragraph said "submitted batch ids are PERSISTED before anything else happens"
+  until PR 3b, which is impossible and contradicted the intents bullet four lines below.
+  Three review rounds on #1056 went on building the wrong table shape from it: keyed on
+  the provider's id, then with that id globally unique — one `create` returns ONE id for
+  every chunk it submitted — then with `custom_id`s that repeat across runs, so a recovery
+  listing matched an earlier run's request. All three are answerable from `batches.create`'s
+  call site.)
+
+  Two more facts the shape must respect, both from the same place. One provider batch
+  holds MANY chunks, so `batch_id` is shared and cannot be unique; `custom_id` carries
+  uniqueness instead and must embed a run token. And `custom_id` is length-capped, so the
+  token is a hash slice rather than the 29-character run id.
+
+  The sample writes `out/batches.json` at submission for the same reason; the full run
+  needs it in the database rather than a file, because a file in a CI runner's workspace
+  does not survive the run that wrote it.
 
   Two consequences worth stating: an id that has EXPIRED (the batch API keeps
   results 29 days) is dropped with a warning and its cards re-submitted, and a run
