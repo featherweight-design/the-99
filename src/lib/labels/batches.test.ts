@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { cardLabelBatches, cardLabelsStaging } from "../../db/schema";
 
-const MIGRATION = "drizzle/0068_lovely_paper_doll.sql";
+const MIGRATION = "drizzle/0068_petite_power_pack.sql";
 
 /**
  * The batch-intent table's SHAPE, asserted because the crash window it exists to close is
@@ -36,8 +36,10 @@ describe("the batch intent table can record an intent before submitting", () => 
   });
 
   // Every field a resumed run needs to reconcile without re-deriving the run's chunking.
-  it("carries the run, the model and the names the batch asked about", () => {
-    for (const col of [cardLabelBatches.runId, cardLabelBatches.model, cardLabelBatches.asked]) {
+  it("carries the run, the model, the request id and the names it asked about", () => {
+    for (const col of [
+      cardLabelBatches.runId, cardLabelBatches.model, cardLabelBatches.customId, cardLabelBatches.asked,
+    ]) {
       expect(col.notNull).toBe(true);
     }
   });
@@ -49,6 +51,21 @@ describe("the generated migration carries the constraints the comments claim", (
   // declaration. A first version of this reached for a private extra-config builder and
   // asserted nothing, because that object is not renderable SQL.
   const sql = readFileSync(MIGRATION, "utf8");
+
+  // The constraint that made the table UNUSABLE when it was wrong: `batches.create` takes
+  // every chunk for a model at once and returns ONE id for all of them, so a global unique
+  // on `batch_id` rejects every chunk row after the first. The pair is what is unique.
+  it("makes the batch id unique per REQUEST, not globally", () => {
+    expect(sql).toContain('UNIQUE("batch_id","custom_id")');
+    expect(sql).not.toMatch(/CONSTRAINT "[^"]*batch_id_unique" UNIQUE\("batch_id"\)/);
+  });
+
+  // Per-chunk granularity: a returned `custom_id` has to map back to the cards that request
+  // asked about, and a provider batch can have some requests succeed and others fail.
+  it("records the request id and the cards that request asked about", () => {
+    expect(sql).toMatch(/"custom_id" text NOT NULL/);
+    expect(sql).toMatch(/"asked" jsonb NOT NULL/);
+  });
 
   it("creates the intent table with a nullable batch id", () => {
     expect(sql).toMatch(/"intent_key" text PRIMARY KEY NOT NULL/);

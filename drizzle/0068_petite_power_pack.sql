@@ -2,13 +2,14 @@ CREATE TABLE "card_label_batches" (
 	"intent_key" text PRIMARY KEY NOT NULL,
 	"run_id" text NOT NULL,
 	"model" text NOT NULL,
+	"custom_id" text NOT NULL,
 	"asked" jsonb NOT NULL,
 	"batch_id" text,
 	"status" text DEFAULT 'intended' NOT NULL,
 	"intended_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"submitted_at" timestamp with time zone,
 	"collected_at" timestamp with time zone,
-	CONSTRAINT "card_label_batches_batch_id_unique" UNIQUE("batch_id"),
+	CONSTRAINT "card_label_batches_batch_request_unique" UNIQUE("batch_id","custom_id"),
 	CONSTRAINT "card_label_batches_status_check" CHECK ("card_label_batches"."status" in ('intended', 'submitted', 'in_progress', 'collected', 'expired', 'failed', 'abandoned')),
 	CONSTRAINT "card_label_batches_id_with_status_check" CHECK ("card_label_batches"."status" in ('intended', 'abandoned') or "card_label_batches"."batch_id" is not null)
 );

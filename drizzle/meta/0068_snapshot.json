@@ -1,5 +1,5 @@
 {
-  "id": "2e00eea8-053e-4a09-a496-6001abb4d23e",
+  "id": "8936599f-9e3d-432a-9cb7-fdb6552d9cab",
   "prevId": "bc2a1147-d89f-4af9-80a1-a284d0a44b8f",
   "version": "7",
   "dialect": "postgresql",
@@ -287,6 +287,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "custom_id": {
+          "name": "custom_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "asked": {
           "name": "asked",
           "type": "jsonb",
@@ -346,11 +352,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "card_label_batches_batch_id_unique": {
-          "name": "card_label_batches_batch_id_unique",
+        "card_label_batches_batch_request_unique": {
+          "name": "card_label_batches_batch_request_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "batch_id"
+            "batch_id",
+            "custom_id"
           ]
         }
       },

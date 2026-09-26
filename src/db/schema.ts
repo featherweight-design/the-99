@@ -1938,7 +1938,7 @@ export const cardLabelsStaging = pgTable("card_labels_staging", {
 ]);
 
 /**
- * One INTENT to submit a batch, written before `batches.create` is called.
+ * One INTENT to submit a chunk of cards, written before `batches.create` is called.
  *
  * **Keyed on a key we choose, not on the provider's `batch_id`, and that is the whole
  * point.** Anthropic assigns `batch_id` only when `create` RETURNS, so a row keyed on it
@@ -1947,35 +1947,50 @@ export const cardLabelsStaging = pgTable("card_labels_staging", {
  * re-submits the same work and PAYS TWICE, which is the exact failure this table exists to
  * prevent. The plan says so in Task 2: reconcile INTENTS, not only reservations.
  *
+ * **One provider batch holds MANY chunks.** `batches.create({ requests })` takes every
+ * chunk for a model at once and returns a single `batch_id` for all of them, so the id is
+ * SHARED down the rows of that model's run and cannot be globally unique. What is unique is
+ * the pair: a `custom_id` identifies one request inside one provider batch. An earlier
+ * version of this table put a global `unique` on `batch_id`, which would have rejected every
+ * chunk row after the first and made this table unusable by the submitter it exists for.
+ *
+ * The row stays per CHUNK rather than per provider batch, because reconciliation is per
+ * request: a returned `custom_id` has to map back to the card names that request asked
+ * about, and a batch can have some requests succeed while others fail.
+ *
  * `intent_key` is `{run_id}:{model}:{chunk}`, deterministic from the run's own plan, so a
  * resumed run computes the same key for the same work and finds its own intent rather than
  * creating a second one.
  *
  * **An intent with a null `batch_id` is AMBIGUOUS, not empty.** The `create` may have
  * succeeded with the id lost, so a resumed run must not simply re-submit: it lists the
- * provider's recent batches and matches on the `custom_id`s it chose, which are derived
- * from `intent_key`. Only an intent with no matching provider batch is re-submitted; one
- * that cannot be resolved either way is marked `abandoned` and reported, because a silent
- * re-submission is how the double charge happens.
+ * provider's recent batches and matches on the `custom_id`s it chose, which are recorded
+ * here. Only a chunk with no matching provider request is re-submitted; one that cannot be
+ * resolved either way is marked `abandoned` and reported, because a silent re-submission is
+ * how the double charge happens.
  *
- * `asked` carries the card names the batch covers so a resumed run can reconcile returned
- * names by face without re-deriving the chunking. In the database rather than a file,
- * because `out/batches.json` does not survive the CI runner that wrote it.
+ * In the database rather than a file, because `out/batches.json` does not survive the CI
+ * runner that wrote it.
  */
 export const cardLabelBatches = pgTable("card_label_batches", {
   intentKey: text("intent_key").primaryKey(),
   runId: text("run_id").notNull(),
   model: text("model").notNull(),
-  /** The card names this batch asked about, so a resumed run can reconcile by face. */
+  /** This request's id inside its provider batch — what a returned result is matched on. */
+  customId: text("custom_id").notNull(),
+  /** The card names this chunk asked about, so a resumed run can reconcile by face. */
   asked: jsonb("asked").$type<string[]>().notNull(),
-  /** Null until `batches.create` returns — see the ambiguity note above. */
-  batchId: text("batch_id").unique(),
+  /** Null until `batches.create` returns, then SHARED by every chunk in that batch. */
+  batchId: text("batch_id"),
   status: text("status").notNull().default("intended"),
   intendedAt: timestamp("intended_at", { withTimezone: true }).notNull().defaultNow(),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   collectedAt: timestamp("collected_at", { withTimezone: true }),
 }, (t) => [
   index("card_label_batches_run_idx").on(t.runId),
+  // One request per id per provider batch. Not `batch_id` alone: the id is shared across
+  // every chunk the same `create` call submitted.
+  unique("card_label_batches_batch_request_unique").on(t.batchId, t.customId),
   check(
     "card_label_batches_status_check",
     sql`${t.status} in ('intended', 'submitted', 'in_progress', 'collected', 'expired', 'failed', 'abandoned')`,
