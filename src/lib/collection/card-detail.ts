@@ -358,6 +358,12 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // reads the catalog row, so it must not wait on it either — a slow catalog read would
   // otherwise hold every owned card's modal. `settle` keeps the abandoned read from rejecting
   // with nothing listening.
+  //
+  // A DELIBERATE SPECULATIVE READ. An owned card pays for a `cards` lookup it discards: one
+  // primary-key query and, for its length, one more pool connection (seven at most, of pg's ten).
+  // Started only after the collection answered, the unowned path — every card the reader does not
+  // hold, the commonest open — would take three round trips instead of two. One cheap read on the
+  // owned path buys a round trip on the other one.
   const catalog = settle(() => db
       .select({
         oracleId: cards.oracleId,
