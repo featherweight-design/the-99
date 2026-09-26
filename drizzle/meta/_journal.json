@@ -512,6 +512,13 @@
       "when": 1790458991127,
       "tag": "0072_answer_owned_only",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1790461308689,
+      "tag": "0073_user_data_stamps",
+      "breakpoints": true
     }
   ]
 }
