@@ -30,6 +30,8 @@ type Job = {
   threshold: { stat: string; op: string; value: number } | null; modal: boolean;
 };
 
+const die = (why: string): never => { console.error(why); process.exit(1); };
+
 const sql = neon(process.env.DATABASE_URL!);
 const goldNames = GOLD.map((r) => r.name);
 const cards = await sql`
@@ -93,6 +95,68 @@ const textRuleJobs = (card: CardRow): Job[] => {
 };
 
 const kindKey = (j: Job) => `${j.space}:${j.kind}`;
+
+/**
+ * Pairs gold jobs with predicted jobs of the SAME KIND, maximising total limit
+ * agreement across the whole group rather than taking the best match for each gold
+ * job in turn.
+ *
+ * Greedy is not merely untidy here, it is wrong: with two gold jobs of one kind, the
+ * locally best prediction for the first can be the only one that fits the second, so
+ * consuming it manufactures a limit disagreement out of two labels that both match.
+ * The gold set exercises this ON PURPOSE -- Depala carries two restricted pumps and
+ * Tyrant's Scorn two removals -- so the defect lands exactly where the set is
+ * sharpest.
+ *
+ * Exhaustive over permutations, which is affordable because the groups are tiny: the
+ * largest same-kind group in the gold set is 3, and the factorial is bounded by a
+ * guard rather than assumed. Above the guard it falls back to greedy and SAYS SO,
+ * because a silent fallback would be the same defect wearing a comment.
+ */
+const PERMUTATION_LIMIT = 6;
+export function bestPairing(
+  gold: Job[], predicted: Job[], agreement: (a: Job, b: Job) => number,
+): [Job, Job][] {
+  const pairs: [Job, Job][] = [];
+  const byKind = new Map<string, Job[]>();
+  for (const g of gold) {
+    const k = kindKey(g);
+    byKind.set(k, [...(byKind.get(k) ?? []), g]);
+  }
+  for (const [kind, golds] of byKind) {
+    const cands = predicted.filter((q) => kindKey(q) === kind);
+    if (cands.length === 0) continue;
+    if (golds.length === 1 || cands.length === 1 || golds.length > PERMUTATION_LIMIT) {
+      if (golds.length > PERMUTATION_LIMIT) {
+        console.warn(`  (${kind}: ${golds.length} same-kind jobs exceeds the permutation limit — paired greedily)`);
+      }
+      const pool = [...cands];
+      for (const g of golds) {
+        let best = -1, at = -1;
+        for (const [i, q] of pool.entries()) {
+          const sc = agreement(g, q);
+          if (sc > best) { best = sc; at = i; }
+        }
+        if (at >= 0) pairs.push([g, pool.splice(at, 1)[0]]);
+      }
+      continue;
+    }
+    // Every assignment of these golds to distinct candidates; keep the best total.
+    const idx = cands.map((_, i) => i);
+    let bestTotal = -1, bestAssign: number[] = [];
+    const walk = (chosen: number[], left: number[]) => {
+      if (chosen.length === Math.min(golds.length, cands.length)) {
+        const total = chosen.reduce((a, ci, gi) => a + agreement(golds[gi], cands[ci]), 0);
+        if (total > bestTotal) { bestTotal = total; bestAssign = [...chosen]; }
+        return;
+      }
+      for (const [n, ci] of left.entries()) walk([...chosen, ci], left.filter((_, m) => m !== n));
+    };
+    walk([], idx);
+    bestAssign.forEach((ci, gi) => pairs.push([golds[gi], cands[ci]]));
+  }
+  return pairs;
+}
 const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"] as const;
 const limitValue = (j: Job, f: string) =>
   f === "threshold"
@@ -198,18 +262,8 @@ for (const [model, byCard] of Object.entries(predictions)) {
     // least one comparison is guaranteed to mismatch and the model is charged for
     // the scorer's pairing. That defect read as `gold Vehicle -> pred Dwarf` on
     // Depala, which is two correct labels mispaired, not a model error.
-    const unused = [...predicted];
     const agreement = (a: Job, b: Job) => LIMITS.filter((f) => limitValue(a, f) === limitValue(b, f)).length;
-    const pairs: [Job, Job][] = [];
-    for (const g of row.jobs) {
-      let best = -1, bestAt = -1;
-      for (const [i, q] of unused.entries()) {
-        if (kindKey(q) !== kindKey(g)) continue;
-        const score = agreement(g as Job, q);
-        if (score > best) { best = score; bestAt = i; }
-      }
-      if (bestAt >= 0) pairs.push([g as Job, unused.splice(bestAt, 1)[0]]);
-    }
+    const pairs = bestPairing(row.jobs as Job[], predicted, agreement);
     for (const [g, p] of pairs) {
       for (const f of LIMITS) {
         if (f === "rampKind" && !(g.kind === "ramp" && g.space === "role")) continue;
@@ -269,6 +323,18 @@ for (const [model, byCard] of Object.entries(predictions)) {
 }
 
 mkdirSync("out", { recursive: true });
+// PUBLISHING a one-model report would commit a comparison that is not one. The skip
+// above is for exploratory runs; with `--publish` both models must be present and
+// complete, or the committed artifact silently loses a column the report quotes.
+if (process.argv.includes("--publish")) {
+  for (const m of ["haiku", "sonnet"]) {
+    const rows = predictions[m];
+    if (!rows) die(`refusing to publish: out/labels-${m}.json is missing, so the comparison is incomplete`);
+    const answered = Object.values(rows).filter((v) => Array.isArray(v)).length;
+    if (answered < GOLD.length) die(`refusing to publish: ${m} answered ${answered} of ${GOLD.length} gold cards`);
+  }
+}
+
 writeFileSync("out/score.json", JSON.stringify(report, null, 1));
 writeFileSync("out/disagreements.json", JSON.stringify(disagreements, null, 1));
 

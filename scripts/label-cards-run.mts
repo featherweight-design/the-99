@@ -17,6 +17,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
+import { ledgerTotal, readLedger, unreconciled, writeReservation } from "./lib/card-labels-ledger.mjs";
 import { costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
 import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM } from "./lib/card-labels-prompt.mjs";
 
@@ -115,9 +116,8 @@ for (const m of /** @type {const} */ (Object.keys(MODELS)) as (keyof typeof MODE
 // A cumulative ledger, because the cap is stated as a TOTAL. Without it a second
 // invocation after a failed collect passes its own estimate and spends the cap
 // again.
-const LEDGER = "out/spend.json";
-let spentBefore = 0;
-try { spentBefore = JSON.parse(readFileSync(LEDGER, "utf8")).totalUsd ?? 0; } catch { /* first run */ }
+const ledger = readLedger();
+const spentBefore = ledgerTotal(ledger);
 
 console.log(`cards: ${all.length} (gold ${gold.length}, random ${random.length}) in ${batches.length} batches of ${CARDS_PER_BATCH}`);
 console.log(`system block: ${sysTokens} estimated tokens (1,215 as billed); caching ${PRICING.sonnet.caches ? "engages for sonnet only" : "engages for neither model"}, and measured a net loss — see the note above PRICING`);
@@ -129,6 +129,19 @@ console.log(`  already spent by earlier runs: $${spentBefore.toFixed(4)}  (cap $
 // Bind on the WORST CASE plus what previous runs already spent. Binding on the
 // expected figure is what let a 3.4x gap sit between the cap and what the
 // requests permit.
+// An UNRECONCILED run is one whose batches were submitted and never collected. A
+// second run started on top of it cannot know whether that money was spent, and the
+// two runs' reservations could not be told apart afterwards -- the flat ledger
+// overwrote `submitted` wholesale, so whichever collector ran second would treat the
+// other's reservation as prior spend or credit it twice.
+const pending = unreconciled(ledger);
+if (pending.length > 0 && !process.argv.includes("--force")) {
+  console.error(`\nREFUSING: ${pending.length} earlier run(s) submitted batches that were never collected:`);
+  for (const [key, r] of pending) console.error(`  ${key}  reserved $${(r.reservedUsd ?? 0).toFixed(4)}`);
+  console.error("Run `node scripts/label-cards-collect.mjs` to reconcile them, or pass --force if you know they are dead.");
+  process.exit(1);
+}
+
 if (worstTotal + spentBefore > CAP_USD) {
   console.error(`\nREFUSING: worst case $${worstTotal.toFixed(2)} + $${spentBefore.toFixed(2)} already spent exceeds the $${CAP_USD} cap.`);
   console.error(`Lower RANDOM_N, or lower max_tokens in card-labels-prompt.mts, and re-run.`);
@@ -172,8 +185,12 @@ for (const [key, model] of Object.entries(MODELS) as [keyof typeof MODELS, strin
   charged += perModelWorst[key];
   // `reservedUsd` is what THIS run booked, so `collect` can swap exactly it for the
   // measured figure and leave every earlier run's spend standing.
-  writeFileSync(LEDGER, JSON.stringify({ totalUsd: +charged.toFixed(4), reservedUsd: +(charged - spentBefore).toFixed(4), submitted, reconciled: false }, null, 1));
+  writeReservation(submitted, charged - spentBefore);
+  // `batches.json` is written HERE, not after the loop. The collector reads it to
+  // know which ids exist, so a process dying between the first and second model used
+  // to strand a submitted batch: the ledger held its id, the collector never saw it,
+  // and the next run submitted that model again.
+  writeFileSync("out/batches.json", JSON.stringify({ submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
   console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests), ledger now $${charged.toFixed(4)}`);
 }
-writeFileSync("out/batches.json", JSON.stringify({ submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
 console.log("\nbatch ids written to out/batches.json — poll with `node scripts/label-cards-collect.mjs`");

@@ -7,14 +7,16 @@ import "./lib/env.mjs";
 
 import Anthropic from "@anthropic-ai/sdk";
 
+import { writeMeasured } from "./lib/card-labels-ledger.mjs";
 import { costOf } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { validateJob } from "./lib/card-labels-schema.mjs";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
-const LEDGER = "out/spend.json";
 const { submitted, batches } = JSON.parse(readFileSync("out/batches.json", "utf8"));
 let collected = 0;
+/** Publication is gated on THIS run having ended every batch it submitted. */
+let allEnded = false;
 mkdirSync("out", { recursive: true });
 
 /** A model may fence its JSON however it likes; the reply is data, not code. */
@@ -39,6 +41,8 @@ for (const [key, id] of Object.entries(submitted)) {
 
   const labels = {};
   const malformed = [];
+  /** Names the model returned that this batch never asked about. */
+  const unexpected = [];
   let inTok = 0, outTok = 0, cacheW = 0, cacheR = 0, errored = 0;
 
   /** Every card in a request we cannot read is a MISS, recorded rather than absent. */
@@ -74,13 +78,20 @@ for (const [key, id] of Object.entries(submitted)) {
       if (!asked1.includes(" // ")) continue;
       for (const face of asked1.split(" // ")) faceOf.set(face, asked1);
     }
-    const resolveName = (n) => (asked.includes(n) ? n : faceOf.get(n) ?? n);
+    // A name that is neither asked for nor a FACE of one is not a card this batch
+    // covers. Returned `null`, it is rejected rather than inserted: an invented name
+    // accepted here enters `labels`, and `label-cards-agree` iterates one model's
+    // keys, so a hallucination returned by both models would count as an agreeing
+    // random card and move the denominator.
+    const resolveName = (n) => (asked.includes(n) ? n : faceOf.get(n) ?? null);
 
     for (const card of parsed) {
       if (!card?.name) continue;
       // Two faces of one card merge into one label set, which is what the
       // schema labels -- the card, not the face.
-      card.name = resolveName(card.name);
+      const resolved = resolveName(card.name);
+      if (resolved === null) { unexpected.push(`${entry.custom_id}: ${card.name}`); continue; }
+      card.name = resolved;
       const jobs = Array.isArray(card.jobs) ? card.jobs : [];
       // A job the schema rejects is DROPPED and RECORDED, never repaired. A
       // repaired label would score the repair rather than the model.
@@ -102,7 +113,8 @@ for (const [key, id] of Object.entries(submitted)) {
   const missing = Object.entries(labels).filter(([, v]) => v === null).length;
   writeFileSync(`out/labels-${key}.json`, JSON.stringify(labels, null, 1));
   writeFileSync(`out/malformed-${key}.txt`, malformed.join("\n"));
-  console.log(`${key}: ${Object.keys(labels).length} cards (${missing} not returned), ${malformed.length} rejected jobs, ${errored} failed requests`);
+  console.log(`${key}: ${Object.keys(labels).length} cards (${missing} not returned), ${malformed.length} rejected jobs, ${unexpected.length} unexpected names, ${errored} failed requests`);
+  if (unexpected.length) console.log(`  unexpected: ${unexpected.slice(0, 5).join(", ")}${unexpected.length > 5 ? " …" : ""}`);
   console.log(`  tokens in=${inTok} out=${outTok} cacheWrite=${cacheW} cacheRead=${cacheR}`);
   console.log(`  COST $${cost.toFixed(4)}  (batch rates)`);
   measured[key] = {
@@ -128,6 +140,7 @@ if (grandTotal) {
     }])),
   }, null, 1));
   console.log("cost and projections -> out/cost.json");
+  allEnded = Object.keys(submitted).length === collected;
   // RECONCILE the ledger the runner wrote. It charges the WORST CASE at submission,
   // because an interrupted run must not read as having spent nothing -- but leaving
   // that figure standing refuses the next legitimate run on a number ~4x the truth.
@@ -135,20 +148,20 @@ if (grandTotal) {
   // back money still in flight.
   const ended = Object.keys(submitted).length === collected;
   if (ended) {
-    // Replace only THIS run's reservation, never the running total. Overwriting
-    // `totalUsd` with `grandTotal` credits back every earlier run's spend, so the
-    // next invocation is authorised against a cap that has already been used.
-    let prior = 0;
-    try {
-      const led = JSON.parse(readFileSync(LEDGER, "utf8"));
-      prior = (led.totalUsd ?? 0) - (led.reservedUsd ?? 0);
-    } catch { /* no ledger: this run is the first */ }
-    const total = prior + grandTotal;
-    writeFileSync(LEDGER, JSON.stringify({ totalUsd: +total.toFixed(4), reservedUsd: 0, submitted, reconciled: true }, null, 1));
-    console.log(`ledger reconciled: $${prior.toFixed(4)} earlier + $${grandTotal.toFixed(4)} measured = $${total.toFixed(4)}`);
+    // Keyed on this run's batch ids, so a repeat collect REPLACES its entry rather
+    // than charging the cap again. Measured: the flat-total version turned $1.7048
+    // into $2.5637 on a second collect over the same batches.
+    const total = writeMeasured(submitted, grandTotal);
+    console.log(`ledger: this run measured $${grandTotal.toFixed(4)}; total committed $${total.toFixed(4)}`);
   } else {
     console.log(`ledger left at the worst case: ${collected} of ${Object.keys(submitted).length} batches ended`);
   }
 }
 
+// Publishing a partial run would copy a stale or half-measured cost file over the
+// committed artifact the report's dollar figures rest on.
+if (process.argv.includes("--publish") && !allEnded) {
+  console.error("REFUSING to publish: not every submitted batch has ended, so the cost figure is partial.");
+  process.exit(1);
+}
 publishArtifacts(["out/cost.json"], process.argv.includes("--publish"));

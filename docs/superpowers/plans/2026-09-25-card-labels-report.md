@@ -12,11 +12,15 @@ The pass buys exactly one thing, and it is the thing that is broken: the LIMITS 
 a job. Today's text rules score **0 on every limit** — not poorly, zero, by
 construction, because they cannot express one.
 
-Sonnet **is** markedly better on the limit family that caused the false matches.
-It gets 85.7% of gating restrictions against Haiku's 72.5% — half the error rate —
-every one of the 30 tribal restrictions against Haiku's 27 of 28, and invents 2
-spurious restrictions against Haiku's 6. Haiku wins the ramp kind (95.5% against 87.5%) and nothing else
-that decides a match. The one-time difference is **$27.60**.
+Sonnet **is** markedly better on the limits that decide a match. It gets 86.4% of
+gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 85.7%
+of recurrences against 78.8%, and finds about one job in twelve more (recall 0.834
+against 0.761). It invents 5 spurious restrictions against Haiku's 7.
+
+**Both models get every TRIBAL restriction right**, so the Warg's Wolf clause is
+solved by either; the choice turns on the wider gating set and on `trigger`. Haiku
+wins the ramp kind (95.7% against 91.7%) and job precision by 1.6 points. The
+one-time difference is **$28.36**.
 
 > **This reverses the recommendation in the first draft of this report, which said
 > Haiku.** That draft rested on a tribal-restriction figure of 87.5% against 90.9%
