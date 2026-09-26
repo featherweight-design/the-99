@@ -1,7 +1,15 @@
 # Full-run plan: label every card's jobs and their limits
 
-> **HELD FOR HUGH'S APPROVAL.** Nothing in this plan is built or run until he
-> picks. It follows the sample and its report
+> **APPROVED by Hugh on 2026-09-26**, together with the one-time full run at about
+> $41 — above the normal caps, with his approval recorded. Conditions carried into the
+> tasks below: a hard stop at $55 worst case, PAY ONCE (generate on staging, copy to
+> production), production writes by job or workflow only, and no player-visible change
+> until a consumer PR reads the labels behind `SWAP_TOOLS_ENABLED`.
+>
+> The model is **Sonnet 4.5**. Sonnet 5 was measured on the same 508 cards and does
+> NOT beat it on the restriction family this feature turns on — 0.727 against 0.864 on
+> the gating subset, and the only model to miss a tribal restriction — despite better
+> job recall and a slightly lower projected cost. It follows the sample and its report
 > (`2026-09-25-card-labels-report.md`), whose recommendation is **Sonnet 4.5, about
 > $41.09 for 31,830 Commander-legal cards** — $28.36 more than Haiku, one time.
 >
@@ -31,8 +39,12 @@ kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
 ## Global constraints
 
 - **Nothing runs per request, ever.** This is a build-time pass, read from a table.
-- **Spend:** a hard `--max-usd` flag, defaulting to the projected run cost plus
-  20%, that REFUSES rather than truncating. The sample's estimator is the model
+- **Spend: a hard stop at $55 worst case**, which is Hugh's approved ceiling with
+  roughly 30% headroom over the $41.09 projection — the headroom exists because the
+  rates behind that projection are UNVERIFIED (the cost endpoints need an Admin API
+  key this repo does not have). **If the projection moves past $50 once real batches
+  report their tokens, PAUSE and report rather than continuing.** A hard `--max-usd`
+  flag REFUSES rather than truncating. The sample's estimator is the model
   (`scripts/label-cards-run.mjs`), including its refusal path.
 - `ANTHROPIC_API_KEY` through `scripts/lib/env.mjs`. Never printed, never logged.
 - **The job vocabulary is 2b's** (`src/lib/recs/roles.ts`, `src/lib/recs/themes.ts`)
@@ -189,17 +201,49 @@ so the next reader does not "fix" it back.
 - **After the catalog refresh**, which runs 09:00 UTC Monday: a card the catalog does
   not yet hold cannot be labelled. `Combo refresh` runs 13:00 for this reason; this
   should sit at or after that.
-- **Both `catalog-staging` and `catalog-production`**, through a `plan` job feeding a
-  matrix — never an expression on `environment`, which is the bug `Catalog refresh`,
-  `Price refresh`, `Commander index` and `Combo refresh` all had and which sent
-  every scheduled run to production alone.
+- **GENERATE AGAINST `catalog-staging` ONLY, then COPY to production.** Hugh's ruling
+  of 2026-09-26: PAY ONCE. A sentence costs a model call to produce and nothing to
+  move, and the same is true of a label — so the fan-out every other refresh workflow
+  uses would double the bill for an identical result. This is the one refresh job here
+  that must NOT feed a matrix over both environments, and the reason is money rather
+  than correctness, which is why it reads as an exception to the pattern beside it.
 - **`CARD_LABELS_ENABLED` repository variable**, `'true'` to fire on schedule; a
-  manual dispatch labels only the environment it names.
-- **`max-parallel: 1` under one workflow-wide concurrency group**, as `Commander
-  index` uses: two legs submitting batches at once double the spend and race the
-  same table.
-- A new set is ~390 cards, so a weekly run costs about **50 cents** on Sonnet (16 on
-  Haiku). Either way the ongoing cost is not a consideration; the backfill is.
+  manual dispatch labels only staging.
+- **One workflow-wide concurrency group.** Not `max-parallel` over a matrix, because
+  there is no matrix: the group exists so two scheduled runs cannot put two batch
+  streams on the API or race the same staging table.
+- A new set is ~390 cards, so a weekly run costs about **50 cents** on Sonnet 4.5 (16
+  on Haiku). Either way the ongoing cost is not a consideration; the backfill is.
+
+### Task 4b — `db:copy:labels`, so the model runs once
+
+**Files:** create `scripts/copy-card-labels.ts`; modify `package.json`.
+
+The `db:copy:prose` pattern, for the same reason it exists there: a label costs a model
+call to produce and nothing to move.
+
+- Reads `LABEL_COPY_SOURCE_URL` and `LABEL_COPY_TARGET_URL`, and takes `--dry-run`.
+  Source and target are SEPARATE variables and the target is never defaulted, as
+  `pull:staging` learned: "not the source" is not the same as "safe to write to".
+- **Installs a row only when the hash the source stored equals the hash the TARGET'S
+  own inputs produce.** A label describing an oracle text the target no longer holds is
+  never written; those rows keep their absence and are picked up by the next
+  `db:build:labels` against that target, which is the run to do afterwards.
+- Carries `model` and `prompt_version` across unchanged, so a copied row says which
+  model produced it and a later audit can tell copied rows from generated ones.
+- Never deletes. A card the source has not labelled leaves the target's row alone.
+
+### Task 4c — the production copy is a JOB, never a probe
+
+Writing to production happens through the workflow or the job, exactly as
+`db:build:prose` does, and never from a probe or a local invocation. d9 must be told
+BEFORE the production copy runs, so Hugh can confirm that the first real consumer —
+E1's matching — is ready or behind a switch.
+
+**The labels change nothing player-visible until a consumer PR reads them**, and that
+PR is behind `SWAP_TOOLS_ENABLED`. So the order is: generate on staging, validate
+against the gold subset (Task 6), copy to production, and only then let a consumer
+read it.
 
 ## Task 5 — consumers: how E1 reads the labels
 
@@ -302,8 +346,11 @@ Five PRs. Each is independently reviewable and none leaves the tree broken.
 3. **`db:build:labels`** — Task 2's script, Task 3's caching decision, the spend cap,
    the refusal floor, face reconciliation. **Held until Hugh approves the spend**,
    then run once against staging before production.
-4. **The weekly hook** — Task 4. After PR 3 has run cleanly by hand at least once;
-   a workflow that has never succeeded manually should not be put on a cron.
+4. **The weekly hook and the copy step** — Tasks 4, 4b and 4c. After PR 3 has run
+   cleanly by hand at least once; a workflow that has never succeeded manually should
+   not be put on a cron. The copy ships WITH the hook rather than after it, because
+   pay-once is what makes the hook single-target: shipping a staging-only generator
+   with no way to install its output would leave production unlabelled indefinitely.
 5. **Consumers and validation** — Tasks 5 and 6 together, because the validation is
    what makes the consumer change safe to believe. Behind the labels being present:
    with an empty table this PR is a no-op by construction, which is what makes it
