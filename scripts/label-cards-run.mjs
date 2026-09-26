@@ -9,7 +9,7 @@
 // why this fits.
 //
 // Writes NO database rows. Reads the catalog, writes files under out/.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import "./lib/env.mjs";
 
@@ -80,8 +80,12 @@ let estIn = 0, estCacheRead = 0, estOut = 0;
 for (const [i, cards] of batches.entries()) {
   const body = cards.map((c) => `${c.name}\n${c.mana_cost ?? ""} | ${c.type_line}\n${c.oracle_text ?? ""}`).join("\n\n");
   estIn += estTokens(body);
-  // First batch writes the cache; the rest read it.
-  if (i === 0) estIn += sysTokens; else estCacheRead += sysTokens;
+  // NOT "first batch writes, the rest read". Measured on this sample: Sonnet wrote
+  // the cache 37 times and read it 6 over 43 requests, because batch requests run
+  // in parallel and almost none finds a warm cache. Booking 1 write and 42 reads
+  // under-estimates the instruction portion ~8x, in the one direction this file
+  // says must never happen. Modelled as mostly-writes instead.
+  if (i === 0) estIn += sysTokens; else if (i % 7 === 0) estCacheRead += sysTokens; else estIn += sysTokens;
   estOut += cards.length * 160;   // ~160 output tokens per card, measured on a pilot
 }
 
@@ -90,7 +94,13 @@ const costOf = (m, { i = 0, cr = 0, o = 0, cw = 0 }) => {
   return (i * p.in + cr * p.cacheRead + o * p.out + cw * p.cacheWrite) / 1e6;
 };
 
-let estTotal = 0;
+// The WORST CASE the request actually permits, which is what a cap has to bind on.
+// `max_tokens` is 8000 per batch of 12 -- 667 tokens a card against the 160
+// measured, so an estimate built on the average leaves 4x of headroom the cap
+// never sees. A cap that cannot be exceeded by the run it approves is not a cap.
+const estOutWorst = batches.length * 8000;
+
+let estTotal = 0, worstTotal = 0;
 const lines = [];
 for (const m of Object.keys(MODELS)) {
   // A model that does not cache pays full input for the instruction block on
@@ -99,19 +109,33 @@ for (const m of Object.keys(MODELS)) {
     ? { i: estIn - sysTokens, cw: sysTokens, cr: estCacheRead, o: estOut }
     : { i: estIn + estCacheRead, o: estOut };
   const c = costOf(m, usage);
+  const w = costOf(m, { ...usage, o: estOutWorst });
   estTotal += c;
+  worstTotal += w;
   const how = PRICING[m].caches ? `cacheRead≈${estCacheRead}` : `no cache (block under the minimum)`;
-  lines.push(`  ${m.padEnd(7)} in≈${usage.i} ${how} out≈${estOut}  $${c.toFixed(3)}`);
+  lines.push(`  ${m.padEnd(7)} in≈${usage.i} ${how} out≈${estOut}  $${c.toFixed(3)}  (worst case $${w.toFixed(3)})`);
 }
+
+// A cumulative ledger, because the cap is stated as a TOTAL. Without it a second
+// invocation after a failed collect passes its own estimate and spends the cap
+// again.
+const LEDGER = "out/spend.json";
+let spentBefore = 0;
+try { spentBefore = JSON.parse(readFileSync(LEDGER, "utf8")).totalUsd ?? 0; } catch { /* first run */ }
 
 console.log(`cards: ${all.length} (gold ${gold.length}, random ${random.length}) in ${batches.length} batches of ${CARDS_PER_BATCH}`);
 console.log(`system block: ${sysTokens} tokens, cached after the first batch`);
 console.log("ESTIMATE (batch rates, both models):");
 lines.forEach((l) => console.log(l));
-console.log(`  TOTAL   $${estTotal.toFixed(3)}  against a $${CAP_USD} cap`);
+console.log(`  TOTAL   $${estTotal.toFixed(3)} expected, $${worstTotal.toFixed(3)} worst case`);
+console.log(`  already spent by earlier runs: $${spentBefore.toFixed(4)}  (cap $${CAP_USD} total)`);
 
-if (estTotal > CAP_USD) {
-  console.error(`\nREFUSING: the estimate exceeds the $${CAP_USD} cap. Lower RANDOM_N and re-run.`);
+// Bind on the WORST CASE plus what previous runs already spent. Binding on the
+// expected figure is what let a 3.4x gap sit between the cap and what the
+// requests permit.
+if (worstTotal + spentBefore > CAP_USD) {
+  console.error(`\nREFUSING: worst case $${worstTotal.toFixed(2)} + $${spentBefore.toFixed(2)} already spent exceeds the $${CAP_USD} cap.`);
+  console.error(`Lower RANDOM_N, or lower max_tokens in card-labels-prompt.mjs, and re-run.`);
   process.exit(1);
 }
 if (dryRun) {
@@ -142,4 +166,8 @@ for (const [key, model] of Object.entries(MODELS)) {
   console.log(`${key}: submitted batch ${batch.id} (${requests.length} requests)`);
 }
 writeFileSync("out/batches.json", JSON.stringify({ submitted, batches: batches.map((b) => b.map((c) => c.name)) }, null, 1));
+// Charge the WORST CASE to the ledger at submission. The true figure is only known
+// after collection, and a ledger that waits for it credits an interrupted run with
+// having spent nothing.
+writeFileSync(LEDGER, JSON.stringify({ totalUsd: spentBefore + worstTotal, note: "worst case charged at submission; see collect for measured" }, null, 1));
 console.log("\nbatch ids written to out/batches.json — poll with `node scripts/label-cards-collect.mjs`");

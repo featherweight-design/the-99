@@ -12,7 +12,7 @@
 // a copy — a reimplementation would drift and the drift would read as rule error.
 // They emit no limits at all, by construction, so their limit recall is 0 and the
 // report says so rather than pretending the comparison is close.
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import "./lib/env.mjs";
 
@@ -94,6 +94,15 @@ const limitValue = (j: Job, f: string) =>
 // actually decides a match.
 const NON_GATING = new Set(["creature", "permanent", "spell", "player", "none"]);
 
+/**
+ * TRIBAL: gold restricts to a NAMED type, capitalised as printed -- Wolf,
+ * Dinosaur, Pirate. This is the Bejeweled Warg case exactly, and it is a strict
+ * subset of the gating set, which also holds lowercase card types (artifact,
+ * land). The two are reported SEPARATELY because they do not agree about which
+ * model is better, and a reader shown only one is being steered.
+ */
+const isTribal = (v: string) => /^[A-Z]/.test(v);
+
 const DEFAULTS: Record<string, string> = {
   rampKind: "none", restrictedTo: "none", trigger: "none",
   recurrence: "repeatable", threshold: "none", modal: "false",
@@ -102,10 +111,23 @@ const DEFAULTS: Record<string, string> = {
 type Tally = { tp: number; fp: number; fn: number };
 const blankTally = (): Tally => ({ tp: 0, fp: 0, fn: 0 });
 
-/** A model whose batch has not landed is SKIPPED and named, never scored as empty. */
+/**
+ * A model whose batch has not landed is SKIPPED and named, never scored as empty.
+ *
+ * A MISSING file and a CORRUPT one are told apart, because collapsing them reports
+ * a truncated labels file as "not present" and prints a two-model report that
+ * reads as complete. Absence is a skip; anything else throws.
+ */
 const loadModel = (key: string) => {
-  try { return JSON.parse(readFileSync(`out/labels-${key}.json`, "utf8")); }
-  catch { console.log(`(${key}: out/labels-${key}.json not present — skipped)`); return null; }
+  const path = `out/labels-${key}.json`;
+  let raw: string;
+  try { raw = readFileSync(path, "utf8"); }
+  catch (e) {
+    if ((e as { code?: string }).code === "ENOENT") { console.log(`(${key}: ${path} not present — skipped)`); return null; }
+    throw e;
+  }
+  try { return JSON.parse(raw); }
+  catch (e) { throw new Error(`${path} is present but unparseable — refusing to score a partial run: ${(e as Error).message}`); }
 };
 const predictions: Record<string, Record<string, Job[] | null>> = Object.fromEntries([
   ["haiku", loadModel("haiku")],
@@ -114,7 +136,7 @@ const predictions: Record<string, Record<string, Job[] | null>> = Object.fromEnt
 ].filter(([, v]) => v != null) as [string, Record<string, Job[] | null>][]);
 
 type LimitStat = { accuracy: number | null; informativeAccuracy: number | null; right: number; wrong: number; infRight: number; infWrong: number };
-type ModelReport = { notReturned: number; jobs: Record<string, number | null>; limits: Record<string, LimitStat>; worstKinds: unknown[] };
+type ModelReport = { notReturned: number; spuriousRestrictions: number; jobs: Record<string, number | null>; limits: Record<string, LimitStat>; worstKinds: unknown[] };
 const report: { scoredAt: string; goldCards: number; models: Record<string, ModelReport> } = { scoredAt: new Date().toISOString(), goldCards: GOLD.length, models: {} };
 const disagreements: Record<string, unknown>[] = [];
 
@@ -122,7 +144,14 @@ for (const [model, byCard] of Object.entries(predictions)) {
   const jobs = blankTally();
   const perKind: Record<string, Tally> = {};
   const limits: Record<string, { right: number; wrong: number; infRight: number; infWrong: number }> = {};
-  for (const f of [...LIMITS, "restrictedTo(gating)"]) limits[f] = { right: 0, wrong: 0, infRight: 0, infWrong: 0 };
+  for (const f of [...LIMITS, "restrictedTo(gating)", "restrictedTo(tribal)"]) limits[f] = { right: 0, wrong: 0, infRight: 0, infWrong: 0 };
+  // SPURIOUS restrictions: the model invented a gating restriction where gold has
+  // none. The gating and tribal subsets both key on GOLD's value, so they are
+  // recall-like and cannot see this direction at all -- a model over-labelling
+  // limits would score perfectly on them. An invented restriction is a false
+  // NEGATIVE in the feature (a good stand-in refused), which is the mirror of the
+  // bug this lane exists to fix, so it is counted rather than left invisible.
+  let spurious = 0;
   let notReturned = 0;
 
   for (const row of GOLD) {
@@ -178,9 +207,19 @@ for (const [model, byCard] of Object.entries(predictions)) {
         }
         // The subset that gates: a named creature type, or a card type a deck may
         // simply not play (artifact, land, Vehicle).
-        if (f === "restrictedTo" && !NON_GATING.has(gv)) {
-          const t = limits["restrictedTo(gating)"];
-          if (gv === pv) { t.right++; t.infRight++; } else { t.wrong++; t.infWrong++; }
+        if (f === "restrictedTo") {
+          if (!NON_GATING.has(gv)) {
+            const t = limits["restrictedTo(gating)"];
+            if (gv === pv) { t.right++; t.infRight++; } else { t.wrong++; t.infWrong++; }
+            if (isTribal(gv)) {
+              const b = limits["restrictedTo(tribal)"];
+              if (gv === pv) { b.right++; b.infRight++; } else { b.wrong++; b.infWrong++; }
+            }
+          } else if (!NON_GATING.has(pv)) {
+            // Gold says this gates nothing and the model named a type anyway.
+            spurious++;
+            disagreements.push({ card: row.name, klass: row.klass, model, type: "spurious restriction", job: kindKey(g), gold: gv, predicted: pv, informative: true });
+          }
         }
       }
     }
@@ -192,6 +231,7 @@ for (const [model, byCard] of Object.entries(predictions)) {
   });
   report.models[model] = {
     notReturned,
+    spuriousRestrictions: spurious,
     jobs: { ...pr(jobs), ...jobs },
     limits: Object.fromEntries(Object.entries(limits).map(([f, v]) => [f, {
       accuracy: v.right + v.wrong ? +(v.right / (v.right + v.wrong)).toFixed(3) : null,
@@ -206,12 +246,14 @@ for (const [model, byCard] of Object.entries(predictions)) {
   };
 }
 
+mkdirSync("out", { recursive: true });
 writeFileSync("out/score.json", JSON.stringify(report, null, 1));
 writeFileSync("out/disagreements.json", JSON.stringify(disagreements, null, 1));
 
 for (const [m, r] of Object.entries(report.models)) {
   console.log(`\n=== ${m} ===  (${r.notReturned} cards not returned)`);
   console.log(`  JOB    precision ${r.jobs.precision}  recall ${r.jobs.recall}   tp=${r.jobs.tp} fp=${r.jobs.fp} fn=${r.jobs.fn}`);
+  console.log(`  spurious gating restrictions invented: ${r.spuriousRestrictions}`);
   for (const [f, v] of Object.entries(r.limits)) {
     const inf = v.informativeAccuracy === null ? "n/a" : String(v.informativeAccuracy);
     console.log(`  ${f.padEnd(13)} accuracy ${String(v.accuracy ?? "-").padEnd(5)} | NON-DEFAULT ${inf.padEnd(5)} (${v.infRight}/${v.infRight + v.infWrong})`);

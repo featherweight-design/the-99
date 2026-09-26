@@ -33,8 +33,9 @@ const CLASSES = {
   // "target creature you control" -- the UNRESTRICTED phrasing the text rules
   // already read correctly, and the exact opposite of what this class is for.
   // Caught by reading the first 16 rows before labelling any of them.
-  // `creature|permanent|player|opponent` are excluded by name because they are
-  // common nouns that pass a capitalised-word test at the start of a sentence.
+  // `Creature|Permanent|Player` are excluded by name because they are common nouns
+  // that pass a capitalised-word test at the start of a sentence. Case-sensitive,
+  // matching the `~` above, so only the sentence-initial forms need naming.
   restrictedCounter: sql`
     select name, mana_cost, type_line, oracle_text, layout from cards
     where commander_legal

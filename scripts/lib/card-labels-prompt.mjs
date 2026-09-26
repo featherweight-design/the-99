@@ -1,11 +1,18 @@
 // The instruction block sent to both models, and the batch request builder.
 //
 // IDENTICAL for Haiku and Sonnet, deliberately: the comparison is between models,
-// so any prompt difference would confound it. It is also CACHED -- one
-// cache_control breakpoint at the end of the system block -- because the block is
-// ~1.5k tokens and is resent for every batch. Over the full run (~32k cards) that
-// is the difference between paying for the instructions once per batch and once
-// per card.
+// so any prompt difference would confound it.
+//
+// A cache_control breakpoint sits at the end of the system block, and MEASUREMENT
+// says it is close to worthless here. The block is 1,215 tokens as billed, which is
+// under Haiku's minimum cacheable length -- zero writes and zero reads across two
+// identical calls -- so for the recommended model it is inert. For Sonnet it
+// engages and still loses: 37 writes against 6 reads over 43 batch requests,
+// because they run in parallel and almost none finds a warm cache, which at 1.25x
+// to write and 0.1x to read cost more than not caching. Uncached, the block is paid
+// once per BATCH of 12 (one system block per request), never once per card.
+// Retained only because it is free to leave and starts paying if the block grows
+// past ~2,048 tokens AND submission is sequenced so reads dominate.
 //
 // The vocabulary is INLINED from the schema module rather than retyped, so a
 // change 2b makes reaches the prompt and the scorer together. A prompt that

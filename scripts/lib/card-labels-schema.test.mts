@@ -66,11 +66,30 @@ describe("validateJob", () => {
       .toContain("rampKind on a non-ramp job");
   });
 
-  // A theme job named `ramp` is not a role job named `ramp`; the rampKind rule
-  // keys on both fields, and keying on `kind` alone would demand a kind here.
-  it("does not demand a rampKind from a theme that happens to be named ramp", () => {
-    const themeDraw = { ...warg, space: "theme" as const, kind: "draw", rampKind: undefined };
-    expect(validateJob(themeDraw)).toEqual([]);
+  // The rampKind rule keys on `kind === "ramp" && space === "role"`. The earlier
+  // version of this test built `kind: "draw"`, so the `kind` half short-circuited
+  // and the `space` half was never exercised -- rewriting the rule to key on
+  // `kind` alone left all 14 tests passing. A theme genuinely named `ramp` is
+  // unconstructible (`ramp` is not in THEMES), so the assertion that can be made
+  // is the pair: a role ramp missing its kind is rejected, and a theme job with
+  // the same shape is not.
+  it("demands a rampKind from role:ramp", () => {
+    expect(validateJob({ ...warg, rampKind: undefined })).toContain('rampKind "undefined"');
+  });
+
+  // The rule keys on `kind === "ramp" && space === "role"`, and ONLY this input
+  // separates that from keying on `kind` alone: `ramp` is not in THEMES, so a
+  // theme job named `ramp` is already wrong about its kind, and the question is
+  // whether it ALSO gets told off for a rampKind it has no business carrying.
+  //
+  // Two earlier versions of this test could not tell the two rules apart. The
+  // first built `kind: "draw"`, so the `kind` half short-circuited; the second
+  // asserted a role ramp and a theme `counters`, neither of which reaches the
+  // `space` half either. Both left a `kind`-only rule passing all 14 tests.
+  it("does not pile a rampKind complaint onto a theme job named ramp", () => {
+    const problems = validateJob({ ...warg, space: "theme" as const, kind: "ramp", rampKind: undefined });
+    expect(problems).toContain('kind "ramp" is not in theme');
+    expect(problems.filter((p) => p.includes("rampKind"))).toEqual([]);
   });
 });
 

@@ -1,9 +1,10 @@
 {
- "scoredAt": "2026-09-25T23:50:31.421Z",
+ "scoredAt": "2026-09-26T00:14:50.547Z",
  "goldCards": 108,
  "models": {
   "haiku": {
    "notReturned": 0,
+   "spuriousRestrictions": 6,
    "jobs": {
     "precision": 0.781,
     "recall": 0.732,
@@ -67,6 +68,14 @@
      "wrong": 11,
      "infRight": 29,
      "infWrong": 11
+    },
+    "restrictedTo(tribal)": {
+     "accuracy": 0.903,
+     "informativeAccuracy": 0.903,
+     "right": 28,
+     "wrong": 3,
+     "infRight": 28,
+     "infWrong": 3
     }
    },
    "worstKinds": [
@@ -138,6 +147,7 @@
   },
   "sonnet": {
    "notReturned": 0,
+   "spuriousRestrictions": 2,
    "jobs": {
     "precision": 0.76,
     "recall": 0.82,
@@ -201,6 +211,14 @@
      "wrong": 6,
      "infRight": 36,
      "infWrong": 6
+    },
+    "restrictedTo(tribal)": {
+     "accuracy": 0.969,
+     "informativeAccuracy": 0.969,
+     "right": 31,
+     "wrong": 1,
+     "infRight": 31,
+     "infWrong": 1
     }
    },
    "worstKinds": [
@@ -272,6 +290,7 @@
   },
   "textRules": {
    "notReturned": 0,
+   "spuriousRestrictions": 0,
    "jobs": {
     "precision": 0.736,
     "recall": 0.722,
@@ -335,6 +354,14 @@
      "wrong": 35,
      "infRight": 0,
      "infWrong": 35
+    },
+    "restrictedTo(tribal)": {
+     "accuracy": 0,
+     "informativeAccuracy": 0,
+     "right": 0,
+     "wrong": 27,
+     "infRight": 0,
+     "infWrong": 27
     }
    },
    "worstKinds": [

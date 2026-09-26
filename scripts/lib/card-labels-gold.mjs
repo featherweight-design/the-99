@@ -55,7 +55,7 @@ export const GOLD = [
       j("role", "ramp", { rk: "burstMana", tr: "activated", rec: "oneShot" }),
       j("theme", "haste", { to: "creature", tr: "activated", rec: "oneShot" }),
     ],
-    why: "rampKind null: a one-shot burst fits none of E1's three kinds (see the schema's note; raised with 2b). oneShot because the ability sacrifices the creature — the distinction the brief names. Haste is conditional twice over: only if that mana is spent, and only on a creature spell.",
+    why: "rampKind burstMana: a one-shot burst fit none of E1's ORIGINAL three kinds, which this card is how we found out — not tapsForMana (gone after one use), not fetchesLand, not makesTreasure (no token; the mana is added directly). Raised with 2b, ruled by d9 on 2026-09-25 as a fourth kind. oneShot because the ability sacrifices the creature — the distinction the brief names. Haste is conditional twice over: only if that mana is spent, and only on a creature spell.",
   },
   {
     name: "Runadi, Behemoth Caller", klass: "named",
