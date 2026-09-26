@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { matchRows } from "./match";
+import { matchRows, type CatalogCard } from "./match";
 import type { CollectionRow } from "../manabox/parse";
 
+const card = (oracleId: string, scryfallId: string, name: string, over: Partial<CatalogCard> = {}): CatalogCard =>
+  ({ oracleId, scryfallId, name, layout: "normal", typeLine: "Artifact", ...over });
 const catalog = [
-  { oracleId: "o-1", scryfallId: "s-1", name: "Sol Ring" },
-  { oracleId: "o-2", scryfallId: "s-2", name: "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki" },
+  card("o-1", "s-1", "Sol Ring"),
+  card("o-2", "s-2", "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki"),
 ];
 const row = (name: string, scryfallId: string | null = null, line = 2): CollectionRow =>
   ({ name, setCode: "x", collectorNumber: "1", quantity: 1, scryfallId, finish: "nonfoil", condition: null, line });
@@ -40,7 +42,7 @@ describe("matchRows", () => {
     // Defensive: the catalog is Scryfall's and always double-slashes, but the index
     // key and the incoming name must normalise identically or the symmetry breaks.
     const { matched } = matchRows([row("Fire // Ice")], [
-      { oracleId: "o-3", scryfallId: "s-3", name: "Fire / Ice" },
+      card("o-3", "s-3", "Fire / Ice"),
     ]);
     expect(matched[0].oracleId).toBe("o-3");
   });
@@ -49,7 +51,7 @@ describe("matchRows", () => {
     // slashes must not disturb the full-name key, whatever the alias does with the
     // first face.
     const many = [
-      { oracleId: "o-4", scryfallId: "s-4", name: "Who // What // When // Where // Why" },
+      card("o-4", "s-4", "Who // What // When // Where // Why"),
     ];
     expect(matchRows([row("Who / What / When / Where / Why")], many).matched[0].oracleId).toBe("o-4");
     expect(matchRows([row("What")], many).unmatched).toHaveLength(1);
@@ -157,5 +159,38 @@ describe("matchRows", () => {
       flavorNames: [{ flavorName: "Freya, Queen of the Valkyries", oracleId: "o-1" }],
     });
     expect(matched[0].oracleId).toBe("o-2");
+  });
+});
+
+// Scryfall's catalog holds cardboard that is not a card: a Jumpstart theme front named
+// "Lands", a Planechase plane, the Experience counter (layout `normal`, type line `Card`).
+// A pasted section header resolved to the first by exact name and sat in a deck as a card.
+describe("matchRows and cardboard that is not a card", () => {
+  const withFronts = [
+    ...catalog,
+    card("o-lands", "s-lands", "Lands", { layout: "front_card", typeLine: "Card" }),
+    card("o-plane", "s-plane", "Tazeem", { layout: "planar", typeLine: "Plane — Zendikar" }),
+    card("o-exp", "s-exp", "Experience", { layout: "normal", typeLine: "Card" }),
+  ];
+
+  it("leaves a line naming one unmatched, by name", () => {
+    const { matched, unmatched } = matchRows([row("Lands"), row("Tazeem"), row("Experience"), row("Sol Ring")], withFronts);
+    expect(matched.map((m) => m.oracleId)).toEqual(["o-1"]);
+    expect(unmatched.map((u) => u.name)).toEqual(["Lands", "Tazeem", "Experience"]);
+  });
+
+  it("leaves it unmatched by Scryfall id too, from the catalog and from printings", () => {
+    const { matched, unmatched } = matchRows([row("x", "s-lands"), row("y", "p-exp")], withFronts, {
+      printings: [{ scryfallId: "p-exp", oracleId: "o-exp" }],
+    });
+    expect(matched).toEqual([]);
+    expect(unmatched).toHaveLength(2);
+  });
+
+  it("does not let a flavor name reach one either", () => {
+    const { matched } = matchRows([row("Basic Lands")], withFronts, {
+      flavorNames: [{ flavorName: "Basic Lands", oracleId: "o-lands" }],
+    });
+    expect(matched).toEqual([]);
   });
 });

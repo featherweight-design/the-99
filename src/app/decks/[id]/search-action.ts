@@ -6,6 +6,7 @@ import { cardBracketFlags, cards, collectionItems, printings } from "../../../db
 import { requireUserId } from "../../../lib/auth";
 import type { CardNoteFacts } from "../../../lib/bracket/card-note";
 import { isTutor } from "../../../lib/bracket/tutor-targets";
+import { isGameCardWhere } from "../../../lib/cards/game-card-where";
 import { withinColorIdentity } from "../../../lib/cards/identity-where";
 import type { Availability } from "../../../lib/decks/availability";
 import { loadAvailability } from "../../../lib/decks/availability-query";
@@ -138,6 +139,8 @@ export async function searchCards(
       or(ilike(cards.name, `%${escaped}%`), isNotNull(flavorHits.flavorName)),
       colorIdentity === null ? undefined : withinColorIdentity(colorIdentity),
       eq(cards.commanderLegal, true),
+      // Sticker sheets are commander-legal on Scryfall and are never one of the 99 (isGameCard).
+      isGameCardWhere(),
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
     ))
     .limit(20);

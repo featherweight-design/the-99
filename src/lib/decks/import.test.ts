@@ -537,3 +537,23 @@ describe("buildDeckImport — the motivating deck", () => {
     expect(back.cards.reduce((n, c) => n + c.quantity, 0)).toBe(98);
   });
 });
+
+// A pasted list's section header ("Lands") resolved by exact name to Scryfall's Jumpstart
+// theme front of that name, and the deck gained a card called Lands. It is not a card, so the
+// line is left for the player to resolve like any other name the catalog does not hold.
+describe("buildDeckImport — a line naming cardboard that is not a card", () => {
+  const LANDS_FRONT = card({ name: "Lands", layout: "front_card", typeLine: "Card", commanderLegal: false });
+  const EXPERIENCE = card({ name: "Experience", typeLine: "Card", commanderLegal: false });
+
+  it("reads a 'Lands' header line as unresolved, not as a card", () => {
+    const result = build("1 Sol Ring\nLands\n1 Forest", [...CATALOG, LANDS_FRONT, EXPERIENCE]);
+    expect(shape(result.cards).map((c) => c.oracleId)).not.toContain(LANDS_FRONT.oracleId);
+    expect(result.unresolved.map((u) => u.rawName)).toEqual(["Lands"]);
+  });
+
+  it("reads a type-line-only 'Card' object as unresolved too", () => {
+    const result = build("1 Experience", [...CATALOG, EXPERIENCE]);
+    expect(result.cards).toEqual([]);
+    expect(result.unresolved.map((u) => u.rawName)).toEqual(["Experience"]);
+  });
+});

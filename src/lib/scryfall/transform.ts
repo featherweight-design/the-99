@@ -1,3 +1,5 @@
+import { isGameCard } from "../cards/game-card";
+
 // Explicit shape (kept in sync with the cards table) rather than a schema
 // import: pure lib code stays free of DB imports per the global constraints.
 export type CardRow = {
@@ -11,10 +13,12 @@ export type CardRow = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; toCardRow narrows it.
 export type ScryfallCard = Record<string, any>;
 
-const SKIP_LAYOUTS = new Set(["token", "double_faced_token", "emblem", "art_series"]);
-
 export function toCardRow(raw: ScryfallCard): CardRow | null {
-  if (!raw.oracle_id || SKIP_LAYOUTS.has(raw.layout)) return null;
+  // Not a card (`isGameCard`): tokens and emblems, and the theme fronts, planes, schemes, avatars,
+  // `Card` objects and sticker sheets the catalog used to take in. Skipped for NEW rows only; a
+  // row already in `cards` stays, because deleting it could cascade into a player's collection.
+  if (!raw.oracle_id) return null;
+  if (!isGameCard({ layout: raw.layout ?? null, typeLine: raw.type_line ?? null })) return null;
   const faces = raw.card_faces as ScryfallCard[] | undefined;
   const oracleText =
     raw.oracle_text ??

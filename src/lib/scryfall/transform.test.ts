@@ -145,6 +145,20 @@ describe("toCardRow", () => {
     expect(toCardRow({ ...solRing, layout: "token" })).toBeNull();
     expect(toCardRow({ ...solRing, layout: "art_series" })).toBeNull();
   });
+
+  // The theme fronts, planes, schemes and avatars are not cards either; a front named "Lands"
+  // resolved a pasted section header into a deck.
+  it("skips every other layout that is not a card", () => {
+    for (const layout of ["front_card", "planar", "scheme", "vanguard", "host", "augment"]) {
+      expect(toCardRow({ ...solRing, layout })).toBeNull();
+    }
+  });
+
+  // `normal` in layout: the Experience counter, and an Unfinity sticker sheet.
+  it("skips a normal object whose type line names no card type", () => {
+    expect(toCardRow({ ...solRing, type_line: "Card" })).toBeNull();
+    expect(toCardRow({ ...solRing, type_line: "Stickers" })).toBeNull();
+  });
 });
 
 describe("a two-sided card's back-face cost", () => {

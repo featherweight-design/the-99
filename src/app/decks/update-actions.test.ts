@@ -27,6 +27,12 @@ const stub = vi.hoisted(() => {
         typeLine: "Basic Land — Island", oracleText: "", commanderLegal: true,
         colorIdentity: ["U"], imageUri: null,
       },
+      // Scryfall's Jumpstart theme front named "Lands": in the catalog, and not a card.
+      {
+        oracleId: "o-lands-front", scryfallId: "s-lands-front", name: "Lands",
+        typeLine: "Card", oracleText: "", commanderLegal: false,
+        colorIdentity: [], imageUri: null, layout: "front_card",
+      },
     ],
     transactions: 0,
     updates: [] as { table: string; values: unknown }[],
@@ -132,6 +138,15 @@ describe("updateDeckFromList input guards", () => {
         source: "paste",
         keep: [],
       }),
+    ).rejects.toThrow(/matched/);
+    expect(stub.state.transactions).toBe(0);
+  });
+
+  // A section header resolved to the theme front of that name and was applied as a card.
+  // It is not one, so a list of headers alone matches nothing and changes nothing.
+  it("does not match a 'Lands' header to the theme front of that name", async () => {
+    await expect(
+      updateDeckFromList({ deckId: "deck-1", text: "Lands\nCreatures", source: "paste", keep: [] }),
     ).rejects.toThrow(/matched/);
     expect(stub.state.transactions).toBe(0);
   });

@@ -39,7 +39,7 @@ function sourceFromFixture(csv: string, skipNames: string[] = []): SeedCollectio
       oracleByName.set(row.name, oracleId);
       // The oracle catalog carries ONE arbitrary printing per card — deliberately not the
       // fixture's, so name matching cannot be what makes these rows resolve.
-      catalog.push({ oracleId, scryfallId: `arbitrary-${oracleId}`, name: row.name });
+      catalog.push({ oracleId, scryfallId: `arbitrary-${oracleId}`, name: row.name, layout: "normal", typeLine: "Creature" });
     }
     if (row.scryfallId) printings.push({ scryfallId: row.scryfallId, oracleId });
   }
