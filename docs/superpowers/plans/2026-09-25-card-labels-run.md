@@ -111,6 +111,18 @@ stop being a second source of truth.
   results 29 days) is dropped with a warning and its cards re-submitted, and a run
   that finds ids still `in_progress` waits or exits cleanly rather than duplicating
   them.
+
+  **Two requirements the sample's own ledger does NOT meet**, found in review there
+  and declined on scope because that tool cannot run again. Both are on this script:
+
+  - **Reconcile INTENTS, not only reservations.** The sample writes an intent before
+    `batches.create` so a crash in that window leaves a trace, but nothing clears an
+    orphaned intent — so its "refuse while a run is unreconciled" guard would block
+    every later run for ever. Collection must clear the intent it owns.
+  - **Stamp the run id onto each labels file, and refuse to score across two.** The
+    sample checks only that each model's file is complete, so a partial re-run could
+    mix fresh output with a stale complete file and publish a comparison of two
+    different runs.
 - **Send the CAST FACE, or the run relabels abilities the card cannot use.**
   `cards.oracle_text` stores both faces joined by `\n//\n`. Sent whole, the model
   labels a land back's `{T}: Add` as ramp on a card whose front is an Aura. Use
