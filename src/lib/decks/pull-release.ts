@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { db } from "../../db";
 import { pullReleases } from "../../db/schema";
 
@@ -38,16 +38,31 @@ export async function clearPullReleases(tx: Tx, sourceDeckId: string): Promise<s
 }
 
 /**
- * The card is back in the source's draft (Put back, or any add of it), so the copy is claimed
- * again: its release goes, and the deck it was pulled for sees its buy tag return.
+ * ONE copy is back in the source's draft (Put back, or any add of it), so ONE released copy is
+ * claimed again: the newest release gives up a copy, and its row goes when it reaches none. Only
+ * that release's asking deck sees its buy tag return; a card pulled twice keeps its other copy out.
  */
 export async function takeBackPullRelease(
   tx: Tx,
   sourceDeckId: string,
   oracleId: string,
 ): Promise<string[]> {
-  const gone = await tx.delete(pullReleases)
+  const [newest] = await tx.select({ askingDeckId: pullReleases.askingDeckId, copies: pullReleases.copies })
+    .from(pullReleases)
     .where(and(eq(pullReleases.sourceDeckId, sourceDeckId), eq(pullReleases.oracleId, oracleId)))
-    .returning({ askingDeckId: pullReleases.askingDeckId });
-  return [...new Set(gone.map((r) => r.askingDeckId))];
+    .orderBy(desc(pullReleases.createdAt), desc(pullReleases.askingDeckId))
+    .limit(1)
+    .for("update");
+  if (!newest) return [];
+  const row = and(
+    eq(pullReleases.sourceDeckId, sourceDeckId),
+    eq(pullReleases.oracleId, oracleId),
+    eq(pullReleases.askingDeckId, newest.askingDeckId),
+  );
+  if (newest.copies > 1) {
+    await tx.update(pullReleases).set({ copies: sql`${pullReleases.copies} - 1` }).where(row);
+  } else {
+    await tx.delete(pullReleases).where(row);
+  }
+  return [newest.askingDeckId];
 }
