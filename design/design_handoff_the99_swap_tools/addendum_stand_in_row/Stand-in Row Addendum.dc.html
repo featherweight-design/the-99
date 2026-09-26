@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --border:#2B241B; --border-strong:#3A3229; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --border:#181C26; --border-strong:#262A35; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;flex-direction:column;gap:64px;padding:48px 56px 80px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1500px;">
+
+  <header style="display:flex;flex-direction:column;gap:10px;max-width:1100px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The 99 · swap tools · addendum, 2026-09-25 · the stand-in row</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1.15;">A stand-in row says what it keeps, gains and loses</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">This amends <a href="../addendum_ranking_rebuild/Ranking Addendum.dc.html">the ranking rebuild</a> (1b) and replaces nothing else. The fact line under each name now compares the card with the one it replaces, in Hugh’s words: <i>keeps</i>, <i>gains</i>, <i>loses</i>. The two synergy shares leave the row, so a row never shows a percentage. They still set the order, which the group heading states. A row runs to 2 lines at 1300 and 3 at 390.</p>
+  </header>
+
+  <section id="3" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">3</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Turn 3 · three ways to mark the groups</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">In <a href="#2a">2a</a> the dots and the verbs were too faint to separate the groups, and one mono run couldn’t hold several items per group. All three options share two changes. First, the comparison moves to its own line spanning the <b style="color:var(--fg-body);font-weight:600;">full row</b>, under the price and Take, which roughly doubles its measure (about 560px at 1300, 315px at 390). Second, items are sans 12 and markers are mono, so the typeface itself divides label from content. Items within a group are comma-separated, and whole groups wrap as units. The row count is unchanged: 2 lines at 1300, 3 at 390. The fixtures carry two items per group on purpose, to show the worst case.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:48px;">
+      <div id="3a" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3a</span><b style="font-size:15px;font-weight:600;">Word tags</b><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;">adopted · LGTM 2026-09-26</span></div>
+        <p style="margin:0;max-width:1060px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Each group starts with a bordered uppercase tag, <i>KEEPS</i>, <i>GAINS</i> or <i>LOSES</i>. The <i>loses</i> tag is dashed, and its items are in muted ink. This is the most explicit option, since the word is still there, and it costs the most width, about 40px per tag.</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;">
+          <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · all</span><dc-import name="Stand-ins Sheet" kind="creatureall" treat="tags" theme="{{ theme }}" hint-size="640px,860px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · all</span><dc-import name="Stand-ins Sheet" kind="creatureall" treat="tags" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div>
+        </div>
+      </div>
+      <div id="3b" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3b</span><b style="font-size:15px;font-weight:600;">Sign badges</b></div>
+        <p style="margin:0;max-width:1060px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Each group starts with a 14px badge: <b style="color:var(--fg);">=</b> keeps, <b style="color:var(--fg);">+</b> gains, <b style="color:var(--fg);">−</b> loses. It reads like a diff. It’s narrower than 3a, but the reader has to learn <i>=</i> once, so the sheet lead would say it. Screen readers get the words.</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;">
+          <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · all</span><dc-import name="Stand-ins Sheet" kind="creatureall" treat="signs" theme="{{ theme }}" hint-size="640px,860px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · all</span><dc-import name="Stand-ins Sheet" kind="creatureall" treat="signs" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div>
+        </div>
+      </div>
+      <div id="3c" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3c</span><b style="font-size:15px;font-weight:600;">Plain, plus, struck</b></div>
+        <p style="margin:0;max-width:1060px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The markers are the text itself. Kept items are plain, each gained item carries a <b style="color:var(--fg);">+</b>, and each lost item is struck through. A vertical hairline separates the groups. This is the quietest and most compact option, with every item self-describing. The risk is that struck text can read as “no longer offered”. Screen readers get the words.</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;">
+          <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · all</span><dc-import name="Stand-ins Sheet" kind="creatureall" treat="struck" theme="{{ theme }}" hint-size="640px,860px"></dc-import></div>
+          <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · all</span><dc-import name="Stand-ins Sheet" kind="creatureall" treat="struck" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="2a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2a</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">The row</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One mono line, three verbs, fixed order</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The line reads <code>{type} · keeps {…} · gains {…} · loses {…}</code>, and any segment can be absent. The verbs are in <code>--fg-faint</code>, what’s kept or gained is in <code>--fg-body</code>, and what’s lost is in <code>--fg-muted</code>. That’s the land row’s rule: the drawback reads last and quietest. The type leads only for other-types rows, as in 1b. For example, Incubation Druid: <i>keeps taps for mana, +1/+1 counters · loses haste</i>.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Two lines at 1300, three at 390</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">At 1300 it’s the name line plus one fact line of about 58 characters. At 390 the price chip moves up onto the name line, so the fact line gets two lines of about 36 characters. Past the budget, the writer drops <i>gains</i> first and never <i>loses</i>. The line also clamps (1 / 2 lines) as a backstop, but the copy is written to fit.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">No figures on the row</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The shares <i>in 58% of Gishath decks, 41% of Naya</i> are gone, and so is <i>MV 2</i>: mana value is only named when it differs, and only if it fits. The heading’s <i>by Gishath synergy</i> still says what orders the group. Staples keep their word, <i>staple</i>, before the comparison.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the sheet (640) · Lotus Cobra · collapsed</span><dc-import name="Stand-ins Sheet" kind="creature" theme="{{ theme }}" hint-size="640px,700px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · collapsed · the price rides the name line</span><dc-import name="Stand-ins Sheet" kind="creature" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,860px"></dc-import></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · both groups in full · the longest rows at 2 lines</span><dc-import name="Stand-ins Sheet" kind="creatureall" theme="{{ theme }}" hint-size="640px,860px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · both groups in full · the longest rows at 3 lines</span><dc-import name="Stand-ins Sheet" kind="creatureall" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1100px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="2b" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2b</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Lands keep their mana line</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Design’s reading, which Hugh may overrule</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A land row already says what it keeps and loses. The mana line is the <i>keeps</i> (<i>makes white and red, untapped</i>) and the drawback is the <i>loses</i> (<i>1 damage for either</i>). Rewriting it as <i>keeps white and red · loses 1 life</i> would drop the rung words that carry the ladder. So lands keep 1a’s line unchanged; only the 390 price moves.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Plateau · every land</span><dc-import name="Stand-ins Sheet" kind="landsall" theme="{{ theme }}" hint-size="640px,720px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><dc-import name="Stand-ins Sheet" kind="landsall" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,960px"></dc-import></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? "amonkhet" }; }
+}
+</script>
+</body>
+</html>
