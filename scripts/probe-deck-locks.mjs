@@ -15,6 +15,11 @@
 //     the tile keeps its lock on the meta line at rest (F8), and the tile's Undo returns it locked.
 //   - Under the Shopping filter Lock cards is absent, and a locked card opened from its Shopping row
 //     draws no stand-ins door while an unlocked one does (PR 6's modal half; SWAP_TOOLS_ENABLED=true).
+//   - Outside the mode (Hugh, 2026-09-25): a locked row draws a 14px mark left of its ✕ at both
+//     widths, not a control, and an unlocked row reserves nothing for the lock.
+//   - Neither the decklist nor Shopping scrolls sideways at 390 or 1300, measured with one row's
+//     name stretched to 124 characters (see `sideways`). Two mutations fail it: the grid back on
+//     bare `1fr` tracks (1300 reads 1481 and 1744), and the 22px slot restored (96 rows leak).
 //   - T1: at 1300 the toolbar, with two-digit auto and kept counts and a draft note at v10, is one
 //     line. 1280 is printed, not asserted (the addendum records it as about 5px over).
 //
@@ -159,6 +164,29 @@ const lockOf = async (deckId, oracleId) =>
   (await sql`select removed_at from deck_locks where deck_id = ${deckId} and oracle_id = ${oracleId}`)[0] ?? null;
 const holds = async (deckId, oracleId) =>
   (await sql`select 1 from deck_cards where deck_id = ${deckId} and oracle_id = ${oracleId}`).length > 0;
+/**
+ * The page's own overflow, `[ok, detail]`, measured under a STRETCHED row (Hugh, staging walk
+ * 2026-09-25). A row's min-content includes its whole `nowrap` name, because `min-w-0` does not shrink
+ * a flex item's min-content contribution, and a bare `1fr` grid track grew to his longest two-faced
+ * name and pushed Shopping to 1428px at 1300. Whether a fixture has such a name is a fact about its
+ * data, so the probe makes one: it lengthens the first drawn name to a two-faced name of 124
+ * characters (long enough to spill the decklist's rows too, not only Shopping's), measures, and puts the name back. On a grid of `minmax(0, 1fr)` tracks the name
+ * truncates and the page holds; on a bare `1fr` it reads over.
+ */
+async function sideways(page) {
+  const m = await page.evaluate(async () => {
+    const doc = document.documentElement;
+    const name = [...document.querySelectorAll("main button")].find((b) => /^View details for /.test(b.getAttribute("aria-label") || "") && b.getBoundingClientRect().width > 0 && b.textContent.trim());
+    const was = name?.textContent ?? null;
+    if (name) name.textContent = "Growing Rites of Itlimoc of the Longest Name Ever Printed // Itlimoc, Cradle of the Sun at Its Very Widest, and Then Some More";
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const out = { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth, stretched: name !== null };
+    if (name) name.textContent = was;
+    return out;
+  });
+  return [m.stretched && m.scrollWidth <= m.clientWidth, JSON.stringify(m)];
+}
+
 async function until(check, ms = 15_000) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -225,17 +253,34 @@ async function run() {
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/deck-locks-mode-${label}.png` });
       await done.click();
       report(`${tag} · Done leaves the mode`, await lockButton.isVisible().catch(() => false), "");
-      // The locked row keeps its mark at rest: the desktop slot beside ✕, the phone's mark after
-      // the name. Read inside the row that holds the card's own remove button.
-      const mark = await page.evaluate(([name, phone]) => {
+      // The locked row keeps its mark at rest, at both widths: a 14px mark just left of the card's
+      // own ✕, not a control (Hugh, 2026-09-25: the desktop hover shortcut and its slot are gone).
+      const mark = await page.evaluate((name) => {
         const remove = [...document.querySelectorAll("main button")].find((b) => b.getAttribute("aria-label") === `Remove ${name}` && b.getBoundingClientRect().width > 0);
-        let row = remove?.parentElement ?? null;
-        const sel = phone ? '[data-testid="row-lock-mark"]' : '[data-testid="row-lock-shortcut"]';
-        while (row && !row.querySelector(sel)) row = row.parentElement;
-        const el = row?.querySelector(sel);
-        return el ? { drawn: el.getBoundingClientRect().width > 0, title: el.getAttribute("title") } : null;
-      }, [fx.plain.name, label === 390]);
-      report(`${tag} · the locked row keeps its mark at rest`, !!mark?.drawn, JSON.stringify(mark));
+        const el = remove?.previousElementSibling;
+        if (!el || el.getAttribute("data-testid") !== "row-lock-mark") return { drawn: false, before: el?.outerHTML.slice(0, 80) ?? null };
+        return { drawn: el.getBoundingClientRect().width > 0, width: Math.round(el.getBoundingClientRect().width), control: !!el.closest("button") };
+      }, fx.plain.name);
+      report(`${tag} · the locked row keeps its mark at rest, left of its ✕`, !!mark?.drawn && mark.width === 14 && !mark.control, JSON.stringify(mark));
+
+      // An UNLOCKED row carries nothing of the lock: no mark, no shortcut, and no empty slot before
+      // its ✕, so it is the width it was before locks existed. Read on every drawn unlocked row.
+      const unlocked = await page.evaluate(() => {
+        const removes = [...document.querySelectorAll("main button")].filter((b) => /^Remove /.test(b.getAttribute("aria-label") || "") && b.getBoundingClientRect().width > 0);
+        const rows = removes.filter((b) => b.previousElementSibling?.getAttribute("data-testid") !== "row-lock-mark");
+        // Outside Shopping nothing else sits before the ✕ as an empty box (the ⇄'s kept slot is a
+        // Shopping-only thing), so an empty box there is a reserved lock slot come back.
+        const leaks = rows.filter((b) => {
+          const prev = b.previousElementSibling;
+          const empty = prev && !prev.textContent.trim() && prev.getBoundingClientRect().width > 0;
+          return b.parentElement.querySelector('[data-testid^="row-lock"]') || empty;
+        });
+        return { rows: rows.length, leaks: leaks.length };
+      });
+      report(`${tag} · an unlocked row reserves nothing for the lock`, unlocked.rows > 0 && unlocked.leaks === 0, JSON.stringify(unlocked));
+      // Hugh, staging walk 2026-09-25: a lock on a row pushed rows past the frame and the page scrolled
+      // sideways. The document itself is the measure, since any row overflowing moves it.
+      report(`${tag} · the decklist does not scroll sideways`, ...(await sideways(page)));
 
       // Clear all auto: counts the copies it can take, sweeps all but the locked one.
       const clear = visible(onPageRole(page, "button", /^Clear all \d+ untouched auto cards/));
@@ -329,6 +374,7 @@ async function run() {
         await page.waitForTimeout(400);
         const present = await onPageRole(page, "button", /^Lock cards$/).filter({ visible: true }).count();
         report(`${tag} · Lock cards is absent under Shopping`, present === 0, `${present} drawn`);
+        report(`${tag} · Shopping does not scroll sideways`, ...(await sideways(page)));
 
         // PR 6's modal half: a card locked in this deck, opened from its Shopping row, draws no
         // stand-ins door (offering stand-ins is offering to cut it), while an unlocked one does, so

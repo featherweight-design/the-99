@@ -701,39 +701,15 @@ export function DecklistRow({
           )
         ) : null}
 
-        {/* THE LOCK SLOT (Locked, PR 4a), just left of the ✕, and only with the switch on.
-            Desktop reserves 22px on every row so a hover never shifts the pips. Its button is a
-            POINTER SHORTCUT (`tabIndex -1`, `aria-hidden`): an open lock on hover presses to lock,
-            the closed lock at rest presses to unlock. The keyboard and screen-reader path is the
-            mode's toggle below, which is also the phone's only way to set a lock. The phone draws
-            the closed lock as a 14px mark, not a control: a standing control would cost 44px of
-            name on every row. */}
-        {lockCards && !lockMode && (
-          <>
-            <button
-              type="button"
-              tabIndex={-1}
-              aria-hidden="true"
-              title={locked ? lockedCardsCopy.row.titleOn : lockedCardsCopy.row.titleOff}
-              onClick={() => lockCards.toggle(card)}
-              data-testid="row-lock-shortcut"
-              className="hidden md:flex flex-none items-center justify-center w-[22px] h-[22px] rounded-[6px] bg-transparent border-0 p-0 cursor-pointer
-                md:group-hover:bg-[color:color-mix(in_oklab,var(--fg)_7%,transparent)]"
-            >
-              {locked ? (
-                <LockMark />
-              ) : (
-                <span className="invisible md:group-hover:visible flex">
-                  <LockMark open />
-                </span>
-              )}
-            </button>
-            {locked && (
-              <span className="md:hidden flex flex-none w-[14px] items-center justify-center" data-testid="row-lock-mark">
-                <LockMark title={lockedCardsCopy.mark.title} />
-              </span>
-            )}
-          </>
+        {/* THE LOCK MARK (Locked), left of the ✕, on a LOCKED row only and outside the mode. It is a
+            mark, not a control: Lock cards mode is the one way to set or clear a lock (Hugh, staging
+            walk 2026-09-25, overruling R2's decision 2, the desktop hover shortcut and the 22px slot it
+            reserved on every row). An unlocked row reserves nothing at either width. That slot also
+            widened every row's min-content, which is what pushed Shopping past the frame. */}
+        {locked && !lockMode && (
+          <span className="flex flex-none w-[14px] items-center justify-center" data-testid="row-lock-mark">
+            <LockMark title={lockedCardsCopy.mark.title} />
+          </span>
         )}
 
         {/* In the mode the ✕ is a lock toggle: `aria-pressed` carries the state, and the name
