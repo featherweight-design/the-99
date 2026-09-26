@@ -92,6 +92,25 @@ for (const r of anyOf.rows.slice(0, 12)) {
   console.log(`  ${r.candidate.name}: ${fits}`);
 }
 
+// Three answers, PR 2: Hugh's whole ask, the four tribes as any of, printed in HOB or HOC. The
+// Sets answer runs through the loader (`printedIn`), so it is asked for there, not filtered here.
+const hugh = await loadSearchFacts(userId, { ...asked, themeJoin: "any", sets: ["hob", "hoc"] });
+const hughRanked = rankCandidates(hugh.candidates, hugh.answers, hugh.card, hugh.tribes);
+console.log(`\nANY OF, printed in HOB or HOC: ${hughRanked.rows.length} results`);
+for (const r of hughRanked.rows) {
+  const fits = r.themeFits.map((t) => `${t.best ? "*" : ""}${label(t.slug)} ${Math.round(t.share * 100)}%${t.typeLine ? " (type line)" : ""}`).join(", ");
+  console.log(`  ${r.candidate.name}: ${fits}`);
+}
+// And his words, read by the free match as the form's submit reads them.
+const { loadIntakeCatalog } = await import("../src/lib/intake/search");
+const { submitTarget } = await import("../src/lib/intake/submit");
+const { emptyParams, parseChooseParams } = await import("../src/lib/intake/params");
+const HUGH = "I want a deck from the HOB or HOC sets using cards I own. The commander can be one I have to buy. Tribal options are Orcs, Elves, Dwarves, or Wizards.";
+const read = parseChooseParams(new URLSearchParams(submitTarget({ ...emptyParams(), words: HUGH }, (await loadIntakeCatalog()).index).split("?")[1]));
+console.log(`  his words read as: themes ${read.themes.join(",")} · join ${read.themeJoin} · sets ${read.sets.join(",")} · not used: ${read.notUsed.join(" | ")}`);
+const printedAll = hugh.candidates.filter((c) => c.inSets).length;
+console.log(`  (commanders printed in HOB or HOC, any theme: ${printedAll})`);
+
 // The HOB commanders the type line brings in, by the tribe they now back.
 console.log("\ntype-line-only backers (the gain), first 20 per tribe:");
 for (const s of slugs) {
