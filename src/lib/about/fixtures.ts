@@ -353,7 +353,8 @@ export const BROWSE_SET_CODE = "HOB";
  * makes the row a misspelling rather than a printing nobody stocks.
  */
 export const ISSUE_UNMATCHED = { name: "Mox Dimaond", setCode: "VMA", line: 907, quantity: 1 };
-export const ISSUE_PARSE_ERROR = { line: 412, reason: "no printing" };
+/** A reason `parse.ts` actually emits (line 120), so the figure prints a row the inspector can. */
+export const ISSUE_PARSE_ERROR = { line: 412, reason: `invalid quantity "x"` };
 
 /**
  * The replace summary's own figures, from §3. Before and after are BOTH
@@ -363,8 +364,8 @@ export const ISSUE_PARSE_ERROR = { line: 412, reason: "no printing" };
 export const REPLACE_SUMMARY = {
   before: 4910,
   after: 5132,
-  noLongerOwned: 61,
-  unaffectedDecks: 11,
+  arrived: 283,
+  left: 61,
 };
 
 /**
@@ -378,19 +379,21 @@ export const REPLACE_SUMMARY = {
  * contradicted the three lines printed directly beneath it. Where the canvas
  * and the surface disagree about something the surface owns, the surface wins.
  *
+ * Still short is not among them: the route draws that section with `ContestedCardRow`, never
+ * a receipt row, so the figure draws it the same way below the other two.
+ *
  * One row per section rather than several, because what the figure has to
  * teach is that the three sections are different ANSWERS — a fourth row in any
  * one of them adds length and no meaning.
  */
 export const REPLACE_ROWS: {
-  section: "cleared" | "still" | "short";
+  section: "cleared" | "still";
   card: string;
   deck: string;
   reason?: string;
 }[] = [
   { section: "cleared", card: "Cultivate", deck: "Kinnan Ramp" },
   { section: "still", card: "Smothering Tithe", deck: "Atraxa Counters", reason: "not in the new list" },
-  { section: "short", card: "Arcane Signet", deck: "Preston Tokens", reason: "2 decks want 1 copy" },
 ];
 
 /** The four doors a collection arrives through, in §3's order. */

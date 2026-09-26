@@ -192,6 +192,45 @@ export function GameFindings({ summary }: { summary: GameSummary }) {
   );
 }
 
+/**
+ * The Games tab's headline: the heading, the record at one game, and the sub-line. Exported so
+ * the About page's log-findings figure draws the tab's own heading rather than a copy of it.
+ */
+export function GameHeadlineHeader({ headline, count }: { headline: Headline; count: number }) {
+  return (
+    <header className="md:flex md:flex-wrap md:items-baseline md:gap-[14px] md:mt-[20px] md:mb-[6px]">
+      <h3 className="font-display font-bold text-[20px] md:text-[26px] leading-[1.25] md:leading-normal text-fg">
+        {headline.heading}
+      </h3>
+      {/* N=1 only. At N>=2 the record is a clause inside the sub-line, so
+          a span here would print it twice. */}
+      {headline.record && (
+        <span className="block md:inline mt-[5px] md:mt-0 font-mono text-[12px] md:text-[13px] md:tabular-nums text-fg-body">
+          {headline.record}
+        </span>
+      )}
+      {headline.sub && (
+        <p
+          className={
+            "mt-[9px] md:mt-0 text-[13px] md:text-[13.5px] leading-[1.6] " +
+            (count === 1 ? "md:max-w-[620px] text-fg-faint" : "md:max-w-[640px] text-fg-body")
+          }
+        >
+          {subFragments(headline.sub, headline.subEmphasis).map((f, i) =>
+            f.ink ? (
+              <span key={i} className={f.ink}>
+                {f.text}
+              </span>
+            ) : (
+              <span key={i}>{f.text}</span>
+            ),
+          )}
+        </p>
+      )}
+    </header>
+  );
+}
+
 export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
@@ -252,38 +291,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
 
   return (
     <section className="px-[16px] py-[14px] md:px-[30px] md:py-[20px]">
-      {headline && (
-        <header className="md:flex md:flex-wrap md:items-baseline md:gap-[14px] md:mt-[20px] md:mb-[6px]">
-          <h3 className="font-display font-bold text-[20px] md:text-[26px] leading-[1.25] md:leading-normal text-fg">
-            {headline.heading}
-          </h3>
-          {/* N=1 only. At N>=2 the record is a clause inside the sub-line, so
-              a span here would print it twice. */}
-          {headline.record && (
-            <span className="block md:inline mt-[5px] md:mt-0 font-mono text-[12px] md:text-[13px] md:tabular-nums text-fg-body">
-              {headline.record}
-            </span>
-          )}
-          {headline.sub && (
-            <p
-              className={
-                "mt-[9px] md:mt-0 text-[13px] md:text-[13.5px] leading-[1.6] " +
-                (summary.count === 1 ? "md:max-w-[620px] text-fg-faint" : "md:max-w-[640px] text-fg-body")
-              }
-            >
-              {subFragments(headline.sub, headline.subEmphasis).map((f, i) =>
-                f.ink ? (
-                  <span key={i} className={f.ink}>
-                    {f.text}
-                  </span>
-                ) : (
-                  <span key={i}>{f.text}</span>
-                ),
-              )}
-            </p>
-          )}
-        </header>
-      )}
+      {headline && <GameHeadlineHeader headline={headline} count={summary.count} />}
 
       {/* Above the aggregate, below the record line: logging is the action this
           view exists for, and burying it under the readings hides it. */}

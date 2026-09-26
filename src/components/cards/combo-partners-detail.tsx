@@ -39,12 +39,15 @@ export function ComboPartnersDetail({
   deckName = null,
   /** Opens a partner's own modal, replacing this one. */
   onSelectPartner,
+  /** Starts open. The About figure's caller: its key names the source marker, drawn only open. */
+  initiallyExpanded = false,
 }: {
   card: BrowseCard;
   deckName?: string | null;
   onSelectPartner?: (oracleId: string) => void;
+  initiallyExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const [boundOpen, setBoundOpen] = useState(false);
   const partners = card.comboPartners ?? [];
   if (partners.length === 0) return null;
