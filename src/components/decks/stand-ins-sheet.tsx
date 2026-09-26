@@ -11,7 +11,7 @@
  * Take is PR 4b's: a press that swaps needs its receipt, its refusal and its undo, and a Take drawn
  * without them would be a control that does nothing. The row's grid keeps its first two columns.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -22,6 +22,7 @@ import { useSwapTools } from "../../lib/swaps/context";
 import type { StandInsRead } from "../../lib/swaps/gather";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { loadingStatus, sheetModel, type SheetGroup, type SheetRow } from "../../lib/swaps/sheet-model";
+import { COMMA_CLASS, COMPARE_CLASS, GROUP_GAP_CLASS, ITEM_CLASS, TAG_CLASS, TYPE_CLASS, type Compare } from "../../lib/swaps/compare";
 import { STAND_IN_GROUP_SHOWN } from "../../lib/swaps/stand-ins";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
@@ -149,7 +150,7 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
         // A press stacks the card over the sheet at z-50, under this box (z-60 over a sheet), and a
         // pointer held still fires no leave: so the press puts the box away itself.
         onPointerDown={preview.onMouseLeave}
-        className="grid grid-cols-[minmax(0,1fr)_72px] md:grid-cols-[minmax(0,1fr)_96px_64px] gap-x-[10px] gap-y-[6px] md:gap-x-[12px] md:gap-y-0 items-center py-[10px] md:py-[9px]">
+        className="grid grid-cols-[minmax(0,max-content)_auto_minmax(0,1fr)_72px] md:grid-cols-[minmax(0,1fr)_96px_64px] gap-x-[7px] gap-y-0 md:gap-x-[12px] items-center py-[10px] md:py-[9px]">
         <div className="flex flex-col gap-[3px] min-w-0">
           <div className="flex items-center gap-[7px] min-w-0">
             <Thumb imageUri={row.imageUri} side="row" />
@@ -175,21 +176,15 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
               </span>
             ) : null}
           </div>
-          {/* A row left with nothing to say (its give-up said once in the lead) draws no second line. */}
-          {row.body.length || row.muted.length ? (
-            // Addendum §1a: what the row does in --fg-body, what it costs or gives up in --fg-muted, one ` · `
-            // between them in --border-strong.
-            <p className="m-0 pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
-              {row.body.length ? <span className="text-[color:var(--fg-body)]">{row.body.join(" · ")}</span> : null}
-              {row.body.length && row.muted.length ? <span className="text-[color:var(--border-strong)]"> · </span> : null}
-              {row.muted.join(" · ")}
-            </p>
-          ) : null}
+
         </div>
-        <div className="col-start-1 row-start-2 pl-[43px] md:col-start-2 md:row-start-1 md:pl-0 flex md:justify-end">
+        {/* Addendum 3a: the price sits on the name line at every width. At 390 it follows the name at the name
+          line's 7px (the name's column grows to its text and no further, and an empty column takes the rest), so
+          a long name ellipsizes beside it; from md it has its own right-aligned column. */}
+        <div className="col-start-2 row-start-1 flex md:justify-end">
           <PricePlate row={row} newestAsOf={newestAsOf} />
         </div>
-        <div className="col-start-2 row-start-1 row-span-2 md:col-start-3 md:row-span-1 flex justify-end">
+        <div className="col-start-4 md:col-start-3 row-start-1 flex justify-end">
           {take.onTake ? (
             <button
               type="button"
@@ -202,6 +197,18 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
             </button>
           ) : null}
         </div>
+        {/* Addendum 3a: the land facts line takes the row's full width under the name line, as a comparison does.
+          A row left with nothing to say (its give-up said once in the lead) draws no second line. */}
+        {row.body.length || row.muted.length ? (
+          // Addendum §1a: what the row does in --fg-body, then what it costs or loses in --fg-muted. Hugh
+          // (2026-09-26): the drawback starts its own line at every width, so the boundary between the mana
+          // line and its cost is clear, as a spell row's LOSES starts its own group.
+          <p className="col-span-full m-0 mt-[3px] pl-[43px] font-mono text-[10.5px] leading-[1.45] [text-wrap:pretty] text-[color:var(--fg-muted)]">
+            {row.body.length ? <span className="text-[color:var(--fg-body)]">{row.body.join(" · ")}</span> : null}
+            {row.muted.length ? <span data-drawback className="block">{row.muted.join(" · ")}</span> : null}
+          </p>
+        ) : null}
+        {row.compare ? <Comparison compare={row.compare} /> : null}
       </div>
       {take.refused ? (
         <div
@@ -240,6 +247,43 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
       ) : null}
       {take.error ? <MutationError message={take.error} /> : null}
     </li>
+  );
+}
+
+/**
+ * A spell row's comparison (stand-in row addendum 3a): what it keeps, gains and loses, on its own grid row
+ * across every column, indented to the name. Inline flow, so the line breaks only between items: a group
+ * that fits a line stays whole, and a longer one continues on the next (READINESS E3). `fitCompare` wrote it
+ * to 1 line at `md` and 2 below; the height cap is a backstop that `measure:swap-lines` proves never engages.
+ */
+function Comparison({ compare }: { compare: Compare }) {
+  const groups = (["keeps", "gains", "loses"] as const).filter((k) => compare[k].length > 0);
+  return (
+    <p data-compare className={COMPARE_CLASS}>
+      {compare.type ? (
+        <>
+          <span className={TYPE_CLASS}>{compare.type}</span>{" "}
+        </>
+      ) : null}
+      {groups.map((k, gi) => (
+        <Fragment key={k}>
+          <span className={gi < groups.length - 1 ? GROUP_GAP_CLASS : undefined}>
+            <span className="sr-only">{copy.compare[k]} </span>
+            {compare[k].map((item, i) => (
+              <Fragment key={item}>
+                {i > 0 ? " " : null}
+                <span className={ITEM_CLASS[k]}>
+                  {i === 0 ? <span aria-hidden="true" className={TAG_CLASS[k]}>{copy.compare[k]}</span> : null}
+                  {item}
+                  {i < compare[k].length - 1 ? <span className={COMMA_CLASS}>,</span> : null}
+                </span>
+              </Fragment>
+            ))}
+          </span>
+          {gi < groups.length - 1 ? " " : null}
+        </Fragment>
+      ))}
+    </p>
   );
 }
 

@@ -8,15 +8,16 @@ in `docs/superpowers/design-tables/swap-tools-sheet.md`.
 ## Structure
 
 **Superseded in part by v2 D1** (the ranking-rebuild addendum §1b, audited in `READINESS-audit.md`): the
-staples group is retired. A staple now sorts LAST in its type group, free or not, and keeps its
+staples group is retired. A staple now sorts LAST in its type group, free or not. Since E2 (stand-in row
+addendum 3a) it is marked by the word `staple` in its comparison's type slot rather than a
 `staple, any commander` clause. The rows below marked *retired* describe #997's shipped form.
 
 | Element | Design | Copy key |
 |---|---|---|
 | A paid universal staple's group | *retired (v2 D1)*: last in its type group, never cut by the group cap | — |
 | Where the group sits | *retired (v2 D1)* | — |
-| A staple's fact line | `{type · }MV {n}{ · also …} · staple, any commander` (v2 D2), never `in N% of {cmdr} decks` | `sheet.stapleFact` |
-| A free staple | last in its type group like any staple, with the same clause | `sheet.stapleFact` |
+| A staple's comparison | `{type · }staple` in the type slot (mono 10.5, `--fg-muted`), then `KEEPS … GAINS … LOSES …` as any spell row (E2, addendum 3a); never `in N% of {cmdr} decks` | `sheet.compare.staple` |
+| A free staple | last in its type group like any staple, with the same mark | `sheet.compare.staple` |
 | The lead, when a staple is listed | its last sentence: `Staples every commander plays come last.` (v2 D1) | `sheet.leadSpellsStaples` |
 | Which staples | the one definition, `loadUniversalStaples` (F18); no names hard-coded | — |
 | Lands and fetches | `same type · lands`, `best mana first`: on the ladder, then synergy, then price (v2 D1) | `sheet.groupSameType`, `sheet.orderBestMana` |

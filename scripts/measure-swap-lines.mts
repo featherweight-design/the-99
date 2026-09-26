@@ -37,6 +37,7 @@ import { jobOf, rankStandIns, type Candidate, type CardRow } from "../src/lib/sw
 import { sheetModel, type SheetRow } from "../src/lib/swaps/sheet-model";
 import type { StandInsRead } from "../src/lib/swaps/gather";
 import { FOUR_LINE_RESIDUE } from "./lib/swap-lines-residue.mjs";
+import { COMMA_CLASS, COMPARE_CLASS, GROUP_GAP_CLASS, ITEM_CLASS, TAG_CLASS, TYPE_CLASS, type Compare } from "../src/lib/swaps/compare";
 
 neonConfig.webSocketConstructor = ws;
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -54,10 +55,12 @@ const RENDERED = Infinity;
 type Mode = "priced" | "sold out";
 /**
  * The ruling (d9, close-out ruling 6, from Hugh's emphasis on card details): a fact line may run to
- * THREE lines at 390, keeping every fact, where Design drew two. Desktop is reported, not asserted.
+ * THREE lines at 390, keeping every fact, where Design drew two. Since E2 (Hugh, 2026-09-26: the drawback on
+ * its own line) desktop is asserted too, at two lines, with no residue: `FOUR_LINE_RESIDUE` is a 390 reading.
  */
 const WIDTH = Number(process.env.MEASURE_WIDTH ?? 390);
-const MAX_LINES = WIDTH === 390 ? 3 : Infinity;
+/** A land row's facts line: up to 3 lines at 390 (close-out ruling 6) and 2 from `md`, the drawback on its own. */
+const MAX_LINES = WIDTH >= 768 ? 2 : 3;
 
 type Row = { oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null; cmc: number | string; image_uri: string | null };
 const toCard = (r: Row): CardRow => ({
@@ -74,7 +77,18 @@ function rowsFor(original: CardRow, pool: Candidate[], isCreatureType: (w: strin
   return sheetModel(read).groups.flatMap((g) => g.rows);
 }
 
-const factText = (r: SheetRow) => [r.body.join(" · "), r.muted.join(" · ")].filter(Boolean).join(" · ");
+/** A spell row's comparison as text, tags in capitals, so two rows that would draw the same thing share a key. */
+const compareText = (c: Compare) => [
+  c.type ? `[${c.type}]` : "",
+  c.keeps.length ? `KEEPS ${c.keeps.join(", ")}` : "",
+  c.gains.length ? `GAINS ${c.gains.join(", ")}` : "",
+  c.loses.length ? `LOSES ${c.loses.join(", ")}` : "",
+].filter(Boolean).join(" ");
+const factText = (r: SheetRow) => r.compare
+  ? compareText(r.compare)
+  : [r.body.join(" · "), r.muted.join(" · ")].filter(Boolean).join(" · ");
+/** A comparison's line budget (addendum 3a): 1 line from `md`, 2 below. */
+const COMPARE_LINES = WIDTH >= 768 ? 1 : 2;
 
 /**
  * One distinct facts line, measured once. `pairs` is every (original, stand-in) that draws it, so the
@@ -134,8 +148,8 @@ async function lines(): Promise<{ lines: Line[]; counts: string }> {
       : [...originals].sort((a, b) => (b.oracleText?.length ?? 0) - (a.oracleText?.length ?? 0)).slice(0, 10);
     for (const o of picked) for (const m of MODES) keep(rowsFor(o, landPool, isType, m), `${shape}: ${o.name}`, o.oracleId, m);
   }
-  // Spells: the originals whose roles reach furthest, since a row names the jobs it adds beyond the
-  // original's and the ones it lacks (two of each at most, JOBS_SHOWN).
+  // Spells: the originals whose roles reach furthest, since a row's comparison names the jobs it keeps,
+  // gains and loses against the original's, losses uncapped (addendum 3a).
   const reach = (c: CardRow) => { const j = jobOf(c); return j.kind === "spell" ? j.roles.length : 0; };
   const spellOriginals = [...spells].sort((a, b) => reach(b) - reach(a) || b.cmc - a.cmc).slice(0, 60);
   for (const o of spellOriginals) for (const m of MODES) keep(rowsFor(o, spellPool, isType, m), `spell: ${o.name}`, o.oracleId, m);
@@ -232,7 +246,24 @@ try {
   // Each line written into the live row's own element, the row's span structure kept: the body in its
   // span, the ` · ` in its own, then the muted clauses.
   // `MEASURE_WRAP` overrides the line's `text-wrap` (e.g. `wrap`), to read what `pretty` itself costs.
-  const measured = await line.evaluate((p, { items, wrapMode }) => {
+  // tsx's esbuild names the arrow functions declared inside the closure below with a `__name` helper the page
+  // does not have; a string evaluates untransformed.
+  await page.evaluate("window.__name = (f) => f");
+  const measured = await line.evaluate((p, { items, wrapMode, cls }) => {
+    // A spell row's comparison is its own grid row across the whole row (addendum 3a), so it is laid out in a
+    // <p> added to the live row with the component's own classes, and read for its lines and for a clip.
+    const grid = p.closest('[data-testid="stand-in-row"]') as HTMLElement;
+    const cp = document.createElement("p");
+    cp.className = cls.COMPARE_CLASS;
+    grid.append(cp);
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const compareHtml = (c: { type: string | null; keeps: string[]; gains: string[]; loses: string[] }) => {
+      const groups = (["keeps", "gains", "loses"] as const).filter((k) => c[k].length > 0);
+      return (c.type ? `<span class="${cls.TYPE_CLASS}">${esc(c.type)}</span> ` : "") + groups.map((k, gi) =>
+        `<span${gi < groups.length - 1 ? ` class="${cls.GROUP_GAP_CLASS}"` : ""}><span class="sr-only">${k} </span>` +
+        c[k].map((item, i) => `${i > 0 ? " " : ""}<span class="${cls.ITEM_CLASS[k]}">${i === 0 ? `<span aria-hidden="true" class="${cls.TAG_CLASS[k]}">${k}</span>` : ""}${esc(item)}${i < c[k].length - 1 ? `<span class="${cls.COMMA_CLASS}">,</span>` : ""}</span>`).join("") +
+        `</span>${gi < groups.length - 1 ? " " : ""}`).join("");
+    };
     const lh = parseFloat(getComputedStyle(p).lineHeight);
     const original = p.innerHTML;
     if (wrapMode) p.style.textWrap = wrapMode;
@@ -244,15 +275,22 @@ try {
     probe.remove();
     const self = { text: p.textContent, lines: p.getBoundingClientRect().height / lh, font: cs.fontFamily, size: cs.fontSize, wrap: cs.textWrap, charW, content: p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) };
     const body = p.firstElementChild?.outerHTML ?? "<span></span>";
-    const dot = p.children[1]?.outerHTML ?? "<span> · </span>";
-    const results = items.map(({ bodyText, mutedText }) => {
+    const results = items.map(({ bodyText, mutedText, compare }) => {
+      if (compare) {
+        cp.innerHTML = compareHtml(compare);
+        const clh = parseFloat(getComputedStyle(cp).lineHeight);
+        // `scrollHeight` is the laid-out height the cap may hide; a clip is anything past the box.
+        return { lines: Math.round(cp.scrollHeight / clh), width: Math.round(cp.clientWidth - parseFloat(getComputedStyle(cp).paddingLeft)), clipped: cp.scrollHeight > cp.clientHeight + 0.5, breaks: [] as string[] };
+      }
       const tpl = document.createElement("template");
       tpl.innerHTML = body;
       const b = tpl.content.firstElementChild as HTMLElement;
       b.textContent = bodyText;
-      tpl.innerHTML = dot;
-      const d = tpl.content.firstElementChild as HTMLElement;
-      p.replaceChildren(...(bodyText ? [b] : []), ...(bodyText && mutedText ? [d] : []), document.createTextNode(mutedText));
+      // The drawback on its own line, as the row draws it (Hugh, 2026-09-26).
+      const d = document.createElement("span");
+      d.className = "block";
+      d.textContent = mutedText;
+      p.replaceChildren(...(bodyText ? [b] : []), ...(mutedText ? [d] : []));
       // Where each line breaks, read off the text itself, so a count can be checked against the words.
       const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
       const breaks: string[] = [];
@@ -268,39 +306,55 @@ try {
           breaks[breaks.length - 1] += n.textContent![i];
         }
       }
-      return { lines: Math.round(p.getBoundingClientRect().height / lh), width: Math.round(p.getBoundingClientRect().width), breaks };
+      return { lines: Math.round(p.getBoundingClientRect().height / lh), width: Math.round(p.getBoundingClientRect().width), clipped: false, breaks };
     });
     p.innerHTML = original;
+    cp.remove();
     return { results, self, again: p.getBoundingClientRect().height / lh };
-  }, { items: longest.map((l) => ({ bodyText: l.row.body.join(" · "), mutedText: l.row.muted.join(" · ") })), wrapMode: process.env.MEASURE_WRAP ?? "" })
+  }, { items: longest.map((l) => ({ bodyText: l.row.body.join(" · "), mutedText: l.row.muted.join(" · "), compare: l.row.compare ?? null })), wrapMode: process.env.MEASURE_WRAP ?? "", cls: { COMPARE_CLASS, TYPE_CLASS, GROUP_GAP_CLASS, COMMA_CLASS, TAG_CLASS, ITEM_CLASS } })
     .then((r) => {
       console.log(`instrument: ${JSON.stringify(r.self)}, restored ${r.again}`);
       return r.results;
     });
 
   for (const mode of ["priced", "sold out"] as Mode[]) {
-    const byLines = new Map<number, number>();
-    longest.forEach((l, i) => { if (l.modes.has(mode)) byLines.set(measured[i].lines, (byLines.get(measured[i].lines) ?? 0) + 1); });
-    console.log(`lines per row, ${mode}: ${[...byLines].sort((a, b) => a[0] - b[0]).map(([n, c]) => `${n}: ${c}`).join(", ")}`);
+    for (const [kind, isCompare] of [["land facts lines", false], ["spell comparisons", true]] as const) {
+      const byLines = new Map<number, number>();
+      longest.forEach((l, i) => {
+        if (l.modes.has(mode) && !!l.row.compare === isCompare) byLines.set(measured[i].lines, (byLines.get(measured[i].lines) ?? 0) + 1);
+      });
+      console.log(`lines per row, ${mode}, ${kind}: ${[...byLines].sort((a, b) => a[0] - b[0]).map(([n, c]) => `${n}: ${c}`).join(", ")}`);
+    }
   }
   if (process.env.MEASURE_DUMP) {
     const { writeFileSync } = await import("node:fs");
     writeFileSync(process.env.MEASURE_DUMP, JSON.stringify(longest.map((l, i) => ({ text: l.text, from: l.from, originalId: l.originalId, standInId: l.row.oracleId, lines: measured[i].lines, body: l.row.body, muted: l.row.muted, pairs: l.pairs }))));
   }
-  const worst = longest.map((l, i) => ({ ...l, ...measured[i] })).sort((a, b) => b.lines - a.lines || b.text.length - a.text.length);
+  const all = longest.map((l, i) => ({ ...l, ...measured[i] })).sort((a, b) => b.lines - a.lines || b.text.length - a.text.length);
+  // A spell row's comparison has its own budget, asserted at every width: `fitCompare` must have fitted it,
+  // and the cap must never have clipped it. A row whose losses alone cannot fit is reported, never cut (d9).
+  const comparisons = all.filter((w) => w.row.compare);
+  const overBudget = comparisons.filter((w) => w.lines > COMPARE_LINES || w.clipped);
+  console.log(`${overBudget.length === 0 ? "  ok  " : " FAIL "} every spell comparison fits ${COMPARE_LINES} line(s) at ${WIDTH}, unclipped (${comparisons.length})`);
+  for (const w of overBudget.slice(0, 20)) console.log(`        ${w.lines} line(s)${w.clipped ? ", clipped" : ""}: ${w.text}  [${w.pairs.map((p) => `${p.from} → ${p.standIn}`).slice(0, 2).join("; ")}]`);
+  if (overBudget.length) failures += 1;
+  // The land rows keep the facts line and its own rule below.
+  const worst = all.filter((w) => !w.row.compare);
   console.log(`rendered ${worst.length} longest lines at ${WIDTH} in a ${worst[0]?.width}px line box:`);
   for (const w of worst.slice(0, 8)) console.log(`  ${w.lines} line(s) · ${w.text.length} ch · ${w.text}  [${w.from}]`);
   if (process.env.MEASURE_TEXT) console.log(`  breaks: ${JSON.stringify((measured[0] as { breaks?: string[] }).breaks)}`);
   if (Number.isFinite(MAX_LINES) && !process.env.MEASURE_TEXT) {
     // The ruling's three lines, with the named residue allowed four and nothing allowed five.
     const key = (text: string, originalId: string, standInId: string) => `${text}\u0000${originalId}\u0000${standInId}`;
-    const listed = new Set(FOUR_LINE_RESIDUE.map((r) => key(r.text, r.originalId, r.standInId)));
+    // The residue is what 390 allows past three lines; from `md` nothing is allowed past two.
+    const residue = WIDTH >= 768 ? [] : FOUR_LINE_RESIDUE;
+    const listed = new Set(residue.map((r) => key(r.text, r.originalId, r.standInId)));
     const five = worst.filter((w) => w.lines > MAX_LINES + 1);
     // Listed means THIS line for THIS original and stand-in, for every pair that draws it: a second pair
     // drawing a listed line's text is unlisted, however the lines were deduplicated for measuring.
     const unlisted = worst.filter((w) => w.lines === MAX_LINES + 1)
       .flatMap((w) => w.pairs.filter((p) => !listed.has(key(w.text, p.originalId, p.standInId))).map((p) => ({ w, p })));
-    const stale = FOUR_LINE_RESIDUE.filter((r) => !worst.some((w) =>
+    const stale = residue.filter((r) => !worst.some((w) =>
       w.text === r.text && w.lines === MAX_LINES + 1 && w.pairs.some((p) => p.originalId === r.originalId && p.standInId === r.standInId)));
     const report = (ok: boolean, label: string, rows: string[]) => {
       if (!ok) failures += 1;
@@ -308,7 +362,7 @@ try {
       for (const r of rows) console.log(`        ${r}`);
     };
     report(five.length === 0, `nothing reaches ${MAX_LINES + 2} lines at ${WIDTH}`, five.map((w) => `${w.lines}: ${w.text}  [${w.from}]`));
-    report(unlisted.length === 0, `every row at ${MAX_LINES + 1} lines is on the named residue (${FOUR_LINE_RESIDUE.length})`,
+    report(unlisted.length === 0, `every row at ${MAX_LINES + 1} lines is on the named residue (${residue.length})`,
       unlisted.map(({ w, p }) => `${w.text}  [${p.from}, stand-in ${p.standIn}]`));
     report(stale.length === 0, "every residue entry still reads 4 lines, for its own original and stand-in",
       stale.map((r) => `stale: ${r.original} → ${r.standIn}: ${r.text}`));

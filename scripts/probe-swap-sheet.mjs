@@ -47,18 +47,20 @@ const KINDS = {
   // A utility land whose stand-ins all give up the same thing: said once in the lead (Hugh, 2026-09-24).
   utility: ["Cavern of Souls"],
   // H4 (PR 6): Sol Ring is a universal staple and a ramp stand-in for Mana Vault, so its row says
-  // `staple, any commander` where a spell's row quotes the commander's figure.
+  // `staple` in its comparison's type slot (addendum 3a) where a spell's row once quoted the commander's figure.
   staple: ["Mana Vault"],
 };
 /** How each kind's lead opens, from the copy module's own templates. */
 const LEAD = {
   land: /^Every land here makes /,
   fetch: /^Every land here finds a /,
-  spell: /^Every card here is /,
-  utility: /^Every land here makes .*and each gives up /,
-  staple: /^Every card here is ramp /,
+  // Addendum 3a: the lead names the original's honest jobs, and a land's drawback reads `loses`.
+  spell: /^Every card here keeps at least one of .+’s jobs /,
+  utility: /^Every land here makes .*and each loses /,
+  staple: /^Every card here keeps at least one of .+’s jobs \(taps for mana/,
 };
-const STAPLE_FACT = "staple, any commander";
+/** Addendum 3a: a staple's comparison opens with the mono word `staple` in the type slot. */
+const STAPLE_WORD = "staple";
 /** v2 D1 (addendum §1b): type groups only, and a land is offered only lands. */
 const SAME_TYPE = /^same type · [a-z]+$/;
 const LAND_GROUP = "same type · lands";
@@ -362,14 +364,18 @@ try {
       if (long.length === 0 && kind === "land") report(`${tag} land: a group long enough to carry Show all`, false, "none drawn");
       if (kind === "staple") {
         // Every group is open now, so a staple ranked past the first five is on the page. Staples sort last.
-        const lines = await dialog.locator("section").evaluateAll((secs) => secs.map((sec) =>
-          [...sec.querySelectorAll("li")].map((li) => li.textContent.replace(/\s+/g, " ").trim())));
-        const sol = lines.flat().find((l) => l.startsWith("Sol Ring"));
-        report(`${tag} staple: Sol Ring reads as a staple`, Boolean(sol?.includes(STAPLE_FACT)) && !sol.includes("%"),
-          sol?.slice(0, 90) ?? "no Sol Ring row");
+        // A row is a staple when its comparison's type slot, the one span with no tag, reads `staple`.
+        const lines = await dialog.locator("section").evaluateAll((secs, word) => secs.map((sec) =>
+          [...sec.querySelectorAll("li")].map((li) => ({
+            text: li.textContent.replace(/\s+/g, " ").trim(),
+            staple: [...li.querySelectorAll("[data-compare] > span")].some((s) => s.textContent === word),
+          }))), STAPLE_WORD);
+        const sol = lines.flat().find((l) => l.text.startsWith("Sol Ring"));
+        report(`${tag} staple: Sol Ring reads as a staple`, Boolean(sol?.staple) && !sol.text.includes("%"),
+          sol?.text.slice(0, 90) ?? "no Sol Ring row");
         report(`${tag} staple: staples sort last in their group`,
-          lines.every((g) => g.every((l, j) => j === 0 || !g[j - 1].includes(STAPLE_FACT) || l.includes(STAPLE_FACT))),
-          lines.map((g) => g.slice(-3).map((l) => l.slice(0, 18)).join(" / ")).join(" | "));
+          lines.every((g) => g.every((l, j) => j === 0 || !g[j - 1].staple || l.staple)),
+          lines.map((g) => g.slice(-3).map((l) => l.text.slice(0, 18)).join(" / ")).join(" | "));
       }
       report(`${tag} ${kind}: nothing wider than the sheet`, read.overflow <= 0, `${read.overflow}px`);
       // v2, item 5: a stand-in row previews its card, desktop only by design, and the box draws ABOVE the
@@ -498,7 +504,15 @@ try {
         await toggles.first().click();
         await page.waitForTimeout(1500);
       }
-      const all = await sheet.locator("li").count();
+      // Show all FETCHES the whole group (A1), and 700 rows can outrun any fixed wait: poll until the
+      // drawn count has grown past the collapsed one and then stopped moving, up to 15s.
+      let all = await sheet.locator("li").count();
+      for (let t = 0; t < 30; t++) {
+        await page.waitForTimeout(500);
+        const now = await sheet.locator("li").count();
+        if (now === all && now > drawn) break;
+        all = now;
+      }
       await sheet.locator("li button").first().click();
       await card.waitFor({ timeout: 15_000 });
       const open = await position();

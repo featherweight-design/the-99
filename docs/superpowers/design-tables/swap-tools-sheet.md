@@ -131,7 +131,7 @@ Swap Tools :217).
 | Job line | color | `var(--fg-muted)` |
 | Job line | key (land) | `sheet.jobColors(colors)` + ` · ` + the original's own drawback clause, or `sheet.givesUpNothing` only when that is true (H3) |
 | Job line | key (fetch) | `sheet.jobFinds(types)` + ` · ` + drawback (`sheet.drawback.lifeFetch(n)`, etc.) |
-| Job line | key (spell) | `sheet.jobRole(roles, mv)` |
+| Job line | key (spell) | `sheet.jobSpell(type, mv, jobs)` (E2): the original's type, mana value, and its jobs for this deck with ramp by its kind |
 | Job line | key (no role) | `sheet.jobNoRole` |
 
 ### 2.1 Head buy tag
@@ -164,7 +164,7 @@ Swap Tools :217).
 | text-wrap | `pretty` |
 | Key (land) | `sheet.leadLands(colors)`; colors e.g. `white and red` |
 | Key (fetch) | `sheet.leadFetch(types)`; types e.g. `Mountain or a Forest` |
-| Key (spell, partner) | v2 D1: sentences joined by a space: `sheet.leadSpellsJob(roles, mv)`, then `sheet.leadSpellsTypes(plural)` when both type groups draw, then `sheet.leadSpellsOrder(card, commander)`, then `sheet.leadSpellsStaples` when a staple is listed; commander = the commander's short name or the pair `A + B` |
+| Key (spell, partner) | v2 D1: sentences joined by a space: `sheet.leadSpellsJob(card, jobs)` (E2: the original's jobs for this deck, `or`-joined, since a row keeps at least one. **Ratified divergence** (/copy-review, d9, 2026-09-26): the addendum's lead ends `, and each row says what it keeps, gains and loses against it`; the build stops at the jobs, because the row's own tags say that), then `sheet.leadSpellsTypes(plural)` when both type groups draw, then `sheet.leadSpellsOrder(card, commander)`, then `sheet.leadSpellsStaples` when a staple is listed; commander = the commander's short name or the pair `A + B` |
 | Key (spell, nothing listed for the pair, F14) | `sheet.leadSpellsOrderUnlisted(card)` in place of `leadSpellsOrder` |
 | Key (sold-out original, F5) | a new free-copies-only lead (owed to /copy-review) |
 
@@ -206,14 +206,15 @@ Swap Tools :217).
 |---|---|---|
 | Wrapper border-bottom | `1px solid var(--border)` | same |
 | Grid display | `grid` | `grid` |
-| grid-template-columns | `minmax(0,1fr) 96px 64px` | `minmax(0,1fr) 72px` |
-| column-gap | `12px` | `10px` |
-| row-gap | not set | `6px` |
+| grid-template-columns | `minmax(0,1fr) 96px 64px` | `minmax(0,max-content) auto minmax(0,1fr) 72px` (E2, addendum 3a: the name's column grows to its text and no further, the price follows it, an empty column takes the rest) |
+| column-gap | `12px` | `7px` (the name line's gap, so the price sits 7px after the name) |
+| row-gap | not set | not set: the second line (a comparison or a land's facts) sets its own top margin |
 | align-items | `center` | `center` |
 | padding | `9px 0` | `10px 0` |
 | Left cell placement | column 1, row 1 | column 1, row 1 |
-| Price cell placement | column 2, row 1 | column 1, row 2 |
-| Take cell placement | column 3, row 1 | column 2, rows `1 / span 2` |
+| Price cell placement | column 2, row 1, right-aligned | column 2, row 1, straight after the name (E2, addendum 3a) |
+| Take cell placement | column 3, row 1 | column 4, row 1 |
+| Second line placement | row 2, every column, indent 43 | same |
 
 ### 5.2 Left cell
 
@@ -256,26 +257,25 @@ Swap Tools :217).
 
 Clauses are joined by ` · ` in the component; no clause is a score and no figure is combined.
 
-**Length: THREE lines at 390, not two (ruled, d9, 2026-09-25, from Hugh's emphasis on card details).**
-The handoff draws this line at two lines. Measured over every row the engine can draw from the catalog
-(`pnpm measure:swap-lines`, about 22,500 distinct lines, rendered in a live row), 21% ran to three and up
-to nine. Every way to hold two drops a fact, and `gives up` is the fact most often dropped, so the line
-keeps every fact and may run to three at 390. It is not clamped: a clamp hides the give-up. Desktop
-measures two lines at most everywhere (1300px, 418px line box) and is unchanged. Eight lines on three rare
-utility originals read four, and since E1 (ramp named by its kind) so do 32 (original, stand-in) spell pairs on Ugin, Eye of
-the Storms, Coveted Jewel and The Great Henge, to be re-measured with E2's row rewrite. All are named one
-by one in `scripts/lib/swap-lines-residue.mts`; the measure fails
-on any other four, on a stale entry, and on any five. A reviewer should not read three lines as a
-regression from the handoff's two.
+**Length (E2, stand-in row addendum 3a, 2026-09-26).** A SPELL row no longer has a facts line: it draws the
+comparison below, written by `fitCompare` to 1 line at 1300 and 2 at 390 and asserted unclipped by
+`pnpm measure:swap-lines` over every row the engine can draw (20,123 distinct comparisons at each width). A
+LAND row keeps its facts line, now across the whole row under the name line (315px at 390 against 233px
+before), with its drawback starting its own line in `--fg-muted` at every width (Hugh, 2026-09-26: the ` · `
+between the mana line and its cost read as no boundary at all). Measured, a land line is 2 lines at most at
+1300 and 3 at 390, with ONE named exception: Mount Doom → Starting Town reads four at 390, because its mana
+line alone takes two. It is named in `scripts/lib/swap-lines-residue.mts`, and the measure fails on any
+other four, a stale entry, and any five. The 41 entries the residue carried before E2 are retired: the
+comparison retired the 32 spell pairs, and the wider land line brought the 9 land pairs to three lines or fewer.
 
 The content rules that got there, each keeping the fact:
 
 | Rule | Was | Now |
 |---|---|---|
-| A row never quotes a give-up | `gives up “You may choose not to untap…”` | the ability named by pattern, else counted: `gives up an ability`, `gives up 2 abilities`, `… and one more` (`sheet.otherAbilities`). The lead may still quote a give-up every row shares |
-| One `gives up` clause per row | `gives up X · gives up Y` | `gives up X and Y` |
+| A row never quotes a give-up | `gives up “You may choose not to untap…”` | the ability named by pattern, else counted: `loses an ability`, `loses 2 abilities`, `… and one more` (`sheet.otherAbilities`). The lead may still quote a give-up every row shares. E2 (d9, 2026-09-26): the word is `loses`, the spell rows' word |
+| One `loses` clause per row | `gives up X · gives up Y` | `loses X and Y` |
 | New named abilities | quoted | storage lands, storage and charge counters, `choose not to untap`: `storing mana`; investigate: `investigating`; `station`; `discover`; `…then destroy the rest`: `a board wipe`; a land's attack trigger: `becoming a creature` |
-| The original's own drawbacks are not given up | `gives up “When this land enters, sacrifice it unless…”` | nothing: sacrifice-unless, sacrifice-instead, doesn't-untap, depletion, an opponent gains control, return to hand, damage-if. The job line's `gives up nothing` still reads the full list |
+| The original's own drawbacks are not given up | `gives up “When this land enters, sacrifice it unless…”` | nothing: sacrifice-unless, sacrifice-instead, doesn't-untap, depletion, an opponent gains control, return to hand, damage-if. The job line's `loses nothing` still reads the full list |
 | One-shot colors share one clause | `blue once, by sacrificing it · black once, …` | `blue and black once, by sacrificing it`; the rest of a five-color job: `every other color once, …` (`sheet.everyOtherColor`) |
 | A cost paid for every color the mana line names | `costs 1 life for white and red` | `costs 1 life`, `deals 1 damage to you` (`drawback.damageAny`) |
 | All five colors | `white, blue, black, red and green` | `every color` (`sheet.everyColor`) |
@@ -285,12 +285,11 @@ The content rules that got there, each keeping the fact:
 
 | Kind | Keys, in order | Arguments |
 |---|---|---|
-| Land (colors) | v2 D2 (addendum §1a): the mana line in `--fg-body`, `sheet.mana.line(colors, state)` with state `sheet.mana.untapped` · `untappedIf(cond)` (a price such as a shock's life) · `untappedWith(cond)` (`you control …`, basic types capitalized) · `tapped`; then, in `--fg-muted` after a ` · ` in `--border-strong`: `damage(n, colors)` · `life(n, colors)` named for the job's colors only, `sheet.mana.once(color)` for a color it makes only by sacrificing itself, and any give-up. A row with no cost says nothing after the mana line | `colors` = the job's colors the land makes again and again, else `sheet.mana.colorless` |
+| Land (colors) | v2 D2 (addendum §1a): the mana line in `--fg-body`, `sheet.mana.line(colors, state)` with state `sheet.mana.untapped` · `untappedIf(cond)` (a price such as a shock's life) · `untappedWith(cond)` (`you control …`, basic types capitalized) · `tapped`; then, in `--fg-muted` on its OWN line (E2, Hugh): `damage(n, colors)` · `life(n, colors)` named for the job's colors only, `sheet.mana.once(color)` for a color it makes only by sacrificing itself, and any give-up. A row with no cost says nothing after the mana line | `colors` = the job's colors the land makes again and again, else `sheet.mana.colorless` |
 | Land, unnamed drawback | `sheet.drawback.unnamed` (italic) | none |
 | Land, what it gives up (H3) | the stand-in's give-up clause for a utility original (e.g. Cavern of Souls: uncounterable creatures). **No key exists; owed to /copy-review.** Never `sheet.givesUpNothing` unless true | the original's non-mana ability, named |
 | Fetch | `sheet.drawback.basicOnly` · then `entersTapped` / `entersTappedUnless(cond)` / `lifeFetch(n)` | |
-| Spell | v2 D2 (addendum R1): in `--fg-body`, `{type · }sheet.mv(n)`, then `sheet.also(jobs)` for up to two jobs beyond the original's, then `stapleFact` for a staple; in `--fg-muted`, `sheet.givesUp(jobs)` for up to two of the original's jobs it lacks. No role (the lead states it once) and no figure (Hugh's Q2) | `jobs` from `sheet.job`, a word named once |
-| Spell, a job every row lacks | said once as the lead's last sentence, `sheet.leadSpellsGivesUp(card, jobs)`, and dropped from each row | |
+| Spell | E2 (stand-in row addendum 3a): a comparison on its own grid row across every column, indented 43px: `{type}` (other-types rows; `sheet.compare.staple` for a staple) in mono 10.5 `--fg-muted`, then the tagged groups `KEEPS` · `GAINS` · `LOSES` (`sheet.compare.*`, drawn uppercase, each with the same word visually hidden). Kept and gained items in `--fg-body`, lost in `--fg-muted`, `, ` in `--fg-faint`. A lower mana value is the last gain, `sheet.mvGain(n)`; there is no `MV n`. Over budget `fitCompare` drops the last gain, then the gains group, then keeps past the first; it never drops a loss, and losses are uncapped. Sans 12; at 390 a 20.4px line (17.4 plus the canvas's 3px gap between wrapped lines, the extra leading taken back by the margins) under a 41px backstop, from `md` 1.45 under 19px. No figure (Hugh's Q2) | job words from `sheet.job`, each word once across the three groups |
 | Foil-only stand-in (F6) | as its kind; the price cell draws BuyTag's foil figure | |
 
 ### 5.4 Price cell
@@ -495,9 +494,9 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Sheet | 640, centred, 60px from top, all-side border, 14 radius, shadow | from 52px, top border only, `14 14 0 0` radius |
 | Header | padding `14px 18px`, gap 10 | 43px tall, padding `0 6px 0 16px`, gap 9 |
 | Body | padding `16 18 18`, gap 14 | padding `14 16 24`, gap 12 |
-| Row grid | `1fr 96px 64px`, gap 12, padding `9px 0` | `1fr 72px`, gaps 10 / 6, padding `10px 0` |
-| Price | column 2, right-aligned | row 2 under the facts, indent 43 |
-| Take | inline, `6px 13px`, 12.5, radius 7 | `72×44`, 13, radius 8, spans both rows |
+| Row grid | `1fr 96px 64px`, gap 12, padding `9px 0` | `max-content auto 1fr 72px`, gap 7, padding `10px 0` |
+| Price | column 2, right-aligned | on the name line, 7px after the name (E2) |
+| Take | inline, `6px 13px`, 12.5, radius 7 | `72×44`, 13, radius 8, row 1 |
 | Try again | `7px 16px` | 44 tall, `0 18px` |
 | ⇄ | 22×20 | 44×44, margin-right −9 |
 | Under-limit slot | empty 22px | none |
@@ -512,7 +511,7 @@ No focus state is drawn anywhere in scope; shipped focus rings apply.
 | Land, unnamed drawback | classifier returns "unnamed" for a stand-in | row facts `drawback.unnamed`, italic | `unnamed: true` |
 | Land, utility original (H3) | the original's text does more than make its colors | as Lands; each stand-in's facts add what it gives up | the original's named non-mana ability (new key) |
 | Fetch | original is a fetch land; stand-ins found by land types | head `jobFinds` + drawback, `leadFetch`, `groupSameType("lands")`, rows with `basicOnly` + drawback | types, `basicOnly`, entered-tapped / life drawbacks |
-| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobRole`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with `{type · }MV · also …` and `gives up …` (v2 D2) | roles, mv, commander short name |
+| Spells | original has a role; stand-ins at MV ≤ original's, same role | head `jobSpell`, the spells lead (§3), `groupSameType(plural)` then `groupOtherTypes`, rows with the 3a comparison `KEEPS … GAINS … LOSES …` (E2) | roles, mv, commander short name |
 | Partner deck | spells kind, deck led by a pair | as Spells, `commander` = `A + B`, ordered by the pair's synergy from pair support | pair name |
 | Partner, pair not indexed (F14) | pair has no support rows; every row unlisted | `leadSpellsOrderUnlisted` in the lead, the type groups as Spells | pair name |
 | No role (spell) | original has no role | head `jobNoRole`, sentence `noRole(name)`; no lead, groups, foot | name |
