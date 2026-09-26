@@ -6,6 +6,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AnalysisPanel } from "./analysis-panel";
+import { synopsisCopy } from "../../lib/copy/synopsis";
 import { deckProfile } from "./__fixtures__/deck-profile";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
@@ -15,14 +16,15 @@ const copy = deckAnalysisCopy.panel;
 const MIX = "the mix strip";
 const AT = new Date().toISOString();
 const onRequest = vi.fn();
-const panel = (state: ProfileState) => (
+type Extra = Partial<Pick<React.ComponentProps<typeof AnalysisPanel>, "pressNote" | "hold" | "overviewReady" | "overview">>;
+const panel = (state: ProfileState, extra: Extra = {}) => (
   <CardDetailProvider fetchCard={async () => null}>
-    <AnalysisPanel state={state} onRequest={onRequest}>
+    <AnalysisPanel state={state} onRequest={onRequest} {...extra}>
       <div>{MIX}</div>
     </AnalysisPanel>
   </CardDetailProvider>
 );
-const draw = (state: ProfileState) => render(panel(state));
+const draw = (state: ProfileState, extra: Extra = {}) => render(panel(state, extra));
 const reading = (over: Partial<{ fresh: boolean; versionNumber: number | null }> = {}) =>
   ({ profile: deckProfile(), analyzedAt: AT, fresh: true, versionNumber: null, ...over });
 const ready = (over: Partial<{ fresh: boolean; versionNumber: number | null }> = {}): ProfileState =>
@@ -141,14 +143,39 @@ describe("AnalysisPanel", () => {
   });
 
   // A press over a held reading: the button disables IN PLACE and the reading stays.
-  it("keeps the reading while a re-read runs, the button disabled in place", () => {
-    draw({ kind: "loading", held: reading({ fresh: false }) });
-    const button = within(banner()!).getByRole("button", { name: deckAnalysisCopy.banner.reanalyze });
+  // 1a, re-analysis (addendum_overview_loading): the button disables in place and shows the work,
+  // the pulse and *Reading your deck…* in place of its label, and the credit note goes.
+  it("keeps the reading while a re-read runs, the button disabled in place and working", () => {
+    draw({ kind: "loading", held: reading({ fresh: false }) }, { pressNote: { analyze: null, reanalyze: "Also writes the overview, using a credit." } });
+    const button = within(banner()!).getByRole("button", { name: deckAnalysisCopy.panel.loading.heading });
     expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(within(banner()!).queryByTestId("press-note")).toBeNull();
     fireEvent.click(button);
     expect(onRequest).not.toHaveBeenCalled();
     expect(screen.queryByTestId("analysis-empty")).toBeNull();
     expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+  });
+
+  // Hugh, 2026-09-26: a first press that also writes holds the empty state's loader through the
+  // write, its heading naming the stage, and paints the verdict only when the shell lets go.
+  it("holds a first press's loader through the write, naming the stage", () => {
+    const { rerender } = draw({ kind: "loading", held: null }, { hold: "reading" });
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(copy.loading.heading);
+    rerender(panel(ready(), { hold: "writing" }));
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(copy.writing.heading);
+    expect(screen.queryByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeNull();
+    rerender(panel(ready(), { hold: null, overviewReady: true }));
+    expect(screen.getByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeInTheDocument();
+    // Said once, together: the verdict and the overview landed at the same moment.
+    expect(screen.getByText(new RegExp(`${synopsisCopy.ready}$`))).toBeTruthy();
+  });
+
+  it("announces the verdict alone when the hold lets go before the overview is written", () => {
+    const { rerender } = draw({ kind: "loading", held: null }, { hold: "reading" });
+    rerender(panel(ready(), { hold: "writing" }));
+    rerender(panel(ready(), { hold: null, overviewReady: false }));
+    expect(screen.queryByText(new RegExp(synopsisCopy.ready))).toBeNull();
+    expect(screen.getByText(/^Analysis ready\./)).toBeTruthy();
   });
 
   // 2d: a failed re-read over a held reading says so as an alert, and the reading stays whole.
@@ -222,7 +249,7 @@ describe("AnalysisPanel", () => {
     const b = banner()!;
     expect(b).toHaveAttribute("role", "alert");
     expect(b.textContent).toContain(deckAnalysisCopy.banner.failedHeld);
-    expect(within(b).getByRole("button", { name: deckAnalysisCopy.banner.tryAgain })).toHaveAttribute("aria-disabled", "true");
+    expect(within(b).getByRole("button", { name: deckAnalysisCopy.panel.loading.heading })).toHaveAttribute("aria-disabled", "true");
   });
 
   // The server's refusal does not outlive the deck being made whole: the shell's count decides.

@@ -108,6 +108,15 @@ export const deckAnalysisCopy = {
       body: "Checking your list against each bracket's rules.",
     },
     /**
+     * A first press that also writes the overview, past the bracket and holding for the overview
+     * (Hugh, 2026-09-26). /copy-review: the heading matches the slot's `synopsisCopy.writing`,
+     * which a slow run hands over to, rather than Hugh's starting "your"; a write takes 17-18s.
+     */
+    writing: {
+      heading: "Writing the overview\u2026",
+      body: "Your bracket is in. The overview takes a little longer.",
+    },
+    /**
      * The profile could not be built. NEVER "something went wrong": a reader who pressed a
      * button is owed what is and is not affected, and the counted figures are unaffected.
      */

@@ -29,6 +29,21 @@ export function stubMode(env: Record<string, string | undefined> = process.env):
     : "survived";
 }
 
+/**
+ * How long the stub waits before it answers: `SYNOPSIS_STUB_DELAY_MS`, 0 when unset, capped at a
+ * minute. A real write takes ~17-18s (measured 2026-09-26), and the first press's hold has to be
+ * walked both under its limit and past it, which an instant stub cannot show.
+ */
+export function stubDelayMs(env: Record<string, string | undefined> = process.env): number {
+  const ms = Number(env.SYNOPSIS_STUB_DELAY_MS);
+  return Number.isFinite(ms) && ms > 0 ? Math.min(ms, 60_000) : 0;
+}
+
+export async function stubDelay(env: Record<string, string | undefined> = process.env): Promise<void> {
+  const ms = stubDelayMs(env);
+  if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Whether this process calls the real model: production builds, or an explicit opt-in. */
 export function synopsisLive(env: Record<string, string | undefined> = process.env): boolean {
   return env.NODE_ENV === "production" || env.SYNOPSIS_LIVE === "1";

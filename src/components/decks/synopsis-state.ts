@@ -25,6 +25,20 @@ export type SynopsisView =
    *  no press over it. */
   | { kind: "ready"; state: SynopsisState; busy: boolean; current: boolean };
 
+/**
+ * How long a first Analyze holds its loader for the overview once the verdict is in (Hugh,
+ * 2026-09-26). Past it the verdict paints and the slot says the overview is still being written.
+ *
+ * 25s, tuned from five live writes on Hugh's pulled decks (2026-09-26): one model call took 17.0
+ * to 18.3s every time, so 25s covers a single-call write with room for the round trip. A write
+ * whose first answer is refused makes a second, repair call and runs ~35s; that one falls back,
+ * which is the one-time growth Hugh accepted for a slow run.
+ */
+export const OVERVIEW_HOLD_MS = 25_000;
+
+/** How often a write another page load started is re-read while it runs. */
+export const PENDING_POLL_MS = 5_000;
+
 export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: string) {
   // The deck an answer is for rides with it: the shell survives a client navigation between
   // decks, and the previous deck's overview must never draw on the next one's tab.
@@ -90,8 +104,14 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     );
   }, [active, refreshKey, deckId, readNumber]);
 
+  // THE DECK A PRESS OF THIS PAGE WROTE FOR (addendum_overview_loading, 1d): a failure that follows
+  // one draws no credit note, because the press already drew it. A stored failure read on a later
+  // page load keeps the note, since the reader never saw one and Try again spends on success.
+  const [pressedFor, setPressedFor] = useState<string | null>(null);
+
   const press = useCallback(async (run: () => Promise<WriteResult | { kind: string }>) => {
     setBusy(true);
+    setPressedFor(deckId);
     try {
       await run().catch(() => null);
       // Whatever the press returned, the stored state is the truth the tab draws. BUSY HOLDS
@@ -101,7 +121,17 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     } finally {
       setBusy(false);
     }
-  }, [load]);
+  }, [load, deckId]);
+
+  // A WRITE ANOTHER PAGE LOAD STARTED (a reload mid-write) is re-read until it settles: nothing of
+  // this page's is waiting on it, and the slot would otherwise say it is writing indefinitely. A read,
+  // never a model call; the reaper frees a run a crash stranded, which ends the poll with it.
+  const pendingElsewhere = active && !busy && answer?.deckId === deckId && answer.state.pending;
+  useEffect(() => {
+    if (!pendingElsewhere) return;
+    const id = setInterval(() => void load(), PENDING_POLL_MS);
+    return () => clearInterval(id);
+  }, [pendingElsewhere, load]);
 
   const write = useCallback(() => press(() => writeSynopsis(deckId)), [press, deckId]);
   const retry = useCallback((synopsisId: string) => press(() => retrySynopsisSections(deckId, synopsisId)), [press, deckId]);
@@ -111,6 +141,8 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     : { kind: "idle" };
   return {
     view,
+    /** A press of this page wrote (or tried to write) this deck's overview. */
+    pressed: pressedFor === deckId,
     /** The latest read (this visit, this key, this deck) has answered or failed. */
     settled: answeredRead === asked.n,
     write,

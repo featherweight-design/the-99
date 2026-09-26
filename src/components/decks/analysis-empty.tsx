@@ -30,12 +30,18 @@ const RING: { bracket: Bracket; left: number; top: number }[] = ([1, 2, 3, 4, 5]
  */
 export function AnalysisEmpty({
   phase,
+  stage = "reading",
   onRequest,
   blocked = null,
   note = null,
   see = null,
 }: {
   phase: "idle" | "loading" | "failed";
+  /**
+   * While loading, what the press is doing: reading the deck, or (a first press that also writes
+   * the overview, held until both can paint) writing the overview (Hugh, 2026-09-26).
+   */
+  stage?: "reading" | "writing";
   onRequest: () => void;
   /**
    * Ruling 1: the deck is not whole, so the press is disabled and this line says why, under it
@@ -53,7 +59,9 @@ export function AnalysisEmpty({
 }) {
   const noteId = useId();
   const shownNote = blocked === null ? note : null;
-  const text = phase === "loading" ? copy.loading : phase === "failed" ? copy.failed : copy.idle;
+  const text = phase === "loading"
+    ? stage === "writing" ? copy.writing : copy.loading
+    : phase === "failed" ? copy.failed : copy.idle;
   const busy = phase === "loading";
   const disabled = busy || blocked !== null;
   return (

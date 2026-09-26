@@ -24,6 +24,16 @@ export const synopsisCopy = {
   writeNew: "Write a new overview",
 
   /**
+   * The overview's own loading (addendum_overview_loading, 2026-09-25). `writing` is the slot's
+   * status line while a first overview is written (1b); `writingNew` sits in the label row while a
+   * new one is written over a held overview; `ready` is said once when a written overview lands.
+   * Owed to /copy-review.
+   */
+  writing: "Writing the overview\u2026",
+  writingNew: "writing a new one for your changes",
+  ready: "Overview ready.",
+
+  /**
    * The note beside a press that also writes the overview (the credit note, `CREDITS-overview.md`
    * 7a to 7e): Analyze in the empty state and Re-analyze in the banner or the sheet. The standing
    * that follows each lead is the shared credits line.
