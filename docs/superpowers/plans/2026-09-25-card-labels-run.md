@@ -6,9 +6,9 @@
 > $41.09 for 31,830 Commander-legal cards** — $28.36 more than Haiku, one time.
 >
 > **Sonnet wins on gating restrictions (0.864 against 0.767), trigger (0.942 against
-> 0.867), recurrence (0.857 against 0.788), job recall (0.834 against 0.761) and
-> invented restrictions (5 against 7). Haiku keeps the ramp kind, 0.957 against
-> 0.917.** Both models score 1.000 on TRIBAL restrictions, so the Warg's Wolf clause
+> 0.867), recurrence (0.87 against 0.8), job recall (0.834 against 0.761) and
+> invented restrictions (5 against 7). Haiku keeps the ramp kind, 0.913 against
+> 0.875.** Both models score 1.000 on TRIBAL restrictions, so the Warg's Wolf clause
 > is solved by either; the choice turns on the wider gating set and on trigger.
 >
 > Two corrections stand behind those figures, both recorded in the report: the first
@@ -23,7 +23,7 @@ so E1's stand-in matching can refuse a match that shares a job and nothing else.
 
 **Why it is worth building:** today's text rules score **0** on every limit's
 non-default subset. Not poorly — zero, because they cannot express a limit. The
-sample measured Sonnet at 1.000 on the tribal restriction and 0.917 on the ramp
+sample measured Sonnet at 1.000 on the tribal restriction and 0.875 on the ramp
 kind, the two limits behind `Bejeweled Warg` matching `Runadi`.
 
 **Tech:** Drizzle on Neon, the Anthropic batch API, the `scripts/.env` convention.
@@ -278,9 +278,9 @@ figures:
 |---|---|---|
 | tribal restriction | 1.000 | must not drop |
 | restrictedTo (gating) | 0.864 | must not drop |
-| rampKind | 0.917 | must not drop |
+| rampKind | 0.875 | must not drop |
 | trigger | 0.942 | must not drop |
-| recurrence | 0.857 | must not drop |
+| recurrence | 0.87 | must not drop |
 | spurious restrictions | 5 | must not rise |
 
 - **A drop means the pass is not what was measured** — a prompt edit, a model
@@ -318,7 +318,7 @@ Five PRs. Each is independently reviewable and none leaves the tree broken.
   model-agnostic, and the input hash carrying the model means a later switch
   relabels rather than mixing two models' output in one table.
 - **A HYBRID is not proposed, because it is not measured.** Haiku is better at ramp
-  kinds (0.957 against 0.917) and Sonnet at restrictions and triggers, so labelling each field
+  kinds (0.913 against 0.875) and Sonnet at restrictions and triggers, so labelling each field
   with its stronger model is an obvious thought — but nothing in the sample measures
   a two-pass merge, and the merge itself has a cost the sample did not pay (two runs,
   plus a rule for reconciling a job the two models disagree about the EXISTENCE of).
