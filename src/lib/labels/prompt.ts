@@ -3,27 +3,37 @@
 // IDENTICAL for Haiku and Sonnet, deliberately: the comparison is between models,
 // so any prompt difference would confound it.
 //
-// A cache_control breakpoint sits at the end of the system block, and MEASUREMENT
-// says it is close to worthless here. The block is ~1,285 tokens by this repo's estimate and 1,215 as BILLED (two
-// different quantities, so both are named), which is
-// under Haiku's minimum cacheable length -- zero writes and zero reads across two
-// identical calls -- so for the recommended model it is inert. For Sonnet it
-// engages and still loses, because the 43 batch requests run in parallel and almost
-// none finds a warm cache. The committed cost artifact records the CURRENT run:
-// 53,277 cache-write tokens and ZERO reads for Sonnet, 0 and 0 for Haiku. An earlier
-// run measured 37 writes against 6 reads; either way the writes dominate, and at
-// 1.25x to write against 0.1x to read that costs more than not caching. Uncached,
-// the block is paid once per BATCH of 12 (one system block per request), never once
-// per card.
-// Retained only because it is free to leave and starts paying if the block grows
-// past ~2,048 tokens AND submission is sequenced so reads dominate.
+// NO `cache_control`, and that is a MEASUREMENT rather than an omission (Task 3).
+//
+// Caching here loses money for both models, for two different reasons:
+//
+//   Haiku    the breakpoint is INERT. The block is ~1,285 tokens by this repo's
+//            estimate and 1,215 as BILLED (two different quantities, so both are
+//            named), which is under Haiku's minimum cacheable length -- zero writes
+//            and zero reads across two identical calls.
+//   Sonnet   it engages and still loses. Batch requests run in PARALLEL, so almost
+//            none finds a warm cache: 53,277 cache-write tokens and ZERO reads in the
+//            committed cost artifact, and 37 writes against 6 reads in an earlier run.
+//            At 1.25x to write against 0.1x to read that is $0.0854 against $0.0784
+//            uncached -- a 9% LOSS.
+//
+// Uncached, the block is paid once per BATCH of 12 (one system block per request),
+// never once per card, which is why the loss is small either way.
+//
+// Revisit only if the instruction block grows past ~2,048 tokens AND batches are
+// submitted sequentially enough for reads to dominate -- BOTH conditions, not either.
+// The breakpoint was left in place through the sample because it was free to leave;
+// it is removed now because "free to leave" stops being true the moment a 32,000-card
+// run multiplies the write premium by 2,650 batches.
 //
 // The vocabulary is INLINED from the schema module rather than retyped, so a
 // change 2b makes reaches the prompt and the scorer together. A prompt that
 // listed jobs by hand would drift from the thing it is scored against, and the
 // drift would read as model error.
-import { castFaceText } from "../../src/lib/cards/facet";
-import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "../../src/lib/labels/types.js";
+import { createHash } from "node:crypto";
+
+import { castFaceText } from "../cards/facet";
+import { RAMP_KINDS, RECURRENCE, ROLES, THEMES, THRESHOLD_OPS, THRESHOLD_STATS, TRIGGERS } from "./types";
 
 export const SYSTEM = `You label Magic: the Gathering cards with the JOBS they do and the LIMITS on each job.
 
@@ -118,14 +128,26 @@ type CardForPrompt = {
 export const renderCard = (c: CardForPrompt) =>
   `${c.name}\n${c.mana_cost || "(no cost)"} | ${c.type_line}\n${castFaceText(c.oracle_text ?? null, c.layout ?? "normal") ?? "(no text)"}`;
 
+/**
+ * Whether a request asks for prompt caching. FALSE, for the reason at the top of this file.
+ *
+ * Exported so the spend estimate reads it from the module that DECIDES it, rather than
+ * inferring caching from a model's capability. `PRICING[m].caches` says the model could
+ * cache; this says whether we ask. Estimating from capability alone books cache-write
+ * tokens no request can generate — and the estimate is what the spend cap binds on, so a
+ * figure computed from something nothing holds is exactly the class of bug this run has
+ * been finding all day.
+ */
+export const SENDS_CACHE_BREAKPOINT = false;
+
 /** The user turn exactly as sent, so the estimate can measure the real thing. */
 export const renderBody = (cards: CardForPrompt[]) =>
   `Label these ${cards.length} cards.\n\n${cards.map(renderCard).join("\n\n---\n\n")}`;
 
 /**
- * One batch request. `cache_control` sits on the LAST system block so everything
- * above it is cached; the per-batch card list goes in the user turn, below the
- * breakpoint, where it is not.
+ * One batch request. The instruction block is the system turn and the per-batch card
+ * list is the user turn — no cache breakpoint on either, for the reason at the top of
+ * this file.
  */
 /**
  * The output ceiling for one batch. EXPORTED because the spend estimate has to bind
@@ -195,7 +217,48 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
     // temperature, which is a real caveat rather than a formality.
     ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
     ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
-    system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
+    system: [{ type: "text" as const, text: SYSTEM }],
     messages: [{ role: "user" as const, content: renderBody(cards) }],
   },
 });
+
+/**
+ * The prompt's version, bumped whenever a change would make a stored label mean something
+ * different from what a fresh call would produce.
+ *
+ * It is in `labelInputHash` below, so a bump marks every row stale and the next build
+ * relabels — which costs a full run, and is therefore a deliberate act rather than a
+ * side effect of editing a comment. Reword freely; bump when the INSTRUCTION changes.
+ */
+export const LABEL_PROMPT_VERSION = "1";
+
+/**
+ * Whether a stored label still describes its card, mirroring `proseInputHash`.
+ *
+ * A row whose stored hash equals the hash its current inputs produce is SKIPPED and costs
+ * nothing, which is what makes the weekly hook nearly free and an interrupted run
+ * resumable by being dispatched again.
+ *
+ * Four things are in the payload and each earns its place:
+ *
+ * - the ORACLE ID, which is what the row is keyed on;
+ * - the NAME and TYPE LINE, because a card errata'd under its existing oracle id leaves a
+ *   stored label describing something else — the one case where the id alone says fresh
+ *   and the label is not. `proseInputHash` carries the name for the same reason;
+ * - the CAST-FACE text rather than the raw column, because that is what the model is
+ *   actually sent: hashing both faces would mark a row stale whenever a back face changed
+ *   without changing anything the label was derived from;
+ * - the PROMPT VERSION and the MODEL, so switching either relabels rather than silently
+ *   mixing two models' output in one table.
+ */
+export function labelInputHash(card: CardForPrompt & { oracleId: string }, model: string): string {
+  const payload = JSON.stringify([
+    card.oracleId,
+    card.name,
+    card.type_line,
+    castFaceText(card.oracle_text, card.layout ?? ""),
+    LABEL_PROMPT_VERSION,
+    model,
+  ]);
+  return createHash("sha256").update(payload).digest("hex");
+}

@@ -19,7 +19,7 @@ import { neon } from "@neondatabase/serverless";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { clearIntent, ledgerTotal, readLedger, unreconciled, writeIntent, writeReservation } from "./lib/card-labels-ledger.mjs";
 import { ALL_MODELS, costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
-import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM } from "./lib/card-labels-prompt.mjs";
+import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SENDS_CACHE_BREAKPOINT, SYSTEM } from "../src/lib/labels/prompt.js";
 
 const CAP_USD = 5;
 const CARDS_PER_BATCH = 12;   // ~12 cards keeps a reply inside max_tokens with room
@@ -113,14 +113,17 @@ for (const m of Object.keys(chosen) as (keyof typeof MODELS)[]) {
   // `estIn` ALREADY holds one system block for every non-read batch, so subtracting
   // another here dropped a full-price block from the Sonnet estimate. The write is
   // booked ON TOP, at the write rate, rather than carved out of the inputs.
-  const usage = PRICING[m].caches
+  const caching = SENDS_CACHE_BREAKPOINT && PRICING[m].caches;
+  const usage = caching
     ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOut }
     : { i: estIn + estCacheRead, o: estOut };
   const c = costOf(m, usage);
   const w = costOf(m, { ...usage, o: estOutWorst });
   estTotal += c;
   worstTotal += w;
-  const how = PRICING[m].caches ? `cacheRead≈${estCacheRead}` : `no cache (block under the minimum)`;
+  const how = caching
+    ? `cacheRead≈${estCacheRead}`
+    : SENDS_CACHE_BREAKPOINT ? `no cache (block under the minimum)` : `no cache (no breakpoint sent)`;
   lines.push(`  ${m.padEnd(7)} in≈${usage.i} ${how} out≈${estOut}  $${c.toFixed(3)}  (worst case $${w.toFixed(3)})`);
 }
 
@@ -155,7 +158,7 @@ if (pending.length > 0 && !process.argv.includes("--force")) {
 
 if (worstTotal + spentBefore > CAP_USD) {
   console.error(`\nREFUSING: worst case $${worstTotal.toFixed(2)} + $${spentBefore.toFixed(2)} already spent exceeds the $${CAP_USD} cap.`);
-  console.error(`Lower RANDOM_N, or lower max_tokens in card-labels-prompt.mts, and re-run.`);
+  console.error(`Lower RANDOM_N, or lower LABEL_MAX_TOKENS, and re-run.`);
   process.exit(1);
 }
 if (dryRun) {
@@ -183,7 +186,7 @@ mkdirSync("out", { recursive: true });
 // haiku's `create` and sonnet's has spent Haiku's money and recorded nothing, so
 // the next invocation reads $0 and authorises the whole run again.
 const perModelWorst = Object.fromEntries((Object.keys(chosen) as (keyof typeof MODELS)[]).map((m) => [m,
-  costOf(m, PRICING[m].caches
+  costOf(m, SENDS_CACHE_BREAKPOINT && PRICING[m].caches
     ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
     : { i: estIn + estCacheRead, o: estOutWorst })]));
 

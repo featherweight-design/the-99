@@ -1928,6 +1928,70 @@ export const deckVersionSynopses = pgTable("deck_version_synopses", {
  * models' output in one table. A row whose hash still matches its inputs is skipped, so
  * a re-run costs nothing for a card nothing has moved.
  */
+/**
+ * Where a label run accumulates before it is allowed to publish.
+ *
+ * **The staging table is what makes REFUSING possible.** A run must leave the previous
+ * labels standing and exit non-zero when its returned-card count falls below the floor —
+ * and that is unachievable if each batch upserts into `card_labels` as it lands, because a
+ * floor failure at batch 2,600 would have already published 2,599 batches while the plan
+ * claims the previous set is untouched. This is the shape #704 arrived at for the printings
+ * denominators, after a refused run there blanked every set's `base_set_size` behind a
+ * green job.
+ *
+ * The publish is then `delete` + `insert ... select` in ONE transaction rather than a
+ * per-row upsert, so a reader never sees a mixture of two runs.
+ *
+ * Rows are scoped by `run_id` and are not a cache: a finished run's rows are the evidence
+ * of what it published, and the next run clears its own id before staging into it.
+ */
+export const cardLabelsStaging = pgTable("card_labels_staging", {
+  runId: text("run_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId, { onDelete: "cascade" }),
+  labels: jsonb("labels").$type<Job[]>().notNull(),
+  model: text("model").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  inputHash: text("input_hash").notNull(),
+  labelledAt: timestamp("labelled_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.runId, t.oracleId] }),
+  index("card_labels_staging_run_idx").on(t.runId),
+]);
+
+/**
+ * Batch ids a run has SUBMITTED, recorded before anything else happens.
+ *
+ * The input-hash skip recovers cards whose labels are already committed and says nothing
+ * about a batch that was submitted and never collected. A process that dies after
+ * submission — or while a batch is still processing, which for 2,650 batches is most of a
+ * run's life — leaves work in flight the next dispatch cannot see, so it submits those
+ * requests again and PAYS TWICE.
+ *
+ * In the database rather than a file, because the sample's `out/batches.json` does not
+ * survive the CI runner that wrote it.
+ *
+ * `status` is the batch's last known state; `collected_at` is set when its results have
+ * been read into staging, which is what stops a second collection re-charging nothing but
+ * re-doing the work. An id whose results have EXPIRED (the batch API keeps them 29 days)
+ * is marked and its cards re-submitted, which is a loss to record rather than hide.
+ */
+export const cardLabelBatches = pgTable("card_label_batches", {
+  batchId: text("batch_id").primaryKey(),
+  runId: text("run_id").notNull(),
+  model: text("model").notNull(),
+  /** The card names this batch asked about, so a resumed run can reconcile by face. */
+  asked: jsonb("asked").$type<string[]>().notNull(),
+  status: text("status").notNull().default("submitted"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  collectedAt: timestamp("collected_at", { withTimezone: true }),
+}, (t) => [
+  index("card_label_batches_run_idx").on(t.runId),
+  check(
+    "card_label_batches_status_check",
+    sql`${t.status} in ('submitted', 'in_progress', 'collected', 'expired', 'failed')`,
+  ),
+]);
+
 export const cardLabels = pgTable("card_labels", {
   oracleId: uuid("oracle_id").primaryKey().references(() => cards.oracleId, { onDelete: "cascade" }),
   labels: jsonb("labels").$type<Job[]>().notNull(),

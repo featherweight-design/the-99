@@ -12,6 +12,7 @@ import { costOf, type ModelKey } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { validateJob } from "../src/lib/labels/schema.js";
 import type { Job } from "../src/lib/labels/types.js";
+import { faceResolver } from "../src/lib/labels/parse.js";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 /**
@@ -102,23 +103,11 @@ for (const [key, id] of Object.entries(submitted)) {
     );
     if (!Array.isArray(parsed)) { malformed.push(`${entry.custom_id}: unparseable`); markMissing(entry.custom_id); continue; }
 
-    // A TWO-FACED CARD'S NAME. Sonnet returned `Soulcipher Board` and
-    // `Cipherbound Spirit` as separate entries where the catalog name is
-    // `Soulcipher Board // Cipherbound Spirit`; Haiku kept the joined name. Left
-    // alone that loses the card from the score entirely -- it reads as "not
-    // returned" while the model answered it. Reconciled by FACE rather than by
-    // fuzzy match, and only against the names this batch asked for.
-    const faceOf = new Map();
-    for (const asked1 of asked) {
-      if (!asked1.includes(" // ")) continue;
-      for (const face of asked1.split(" // ")) faceOf.set(face, asked1);
-    }
-    // A name that is neither asked for nor a FACE of one is not a card this batch
-    // covers. Returned `null`, it is rejected rather than inserted: an invented name
-    // accepted here enters `labels`, and `label-cards-agree` iterates one model's
-    // keys, so a hallucination returned by both models would count as an agreeing
-    // random card and move the denominator.
-    const resolveName = (n: string) => (asked.includes(n) ? n : faceOf.get(n) ?? null);
+    // Face reconciliation lives in `src/lib/labels/parse.ts` now, shared with the build
+    // that will do the same job over 32,000 cards. Its rules — merge by face, refuse an
+    // invented name, and record a miss rather than writing an empty label — are the
+    // sample's own, measured here and pinned by that module's tests.
+    const resolveName = faceResolver(asked);
 
     for (const card of parsed) {
       if (!card?.name) continue;
