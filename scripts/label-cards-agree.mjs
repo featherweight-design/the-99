@@ -6,6 +6,7 @@
 // decides whether the cheaper model is safe to run alone.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
+import { bestPairing } from "./lib/card-labels-pairing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 
 const h = JSON.parse(readFileSync("out/labels-haiku.json", "utf8"));
@@ -14,6 +15,8 @@ const gold = new Set((await import("./lib/card-labels-gold.mjs")).GOLD.map((r) =
 
 const LIMITS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"];
 const kindKey = (j) => `${j.space}:${j.kind}`;
+const agree = (x, y) => LIMITS.filter((f) => lim(x, f) === lim(y, f)).length;
+
 const lim = (j, f) => f === "threshold"
   ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
   : String(j[f] ?? "none");
@@ -53,26 +56,22 @@ for (const name of Object.keys(h)) {
   if (jobsMatch) sameJobs++;
 
   let allLimitsMatch = jobsMatch;
-  // Best-first among same-kind candidates, as the scorer does: first-match pairs
-  // two correct labels as a disagreement whenever a card carries two jobs of one
-  // kind (Depala's two pumps, Tyrant's Scorn's two removals).
-  const used = [...b];
-  const agree = (x, y) => LIMITS.filter((f) => lim(x, f) === lim(y, f)).length;
-  for (const ja of a) {
-    let best = -1, at = -1;
-    for (const [i, q] of used.entries()) {
-      if (kindKey(q) !== kindKey(ja)) continue;
-      const sc = agree(ja, q);
-      if (sc > best) { best = sc; at = i; }
-    }
-    if (at < 0) { allLimitsMatch = false; continue; }
-    const jb = used.splice(at, 1)[0];
+  // THE SCORER'S pairing, imported rather than re-walked. A first-best walk here
+  // assigns a prediction to the wrong gold instance when a card carries two jobs of
+  // one kind, so the committed agreement artifact would disagree with the scoring
+  // rule the report states. Fixing the scorer and leaving this greedy is the same
+  // unswept class three times over in this branch.
+  const pairedA = new Set();
+  for (const [ja, jb] of bestPairing(a, b, agree)) {
+    pairedA.add(ja);
     for (const f of LIMITS) {
       if (f === "rampKind" && !(ja.kind === "ramp" && ja.space === "role")) continue;
       limitCompared[f]++;
       if (lim(ja, f) !== lim(jb, f)) { limitDisagree[f]++; allLimitsMatch = false; }
     }
   }
+  // A gold-side job with no counterpart is a difference too.
+  if (pairedA.size !== a.length) allLimitsMatch = false;
   if (allLimitsMatch) sameEverything++;
   else disagreeing.push({ name, haiku: ak.join(","), sonnet: bk.join(",") });
 }

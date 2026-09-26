@@ -11,10 +11,12 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import { GOLD } from "./lib/card-labels-gold.mjs";
+import { bestPairing } from "./lib/card-labels-pairing.mjs";
 
 const h = JSON.parse(readFileSync("out/labels-haiku.json", "utf8"));
 const s = JSON.parse(readFileSync("out/labels-sonnet.json", "utf8"));
 const LIMS = ["rampKind", "restrictedTo", "trigger", "recurrence", "threshold", "modal"];
+const agree = (x, y) => LIMS.filter((f) => limOf(x, f) === limOf(y, f)).length;
 const limOf = (j, f) => f === "threshold"
   ? (j.threshold ? `${j.threshold.stat}${j.threshold.op}${j.threshold.value}` : "none")
   : String(j[f] ?? "none");
@@ -36,22 +38,15 @@ const rows = [];
 for (const row of GOLD) {
   const A = h[row.name], B = s[row.name];
   if (!Array.isArray(A) || !Array.isArray(B)) continue;
-  // Same-kind jobs are paired best-first and WITHOUT REUSE, as the scorer does.
-  // `find` returns the same predicted job for both of a card's two pumps, which
-  // renders two correct labels as a disagreement on the sheet.
-  const poolA = [...A], poolB = [...B];
-  const take = (pool, g) => {
-    let best = -1, at = -1;
-    for (const [i, q] of pool.entries()) {
-      if (kindKey(q) !== kindKey(g)) continue;
-      const sc = LIMS.filter((f) => limOf(q, f) === limOf(g, f)).length;
-      if (sc > best) { best = sc; at = i; }
-    }
-    return at < 0 ? undefined : pool.splice(at, 1)[0];
-  };
+  // THE SCORER'S pairing, imported. A greedy `take` shows a false disagreement, or
+  // marks the wrong side decisive, on exactly the cards this sheet is most likely to
+  // pick -- the ones with two jobs of a kind. The sheet must agree with the scores it
+  // sits beside.
+  const pairA = new Map(bestPairing(row.jobs, A, agree).map(([g, q]) => [g, q]));
+  const pairB = new Map(bestPairing(row.jobs, B, agree).map(([g, q]) => [g, q]));
   for (const g of row.jobs) {
-    const a = take(poolA, g);
-    const b = take(poolB, g);
+    const a = pairA.get(g);
+    const b = pairB.get(g);
     const gating = !NON_GATING.has(g.restrictedTo) || (g.kind === "ramp" && g.space === "role");
     if (!gating) continue;
     const differ = show(a) !== show(b);

@@ -80,7 +80,7 @@ on the jobs it got right, did it get the limits right.
 
 | | Haiku | Sonnet | text rules |
 |---|---|---|---|
-| JOB precision | **0.800** | 0.784 | 0.742 |
+| JOB precision | **0.8** | 0.784 | 0.762 |
 | JOB recall | 0.761 | **0.834** | 0.717 |
 | rampKind | **0.957** | 0.917 | 0 |
 | restrictedTo, tribal | 1.000 | 1.000 | 0 |
@@ -276,7 +276,7 @@ both.
 - `scripts/label-cards-run.mts` — batch submission, with the spend cap
 - `scripts/label-cards-collect.mjs` — collection, measured cost, face reconciliation
 - `scripts/label-cards-score.mts` — precision, recall, the non-default split
-- `scripts/lib/card-labels-pairing.mts` — which prediction answers which gold job when a card has two of a kind, with its own tests (6)
+- `scripts/lib/card-labels-pairing.mjs` — which prediction answers which gold job when a card has two of a kind, with its own tests (6)
 - `scripts/label-cards-agree.mjs` — Haiku against Sonnet on the random 400
 - `scripts/label-cards-blindsheet.mjs` — the blind sheet below
 ### Committed evidence

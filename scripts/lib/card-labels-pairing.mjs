@@ -6,13 +6,14 @@
 // this algorithm were wrong, and none of them moved a published figure, so the
 // aggregate scores could never have caught them. Only direct tests can.
 
-export type PairJob = {
-  space: string; kind: string; rampKind?: string | null;
-  restrictedTo: string | null; trigger: string; recurrence: string;
-  threshold: { stat: string; op: string; value: number } | null; modal: boolean;
-};
+/**
+ * @typedef {{ space: string, kind: string, rampKind?: string|null,
+ *   restrictedTo: string|null, trigger: string, recurrence: string,
+ *   threshold: { stat: string, op: string, value: number }|null, modal: boolean }} PairJob
+ */
 
-const kindKey = (j: PairJob) => `${j.space}:${j.kind}`;
+/** @param {PairJob} j */
+const kindKey = (j) => `${j.space}:${j.kind}`;
 
 /**
  * Pairs gold jobs with predicted jobs of the SAME KIND, maximising total limit
@@ -39,11 +40,17 @@ const kindKey = (j: PairJob) => `${j.space}:${j.kind}`;
  * would be the same defect wearing a comment.
  */
 const PERMUTATION_LIMIT = 6;
-export function bestPairing(
-  gold: PairJob[], predicted: PairJob[], agreement: (a: PairJob, b: PairJob) => number,
-): [PairJob, PairJob][] {
-  const pairs: [PairJob, PairJob][] = [];
-  const byKind = new Map<string, PairJob[]>();
+/**
+ * @param {PairJob[]} gold
+ * @param {PairJob[]} predicted
+ * @param {(a: PairJob, b: PairJob) => number} agreement
+ * @returns {[PairJob, PairJob][]}
+ */
+export function bestPairing(gold, predicted, agreement) {
+  /** @type {[PairJob, PairJob][]} */
+  const pairs = [];
+  /** @type {Map<string, PairJob[]>} */
+  const byKind = new Map();
   for (const g of gold) {
     const k = kindKey(g);
     byKind.set(k, [...(byKind.get(k) ?? []), g]);
@@ -70,21 +77,23 @@ export function bestPairing(
     // each gets. `k` is how many pairs are possible at all.
     const k = Math.min(golds.length, cands.length);
     let bestTotal = -1;
-    let bestPairs: [PairJob, PairJob][] = [];
-    const goldSubsets: number[][] = [];
-    const chooseGold = (start: number, picked: number[]) => {
+    /** @type {[PairJob, PairJob][]} */
+    let bestPairs = [];
+    /** @type {number[][]} */
+    const goldSubsets = [];
+    const chooseGold = (/** @type {number} */ start, /** @type {number[]} */ picked) => {
       if (picked.length === k) { goldSubsets.push([...picked]); return; }
       for (let i = start; i < golds.length; i++) chooseGold(i + 1, [...picked, i]);
     };
     chooseGold(0, []);
 
     for (const gsub of goldSubsets) {
-      const walk = (chosen: number[], left: number[]) => {
+      const walk = (/** @type {number[]} */ chosen, /** @type {number[]} */ left) => {
         if (chosen.length === k) {
           const total = chosen.reduce((a, ci, n) => a + agreement(golds[gsub[n]], cands[ci]), 0);
           if (total > bestTotal) {
             bestTotal = total;
-            bestPairs = chosen.map((ci, n) => [golds[gsub[n]], cands[ci]] as [PairJob, PairJob]);
+            bestPairs = chosen.map((ci, n) => [golds[gsub[n]], cands[ci]]);
           }
           return;
         }
