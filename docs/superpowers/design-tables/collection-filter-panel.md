@@ -146,10 +146,10 @@ by the colour pips."
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Label | `Set: Bloomburrow ▾` | `Set: Bloomburrow ▾` |
-| Copy key | `triggerOne(setName)` | `triggerOne(setName)` |
+| Label | `Set 1 ▾` | `Set 1 ▾` |
+| Copy key | `triggerCount(n)`: `Set 0`, `Set 1`, `Sets 2` (2026-09-26, Hugh's staging walk: the name grew the trigger and moved the row) | same |
 | Border | `1px solid #C9A24B` | `1px solid #C9A24B` |
-| `max-width` | `170px` (phone frame) | `230px` |
+| Width | held at the widest one-digit label (`Sets 9`) by a hidden sizer, so a pick moves nothing beside it | same |
 | Overflow | `hidden` · `text-overflow: ellipsis` · `white-space: nowrap` | same |
 | Accessible name | `Filter by set, Bloomburrow, collapsed` | `Filter by set, Bloomburrow, collapsed` |
 
@@ -746,14 +746,14 @@ already custom and already right.
 | Trigger · focus-visible | keyboard focus reaches the trigger | trigger `<button>:focus-visible` | CSS only |
 | Trigger · open | `↵`/`␣`/`↓`/click on the trigger | trigger + popover **or** sheet | `open=true`, `aria-expanded=true`, `isDesktop` from `matchMedia` |
 | Trigger · active | ≥1 selected, panel closed | trigger `<button>` with brass border | `selected.length >= 1` |
-| Trigger · one selected | `selected.length === 1` | trigger with `triggerOne(setName)` label | `selected`, `options` (to resolve the name) |
-| Trigger · many selected | `selected.length >= 2` | trigger + count pip | `selected.length` |
+| Trigger · one selected | `selected.length === 1` | trigger reading `Set 1`; the name is in the chip row | `selected.length` |
+| Trigger · many selected | `selected.length >= 2` | trigger reading `Sets N`, no count pip | `selected.length` |
 | Trigger · disabled | empty collection | trigger `<button disabled>` | `disabled` |
 | 1 · Closed | panel dismissed, no set filter | filter bar only | `open=false`, `selected=[]` |
 | 2 · Open, empty search | panel opened, no query, nothing selected | popover (desktop) / sheet (mobile) + `Newest first` group + 254 options | `options[]`, `selected=[]`, `query=""`, `onToggle`, `onClear` |
 | 3 · Open, with query | query matches ≥1 owned set | panel + `N matches` group + filtered list, no group split | `query`, filtered `options`, `announceMatches(n, query)` |
 | 4 · No results | query matches 0 owned sets | panel + empty state; footer dropped (desktop) | `query`, `onClearSearch`, `emptyTitle`, `emptyBody(query)` |
-| 5 · One selected | one set toggled on, panel dismissed | filter bar + 1 chip + `Set: Bloomburrow ▾` | `selected=['blb']`, chip row given the new filter |
+| 5 · One selected | one set toggled on, panel dismissed | filter bar + 1 chip + `Set 1 ▾` | `selected=['blb']`, chip row given the new filter |
 | 6 · Many selected | 3 sets toggled on **with `Type: Instant` also active** | panel reopened with pinned `Selected · 3` group, filter-aware counts, ≥1 zero-count disabled row | `selected[]`, `options[].count` computed under the other filters, `options[].disabled` |
 | 7 · Keyboard focus walk | keyboard-only operation, 4 ordered frames | trigger focus ring → panel with input focused → active row + toggle → trigger refocused | `aria-activedescendant`, focus-return ref on the trigger |
 | Row · default | option is enabled and unselected | `li[role=option][aria-selected=false]` | `option.label`, `option.count` |

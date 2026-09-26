@@ -68,7 +68,7 @@ describe("the copy block", () => {
   // The one departure from `collectionFilterCopy.sort`. The prefix costs 38px,
   // which is the view well's place on the phone's arrangement line.
   it("prints the order with no `Sort:` prefix", () => {
-    expect(deckSortCopy.triggerOne("Name · A–Z")).toBe("Name · A–Z");
+    expect(deckSortCopy.triggerOne!("Name · A–Z")).toBe("Name · A–Z");
   });
 
   // Nothing else on screen says a second press reverses, so the chosen row's

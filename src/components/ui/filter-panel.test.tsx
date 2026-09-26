@@ -525,7 +525,8 @@ describe("FilterPanel", () => {
     // Esc is dismiss, never undo — nothing is rolled back on the way out.
     expect(onToggle).not.toHaveBeenCalled();
     expect(onClear).not.toHaveBeenCalled();
-    expect(trigger.textContent).toContain("Bloomburrow");
+    // Set's trigger counts rather than names (`triggerCount`), so its text is `Set 1`.
+    expect(trigger.querySelector("[data-trigger-label]")?.textContent).toBe("Set 1");
   });
 
   it("groups the selection at the top, computed on open and frozen while open", () => {
@@ -582,6 +583,20 @@ describe("FilterPanel", () => {
     // Past one selection the names live in the chip row, not the label.
     expect(trigger.textContent).not.toContain("Bloomburrow");
     expect(trigger.textContent).toContain("2");
+  });
+
+  // Hugh's staging walk: `Set: Bloomburrow` grew the trigger on a pick and pushed every control
+  // after it along the row. A counting trigger says `Set 0`, `Set 1`, `Sets 2`, never a name, and
+  // draws no pill beside the figure it already prints.
+  it("counts rather than names on a trigger that carries `triggerCount`", () => {
+    for (const [selected, label] of [[[], "Set 0"], [["BLB"], "Set 1"], [["BLB", "MH3"], "Sets 2"]] as const) {
+      const { unmount } = renderPanel({ selected: [...selected] });
+      const trigger = screen.getByRole("button", { name: /Filter by set/ });
+      expect(trigger.querySelector("[data-trigger-label]")?.textContent).toBe(label);
+      // No pill: the only figure drawn is the label's own.
+      expect(trigger.querySelector(".rounded-full")).toBeNull();
+      unmount();
+    }
   });
 
   it("opens with the first row active when ArrowDown is pressed on the trigger", () => {

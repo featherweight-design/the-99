@@ -959,15 +959,24 @@ export function FilterPanel({
                 : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)]",
         ].join(" ")}
       >
-        {oneName !== null ? (
+        {copy.triggerCount ? (
+          // The label and a hidden sizer share one grid cell, so the trigger is as wide as its
+          // widest one-digit form (`Sets 9`) from nothing chosen up to nine: a pick moves nothing
+          // beside it. Tabular figures make every digit the sizer's width.
+          <span className="grid tabular-nums">
+            <span aria-hidden="true" className="invisible col-start-1 row-start-1">{copy.triggerCount(9)}</span>
+            <span data-trigger-label className="col-start-1 row-start-1">{copy.triggerCount(selected.length)}</span>
+          </span>
+        ) : oneName !== null && copy.triggerOne ? (
           <span className={`${bp("max-w-[230px]", "max-w-[170px]")} overflow-hidden text-ellipsis whitespace-nowrap`}>
             {copy.triggerOne(oneName)}
           </span>
         ) : (
           <span>{copy.triggerLabel}</span>
         )}
-        {/* Names never go in the label past one — they live in the chip row. */}
-        {selected.length >= 2 && (
+        {/* Names never go in the label past one — they live in the chip row. A counting trigger
+            already carries the figure, so it draws no pill beside it. */}
+        {selected.length >= 2 && !copy.triggerCount && (
           <span className="rounded-full px-[7px] py-px font-mono text-[11px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
             {selected.length}
           </span>

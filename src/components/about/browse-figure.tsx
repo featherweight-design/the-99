@@ -177,7 +177,7 @@ export function BrowseFigureBody() {
         </span>
         <span className="hidden items-center gap-[6px] min-[1000px]:flex">
           <Trigger label={collectionFilterCopy.type.triggerLabel} />
-          <Trigger label={collectionFilterCopy.set.triggerOne("The Hobbit")} active />
+          <Trigger label={collectionFilterCopy.set.triggerCount!(1)} active />
           <Trigger label={collectionFilterCopy.availability.triggerLabel} />
         </span>
 

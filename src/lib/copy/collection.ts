@@ -158,7 +158,7 @@ export const collectionFilterCopy = {
   set: {
     // Trigger
     triggerLabel: "Set",
-    triggerOne: (setName: string) => `Set: ${setName}`,
+    triggerCount: (n: number) => (n <= 1 ? `Set ${n}` : `Sets ${n}`),
     triggerAriaCollapsed: "Filter by set, collapsed",
     triggerAriaWithSelection: (n: number) => `Filter by set, ${count(n)} selected, collapsed`,
 
@@ -402,7 +402,15 @@ export const collectionFilterCopy = {
  */
 export type FilterPanelCopy = {
   triggerLabel: string;
-  triggerOne: (name: string) => string;
+  /** The trigger once exactly one option is chosen. Omitted where `triggerCount` names it instead. */
+  triggerOne?: (name: string) => string;
+  /**
+   * A trigger that COUNTS rather than names, drawn at every selection including none. Set carries
+   * it because a set's name is long and varied: `Set: The Hobbit` grew the trigger and pushed every
+   * control after it along the row. A count keeps one width from nothing chosen to one, and the
+   * names live in the chip row, as they already did past one.
+   */
+  triggerCount?: (n: number) => string;
   triggerAriaCollapsed: string;
   triggerAriaWithSelection: (n: number) => string;
 
