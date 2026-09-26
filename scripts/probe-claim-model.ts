@@ -981,10 +981,15 @@ async function pullReleaseSection() {
       userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: second,
     }));
     check("two askers are two release rows", await releases(source), 2);
+    // A repeat pull for the FIRST asker makes its row the newest again, whatever order the rows
+    // were first written in.
+    await db.transaction((tx) => writePullRelease(tx, {
+      userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: asking,
+    }));
     // Put back returns ONE copy, so it takes back one release: the newest, and only its asker.
     const one = await addCardToDeckFor(USER_P, source, card, { relock: false });
-    check("put back takes back only the newest release", (one.released ?? []).join(","), second);
-    check("and leaves the other standing", await releases(source), 1);
+    check("put back takes back only the newest release", (one.released ?? []).join(","), asking);
+    check("and leaves the other standing", await releases(source), 2);
     await fixture.execute(sql`delete from deck_cards where deck_id = ${source} and oracle_id = ${card}`);
     await db.transaction((tx) => writePullRelease(tx, {
       userId: USER_P, sourceDeckId: source, oracleId: card, askingDeckId: second,

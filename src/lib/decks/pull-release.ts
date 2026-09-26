@@ -20,7 +20,8 @@ export async function writePullRelease(
     target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
     // A second pull of the same card from the same draft for the same deck takes one more copy.
     // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
-    set: { copies: sql`${pullReleases.copies} + 1` },
+    // The stamp moves too: Put back takes back from the NEWEST pull, which this one now is.
+    set: { copies: sql`${pullReleases.copies} + 1`, createdAt: sql`now()` },
   });
 }
 
