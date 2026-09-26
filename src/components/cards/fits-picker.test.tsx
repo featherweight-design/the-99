@@ -341,3 +341,55 @@ describe("the picker's markup across the E1 extraction", () => {
     expect(body()).toMatchSnapshot();
   });
 });
+
+describe("a card opened from the picker", () => {
+  // Hugh's staging walk: pressing a card named inside the picker opened it BEHIND the picker. It
+  // stacks over the picker the way a stand-in's card stacks over its sheet, and closing it is a step
+  // back to the picker rather than out of both.
+  const full = (oracleId: string, name: string) => ({
+    ...card, oracleId, name, typeLine: "Creature", manaCost: "{G}", cmc: 1, oracleText: null, keywords: [],
+    rarity: "rare", printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
+    commanderLegal: true, hasDecks: true, availability: null,
+  }) as unknown as BrowseCard;
+  const cards: Record<string, BrowseCard> = {
+    "o-birds": full("o-birds", "Birds of Paradise"),
+    "o-sanity": full("o-sanity", "Fraying Sanity"),
+  };
+
+  async function openPickerCard() {
+    actions.loadFitsAction.mockResolvedValue(read());
+    const { CardDetailTrigger } = await import("./card-detail-provider");
+    render(
+      <CardDetailProvider fetchCard={async (id) => cards[id] ?? null}>
+        <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">Birds of Paradise</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Birds of Paradise/ })));
+    await settle();
+    await act(async () => fireEvent.click(screen.getAllByRole("button", { name: copy.calloutAria("Birds of Paradise") })[0]));
+    await settle();
+    const picker = screen.getByTestId("fits-picker");
+    await act(async () => fireEvent.click(within(picker).getByRole("button", { name: /Fraying Sanity/ })));
+    await settle();
+    return picker;
+  }
+
+  const dialogNamed = (name: string) =>
+    screen.getAllByRole("dialog").find((d) => d.textContent?.includes(name) && !d.contains(screen.queryByTestId("fits-picker")));
+
+  it("paints over the picker: both are fixed at one z-index, so it comes later in the document", async () => {
+    const picker = await openPickerCard();
+    const top = dialogNamed("Fraying Sanity");
+    expect(top).toBeDefined();
+    expect(picker.compareDocumentPosition(top!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("closes back to the picker, which is still open for the card it came from", async () => {
+    await openPickerCard();
+    const top = dialogNamed("Fraying Sanity")!;
+    await act(async () => fireEvent.keyDown(top, { key: "Escape" }));
+    await settle();
+    expect(dialogNamed("Fraying Sanity")).toBeUndefined();
+    expect(screen.getByTestId("fits-picker")).toBeInTheDocument();
+  });
+});
