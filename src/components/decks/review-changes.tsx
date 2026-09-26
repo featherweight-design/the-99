@@ -421,7 +421,13 @@ export function Column({
   );
 
   return (
-    <section className={`flex-1 min-w-0 flex-col ${hiddenOnPhone ? "hidden md:flex" : "flex"}`}>
+    // From `md` the section is a subgrid spanning the parent's two rows, so the two
+    // columns' headers share one row height. A note that wraps (`Going out` at double
+    // digits) grows that row for both, and each column's first card stays level with
+    // the other's instead of the longer note pushing its own column down.
+    <section
+      className={`flex-1 min-w-0 flex-col ${hiddenOnPhone ? "hidden" : "flex"} md:grid md:row-span-2 md:grid-rows-subgrid`}
+    >
       {/* Hidden on the phone only while the segmented pair is above the column:
           that pair IS the direction, and a heading repeating it would be the same
           word twice. A lone column has no pair — the other direction is empty —
@@ -459,7 +465,7 @@ export function Column({
           than chosen for it — a column whose group rhythm was 16px almost
           everywhere and 22px at the boundaries that happened to have been
           folded. One value, and it is the one the column already mostly had. */}
-      {(groupByCardType(rows) as TypeGroup[]).map(renderGroup)}
+      <div>{(groupByCardType(rows) as TypeGroup[]).map(renderGroup)}</div>
     </section>
   );
 }
@@ -973,7 +979,10 @@ export function ReviewChanges({
               two ~190px columns put every card name on three lines. */}
           {/* Named, because the commit sheet's money block links back up to the
               rows it is quoting. */}
-          <div id="review" className="flex flex-col md:flex-row md:items-start gap-[22px]">
+          <div
+            id="review"
+            className="flex flex-col gap-[22px] md:grid md:grid-flow-col md:auto-cols-[minmax(0,1fr)] md:grid-rows-[auto_auto] md:gap-x-[22px] md:gap-y-0"
+          >
           {/* Empty columns are drawn as nothing at all rather than as an empty
               state: the only way to arrive with none is `?commit=1`, where the
               commit sheet is the page and a "no changes" panel above it would

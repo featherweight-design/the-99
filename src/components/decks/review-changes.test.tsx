@@ -817,10 +817,13 @@ describe("ReviewChanges", () => {
       return heading.closest("div.mb-\\[16px\\]") as HTMLElement;
     });
     expect(groups.every(Boolean)).toBe(true);
-    // One section between them, and each group sitting directly in it.
-    const section = groups[0].parentElement as HTMLElement;
+    // One list between them, each group sitting directly in it, and the list the
+    // section's second subgrid row (the header is the first).
+    const list = groups[0].parentElement as HTMLElement;
+    expect(groups[1].parentElement).toBe(list);
+    const section = list.parentElement as HTMLElement;
     expect(section.tagName).toBe("SECTION");
-    expect(groups[1].parentElement).toBe(section);
+    expect(section.children[1]).toBe(list);
     expect(section.querySelector(".md\\:flex-row")).toBeNull();
   });
 
