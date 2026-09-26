@@ -138,6 +138,20 @@ async function walk(page, width, fixture) {
   report(`the tile's ! lands with the sheet open ${tag}`, await sheetOpen(page), "notices-body");
   await page.waitForFunction(() => !new URL(location.href).searchParams.has("notices"), null, { timeout: 10_000 }).catch(() => {});
   report(`parameter stripped after a press ${tag}`, !new URL(page.url()).searchParams.has("notices"), page.url());
+  // Close it, leave by the app's own navigation, and come Back: the history entry the tile pushed
+  // must not reopen the sheet from the router's cached payload.
+  await page.keyboard.press("Escape");
+  await page.locator('[data-testid="notices-body"]').first().waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
+  await page.evaluate(() => { window.__probeStay = true; });
+  // The shell's own Decks link, whichever width draws it (the rail on desktop, the tab bar on a phone).
+  await page.getByRole("link", { name: "Decks", exact: true }).filter({ visible: true }).first().click();
+  await page.waitForURL((u) => u.pathname === "/decks", { timeout: 30_000 });
+  await page.goBack({ waitUntil: "domcontentloaded" });
+  await page.waitForURL((u) => u.pathname === `/decks/${fixture.id}`, { timeout: 30_000 });
+  const soft = await page.evaluate(() => window.__probeStay === true);
+  const reopened = await page.locator('[data-testid="notices-body"]').first()
+    .waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false);
+  report(`Back does not reopen it ${tag}`, !reopened, `${reopened ? "reopened" : "stayed shut"} (${soft ? "client" : "document"} back)`);
 
   // 3 · A cold load of the URL the mark names.
   await resetReadMarks(fixture);
