@@ -85,7 +85,7 @@ shipped `<select>` it replaces — same size, same position, same single tab sto
 | Property | Mobile | Desktop |
 |---|---|---|
 | Element | `<button>` | `<button>` |
-| Label | `Set 0 ▾` (the counting trigger draws its figure at none, too) | `Set 0 ▾` |
+| Label | no trigger: below 1000px the set row lives in the filter sheet and reads `Any set` | `Set 0 ▾` (the counting trigger draws its figure at none, too) |
 | Font | Plex Sans 13px / 500 | Plex Sans 13px / 500 |
 | Color | `#EDE6D8` | `#EDE6D8` |
 | Background | `#2A241D` | `#2A241D` |
@@ -146,11 +146,11 @@ by the colour pips."
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Label | `Set 1 ▾` | `Set 1 ▾` |
-| Copy key | `triggerCount(n)`: `Set 0`, `Set 1`, `Sets 2` (2026-09-26, Hugh's staging walk: the name grew the trigger and moved the row) | same |
+| Label | the sheet's set row reads the set's name | `Set 1 ▾` |
+| Copy key | the sheet row's `collectionChassisCopy.chip.sets(n, name)`, unchanged | `triggerCount(n)`: `Set 0`, `Set 1`, `Sets 2` (2026-09-26, Hugh's staging walk: the name grew the trigger and moved the row) |
 | Border | `1px solid #C9A24B` | `1px solid #C9A24B` |
-| Width | held at the widest one-digit label (`Sets 9`) by a hidden sizer, so a pick moves nothing beside it | same |
-| Overflow | none: a count cannot run long, so nothing truncates | same |
+| Width | the sheet row is full width, so nothing moves | held at the widest one-digit label (`Sets 9`) by a hidden sizer, so a pick moves nothing beside it |
+| Overflow | the sheet row truncates the name, as before | none: a count cannot run long, so nothing truncates |
 | Accessible name | `Filter by set, Bloomburrow, collapsed` | `Filter by set, Bloomburrow, collapsed` |
 
 The README fixed truncation at `230px` (and the phone frame drew `170px`) while the label named
@@ -160,7 +160,7 @@ the set. It counts now (2026-09-26), so there is no name to truncate and no cap.
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Label | `Sets N ▾`, no pip | `Sets N ▾`, no pip |
+| Label | the sheet's set row reads `N sets` | `Sets N ▾`, no pip |
 | Layout | `display: inline-flex` · `align-items: center` · `gap: 8px` | same |
 | Border | `1px solid #C9A24B` | `1px solid #C9A24B` |
 | Names in label | never — they live in the chip row | never |
