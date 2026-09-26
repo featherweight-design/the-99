@@ -184,11 +184,6 @@ describe("activeControlCount", () => {
 
   // Colours and match on both lanes, plus availability on owned. Search and
   // order never count, and discover has no third control to count.
-  it("counts a Printed in selection as one control, however many sets it names", () => {
-    expect(activeControlCount({ ...defaultParams("owned"), printedIn: ["hob", "hoc"] }, "owned")).toBe(1);
-    expect(activeControlCount({ ...defaultParams("discover"), printedIn: ["hob"] }, "discover")).toBe(1);
-  });
-
   it("ceilings at 3 on owned and 2 on discover", () => {
     expect(
       activeControlCount(

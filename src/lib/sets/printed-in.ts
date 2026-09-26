@@ -41,8 +41,8 @@ export type PrintedInSet = { code: string; name: string };
 
 /**
  * Every set that printed a legendary card, newest first, and for each such card the sets it was
- * printed in (as indices into `sets`). Global rather than per reader: the lanes cross it with
- * their own rows, so a set with nothing on a lane still arrives here and is drawn at a count of 0.
+ * printed in (as indices into `sets`). Global rather than per reader: each lane crosses it with its
+ * own rows through `lanePrintedIn`, which keeps only the sets those rows were printed in.
  */
 export type CommanderPrintings = {
   sets: PrintedInSet[];

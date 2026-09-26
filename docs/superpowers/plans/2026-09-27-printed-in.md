@@ -80,7 +80,9 @@ are counted against; the set filter narrows rows. They compose like the colors d
 
 1. **Predicate, index and params (no UI).** `printed-in.ts` (`printedIn`, `lanePrintedIn`,
    `filePrintedIn`, `isPrintedIn`) with its `.toSQL()` test, `printed-in-read.ts`, and
-   `LaneParams.printedIn` through parse, serialize, `laneQuery` and `activeControlCount`. Plus
+   `LaneParams.printedIn` through parse, serialize and `laneQuery`
+   (`activeControlCount` counts it in PR 2, beside the chip, so no badge lights over an
+   unfiltered list). Plus
    `probe:printed-in`, read-only against the real catalog: the predicate and the index agree set by
    set, a card printed in two sets matches either, two sets are the union, case, an unknown code.
    `nearestFix` moves to PR 2, where its candidates are built.

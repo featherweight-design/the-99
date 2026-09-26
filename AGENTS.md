@@ -1766,8 +1766,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Help me choose asks it in SQL through `printedIn(oracleId, codes)`, and the commander lanes
   test rows they already hold against an index, `loadCommanderPrintings`, that each page crosses
   with the rows it ships. The unit suite proves the emitted SQL and the index's shaping over
-  hand-built rows. Only a database answers whether they AGREE, so the probe counts eighteen sets
-  both ways (the ten busiest and the ten newest), plus a card printed in two sets matching
+  hand-built rows. Only a database answers whether they AGREE, so the probe counts up to twenty
+  sets both ways (the ten busiest and the ten newest, less any on both lists), plus a card printed in two sets matching
   either, two sets taken as the union, case, and an unknown code. Every fixture is found by query.
 
   With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every legendary
