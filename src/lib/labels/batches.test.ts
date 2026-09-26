@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { cardLabelBatches, cardLabelsStaging } from "../../db/schema";
 
-const MIGRATION = "drizzle/0068_fine_cerise.sql";
+const MIGRATION = "drizzle/0068_card_label_batches.sql";
 
 /**
  * The batch-intent table's SHAPE, asserted because the crash window it exists to close is
