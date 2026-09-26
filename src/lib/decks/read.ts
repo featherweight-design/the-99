@@ -915,6 +915,12 @@ export async function listDecksWithStats(
      * a correlated subquery per deck on the list's hot path.
      */
     includeNotice?: boolean;
+    /**
+     * Told when a tolerated read failed and the list fell back (no in-use clause, or the status
+     * pill from ownership alone). A caller that caches the list must not store one of those: a
+     * transient error would otherwise stand for as long as the entry does.
+     */
+    onSoftFailure?: (read: "availability" | "buyRows") => void;
   } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
@@ -1065,7 +1071,10 @@ export async function listDecksWithStats(
   // clause is not worth a 500 on the deck list.
   const availability =
     opts.includeInUseElsewhere && rows.length > 0
-      ? await loadAvailability(userId).catch(() => null)
+      ? await loadAvailability(userId).catch(() => {
+          opts.onSoftFailure?.("availability");
+          return null;
+        })
       : null;
   const inUseElsewhere = availability
     ? inUseElsewhereByDeck(availability.values())
@@ -1108,7 +1117,12 @@ export async function listDecksWithStats(
   );
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
-  const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
+  const buyRows = canFlip
+    ? await loadDeckBuyRows(userId).catch(() => {
+        opts.onSoftFailure?.("buyRows");
+        return [];
+      })
+    : [];
   const unfundedByDeck = new Map<string, number>();
   for (const r of buyRows) {
     unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);

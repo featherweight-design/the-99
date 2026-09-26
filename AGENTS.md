@@ -358,7 +358,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   largest account's real sizes, median of 3, which is how the before figure is taken on a
   database the migration has not reached. Measured on a `pull:staging` copy, the median of three
   runs each with every trigger disabled and then enabled: a 3,250-row collection replace went
-  544ms to 587ms (about 13 microseconds for each of its ~6,500 row events), and a 96-row commit
+  544ms to 587ms (about 7 microseconds for each of its ~6,500 row events, a delete and an insert per row), and a 96-row commit
   377ms to 375ms, which is no measurable change. It writes a fixture under a per-run `user_id` and deletes it in a `finally`. Point it
   at `local-dev` or a scratch branch, **never production**.
 

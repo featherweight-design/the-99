@@ -14,12 +14,12 @@ describe("schemaTables", () => {
     const tables = schemaTables(`
 export const decks = pgTable("decks", { id: uuid("id"), userId: text("user_id") });
 export const deckCards = pgTable("deck_cards", { deckId: uuid("deck_id").references(() => decks.id) });
-export const cards = pgTable("cards", { oracleId: uuid("oracle_id") });
+export const cards = pgTable("cards", { oracleId: uuid("oracle_id") }, (t) => [index("user_id_lookup").on(t.oracleId)]);
 `);
     expect(tables.get("decks")).toEqual({ name: "decks", owner: "user_id" });
     expect(tables.get("deckCards")).toEqual({ name: "deck_cards", owner: "deck_id" });
-    // A table whose body only MENTIONS another table's owner column in a reference is still
-    // catalog-wide: the owner is a column of its own, in a `("...")` declaration.
+    // A table whose body only MENTIONS an owner column's name (here inside an index name) is
+    // still catalog-wide: the owner is a column of its own, declared as `("user_id")`.
     expect(tables.get("cards")).toEqual({ name: "cards", owner: null });
   });
 });
