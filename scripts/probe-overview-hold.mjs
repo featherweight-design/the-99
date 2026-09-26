@@ -115,6 +115,25 @@ const OBSERVE = () => {
   requestAnimationFrame(tick);
 };
 
+// Deletes what a press wrote onto the deck, the overview's ledger unit with it, each step on its
+// own so one failing cannot skip the rest. Run after each width, so both widths press the same deck
+// from the same state, and again in the `finally`.
+async function reset(id, before) {
+  try {
+    const calls = (await sql`
+      delete from deck_synopses where deck_id = ${id} and not (id = any(${before}::uuid[]))
+      returning model_call_id`).map((r) => r.model_call_id).filter(Boolean);
+    if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
+  } catch (error) {
+    console.error(`cleanup: the overview on ${id} was left behind:`, error.message);
+  }
+  try {
+    await sql`delete from deck_profiles where deck_id = ${id}`;
+  } catch (error) {
+    console.error(`cleanup: the reading on ${id} was left behind:`, error.message);
+  }
+}
+
 async function run() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
   if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
@@ -124,21 +143,23 @@ async function run() {
   const browser = await chromium.launch();
   // Filled BEFORE the press each one covers: the deck, and the overview rows it held already.
   const created = new Map();
+  let deck = null;
   try {
     for (const width of [1300, 390]) {
       const at = (s) => `${s} @ ${width}`;
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
       const page = await context.newPage();
       const userId = await signIn(page);
-      // A whole deck with no reading and no overview: the press is a first press that writes.
-      const [deck] = await sql`
+      // A whole deck with no reading and no overview: the press is a first press that writes. Chosen
+      // once, and reset after each width, so both widths measure the same deck.
+      if (!deck) [deck] = await sql`
         select d.id, d.name from decks d where d.user_id = ${userId}
           and not exists (select 1 from deck_profiles p where p.deck_id = d.id)
           and not exists (select 1 from deck_synopses s where s.deck_id = d.id)
           and (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id) >= 98
         order by d.name limit 1`;
       if (!deck) throw new Error("The account has no whole deck without a reading and an overview.");
-      created.set(deck.id, (await sql`select id from deck_synopses where deck_id = ${deck.id}`).map((r) => r.id));
+      if (!created.has(deck.id)) created.set(deck.id, (await sql`select id from deck_synopses where deck_id = ${deck.id}`).map((r) => r.id));
 
       await page.addInitScript(OBSERVE);
       await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "domcontentloaded" });
@@ -149,6 +170,7 @@ async function run() {
       const note = await page.locator(`${PAGE} [data-testid='analysis-empty'] [data-testid='press-note']`).first().textContent().catch(() => null);
       if (!report(at(`the press on ${deck.name} writes the overview`), /overview/.test(note ?? "") && !/Reads the bracket only/.test(note ?? ""), JSON.stringify(note))) {
         await context.close();
+        await reset(deck.id, created.get(deck.id));
         continue;
       }
       await page.evaluate(() => { const w = window.__hold; w.seen = {}; w.headings = []; w.tops.verdict.clear(); w.tops.overview.clear(); w.said = []; });
@@ -199,25 +221,12 @@ async function run() {
           JSON.stringify(w.said));
       }
       await context.close();
+      await reset(deck.id, created.get(deck.id));
     }
   } finally {
     await browser.close();
     // Each step on its own, so one failing cannot skip the rest.
-    for (const [id, before] of created) {
-      try {
-        const calls = (await sql`
-          delete from deck_synopses where deck_id = ${id} and not (id = any(${before}::uuid[]))
-          returning model_call_id`).map((r) => r.model_call_id).filter(Boolean);
-        if (calls.length > 0) await sql`delete from model_calls where id = any(${calls}::uuid[])`;
-      } catch (error) {
-        console.error(`cleanup: the overview on ${id} was left behind:`, error.message);
-      }
-      try {
-        await sql`delete from deck_profiles where deck_id = ${id}`;
-      } catch (error) {
-        console.error(`cleanup: the reading on ${id} was left behind:`, error.message);
-      }
-    }
+    for (const [id, before] of created) await reset(id, before);
     console.log(`cleaned up ${created.size} deck(s)`);
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
