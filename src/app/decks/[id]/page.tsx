@@ -101,12 +101,11 @@ export default async function DeckBuilderPage({
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
 
-  // STAGE A: every read keyed on (deck, reader) alone starts NOW, beside the ownership guard
-  // rather than after it. Each is owner-scoped in its own SQL — `getDeckDetail`, the draft's
-  // snapshot, the fill passes, the versions, the games, the suggestions' `requireDeck`, the stored
-  // reading, the notices and the shopping limit all refuse a deck the reader does not own — so
-  // a stranger's deck id has no data read against it, and the guard below only decides what to
-  // RENDER. The page used to take these after the guard, in series: 418ms of `getDeckDetail`
+  // STAGE A: every read the next wave waits on starts NOW, beside the ownership guard rather than
+  // after it. Each is owner-scoped in its own SQL — `getDeckDetail`, the draft's snapshot, the fill
+  // passes, the versions, the games and the suggestions' `requireDeck` all refuse a deck the reader
+  // does not own — so a stranger's deck id has no data read against it, and the guard below only
+  // decides what to RENDER. The page used to take these after the guard, in series: 418ms of `getDeckDetail`
   // before a wave whose longest read was 330ms, on the deck `measure:load` walks.
   //
   // Each early read is marked handled at once, because on a deck the reader does not own the
@@ -135,6 +134,13 @@ export default async function DeckBuilderPage({
   const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
   // The rail rides the deck's own `Versions` tab, so its rows are part of this page.
   const versionsRead = early(perf.timed("versions", () => listVersions(id, userId)));
+  const detail = await detailRead;
+  if (!detail) notFound();
+
+  // STAGE A IS BOUNDED TO THE CRITICAL PATH. These three are awaited only at the very end, behind
+  // the last wave's ~450ms, so starting them after the guard costs nothing — and starting them at
+  // t0 put eleven reads in flight against pg's ten-connection pool, which measured as the page's
+  // first byte arriving ~120ms later than before this reordering.
   // The header's bracket chip, from the analysis already stored for this deck. It computes nothing
   // (see `readStoredPermits`), and a failed read draws no chip, which is what an unread deck draws
   // anyway.
@@ -155,8 +161,6 @@ export default async function DeckBuilderPage({
     ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
     : Promise.resolve(null);
 
-  const detail = await detailRead;
-  if (!detail) notFound();
 
   // `total`, not `built`, and the same figure the strip is measured against:
   // unresolved lines hold the slots they arrived on, so a deck whose only gap
