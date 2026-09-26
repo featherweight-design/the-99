@@ -108,9 +108,11 @@ import {
   ParseErrorRowView,
   UnmatchedRowView,
 } from "../collection/issue-inspector-list";
-import { AnchoredNumerals, KeyNumeral, byAriaPrefix, first, withText } from "./numeral";
+import { AnchoredNumerals, KeyNumeral, byAriaPrefix, first, leafMatching, visible, withText } from "./numeral";
 import { discoverCopy } from "../../lib/copy/lanes";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
@@ -1172,7 +1174,19 @@ export function ShoppingFigureBody() {
  * deck page rather than the Versions tab, so it is not drawn here.
  */
 export function VersionsFigureBody() {
-  return <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />;
+  return (
+    <AnchoredNumerals
+      gutter
+      marks={[
+        // 1: the older version's meta line, which carries its games on a wide screen. 2: the
+        // newest version's note.
+        { n: 1, find: (r) => r.querySelectorAll("span.block.font-mono")[1] ?? null, side: "gutter" },
+        { n: 2, find: withText("span", DECK_VERSIONS[0].note ?? "", true), side: "gutter" },
+      ]}
+    >
+      <VersionRail deckId="about-deck" versions={DECK_VERSIONS} />
+    </AnchoredNumerals>
+  );
 }
 
 /**
@@ -1440,6 +1454,16 @@ export function ProxiesFigureBody() {
 export function ReviewAndCommitFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
+      {/* 1: the breakdown beside `Coming in`. 2: the row carrying Pull it. 3: the row whose deck
+          has changes of its own, which says so and offers no control. */}
+      <AnchoredNumerals
+        gutter
+        marks={[
+          { n: 1, find: withText("span, p", deckVersioningCopy.review.groupInBreakdown(5, 3, 1)), side: "before", mdSide: "before" },
+          { n: 2, find: withText("button", deckVersioningCopy.review.pull), side: "before" },
+          { n: 3, find: withText("span", deckVersioningCopy.review.pullGuardTag), side: "before" },
+        ]}
+      >
       <Column
         deckId="about-figure"
         columnKey="in"
@@ -1463,6 +1487,7 @@ export function ReviewAndCommitFigureBody() {
         onRestore={null}
         restoreErrors={{}}
       />
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }
@@ -1495,10 +1520,21 @@ export function NewDeckFigureBody() {
           BEFORE anything happens rather than the one the caption describes —
           and it leaves the name field and `Create deck →` undrawn, which are
           two of the three things the entry's key lines are about. */}
-      <CreatePicker
-        legalCommanders={CREATE_COMMANDERS}
-        initialSelectedId={CREATE_COMMANDERS[1].oracleId}
-      />
+      {/* 1: the first commander in the list, which holds only what you own. 2: its pool figure.
+          3: the deck's name, the one thing asked for. Inside the clip, so the gutter is not cut. */}
+      <AnchoredNumerals
+        gutter
+        marks={[
+          { n: 1, find: first("ul button[aria-pressed]"), side: "gutter", align: "top" },
+          { n: 2, find: leafMatching("ul button[aria-pressed]", /\d+ cards$/), side: "after" },
+          { n: 3, find: visible("#picker-deck-name, #picker-deck-name-mobile"), side: "gutter" },
+        ]}
+      >
+        <CreatePicker
+          legalCommanders={CREATE_COMMANDERS}
+          initialSelectedId={CREATE_COMMANDERS[1].oracleId}
+        />
+      </AnchoredNumerals>
     </div>
   );
 }
@@ -1535,7 +1571,16 @@ function LockedRows() {
 export function LockedCardsFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
-      <div className="flex flex-col gap-[14px]">
+      <AnchoredNumerals
+        gutter
+        className="flex flex-col gap-[14px]"
+        marks={[
+          // 1: the closed lock at rest. 2: Lock cards, drawn as its Done. 3: the mode's count.
+          { n: 1, find: first('[data-testid="row-lock-mark"]'), side: "gutter" },
+          { n: 2, find: withText("button", lockedCardsCopy.mode.done), side: "before" },
+          { n: 3, find: first('[data-testid="lock-mode-line"] span'), side: "after" },
+        ]}
+      >
         <LockCardsProvider value={LOCKS_AT_REST}>
           <LockedRows />
         </LockCardsProvider>
@@ -1548,7 +1593,7 @@ export function LockedCardsFigureBody() {
             <LockedRows />
           </LockCardsProvider>
         </div>
-      </div>
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }
@@ -1566,8 +1611,8 @@ const NAYA = ["R", "G", "W"];
 
 export function ChangeCommanderFigureBody() {
   const desktop = useIsDesktop();
-  const { deckName, current, yours, toBuy } = CHANGE_COMMANDER;
-  const siblings = [yours, toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
+  const { deckName, current, yours, inDeck, toBuy } = CHANGE_COMMANDER;
+  const siblings = [yours, inDeck, toBuy].flatMap((c) => c.halves.map((h) => h.oracleId));
   const row = (c: typeof yours) => (
     <CandidateRow
       candidate={c}
@@ -1583,8 +1628,27 @@ export function ChangeCommanderFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
       <ChangeCommanderProvider deckId="about-figure" deckName={deckName} pair={false} hasVersion>
-        <div className="flex flex-col gap-[14px]">
+        {/* 1: the art band, in this deck's colors, where the door sits. 2: the first candidate's
+            overlap figure. 3: the To buy group, after the ones you own. 4: the candidate already
+            in the 99, which trades places with the commander. */}
+        <AnchoredNumerals
+          gutter
+          className="flex flex-col gap-[14px]"
+          marks={[
+            { n: 1, find: first('[data-figure-band]'), side: "gutter", align: "top" },
+            { n: 2, find: first('[data-testid="change-commander-row"] button[aria-controls]'), side: "before" },
+            { n: 3, find: withText("h3", changeCommanderCopy.sheet.groupBuy(1), true), side: "gutter" },
+            // The mark whose own first words are "in this deck" (the separator is a child span).
+            {
+              n: 4,
+              find: (r) =>
+                [...r.querySelectorAll("span")].find((el) => el.firstChild?.textContent === changeCommanderCopy.sheet.inDeck.split(" · ")[0]) ?? null,
+              side: "gutter",
+            },
+          ]}
+        >
           <div
+            data-figure-band
             className="relative h-[150px] overflow-hidden rounded-[8px] border border-solid border-[color:var(--border)] md:h-[120px]"
             style={{ background: identityGradient(NAYA) }}
           >
@@ -1592,10 +1656,11 @@ export function ChangeCommanderFigureBody() {
           </div>
           <section>
             <CandidateGroupHeading
-              label={changeCommanderCopy.sheet.groupYours(1)}
+              label={changeCommanderCopy.sheet.groupYours(2)}
               note={changeCommanderCopy.sheet.groupNote}
             />
             {row(yours)}
+            {row(inDeck)}
           </section>
           <section>
             <CandidateGroupHeading
@@ -1604,7 +1669,7 @@ export function ChangeCommanderFigureBody() {
             />
             {row(toBuy)}
           </section>
-        </div>
+        </AnchoredNumerals>
       </ChangeCommanderProvider>
     </CardDetailProvider>
   );
@@ -1621,6 +1686,14 @@ export function ChangeCommanderFigureBody() {
 export function HelpMeChooseFigureBody() {
   return (
     <CardDetailProvider fetchCard={async () => null}>
+      {/* Key 1 on the figure that sets a row's rank, key 2 on the ownership line beside it. */}
+      <AnchoredNumerals
+        gutter
+        marks={[
+          { n: 1, find: first("[data-sets-rank]"), side: "gutter", mdSide: "before" },
+          { n: 2, find: first('[data-testid="ownership-line"]'), side: "gutter" },
+        ]}
+      >
       <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
         {CHOOSE.rows.map(({ row, trial }) => (
           <ChooseRow
@@ -1635,6 +1708,7 @@ export function HelpMeChooseFigureBody() {
           />
         ))}
       </ul>
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }
@@ -1657,16 +1731,28 @@ export function FitsYourDecksFigureBody() {
           freeNow={FITS.free}
           countsKnown
         />
-        <FitsRows
-          rows={FITS.rows}
-          staple={false}
-          cardName={FITS.card.name}
-          freeNow={FITS.free}
-          busy={null}
-          refused={null}
-          noteFor={() => null}
-          onAdd={() => {}}
-        />
+        {/* 1: the group's heading, the decks that could take it. 2: the order note at its right.
+            3: the first row's reason. 4: the first row's need. */}
+        <AnchoredNumerals
+          gutter
+          marks={[
+            { n: 1, find: withText("h3", swapToolsCopy.fits.groupJoin), side: "after" },
+            { n: 2, find: withText("span", swapToolsCopy.fits.orderReasons), side: "before" },
+            { n: 3, find: first('[data-testid="fits-reason"]'), side: "gutter" },
+            { n: 4, find: first('[data-testid="fits-reason-need"]'), side: "after" },
+          ]}
+        >
+          <FitsRows
+            rows={FITS.rows}
+            staple={false}
+            cardName={FITS.card.name}
+            freeNow={FITS.free}
+            busy={null}
+            refused={null}
+            noteFor={() => null}
+            onAdd={() => {}}
+          />
+        </AnchoredNumerals>
         <FitsHolds holds={FITS.holds} />
       </div>
     </CardDetailProvider>

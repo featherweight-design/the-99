@@ -1713,6 +1713,8 @@ export const CHANGE_COMMANDER: {
   deckName: string;
   current: { cmc: number; name: string };
   yours: Candidate;
+  /** A candidate already in the 99: it moves to the command zone and Gishath takes its slot. */
+  inDeck: Candidate;
   toBuy: Candidate;
 } = {
   deckName: "HD - Gishath",
@@ -1736,6 +1738,26 @@ export const CHANGE_COMMANDER: {
     fit: { n: 23, of: 64 },
     matched: [],
     deckCount: 1204,
+  },
+  inDeck: {
+    key: "about-uril",
+    halves: [
+      {
+        oracleId: "about-uril",
+        name: "Uril, the Miststalker",
+        manaCost: "{2}{R}{G}{W}",
+        cmc: 5,
+        artCropUri: null,
+        imageUri: null,
+        inDeck: true,
+        owned: true,
+        availability: { owned: 1, hard: 0, soft: 0, free: 1, claims: [] },
+        price: null,
+      },
+    ],
+    fit: { n: 19, of: 64 },
+    matched: [],
+    deckCount: 896,
   },
   toBuy: {
     key: "about-mayael",

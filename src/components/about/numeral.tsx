@@ -164,3 +164,17 @@ export function byAriaPrefix(scope: string, prefix: string) {
       (el.getAttribute("aria-label") ?? "").startsWith(prefix),
     ) ?? null;
 }
+
+/** A finder for the first element matching `selector` that is laid out (not `display: none`). */
+export function visible(selector: string) {
+  return (root: HTMLElement) =>
+    [...root.querySelectorAll<HTMLElement>(selector)].find((el) => el.getClientRects().length > 0) ?? null;
+}
+
+/** A finder for the first leaf under the first `scope` whose whole text matches `pattern`. */
+export function leafMatching(scope: string, pattern: RegExp) {
+  return (root: HTMLElement) =>
+    [...(root.querySelector(scope)?.querySelectorAll("*") ?? [])].find(
+      (el) => el.children.length === 0 && pattern.test((el.textContent ?? "").trim()),
+    ) ?? null;
+}

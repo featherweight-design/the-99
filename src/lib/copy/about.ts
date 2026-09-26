@@ -322,18 +322,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       // Audit H3: with no theme and no card the list IS ordered by ownership. H1: the hand-off
       // shipped in #1011, and Create is what fills the deck, not the pick.
-      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words. The results are ordered by how well each commander fits what you asked, owned or not. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them.',
+      'For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words, which is matched for free, while Look deeper weighs all of it for one credit. The results are ordered by how well each commander fits what you asked, owned or not. With no theme or card to fit, they are ordered by how many of their cards you already have. Picking one carries your answers to a new deck, and creating it fills the 99 under them. When too few commanders fit, the page offers answers to loosen.',
     keys: [
       // Audit H4: SETS RANK is drawn only when a row has more than one figure.
       "With a theme or a card, each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row, and when there is more than one it is marked SETS RANK.",
       // Audit H5. The owned-order exception is said once, in the caption, so this line drops the
       // "never orders it" that the exception made false.
       "Every row shows what you own beside the fit: the commander's own mark, how much of its 99 you own, and roughly what the rest would cost.",
-      // Audit H2 (the panel shipped in #1000), and a fact 1f corrected: the cost is shown on the
-      // results, in the Look deeper panel, never on the form.
-      'Your sentence is matched for free. Look deeper, on the results, weighs all of it for one credit, and the cost is shown before you press.',
-      // Audit H6: the page offers answers to loosen, each with a count.
-      'When too few commanders fit, the page offers answers to loosen, each with how many commanders it would bring back, or you can change the answers yourself.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -451,15 +446,13 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'NEVER_CUT_ENABLED',
     caption:
-      "Lock a card and no tool will offer to cut it: Suggested changes won't propose it and it gets no cheaper stand-ins. The ✕ still removes it: a lock binds the app's suggestions, not you.",
+      "Lock a card and no tool will offer to cut it: Suggested changes won't propose it and it gets no cheaper stand-ins. The ✕ still removes it: a lock binds the app's suggestions, not you. Clear all auto and Pull it pass a locked card by, and one you remove comes back locked by Undo, Put back or a discard, until a commit without it ends the lock.",
     keys: [
       // Audit L2: the lock sits beside the ✕ on a row, not after the name. Its other half (what
       // else changes) is said once, where it belongs: stand-ins in the caption, Pull it in key 3.
-      "A locked card shows a closed lock beside its ✕ in the list, and on its tile's caption.",
+      "A locked card shows a closed lock beside its ✕ in the list.",
       "Lock cards, in the deck's toolbar, turns each ✕ into a lock until you press Done. It is how you lock a card from a phone or a keyboard.",
-      'Clear all auto skips locked cards and says how many stayed. Pull it never takes a copy from a deck where the card is locked, and says locked instead.',
-      // Audit L1: a discard brings a removed locked card back locked; a commit is what ends it.
-      'Remove a locked card and bring it back with Undo, Put back or a discard, and it is still locked. Once a version is committed without it, the lock is gone.',
+      'while Lock cards is on, the line counts the cards locked so far, one per card however many copies.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -588,8 +581,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. On a committed deck, cards you add count against your collection for this deck straight away, and no other deck feels them until you commit.',
     keys: [
-      'a version shows how many games it held, and each game in the log names its version, so you can tell whether a change helped.',
-      'a deck you have never committed reads Draft once it holds a card, however many. Commit v1 and it takes the status its list earns.',
+      'each version carries its date, its card count and its average mana value, and on a wide screen how many games it held; each game in the log names its version, so you can tell whether a change helped.',
+      'a version keeps the note you wrote when you committed it, or says it has none.',
     ],
     since: 1,
   },
