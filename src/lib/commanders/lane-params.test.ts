@@ -19,6 +19,7 @@ describe("parseLaneParams", () => {
       match: "contains",
       avail: "all",
       order: "fit",
+      printedIn: [],
     });
     expect(parseLaneParams(sp(""), "discover").order).toBe("bestfit");
   });
@@ -97,7 +98,7 @@ describe("serializeLaneParams", () => {
   it("writes only the non-default keys, in a stable order", () => {
     expect(
       serializeLaneParams(
-        { q: "druid", colors: ["b", "g"], match: "exactly", avail: "free", order: "name" },
+        { q: "druid", colors: ["b", "g"], match: "exactly", avail: "free", order: "name", printedIn: [] },
         "owned",
       ),
     ).toBe("?q=druid&c=b%2Cg&m=exact&a=free&o=name");
@@ -110,7 +111,7 @@ describe("serializeLaneParams", () => {
   });
 
   it("round-trips through parse", () => {
-    const p: LaneParams = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent" };
+    const p: LaneParams = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent", printedIn: [] };
     const qs = serializeLaneParams(p, "discover");
     expect(parseLaneParams(new URLSearchParams(qs), "discover")).toEqual(p);
   });
@@ -134,6 +135,25 @@ describe("laneQuery", () => {
     expect(laneQuery(live, parseLaneParams(live, "discover"), "discover")).toBe(
       "?ref=email&o=new",
     );
+  });
+});
+
+describe("Printed in", () => {
+  it("reads ?p= as lower-cased, deduped, sorted set codes", () => {
+    expect(parseLaneParams(sp("p=HOC,hob,,hob"), "discover").printedIn).toEqual(["hob", "hoc"]);
+  });
+
+  it("writes it after the lane's other keys, and round-trips on both lanes", () => {
+    for (const lane of ["owned", "discover"] as const) {
+      const p: LaneParams = { ...defaultParams(lane), colors: ["g"], printedIn: ["hob", "hoc"] };
+      const qs = serializeLaneParams(p, lane);
+      expect(qs).toBe("?c=g&p=hob%2Choc");
+      expect(parseLaneParams(sp(qs), lane)).toEqual(p);
+    }
+  });
+
+  it("is a lane key, so clearing it clears it from the live URL", () => {
+    expect(laneQuery(sp("utm=x&p=hob"), defaultParams("owned"), "owned")).toBe("?utm=x");
   });
 });
 
@@ -167,13 +187,13 @@ describe("activeControlCount", () => {
   it("ceilings at 3 on owned and 2 on discover", () => {
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name" },
+        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", printedIn: [] },
         "owned",
       ),
     ).toBe(3);
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent" },
+        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent", printedIn: [] },
         "discover",
       ),
     ).toBe(2);

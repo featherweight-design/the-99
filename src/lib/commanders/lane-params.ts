@@ -1,5 +1,6 @@
 import type { JoinMode } from "./filter";
 import { parseColors } from "../color-param";
+import { normalizeSetCodes } from "../sets/printed-in";
 
 export type Lane = "owned" | "discover";
 // `added` is deliberately absent. The handoff's owned order reads Fit · Name ·
@@ -23,6 +24,8 @@ export type LaneParams = {
   match: JoinMode;
   avail: Avail;
   order: LaneOrder;
+  /** `Printed in`: set codes, lower-cased and sorted. Any printing counts (decision 9). */
+  printedIn: string[];
 };
 
 const WUBRG = ["w", "u", "b", "r", "g"] as const;
@@ -48,6 +51,7 @@ export function defaultParams(lane: Lane): LaneParams {
     match: "contains",
     avail: "all",
     order: ORDERS[lane][0],
+    printedIn: [],
   };
 }
 
@@ -80,6 +84,9 @@ export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
     match: read(sp, "m") === "exact" ? "exactly" : "contains",
     avail: lane === "owned" && read(sp, "a") === "free" ? "free" : "all",
     order,
+    // Unknown codes are kept rather than validated: a set that stops existing matches nothing,
+    // and the empty state names the control to drop.
+    printedIn: normalizeSetCodes((sp.get("p") ?? "").split(",")),
   };
 }
 
@@ -90,6 +97,7 @@ export function serializeLaneParams(p: LaneParams, lane: Lane): string {
   if (p.match === "exactly") sp.set("m", "exact");
   if (lane === "owned" && p.avail === "free") sp.set("a", "free");
   if (p.order !== ORDERS[lane][0]) sp.set("o", p.order);
+  if (p.printedIn.length > 0) sp.set("p", normalizeSetCodes(p.printedIn).join(","));
   const qs = sp.toString();
   return qs ? `?${qs}` : "";
 }
@@ -98,7 +106,7 @@ export function serializeLaneParams(p: LaneParams, lane: Lane): string {
 // belong to neither lane — a campaign tag, something another surface left — and
 // a write rebuilt from `LaneParams` alone would drop them. This is the list a
 // write is allowed to clear; everything else on the live URL is copied across.
-const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s"];
+const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s", "p"];
 
 /**
  * The query string to write for `p`, keeping every parameter the lane does not
