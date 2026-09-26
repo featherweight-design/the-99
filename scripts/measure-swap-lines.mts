@@ -1,22 +1,23 @@
 /**
- * measure:swap-lines — the stand-ins sheet's two-line row, proved over the catalog (close-out ruling 6).
+ * measure:swap-lines — the stand-ins sheet's facts line, proved over the catalog (close-out ruling 6).
  *
  * A row's second line is its facts: a land's `makes {colors}, {state}`, then its costs, the colors it
  * makes only once and what it gives up; a spell's type, MV, the jobs it does beyond the original's, and
- * what it gives up. The design holds that line to two lines at 390, and the ruling is to PROVE the
- * content does that rather than clamp it, because a clamp hides exactly the `gives up` clause a reader
- * needs.
+ * what it gives up. The handoff drew that line at two lines at 390. The ruling (d9, 2026-09-25, from
+ * Hugh's emphasis on card details) is THREE there, keeping every fact rather than clamping, because a
+ * clamp hides exactly the `gives up` clause a reader needs. Desktop is reported, not asserted.
  *
  * So this builds every row the engine could draw, not a hand-picked worst case: every Commander-legal
- * land is ranked, through `rankStandIns` and `sheetModel`, against one original per color set and per
- * fetch shape (the one whose own abilities give the longest `gives up`), and every spell against the
- * spells whose roles and themes reach furthest. The original is treated as sold out, because a sold-out
- * sheet keeps every row's own give-up where a priced one can say it once in the lead: the longest form.
- * Every candidate is free, so no price filter drops a row.
+ * land is ranked, through `rankStandIns` and `sheetModel`, against the originals of each color set and
+ * fetch shape (all of them for a small shape, the ten with the most oracle text for a crowded one), and
+ * every spell against the 60 spells whose roles reach furthest. Each original is read BOTH priced, where
+ * a give-up every row shares is said once in the lead, and sold out, where each row keeps its own. Every
+ * candidate is free, so no price filter drops a row.
  *
- * The longest lines by characters are then rendered in a real stand-ins row at 390x844 on the running
- * app, each written into a live row's own line element (its font, its width, its padding), and counted
- * in laid-out lines. The run FAILS if any reaches 3.
+ * Every distinct line is then rendered in a real stand-ins row on the running app, each written into a
+ * live row's own line element (its font, its width, its padding), and counted in laid-out lines. At 390
+ * the run FAILS when anything reaches five lines, when a row not on the named residue
+ * (`lib/swap-lines-residue.mts`) reaches four, or when a residue entry no longer does.
  *
  * FIXTURE. A brew led by Kenrith holding one unowned card over $10, so the sheet has a row to borrow; it
  * is deleted in a `finally`, with the account's About row put back as found. Needs a server with

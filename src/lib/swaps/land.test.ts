@@ -168,7 +168,7 @@ describe("nameAbility: one case per pattern", () => {
   const cases: [string, string][] = [
     ["spend this mana only to cast a creature spell, and that spell can't be countered.", "uncounterable spells"],
     ["{1}: this land becomes a 2/2 artifact creature until end of turn.", "becoming a creature"],
-    ["whenever restless cottage attacks, create a 2/2 black zombie creature token.", "becoming a creature"],
+    ["whenever this land attacks, create a food token and exile up to one target card from a graveyard.", "becoming a creature"],
     ["channel — {1}{g}, discard this card: destroy target artifact.", "its channel ability"],
     ["{t}: add {g} for each creature you control.", "its extra mana"],
     ["{t}: add {c}{c}. this land deals 2 damage to you.", "its extra mana"],
@@ -275,6 +275,21 @@ describe("givesUp (H3)", () => {
       L("Land Cap", "Land", "This land doesn't untap during your untap step if it has a depletion counter on it.\nAt the beginning of your upkeep, remove a depletion counter from this land.\n{T}: Add {W} or {U}. Put a depletion counter on this land."),
     ]) {
       expect(givesUp(land, wastes).filter((g) => g.kind === "quoted"), land.name).toEqual([]);
+    }
+    // Contested War Zone's control change is a drawback, and no creature ability of the land's.
+    const zone = L("Contested War Zone", "Land", "Whenever a creature deals combat damage to you, that creature's controller gains control of this land.\n{T}: Add {C}.\n{1}, {T}: Attacking creatures get +1/+0 until end of turn.");
+    expect(givesUp(zone, wastes).map((g) => (g.kind === "named" ? g.label : "quoted"))).not.toContain("becoming a creature");
+    expect(givesUp(zone, wastes)).toHaveLength(1);
+  });
+
+  it("still gives up an ability whose COST or effect returns the land to hand", () => {
+    const wastes = L("Wastes", "Basic Land", "({T}: Add {C}.)");
+    for (const land of [
+      L("Maze's End", "Land", "This land enters tapped.\n{T}: Add {C}.\n{3}, {T}, Return this land to its owner's hand: Search your library for a Gate card, put it onto the battlefield, then shuffle. If you control ten or more Gates with different names, you win the game."),
+      L("Thawing Glaciers", "Land", "This land enters tapped.\n{1}, {T}: Search your library for a basic land card, put that card onto the battlefield tapped, then shuffle. Return this land to its owner's hand at the beginning of the next cleanup step."),
+      L("Ghost Town", "Land", "{T}: Add {C}.\n{0}: Return this land to its owner's hand. Activate only if it's not your turn."),
+    ]) {
+      expect(givesUp(land, wastes), land.name).toHaveLength(1);
     }
   });
 

@@ -27,7 +27,7 @@ export function listWords(words: readonly string[], joiner: "and" | "or"): strin
   return `${words.slice(0, -1).join(", ")} ${joiner} ${words.at(-1)}`;
 }
 
-// Close-out ruling 6: all five read `every color`, 33 characters shorter on a line that has 72 at 390.
+// Close-out ruling 6: all five read `every color`, 22 characters shorter on a line that holds 36 at 390.
 const colorsText = (colors: readonly Color[]) =>
   new Set(colors).size === 5 ? copy.everyColor : listWords(colors.map((c) => COLOR_WORD[c]), "and");
 const article = (word: string) => `${/^[AEIOU]/.test(word) ? "an" : "a"} ${word}`;

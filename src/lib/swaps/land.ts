@@ -276,7 +276,9 @@ export function nonManaAbilities(card: LandText): string[] {
 export const GIVES_UP_PATTERNS: readonly (readonly [RegExp, string])[] = [
   // A land that attacks is a creature: its attack trigger is part of becoming one, so the Restless
   // lands give up one thing rather than two (close-out ruling 6).
-  [/^whenever [^.]*\b(?:attacks|blocks|deals combat damage)\b/, "becoming a creature"],
+  // The land's OWN trigger only: "whenever a creature deals combat damage to you" is not a creature
+  // ability of the land's (Contested War Zone).
+  [/^whenever this land (?:attacks|blocks|deals combat damage)\b/, "becoming a creature"],
   [/can't be countered/, "uncounterable spells"],
   [/\b(?:becomes|enter[^.]*as) a copy of\b/, "copying a land"],
   [/\bbecomes? an? [^.]*\bcreature\b/, "becoming a creature"],
@@ -359,11 +361,17 @@ const DRAWBACK_LINES: readonly RegExp[] = [
   /^when this land enters, sacrifice (?:a|an|two|three) \w*\s*lands?\b/,
   /\bdoesn't untap during your (?:next )?untap step\b/,
   /\bdepletion counters?\b/,
-  /^an opponent gains control of this land\b/,
+  /\bgains control of this land\b/,
   /^at the beginning of the end step, if you control no \w+, sacrifice this land\b/,
   /\breturn this land to its owner's hand\b/,
   /\bdeals \w+ damage to you if\b/,
 ];
+
+/**
+ * A drawback is a line with no activation cost: an ability that returns the land to hand as its COST
+ * (Maze's End, Ghost Town) or as part of what it does (Thawing Glaciers) is an ability, and is given up.
+ */
+const isDrawbackLine = (line: string) => !/^[^.]*:/.test(line) && DRAWBACK_LINES.some((d) => d.test(line));
 
 /**
  * What a stand-in gives up against the original: each of the original's non-mana abilities the
@@ -382,7 +390,7 @@ export function givesUp(original: LandText, standIn: LandText): GivenUp[] {
   const kept = new Set(nonManaAbilities(standIn).map((s) => key(s, standIn.name)));
   const out: GivenUp[] = [];
   const seen = new Set<string>();
-  for (const sentence of nonManaAbilities(original).filter((s) => !DRAWBACK_LINES.some((d) => d.test(s)))) {
+  for (const sentence of nonManaAbilities(original).filter((s) => !isDrawbackLine(s))) {
     const k = key(sentence, original.name);
     if (seen.has(k) || kept.has(k)) continue;
     seen.add(k);
