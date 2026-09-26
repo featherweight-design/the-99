@@ -13,13 +13,13 @@ a job. Today's text rules score **0 on every limit** — not poorly, zero, by
 construction, because they cannot express one.
 
 Sonnet **is** markedly better on the limits that decide a match. It gets 86.4% of
-gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 85.7%
-of recurrences against 78.8%, and finds about one job in twelve more (recall 0.834
+gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 86.8%
+of recurrences against 80.0%, and finds about one job in twelve more (recall 0.834
 against 0.761). It invents 5 spurious restrictions against Haiku's 7.
 
 **Both models get every TRIBAL restriction right**, so the Warg's Wolf clause is
 solved by either; the choice turns on the wider gating set and on `trigger`. Haiku
-wins the ramp kind (95.7% against 91.7%) and job precision by 1.6 points. The
+wins the ramp kind (91.3% against 87.5%) and job precision by 1.6 points. The
 one-time difference is **$28.36**.
 
 > **This reverses the recommendation in the first draft of this report, which said
@@ -51,8 +51,8 @@ on a **Wolf** and the deck was Dinosaurs; and on `ramp`, where the Warg makes a
 
 | | tribal restriction | gating restriction | ramp kind | spurious invented |
 |---|---|---|---|---|
-| **Haiku 4.5** | 1.000 (29/29) | 0.767 (33/43) | **0.957** (22/23) | 7 |
-| **Sonnet 4.5** | 1.000 (30/30) | **0.864** (38/44) | 0.917 (22/24) | **5** |
+| **Haiku 4.5** | 1.000 (29/29) | 0.767 (33/43) | **0.913** (21/23) | 7 |
+| **Sonnet 4.5** | 1.000 (30/30) | **0.864** (38/44) | 0.875 (21/24) | **5** |
 | today's text rules | **0** (0/25) | **0** (0/35) | **0** (0/21) | 0 |
 
 **The tribal restriction — the Warg's Wolf clause — is now a tie at 1.000.** Either
@@ -76,7 +76,7 @@ the WIDER gating set (card types a deck may simply not play), where Sonnet leads
   count is 7 for Haiku and 5 for Sonnet, and was unchanged by that scoping, so it was
   not load-bearing here. Both restriction columns key on GOLD's value, so they are recall-like and
   blind to over-labelling; an invented restriction refuses a good stand-in, which
-  is the mirror of the bug. Haiku invents three times as many.
+  is the mirror of the bug. Haiku invents 7 against Sonnet's 5.
 
 ## Full scores against the gold set
 
@@ -87,11 +87,11 @@ on the jobs it got right, did it get the limits right.
 |---|---|---|---|
 | JOB precision | **0.8** | 0.784 | 0.762 |
 | JOB recall | 0.761 | **0.834** | 0.717 |
-| rampKind | **0.957** | 0.917 | 0 |
+| rampKind | **0.913** | 0.875 | 0 |
 | restrictedTo, tribal | 1.000 | 1.000 | 0 |
 | restrictedTo, gating | 0.767 | **0.864** | 0 |
 | trigger | 0.867 | **0.942** | 0 |
-| recurrence | 0.788 | **0.857** | 0 |
+| recurrence | 0.8 | **0.868** | 0 |
 | threshold | 1.000 | 1.000 | 0 |
 | modal | 1.000 | 1.000 | 0 |
 | spurious restrictions invented | 7 | **5** | 0 |
@@ -110,7 +110,7 @@ all the value is, and Sonnet additionally finds about one job in eight that the
 rules miss.
 
 **Read the limit rows as NON-DEFAULT accuracy.** Scored naively, the text rules
-appear to get 93% of thresholds and 86% of modality right — while emitting no
+appear to get 94% of thresholds and 86% of modality right — while emitting no
 limits at all. They score by always guessing the default, and the default is
 usually right. Every limit is therefore scored on the subset where the true answer
 is NOT the default, the only cases where a limit changes a match. That is the
@@ -204,7 +204,7 @@ both.
    every sacrifice-for-mana land are the same shape. Forcing it into
    `makesTreasure` would have recreated the very false match the kinds exist to
    prevent, both being "one-time mana". Raised with 2b, ruled by d9: a fourth
-   kind, `burstMana`. Seven gold jobs carry it. (The rampKind row above is
+   kind, `burstMana`. Four gold jobs carry it. (The rampKind row above is
    accuracy over ALL paired ramp jobs; nothing committed reports per-kind accuracy,
    so there is no separate `burstMana` figure to quote.)
 
@@ -240,7 +240,7 @@ both.
   recommendation. Just under a quarter of the gating restrictions gold records are
   missed by Haiku against about a seventh by Sonnet. If false matches survive the pass, this is the
   first place to look, and re-scoring the gold subset is what tells you.
-- **Job recall is ~0.73–0.82**, so roughly a fifth of jobs are missed by every
+- **Job recall runs 0.717 to 0.834**, so roughly a fifth of jobs are missed by every
   labeller including the models. The pass improves limits, not coverage.
 - **A second pass costs the same as the first.** At 16 cents a set there is no
   reason to treat the labels as immutable; re-running a set after a rule change is
@@ -256,6 +256,24 @@ both.
   correct answer is no jobs at all (a Saga's lore counter, an artifact's charge
   counter). Without those the set cannot measure over-labelling, which is the
   failure that produced the bug.
+- **The ramp kinds agree with E1's shipped classifier**, measured rather than
+  asserted: over the 25 ramp-labelled gold cards, `honestJobs` from
+  `src/lib/swaps/honest.ts` **agrees on 22, contradicts 0, and assigns no kind to 3**.
+  The three are places the gold is deliberately WIDER than E1, each recorded in its
+  own `why` and raised with 2b: `Dora Milaje Elite`, whose only mana is a token's
+  reminder text that `usableText` strips; and `Weathered Wayfarer` and
+  `Marshals' Pathcruiser`, which fetch to HAND where E1's rule requires the
+  battlefield and 2b's written definition allows either.
+
+  **The three divergences are pinned; the 22 agreements are not.** A test runs
+  `honestJobs` on fixture text and asserts, for each of the three, that E1 still
+  assigns no kind, that the gold label is still the expected one, and that the row
+  records the divergence — so a divergence closing, or one of those labels regressing,
+  fails it by name. The 22 agreements were MEASURED once and are not mechanically
+  held: enumerating them needs a database, which makes it a probe rather than a unit
+  test, and that is a gap rather than a decision to be proud of. **A fourth divergence
+  appearing would not be caught** — the test visits the three known fixtures by name and
+  its title says so.
 - **The vocabulary is 2b's**, asserted against `src/lib/recs/roles.ts` and
   `src/lib/recs/themes.ts` by a test rather than copied. A drifted copy would give
   a score that reads fine while a dropped theme is never measured.

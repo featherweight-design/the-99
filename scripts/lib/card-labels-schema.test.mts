@@ -132,6 +132,89 @@ describe("the gold set", () => {
     expect(GOLD.filter((r) => r.jobs.length === 0).length).toBeGreaterThanOrEqual(4);
   });
 
+  // THE THREE DIVERGENCES from E1's classifier, verified by RUNNING it.
+  //
+  // An earlier version of this test checked three hard-coded names and a phrase in
+  // `why`, under a title claiming it verified E1's behaviour. It did not: a label
+  // reverting to an E1-incompatible kind, or a fourth divergence appearing, left it
+  // green. `honestJobs` needs no database -- the card, the creature-type predicate and
+  // the deck lens are all arguments -- so the real classifier runs here on literal
+  // oracle text, and the title is now true of what the test does.
+  //
+  // The text is a FIXTURE, not a catalog read: what is under test is E1's behaviour on
+  // that text, and printed oracle text does not move. Each card also has to record its
+  // divergence, because the report claims it does and that claim broke once already.
+  const DIVERGING = [
+    {
+      name: "Dora Milaje Elite",
+      expectKind: "tapsForMana",
+      typeLine: "Creature — Human Berserker",
+      // Its only mana is the token's REMINDER, which `usableText` strips.
+      oracleText: "First strike\nWhen this creature enters, if an opponent controls more lands than you, create a tapped Vibranium token. (It's an artifact with indestructible and \"{T}: Add {C}. This mana can't be spent to cast a nonartifact spell.\")",
+    },
+    {
+      name: "Weathered Wayfarer",
+      expectKind: "fetchesLand",
+      typeLine: "Creature — Human Nomad Cleric",
+      // Fetches to HAND; E1's FETCHES requires `onto the battlefield`.
+      oracleText: "{W}, {T}: Search your library for a land card, reveal it, put it into your hand, then shuffle. Activate only if an opponent controls more lands than you.",
+    },
+    {
+      name: "Marshals' Pathcruiser",
+      expectKind: "fetchesLand",
+      typeLine: "Artifact — Vehicle",
+      oracleText: "When this Vehicle enters, search your library for a basic land card, reveal it, put it into your hand, then shuffle.\nCrew 5",
+    },
+  ] as const;
+
+  // Derived from E1's TYPE ALGEBRA, not from a copy of its kind names.
+  // `SwapRole = Exclude<Role, "land" | "ramp"> | RampKind`, so anything `honestJobs`
+  // returns that is NOT a coarse role IS a ramp kind — whatever it is called. A copied
+  // list of four names would go stale the moment E1 added a fifth, and the test would
+  // stay green while a divergence had actually closed. `ROLES` is itself pinned to
+  // `src/lib/recs/roles.ts` by the first test in this file, so the derivation is held
+  // at both ends.
+  const COARSE = ROLES.filter((r) => r !== "land" && r !== "ramp");
+  const isRampKind = (role: string) => !COARSE.includes(role);
+
+  // TITLE SAYS THREE FIXTURES, because that is all this test visits.
+  //
+  // It cannot verify the report's 22/0/3 partition: doing that means running
+  // `honestJobs` over all 25 ramp-labelled gold rows, which needs their oracle text,
+  // which needs the catalog — a probe, not a unit test. So a FOURTH divergence
+  // appearing, or an unlisted row's kind changing, leaves this green while that
+  // measurement goes stale. The report says as much rather than implying coverage it
+  // does not have, and an earlier title here ("every card E1 assigns no ramp kind to")
+  // claimed exactly the completeness this does not establish.
+  it("holds the three known divergences: E1 silent, label expected, note present", async () => {
+    const { honestJobs } = await import("../../src/lib/swaps/honest");
+    const { GOLD } = await import("./card-labels-gold.mjs");
+
+    for (const fixture of DIVERGING) {
+      const jobs = honestJobs(
+        { ...fixture, layout: "normal", keywords: [] } as never,
+        () => false,
+        null,
+      );
+      const kinds = (jobs.roles as string[]).filter(isRampKind);
+      expect(kinds, `E1 now assigns ${fixture.name} a ramp kind — the divergence has closed, so the gold row and the report's 22/0/3 both need revisiting`).toEqual([]);
+
+      const row = (GOLD as { name: string; why: string; jobs: { space: string; kind: string; rampKind?: string }[] }[])
+        .find((r) => r.name === fixture.name);
+      expect(row, `${fixture.name} is not in the gold set`).toBeTruthy();
+
+      // THE LABEL ITSELF, not only its prose. An earlier version checked `why` alone,
+      // so reverting Dora to `burstMana` stayed green while the report claimed a label
+      // regression was caught — the claim was in the test's reply, not in the test.
+      const ramp = row!.jobs.find((x) => x.space === "role" && x.kind === "ramp");
+      expect(ramp, `${fixture.name} has no role:ramp job`).toBeTruthy();
+      expect(ramp!.rampKind, `${fixture.name}'s ramp kind regressed`).toBe(fixture.expectKind);
+
+      expect(row!.why, `${fixture.name} does not record that E1 assigns it no kind`)
+        .toMatch(/E1 assigns (this card )?no (ramp job|kind)/);
+    }
+  });
+
   it("covers all four ramp kinds, including the one it found", async () => {
     const { GOLD } = await import("./card-labels-gold.mjs");
     const kinds = new Set(

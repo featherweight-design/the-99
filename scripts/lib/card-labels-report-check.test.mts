@@ -21,7 +21,7 @@ const AGREE = "docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json
 /** The shapes these artifacts actually have, so the checks read them without casts. */
 type ModelScore = {
   jobs: { precision: number; recall: number; tp: number; fp: number; fn: number };
-  limits: Record<string, { informativeAccuracy: number | null }>;
+  limits: Record<string, { accuracy: number | null; informativeAccuracy: number | null }>;
   spuriousRestrictions: number;
 };
 type Score = { models: Record<string, ModelScore> };
@@ -146,6 +146,90 @@ describe("the report agrees with the artifacts it cites", () => {
       const wrong = ints.filter((n) => n !== haiku && n !== sonnet);
       expect(wrong, `"${line.trim()}" quotes ${wrong.join(", ")}; the artifact says ${haiku} and ${sonnet}`).toEqual([]);
     }
+  });
+
+  // THE ANSWER PARAGRAPH, checked BY ATTRIBUTION rather than by existence.
+  //
+  // The scan below asks only whether a percentage appears somewhere in the union of
+  // artifact values, so SWAPPING Haiku's and Sonnet's recurrence figures leaves both in
+  // the set and passes. That paragraph is the most-read claim in the report and its
+  // whole point is which model is better, so a swap there is the worst drift the guard
+  // could miss. Each pair is asserted in the order the sentence states it.
+  it("attributes the answer paragraph's percentages to the right models", () => {
+    const pct = (v: number | null) => `${(100 * (v ?? 0)).toFixed(1)}%`;
+    const s = score.models.sonnet.limits;
+    const h = score.models.haiku.limits;
+    for (const [limit, label] of [
+      ["restrictedTo(gating)", "gating restrictions"],
+      ["trigger", "triggers"],
+      ["recurrence", "recurrences"],
+    ] as const) {
+      const sonnet = pct(s[limit].informativeAccuracy);
+      const haiku = pct(h[limit].informativeAccuracy);
+      // "86.4% of gating restrictions against Haiku's 76.7%" — Sonnet first, then Haiku.
+      const wanted = new RegExp(`${sonnet.replace(".", "\\.")}\\s+of\\s+${label}\\s+against\\s+(?:Haiku's\\s+)?${haiku.replace(".", "\\.")}`);
+      expect(plain.replace(/\n/g, " "), `${label}: expected "${sonnet} of ${label} against ... ${haiku}"`)
+        .toMatch(wanted);
+    }
+  });
+
+  // PERCENTAGE-SHAPED prose figures. The scan below reads `0.NNN`, and the answer
+  // paragraph states the same accuracies as `NN.N%` -- so every figure in the report's
+  // most-read section was uncovered. PROVED uncovered: reinstating the two pre-fix
+  // percentages (`95.7% against 91.7%`, `against 78.8%`) left all tests passing.
+  //
+  // This is the fourth shape stale figures have escaped in on this report: `0.NNN`,
+  // bare integers, `N.N points`, and now `NN.N%`. The honest statement is that the
+  // guard covers the shapes it has been taught, which is what the report's own
+  // provenance note says.
+  // THE DEFAULT-INCLUSIVE accuracies, quoted as whole percentages. These are the ones
+  // the report uses to make its central point -- that a labeller emitting no limits
+  // scores well on the default-inclusive figure -- so they are the integers most worth
+  // pinning. Found live drift on its first run: the report said 93% of thresholds
+  // where the artifact records 0.939.
+  it("states the default-inclusive text-rule accuracies the artifact records", () => {
+    const t = score.models.textRules.limits;
+    for (const [limit, v] of [["thresholds", t.threshold], ["modality", t.modal]] as const) {
+      expect(v.accuracy, `${limit} has no default-inclusive accuracy`).not.toBeNull();
+      const want = Math.round(100 * (v.accuracy ?? 0));
+      expect(plain, `${limit} default-inclusive accuracy`).toContain(`${want}% of ${limit}`);
+    }
+  });
+
+  // ONE-DECIMAL percentages only, and the name says so. Integer percentages elsewhere
+  // in the report are either DERIVED (a 16% relative job gain, from 171 against 147)
+  // or HYPOTHETICAL (a second labeller disagreeing with 10% of the set) -- neither is
+  // an artifact value, and teaching this check to tell them apart from a quoted
+  // accuracy is the shape-chasing this guard has already done four times. The
+  // artifact-backed integers are pinned by the test above instead.
+  it("quotes no one-decimal percentage the artifacts do not contain", () => {
+    const known = new Set<string>();
+    for (const r of Object.values(score.models)) {
+      for (const v of [r.jobs.precision, r.jobs.recall]) known.add((100 * v).toFixed(1));
+      for (const l of Object.values(r.limits)) {
+        if (l.informativeAccuracy !== null) known.add((100 * l.informativeAccuracy).toFixed(1));
+      }
+    }
+    // Agreement rates are percentages too, and are quoted in that section.
+    for (const [f, n] of Object.entries(agree.limitDisagree)) {
+      const d = agree.limitCompared[f];
+      if (d) known.add(((100 * n) / d).toFixed(1));
+    }
+    for (const n of [agree.sameJobs, agree.sameEverything]) known.add(((100 * n) / agree.cards).toFixed(1));
+
+    // Table rows are covered cell-by-cell above. BLOCKQUOTES are skipped because that
+    // is where this report keeps its correction history, and a superseded figure is
+    // quoted there ON PURPOSE -- "that draft rested on 87.5% against 90.9%" is the
+    // record of a mistake, not a claim about the current run. The cost is that a stale
+    // figure hidden inside a blockquote would pass; the alternative is a list of
+    // exempt numbers, which rots the moment the figures move.
+    const prose = report.split("\n")
+      .filter((l) => !l.trimStart().startsWith("|") && !l.trimStart().startsWith(">"))
+      .join("\n");
+    const seen = new Set<string>();
+    for (const m of prose.matchAll(/(?<![\d.])(\d{1,2}\.\d)%/g)) seen.add(m[1]);
+    const unknown = [...seen].filter((v) => !known.has(v));
+    expect(unknown, `percentages in prose that no artifact records: ${unknown.join(", ")}`).toEqual([]);
   });
 
   it("quotes no accuracy-shaped figure the artifacts do not contain", () => {

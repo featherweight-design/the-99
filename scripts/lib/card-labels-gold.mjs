@@ -273,13 +273,13 @@ export const GOLD = [
   },
   {
     name: "Kessig Naturalist // Lord of the Ulvenwald", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: "burstMana", tr: "attacks", rec: "oneShot" })],
-    why: "Mana on ATTACK, once per combat, and it does not empty between steps. Not a tap, no Treasure — another kindless burst, and the front face is the only one the rules read.",
+    jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "attacks" })],
+    why: "Mana on ATTACK. Labelled `burstMana`/`oneShot` at first, on the reasoning that it is not a tap and makes no Treasure — WRONG against E1's ratified kinds (2026-09-26). One-shot means the source is CONSUMED making the mana: sacrifice this, an instant or sorcery, an entering trigger, a Gold token. An attack trigger is none of those and the creature survives, so this is repeatable mana from the permanent's own ability. `rampKinds` in src/lib/swaps/honest.ts returns [\"tapsForMana\"], checked directly.",
   },
   {
     name: "The Mana Rig", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: "burstMana", tr: "cast" })],
-    why: "A Powerstone is Treasure-adjacent but is NOT a Treasure (it cannot pay for spells generally). Labelling it makesTreasure would be false; kindless.",
+    jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "cast" })],
+    why: "A Powerstone is Treasure-adjacent but is NOT a Treasure (it cannot pay for spells generally), so `makesTreasure` would be false — but `burstMana` was wrong too. E1 names the Powerstone explicitly under taps for mana, because it taps every turn; the source is not consumed. `rampKinds` returns [\"tapsForMana\"], checked directly.",
   },
   {
     name: "Sorcerer Class", klass: "conditionalMana",
@@ -288,8 +288,8 @@ export const GOLD = [
   },
   {
     name: "Dora Milaje Elite", klass: "conditionalMana",
-    jobs: [j("role", "ramp", { rk: "burstMana", tr: "etb", rec: "oneShot" })],
-    why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. Kindless (Vibranium token).",
+    jobs: [j("role", "ramp", { rk: "tapsForMana", tr: "etb" })],
+    why: "Gated on an opponent controlling MORE LANDS — a condition about the board, not the card. The Vibranium token reads `{T}: Add {C}` — a repeatable tap, nothing consumed — which is the POWERSTONE shape, so `tapsForMana` rather than a burst. Labelled `burstMana`/`oneShot` at first and corrected 2026-09-26 in the same sweep as The Mana Rig; it was the sibling that sweep missed. **E1 assigns this card no ramp job at all**, because `usableText` strips a mana token's reminder text and the Vibranium ability lives only there — so this label is a judgement about what the CARD does, not a reading of the classifier, and it is one of three rows where the gold set is deliberately wider than E1. Raised with 2b.",
   },
   {
     name: "Gatewatch Beacon", klass: "conditionalMana",
@@ -558,7 +558,7 @@ export const GOLD = [
   {
     name: "Weathered Wayfarer", klass: "fetchesLand",
     jobs: [j("role", "ramp", { rk: "fetchesLand", to: "land", tr: "activated" })],
-    why: "REPEATABLE fetch, but to HAND and only while an opponent has more lands. Repeatable and conditional at once; a Treasure-versus-tap reading misses both.",
+    why: "REPEATABLE fetch, but to HAND and only while an opponent has more lands. Repeatable and conditional at once; a Treasure-versus-tap reading misses both. NOTE: E1 assigns no kind here — its `FETCHES` rule requires `onto the battlefield` — while 2b's written definition says \"onto the battlefield or into the hand\". The prose and the code disagree; this label follows the prose and the divergence is raised with 2b rather than settled here.",
   },
   {
     name: "Silver Deputy", klass: "fetchesLand",
@@ -568,7 +568,7 @@ export const GOLD = [
   {
     name: "Marshals' Pathcruiser", klass: "fetchesLand",
     jobs: [j("role", "ramp", { rk: "fetchesLand", to: "land", tr: "etb", rec: "oneShot" }), j("theme", "counters", { tr: "activated", rec: "oneShot" })],
-    why: "Fetch to HAND, which still counts as fetchesLand by 2b's definition ('onto the battlefield or into the hand').",
+    why: "Fetch to HAND, which still counts as fetchesLand by 2b's written definition ('onto the battlefield or into the hand'). NOTE, the same divergence as `Weathered Wayfarer`: E1 assigns this card no kind, because its `FETCHES` rule requires `onto the battlefield`. The prose and the code disagree; this label follows the prose and the divergence is raised with 2b rather than settled here.",
   },
   {
     name: "Bant Panorama", klass: "fetchesLand",
