@@ -114,6 +114,8 @@ describe("honestJobs (E1)", () => {
     expect([...rampKinds("{t}: add {c}{c}.", "Artifact")]).toEqual(["tapsForMana"]);
     expect([...rampKinds("add {b}{b}{b}.", "Instant")]).toEqual(["burstMana"]);
     expect([...rampKinds("{t}, sacrifice this artifact: add one mana of any color.", "Artifact")]).toEqual(["burstMana"]);
+    // Sacrificing something ELSE leaves the source to do it again: Ashnod's Altar is repeatable mana.
+    expect([...rampKinds("sacrifice a creature: add {c}{c}.", "Artifact")]).toEqual(["tapsForMana"]);
     expect([...rampKinds("search your library for a basic land card, put that card onto the battlefield tapped, then shuffle.", "Sorcery")])
       .toEqual(["fetchesLand"]);
     expect([...rampKinds("when this creature enters, add {r}{r}{r}.", "Creature")]).toEqual(["burstMana"]);

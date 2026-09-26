@@ -147,8 +147,9 @@ export function rampKinds(text: string, typeLine: string): Set<RampKind> {
     if (!ADDS.test(line)) continue;
     const colon = line.indexOf(":");
     const cost = colon >= 0 && colon < line.search(ADDS) ? line.slice(0, colon) : "";
-    // Used up doing it: a spell, a cost that sacrifices the source, or an entering trigger that fires once.
-    const consumed = oneShotSpell || /\bsacrifice\b/.test(cost) || /^when [^.,]* enters\b/.test(line);
+    // Used up doing it: a spell, a cost that sacrifices the SOURCE (its own name reads as `this`), or an
+    // entering trigger that fires once. Sacrificing something else (Ashnod's Altar) repeats (review, round 4).
+    const consumed = oneShotSpell || /\bsacrifice this\b/.test(cost) || /^when [^.,]* enters\b/.test(line);
     kinds.add(consumed ? "burstMana" : "tapsForMana");
   }
   return kinds;
