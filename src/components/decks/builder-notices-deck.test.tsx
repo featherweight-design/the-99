@@ -78,13 +78,55 @@ const ILLEGAL: DeckNotices = {
 const never = () => new Promise<DeckNotices | null>(() => {});
 const tags = () => screen.queryAllByRole("button", { name: /Open notices$/ });
 
-function shell(deck: DeckDetail) {
+function shell(deck: DeckDetail, over: { initialNotices?: DeckNotices | null; openNoticesOnArrival?: boolean } = {}) {
   return (
     <BuilderShell mix={TEST_MIX} deck={deck} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      analysisEnabled noticesEnabled />
+      analysisEnabled noticesEnabled {...over} />
   );
 }
+
+// The loader's read (Hugh's staging walk, 2026-09-26): the tag used to arrive from a read after mount,
+// popping into a header that had already drawn. It is in the FIRST render now, and the tile's `!`
+// lands with the sheet open.
+describe("BuilderShell — notices read with the page", () => {
+  beforeEach(() => {
+    peekNotices.mockReset();
+    openNotices.mockReset();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("draws the tag in the first render, from the loader's read, and asks nothing after mount", async () => {
+    peekNotices.mockImplementation(never);
+    // No act: the synchronous first render is what the reader's first paint is.
+    render(shell(DECK, { initialNotices: ILLEGAL }));
+    expect(tags().length).toBeGreaterThan(0);
+    await act(async () => {});
+    expect(peekNotices).not.toHaveBeenCalled();
+  });
+
+  it("opens the sheet in the first render on `?notices=1`, records the open, and strips the parameter", async () => {
+    openNotices.mockImplementation(async () => ({ ...ILLEGAL, violationsUnread: false }));
+    window.history.replaceState(null, "", `/decks/${DECK.id}?tab=deck&notices=1`);
+    render(shell(DECK, { initialNotices: ILLEGAL, openNoticesOnArrival: true }));
+    expect(screen.getByTestId("notices-body")).toBeTruthy();
+    await act(async () => {});
+    expect(openNotices).toHaveBeenCalledWith(DECK.id);
+    expect(window.location.search).toBe("?tab=deck");
+    expect(screen.getByTestId("notices-body")).toBeTruthy();
+  });
+
+  it("opens it on a move to a deck that asks, the shell kept across the move", async () => {
+    peekNotices.mockImplementation(async () => null);
+    openNotices.mockImplementation(async () => ILLEGAL);
+    let view!: ReturnType<typeof render>;
+    await act(async () => { view = render(shell(DECK)); });
+    expect(screen.queryByTestId("notices-body")).toBeNull();
+    await act(async () => { view.rerender(shell(OTHER, { initialNotices: ILLEGAL, openNoticesOnArrival: true })); });
+    expect(screen.getByTestId("notices-body")).toBeTruthy();
+    expect(openNotices).toHaveBeenCalledWith(OTHER.id);
+  });
+});
 
 describe("BuilderShell — notices follow the deck", () => {
   beforeEach(() => {

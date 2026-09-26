@@ -15,6 +15,7 @@ import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 import { BracketChip } from "./bracket-chip";
 import { NoticeMark, noticeSentence, noticeSpoken } from "./notice-tag";
+import { noticesHref } from "../../lib/notices/arrival";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 
@@ -546,12 +547,13 @@ export function DeckCard({
           ) : null}
           {deck.notice ? (
             // F19: the mark is lifted OVER the tile's cover link (last in the DOM, `absolute
-            // inset-0`) so its tooltip can open, as a SECOND link to the same deck rather than a
-            // forwarded click: cmd-click and middle-click then open a new tab, as the rest of the
-            // tile does. Out of the tab order and the accessibility tree, since the cover link is
-            // the tile's one target and already says the notice.
+            // inset-0`) so its tooltip can open, as a SECOND link to the same deck that opens its
+            // Notices sheet on arrival (`noticesHref`), rather than a forwarded click: cmd-click
+            // and middle-click then open a new tab, as the rest of the tile does. Out of the tab
+            // order and the accessibility tree, since the cover link is the tile's one target and
+            // already says the notice.
             <Link
-              href={`/decks/${deck.id}`}
+              href={noticesHref(deck.id)}
               tabIndex={-1}
               aria-hidden="true"
               data-notice-link

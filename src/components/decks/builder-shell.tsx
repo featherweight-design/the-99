@@ -86,6 +86,7 @@ import { headerNotice } from "./notice-tag";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { deckIdentity } from "../../lib/decks/format";
 import { openNotices, peekNotices } from "../../lib/notices/actions";
+import { NOTICES_PARAM } from "../../lib/notices/arrival";
 import type { DeckNotices } from "../../lib/notices/read";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
@@ -185,6 +186,12 @@ interface BuilderShellProps {
   /** `NOTICES_ENABLED` (`src/lib/notices/flag.ts`): whether the header draws the notice tag and the
    *  Notices sheet can open. Off, nothing of the notices is read or drawn. */
   noticesEnabled?: boolean;
+  /** The deck's notices as the page's loader read them, so the header's tag paints WITH the header
+   *  rather than popping in after a client read. Null when off, unread, or the read failed. */
+  initialNotices?: DeckNotices | null;
+  /** The URL asked for the Notices sheet (`?notices=1`, the /decks tile's `!`): it opens on arrival
+   *  and the parameter is stripped. */
+  openNoticesOnArrival?: boolean;
   /** The stored analysis's permitted range, for the header's bracket chip; null when unread. */
   storedPermits?: Bracket[] | null;
   /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
@@ -231,6 +238,8 @@ export function BuilderShell({
   initialView = "deck",
   analysisEnabled = false,
   noticesEnabled = false,
+  initialNotices = null,
+  openNoticesOnArrival = false,
   storedPermits = null,
   neverCut = false,
   deeperLooks = false,
@@ -468,12 +477,13 @@ export function BuilderShell({
       ? { permits: headerPermits, answered: chipAnswer(headerPermits, declaration.declared) }
       : null;
 
-  // DECK NOTICES (plan PR 6). Read after mount by `peekNotices`, so the page's loader pays nothing
-  // for them, and read again whenever a reading lands (a re-analysis clears data notices). Opening
-  // the sheet marks what it showed as read (`openNotices`); the tag goes quiet at once rather than
-  // on the next read.
-  const [notices, setNotices] = useState<DeckNotices | null>(null);
-  const [noticesShown, setNoticesShown] = useState<DeckNotices | null>(null);
+  // DECK NOTICES (plan PR 6). Read by the page's loader, so the tag paints with the header (a read
+  // after mount popped it in once everything else had drawn), and read again by `peekNotices`
+  // whenever a reading lands (a re-analysis clears data notices). Opening the sheet marks what it
+  // showed as read (`openNotices`); the tag goes quiet at once rather than on the next read. A URL
+  // asking for the sheet (the tile's `!`) has it open in the first paint.
+  const [notices, setNotices] = useState<DeckNotices | null>(initialNotices);
+  const [noticesShown, setNoticesShown] = useState<DeckNotices | null>(openNoticesOnArrival ? initialNotices : null);
   // Whether the foot pressed the reading now in flight or on screen: its busy and failed states are
   // DERIVED from the profile's own state while that holds, so a failure from the tab's Analyze is the
   // tab's to say. Cleared when the sheet closes.
@@ -483,13 +493,19 @@ export function BuilderShell({
   const [noticesDeck, setNoticesDeck] = useState(deck.id);
   if (noticesDeck !== deck.id) {
     setNoticesDeck(deck.id);
-    setNotices(null);
-    setNoticesShown(null);
+    setNotices(initialNotices);
+    setNoticesShown(openNoticesOnArrival ? initialNotices : null);
     setFootPressed(false);
   }
   const readingAt = reading?.analyzedAt ?? null;
+  // The deck the peek below last ran for: its first run for a deck the loader already read is
+  // skipped, since that read is what the tag is drawing.
+  const peekedDeck = useRef<string | null>(null);
   useEffect(() => {
     if (!analysisEnabled || !noticesEnabled) return;
+    const firstForDeck = peekedDeck.current !== deck.id;
+    peekedDeck.current = deck.id;
+    if (firstForDeck && initialNotices) return;
     let live = true;
     // An open sheet takes the new read too: after the foot's Re-analyze the entries the new reading
     // absorbed leave the list at once, rather than on the next open.
@@ -499,7 +515,7 @@ export function BuilderShell({
       setNoticesShown((shown) => (shown && n ? n : shown));
     }).catch(() => {});
     return () => { live = false; };
-  }, [analysisEnabled, noticesEnabled, deck.id, readingAt, listKey]);
+  }, [analysisEnabled, noticesEnabled, deck.id, readingAt, listKey, initialNotices]);
   // Which deck's sheet is open NOW (null: none), readable from the reply's continuation:
   // `openNotices` answers after the sheet draws, and a reply landing after a close, or after a move
   // to another deck, must not draw the sheet or the tag again.
@@ -509,6 +525,24 @@ export function BuilderShell({
     deckNow.current = deck.id;
     noticesOpenFor.current = null;
   }, [deck.id]);
+  // Arriving with `?notices=1`: the sheet is already drawn from the loader's read (state above), so
+  // this records the open, as a press does, and strips the parameter so a refresh or a back step
+  // lands on the deck alone. After the reset above, which clears `noticesOpenFor` for a new deck.
+  useEffect(() => {
+    if (!openNoticesOnArrival) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has(NOTICES_PARAM)) {
+      url.searchParams.delete(NOTICES_PARAM);
+      window.history.replaceState(window.history.state, "", url);
+    }
+    const id = deck.id;
+    noticesOpenFor.current = id;
+    void openNotices(id).then((n) => {
+      if (!n || deckNow.current !== id) return;
+      setNotices(n);
+      if (noticesOpenFor.current === id) setNoticesShown(n);
+    }).catch(() => {});
+  }, [deck.id, openNoticesOnArrival]);
   const openNoticesSheet = () => {
     const id = deck.id;
     noticesOpenFor.current = id;

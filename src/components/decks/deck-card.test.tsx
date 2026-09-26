@@ -754,11 +754,13 @@ describe("DeckCard — the notice mark (tile marker addendum)", () => {
   });
 
   // F19: a second link over the cover link, not a forwarded click, out of the tab order and the tree.
-  it("lifts the mark as a second link to the deck, out of the tab order and the accessibility tree", () => {
+  it("lifts the mark as a second link, to the deck's Notices sheet, out of the tab order and the accessibility tree", () => {
     const { container } = card({ notice: { kind: "unread", count: 1 } });
     const link = container.querySelector<HTMLAnchorElement>("[data-notice-link]")!;
     expect(link.tagName).toBe("A");
-    expect(link.getAttribute("href")).toBe(`/decks/${deck({}).id}`);
+    // The mark asks for the sheet (Hugh's staging walk, 2026-09-26): landing on the deck with no word
+    // of the notices left the reader hunting for what the mark was pointing at.
+    expect(link.getAttribute("href")).toBe(`/decks/${deck({}).id}?notices=1`);
     expect(link.getAttribute("tabindex")).toBe("-1");
     expect(link.getAttribute("aria-hidden")).toBe("true");
     expect(link.className).toMatch(/\brelative\b/);
