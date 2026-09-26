@@ -909,6 +909,14 @@ not positions in one flat 1–45 sequence.
 31. **The phone tab row relies on `overflow: hidden` with no scroll.** Four labels at 14px with
     an 18px gap plus one count inside 362px of screen; the fourth tab is the active one and is
     drawn intact, but nothing states what happens to a longer tab set or to the clipped edge.
+    **Answered as an ENGINEERING CALL on 2026-09-25** (Hugh's staging walk, note d; the
+    orchestrator ruled it acceptable, pending Hugh's look): the shipped row now carries FIVE tabs
+    (`Your deck`, `Analysis`, `Consider`, `Games`, `Versions`), and at 390 on a deck with versions
+    `Your deck 99` broke onto a second line (51px against 44). A tab label never breaks now
+    (`white-space: nowrap`, `flex: none`), and where the tabs are wider than the phone the ROW
+    scrolls sideways (`overflow-x: auto`, scrollbar hidden) while the page never does. The last
+    tab is left partly cut at the edge as the cue that the row scrolls: 22px of it at 390 on the
+    staging set. `probe:analysis-load-order` reads both halves.
 32. **Rail row padding differs by width without a rule.** `12px 14px` desktop (matching the
     Component notes) against `11px 12px` phone, while the phone row also carries
     `min-height: 64px` — the two adjustments are not related to each other in any stated way.

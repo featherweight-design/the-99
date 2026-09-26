@@ -113,15 +113,19 @@ export function AnalysisPanel({
     ? legality.built !== legality.size ? legality : null
     : state.kind === "illegal" ? state : null;
   const blocked = short ? deckAnalysisCopy.panel.illegal(short.built, short.size) : null;
-  if (opening !== "off") {
-    return (
+  // OPENING: the loader, with the body MOUNTED BEHIND IT and hidden. Suggested changes reads its
+  // own state on mount, and the shell holds the loader until that read has settled too (Hugh's
+  // staging walk, 2026-09-25: nothing may pop in once the tab has painted). One tree in both
+  // phases, so revealing it keeps every read that already landed rather than remounting.
+  const gated = opening !== "off";
+  return (
+    <>
+    {gated ? (
       <div className="px-[16px] pt-[18px] pb-[32px] md:px-[30px] md:pt-6 md:pb-10">
         <OpeningLoader drawn={opening === "loader"} />
       </div>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-[22px] px-[16px] pt-[18px] pb-[32px] md:gap-[28px] md:px-[30px] md:pt-6 md:pb-10">
+    ) : null}
+    <div hidden={gated} className="flex flex-col gap-[22px] px-[16px] pt-[18px] pb-[32px] md:gap-[28px] md:px-[30px] md:pt-6 md:pb-10">
       {held ? (
         <>
           {/* THE BANNER, the one place staleness is said (2i, 2d), over a reading that stays. Only
@@ -171,6 +175,7 @@ export function AnalysisPanel({
       ) : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
+    </>
   );
 }
 

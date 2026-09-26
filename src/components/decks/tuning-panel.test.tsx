@@ -70,6 +70,24 @@ async function press(name: string) {
 }
 
 describe("TuningPanel", () => {
+  // The tab's opening holds its loader until this read settles, so Suggested changes and its
+  // credit line never arrive after the rest of the tab: told once the read answers, and once it
+  // fails, since a failure must not hold the loader either.
+  it("says when its first read has settled, answered or failed", async () => {
+    const answered = vi.fn();
+    await act(async () => {
+      render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} onSettled={answered} />);
+    });
+    expect(answered).toHaveBeenCalledTimes(1);
+    const failed = vi.fn();
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d2" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh], { read: vi.fn(async () => { throw new Error("down"); }) })} onSettled={failed} />,
+      );
+    });
+    expect(failed).toHaveBeenCalledTimes(1);
+  });
+
   it("opens at zero games rather than gating, and says the list alone will be read", async () => {
     await draw(deps([fresh]));
     expect(screen.getByText(copy.noGamesLead)).toBeInTheDocument();

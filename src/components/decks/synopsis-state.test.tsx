@@ -22,6 +22,68 @@ beforeEach(() => {
 });
 
 describe("useDeckSynopsis", () => {
+  // The tab's opening waits on this: settled once the first read answers OR fails, so a failed
+  // overview read never holds the loader up.
+  it("is settled once its first read answers, and once one fails", async () => {
+    const ok = renderHook(() => useDeckSynopsis("d1", true, "k"));
+    expect(ok.result.current.settled).toBe(false);
+    await waitFor(() => expect(ok.result.current.settled).toBe(true));
+    ok.unmount();
+    actions.fetchSynopsis.mockRejectedValueOnce(new Error("down"));
+    const failed = renderHook(() => useDeckSynopsis("d2", true, "k"));
+    await waitFor(() => expect(failed.result.current.settled).toBe(true));
+    expect(failed.result.current.view.kind).toBe("idle");
+  });
+
+  it("is not settled on a new visit by the last visit's answer, until the new read answers", async () => {
+    let answer!: (v: unknown) => void;
+    const { result, rerender } = renderHook(({ active }) => useDeckSynopsis("d4", active, "k"), { initialProps: { active: true } });
+    await waitFor(() => expect(result.current.settled).toBe(true));
+    rerender({ active: false });
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { answer = r; }));
+    rerender({ active: true });
+    expect(result.current.view.kind).toBe("ready");
+    expect(result.current.settled).toBe(false);
+    await act(async () => answer(synopsisState()));
+    expect(result.current.settled).toBe(true);
+  });
+
+  // A press's re-read supersedes the visit's own read; if that re-read then fails, the superseded
+  // read will never settle, so the re-read settles for it, or the tab's loader would hold for good.
+  it("is settled by a press's re-read that superseded the visit's read, even when it fails", async () => {
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise(() => {}));
+    const { result } = renderHook(() => useDeckSynopsis("d6", true, "k"));
+    expect(result.current.settled).toBe(false);
+    actions.fetchSynopsis.mockRejectedValueOnce(new Error("down"));
+    await act(async () => { await result.current.write(); });
+    expect(result.current.settled).toBe(true);
+  });
+
+  it("is not settled by a key the list returns to, until that key's new read answers", async () => {
+    let answer!: (v: unknown) => void;
+    const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d5", true, key), { initialProps: { key: "a" } });
+    await waitFor(() => expect(result.current.settled).toBe(true));
+    rerender({ key: "b" });
+    await waitFor(() => expect(result.current.settled).toBe(true));
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { answer = r; }));
+    rerender({ key: "a" });
+    expect(result.current.settled).toBe(false);
+    await act(async () => answer(synopsisState()));
+    expect(result.current.settled).toBe(true);
+  });
+
+  it("is not settled by an answer for an older key, until the key on screen answers", async () => {
+    let answer!: (v: unknown) => void;
+    const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d3", true, key), { initialProps: { key: "a" } });
+    await waitFor(() => expect(result.current.settled).toBe(true));
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise((r) => { answer = r; }));
+    rerender({ key: "b" });
+    expect(result.current.view.kind).toBe("ready");
+    expect(result.current.settled).toBe(false);
+    await act(async () => answer(synopsisState()));
+    expect(result.current.settled).toBe(true);
+  });
+
   it("reads nothing while the tab is closed", () => {
     const { result } = renderHook(() => useDeckSynopsis("d1", false, "k"));
     expect(actions.fetchSynopsis).not.toHaveBeenCalled();

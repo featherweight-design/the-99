@@ -30,6 +30,22 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
   // decks, and the previous deck's overview must never draw on the next one's tab.
   const [answer, setAnswer] = useState<{ state: SynopsisState; key: string; deckId: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // SETTLED IS A FACT ABOUT THE LATEST READ, never about an answer on hand. Every read the effect
+  // below starts (the tab opening, the key moving, the deck changing) is numbered here, during
+  // render, and `settled` holds only once THAT read has answered or failed: an answer kept from a
+  // last visit, or from a key the list has since returned to, may differ from what the new read
+  // says, and until it says it the credit notes are unpriced. A failure settles as an answer
+  // would, so a failed read never holds the tab's loader up.
+  const [asked, setAsked] = useState({ active, deckId, refreshKey, n: 0 });
+  if (asked.active !== active || asked.deckId !== deckId || asked.refreshKey !== refreshKey) {
+    setAsked({ active, deckId, refreshKey, n: asked.n + 1 });
+  }
+  const [answeredRead, setAnsweredRead] = useState(-1);
+  // The latest read's number, readable from a press's continuation.
+  const latestRead = useRef(asked.n);
+  useEffect(() => {
+    latestRead.current = asked.n;
+  }, [asked.n]);
   const generation = useRef(0);
 
   // The key a read was asked under, and the deck on screen, readable from a continuation.
@@ -48,10 +64,14 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const key = askedKey.current;
     // A failed read keeps the answer on screen; the next key or press asks again.
     const got = await fetchSynopsis(deckId).catch(() => null);
-    if (mine !== generation.current || !got) return;
-    if ("synopsis" in got) setAnswer({ state: got, key, deckId });
+    if (mine !== generation.current) return;
+    if (got && "synopsis" in got) setAnswer({ state: got, key, deckId });
+    // It superseded any read still out, so it answers for the latest one as well, and does so on a
+    // failure too: a superseded read never settles, so leaving this unsettled would hold the tab.
+    setAnsweredRead(latestRead.current);
   }, [deckId]);
 
+  const readNumber = asked.n;
   useEffect(() => {
     if (!active) return;
     // The read settles in a continuation rather than through `load`, so no state is set
@@ -59,12 +79,16 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const mine = ++generation.current;
     fetchSynopsis(deckId).then(
       (got) => {
-        if (mine === generation.current && "synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
+        if (mine !== generation.current) return;
+        if ("synopsis" in got) setAnswer({ state: got, key: refreshKey, deckId });
+        setAnsweredRead(readNumber);
       },
       // A failed read keeps what is on screen, never a stale `current`; the next key asks again.
-      () => {},
+      () => {
+        if (mine === generation.current) setAnsweredRead(readNumber);
+      },
     );
-  }, [active, refreshKey, deckId]);
+  }, [active, refreshKey, deckId, readNumber]);
 
   const press = useCallback(async (run: () => Promise<WriteResult | { kind: string }>) => {
     setBusy(true);
@@ -87,6 +111,8 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     : { kind: "idle" };
   return {
     view,
+    /** The latest read (this visit, this key, this deck) has answered or failed. */
+    settled: answeredRead === asked.n,
     write,
     retry,
   };
