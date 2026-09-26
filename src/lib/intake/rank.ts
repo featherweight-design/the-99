@@ -234,12 +234,14 @@ export function rankCandidates(
 
 /** A row's theme figures: every theme asked, or, as any of, the ones it backs with the best marked. */
 function themeFits(c: Candidate, a: Answers, tribes: Tribes): Ranked["themeFits"] {
-  const fits = a.themes.map((slug) => {
+  const fits = a.themes.flatMap((slug) => {
     const b = backing(c, slug, tribes);
-    return { slug, share: b?.share ?? 0, typeLine: b?.typeLine ?? false, backed: b !== null };
+    // As all of every theme is a figure, 0 where unbacked; as any of only a backed one is.
+    if (b === null && isAnyOf(a)) return [];
+    return [{ slug, share: b?.share ?? 0, typeLine: b?.typeLine ?? false }];
   });
-  if (!isAnyOf(a)) return fits.map(({ backed: _, ...f }) => f);
-  const backed = fits.filter((f) => f.backed).map(({ backed: _, ...f }) => f);
+  if (!isAnyOf(a)) return fits;
+  const backed = fits;
   if (backed.length === 0) return [];
   // The group's value is its highest figure, a measured one ahead of a type-line one as in the order.
   const best = backed.reduce((x, y) => (Number(x.typeLine) - Number(y.typeLine) || y.share - x.share) > 0 ? y : x);
