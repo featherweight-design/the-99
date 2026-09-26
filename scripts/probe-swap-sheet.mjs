@@ -26,7 +26,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
-import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 neonConfig.webSocketConstructor = ws;
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
@@ -110,8 +110,7 @@ async function signIn(page) {
   // Clear the About gate: below the current version `proxy.ts` redirects every route to /about.
   // What was there is captured first and put back in the `finally`.
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
-  const prior = await pool.query(`select about_version_seen from user_prefs where user_id = $1`, [userId]);
-  aboutPrior = { userId, existed: prior.rowCount > 0, value: prior.rows[0]?.about_version_seen ?? null };
+  aboutPrior = await captureAboutSeen(userId);
   await pool.query(
     `insert into user_prefs (user_id, about_version_seen) values ($1, $2)
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
@@ -491,14 +490,7 @@ try {
   }
   try {
     if (aboutPrior) {
-      if (aboutPrior.existed) {
-        await pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`, [
-          aboutPrior.userId,
-          aboutPrior.value,
-        ]);
-      } else {
-        await pool.query(`delete from user_prefs where user_id = $1`, [aboutPrior.userId]);
-      }
+      await restoreAboutSeen(aboutPrior);
       console.log("About row restored");
     }
   } catch (error) {

@@ -1465,7 +1465,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a switch is seen by its id, so a switch left on in the server a probe runs against would still
   put a card over the page. The helper is the one place a probe marks those seen — it raises the
   version floor (never lowering it) and adds every catalog id to `about_seen_ids`, all of them because a probe cannot read the server's switches,
-  and does not put them back, which says no more than the version write already says. That write
+  and does not put them back, which says no more than the version write already says. A probe
+  that puts the About columns back captures them with `captureAboutSeen` before its first write
+  and restores it with `restoreAboutSeen`, which writes both columns (or deletes a row that was not
+  there). `probe:help-me-choose-doors` is the one exception, and a sound one: it snapshots the
+  WHOLE `user_prefs` row and restores it in its own transaction, which covers both. A hand-written restore of `about_version_seen` alone left the ids this helper added on the
+  fixture account, and the test fails any probe that sets the version to a stated value without the ids, as an update or an upsert. That write
   is the guarantee. The cookie it also sets is only the proxy's fast path while no switch is on:
   the proxy keys its cookie to the switched entries it draws, which a probe cannot know. It
   presses Later if a card is already up. `about-clear.test.mts` sweeps every

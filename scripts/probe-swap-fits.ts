@@ -33,7 +33,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 
-import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
@@ -54,7 +54,7 @@ const WIDTHS = [
 ];
 
 let failures = 0;
-let aboutPrior: { userId: string; existed: boolean; value: number | null } | null = null;
+let aboutPrior: Awaited<ReturnType<typeof captureAboutSeen>> | null = null;
 function report(label: string, ok: boolean, detail: string) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   if (!ok) failures += 1;
@@ -90,8 +90,7 @@ async function signIn(page: Page): Promise<string> {
   const userId = await page.evaluate(() => (window as unknown as { Clerk: { user?: { id: string } } }).Clerk.user?.id ?? null);
   if (!userId) throw new Error("Signed in but Clerk reports no user.");
   const { version } = JSON.parse(readFileSync(ABOUT_VERSION_FILE, "utf8"));
-  const prior = await pool.query(`select about_version_seen from user_prefs where user_id = $1`, [userId]);
-  aboutPrior = { userId, existed: (prior.rowCount ?? 0) > 0, value: prior.rows[0]?.about_version_seen ?? null };
+  aboutPrior = await captureAboutSeen(userId);
   await pool.query(
     `insert into user_prefs (user_id, about_version_seen) values ($1, $2)
        on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, $2)`,
@@ -233,12 +232,7 @@ void (async () => {
     console.log(` FAIL  the run threw — ${(e as Error).message}`);
   } finally {
     for (const id of deckIds) await pool.query(`delete from decks where id = $1`, [id]).catch(() => { failures += 1; });
-    if (aboutPrior) {
-      const a = aboutPrior as { userId: string; existed: boolean; value: number | null };
-      await (a.existed
-        ? pool.query(`update user_prefs set about_version_seen = $2 where user_id = $1`, [a.userId, a.value])
-        : pool.query(`delete from user_prefs where user_id = $1`, [a.userId])).catch(() => { failures += 1; });
-    }
+    if (aboutPrior) await restoreAboutSeen(aboutPrior).catch(() => { failures += 1; });
     await browser?.close();
     await pool.end();
   }
