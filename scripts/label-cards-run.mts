@@ -18,7 +18,7 @@ import { neon } from "@neondatabase/serverless";
 
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { clearIntent, ledgerTotal, readLedger, unreconciled, writeIntent, writeReservation } from "./lib/card-labels-ledger.mjs";
-import { ALL_MODELS, costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
+import { costOf, MODELS, PRICING } from "./lib/card-labels-pricing.mjs";
 import { buildRequest, MAX_TOKENS_PER_BATCH, renderBody, SYSTEM } from "./lib/card-labels-prompt.mjs";
 
 const CAP_USD = 5;
@@ -26,16 +26,6 @@ const CARDS_PER_BATCH = 12;   // ~12 cards keeps a reply inside max_tokens with 
 const RANDOM_N = Number(process.env.RANDOM_N ?? 400);
 
 const dryRun = process.argv.includes("--dry-run");
-
-// `LABEL_MODELS` runs a SUBSET, so a single model can be added to an existing
-// comparison without paying for the others again. Names are the keys of MODELS.
-const only = (process.env.LABEL_MODELS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-const chosen = only.length
-  ? Object.fromEntries(Object.entries(ALL_MODELS).filter(([k]) => only.includes(k)))
-  : MODELS;
-if (only.length && Object.keys(chosen).length !== only.length) {
-  throw new Error(`LABEL_MODELS names a model that is not in ALL_MODELS: ${only.join(",")}`);
-}
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -107,7 +97,7 @@ const estOutWorst = batches.length * MAX_TOKENS_PER_BATCH;
 
 let estTotal = 0, worstTotal = 0;
 const lines = [];
-for (const m of Object.keys(chosen) as (keyof typeof MODELS)[]) {
+for (const m of /** @type {const} */ (Object.keys(MODELS)) as (keyof typeof MODELS)[]) {
   // A model that does not cache pays full input for the instruction block on
   // EVERY batch; there is no cache read to discount.
   // `estIn` ALREADY holds one system block for every non-read batch, so subtracting
@@ -182,7 +172,7 @@ mkdirSync("out", { recursive: true });
 // submissions leaves the hole it exists to close: a process that dies between
 // haiku's `create` and sonnet's has spent Haiku's money and recorded nothing, so
 // the next invocation reads $0 and authorises the whole run again.
-const perModelWorst = Object.fromEntries((Object.keys(chosen) as (keyof typeof MODELS)[]).map((m) => [m,
+const perModelWorst = Object.fromEntries((Object.keys(MODELS) as (keyof typeof MODELS)[]).map((m) => [m,
   costOf(m, PRICING[m].caches
     ? { i: estIn, cw: sysTokens, cr: estCacheRead, o: estOutWorst }
     : { i: estIn + estCacheRead, o: estOutWorst })]));
@@ -195,7 +185,7 @@ const submitted: Record<string, string> = {};
 // cap over-charged rather than under-charged, and there is no second key to orphan.
 writeReservation(runId, worstTotal);
 console.log(`reserved $${worstTotal.toFixed(4)} for ${runId}`);
-for (const [key, model] of Object.entries(chosen) as [keyof typeof MODELS, string][]) {
+for (const [key, model] of Object.entries(MODELS) as [keyof typeof MODELS, string][]) {
   const requests = batches.map((cards, i) => buildRequest(`${key}-${i}`, model, cards));
   // The intent goes down BEFORE the call. A process exit between `create` returning
   // and the id reaching disk would otherwise lose a batch the provider still bills:
