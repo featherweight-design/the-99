@@ -55,8 +55,9 @@ Until D1 is drawn, the build ships #1059's rule and those rows stay out.
    than two of {names} at once" is true today only by measure: one staging commander backs two of
    Hugh's four tribes, and none backs three. The build computes the most themes any candidate backs
    at once, by the same `backing` rule #1059 ranks with (type line included), and states that
-   number, or drops the reason line when the count is 1. The wording goes to `/copy-review`. It also
-   says "decks", which a type-line match makes loose.
+   number, or drops the reason line when the count is 1. The placeholder `widenWhy(names)` takes no
+   count and always says "two", so the build's copy key takes the count as a second argument. The
+   wording goes to `/copy-review`. It also says "decks", which a type-line match makes loose.
 2. **Sets share one set-matching query with filter-chassis `Printed in`.** That dimension is
    decision 9's "any printing", cut from the chassis's first round and not yet built. The build
    adds one predicate module (`printedIn(setCodes)`: a commander has a printing whose `set_code`
