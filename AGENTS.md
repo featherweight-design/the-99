@@ -1798,6 +1798,37 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `layout` dropped where the land-capable count reads it. Point it at `local-dev` or a scratch
   Neon branch, **never production**.
 
+- `pnpm measure:load` times the pages and the card-details press in a real browser at 1300x900
+  and 390x844. It is the before/after tool every performance PR puts in its body (the performance
+  lane, from `plans/2026-09-27-performance-research.md`). Per route (Home, `/decks`, a deck,
+  `/collection`, `/commanders`, `/discover`) it reads cold, warm and client-navigation loads:
+  TTFB, the first frame `<main>` holds content rather than the route's `LoadingScreen`, when the
+  server finished streaming, and the first card image. It also reads the card-details press on the
+  deck page, to the dialog and to its art. The median of `MEASURE_RUNS` runs (default 3), printed
+  as a Markdown table.
+
+  **Point it at `next start`, never `next dev`**, whose compile times swamp every figure. The
+  server runs on a scratch Neon branch holding a `pull:staging` copy. The harness signs in as
+  `E2E_AUDIT_USER_EMAIL` and marks the About entries seen, and refuses production and staging for
+  that write, by `neon.branch_id`. Two optional readings:
+
+  - `MEASURE_SERVER_LOG`: the stdout of a server started with `PERF_TIMING=1`. The `[perf]` lines
+    `src/lib/perf/timing.ts` logs after each request are attached to the route they timed, so a
+    before/after says WHICH read moved. Off, `perfRoute` hands every request one frozen no-op
+    tracker, and the test pins that. The line carries route patterns, labels and milliseconds, and
+    never an id or a name.
+  - `MEASURE_DB_URL` with `MEASURE_DB_BRANCH`: database execution time per warm load, from
+    `pg_stat_statements`, reset before each load. The reset is a write, and the figure means
+    nothing on a database others are using, so it runs only when the URL reports the named branch,
+    and never on production or staging.
+
+  **Two traps it was built around.** Playwright turns the HTTP cache OFF for a context carrying a
+  route, and Clerk's testing token is one. So the harness signs in once, carries the session into
+  contexts with no route, and only then is "warm" warm. The first version read 0 cached scripts on
+  every warm load. And React's `cache` is not request-scoped inside a server action: the first
+  timing module keyed its spans on it, and the card-details action logged its total with none of
+  its spans. So `perfRoute` returns an explicit tracker instead.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.

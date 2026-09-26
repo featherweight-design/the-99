@@ -4,6 +4,7 @@ import { sanitizeDeckScope } from "../lib/combos/deck-scope-param";
 import type { BrowseCard } from "../lib/collection/browse";
 import { loadCardDetail } from "../lib/collection/card-detail";
 import { requireUserId } from "../lib/auth";
+import { perfRoute } from "../lib/perf/timing";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,7 +31,9 @@ export async function getCardDetail(
    */
   deckOracleIds?: readonly string[],
 ): Promise<BrowseCard | null> {
-  const userId = await requireUserId();
+  // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
+  const perf = perfRoute("getCardDetail");
+  const userId = await perf.timed("auth", () => requireUserId());
   // Server actions are reachable via crafted requests; a non-uuid would reach Postgres as a
   // cast error rather than a miss.
   if (!UUID.test(oracleId)) return null;
@@ -38,5 +41,5 @@ export async function getCardDetail(
   // `sanitizeDeckScope`, which is where the rule lives so a test can call it rather than
   // restate it.
   const scoped = sanitizeDeckScope(deckOracleIds);
-  return loadCardDetail(userId, oracleId, scoped);
+  return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped));
 }

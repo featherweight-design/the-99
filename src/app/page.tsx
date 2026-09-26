@@ -1,3 +1,4 @@
+import { perfRoute } from "../lib/perf/timing";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { Crowned99 } from "../components/marks";
@@ -92,8 +93,10 @@ export default async function HomePage() {
   // before reading a collection is not a new player, and that state is
   // reachable by design: the checklist's own escape hatch links to
   // /decks/import. Showing them the three steps would hide the deck they have.
+  // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
+  const perf = perfRoute("/");
   const [stats, decks] = await Promise.all([
-    getCollectionStats(userId),
+    perf.timed("collectionStats", () => getCollectionStats(userId)),
     // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
     // the order it asks for: the resume block re-sorts by `byTouched` and
     // nothing else on the page renders this list. `lastPlayed` — what Home took
@@ -110,23 +113,23 @@ export default async function HomePage() {
     // about the same deck.
     // Commander art on, for the same reason proxy stats are: these rows are
     // RENDERED here, and the resume row's portrait is the commander's own art.
-    listDecksWithStats(userId, "name", {
+    perf.timed("listDecks", () => listDecksWithStats(userId, "name", {
       includeProxyStats: true,
       includeDeckState: true,
       includeCommanderArt: true,
       // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
       // `/decks` reads it under. 0.83ms on staging.
       includeBracket: analysisTabEnabled(),
-    }),
+    })),
   ]);
   if (stats.uniqueCards === 0 && decks.length === 0) {
     return <FirstRunChecklist />;
   }
 
   const [lastUpdated, ranked, shopping] = await Promise.all([
-    getCollectionLastUpdated(userId),
-    getRankedList(userId),
-    loadShoppingRollup(userId),
+    perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
+    perf.timed("rankedList", () => getRankedList(userId)),
+    perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
   ]);
 
   // ONE clock for the whole render. The rotation's day boundary and the
@@ -140,7 +143,7 @@ export default async function HomePage() {
   // page draws two of its rows on the desktop hero and the rest never reach a screen,
   // and the lookup is a join over `collection_items × printings × sets`.
   const slice = readySlice(ranked.items, { userId, now });
-  const ready = { ...slice, shown: await withOwnedCardArt(userId, slice.shown) };
+  const ready = { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) };
 
   // One availability read between the in-use clause and the Commitments card.
   // Fail soft, the same way src/app/commanders/page.tsx does: losing
@@ -151,9 +154,9 @@ export default async function HomePage() {
     const [{ collection }, availability] = await Promise.all([
       // React-cached, so on the branch where getRankedList recomputed this is a
       // cache hit rather than a second query.
-      loadCollectionPool(userId),
+      perf.timed("collectionPool", () => loadCollectionPool(userId)),
       // No options: the whole-user vantage, as /collection already takes.
-      loadAvailability(userId),
+      perf.timed("availability", () => loadAvailability(userId)),
     ]);
     // The shown pair, not the whole ranked list — only a rendered hero prints
     // the clause.

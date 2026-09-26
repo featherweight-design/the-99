@@ -1,5 +1,6 @@
 // /decks — the deck list. This authenticates and loads; `DecksView` owns the
 // filters, the order and the URL that carries both.
+import { perfRoute } from "../../lib/perf/timing";
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
@@ -36,13 +37,15 @@ export default async function DecksPage({
   // The tile's bracket chip reads each deck's last analyzed bracket. Off with the Analysis tab's
   // flag, because a chip that lands on a tab nobody can open is a promise the page cannot keep.
   const includeBracket = analysisTabEnabled();
+  // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
+  const perf = perfRoute("/decks");
   const [decks, shopping, folders] = await Promise.all([
     // The sort has no default in the reader, so no caller's order can move
     // under it. The server hands back this order and the client re-sorts from
     // there without a request.
     // This is the one caller that draws the in-use-elsewhere clause, so it is
     // the one that pays for the availability read behind it.
-    listDecksWithStats(userId, DEFAULT_DECK_SORT, {
+    perf.timed("listDecks", () => listDecksWithStats(userId, DEFAULT_DECK_SORT, {
       includeInUseElsewhere: true,
       // This is the surface that draws `N proxies` and the covered status pill.
       includeProxyStats: true,
@@ -56,14 +59,14 @@ export default async function DecksPage({
       includeBracket,
       // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
       includeNotice: includeBracket && noticesEnabled(),
-    }),
+    })),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.
-    loadShoppingRollup(userId),
+    perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
     // The shelf line's own read, and it cannot be derived from the decks above:
     // a folder holding no decks has no deck row to be named by, and landing on
     // that empty shelf is the whole loop the create flow teaches.
-    listFolders(userId),
+    perf.timed("folders", () => listFolders(userId)),
   ]);
 
   // Only the zero state prints these two, and `getRankedList` recomputes the
