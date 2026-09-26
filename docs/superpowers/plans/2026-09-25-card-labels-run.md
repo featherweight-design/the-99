@@ -262,8 +262,19 @@ call to produce and nothing to move.
   `pull:staging` learned: "not the source" is not the same as "safe to write to".
 - **Installs a row only when the hash the source stored equals the hash the TARGET'S
   own inputs produce.** A label describing an oracle text the target no longer holds is
-  never written; those rows keep their absence and are picked up by the next
-  `db:build:labels` against that target, which is the run to do afterwards.
+  never written; those rows keep their absence.
+
+  **A mismatch is REPORTED, with its count, and nothing is queued.** This bullet used to
+  end "and are picked up by the next `db:build:labels` against that target, which is the
+  run to do afterwards" — which would run the MODEL against production, the exact thing
+  pay-once exists to prevent, for labels that already exist on the source and are merely
+  describing a different catalog state. The copy says how many differ and lets a human
+  decide; the cheap fix is almost always to re-run the catalog refresh so the two agree,
+  not to buy the labels a second time.
+
+  **A card the target's catalog does not hold at all is skipped silently**, not counted as
+  a mismatch: there is nothing for the label to describe, and a source generated against a
+  newer catalog always carries rows the target has never heard of.
 - Carries `model` and `prompt_version` across unchanged, so a copied row says which
   model produced it and a later audit can tell copied rows from generated ones.
 - Never deletes. A card the source has not labelled leaves the target's row alone.

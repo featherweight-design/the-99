@@ -1,0 +1,78 @@
+name: Card labels
+
+# Labels new or changed cards' jobs and their limits, weekly.
+#
+# SHIPS DISABLED. `LABELS_REFRESH_ENABLED` must be set to 'true' for the schedule to fire, and
+# that flip is Hugh's: this is the first job in the repository that SPENDS MONEY on a cron, and
+# he approved a one-time backfill rather than a standing weekly charge. Until he switches it on,
+# only a manual dispatch runs.
+#
+# STAGING ONLY, with no matrix. Every other refresh job here fans out over both catalog
+# environments; this one must not, because a label costs a model call to produce and nothing to
+# move — so `db:copy:labels` carries the result to production and the fan-out would double the
+# bill for an identical outcome. Hugh's pay-once ruling, 2026-09-26. The exception is about money
+# rather than correctness, which is why it reads as one beside its siblings.
+on:
+  schedule:
+    # 14:00 UTC Monday — AFTER `Catalog refresh` at 09:00 and `Combo refresh` at 13:00. A card the
+    # catalog has not ingested cannot be labelled, so the catalog moves first; an hour past the
+    # combo job keeps two long ingests off the same window rather than for any dependency.
+    - cron: '0 14 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    # Kill switch for the cron; a manual dispatch always runs.
+    if: vars.LABELS_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    concurrency:
+      # ONE group for the whole workflow, not per target, because there is no target: staging is
+      # the only database this writes. The group exists so two runs cannot put two batch streams
+      # on the API or race the same staging table. Never cancel in progress — an abort between
+      # submitting a batch and recording its intent is the one window that costs money twice.
+      group: card-labels
+      cancel-in-progress: false
+    # Batches are asynchronous. A run submits, then later runs collect: this is the submit-and-poll
+    # window, not the whole job's life.
+    timeout-minutes: 45
+    environment: catalog-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Label new and changed cards
+        # `shell: bash` expands to `bash -eo pipefail`. WITHOUT IT the script's exit code is
+        # swallowed by `tee`, and the job reports green over a refused run — which would make the
+        # spend cap and the publish floor, the two guards this job has, invisible in the only
+        # place anyone looks.
+        shell: bash
+        env:
+          # CATALOG_DATABASE_URL is the only database secret the catalog-* environments carry;
+          # `secrets.DATABASE_URL` is empty there and `requireEnv` would refuse.
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # A PER-RUN CAP sized to a release week, not to the backfill's $55.
+          #
+          # Measured over recent sets on the real catalog: a single set brings 65-616
+          # Commander-legal cards (median 193), and a release WEEK can bring several — 2026-06-26
+          # brought 897 across two, which is 75 requests and a worst case of $5.85. $9 covers that
+          # with room and still refuses anything resembling a backfill, which would be $208.
+          #
+          # The cap binds on the worst case, so a week that somehow brought 1,200 new cards would
+          # refuse and report rather than quietly spending more than a week is worth.
+          LABEL_CAP_USD: '9'
+          # And pause well before the cap: a week projecting past $5 is a week worth looking at,
+          # since the measured expectation is about $1.20.
+          LABEL_REPORT_AT_USD: '5'
+        run: |
+          echo "### Card labels — \`catalog-staging\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:labels | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
