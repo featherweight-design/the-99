@@ -996,7 +996,10 @@ export function FilterPanel({
             aria-label={copy.panelAriaLabel}
             onKeyDown={onPanelKeyDown}
             onBlur={onPanelBlur}
-            className="absolute top-[calc(100%+6px)] z-10 overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            // z-30: above the page's own positioned content and below the tab bar (z-40) and the
+            // sheets (z-50). At z-10 it TIED with a deck tile's overflow wrapper, which comes later
+            // in the document and so won: a ⋯ drew over the open Status list (probe:deck-menu-stack).
+            className="absolute top-[calc(100%+6px)] z-30 overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
             // A measured per-pixel offset, so it cannot be a class. Not color
             // or border — the inline-style rule is about styles that outrank
             // hover: utilities.
