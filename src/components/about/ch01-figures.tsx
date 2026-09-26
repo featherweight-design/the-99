@@ -1367,7 +1367,7 @@ export function ThemesFigureBody() {
         { n: 1, find: first("[data-theme-tile] [data-theme-short]"), side: "after" },
         { n: 2, find: nth("[data-theme-tile]", 1), side: "inset-tl" },
         // On the tile's name rather than its corner, where the miniature draws its own tick.
-        { n: 3, find: first('[data-theme-tile="active"] > span'), side: "after" },
+        { n: 3, find: first('[data-theme-tile="active"] [data-theme-name]'), side: "after" },
       ]}
     >
       {THEMES.map((theme) => (
@@ -1385,7 +1385,7 @@ export function ThemesFigureBody() {
           }`}
         >
           <ThemeMiniature theme={theme.key} compact={false} selected={theme.key === active} />
-          <span className="text-[12.5px] leading-[1.2] text-[color:var(--fg)]">{theme.name}</span>
+          <span data-theme-name className="self-start text-[12.5px] leading-[1.2] text-[color:var(--fg)]">{theme.name}</span>
           {/* The plane is the SUBTITLE, never the label: you pick Neon Rain,
               not Kamigawa, and an earlier figure had them the other way up.
               `short`, which is what the picker draws — the full plane name is
