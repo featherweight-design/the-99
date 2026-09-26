@@ -30,6 +30,12 @@ const { LABEL_COPY_SOURCE_URL, LABEL_COPY_TARGET_URL } = requireEnv([
 ]);
 
 const dryRun = process.argv.includes("--dry-run");
+
+/**
+ * The model the TARGET would label with, which is what its hashes must be computed against.
+ * Same default as `build-card-labels.ts`, so the two agree unless someone overrides both.
+ */
+const TARGET_MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
 const connect = (connectionString: string) => drizzle(new Pool({ connectionString }), { schema });
 const source = connect(LABEL_COPY_SOURCE_URL);
 const target = connect(LABEL_COPY_TARGET_URL);
@@ -70,18 +76,41 @@ async function main(): Promise<void> {
       + `Re-generate on the source, or check out the version that produced them.`);
   }
 
-  const byModel = new Map<string, string>();
-  const targetHashes: TargetHash[] = [];
-  for (const row of comparable) byModel.set(row.oracleId, row.model);
-  for (const c of catalog) {
-    const model = byModel.get(c.oracleId);
-    if (model === undefined) continue; // the source has not labelled it; nothing to compare
-    targetHashes.push({ oracleId: c.oracleId, inputHash: labelInputHash(c, model) });
+  // THE TARGET'S OWN MODEL, not the source row's, and that distinction is pay-once itself.
+  //
+  // The hash includes the model. Computing it with each source row's model made the comparison
+  // self-consistent and answered the wrong question: a Sonnet row would install onto a target
+  // configured for a different model and look fresh, and then the target's next `db:build:labels`
+  // would see the model-inclusive mismatch and PAY to regenerate a label it had just been given.
+  // The copy exists to stop exactly that, so the comparison has to be against the model the
+  // target would use.
+  //
+  // I reasoned about this earlier and concluded the source's model was right, having checked that
+  // the comparison agreed with itself rather than that it served the guarantee.
+  const differentModel = comparable.filter((r) => r.model !== TARGET_MODEL);
+  const usable = comparable.filter((r) => r.model === TARGET_MODEL);
+  if (differentModel.length > 0) {
+    console.log(`  ${differentModel.length} source row(s) were produced by `
+      + `${[...new Set(differentModel.map((r) => r.model))].join(", ")} and the target builds with `
+      + `${TARGET_MODEL} — NOT copied. Installing them would look fresh and then be regenerated at `
+      + `full price by the target's next build. Set LABEL_MODEL to match, or re-generate.`);
   }
 
+  const labelledByTarget = new Set(usable.map((r) => r.oracleId));
+  const targetHashes: TargetHash[] = [];
+  for (const c of catalog) {
+    if (!labelledByTarget.has(c.oracleId)) continue; // nothing comparable from the source
+    targetHashes.push({ oracleId: c.oracleId, inputHash: labelInputHash(c, TARGET_MODEL) });
+  }
+
+  // What the target holds, MINUS anything the source has under a stale prompt version or another
+  // model. Those are reported in their own buckets; leaving them here made the summary claim the
+  // target had a row "absent from the source" when the source has it and simply cannot be
+  // compared — one fact in two buckets, and the wrong one.
+  const otherwiseKnown = new Set([...staleVersion, ...differentModel].map((r) => r.oracleId));
   const held = new Set((await target.select({ id: cardLabels.oracleId }).from(cardLabels))
-    .map((r) => r.id));
-  const plan = planCopy(comparable, targetHashes, held);
+    .map((r) => r.id).filter((id) => !otherwiseKnown.has(id)));
+  const plan = planCopy(usable, targetHashes, held);
 
   console.log(`  install ${plan.install.length}`);
   console.log(`  mismatched ${plan.mismatched.length} — the source's label describes a different `

@@ -14,10 +14,19 @@ name: Card labels
 # rather than correctness, which is why it reads as one beside its siblings.
 on:
   schedule:
-    # 14:00 UTC Monday — AFTER `Catalog refresh` at 09:00 and `Combo refresh` at 13:00. A card the
-    # catalog has not ingested cannot be labelled, so the catalog moves first; an hour past the
-    # combo job keeps two long ingests off the same window rather than for any dependency.
-    - cron: '0 14 * * 1'
+    # DAILY at 14:00 UTC, with a run id keyed to the ISO WEEK — and the daily cadence is what makes
+    # a timeout recoverable rather than abandoned.
+    #
+    # Monday's run is the one that finds work: it is after `Catalog refresh` (09:00) and `Combo
+    # refresh` (13:00), because a card the catalog has not ingested cannot be labelled. Every other
+    # day is a no-op costing one query, because the hash skip finds nothing to do.
+    #
+    # The reason it is not weekly: batches can take up to the provider's 24-hour ceiling, and a job
+    # that times out mid-run leaves intents recorded under that week's id. Weekly, the next
+    # invocation would be seven days later under a NEW id — so the old batch's results would never
+    # be collected and its cards would be submitted again, paid for twice. Daily, tomorrow's run
+    # computes the same ISO-week id, finds those intents and collects them.
+    - cron: '0 14 * * *'
   workflow_dispatch:
 
 permissions:
@@ -114,14 +123,25 @@ jobs:
               exit "$status"
             fi
             case "$out" in
+              # A pause is a hold awaiting a decision, so it is a failure rather than a quiet stop.
               *"PAUSED"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 1 ;;
+              # Published, or there was nothing stale to label: done either way.
               *"published"*|*"nothing to do"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              # TERMINAL AND NOT SUCCESS: every request came back and nothing valid was staged.
+              # Sleeping on this looped all 40 passes and failed ~80 minutes later, hiding the one
+              # line that says what happened and what to do about it.
+              *"nothing staged and nothing left to submit"*)
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+                exit 1 ;;
             esac
             # Still processing, or a wave just went out. Batches are minutes rather than seconds.
             sleep 120
           done
-          echo "gave up after 40 passes — intents are recorded, re-dispatch to resume" \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "gave up after 40 passes (~80 minutes). Intents are recorded under"
+            echo "$LABEL_RUN_ID, and TOMORROW'S scheduled run computes the same ISO-week id,"
+            echo "finds them and resumes — no dispatch needed, and nothing is re-submitted."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
