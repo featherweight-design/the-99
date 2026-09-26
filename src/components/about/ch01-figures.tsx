@@ -172,8 +172,8 @@ export function ImportFigureBody() {
 /**
  * The replace summary. The old figure printed three section headings as mono
  * strings; §3 draws the figure that makes the entry's three key lines legible —
- * before and after both printed, a line per deck that felt it, and a count of
- * the decks that did not.
+ * the route's own heading and lede, its money sections, and Still short as the route draws
+ * it: the contested row, under key 4.
  */
 export function PostImportFigureBody() {
   const { before, after, arrived, left } = REPLACE_SUMMARY;
@@ -199,8 +199,8 @@ export function PostImportFigureBody() {
         </span>
       </div>
 
-      {/* Keys 2 and 3 — THREE SECTIONS, and a row that is a CARD carrying the
-          deck that wanted it. The R4 canvas draws deck rows with a count each;
+      {/* Keys 2 and 3 — the two money SECTIONS (Still short is under key 4), and a row
+          that is a CARD carrying the deck that wanted it. The R4 canvas draws deck rows with a count each;
           the shipped summary does not, and the three captions printed directly
           under this figure describe the sections. A figure built from the
           drawing contradicted its own key lines on the page. */}

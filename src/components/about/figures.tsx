@@ -568,21 +568,17 @@ function CardDetailFigure({ width }: { width: AboutWidth }) {
 function RoleCoverageFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="role-coverage" width={width}>
-      {/* The commander page's own group heads (`RoleGroupHeader`), desktop and phone forms at
-          their widths, one per role. Wipes is the entry's subject: 1 owned, 2 short of the
-          baseline, is what tells you what to fix before you start building. */}
+      {/* The commander page's own group heads (`RoleGroupHeader`), one per role, in the form the
+          page draws at narrow widths: this is an inset, about 250px of content from 1000px up, and
+          the desktop head is one unwrapping row sized for the page's full column. Wipes is the
+          entry's subject: 1 owned, 2 short of the baseline, is what to fix before you build. */}
       <div className="flex flex-col gap-[10px]">
         {(Object.keys(ROLE_COUNTS) as (keyof typeof ROLE_COUNTS)[]).map((role) => (
           <div
             key={role}
             className="rounded-[10px] border border-solid border-[color:var(--border)] px-[14px] py-[11px]"
           >
-            <div className="hidden md:block">
-              <RoleGroupHeader layout="desktop" role={role} count={ROLE_COUNTS[role]} listId={`about-role-${role}`} />
-            </div>
-            <div className="md:hidden">
-              <RoleGroupHeader layout="phone" role={role} count={ROLE_COUNTS[role]} listId={`about-role-${role}-phone`} />
-            </div>
+            <RoleGroupHeader layout="phone" role={role} count={ROLE_COUNTS[role]} listId={`about-role-${role}`} />
           </div>
         ))}
       </div>
