@@ -17,6 +17,8 @@ const REPORT = "docs/superpowers/plans/2026-09-25-card-labels-report.md";
 const SCORE = "docs/superpowers/benchmarks/2026-09-25-card-labels-score.json";
 const COST = "docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json";
 const AGREE = "docs/superpowers/benchmarks/2026-09-25-card-labels-agreement.json";
+/** The Sonnet 5 sample, run separately and published on its own — see its `_note`. */
+const SONNET5 = "docs/superpowers/benchmarks/2026-09-26-card-labels-sonnet5.json";
 
 /** The shapes these artifacts actually have, so the checks read them without casts. */
 type ModelScore = {
@@ -25,7 +27,12 @@ type ModelScore = {
   spuriousRestrictions: number;
 };
 type Score = { models: Record<string, ModelScore> };
-type Cost = { totalUsd: number; projections: Record<string, { fullRunUsd: number }> };
+type Sample = { usd: number; usdPerCard: number };
+type Cost = {
+  totalUsd: number;
+  perModel: Record<string, Sample>;
+  projections: Record<string, { fullRunUsd: number; perSetUsd: number }>;
+};
 type Agree = {
   cards: number; sameJobs: number; sameEverything: number;
   jobTally: { both: number; haikuOnly: number; sonnetOnly: number };
@@ -38,6 +45,20 @@ const plain = report.replace(/\*\*/g, "");
 const score = JSON.parse(readFileSync(SCORE, "utf8")) as Score;
 const cost = JSON.parse(readFileSync(COST, "utf8")) as Cost;
 const agree = JSON.parse(readFileSync(AGREE, "utf8")) as Agree;
+// Sonnet 5 lands in the SAME structures the other two are read from, so every check
+// below widens by naming it in a model list rather than by growing a parallel branch.
+// Its dollars come from `claude-sonnet-5`'s own published rates, tied to the canonical
+// table by `card-labels-pricing.test.mts`; the figures still have to match the artifact
+// that published them.
+const sonnet5 = JSON.parse(readFileSync(SONNET5, "utf8")) as {
+  score: ModelScore; projection: { fullRunUsd: number; perSetUsd: number }; cost: Sample;
+  wastedUsd: number;
+};
+score.models.sonnet5 = sonnet5.score;
+cost.projections.sonnet5 = sonnet5.projection;
+
+/** Every model column in the tables, in the order they are drawn. */
+const COLUMNS = ["haiku", "sonnet", "sonnet5", "textRules"] as const;
 
 describe("the report agrees with the artifacts it cites", () => {
   // The full-scores table, read as a table rather than by regex over the prose: a
@@ -45,29 +66,28 @@ describe("the report agrees with the artifacts it cites", () => {
   const row = (label: string) => {
     const line = report.split("\n").find((l) => l.startsWith(`| ${label} `));
     if (!line) throw new Error(`no table row for "${label}" in ${REPORT}`);
-    return line.split("|").slice(2, 5).map((c) => c.replace(/\*/g, "").trim());
+    return line.split("|").slice(2, 2 + COLUMNS.length).map((c) => c.replace(/\*/g, "").trim());
   };
 
   it("states the job precision the artifact records", () => {
     expect(row("JOB precision")).toEqual([
-      String(score.models.haiku.jobs.precision),
-      String(score.models.sonnet.jobs.precision),
-      String(score.models.textRules.jobs.precision),
+      ...COLUMNS.map((m) => String(score.models[m].jobs.precision)),
     ]);
   });
 
   it("states the job recall the artifact records", () => {
     expect(row("JOB recall")).toEqual([
-      String(score.models.haiku.jobs.recall),
-      String(score.models.sonnet.jobs.recall),
-      String(score.models.textRules.jobs.recall),
+      ...COLUMNS.map((m) => String(score.models[m].jobs.recall)),
     ]);
   });
 
-  for (const limit of ["rampKind", "trigger", "recurrence"]) {
+  // `threshold` and `modal` are in here because they were asserted by NOBODY: the diff
+  // adds a cell to each and a 1.000 tie is exactly the sort of row that goes stale
+  // unnoticed, having never changed.
+  for (const limit of ["rampKind", "trigger", "recurrence", "threshold", "modal"]) {
     it(`states the ${limit} accuracy the artifact records`, () => {
       const cells = row(limit);
-      for (const [i, m] of ["haiku", "sonnet", "textRules"].entries()) {
+      for (const [i, m] of COLUMNS.entries()) {
         const want = score.models[m].limits[limit].informativeAccuracy;
         expect(Number(cells[i]), `${limit} for ${m}`).toBe(want);
       }
@@ -77,7 +97,7 @@ describe("the report agrees with the artifacts it cites", () => {
   for (const [label, key] of [["restrictedTo, tribal", "restrictedTo(tribal)"], ["restrictedTo, gating", "restrictedTo(gating)"]] as const) {
     it(`states the ${key} accuracy the artifact records`, () => {
       const cells = row(label);
-      for (const [i, m] of ["haiku", "sonnet", "textRules"].entries()) {
+      for (const [i, m] of COLUMNS.entries()) {
         expect(Number(cells[i]), `${key} for ${m}`).toBe(score.models[m].limits[key].informativeAccuracy);
       }
     });
@@ -85,17 +105,132 @@ describe("the report agrees with the artifacts it cites", () => {
 
   it("states the spurious counts the artifact records", () => {
     const cells = row("spurious restrictions invented");
-    for (const [i, m] of ["haiku", "sonnet", "textRules"].entries()) {
+    for (const [i, m] of COLUMNS.entries()) {
       expect(Number(cells[i]), `spurious for ${m}`).toBe(score.models[m].spuriousRestrictions);
     }
   });
 
   // The COST table is the one that had no artifact at all for two drafts.
-  it("states the full-run projections the cost artifact records", () => {
-    for (const m of ["haiku", "sonnet"]) {
-      const full = cost.projections[m].fullRunUsd.toFixed(2);
-      expect(report, `full-run cost for ${m}`).toContain(`$${full}`);
+  //
+  // Read as a ROW rather than with `toContain`, and that is the third time this file
+  // has had to learn the same lesson: a `toContain` passes on ANY occurrence, so a
+  // figure quoted in both the table and a sentence goes stale in one of them
+  // invisibly. Caught by mutating $37.69 in the prose, which failed nothing.
+  const costRow = (label: string) => {
+    const line = report.split("\n").find((l) => l.startsWith(`| ${label} |`));
+    if (!line) throw new Error(`no cost row for "${label}" in ${REPORT}`);
+    return line.split("|").slice(2, 6).map((c) => c.replace(/[*$]/g, "").trim());
+  };
+
+  /** Every line that is not part of a table — where a stale figure actually hides. */
+  const proseLines = report.split("\n").filter((l) => !l.trimStart().startsWith("|"));
+
+  // EVERY cell, not just the projection. Three of the four were unpinned, and the
+  // mutation that proves it is cheap: `| Sonnet 5 | $0.9999 | $0.009999 | $37.69 | $9.99 |`
+  // passed while only cell 2 was asserted.
+  it("states every cost cell the artifacts record", () => {
+    for (const [m, label, sample] of [
+      ["haiku", "Haiku 4.5", cost.perModel.haiku],
+      ["sonnet", "Sonnet 4.5", cost.perModel.sonnet],
+      ["sonnet5", "Sonnet 5", sonnet5.cost],
+    ] as const) {
+      const cells = costRow(label);
+      expect(cells[0], `sample spend for ${m}`).toBe(sample.usd.toFixed(4));
+      expect(cells[1], `per card for ${m}`).toBe(sample.usdPerCard.toFixed(6));
+      expect(cells[2], `full-run cell for ${m}`).toBe(cost.projections[m].fullRunUsd.toFixed(2));
+      expect(cells[3], `per-set cell for ${m}`).toBe(cost.projections[m].perSetUsd.toFixed(2));
     }
+  });
+
+  // The projection has to appear in the PROSE too, and this is the check that was a
+  // tautology in its first version: `expect(report).toContain(...)` is satisfied by the
+  // table cell asserted one line above it, so rewriting a sentence to read
+  // "($41.09 against $41.09)" left 18 of 18 passing. It reads prose lines only now.
+  //
+  // The two models the ARGUMENT turns on, not all three. Haiku's $12.73 is quoted
+  // nowhere but the table — the prose carries it as the $28.36 difference instead —
+  // so demanding it here would fail a report that is correct. What stops a stale prose
+  // projection for any model is the dollar guard below, which admits only figures an
+  // artifact records.
+  it("quotes the deciding full-run projections in the prose, not only in the table", () => {
+    for (const m of ["sonnet", "sonnet5"] as const) {
+      const full = `$${cost.projections[m].fullRunUsd.toFixed(2)}`;
+      expect(proseLines.some((l) => l.includes(full)), `${full} (${m}) in prose`).toBe(true);
+    }
+  });
+
+  // A RANGE claim cannot be checked by membership, which is what the guards below do:
+  // reverting "0.717 to 0.888" to the pre-Sonnet-5 "0.717 to 0.834" passed everything,
+  // because 0.834 is a real figure — Sonnet 4.5's own recall — and a membership check
+  // only asks whether a number is recorded somewhere, never whether it is the right
+  // number in this sentence. So the two ENDS are computed across every scored model.
+  it("states the job-recall range across every model scored", () => {
+    const recalls = Object.values(score.models).map((m) => m.jobs.recall);
+    const lo = Math.min(...recalls), hi = Math.max(...recalls);
+    const prose = proseLines.join(" ").replace(/\s+/g, " ").replace(/\*\*/g, "");
+    expect(prose, "job-recall range").toContain(`Job recall runs ${lo} to ${hi}`);
+  });
+
+  // EVERY projection must be the COLLECTOR's own arithmetic, which is its ROUNDED
+  // per-card figure times the basis. Review found the Sonnet 5 artifact carrying $25.13,
+  // computed from unrounded tokens, where a `--publish` regeneration produces $25.15 —
+  // so the committed evidence could not be reproduced by the documented command, which is
+  // the exact drift this whole file exists to rule out, arriving through arithmetic rather
+  // than through a stale copy.
+  it("projects every model the way the collector does, from its rounded per-card figure", () => {
+    const BASIS = { full: 31830, set: 390 };
+    for (const [m, sample] of [
+      ["haiku", cost.perModel.haiku], ["sonnet", cost.perModel.sonnet], ["sonnet5", sonnet5.cost],
+    ] as const) {
+      const p = m === "sonnet5" ? sonnet5.projection : cost.projections[m];
+      expect(p.fullRunUsd, `full run for ${m}`).toBeCloseTo(+(sample.usdPerCard * BASIS.full).toFixed(2), 6);
+      expect(p.perSetUsd, `per set for ${m}`).toBeCloseTo(+(sample.usdPerCard * BASIS.set).toFixed(2), 6);
+    }
+  });
+
+  // The per-set figures are quoted in prose as WORDS ("50 cents", "16"), which carry no
+  // `$` and so escape the dollar guard below entirely. Named, because the sentence is
+  // the one the report's conclusion rests on. Read from the JOINED prose: the sentence
+  // wraps, and matching one line found "50 cents" with "16 on Haiku" on the next.
+  it("quotes the per-set costs the artifact records, in the sentence that turns on them", () => {
+    const prose = proseLines.join(" ").replace(/\s+/g, " ").replace(/\*\*/g, "");
+    const at = prose.indexOf("a new set costs");
+    if (at < 0) throw new Error(`no per-set sentence in ${REPORT}`);
+    const sentence = prose.slice(at, prose.indexOf(".", at) + 1);
+    const cents = (m: "haiku" | "sonnet") => String(Math.round(100 * cost.projections[m].perSetUsd));
+    expect(sentence, "Sonnet per set").toContain(`${cents("sonnet")} cents`);
+    expect(sentence, "Haiku per set").toContain(cents("haiku"));
+  });
+
+  // Every dollar figure in the PROSE must be one the ledger or the artifacts record.
+  // Without this, the check above passes while a sentence invents a projection.
+  it("quotes no dollar figure in prose that no artifact records", () => {
+    const known = new Set<string>([
+      // DERIVED from the artifacts, so these cannot go stale silently.
+      ...Object.values(cost.projections).map((p) => p.fullRunUsd.toFixed(2)),
+      ...Object.values(cost.projections).map((p) => p.perSetUsd.toFixed(2)),
+      cost.totalUsd.toFixed(4), sonnet5.cost.usd.toFixed(4),
+      // What reproducing all three models' labels costs — derived, so it tracks a rate
+      // change rather than needing to be re-stated beside one.
+      (cost.totalUsd + sonnet5.cost.usd).toFixed(2),
+      sonnet5.wastedUsd.toFixed(4), // the attempt that returned nothing
+      // NAMED, with their provenance — the same treatment the report's 54% gets. Each
+      // is a figure no artifact holds, and listing it here is what makes a NEW
+      // unlisted figure a failure rather than noise.
+      "5", "5.00", "55", "50", // the caps: the sample's $5 and the run plan's $50/$55
+      "2", "10", // claude-sonnet-5's published per-million rates, from scripts/eval/lib/pricing.mts
+      "0.8459", // the first, contaminated run — ledger `out/spend.json`
+      "1.0367", "0.6017", // what the LEDGER stored for Sonnet 5, at the superseded rates
+      "37.69", // the projection those rates produced, named as the corrected figure
+      "2.7971", // the whole spend against the sample cap, at verified rates
+      "28.36", // Sonnet 4.5 minus Haiku on the full run
+      "0.0854", "0.0784", // the caching measurement, quoted in Method as history
+      "25.13", // what Sonnet 5's full run costs from UNROUNDED tokens, named where the
+               // report explains why the table carries the collector's figure instead
+    ]);
+    const prose = report.split("\n").filter((l) => !l.startsWith("| ")).join("\n");
+    const unknown = [...prose.matchAll(/\$(\d+(?:\.\d+)?)/g)].map((m) => m[1]).filter((v) => !known.has(v));
+    expect(unknown, `dollar figures in prose no artifact records: ${unknown.join(", ")}`).toEqual([]);
   });
 
   it("states the measured sample total the cost artifact records", () => {

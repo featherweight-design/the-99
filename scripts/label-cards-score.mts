@@ -24,6 +24,7 @@ import { loadCreatureTypes } from "../src/lib/swaps/gather";
 import { cardThemes } from "../src/lib/recs/themes";
 import { GOLD } from "./lib/card-labels-gold.mjs";
 import { bestPairing } from "./lib/card-labels-pairing.mjs";
+import { ALL_MODELS, MODELS } from "./lib/card-labels-pricing.mjs";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 
 type Job = {
@@ -151,9 +152,29 @@ const loadModel = (key: string) => {
   try { return JSON.parse(raw); }
   catch (e) { throw new Error(`${path} is present but unparseable — refusing to score a partial run: ${(e as Error).message}`); }
 };
+/**
+ * The DEFAULT models, plus any named by `LABEL_MODELS` — the runner's own convention, and
+ * the reason this is not simply "every labels file on disk".
+ *
+ * A stray `out/labels-sonnet5.json` from an opt-in run would otherwise be picked up
+ * silently by an ordinary scoring run, which then writes a three-model document to the
+ * path the canonical two-model artifact publishes from. The publish gate refuses that, so
+ * the documented regeneration — run, collect, score, agree — would fail for anyone who
+ * had ever sampled an opt-in model, with a refusal about a model they did not ask for.
+ *
+ * Naming the model is how you get it scored, which is how you got it RUN.
+ */
+const asked = (process.env.LABEL_MODELS ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+const unknownAsked = asked.filter((m) => !(m in ALL_MODELS));
+if (unknownAsked.length > 0) {
+  throw new Error(`LABEL_MODELS names a model that is not in ALL_MODELS: ${unknownAsked.join(", ")}`);
+}
+const scoring = asked.length > 0 ? asked : Object.keys(MODELS);
+
+// A model is SKIPPED with a line rather than scored as empty when its file is absent, so
+// adding one to an existing comparison does not require re-running the others.
 const predictions: Record<string, Record<string, Job[] | null>> = Object.fromEntries([
-  ["haiku", loadModel("haiku")],
-  ["sonnet", loadModel("sonnet")],
+  ...scoring.map((m) => [m, loadModel(m)] as const),
   ["textRules", Object.fromEntries(GOLD.map((r) => [r.name, textRuleJobs(mustGet(r.name))]))],
 ].filter(([, v]) => v != null) as [string, Record<string, Job[] | null>][]);
 

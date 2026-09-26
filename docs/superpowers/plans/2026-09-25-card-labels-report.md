@@ -17,10 +17,14 @@ gating restrictions against Haiku's 76.7%, 94.2% of triggers against 86.7%, 86.8
 of recurrences against 80.0%, and finds about one job in twelve more (recall 0.834
 against 0.761). It invents 5 spurious restrictions against Haiku's 7.
 
-**Both models get every TRIBAL restriction right**, so the Warg's Wolf clause is
-solved by either; the choice turns on the wider gating set and on `trigger`. Haiku
-wins the ramp kind (91.3% against 87.5%) and job precision by 1.6 points. The
-one-time difference is **$28.36**.
+**Both 4.5-family models get every TRIBAL restriction right**, so the Warg's Wolf
+clause is solved by either; the choice turns on the wider gating set and on
+`trigger`. Haiku wins the ramp kind (91.3% against 87.5%) and job precision by 1.6
+points. The one-time difference is **$28.36**.
+
+**Sonnet 5 was sampled afterwards and does not change the answer.** It is cheaper
+and finds more jobs, and it is the weakest of the three on exactly the restriction
+family the bug was about — see the fourth column below and the caveats beside it.
 
 > **This reverses the recommendation in the first draft of this report, which said
 > Haiku.** That draft rested on a tribal-restriction figure of 87.5% against 90.9%
@@ -83,26 +87,65 @@ the WIDER gating set (card types a deck may simply not play), where Sonnet leads
 108 hand-labelled cards, 205 jobs. JOB = did it find the right job kinds. LIMIT =
 on the jobs it got right, did it get the limits right.
 
-| | Haiku | Sonnet | text rules |
-|---|---|---|---|
-| JOB precision | **0.8** | 0.784 | 0.762 |
-| JOB recall | 0.761 | **0.834** | 0.717 |
-| rampKind | **0.913** | 0.875 | 0 |
-| restrictedTo, tribal | 1.000 | 1.000 | 0 |
-| restrictedTo, gating | 0.767 | **0.864** | 0 |
-| trigger | 0.867 | **0.942** | 0 |
-| recurrence | 0.8 | **0.868** | 0 |
-| threshold | 1.000 | 1.000 | 0 |
-| modal | 1.000 | 1.000 | 0 |
-| spurious restrictions invented | 7 | **5** | 0 |
+| | Haiku | Sonnet 4.5 | Sonnet 5 | text rules |
+|---|---|---|---|---|
+| JOB precision | **0.8** | 0.784 | 0.752 | 0.762 |
+| JOB recall | 0.761 | 0.834 | **0.888** | 0.717 |
+| rampKind | 0.913 | 0.875 | **0.92** | 0 |
+| restrictedTo, tribal | **1.000** | **1.000** | 0.931 | 0 |
+| restrictedTo, gating | 0.767 | **0.864** | 0.727 | 0 |
+| trigger | 0.867 | **0.942** | 0.884 | 0 |
+| recurrence | 0.8 | 0.868 | **0.89** | 0 |
+| threshold | 1.000 | 1.000 | 1.000 | 0 |
+| modal | 1.000 | 1.000 | 1.000 | 0 |
+| spurious restrictions invented | 7 | **5** | 6 | 0 |
 
-Sonnet takes job recall, the gating restrictions, trigger, recurrence and the
-spurious count. Haiku takes the ramp kind and job precision. Tribal restrictions,
-thresholds and modality are ties at 1.000 — three limits that need no model choice
-at all, and that today's rules still get none of.
+Sonnet 4.5 takes the gating restrictions, trigger and the spurious count. Haiku
+takes job precision. Sonnet 5 takes job recall, the ramp kind and recurrence.
+Thresholds and modality are ties at 1.000 on all three — two limits that need no
+model choice at all, and that today's rules still get none of.
+
+**Sonnet 5 was run after the decision, on Hugh's request, and it does not reverse
+it.** It wins recall (0.888 against 0.834) and it is markedly cheaper ($25.15
+against $41.09), and it loses the restriction family, which is the family the bug
+was about: gating 0.727 against 0.864, and tribal 0.931 against a tie at 1.000 —
+the only score in the whole table where a model failed a limit that both others got
+perfect. **A model that is cheaper and finds more jobs still did not take it**,
+because what the pass is bought for is the limits. Four caveats sit beside its
+figures:
+
+- **Its sampling is NOT deterministic, and the others' is.** Sonnet 5 rejects
+  `temperature`, so it runs at the default while Haiku and Sonnet 4.5 are pinned at
+  0. Its column is therefore one draw from a distribution where theirs are
+  repeatable, and a re-run could move its figures. That cuts both ways and is the
+  reason not to read a 4-point gap either way as decisive — but it does not rescue
+  the tribal row, where it alone failed a limit the other two got perfect.
+- **Its dollars are RATE-DERIVED rather than billed.** The rates themselves are the
+  verified ones — `claude-sonnet-5` at $2/$10 per million, halved by the Batch API,
+  from `scripts/eval/lib/pricing.mts` — but the cost and usage endpoints need an
+  Admin API key this repository does not have (measured: both answer 401), so no
+  column here is a bill. Its TOKEN counts are exact.
+
+  This figure was **$37.69** in the first version of this section, computed at
+  Sonnet 4.5's rates, which overstated it by exactly 3/2. Review caught it, and it
+  mattered for more than the report: the same row feeds the ledger reservation, so
+  an opt-in run was being approved against a ceiling two thirds of its real one.
+
+  Every projection here is the collector's own arithmetic — its rounded per-card
+  figure times the basis — so re-running it reproduces the table. From the unrounded
+  token cost this column would read $25.13, and the two 4.5-family columns come from
+  the same rounded path, so matching it keeps the three comparable rather than making
+  one of them alone more precise.
+- **It needed `thinking: {type: "disabled"}` to run at all.** Adaptive thinking is
+  on by default and consumed 2,999 of a 3,000-token output ceiling, returning
+  nothing; the first attempt cost **$1.0367 for zero labels**. Its figures come
+  from the second run, at a 4,000-token ceiling with thinking off.
+- **One card came back malformed** (`Emerald Charm`, a `kind` of the string
+  `"null"`), against 6 rejected jobs for Sonnet 4.5 and 13 for Haiku. Not a
+  deciding difference, but it is the only run that produced an unparseable kind.
 
 **The job columns are the finding nobody expected — with one correction.** On
-PRECISION all three sit within 4 points (0.762 to 0.8), so a pass bought to find job
+PRECISION all four sit within 5 points (0.752 to 0.8), so a pass bought to find job
 KINDS more accurately would be close to a waste. On RECALL they do not: Sonnet finds
 0.834 against the rules' 0.717, which is 171 true jobs against 147 — a 16% relative
 gain, not a rounding difference. So the limits are where nearly
@@ -124,8 +167,18 @@ Measured, at batch rates, over 508 cards (108 gold + 400 random):
 |---|---|---|---|---|
 | Haiku 4.5 | $0.2033 | $0.000400 | **$12.73** | $0.16 |
 | Sonnet 4.5 | $0.6556 | $0.001291 | **$41.09** | $0.50 |
+| Sonnet 5 | $0.4011 | $0.000790 | **$25.15** | $0.31 |
 
-Sample total **$0.8589** against a $5 cap (plus $0.8459 for the first, contaminated run — see below — so $1.70 of the cap is used).
+Sample total **$0.8589** against a $5 cap for the two-model run. Four runs went against
+that cap and **$2.7971** of it was spent: this one, $0.8459 for the first contaminated
+run (see below), and $0.6911 + $0.4011 for the two Sonnet 5 attempts, the first of which
+returned nothing.
+
+The ledger on disk still records the Sonnet 5 pair as $1.0367 and $0.6017, because it
+stored what the superseded rates computed. Both restate EXACTLY rather than
+approximately — every rate in that row is two thirds of the one used, so every term
+scales alike — and the first attempt's own token counts were overwritten by the second
+run, which is why the restatement is arithmetic rather than a re-measurement.
 
 The ongoing cost is the part that settles it: a new set costs **50 cents** on
 Sonnet and 16 on Haiku. Either way keeping the labels current is free in practice,
@@ -236,11 +289,13 @@ both.
 
 ## What to watch if this ships
 
-- **`restrictedTo` is the weak limit**, for both models, and the reason for the
+- **`restrictedTo` is the weak limit**, for all three models, and the reason for the
   recommendation. Just under a quarter of the gating restrictions gold records are
-  missed by Haiku against about a seventh by Sonnet. If false matches survive the pass, this is the
-  first place to look, and re-scoring the gold subset is what tells you.
-- **Job recall runs 0.717 to 0.834**, so roughly a fifth of jobs are missed by every
+  missed by Haiku against about a seventh by Sonnet 4.5 — and over a quarter by
+  Sonnet 5, which is why the newest model did not take the decision. If false matches
+  survive the pass, this is the first place to look, and re-scoring the gold subset is
+  what tells you.
+- **Job recall runs 0.717 to 0.888**, so roughly an eighth of jobs are missed by every
   labeller including the models. The pass improves limits, not coverage.
 - **A second pass costs the same as the first.** At 16 cents a set there is no
   reason to treat the labels as immutable; re-running a set after a rule change is
@@ -307,7 +362,8 @@ both.
 - `scripts/label-cards-blindsheet.mjs` — the blind sheet below
 ### Committed evidence
 
-Regenerate and republish with:
+Regenerate and republish with — the DEFAULT two models, no environment set, which is the
+only set these paths publish:
 
 ```
 pnpm tsx scripts/label-cards-score.mts --publish
@@ -328,7 +384,17 @@ batch, cannot quietly overwrite the evidence a merged report rests on.
 - `docs/superpowers/benchmarks/2026-09-25-card-labels-cost.json` — measured tokens,
   cost per model, and the full-run and per-set projections with their basis
 
-The raw labels (296KB across both models) and the 711-row disagreement list stay in
-`out/` and are NOT committed: they are reproducible from the committed scripts for
-about 85 cents, and the figures derived from them are committed above. Re-run
-`label-cards-run` then `-collect`, `-score`, `-agree` to regenerate.
+The raw labels (462KB across the three models) and the 711-row disagreement list stay in
+`out/` and are NOT committed: they are reproducible from the committed scripts for about
+85 cents for the default two, or **$1.26** with Sonnet 5, and the figures derived from
+them are committed above.
+
+To regenerate the committed evidence, run `label-cards-run` then `-collect`, `-score`,
+`-agree`, `-blindsheet`, with no environment set — that is the DEFAULT two-model workflow,
+and it is the only one those last two support: `-agree` and `-blindsheet` compare Haiku
+against Sonnet by construction and read exactly those two labels files.
+
+`LABEL_MODELS=sonnet5` applies to `-run`, `-collect` and `-score` alone, which is the whole
+opt-in path: it produces the standalone Sonnet 5 figures and nothing else. Publishing that
+run is refused rather than allowed to replace the two-model artifacts, so its column is
+updated by hand from the scorer's output, as it was.
