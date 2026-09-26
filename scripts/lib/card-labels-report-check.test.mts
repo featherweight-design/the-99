@@ -47,8 +47,9 @@ const cost = JSON.parse(readFileSync(COST, "utf8")) as Cost;
 const agree = JSON.parse(readFileSync(AGREE, "utf8")) as Agree;
 // Sonnet 5 lands in the SAME structures the other two are read from, so every check
 // below widens by naming it in a model list rather than by growing a parallel branch.
-// Its dollars are a projection at 4.5's rates and the report says so; the figures
-// still have to match the artifact that published them.
+// Its dollars come from `claude-sonnet-5`'s own published rates, tied to the canonical
+// table by `card-labels-pricing.test.mts`; the figures still have to match the artifact
+// that published them.
 const sonnet5 = JSON.parse(readFileSync(SONNET5, "utf8")) as {
   score: ModelScore; projection: { fullRunUsd: number; perSetUsd: number }; cost: Sample;
   wastedUsd: number;
