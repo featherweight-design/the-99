@@ -520,7 +520,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   reservation that moved one and not the other would leave the deck page and the receipt
   disagreeing about the same card.
 
-  Its last section covers **Pull it's release** (Hugh, 2026-09-27). A pull takes the card out of
+  Its last section covers **the release a `Pull it` writes** (Hugh, 2026-09-27). A pull takes the card out of
   the SOURCE deck's draft and commits nothing; a `pull_releases` row subtracts the pulled copy from
   that deck's committed claim, so the asking deck's buy tag clears before anyone commits. The
   subtraction lives once, in `all_claims`, which `loadAvailability` and `loadDeckBuyRows` both

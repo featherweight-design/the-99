@@ -47,7 +47,7 @@ const USER_W = `probe-write-${Date.now()}`;
 // And the review page's own read gets a fifth: its two filters and its UNEXCLUDED vantage are
 // facts about a query, and a component test fed hand-built props cannot see either.
 const USER_D = `probe-door-${Date.now()}`;
-// And Pull it's release (Hugh, 2026-09-27) gets a sixth: a pull that edits the source's draft and
+// And the release a Pull it writes (Hugh, 2026-09-27) gets a sixth: a pull that edits the source's draft and
 // leaves its version standing, with the copy freed through a release row both readers subtract.
 const USER_P = `probe-pull-${Date.now()}`;
 
