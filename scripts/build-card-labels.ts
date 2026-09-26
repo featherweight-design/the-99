@@ -683,6 +683,11 @@ async function main(): Promise<void> {
       + `$${REPORT_AT_USD.toFixed(2)} report line (cap $${CAP_USD.toFixed(2)}).`);
     console.error(`Nothing further has been submitted. Report the figure and hold for Hugh; `
       + `re-run with LABEL_REPORT_AT_USD=${CAP_USD} only once he has approved it.`);
+    // NON-ZERO. A plain `return` here exited 0, so the one week the report line actually fired
+    // would have shown a GREEN step — and the workflow's own comment claims the two guards are
+    // visible "in the only place anyone looks". A pause is a hold awaiting a decision, which is
+    // not success.
+    process.exitCode = 1;
     return;
   }
 

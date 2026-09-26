@@ -37,10 +37,13 @@ describe("planCopy", () => {
     );
     expect(p.mismatched.sort()).toEqual(["a", "b"]);
     expect(p.install).toEqual([]);
+    // The PROPERTY the name claims, which the two assertions above do not test: the plan has no
+    // bucket that would feed a paid rebuild. Asserting the exact key set means reintroducing a
+    // `rebuild`/`queue` field fails here, which is the thing Task 4b's edit exists to prevent.
+    expect(Object.keys(p).sort())
+      .toEqual(["absentFromSource", "install", "mismatched", "notInTargetCatalog"]);
   });
 
-  // A source labelled against a newer catalog always carries cards the target has never heard of.
-  // That is not a mismatch — there is nothing to describe — so it is skipped silently.
   // Counted, not silent. A source generated against a newer catalog always carries some of these,
   // and the count is what distinguishes that from the target's catalog refresh having stopped.
   it("counts a card the target's catalog does not hold, and does not call it a mismatch", () => {

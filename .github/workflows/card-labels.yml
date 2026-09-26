@@ -2,7 +2,7 @@ name: Card labels
 
 # Labels new or changed cards' jobs and their limits, weekly.
 #
-# SHIPS DISABLED. `LABELS_REFRESH_ENABLED` must be set to 'true' for the schedule to fire, and
+# SHIPS DISABLED. `CARD_LABELS_ENABLED` must be set to 'true' for the schedule to fire, and
 # that flip is Hugh's: this is the first job in the repository that SPENDS MONEY on a cron, and
 # he approved a one-time backfill rather than a standing weekly charge. Until he switches it on,
 # only a manual dispatch runs.
@@ -26,7 +26,7 @@ permissions:
 jobs:
   label:
     # Kill switch for the cron; a manual dispatch always runs.
-    if: vars.LABELS_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    if: vars.CARD_LABELS_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     concurrency:
       # ONE group for the whole workflow, not per target, because there is no target: staging is
@@ -35,9 +35,13 @@ jobs:
       # submitting a batch and recording its intent is the one window that costs money twice.
       group: card-labels
       cancel-in-progress: false
-    # Batches are asynchronous. A run submits, then later runs collect: this is the submit-and-poll
-    # window, not the whole job's life.
-    timeout-minutes: 45
+    # Batches are asynchronous and this job POLLS until they are collected and published, so the
+    # window has to cover the provider's turnaround. Measured on the sample: a 43-request batch
+    # ended within minutes, but the API's stated ceiling is 24 hours and a set week is ~75
+    # requests. Three hours is generous for the real case and still bounded; a run that times out
+    # leaves its intents recorded, and the next invocation with the same run id resumes rather
+    # than re-submitting.
+    timeout-minutes: 180
     environment: catalog-staging
     steps:
       - uses: actions/checkout@v4
@@ -65,17 +69,61 @@ jobs:
           # brought 897 across two, which is 75 requests and a worst case of $5.85. $9 covers that
           # with room and still refuses anything resembling a backfill, which would be $208.
           #
-          # The cap binds on the worst case, so a week that somehow brought 1,200 new cards would
-          # refuse and report rather than quietly spending more than a week is worth.
+          # WHAT THIS ACTUALLY DOES, measured rather than asserted — an earlier version of this
+          # comment claimed 1,200 cards would "refuse and report", and that is false:
+          #
+          #    897 cards  ( 75 req)  worst $5.85   submits in full   projection $1.16
+          #  1,200 cards  (100 req)  worst $7.80   submits in full   projection $1.55
+          #  1,368 cards  (114 req)  worst $8.89   submits in full   projection $1.77
+          #  2,000 cards  (167 req)  worst $13.02  wave TRUNCATES to 115 requests
+          #  3,900 cards  (325 req)  worst $25.34  PAUSES on the projection
+          #
+          # So the cap truncates above ~1,368 cards and the projection is what refuses, at
+          # ~3,900. That is the right shape for a weekly job: a heavy release week goes through,
+          # a backfill-sized surprise stops and reports. It is NOT a hard refusal at 1,200, and
+          # saying so would have left somebody trusting a bound that does not exist.
           LABEL_CAP_USD: '9'
-          # And pause well before the cap: a week projecting past $5 is a week worth looking at,
-          # since the measured expectation is about $1.20.
+          # The projection line, which is what actually refuses: about four times the measured
+          # weekly expectation of $1.20.
           LABEL_REPORT_AT_USD: '5'
         run: |
-          echo "### Card labels — \`catalog-staging\`" >> "$GITHUB_STEP_SUMMARY"
+          # A STABLE RUN ID, and a LOOP until there is nothing left to do.
+          #
+          # Both are required and neither was here. `db:build:labels` submits a wave and exits —
+          # batches are asynchronous, so collection happens on a LATER invocation, and every
+          # figure the run depends on (the intent ledger, `alreadySpent`, the publish) is scoped
+          # to `LABEL_RUN_ID`. With a fresh timestamp per run and no re-invocation, a scheduled
+          # run submitted a wave, exited, and its results were never collected: `publishRun`
+          # was unreachable, the cards still failed the hash check next Monday, and the same
+          # work was PAID FOR AGAIN every week while nothing was ever published. A recurring
+          # charge producing no labels at all.
+          #
+          # The id is derived from the ISO week, so a re-dispatch inside the same week resumes
+          # that week's run rather than starting a second one beside it.
+          export LABEL_RUN_ID="weekly-$(date -u +%G-W%V)"
+          echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:build:labels | tee -a "$GITHUB_STEP_SUMMARY"
+          for attempt in $(seq 1 40); do
+            echo "--- pass $attempt ---" | tee -a "$GITHUB_STEP_SUMMARY"
+            out=$(pnpm --silent db:build:labels 2>&1) || status=$?
+            printf '%s\n' "$out" | tee -a "$GITHUB_STEP_SUMMARY"
+            # A refusal or a pause is terminal: the script has already said why, and re-running
+            # it would either refuse identically or spend past a line somebody set.
+            if [ "${status:-0}" -ne 0 ]; then
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              exit "$status"
+            fi
+            case "$out" in
+              *"PAUSED"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 1 ;;
+              *"published"*|*"nothing to do"*) echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+            esac
+            # Still processing, or a wave just went out. Batches are minutes rather than seconds.
+            sleep 120
+          done
+          echo "gave up after 40 passes — intents are recorded, re-dispatch to resume" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       # PRODUCTION IS NOT UPDATED BY THIS WORKFLOW, and that is a gap rather than a design.
       #
@@ -89,18 +137,23 @@ jobs:
       # credential decision rather than a code one. `db:copy:prose` has the same shape and is run
       # by hand for the same reason; this workflow's summary says so on every run rather than
       # leaving production quietly stale.
-      - name: Note what production still needs
+      - name: Note that production is not updated by this run
         shell: bash
+        # A quoted heredoc: the previous version escaped a quote inside a double-quoted `echo` and
+        # left the string open, so `bash -n` failed and every run went red AFTER the model spend.
         run: |
-          {
-            echo ""
-            echo "**Production is not updated by this run.** These labels are on"
-            echo "\`catalog-staging\`. Carrying them to production costs nothing but needs both"
-            echo "database URLs in one job, and no environment holds both — so it is a manual"
-            echo "step until a secret with staging's URL exists:"
-            echo ""
-            echo '```'
-            echo "LABEL_COPY_SOURCE_URL=<catalog-staging> \"
-            echo "LABEL_COPY_TARGET_URL=<catalog-production> pnpm db:copy:labels"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat >> "$GITHUB_STEP_SUMMARY" <<'NOTE'
+
+          **These labels are on `catalog-staging` only.** Production is not updated by this run
+          and currently has no labels.
+
+          That is harmless today: Task 4c notes the labels change nothing player-visible until a
+          consumer reads them, and the first consumer is behind `SWAP_TOOLS_ENABLED`. So
+          production can wait.
+
+          It cannot be automated yet. `db:copy:labels` needs BOTH database URLs in one job, and
+          neither `catalog-staging` nor `catalog-production` holds the other's — so it needs one
+          new secret with staging's URL, readable from a production job. **Task 4c forbids running
+          the copy from a local invocation**, so this is deliberately NOT a manual workaround: the
+          copy waits for the job, and the job waits for the secret.
+          NOTE

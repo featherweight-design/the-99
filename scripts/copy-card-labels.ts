@@ -16,7 +16,7 @@ import ws from "ws";
 import * as schema from "../src/db/schema";
 import { cardLabels } from "../src/db/schema";
 import { planCopy, type SourceLabel, type TargetHash } from "../src/lib/labels/copy";
-import { labelInputHash } from "../src/lib/labels/prompt";
+import { LABEL_PROMPT_VERSION, labelInputHash } from "../src/lib/labels/prompt";
 import { requireEnv } from "./lib/env.mjs";
 
 neonConfig.webSocketConstructor = ws;
@@ -57,9 +57,22 @@ async function main(): Promise<void> {
     select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
       from cards where commander_legal = true`);
   const catalog = (rows as { rows?: CardRow[] }).rows ?? (rows as unknown as CardRow[]);
+  // A row generated under a DIFFERENT prompt version can never match, because the version is in
+  // the hash and `labelInputHash` uses the running checkout's. That is correct — the label was
+  // produced by a different prompt — but it is not a catalog difference, and reporting it as one
+  // would send somebody to re-run a catalog refresh that cannot fix it. Counted separately.
+  const staleVersion = src.filter((r) => r.promptVersion !== LABEL_PROMPT_VERSION);
+  const comparable = src.filter((r) => r.promptVersion === LABEL_PROMPT_VERSION);
+  if (staleVersion.length > 0) {
+    console.log(`  ${staleVersion.length} source row(s) were generated under prompt version `
+      + `${[...new Set(staleVersion.map((r) => r.promptVersion))].join(", ")} against this `
+      + `checkout's ${LABEL_PROMPT_VERSION} — not copied, and NOT a catalog difference. `
+      + `Re-generate on the source, or check out the version that produced them.`);
+  }
+
   const byModel = new Map<string, string>();
   const targetHashes: TargetHash[] = [];
-  for (const row of src) byModel.set(row.oracleId, row.model);
+  for (const row of comparable) byModel.set(row.oracleId, row.model);
   for (const c of catalog) {
     const model = byModel.get(c.oracleId);
     if (model === undefined) continue; // the source has not labelled it; nothing to compare
@@ -68,7 +81,7 @@ async function main(): Promise<void> {
 
   const held = new Set((await target.select({ id: cardLabels.oracleId }).from(cardLabels))
     .map((r) => r.id));
-  const plan = planCopy(src, targetHashes, held);
+  const plan = planCopy(comparable, targetHashes, held);
 
   console.log(`  install ${plan.install.length}`);
   console.log(`  mismatched ${plan.mismatched.length} — the source's label describes a different `
@@ -105,4 +118,14 @@ async function main(): Promise<void> {
   console.log(`\ninstalled ${plan.install.length} label(s)`);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main()
+  .catch((err) => { console.error(err); process.exitCode = 1; })
+  // Both pools closed, as `copy-commander-prose.ts` does and for its stated reason: the open
+  // sockets would keep the process alive past its work. Two connections, so two `end()`s, each
+  // independently so one failing cannot skip the other.
+  .finally(async () => {
+    for (const pool of [source, target]) {
+      try { await pool.$client.end(); } catch { /* going away regardless */ }
+    }
+    process.exit(process.exitCode ?? 0);
+  });
