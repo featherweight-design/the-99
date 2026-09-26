@@ -64,9 +64,10 @@ export function useDeckSynopsis(deckId: string, active: boolean, refreshKey: str
     const key = askedKey.current;
     // A failed read keeps the answer on screen; the next key or press asks again.
     const got = await fetchSynopsis(deckId).catch(() => null);
-    if (mine !== generation.current || !got) return;
-    if ("synopsis" in got) setAnswer({ state: got, key, deckId });
-    // It superseded any read still out, so it answers for the latest one as well.
+    if (mine !== generation.current) return;
+    if (got && "synopsis" in got) setAnswer({ state: got, key, deckId });
+    // It superseded any read still out, so it answers for the latest one as well, and does so on a
+    // failure too: a superseded read never settles, so leaving this unsettled would hold the tab.
     setAnsweredRead(latestRead.current);
   }, [deckId]);
 

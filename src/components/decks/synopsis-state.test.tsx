@@ -48,6 +48,17 @@ describe("useDeckSynopsis", () => {
     expect(result.current.settled).toBe(true);
   });
 
+  // A press's re-read supersedes the visit's own read; if that re-read then fails, the superseded
+  // read will never settle, so the re-read settles for it, or the tab's loader would hold for good.
+  it("is settled by a press's re-read that superseded the visit's read, even when it fails", async () => {
+    actions.fetchSynopsis.mockImplementationOnce(() => new Promise(() => {}));
+    const { result } = renderHook(() => useDeckSynopsis("d6", true, "k"));
+    expect(result.current.settled).toBe(false);
+    actions.fetchSynopsis.mockRejectedValueOnce(new Error("down"));
+    await act(async () => { await result.current.write(); });
+    expect(result.current.settled).toBe(true);
+  });
+
   it("is not settled by a key the list returns to, until that key's new read answers", async () => {
     let answer!: (v: unknown) => void;
     const { result, rerender } = renderHook(({ key }) => useDeckSynopsis("d5", true, key), { initialProps: { key: "a" } });

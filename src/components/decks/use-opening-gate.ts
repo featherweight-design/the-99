@@ -63,8 +63,20 @@ export function useOpenOnce(holding: boolean, visit: string, shown: boolean): bo
   const [opened, setOpened] = useState<string | null>(null);
   // Adjusted during render, so the frame that lets go is the frame that latches.
   if (shown && !holding && opened !== visit) setOpened(visit);
-  return shown && holding && opened !== visit;
+  const gating = shown && holding && opened !== visit;
+  // A CEILING: a read that never answers (a hung request, one superseded in a way nothing
+  // settles) must not hold the tab for good. Past it the visit opens with what it has, and a part
+  // still out arrives late, which is the lesser failure.
+  useEffect(() => {
+    if (!gating) return;
+    const t = setTimeout(() => setOpened(visit), OPENING_CEILING_MS);
+    return () => clearTimeout(t);
+  }, [gating, visit]);
+  return gating;
 }
+
+/** How long a visit's opening may wait on its reads before it opens regardless. */
+export const OPENING_CEILING_MS = 8_000;
 
 /**
  * The opening loader's timing (Analysis tab handoff §8, 8a), for a fetch whose outcome the tab

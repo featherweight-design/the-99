@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { holdsOpening, isOpening, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
+import { holdsOpening, isOpening, OPENING_CEILING_MS, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -133,6 +133,41 @@ describe("what the opening waits on", () => {
     expect(result.current).toBe(false);
     rerender({ holding: true, visit: "d:2" });
     expect(result.current).toBe(true);
+  });
+
+  it("opens a visit whose reads never answer once the ceiling passes", () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => useOpenOnce(true, "d:1", true));
+      expect(result.current).toBe(true);
+      act(() => { vi.advanceTimersByTime(OPENING_CEILING_MS); });
+      expect(result.current).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Leaving the tab while the loader is held, and coming back before its hold ends, must not
+  // leave the loader up: the new visit's reads answering lets it go.
+  it("lets go of a loader held across a leave and a re-entry, once the new visit's reads answer", () => {
+    vi.useFakeTimers();
+    try {
+      const { result, rerender } = renderHook(
+        ({ holding, visit, shown }) => useOpeningGate(useOpenOnce(holding, visit, shown), "d"),
+        { initialProps: { holding: true, visit: "d:1", shown: true } },
+      );
+      act(() => { vi.advanceTimersByTime(OPENING_DELAY_MS); });
+      expect(result.current).toBe("loader");
+      rerender({ holding: true, visit: "d:1", shown: false });
+      act(() => { vi.advanceTimersByTime(OPENING_HOLD_MS / 4); });
+      rerender({ holding: true, visit: "d:2", shown: true });
+      expect(result.current).toBe("loader");
+      rerender({ holding: false, visit: "d:2", shown: true });
+      act(() => { vi.advanceTimersByTime(OPENING_HOLD_MS); });
+      expect(result.current).toBe("off");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("never gates a tab that is not shown", () => {
