@@ -649,6 +649,14 @@ describe("the Lock cards mode, through BuilderShell", () => {
     expect(line().parentElement!.className).not.toContain("invisible");
   });
 
+  // Shopping has no mode, so it holds no slot for one: its key keeps its own size.
+  it("holds no mode slot under Shopping", async () => {
+    renderShell([sol, { ...signet, owned: false }]);
+    expect(screen.queryByTestId("lock-mode-line")).not.toBeNull();
+    await act(async () => screen.getAllByRole("button", { name: /^Shopping/ })[0].click());
+    expect(screen.queryByTestId("lock-mode-line")).toBeNull();
+  });
+
   it("locks at once, holds the lock once the server agrees, and announces it", async () => {
     const write = deferred<DeckMutationResult>();
     setCardLocked.mockReturnValue(write.promise);

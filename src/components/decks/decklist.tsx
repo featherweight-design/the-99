@@ -376,7 +376,8 @@ export function Decklist({
   // hidden one out of the tab order and the accessibility tree, so still only one is read. A deck
   // with no key at all holds the slot too, blank outside the mode: that is the one layout where
   // the rule costs a line, and a list that jumps under the press is the defect being fixed.
-  const keyLine = onLockModeChange ? (
+  // All only: Shopping has no Lock cards mode, so it keeps its own key and empty-state sizing.
+  const keyLine = onLockModeChange && filter === "all" ? (
     <div className="grid">
       <div className={`[grid-area:1/1] ${lockMode ? "invisible" : ""}`}>
         <MarkKey marks={markKey} regionAria={markKeyRegion} />
