@@ -17,7 +17,9 @@ import { recommendedMix } from "../../lib/decks/mix";
 const getCardDetail = vi.fn(
   async (_oracleId: string, _deckOracleIds?: readonly string[]) => null,
 );
+// A press reads through the action and a prefetch through the route; one stub answers both.
 vi.mock("../../app/card-detail-action", () => ({ getCardDetail }));
+vi.mock("../../lib/cards/fetch-card-detail", () => ({ fetchCardDetail: getCardDetail }));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),

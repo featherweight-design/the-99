@@ -10,7 +10,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { bracketShift } from "../../lib/tuning/bracket-shift";
 import type { TuningItem } from "../../lib/tuning/state";
 import type { Bracket } from "../../lib/profile/types";
-import { useCardDetail } from "../cards/card-detail-provider";
+import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BracketChip } from "./bracket-chip";
@@ -219,7 +219,8 @@ function useOpen(item: TuningItem, side: "cut" | "add") {
   const { open } = useCardDetail();
   const id = side === "cut" ? item.cutOracleId : item.addOracleId;
   const preview = usePreviewRow(side === "cut" ? item.cutImageUri : item.addImageUri);
-  return { onClick: () => open(id, [item.cutOracleId, item.addOracleId]), ...preview };
+  const intent = useCardIntent(id);
+  return { onClick: () => open(id, [item.cutOracleId, item.addOracleId]), ...preview, ...intent };
 }
 
 function Name({ item, side }: { item: TuningItem; side: "cut" | "add" }) {

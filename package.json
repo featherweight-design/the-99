@@ -100,6 +100,7 @@
     "probe:last-slots": "node scripts/probe-last-slots.mjs",
     "probe:hover-preview": "node scripts/probe-hover-preview.mjs",
     "probe:analysis-tab": "node scripts/probe-analysis-tab.mjs",
+    "probe:card-prefetch": "node scripts/probe-card-prefetch.mjs",
     "probe:card-note": "node scripts/probe-card-note.mjs",
     "probe:deck-grid": "node scripts/probe-deck-grid.mjs",
     "probe:list-scroll": "node scripts/probe-list-scroll.mjs",

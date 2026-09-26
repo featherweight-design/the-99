@@ -7,7 +7,7 @@ import type { TuningItem } from "../../lib/tuning/state";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 
 const open = vi.fn();
-vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open }) }));
+vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open }), useCardIntent: () => ({}) }));
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(), readTuningEvidence: vi.fn(),
   readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(), undoSuggestion: vi.fn(),

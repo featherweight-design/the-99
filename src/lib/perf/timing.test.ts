@@ -51,8 +51,8 @@ describe("perfRoute", () => {
     vi.stubEnv("PERF_TIMING", "1");
     const finishes: (() => void)[] = [];
     afters.mockImplementation((fn) => { finishes.push(fn); });
-    const one = perfRoute("getCardDetail");
-    const two = perfRoute("getCardDetail");
+    const one = perfRoute("/api/card-detail");
+    const two = perfRoute("/api/card-detail");
     await one.timed("auth", async () => 1);
     await two.timed("loadCardDetail", async () => 2);
     finishes.forEach((f) => f());

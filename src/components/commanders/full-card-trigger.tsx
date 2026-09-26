@@ -3,7 +3,7 @@
 // open the shared card modal through CardDetailProvider, which detail.tsx
 // already mounts for the role chips further down the page.
 
-import { useCardDetail } from "../cards/card-detail-provider";
+import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { PENDING_OPACITY } from "./pending";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 
@@ -108,6 +108,7 @@ export function FullCardTrigger({
   bandTapTarget?: boolean;
 }) {
   const { open, pendingOracleId } = useCardDetail();
+  const intent = useCardIntent(oracleId);
   const pending = pendingOracleId === oracleId;
   const labelled = LABELLED.has(placement);
 
@@ -121,6 +122,7 @@ export function FullCardTrigger({
           aria-hidden="true"
           className="absolute inset-0 cursor-pointer"
           onClick={() => open(oracleId)}
+          {...intent}
         />
       ) : null}
 
@@ -169,6 +171,7 @@ export function FullCardTrigger({
         // the modal's focus-return would have nothing to hand focus back to.
         aria-busy={pending}
         onClick={() => open(oracleId)}
+        {...intent}
       >
         {/* The pending dim lands on the GLYPH, never on the plate. Dimming the
             plate composites `--bg` at 55% over the crop, which puts the icon back

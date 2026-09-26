@@ -26,7 +26,7 @@ import { isBasicLand } from "../../lib/decks/grouping";
 import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger, useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { TwoFacedMark } from "../cards/two-faced-mark";
@@ -224,6 +224,8 @@ export function DecklistRow({
   // preview that only opened over it would be a second, smaller target for a
   // gesture the reader is already making across the row.
   const previewHandlers = usePreviewRow(card.imageUri);
+  // The row body opens the card too, so resting on it prefetches the card as the name does.
+  const intent = useCardIntent(card.oracleId, card.imageUri);
   // Two strings, because they answer different questions. The visible one is a
   // front face and may clip; the accessible one is whole and never does. The
   // modal — one tap away on this very name — is the recovery path for the clip.
@@ -424,6 +426,7 @@ export function DecklistRow({
           a real border would add 2px to one row's height and shunt the list. */}
       <div
         {...previewHandlers}
+        {...intent}
         // Named so a probe can address a decklist row without matching a
         // composed class list, which is the caller's and changes with it.
         data-decklist-row

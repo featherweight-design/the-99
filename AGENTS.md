@@ -1420,6 +1420,46 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Two mutations fail it: the rows reporting no movement, and the edge flip removed. Makes no
   writes; point it at `local-dev`.
 
+- `pnpm probe:card-prefetch` proves the card modal reads ahead on INTENT, never through the
+  server-action queue, and that a press is never slower for it — at 1300x900 and 390x844 on a
+  deck page, by reading the network. A pointer passing over names reads nothing and the one it
+  rests on is read, and it is THAT card; a resting pointer (focus at 390, as a keyboard reader)
+  reads a card ONCE, as `GET /api/card-detail`, and the press after it paints from that read; no
+  prefetch is ever a server action (the check that catches a prefetch turned back into one); and
+  a server action pressed while a prefetch GET is provably still reading (the probe holds card
+  reads for 4s) starts at once.
+
+  **Two reads, and each is where it is for a reason.** A prefetch reads the ROUTE because Next
+  runs a page's server actions one at a time: a prefetch that was an action would sit in the same
+  queue as the reader's writes, so hovering a few rows and pressing Add would wait behind reads
+  nobody asked for. A press reads the ACTION because on Vercel a route handler runs in a
+  different function from the page — the staging build groups `decks/[id]` and `api/health` into
+  different functions — so the route's first request pays a cold start and fresh database
+  connections, where the action runs in the function that just drew the page. Measured locally,
+  a separate pool alone took the first press from 358ms to 881ms. A press whose card is still
+  being prefetched WAITS on it for at most `PREFETCH_WAIT_MS`, then reads through the action and
+  shows only the action's answer. It does not race the two: an earlier build did, and a prefetch
+  painting while the press's action was still pending made the NEXT action on the page run
+  ~800ms client-side, so another card opened 400ms after closing one took 815ms (315ms before) —
+  and with 2.5s between presses the effect vanished. The probe holds card reads 900ms and asserts
+  the press costs at most the wait over the action alone.
+
+  **A press never starts a prefetch of its own**, neither on pointerdown nor on the focus a press
+  brings (only keyboard focus, `:focus-visible`, counts as intent). A read the press starts has no
+  head start on the press's own action, so it can only add the wait: measured at 390, where a tap
+  is all there is, the route (~190ms) missed the 180ms wait often enough that the medians went from
+  354 to 408ms for a first press and 336 to 828ms for the next card. A tap now reads through the
+  action, exactly as before this feature.
+
+  The route's payload carries `Date`s (a price fact's `asOf`), which plain JSON turns into
+  strings: the first build of the route took the page down on the first press, at
+  `asOf.getTime()`, with every unit test green. `card-detail-wire.ts` tags a `Date` on the wire
+  and brings it back one, at any depth, and `route.test.ts` asserts the route and the action
+  answer the same card.
+
+  Its deck is the account's largest with two or more versions. It writes only the About row, captured first and put back in a `finally`.
+  Point it at `next start` on `local-dev` or a scratch branch, **never production**.
+
 - `pnpm probe:card-note` measures the card note on all three of the deck page's add surfaces —
   the Consider tile, the top-off row and the quick-add result row — at 1300x900 and 390x844.
   Seventy-one checks.
@@ -1852,8 +1892,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `/collection`, `/commanders`, `/discover`) it reads cold, warm and client-navigation loads:
   TTFB, the first frame `<main>` holds content rather than the route's `LoadingScreen`, when the
   server finished streaming, and the first card image. It also reads the card-details press on the
-  deck page, to the dialog and to its art. The median of `MEASURE_RUNS` runs (default 3), printed
-  as a Markdown table.
+  deck page, to the dialog and to its art: cold, warm, another cold card, and after INTENT (a
+  pointer resting on the card, or focus at 390 as a keyboard reader would), which is what the
+  prefetch is for; a tap starts no prefetch, since one started by the press has no head start. The
+  median of `MEASURE_RUNS` runs (default 3), printed as a Markdown table.
 
   **Point it at `next start`, never `next dev`**, whose compile times swamp every figure. The
   server runs on a scratch Neon branch holding a `pull:staging` copy, and the worktree's `.env`
