@@ -28,6 +28,15 @@ on:
     # computes the same ISO-week id, finds those intents and collects them.
     - cron: '0 14 * * *'
   workflow_dispatch:
+    inputs:
+      cap:
+        description: 'Hard stop in USD for this run (max 55). Blank uses the weekly 9.'
+        required: false
+        default: ''
+      pause:
+        description: 'Pause and report if the projection passes this (max 50). Blank uses the weekly 5.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -60,6 +69,73 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Resolve the spend bounds
+        id: bounds
+        shell: bash
+        # WHY THIS IS A SEPARATE STEP AND NOT A `boundedNumber` CALL: `boundedNumber` CLAMPS an
+        # out-of-range value to its default, and a clamp is the wrong answer to a typo here. A
+        # dispatch asking for 550 meant 55; clamping hands it 55 and runs, which happens to be
+        # right, while a dispatch asking for 5.5 when it meant 55 gets 5.5 and truncates its wave
+        # to nothing. Neither tells the operator they mistyped. So the bounds are validated HERE
+        # and an out-of-range input FAILS THE JOB — before the model is ever called, which is the
+        # only point at which failing is free.
+        #
+        # The ceilings are Hugh's, and they are two different bounds rather than one: 55 is the
+        # hard stop on what a run may spend, 50 is where it stops and reports instead of
+        # continuing. A dispatch may ask for LESS of either. It may never ask for more.
+        env:
+          # Read through `env:` rather than interpolated into the script body. A `${{ }}` inside a
+          # `run:` is substituted as TEXT before bash sees it, so a crafted input becomes script.
+          # Nothing here is attacker-reachable — dispatch needs write access — but the habit is
+          # what keeps it that way, and it costs nothing.
+          RAW_CAP: ${{ inputs.cap }}
+          RAW_PAUSE: ${{ inputs.pause }}
+        run: |
+          # An empty input is the CRON PATH, and also a dispatch that left the box alone: both
+          # take the weekly figures. `inputs.*` is empty (never absent) on a schedule, so one
+          # branch covers both and there is no `github.event_name` test to get wrong.
+          cap="${RAW_CAP:-9}"
+          pause="${RAW_PAUSE:-5}"
+
+          # A decimal-tolerant numeric test. `[[ $x =~ ^[0-9]+$ ]]` would reject 5.5, and `$(( ))`
+          # is integer-only in bash — so awk does both the parse and the comparison, and the same
+          # awk decides the bound. One tool, one notion of "a number".
+          check() {
+            local name="$1" value="$2" ceiling="$3"
+            if ! printf '%s' "$value" | grep -Eq '^[0-9]+(\.[0-9]+)?$'; then
+              echo "::error::$name must be a number, got '$value'"
+              return 1
+            fi
+            if ! awk -v v="$value" -v c="$ceiling" 'BEGIN{exit !(v>0 && v<=c)}'; then
+              echo "::error::$name must be greater than 0 and at most $ceiling, got '$value'"
+              return 1
+            fi
+          }
+
+          # Both are checked before either failure exits, so a dispatch that got both wrong is
+          # told both times rather than once per attempt.
+          ok=0
+          check 'cap'   "$cap"   55 || ok=1
+          check 'pause' "$pause" 50 || ok=1
+          [ "$ok" -eq 0 ] || exit 1
+
+          echo "cap=$cap"     >> "$GITHUB_OUTPUT"
+          echo "pause=$pause" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Spend bounds"
+            echo ""
+            echo "| | value | ceiling |"
+            echo "|---|---|---|"
+            echo "| hard stop | \$$cap | \$55 |"
+            echo "| pause and report | \$$pause | \$50 |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          if awk -v p="$pause" -v c="$cap" 'BEGIN{exit !(p>c)}'; then
+            echo "Note: the pause is above the hard stop, so the cap truncates each wave before" \
+                 "the projection can ever refuse one. That is safe but probably not intended." \
+                 >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Label new and changed cards
         # `shell: bash` expands to `bash -eo pipefail`. WITHOUT IT the script's exit code is
         # swallowed by `tee`, and the job reports green over a refused run — which would make the
@@ -91,10 +167,14 @@ jobs:
           # ~3,900. That is the right shape for a weekly job: a heavy release week goes through,
           # a backfill-sized surprise stops and reports. It is NOT a hard refusal at 1,200, and
           # saying so would have left somebody trusting a bound that does not exist.
-          LABEL_CAP_USD: '9'
-          # The projection line, which is what actually refuses: about four times the measured
-          # weekly expectation of $1.20.
-          LABEL_REPORT_AT_USD: '5'
+          # THE LITERALS MOVED to the `Resolve the spend bounds` step above, which validates a
+          # dispatch's overrides and echoes what it settled on. They are read from that step's
+          # OUTPUTS rather than from `$GITHUB_ENV`, because a step-level `env:` block WINS over
+          # the job environment — so writing them there and leaving the literals here would have
+          # left the dispatch inputs silently inert, the ninth instance in this feature of a
+          # correct rule wired to nothing.
+          LABEL_CAP_USD: ${{ steps.bounds.outputs.cap }}
+          LABEL_REPORT_AT_USD: ${{ steps.bounds.outputs.pause }}
         run: |
           # A STABLE RUN ID, and a LOOP that branches on the script's EXIT CODE.
           #
@@ -114,6 +194,15 @@ jobs:
           #    0   done, published or nothing stale
           #   75   more work: a wave went out, or batches are still processing — call again
           #    *   stop and look: refused, paused, or nothing labelable
+          # REFUSE AN EMPTY BOUND rather than inheriting a default. `boundedNumber` falls back to
+          # 55 and 50 when a variable is absent — the widest values it allows — so if the bounds
+          # step is ever reordered after this one, renamed, or dropped, these expressions resolve
+          # to empty and the run silently acquires the BACKFILL's ceilings on a weekly cron. That
+          # is the exact failure this feature has shipped nine times: a correct rule wired to
+          # nothing, invisible in every dry run. Two lines close it at the seam.
+          : "${LABEL_CAP_USD:?empty — the bounds step did not run or did not publish its outputs}"
+          : "${LABEL_REPORT_AT_USD:?empty — the bounds step did not run or did not publish its outputs}"
+
           export LABEL_RUN_ID="weekly-$(date -u +%G-W%V)"
           echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
