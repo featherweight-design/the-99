@@ -357,9 +357,10 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 
   const [deck] = deckRows;
   if (!deck) return null;
-  // The commanders come from ONE statement: its rows and the pair it matched against. Read off
-  // the deck row instead, a commander change landing between the two statements would name a
-  // commander the other statement never returned, and an owned deck would read as missing.
+  // The commanders come from ONE statement: its rows and the pair it matched against. The deck
+  // row is never consulted for them, because it is a second statement: a commander change landing
+  // between the two would name a commander this one never returned, and an owned deck would read
+  // as missing.
   const pair = commanderRows[0];
   if (!pair) return null;
   const commanderOracleId = pair.deckCommanderOracleId;
