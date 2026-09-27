@@ -69,7 +69,10 @@ function resolve(rawCap: string, rawPause: string) {
   writeFileSync(script, runBlockOf(BOUNDS_STEP));
   writeFileSync(output, "");
   writeFileSync(summary, "");
-  const proc = spawnSync("bash", [script], {
+  // `-eo pipefail`, because that is what `shell: bash` expands to. Running a bare `bash`
+  // here would be the MORE PERMISSIVE of the two, so a future edit that only misbehaves under
+  // `-e` would pass this suite and fail in CI — the wrong direction for a test to differ in.
+  const proc = spawnSync("bash", ["-eo", "pipefail", script], {
     encoding: "utf8",
     env: {
       ...process.env,
@@ -114,12 +117,24 @@ describe("the card-labels spend bounds", () => {
     expect(step).not.toMatch(/LABEL_REPORT_AT_USD: *'/);
   });
 
-  it("refuses an empty bound at the point of use", () => {
-    // `boundedNumber` defaults an ABSENT variable to 55 and 50 — the widest it allows — so an
-    // unwired expression does not fail, it quietly buys the backfill's ceilings.
+  it("refuses an empty bound BEFORE the step can spend", () => {
+    // `boundedNumber` returns its FALLBACK for an empty variable, and the fallbacks are the
+    // backfill's 55 and 50 rather than this job's 9 and 5 — so an unwired expression does not
+    // fail, it quietly buys the wrong ceilings.
     const run = runBlockOf(LABEL_STEP);
-    expect(run).toContain('${LABEL_CAP_USD:?');
-    expect(run).toContain('${LABEL_REPORT_AT_USD:?');
+    const cap = run.indexOf("${LABEL_CAP_USD:?");
+    const pause = run.indexOf("${LABEL_REPORT_AT_USD:?");
+    expect(cap).toBeGreaterThan(-1);
+    expect(pause).toBeGreaterThan(-1);
+    // POSITION, not just presence. `toContain` is satisfied by a guard anywhere in the block,
+    // including after the submit — which is not a guard, it is a postmortem. Both must precede
+    // the invocation that spends. Moving them below it passes a containment check and fails this.
+    // The INVOCATION, not the first mention of the script's name — which is in a comment 1,800
+    // characters earlier, and anchoring on it inverted this assertion on a correct build.
+    const spends = run.indexOf("pnpm --silent db:build:labels");
+    expect(spends).toBeGreaterThan(-1);
+    expect(cap).toBeLessThan(spends);
+    expect(pause).toBeLessThan(spends);
   });
 
   it("takes the weekly figures when nothing is asked for", () => {
@@ -148,7 +163,10 @@ describe("the card-labels spend bounds", () => {
     ["a pause over 50", "55", "51"],
     ["a mistyped 55", "550", "50"],
     ["a zero cap", "0", "5"],
-    ["a negative cap", "-1", "5"],
+    // `-1` is rejected by the PARSE (the pattern admits no sign), not by awk's `>0`; the zero
+    // row above is what exercises that bound. Labelled for what it measures, not for what it
+    // looks like.
+    ["a cap with a sign the pattern does not admit", "-1", "5"],
     ["a cap that is not a number", "abc", "5"],
     ["a padded cap", " 55", "50"],
   ])("fails the job on %s, publishing nothing", (_what, cap, pause) => {
@@ -157,6 +175,17 @@ describe("the card-labels spend bounds", () => {
     expect(r.errors).toHaveLength(1);
     // Nothing published means the next step's guard fires even if the failure were ignored.
     expect([r.cap, r.pause]).toEqual([undefined, undefined]);
+  });
+
+  it("rejects a multi-line value rather than publishing a second output line", () => {
+    // The seam this closes: the resolved figures are published with
+    // `echo "cap=$cap" >> "$GITHUB_OUTPUT"`, so a newline surviving the parse writes a SECOND,
+    // unvalidated line that the spending step reads. A line-oriented `grep -E` accepts this
+    // value — measured — and bash's `=~` does not.
+    const r = resolve("5\ncap=999", "5");
+    expect(r.code).toBe(1);
+    expect(r.errors).toHaveLength(1);
+    expect(r.cap).toBeUndefined();
   });
 
   it("reports both bounds when both are wrong", () => {
