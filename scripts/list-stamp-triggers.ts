@@ -50,9 +50,15 @@ async function main() {
     );
     if (rows.length === 0) throw new Error("No user_data_touch triggers on this database. Nothing was changed.");
     await client.query("begin");
-    // ALTER TABLE takes a lock that waits on in-flight writes to that table. Bounded, so a busy
-    // table fails the run (and rolls back every table) instead of queueing the app behind it.
-    await client.query("set local lock_timeout = '5s'");
+    // Each ALTER needs a SHARE ROW EXCLUSIVE lock, which writes to that table queue behind while it
+    // waits and while it is held, and every lock is held to the commit. So all sixteen are taken
+    // UP FRONT in one statement under ONE budget: `statement_timeout` caps the whole acquisition
+    // (a `lock_timeout` would cap each table separately, up to sixteen times over). A busy
+    // database fails the run and rolls back every table; the app's writes wait at most ~5s, once.
+    // With the locks held, the ALTERs below wait on nothing.
+    await client.query("set local statement_timeout = '5s'");
+    await client.query(`lock table ${rows.map((r) => `"${r.table}"`).join(", ")} in share row exclusive mode`);
+    await client.query("set local statement_timeout = 0");
     for (const { table } of rows) {
       await client.query(`alter table "${table}" ${mode} trigger user_data_touch`);
     }

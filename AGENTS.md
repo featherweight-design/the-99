@@ -359,8 +359,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     reader on a fresh miss (the deployment is in the key).
 
 - `pnpm list-stamp:triggers disable|enable` takes every `user_data_touch` trigger out of the
-  write path, or puts it back, in ONE transaction with a 5s lock timeout, so a busy table rolls
-  the whole run back rather than queueing the app. It reads the triggers the database actually
+  write path, or puts it back, in ONE transaction. It takes all sixteen table locks up front in
+  one `lock table` statement under a 5s `statement_timeout`, so the app's writes wait at most ~5s
+  once, and a busy database rolls the whole run back. A per-table `lock_timeout` would not do
+  that: each table could wait its own 5s while the tables already locked stayed blocked. It reads the triggers the database actually
   has, not a list, and reads them back afterwards. The target is NAMED, the `pull:staging` rule:
   `STAMP_TARGET_URL` and `STAMP_TARGET_BRANCH`, and a branch that does not match what the
   database reports stops the run before anything is altered. Rehearsed on a branch of staging
