@@ -30,6 +30,7 @@ import { db } from "../../db";
 import { cards, spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { isTutor } from "../bracket/tutor-targets";
+import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import type { CandidateFacts } from "../bracket/delta";
 import type { ComboRef } from "./types";
 
@@ -165,6 +166,10 @@ async function completionsFor(
     steps: string | null;
     notable_prerequisites: string | null;
   }[]) {
+    // What a variant PRODUCES decides whether this system counts it, never its card count: the
+    // assembled read applies the same rule, and a completion it would not count must not move
+    // the candidate's bracket either.
+    if (!isInfiniteOrGameEnding(raw.produces ?? [])) continue;
     const combo: ComboRef = {
       variantId: raw.variant_id,
       // Names are resolved at the DRAW, not here: this read is per pool, and a join onto

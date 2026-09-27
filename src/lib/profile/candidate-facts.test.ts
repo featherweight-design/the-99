@@ -18,12 +18,14 @@ const dialect = new PgDialect();
 const executed: string[] = [];
 /** The `cards` rows the select returns — empty unless a case states them. */
 let cardRows: { oracleId: string; name: string; gameChanger: boolean; oracleText: string | null }[] = [];
+/** The completions statement's rows — empty unless a case states them. */
+let completionRows: Record<string, unknown>[] = [];
 vi.mock("../../db", () => ({
   db: {
     select: () => ({ from: () => ({ where: async () => cardRows }) }),
     execute: async (q: Parameters<PgDialect["sqlToQuery"]>[0]) => {
       executed.push(dialect.sqlToQuery(q).sql);
-      return { rows: [] };
+      return { rows: completionRows };
     },
   },
 }));
@@ -56,6 +58,23 @@ describe("the candidate facts read", () => {
     await loadCandidateFacts(["d1"], ["d1"]);
     // Otherwise a card already in the deck reads as closing the combo it is already half of.
     expect(executed[0]).toMatch(/t\.oracle_id\s*<>\s*all/);
+  });
+
+  it("keeps only the completions the bracket system counts", async () => {
+    executed.length = 0;
+    cardRows = [{ oracleId: "c1", name: "C1", gameChanger: false, oracleText: null }];
+    const row = (variant_id: string, produces: string[]) => ({
+      candidate: "c1", variant_id, produces, pieces: ["c1", "d1"], bracket_tag: "R",
+      mana_needed: null, mana_value_needed: null, steps: null, notable_prerequisites: null,
+    });
+    completionRows = [row("counted", ["Infinite mana"]), row("mundane", ["Draw a card"])];
+    try {
+      const facts = await loadCandidateFacts(["c1"], ["d1"]);
+      expect(facts.get("c1")?.completesCombos.map((c) => c.variantId)).toEqual(["counted"]);
+    } finally {
+      cardRows = [];
+      completionRows = [];
+    }
   });
 
   it("makes no round trip for an empty pool", async () => {
