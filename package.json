@@ -112,6 +112,7 @@
     "probe:commanders-mode": "node scripts/probe-commanders-mode.mjs",
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:list-stamp": "tsx scripts/probe-list-stamp.ts",
+    "list-stamp:triggers": "tsx scripts/list-stamp-triggers.ts",
     "probe:about": "node scripts/probe-about.mjs",
     "probe:about-numerals": "node scripts/probe-about-numerals.mjs",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",

@@ -13,8 +13,11 @@ vi.mock("./user-lists", () => ({
   }),
 }));
 vi.mock("./user-data-stamp", () => ({ userDataStamp: vi.fn(async () => stamp.value) }));
+const enabled = vi.hoisted(() => ({ value: true }));
+vi.mock("./list-cache-flag", () => ({ listCacheEnabled: () => enabled.value }));
 
 import { cacheForUser } from "./user-lists";
+import { userDataStamp } from "./user-data-stamp";
 import { cachePageForUser } from "./page-cache";
 import { recordSoftFailure } from "./soft-failure";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -27,7 +30,9 @@ describe("cachePageForUser", () => {
   beforeEach(() => {
     store.clear();
     stamp.value = 0;
+    enabled.value = true;
     vi.mocked(cacheForUser).mockClear();
+    vi.mocked(userDataStamp).mockClear();
   });
 
   it("serves a repeat from the cache while the reader's stamp stands", async () => {
@@ -76,6 +81,16 @@ describe("cachePageForUser", () => {
     await cachePageForUser("u1", "decks", [], load);
     expect(cacheForUser).not.toHaveBeenCalled();
     expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it("switched off, reads no stamp, stores nothing and runs the load every time", async () => {
+    enabled.value = false;
+    const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
+    await cachePageForUser("u1", "decks", [], load);
+    await cachePageForUser("u1", "decks", [], load);
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(userDataStamp).not.toHaveBeenCalled();
+    expect(cacheForUser).not.toHaveBeenCalled();
   });
 
   it("lets a load's own failure through", async () => {

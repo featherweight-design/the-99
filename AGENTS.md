@@ -338,6 +338,35 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   every visit by design. A stamp that cannot be read (a preview deploy runs no migrations)
   renders uncached rather than wrong.
 
+  **It ships behind `LIST_CACHE_ENABLED`** (Hugh, 2026-09-27): `'true'` on staging, unset on
+  production until he has watched it. Off means OFF: `cachePageForUser` reads no stamp, stores
+  nothing and runs the page exactly as before the cache existed. The triggers run either way.
+
+  **The runbook, and its ORDER is the point:**
+
+  - **A cached page looks stale:** turn `LIST_CACHE_ENABLED` off (a redeploy), or Vercel
+    Instant Rollback to the deployment before the cache. Nothing in the database changes.
+  - **Writes are failing on a `user_data_touch` trigger:** FIRST turn the cache off or roll back,
+    THEN run `pnpm list-stamp:triggers disable` against that database. Never the other way
+    round: disabling the triggers while cached code is live freezes every reader's stamp, and
+    every cached page is served stale after the writes that should have retired it.
+  - **Never drop `user_data_stamps` while the triggers exist.** Every write to the sixteen tables
+    would then fail on the missing table.
+  - **Permanent removal is a follow-up migration**: drop the sixteen triggers, then the function,
+    then the table. `list-stamp:triggers` is the emergency lever, not the way out.
+  - **Coming back:** `list-stamp:triggers enable`, then a deploy with the switch on. A stamp that
+    sat still while writes landed says nothing about them, and a new deployment starts every
+    reader on a fresh miss (the deployment is in the key).
+
+- `pnpm list-stamp:triggers disable|enable` takes every `user_data_touch` trigger out of the
+  write path, or puts it back, in ONE transaction with a 5s lock timeout, so a busy table rolls
+  the whole run back rather than queueing the app. It reads the triggers the database actually
+  has, not a list, and reads them back afterwards. The target is NAMED, the `pull:staging` rule:
+  `STAMP_TARGET_URL` and `STAMP_TARGET_BRANCH`, and a branch that does not match what the
+  database reports stops the run before anything is altered. Rehearsed on a branch of staging
+  migrated to 0073: a wrong branch refused, `disable` took all sixteen and `probe:list-stamp`
+  then failed 66 checks, `enable` put them back and it passed. The runbook above says WHEN.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its

@@ -21,6 +21,7 @@ import { changeCommanderEnabled } from "../commander-change/flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { noticesEnabled } from "../notices/flag";
+import { listCacheEnabled } from "./list-cache-flag";
 import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
 import { watchSoftFailures } from "./soft-failure";
@@ -51,6 +52,8 @@ export async function cachePageForUser<T>(
   key: string[],
   load: () => Promise<PageLoad<T>>,
 ): Promise<T> {
+  // Switched off, the page runs exactly as it did before this cache: no stamp read, nothing stored.
+  if (!listCacheEnabled()) return (await load()).value;
   const stamp = await userDataStamp(userId);
   // Without a stamp there is nothing to say an entry is still true, so nothing is cached.
   if (stamp === null) return (await load()).value;
