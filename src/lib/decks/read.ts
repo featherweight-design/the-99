@@ -234,7 +234,7 @@ export async function requireDeck(deckId: string, userId: string) {
  * THE OWNER IS IN EACH QUERY'S OWN SQL. They run beside the deck row rather than after it, so
  * none of them can lean on "the deck row already proved this deck is theirs": each joins `decks`
  * on `user_id` itself. A stranger's deck id reads as no deck, no cards, no commanders and no
- * lines. `read.test.ts` pins the qualified predicate on all four.
+ * lines. `deck-detail-reads.test.ts` pins the qualified predicate on all four.
  */
 export function deckDetailReads(deckId: string, userId: string) {
   const ownDeck = and(eq(decks.id, deckId), eq(decks.userId, userId));
