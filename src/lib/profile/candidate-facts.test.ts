@@ -18,12 +18,14 @@ const dialect = new PgDialect();
 const executed: string[] = [];
 /** The `cards` rows the select returns — empty unless a case states them. */
 let cardRows: { oracleId: string; name: string; gameChanger: boolean; oracleText: string | null }[] = [];
+/** The completions statement's rows — empty unless a case states them. */
+let completionRows: Record<string, unknown>[] = [];
 vi.mock("../../db", () => ({
   db: {
     select: () => ({ from: () => ({ where: async () => cardRows }) }),
     execute: async (q: Parameters<PgDialect["sqlToQuery"]>[0]) => {
       executed.push(dialect.sqlToQuery(q).sql);
-      return { rows: [] };
+      return { rows: completionRows };
     },
   },
 }));
@@ -43,9 +45,9 @@ describe("the candidate facts read", () => {
   it("asks for variants the deck holds exactly ONE piece of", async () => {
     executed.length = 0;
     await loadCandidateFacts(["c1"], ["d1"]);
-    // The set question. `h.n = 1` is what makes it "one card away" rather than "assembled"
-    // or "untouched", and it is the whole difference from `assembledCombosQuery`.
-    expect(executed[0]).toContain("h.n = 1");
+    // The set question. Exactly one piece held is what makes it "one card away" rather than
+    // "assembled" or "untouched", and it is the whole difference from `assembledCombosQuery`.
+    expect(executed[0]).toContain("having count(*) = 1");
     expect(executed[0]).toMatch(/card_count\s*=\s*2/);
     // Template-gated variants name a CATEGORY of card, so a decklist cannot assemble one.
     expect(executed[0]).toContain("requires_template_ids");
@@ -56,6 +58,23 @@ describe("the candidate facts read", () => {
     await loadCandidateFacts(["d1"], ["d1"]);
     // Otherwise a card already in the deck reads as closing the combo it is already half of.
     expect(executed[0]).toMatch(/t\.oracle_id\s*<>\s*all/);
+  });
+
+  it("keeps only the completions the bracket system counts", async () => {
+    executed.length = 0;
+    cardRows = [{ oracleId: "c1", name: "C1", gameChanger: false, oracleText: null }];
+    const row = (variant_id: string, produces: string[]) => ({
+      candidate: "c1", variant_id, produces, pieces: ["c1", "d1"], bracket_tag: "R",
+      mana_needed: null, mana_value_needed: null, steps: null, notable_prerequisites: null,
+    });
+    completionRows = [row("counted", ["Infinite mana"]), row("mundane", ["Draw a card"])];
+    try {
+      const facts = await loadCandidateFacts(["c1"], ["d1"]);
+      expect(facts.get("c1")?.completesCombos.map((c) => c.variantId)).toEqual(["counted"]);
+    } finally {
+      cardRows = [];
+      completionRows = [];
+    }
   });
 
   it("makes no round trip for an empty pool", async () => {
@@ -96,20 +115,26 @@ describe("the completions statement", () => {
     },
   );
 
-  // THE WIDE COLUMNS STAY OUT OF THE MATERIALISED CTE AND OUT OF THE GROUP KEY.
-  //
-  // `two_card` is referenced three times, so Postgres materialises it; `steps` averages 395
-  // characters against a max of 754. Carrying the four columns there spooled them for every
-  // two-card membership row in the index and then used them as GROUP BY keys, when only the
-  // matched completions need them. Asserting the CTE's own select list is the only way to see
-  // that from the emitted string — every column appears somewhere in the statement either way.
-  it("keeps the CTE narrow: variant_id and oracle_id only", () => {
+  // IT STARTS FROM THE DECK. The first CTE walks the membership index by the deck's own cards,
+  // before any grouping; the version that materialised every two-card membership row first took
+  // ~280ms against ~22ms for the same answer. Asserting the CTE's shape is the only way to see
+  // that from the emitted string.
+  it("reads the membership index from the deck's side first, before any join or group", () => {
     const sql = rendered();
-    const cte = sql.slice(sql.indexOf("with two_card as ("), sql.indexOf("), held as ("));
-    expect(cte).toContain("v.variant_id");
-    expect(cte).toContain("vc.oracle_id");
+    const held = sql.slice(sql.indexOf("with held as ("), sql.indexOf("), matched as ("));
+    expect(held).toMatch(/where vc\.oracle_id = any\(\$\d+::uuid\[\]\)/);
+    expect(held).toContain("v.card_count = 2");
+    expect(held).toContain("having count(*) = 1");
+    expect(sql).not.toContain("two_card");
+  });
+
+  // THE WIDE COLUMNS STAY OUT OF BOTH CTEs AND OUT OF THE GROUP KEY: `steps` averages 395
+  // characters, and only the matched completions need it.
+  it("keeps the CTEs narrow: no wide column before the final join", () => {
+    const sql = rendered();
+    const ctes = sql.slice(sql.indexOf("with held as ("), sql.indexOf("select m.candidate"));
     for (const wide of ["steps", "mana_needed", "notable_prerequisites", "produces"]) {
-      expect(cte).not.toContain(wide);
+      expect(ctes).not.toContain(wide);
     }
   });
 
@@ -124,6 +149,12 @@ describe("the completions statement", () => {
 
   // RULE 1, shared with the assembled read: a template-gated variant names a CATEGORY of card,
   // so a decklist cannot be said to complete it either.
+  it("counts no command-zone-only piece, held or added, since both sit in the 99", () => {
+    const text = rendered();
+    expect(text).toMatch(/having count\(\*\) = 1 and not bool_or\(vc\.must_be_commander\)/);
+    expect(text).toMatch(/and not t\.must_be_commander/);
+  });
+
   it("excludes template-gated variants", () => {
     expect(rendered()).toContain("cardinality(v.requires_template_ids) = 0");
   });

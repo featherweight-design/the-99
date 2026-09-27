@@ -30,6 +30,7 @@ import { db } from "../../db";
 import { cards, spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { isTutor } from "../bracket/tutor-targets";
+import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import type { CandidateFacts } from "../bracket/delta";
 import type { ComboRef } from "./types";
 
@@ -97,39 +98,48 @@ export async function loadCandidateFacts(
  * a projection and the mapping's `?? null` reads it as null on every row, with no error. Only
  * one of the two was guarded while it was inlined here.
  *
- * THE FOUR WIDE COLUMNS ARE JOINED BACK AFTER THE AGGREGATE, never carried through the CTE.
- * `two_card` is referenced three times and is therefore materialised, and `steps` averages 395
- * characters against a max of 754 — so carrying it there spooled it for every two-card
- * membership row in the index and then used it as a GROUP BY key, when only the handful of
- * matched completions need it at all. The narrow CTE and the two-column group key are the
- * point; the join at the end costs one index lookup per matched variant.
+ * IT STARTS FROM THE DECK. `held` walks `spellbook_variant_cards` by `oracle_id` (its own index)
+ * for the deck's cards alone, and everything after joins from those variants. The version before
+ * it materialised every two-card membership row in the index as a CTE and then filtered, which
+ * was 276-298ms of execution for a 96-card deck against its 245-card support pool on a
+ * `pull:staging` copy; this is 22-23ms warm, with the same rows (a differential over all 20 of
+ * the account's decks, 160 queries and 1,678 rows, found 0 different).
+ *
+ * `having count(*) = 1` is the rule as stated ("exactly one piece held"), and it is also implied:
+ * a variant with both pieces in the deck cannot be completed by a candidate outside it, which
+ * `t.oracle_id <> all(deck)` already requires. It stays because it keeps `held` small.
+ *
+ * THE FOUR WIDE COLUMNS ARE JOINED BACK AFTER THE AGGREGATE, never carried through a CTE or the
+ * GROUP BY: `steps` averages 395 characters against a max of 754, and only the handful of
+ * matched completions need them. The join at the end costs one index lookup per matched variant.
  */
 export function completionsQuery(
   candidateIds: readonly string[],
   deckOracleIds: readonly string[],
 ) {
   return sql`
-    with two_card as (
-      select v.variant_id, vc.oracle_id
-      from ${spellbookVariants} v
-      join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
-      where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
-    ),
-    held as (
-      select variant_id, count(*)::int as n
-      from two_card
-      where oracle_id = any(${sql.param([...deckOracleIds])}::uuid[])
-      group by variant_id
+    with held as (
+      select vc.variant_id
+      from ${spellbookVariantCards} vc
+      join ${spellbookVariants} v on v.variant_id = vc.variant_id
+      where vc.oracle_id = any(${sql.param([...deckOracleIds])}::uuid[])
+        and v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+      group by vc.variant_id
+      -- §4.3b rule 2: a command-zone-only piece counts only as a commander, and these ids are
+      -- the deck's LIST, so a held piece that must be the commander holds nothing here.
+      having count(*) = 1 and not bool_or(vc.must_be_commander)
     ),
     matched as (
       select t.oracle_id as candidate,
              t.variant_id,
              array_agg(p.oracle_id order by p.oracle_id) as pieces
-      from two_card t
-      join held h on h.variant_id = t.variant_id and h.n = 1
-      join two_card p on p.variant_id = t.variant_id
+      from held h
+      join ${spellbookVariantCards} t on t.variant_id = h.variant_id
+      join ${spellbookVariantCards} p on p.variant_id = h.variant_id
       where t.oracle_id = any(${sql.param([...candidateIds])}::uuid[])
         and t.oracle_id <> all(${sql.param([...deckOracleIds])}::uuid[])
+        -- The same rule on the card being added: it goes into the 99, never the command zone.
+        and not t.must_be_commander
       group by t.oracle_id, t.variant_id
     )
     select m.candidate, m.variant_id, m.pieces,
@@ -160,6 +170,10 @@ async function completionsFor(
     steps: string | null;
     notable_prerequisites: string | null;
   }[]) {
+    // What a variant PRODUCES decides whether this system counts it, never its card count: the
+    // assembled read applies the same rule, and a completion it would not count must not move
+    // the candidate's bracket either.
+    if (!isInfiniteOrGameEnding(raw.produces ?? [])) continue;
     const combo: ComboRef = {
       variantId: raw.variant_id,
       // Names are resolved at the DRAW, not here: this read is per pool, and a join onto

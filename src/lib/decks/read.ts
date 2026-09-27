@@ -226,101 +226,154 @@ export async function requireDeck(deckId: string, userId: string) {
   return deck;
 }
 
-export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
-  // First: check deck exists and belongs to userId.
-  const [deck] = await db
-    .select({
-      id: decks.id,
-      name: decks.name,
-      createdAt: decks.createdAt,
-      filled: decks.filled,
-      commanderOracleId: decks.commanderOracleId,
-      partnerOracleId: decks.partnerOracleId,
-      // The LIVE declaration, which the card note cites and nothing else on this page reads.
-      // Null is UNANSWERED and means nothing else: there is no skip, and the note prints no
-      // deck clause rather than falling back to a determined verdict that may be four edits
-      // old with nothing on the row to say so.
-      declaredBracket: decks.declaredBracket,
-      intent: decks.intent,
-      intentSeeded: decks.intentSeeded,
-    })
-    .from(decks)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-
-  if (!deck) return null;
-
-  // Second: fetch both commanders' card details in one query. The two ids are
-  // read back out of the result rather than trusted to come back in order —
-  // `in` promises a set, not a sequence.
-  const commanderIds = [
-    deck.commanderOracleId,
-    ...(deck.partnerOracleId ? [deck.partnerOracleId] : []),
-  ];
-  const commanderRows = await db
-    .select({
-      oracleId: cards.oracleId,
-      name: cards.name,
-      colorIdentity: cards.colorIdentity,
-      manaCost: cards.manaCost,
-      typeLine: cards.typeLine,
-      oracleText: cards.oracleText,
-      imageUri: cards.imageUri,
-      artCropUri: cards.artCropUri,
-      // COMMANDERS ARE CARDS. The bracket rules count a Game Changer in the command zone
-      // against every limit, so the card note's ordinal has to count it too — and this is
-      // the one card on the page that is a column on `decks` rather than a `deck_cards` row.
-      gameChanger: cards.gameChanger,
-    })
-    .from(cards)
-    .where(inArray(cards.oracleId, commanderIds));
-
-  // Every printed id in this deck, list cards and commanders alike, in one
-  // FAIL-SOFT read. It is not a column on the card query and not a join, because
-  // a proxy flag is decoration on a page that must render without it: the
-  // availability rollup and the printed-name lookup beside it both degrade the
-  // same way, and a transient failure here would otherwise 500 an otherwise
-  // readable deck over a mark.
-  // The lock set is the same kind of decoration and degrades the same way ("empty"): a failed read
-  // draws the deck as it read before Locked existed. Nothing is read with the switch off.
-  const [proxiedIds, lockedIds] = await Promise.all([
-    proxiedOracleIds(deckId, userId),
-    neverCutEnabled() ? lockedOracleIds(deckId, userId) : Promise.resolve(new Set<string>()),
-  ]);
-
-  const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
-  if (!commanderRow) return null;
-  const partnerRow = deck.partnerOracleId
-    ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
-    : null;
-
-  // Third: fetch all deck cards with owned flag.
+/**
+ * The deck page's four owner-scoped reads that need nothing but the deck id and the reader, as
+ * query builders (not yet run), so `getDeckDetail` can start them together and a test can read
+ * the SQL each one emits.
+ *
+ * THE OWNER IS IN EACH QUERY'S OWN SQL. They run beside the deck row rather than after it, so
+ * none of them can lean on "the deck row already proved this deck is theirs": each joins `decks`
+ * on `user_id` itself. A stranger's deck id reads as no deck, no cards, no commanders and no
+ * lines. `deck-detail-reads.test.ts` pins the qualified predicate on all four.
+ */
+export function deckDetailReads(deckId: string, userId: string) {
+  const ownDeck = and(eq(decks.id, deckId), eq(decks.userId, userId));
   const ownedSql = sql<boolean>`exists (
     select 1 from ${collectionItems}
     where ${collectionItems.oracleId} = ${cards.oracleId}
     and ${collectionItems.userId} = ${userId}
   )`;
+  return {
+    deck: db
+      .select({
+        id: decks.id,
+        name: decks.name,
+        createdAt: decks.createdAt,
+        filled: decks.filled,
+        // The LIVE declaration, which the card note cites and nothing else on this page reads.
+        // Null is UNANSWERED and means nothing else: there is no skip, and the note prints no
+        // deck clause rather than falling back to a determined verdict that may be four edits
+        // old with nothing on the row to say so.
+        declaredBracket: decks.declaredBracket,
+        intent: decks.intent,
+        intentSeeded: decks.intentSeeded,
+      })
+      .from(decks)
+      .where(ownDeck),
+    // Both commanders' card details in one query, found through the deck row itself rather than
+    // from ids a first read handed over. The two ids are read back out of the result rather than
+    // trusted to come back in order: `in` promises a set, not a sequence.
+    commanders: db
+      .select({
+        oracleId: cards.oracleId,
+        name: cards.name,
+        colorIdentity: cards.colorIdentity,
+        manaCost: cards.manaCost,
+        typeLine: cards.typeLine,
+        oracleText: cards.oracleText,
+        imageUri: cards.imageUri,
+        artCropUri: cards.artCropUri,
+        // COMMANDERS ARE CARDS. The bracket rules count a Game Changer in the command zone
+        // against every limit, so the card note's ordinal has to count it too — and this is
+        // the one card on the page that is a column on `decks` rather than a `deck_cards` row.
+        gameChanger: cards.gameChanger,
+        // The pair THIS statement matched against. The deck row is a separate statement in the
+        // same wave, so a commander change committing between the two would hand them different
+        // pairs; the page names its commanders from these columns, never from the deck row's.
+        deckCommanderOracleId: decks.commanderOracleId,
+        deckPartnerOracleId: decks.partnerOracleId,
+      })
+      .from(cards)
+      .innerJoin(decks, and(
+        ownDeck,
+        sql`${cards.oracleId} in (${decks.commanderOracleId}, ${decks.partnerOracleId})`,
+      )),
+    // All deck cards with the owned flag.
+    cards: db
+      .select({
+        oracleId: cards.oracleId,
+        name: cards.name,
+        typeLine: cards.typeLine,
+        oracleText: cards.oracleText,
+        keywords: cards.keywords,
+        manaCost: cards.manaCost,
+        cmc: cards.cmc,
+        imageUri: cards.imageUri,
+        layout: cards.layout,
+        gameChanger: cards.gameChanger,
+        owned: ownedSql,
+        quantity: deckCards.quantity,
+        auto: deckCards.auto,
+      })
+      .from(deckCards)
+      .innerJoin(decks, and(eq(decks.id, deckCards.deckId), ownDeck))
+      .innerJoin(cards, eq(deckCards.oracleId, cards.oracleId))
+      .where(eq(deckCards.deckId, deckId))
+      .orderBy(asc(cards.name)),
+    // The lines the import could not identify, in the source's own order.
+    unresolved: db
+      .select({
+        id: deckUnresolvedRows.id,
+        rawName: deckUnresolvedRows.rawName,
+        quantity: deckUnresolvedRows.quantity,
+        sourceLine: deckUnresolvedRows.sourceLine,
+      })
+      .from(deckUnresolvedRows)
+      .innerJoin(decks, and(eq(decks.id, deckUnresolvedRows.deckId), ownDeck))
+      .where(eq(deckUnresolvedRows.deckId, deckId))
+      .orderBy(asc(deckUnresolvedRows.sourceLine)),
+  };
+}
 
-  const cardRows = await db
-    .select({
-      oracleId: cards.oracleId,
-      name: cards.name,
-      typeLine: cards.typeLine,
-      oracleText: cards.oracleText,
-      keywords: cards.keywords,
-      manaCost: cards.manaCost,
-      cmc: cards.cmc,
-      imageUri: cards.imageUri,
-      layout: cards.layout,
-      gameChanger: cards.gameChanger,
-      owned: ownedSql,
-      quantity: deckCards.quantity,
-      auto: deckCards.auto,
-    })
-    .from(deckCards)
-    .innerJoin(cards, eq(deckCards.oracleId, cards.oracleId))
-    .where(eq(deckCards.deckId, deckId))
-    .orderBy(asc(cards.name));
+export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
+  // TWO WAVES, not seven reads in a row. Each read below used to wait for the one before it, and
+  // on a `pull:staging` copy that chain was ~410-440ms for a 96-card deck, most of it round trips.
+  // Wave 1 needs nothing but the deck id and the reader, so it runs at once; wave 2 needs the ids
+  // wave 1 found, so it runs at once after it.
+  //
+  // THE OWNER IS IN EVERY WAVE-1 QUERY'S OWN SQL, because they no longer wait for the deck row
+  // to prove ownership first: the card, commander and unresolved-line reads each join `decks`
+  // on `user_id`, and the proxy and lock reads already did. A stranger's deck id reads as no deck
+  // and nothing else, exactly as it did when the deck row was checked first.
+  const reads = deckDetailReads(deckId, userId);
+  const [deckRows, commanderRows, [proxiedIds, lockedIds], cardRows, unresolvedRows] = await Promise.all([
+    reads.deck,
+    reads.commanders,
+    // Every printed id in this deck, list cards and commanders alike, in one
+    // FAIL-SOFT read. It is not a column on the card query and not a join, because
+    // a proxy flag is decoration on a page that must render without it: the
+    // availability rollup and the printed-name lookup beside it both degrade the
+    // same way, and a transient failure here would otherwise 500 an otherwise
+    // readable deck over a mark.
+    // The lock set is the same kind of decoration and degrades the same way ("empty"): a failed read
+    // draws the deck as it read before Locked existed. Nothing is read with the switch off.
+    Promise.all([
+      proxiedOracleIds(deckId, userId),
+      neverCutEnabled() ? lockedOracleIds(deckId, userId) : Promise.resolve(new Set<string>()),
+    ]),
+    reads.cards,
+    reads.unresolved,
+  ]);
 
+  const [deck] = deckRows;
+  if (!deck) return null;
+  // The commanders come from ONE statement: its rows and the pair it matched against. The deck
+  // row is never consulted for them, because it is a second statement: a commander change landing
+  // between the two would name a commander this one never returned, and an owned deck would read
+  // as missing.
+  const pair = commanderRows[0];
+  if (!pair) return null;
+  const commanderOracleId = pair.deckCommanderOracleId;
+  const partnerOracleId = pair.deckPartnerOracleId;
+  const commanderIds = [commanderOracleId, ...(partnerOracleId ? [partnerOracleId] : [])];
+  const commanderRow = commanderRows.find((c) => c.oracleId === commanderOracleId);
+  if (!commanderRow) return null;
+  const partnerRow = partnerOracleId
+    ? (commanderRows.find((c) => c.oracleId === partnerOracleId) ?? null)
+    : null;
+
+  // WAVE 2: the three reads that need wave 1's ids, at once.
+  //
   // This deck's own vantage: its claims must not count against its own rows, or
   // every card in a committed deck would read as spoken for by itself.
   //
@@ -332,15 +385,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // every deck-page load; unowned rows are excluded for the same reason the
   // search action excludes them, which is that the rollup is driven by the
   // collection and cannot return them.
-  const ownedIds = cardRows.filter((r) => r.owned).map((r) => r.oracleId);
-  const availability =
-    ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => {
-          recordSoftFailure();
-          return null;
-        })
-      : null;
-
+  //
   // The printed name and the art both come from the player's own copy, which this
   // route does not otherwise read: the deck query is oracle-level. One extra query
   // for the whole decklist — see `resolveOwnedPrintings` for why it reuses the
@@ -351,7 +396,31 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // came to be the one card on these two surfaces still drawn from the oracle-level
   // catalog — art belonging to whichever printing Scryfall's oracle row happens to
   // name, and not to the copy in the player's box.
-  const resolved = await resolveOwnedPrintings(userId, [...ownedIds, ...commanderIds]);
+  //
+  // The two bracket facts that are not columns on `cards`. FAIL-SOFT for exactly the reason
+  // the proxy read above is: a mark is decoration on a page that must render without it, and
+  // a transient failure here would otherwise 500 a readable deck over three glyphs. An empty
+  // map costs the marks and nothing else.
+  //
+  // The COMMANDERS' ids ride along: they draw no mark on this page, but the card note counts
+  // a kind across the whole deck and a commander is part of the deck. One read either way.
+  //
+  // FAIL-SOFT, and the FAILURE IS CARRIED rather than flattened to an empty map. The marks
+  // degrade to absence either way, which is right for them — but the card note's ordinals are
+  // counts, and a count nobody has is not zero. The candidate's own facts come from a separate
+  // flags read that can succeed while this one fails, so a flattened failure introduces a
+  // correctly-detected mass land denial as `your 1st` to a deck already holding three.
+  const ownedIds = cardRows.filter((r) => r.owned).map((r) => r.oracleId);
+  const [availability, resolved, bracketFlags] = await Promise.all([
+    ownedIds.length > 0
+      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => {
+          recordSoftFailure();
+          return null;
+        })
+      : null,
+    resolveOwnedPrintings(userId, [...ownedIds, ...commanderIds]),
+    readNoteFlags([...cardRows.map((r) => r.oracleId), ...commanderIds]),
+  ]);
 
   /** A commander drawn from the player's own copy where they have one. */
   const asCommander = (row: typeof commanderRow): DeckCommander => {
@@ -374,23 +443,6 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       printedName: own?.printedName ?? null,
     };
   };
-  // The two bracket facts that are not columns on `cards`. FAIL-SOFT for exactly the reason
-  // the proxy read above is: a mark is decoration on a page that must render without it, and
-  // a transient failure here would otherwise 500 a readable deck over three glyphs. An empty
-  // map costs the marks and nothing else.
-  //
-  // The COMMANDERS' ids ride along: they draw no mark on this page, but the card note counts
-  // a kind across the whole deck and a commander is part of the deck. One read either way.
-  //
-  // FAIL-SOFT, and the FAILURE IS CARRIED rather than flattened to an empty map. The marks
-  // degrade to absence either way, which is right for them — but the card note's ordinals are
-  // counts, and a count nobody has is not zero. The candidate's own facts come from a separate
-  // flags read that can succeed while this one fails, so a flattened failure introduces a
-  // correctly-detected mass land denial as `your 1st` to a deck already holding three.
-  const bracketFlags = await readNoteFlags([
-    ...cardRows.map((r) => r.oracleId),
-    ...commanderIds,
-  ]);
   const flags = bracketFlags ?? new Map<string, CardBracketFlags>();
 
   const commander = asCommander(commanderRow);
@@ -425,18 +477,6 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       row.owned ? (resolved.get(row.oracleId)?.collectorNumber ?? null) : null,
     layout: row.layout,
   }));
-
-  // Fourth: the lines the import could not identify, in the source's own order.
-  const unresolvedRows = await db
-    .select({
-      id: deckUnresolvedRows.id,
-      rawName: deckUnresolvedRows.rawName,
-      quantity: deckUnresolvedRows.quantity,
-      sourceLine: deckUnresolvedRows.sourceLine,
-    })
-    .from(deckUnresolvedRows)
-    .where(eq(deckUnresolvedRows.deckId, deckId))
-    .orderBy(asc(deckUnresolvedRows.sourceLine));
 
   return {
     id: deck.id,

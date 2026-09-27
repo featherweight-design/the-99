@@ -44,3 +44,35 @@ Card press: cold 347ms to dialog, 359ms to art; warm 32ms; another cold card 305
 
 Card press: cold 391ms to dialog, 400ms to art; warm 32ms; another cold card 301ms.
 
+
+## PR 8 — 2026-09-27, the deck page's own queries (#687)
+
+Before is `origin/main` at #1082, after is this branch, both against the same scratch copy of the
+reference account (20 decks on the day of the pull) with the list cache OFF, so every load runs
+the readers. Only `/decks/[id]` is touched; the other routes moved within run-to-run noise.
+
+Two changes, both on the deck page's critical path:
+
+- **Combo completions start from the deck's own cards.** The query used to build every two-card
+  variant in the index (`two_card`) before filtering to the ones the deck half-holds. It now reads
+  the membership index from the deck's side first. EXPLAIN execution, warm: 276–298ms to 22–23ms.
+- **`getDeckDetail` runs in two waves.** The deck row, its commanders, its cards and its
+  unresolved rows are one parallel wave, each scoped to the owner in its own SQL; availability,
+  owned printings and note flags are the second. It used to run them largely in sequence.
+
+| `/decks/[id]` | 1300 before / after | 390 before / after |
+|---|---|---|
+| Content cold | 1069 / 827 | 1049 / 825 |
+| Content warm | 928 / 589 | 944 / 500 |
+| Stream end warm | 897 / 560 | 917 / 477 |
+| Soft first / revisit | 895 / 818 → 670 / 554 | 871 / 814 → 643 / 517 |
+| DB exec warm | 997ms / 711ms | 985ms / 760ms |
+
+Server spans on a warm load, before → after: getDeckDetail ~420 → ~225, candidateFacts ~450 →
+~120, availability ~335 → ~255, total ~950 → ~510. The card press did not move (cold 240ms to
+dialog at 1300, 276ms at 390).
+
+Both changes were checked by differential against the old modules on the same data: completions
+over 20 decks, 160 queries, **1,678 rows compared, 0 differ**; `getDeckDetail` over 20 decks,
+**1,628 card rows compared, 0 differ**, and a second account asking for each deck read none of
+them. No index was needed: `spellbook_variant_cards_oracle_idx` already serves the new plan.
