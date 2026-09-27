@@ -15,8 +15,8 @@ import { TOO_NARROW_BELOW, carriesSubtype, rawShare, themeShare, type ThemeRow }
  *    every card it chooses inside the limits and can always finish with basics, so only those two
  *    can put a deck outside a bracket. They pass when the lowest bracket they permit is at or
  *    under the answer; brackets 4 and 5 state no limits, so they admit everything.
- *  - THE BUDGET, tested on the commander's own price plus an unowned build-around card's. What
- *    the player owns costs nothing here. A price never stocked cannot be tested, so it passes, and
+ *  - THE BUDGET, tested on the commander's own price plus the build-around card's when the
+ *    fill buys it: unowned, or every copy held (`CardFacts.free`). A copy free costs nothing. A price never stocked cannot be tested, so it passes, and
  *    the row says the price is unknown; a card nobody sells is not a reason to hide a commander.
  *
  * THE ORDER IS FIT, NOT THE COLLECTION (ruling 5). With a theme or a card the key is the WEAKEST
@@ -81,7 +81,8 @@ export type BracketFacts = { gameChanger: boolean; massLandDenial: boolean; extr
 
 export type CardFacts = BracketFacts & {
   oracleId: string;
-  owned: boolean;
+  /** Owned with a copy free, so placing it costs nothing. Held or unowned, the fill buys it. */
+  free: boolean;
   /** The cheapest printing stocked now; null when none is. */
   priceCents: number | null;
 };
@@ -217,7 +218,7 @@ export function withinBracket(c: Candidate, card: CardFacts | null, bracket: Bra
 }
 
 export function withinBudget(c: Candidate, card: CardFacts | null, dollars: number): boolean {
-  const cost = (c.owned ? 0 : c.priceCents ?? 0) + (card && !card.owned ? card.priceCents ?? 0 : 0);
+  const cost = (c.owned ? 0 : c.priceCents ?? 0) + (card && !card.free ? card.priceCents ?? 0 : 0);
   return cost <= dollars * 100;
 }
 

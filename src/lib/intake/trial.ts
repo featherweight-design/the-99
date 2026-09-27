@@ -6,6 +6,7 @@ import { isBasicLand } from "../decks/grouping";
 import { loadPrices, slotFor } from "../discovery/price";
 import { db } from "../../db";
 import { sql } from "drizzle-orm";
+import { buysCopy } from "./buys-card";
 import type { DeckAnswers } from "./fill-facts";
 
 /**
@@ -62,7 +63,7 @@ export async function trialFill(
   for (const r of rows) {
     const f = facts.get(r.oracleId);
     const a = availability.get(r.oracleId);
-    const buys = !f || (!isBasicLand(f.type_line) && (!f.owned || (a !== undefined && a.free <= 0)));
+    const buys = !f || (!isBasicLand(f.type_line) && buysCopy(f.owned, a));
     if (!buys) {
       owned += r.quantity;
       continue;

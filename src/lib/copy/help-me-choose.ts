@@ -57,8 +57,9 @@ export const helpMeChooseCopy = {
     poolOwn: "Only cards I own",
     poolCaptionAny: "Owned or not. The budget caps what you’d buy.",
     poolCaptionOwn: "The 99 comes from your collection. The commander can still be one you’d buy, and it’s priced on its own.",
-    // Audit 8: an unowned card asked for is priced with the commander, so the addendum's "commander only" names it.
-    budgetCaptionOwn: "With the 99 from your cards, this caps the commander and any card you ask for that you don’t own. It never ranks.",
+    // Audit 8: a card asked for that the fill buys (unowned, or every copy held) is priced with the
+    // commander, so the addendum's "commander only" names it.
+    budgetCaptionOwn: "With the 99 from your cards, this caps the commander and any card you ask for that you’d have to buy. It never ranks.",
     // Three-answers addendum §2: the Sets answer.
     sets: "Sets",
     setsCaption: "Only commanders printed in one of these. Leave it empty for every set.",
@@ -227,11 +228,12 @@ export const helpMeChooseCopy = {
     cardFig: (pct: number) => `${pct}% of its decks run it.`, // canvas
     budgetFirst: (card: string, price: string) => `${card} takes ${price} of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.`,
     budgetUnknown: (card: string) => `${card} has no price on record, so the budget can’t count it. The fill caps the rest as usual.`,
-    /** No card to pay for first, or one already owned: the budget caps the fill alone. Eng: undrawn. */
+    /** No card to pay for first, or one with a copy free: the budget caps the fill alone. Eng: undrawn. */
     budgetAlone: "The fill buys in its own order while the price fits, and finishes with basics.",
     /** Own-only: the pool row says where the 99 comes from, so this says only that nothing is bought for it. */
     budgetOwn: "The fill buys nothing for the 99.",
-    /** Own-only with an unowned build-around card: the budget charges it (audit 8), and it is the one buy. */
+    /** Own-only with a build-around card the fill buys (unowned, or every copy held): the budget
+     *  charges it (audit 8), and it is the one buy. */
     budgetOwnCard: (card: string, price: string | null) =>
       price === null
         ? `${card} has no price on record, so the budget can’t count it. The fill buys nothing else for the 99.`

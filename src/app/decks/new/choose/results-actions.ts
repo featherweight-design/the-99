@@ -80,7 +80,7 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
   const byId = new Map(found.map((c) => [c.oracle_id, c]));
   // The card through the search's own rule: a card the search drops (a basic, one not legal, one
   // gone) is dropped here too, or the figures would count a card the results never applied.
-  const card = p.card === null ? null : (await loadCardRow(userId, p.card)) === null ? null : p.card;
+  const card = p.card === null ? null : (await loadCardRow(userId, p.card, false)) === null ? null : p.card;
   const answers = {
     budgetCents: p.budgetDollars === null ? null : p.budgetDollars * 100,
     bracket: p.bracket,

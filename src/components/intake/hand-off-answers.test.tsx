@@ -5,7 +5,7 @@ import { budgetLine, HandOffAnswersBlock } from "./hand-off-answers";
 
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const card = (over: Partial<NonNullable<HandOffAnswers["card"]>> = {}) => ({
-  oracleId: CARD, name: "Regisaur Alpha", owned: false, price: { kind: "priced", cents: 110 } as const, pct: 64, ...over,
+  oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 } as const, pct: 64, ...over,
 });
 const all: HandOffAnswers = {
   themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }],
@@ -75,6 +75,10 @@ describe("Built from your answers", () => {
     expect(budgetLine(null)).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
     // The card's read failed: the create still pays for it first, so no line is true yet.
     expect(budgetLine(null, true)).toBeNull();
+    // Owned with every copy held: the fill buys it, so the budget pays for it first.
+    const held = card({ owned: true, held: { deck: "Atraxa" } });
+    expect(budgetLine(held)).toMatch(/^Regisaur Alpha takes \$1\.10 of it first\./);
+    expect(budgetLine(held, false, true)).toBe("Regisaur Alpha takes $1.10 of it. The fill buys nothing else for the 99.");
     // Own-only: nothing is bought for the 99, unless the card is the one buy.
     expect(budgetLine(null, false, true)).toBe("The fill buys nothing for the 99.");
     expect(budgetLine(card({ owned: true }), false, true)).toBe("The fill buys nothing for the 99.");

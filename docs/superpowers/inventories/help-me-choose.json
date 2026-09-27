@@ -277,6 +277,37 @@
           "settle": 2000
         }
       ]
+    },
+    {
+      "id": "results-held-card",
+      "label": "results: a build-around card whose every copy is held reads as held, not free (held card)",
+      "view": "src/components/intake/read-as-bar.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?a=6ad8011d-3471-4369-9d68-b264cc027487&b=150&v=results",
+          "wait": "[data-testid='card-chip-held']",
+          "settle": 4000
+        }
+      ]
+    },
+    {
+      "id": "hand-off-held-card",
+      "label": "/decks/new: a held build-around card on the hand-off, its budget line charging it (held card)",
+      "view": "src/components/intake/hand-off-answers.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?a=6ad8011d-3471-4369-9d68-b264cc027487&b=150&v=results",
+          "wait": "[data-testid='row-hand-off']",
+          "settle": 3000
+        },
+        {
+          "click": "[data-testid='row-hand-off']"
+        },
+        {
+          "wait": "[data-testid='hand-off-answers']",
+          "settle": 2000
+        }
+      ]
     }
   ]
 }

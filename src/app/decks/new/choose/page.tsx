@@ -21,6 +21,7 @@ import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../lib/intake/present";
 import { isAnyOf } from "../../../../lib/intake/rank";
+import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
@@ -151,7 +152,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               themeLabels={themeLabels}
               cardName={card?.name ?? null}
               // The chip's own reading, for rows whose figures are still counting (4e on every row).
-              cardUnpriced={!!card && !card.owned && card.price.kind !== "priced"}
+              cardUnpriced={!!card && buysCard(card) && card.price.kind !== "priced"}
               queryString={queryString}
               changeHref={changeHref}
             />

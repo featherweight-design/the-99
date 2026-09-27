@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { BuyTag } from "../decks/buy-tag";
+import { AvailabilityGlyph } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
@@ -150,7 +151,14 @@ export function CardValue({ card, size = "chip" }: { card: CardChip; /** `row`: 
       >
         {card.name}
       </CardDetailTrigger>
-      {card.owned ? (
+      {card.held ? (
+        // Owned, every copy held: the fill buys it, so it never reads as free. The commander
+        // row's own held mark, glyph and words.
+        <span data-testid="card-chip-held" className="inline-flex items-center gap-[6px] whitespace-nowrap font-mono text-[10px] text-[color:var(--avail-hard-fg)]">
+          <AvailabilityGlyph state="hard" seam={size === "row" ? "var(--surface-rail)" : "var(--surface)"} />
+          {copy.results.held(card.held.deck)}
+        </span>
+      ) : card.owned ? (
         <OwnershipDot owned size={6} />
       ) : card.price.kind === "priced" ? (
         <BuyTag variant="row" {...priceFactOf(card.price)} />

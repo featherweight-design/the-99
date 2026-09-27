@@ -9,6 +9,7 @@ import { isBasicLand } from "../decks/grouping";
 import type { FillCandidate, FillGate } from "../decks/fill";
 import { loadPrices } from "../discovery/price";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
+import { buysCopy } from "./buys-card";
 import { allGates, bracketGate, budgetGate, type ComboEdge } from "./fill-gate";
 import type { Bracket } from "./rank";
 
@@ -61,9 +62,7 @@ export async function loadFillGate(args: {
      *  an owned card is when every copy is claimed. No availability row means nothing claims it. */
     const buys = (id: string) => {
       if (basics.has(id)) return false;
-      if (!owned.has(id)) return true;
-      const a = availability.get(id);
-      return a !== undefined && a.free <= 0;
+      return buysCopy(owned.has(id), availability.get(id));
     };
     const priceOf = (id: string) => prices.get(id)?.liveCents ?? null;
     // The placed cards go in before the fill, so they are charged first. They are not in the pool
@@ -75,7 +74,7 @@ export async function loadFillGate(args: {
         .rows as { oracle_id: string; type_line: string }[]).filter((r) => isBasicLand(r.type_line)).map((r) => r.oracle_id),
     );
     const placedCost = placed
-      .filter((id) => !placedBasics.has(id) && !((availability.get(id)?.free ?? 0) > 0))
+      .filter((id) => !placedBasics.has(id) && buysCopy(availability.has(id), availability.get(id)))
       .reduce((sum, id) => sum + (priceOf(id) ?? 0), 0);
     gates.push(budgetGate({
       remainingCents: answers.budgetCents - placedCost,

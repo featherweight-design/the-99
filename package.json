@@ -34,6 +34,7 @@
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:pair-index": "tsx scripts/probe-pair-index.ts",
     "probe:printed-in": "tsx scripts/probe-printed-in.ts",
+    "probe:held-card": "tsx scripts/probe-held-card.ts",
     "probe:printed-in-lanes": "node scripts/probe-printed-in-lanes.mjs",
     "probe:card-art-corners": "node scripts/probe-card-art-corners.mjs",
     "probe:commander-availability": "tsx scripts/probe-commander-availability.mjs",

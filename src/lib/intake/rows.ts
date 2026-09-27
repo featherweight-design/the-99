@@ -118,6 +118,8 @@ export type CardChip = {
   oracleId: string;
   name: string;
   owned: boolean;
+  /** Owned, every copy held by a committed deck: drawn and charged as a buy (see `buysCard`). */
+  held: { deck: string | null } | null;
   price: ReturnType<typeof slotFor>;
 };
 
@@ -130,5 +132,5 @@ export async function loadCardChip(userId: string, oracleId: string): Promise<Ca
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
   const [row, prices] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId])]);
   if (!row) return null;
-  return { oracleId, name: row.name, owned: row.owned, price: slotFor(prices.get(oracleId)) };
+  return { oracleId, name: row.name, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
 }

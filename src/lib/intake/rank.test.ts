@@ -11,7 +11,7 @@ const cmd = (over: Partial<Candidate> & { name: string }): Candidate => ({
 });
 const tag = (slug: string, count: number) => ({ slug, label: slug, count });
 const card = (over: Partial<CardFacts> = {}): CardFacts => ({
-  oracleId: "ds", owned: false, priceCents: 5000, gameChanger: false, massLandDenial: false, extraTurn: false, ...over,
+  oracleId: "ds", free: false, priceCents: 5000, gameChanger: false, massLandDenial: false, extraTurn: false, ...over,
 });
 const names = (r: ReturnType<typeof rankCandidates>) => r.rows.map((x) => x.candidate.name);
 
@@ -102,7 +102,7 @@ describe("withinBudget: the commander's price and an unowned card's", () => {
   });
 
   it("charges nothing for what the player owns", () => {
-    expect(withinBudget(cmd({ name: "C", owned: true, priceCents: 90_000 }), card({ owned: true, priceCents: 90_000 }), 1)).toBe(true);
+    expect(withinBudget(cmd({ name: "C", owned: true, priceCents: 90_000 }), card({ free: true, priceCents: 90_000 }), 1)).toBe(true);
   });
 
   it("passes a price that was never stocked, which it cannot test", () => {
@@ -115,7 +115,7 @@ describe("withinBudget: the commander's price and an unowned card's", () => {
     const asked: Answers = { ...none, card: "x", budgetDollars: 100, pool: "own" };
     expect(passes(c, asked, card({ priceCents: 5000 }))).toBe(false);
     expect(passes(c, { ...asked, budgetDollars: 110 }, card({ priceCents: 5000 }))).toBe(true);
-    expect(passes(c, asked, card({ owned: true, priceCents: 5000 }))).toBe(true);
+    expect(passes(c, asked, card({ free: true, priceCents: 5000 }))).toBe(true);
   });
 });
 
