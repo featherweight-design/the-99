@@ -197,6 +197,9 @@ jobs:
           # the job environment — so writing them there and leaving the literals here would have
           # left the dispatch inputs silently inert, the ninth instance in this feature of a
           # correct rule wired to nothing.
+          # The kill switch, so the TIMEOUT message can say truthfully whether anything will
+          # resume the run. Absent or anything but 'true' means the cron is skipped.
+          CRON_ENABLED: ${{ vars.CARD_LABELS_ENABLED }}
           LABEL_CAP_USD: ${{ steps.bounds.outputs.cap }}
           LABEL_REPORT_AT_USD: ${{ steps.bounds.outputs.pause }}
         run: |
@@ -249,9 +252,21 @@ jobs:
             sleep 120
           done
           {
+            # WHAT RESUMES THIS DEPENDS ON THE SWITCH, and saying otherwise strands the run. This
+            # used to claim "TOMORROW's scheduled run … no dispatch needed" unconditionally — but
+            # the schedule is gated on `CARD_LABELS_ENABLED`, which is UNSET today, so the cron is
+            # skipped and nothing resumes anything. An operator reading that waits for a run that
+            # never happens, on a backfill that is half paid for.
             echo "gave up after 40 passes (~80 minutes). Intents are recorded under"
-            echo "$LABEL_RUN_ID, and TOMORROW'S scheduled run computes the same ISO-week id,"
-            echo "finds them and resumes — no dispatch needed, and nothing is re-submitted."
+            echo "$LABEL_RUN_ID, and nothing is re-submitted: any later run computing the same"
+            echo "ISO-week id finds them and carries on."
+            if [ "$CRON_ENABLED" = "true" ]; then
+              echo "The schedule is ON, so tomorrow's run resumes this by itself."
+            else
+              echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so the cron is skipped"
+              echo "and NOTHING will resume this on its own. Dispatch this workflow again, in the"
+              echo "same ISO week, to continue the run."
+            fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit 1

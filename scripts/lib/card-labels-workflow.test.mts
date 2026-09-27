@@ -207,6 +207,37 @@ describe("the card-labels spend bounds", () => {
     expect(r.errors).toHaveLength(2);
   });
 
+  it("does not promise a scheduled resumption the kill switch forbids", () => {
+    // The timeout path used to say "TOMORROW'S scheduled run … no dispatch needed" flatly. The
+    // schedule is gated on `CARD_LABELS_ENABLED`, which is unset, so the cron is SKIPPED and
+    // nothing resumes a half-paid backfill — an operator following that waits for a run that
+    // never comes. What resumes the run depends on the switch, so the message has to read it.
+    const step = workflow.slice(
+      workflow.indexOf(LABEL_STEP),
+      workflow.indexOf("\n      - ", workflow.indexOf(LABEL_STEP) + LABEL_STEP.length),
+    );
+    // The switch must REACH the step, or the branch reads an empty variable and is decorative.
+    expect(step).toContain("CRON_ENABLED: ${{ vars.CARD_LABELS_ENABLED }}");
+    const run = runBlockOf(LABEL_STEP);
+    expect(run).toContain('if [ "$CRON_ENABLED" = "true" ]');
+    // And the unconditional claim must not come back: anything TOLD to the operator about a
+    // resumption needing no dispatch has to sit after the test that earns it.
+    //
+    // Comments are stripped first. The comment above this branch explains the defect and says
+    // "tomorrow" while doing so, which is not a claim to anybody — searching the raw block read
+    // that explanation as the very promise it documents removing, and failed a correct build.
+    const spoken = run
+      .split("\n")
+      .map((l) => (l.trim().startsWith("#") ? "" : l))
+      .join("\n");
+    const branch = spoken.indexOf('if [ "$CRON_ENABLED" = "true" ]');
+    expect(branch).toBeGreaterThan(-1);
+    for (const claim of ["resumes this by itself", "tomorrow", "no dispatch needed"]) {
+      const at = spoken.toLowerCase().indexOf(claim.toLowerCase());
+      if (at >= 0) expect(at).toBeGreaterThan(branch);
+    }
+  });
+
   it("agrees with the script about the highest report line a dispatch may ask for", () => {
     // `build-card-labels.ts` holds a SECOND COPY of this ceiling, because the pause has to tell
     // the operator whether a dispatch can resume the run at all — and its previous two wordings
