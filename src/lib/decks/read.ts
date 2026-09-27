@@ -250,8 +250,6 @@ export function deckDetailReads(deckId: string, userId: string) {
         name: decks.name,
         createdAt: decks.createdAt,
         filled: decks.filled,
-        commanderOracleId: decks.commanderOracleId,
-        partnerOracleId: decks.partnerOracleId,
         // The LIVE declaration, which the card note cites and nothing else on this page reads.
         // Null is UNANSWERED and means nothing else: there is no skip, and the note prints no
         // deck clause rather than falling back to a determined verdict that may be four edits
@@ -279,6 +277,11 @@ export function deckDetailReads(deckId: string, userId: string) {
         // against every limit, so the card note's ordinal has to count it too — and this is
         // the one card on the page that is a column on `decks` rather than a `deck_cards` row.
         gameChanger: cards.gameChanger,
+        // The pair THIS statement matched against. The deck row is a separate statement in the
+        // same wave, so a commander change committing between the two would hand them different
+        // pairs; the page names its commanders from these columns, never from the deck row's.
+        deckCommanderOracleId: decks.commanderOracleId,
+        deckPartnerOracleId: decks.partnerOracleId,
       })
       .from(cards)
       .innerJoin(decks, and(
@@ -354,14 +357,18 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 
   const [deck] = deckRows;
   if (!deck) return null;
-  const commanderIds = [
-    deck.commanderOracleId,
-    ...(deck.partnerOracleId ? [deck.partnerOracleId] : []),
-  ];
-  const commanderRow = commanderRows.find((c) => c.oracleId === deck.commanderOracleId);
+  // The commanders come from ONE statement: its rows and the pair it matched against. Read off
+  // the deck row instead, a commander change landing between the two statements would name a
+  // commander the other statement never returned, and an owned deck would read as missing.
+  const pair = commanderRows[0];
+  if (!pair) return null;
+  const commanderOracleId = pair.deckCommanderOracleId;
+  const partnerOracleId = pair.deckPartnerOracleId;
+  const commanderIds = [commanderOracleId, ...(partnerOracleId ? [partnerOracleId] : [])];
+  const commanderRow = commanderRows.find((c) => c.oracleId === commanderOracleId);
   if (!commanderRow) return null;
-  const partnerRow = deck.partnerOracleId
-    ? (commanderRows.find((c) => c.oracleId === deck.partnerOracleId) ?? null)
+  const partnerRow = partnerOracleId
+    ? (commanderRows.find((c) => c.oracleId === partnerOracleId) ?? null)
     : null;
 
   // WAVE 2: the three reads that need wave 1's ids, at once.

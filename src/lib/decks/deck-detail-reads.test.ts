@@ -26,4 +26,14 @@ describe("deckDetailReads", () => {
     expect(q.sql).toContain(`"decks"."commander_oracle_id"`);
     expect(q.sql).toContain(`"decks"."partner_oracle_id"`);
   });
+
+  it("names the commanders from the pair the commander statement matched, not the deck row", () => {
+    // The deck row and the commanders are separate statements in one wave. A commander change
+    // committing between them would hand the two different pairs, so only one may carry it.
+    const commanders = reads.commanders.toSQL().sql;
+    const projection = commanders.slice(0, commanders.indexOf(" from "));
+    expect(projection).toContain(`"decks"."commander_oracle_id"`);
+    expect(projection).toContain(`"decks"."partner_oracle_id"`);
+    expect(reads.deck.toSQL().sql).not.toContain("commander_oracle_id");
+  });
 });
