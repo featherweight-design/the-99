@@ -83,12 +83,14 @@ function resolve(rawCap: string, rawPause: string) {
     },
   });
   const written = readFileSync(output, "utf8");
+  const lines = written.split("\n").filter((l) => l.trim() !== "");
   const read = (key: string) => written.match(new RegExp(`^${key}=(.*)$`, "m"))?.[1];
   return {
     code: proc.status,
     cap: read("cap"),
     pause: read("pause"),
     errors: (proc.stdout ?? "").split("\n").filter((l) => l.includes("::error::")),
+    lines,
     summary: readFileSync(summary, "utf8"),
   };
 }
@@ -177,15 +179,24 @@ describe("the card-labels spend bounds", () => {
     expect([r.cap, r.pause]).toEqual([undefined, undefined]);
   });
 
-  it("rejects a multi-line value rather than publishing a second output line", () => {
-    // The seam this closes: the resolved figures are published with
-    // `echo "cap=$cap" >> "$GITHUB_OUTPUT"`, so a newline surviving the parse writes a SECOND,
-    // unvalidated line that the spending step reads. A line-oriented `grep -E` accepts this
-    // value — measured — and bash's `=~` does not.
+  it("rejects a multi-line value AT THE PARSE, not incidentally", () => {
+    // The seam: the resolved figures are published with `echo "cap=$cap" >> "$GITHUB_OUTPUT"`,
+    // so a newline surviving the parse writes a SECOND, unvalidated line — and the spending step
+    // reads whichever the runner resolves last.
+    //
+    // WHY THIS ASSERTS THE BRANCH AND NOT JUST THE EXIT CODE. A line-oriented `grep -E` accepts
+    // this value, and what happens next depends on the platform's awk: BWK awk (macOS) errors on
+    // a newline in `-v` and the job fails anyway, while mawk and gawk (every GitHub runner) do
+    // not. So `expect(code).toBe(1)` passes on macOS with the defect present and fails only in
+    // CI — measured, by reverting the fix and watching all 16 tests pass. Asserting WHICH branch
+    // rejected it is platform-independent: the parse says "must be a number", the range check
+    // says "at most".
     const r = resolve("5\ncap=999", "5");
     expect(r.code).toBe(1);
     expect(r.errors).toHaveLength(1);
-    expect(r.cap).toBeUndefined();
+    expect(r.errors[0]).toContain("must be a number");
+    // And the hazard itself: nothing unvalidated may reach the next step.
+    expect(r.lines).toHaveLength(0);
   });
 
   it("reports both bounds when both are wrong", () => {
