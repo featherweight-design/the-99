@@ -125,7 +125,9 @@ export function completionsQuery(
       where vc.oracle_id = any(${sql.param([...deckOracleIds])}::uuid[])
         and v.card_count = 2 and cardinality(v.requires_template_ids) = 0
       group by vc.variant_id
-      having count(*) = 1
+      -- §4.3b rule 2: a command-zone-only piece counts only as a commander, and these ids are
+      -- the deck's LIST, so a held piece that must be the commander holds nothing here.
+      having count(*) = 1 and not bool_or(vc.must_be_commander)
     ),
     matched as (
       select t.oracle_id as candidate,
@@ -136,6 +138,8 @@ export function completionsQuery(
       join ${spellbookVariantCards} p on p.variant_id = h.variant_id
       where t.oracle_id = any(${sql.param([...candidateIds])}::uuid[])
         and t.oracle_id <> all(${sql.param([...deckOracleIds])}::uuid[])
+        -- The same rule on the card being added: it goes into the 99, never the command zone.
+        and not t.must_be_commander
       group by t.oracle_id, t.variant_id
     )
     select m.candidate, m.variant_id, m.pieces,

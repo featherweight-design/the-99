@@ -149,6 +149,12 @@ describe("the completions statement", () => {
 
   // RULE 1, shared with the assembled read: a template-gated variant names a CATEGORY of card,
   // so a decklist cannot be said to complete it either.
+  it("counts no command-zone-only piece, held or added, since both sit in the 99", () => {
+    const text = rendered();
+    expect(text).toMatch(/having count\(\*\) = 1 and not bool_or\(vc\.must_be_commander\)/);
+    expect(text).toMatch(/and not t\.must_be_commander/);
+  });
+
   it("excludes template-gated variants", () => {
     expect(rendered()).toContain("cardinality(v.requires_template_ids) = 0");
   });
