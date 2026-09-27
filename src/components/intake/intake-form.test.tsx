@@ -55,12 +55,12 @@ describe("the Theme field's join", () => {
 });
 
 describe("Cards for the 99", () => {
-  it("sends own-only with the submit, and says the budget caps the commander and an unowned card", () => {
+  it("sends own-only with the submit, and says the budget caps the commander and a card it would buy", () => {
     push.mockClear();
     render(<IntakeForm themes={[]} initial={emptyParams()} />);
     const group = screen.getByRole("radiogroup", { name: "Cards for the 99" });
     fireEvent.click(within(group).getByRole("radio", { name: "Only cards I own" }));
-    expect(screen.getByText("With the 99 from your cards, this caps the commander and any card you ask for that you don’t own. It never ranks.")).toBeTruthy();
+    expect(screen.getByText("With the 99 from your cards, this caps the commander and any card you ask for that you’d have to buy. It never ranks.")).toBeTruthy();
     fireEvent.submit(group.closest("form")!);
     expect(push.mock.calls[0][0]).toContain("pool=own");
   });

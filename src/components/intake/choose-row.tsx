@@ -265,9 +265,8 @@ function OwnershipLine({
   best: boolean;
 }) {
   const ready = trial.state === "ready" ? trial.figures : null;
-  // A ready row's own count decides; until then the card's chip does, so for an unowned card the
-  // line is there from the first paint. The chip cannot see claims: an owned card whose every copy
-  // is held is only known to buy once the count lands, and its line arrives with it.
+  // A ready row's own count decides; until then the card's chip does, so for a card the fill buys
+  // (unowned, or every copy held: `buysCard`) the line is there from the first paint.
   const unpriced = ready ? ready.unpricedCard !== null : cardUnpriced;
   const capCents = budgetDollars === null ? null : budgetDollars * 100;
   return (
