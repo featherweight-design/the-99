@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, modelToken, planChunks, runToken, waveSize,
+  boundedNumber, CARDS_PER_REQUEST, meetsFloor, modelToken, pauseRemediation, planChunks,
+  runToken, waveSize,
   withinCap,
   worstCaseUsd,
 } from "./plan";
@@ -242,5 +243,40 @@ describe("modelToken", () => {
     const a = planChunks("r", "claude-sonnet-4-5", names(12))[0].customId;
     const b = planChunks("r", "claude-sonnet-5", names(12))[0].customId;
     expect(a).not.toBe(b);
+  });
+});
+
+describe("what a paused run tells the operator", () => {
+  // The bound the dispatch form enforces. Pinned against the workflow in
+  // `scripts/lib/card-labels-workflow.test.mts`; used here as the argument it is.
+  const CEILING = 50;
+
+  it("names a reachable figure when the form can reach it", () => {
+    const r = pauseRemediation(41.09, CEILING);
+    expect(r.canResume).toBe(true);
+    expect(r.neededUsd).toBe(41.09);
+    expect(r.text).toContain("$41.09");
+  });
+
+  it("rounds the needed figure UP, so the retry does not pause on a rounding error", () => {
+    // The run's own comparison is `projected > line`, so a line at a TRUNCATED projection pauses
+    // again. 41.081 must ask for 41.09, never 41.08.
+    expect(pauseRemediation(41.081, CEILING).neededUsd).toBe(41.09);
+    expect(pauseRemediation(41.081, CEILING).text).not.toContain("$41.08 ");
+  });
+
+  it("does not offer a dispatch it cannot reach", () => {
+    // THE INVARIANT, asserted rather than the wording — this sentence has been wrong three times
+    // and each wrong version read perfectly well. Past the ceiling there is no input to name.
+    const r = pauseRemediation(60, CEILING);
+    expect(r.canResume).toBe(false);
+    expect(r.text).not.toMatch(/dispatch again/i);
+    expect(r.text).toMatch(/NO DISPATCH CAN DO IT/);
+  });
+
+  it("refuses to resume at exactly the ceiling's own figure and one cent past it", () => {
+    // The boundary in both directions, because `<=` and `<` read identically and differ here.
+    expect(pauseRemediation(50, CEILING).canResume).toBe(true);
+    expect(pauseRemediation(50.01, CEILING).canResume).toBe(false);
   });
 });

@@ -32,7 +32,8 @@ import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { faceResolver } from "../src/lib/labels/parse";
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, planChunks, waveSize, withinCap, worstCaseUsd,
+  boundedNumber, CARDS_PER_REQUEST, meetsFloor, pauseRemediation, planChunks, waveSize,
+  withinCap, worstCaseUsd,
   type Chunk,
 } from "../src/lib/labels/plan";
 import {
@@ -57,6 +58,16 @@ const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REP
 
 /** 95% of the cards asked about, per the plan. Below it the run refuses and publishes nothing. */
 const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);
+
+/**
+ * The highest report line `card-labels.yml` will accept from a dispatch — Hugh's $50.
+ *
+ * Here so the PAUSE can tell the operator whether a dispatch can actually resume the run, which
+ * is the one thing its previous two wordings both got wrong. It is a SECOND COPY of a figure the
+ * workflow enforces, so `card-labels-workflow.test.mts` asserts the two agree; a remediation that
+ * names a ceiling the form does not have is exactly the defect this replaced.
+ */
+const DISPATCH_REPORT_CEILING_USD = 50;
 
 /**
  * Batch rates for the model actually selected, and a REFUSAL for one this repository has no
@@ -713,8 +724,18 @@ async function main(): Promise<void> {
   if (projected > REPORT_AT_USD) {
     console.error(`\nPAUSED: the projected total is $${projected.toFixed(2)}, past the `
       + `$${REPORT_AT_USD.toFixed(2)} report line (cap $${CAP_USD.toFixed(2)}).`);
-    console.error(`Nothing further has been submitted. Report the figure and hold for Hugh; `
-      + `re-run with LABEL_REPORT_AT_USD=${CAP_USD} only once he has approved it.`);
+    // THE REMEDIATION HAS TO BE FOLLOWABLE, and has now been wrong twice in opposite directions.
+    //
+    // It first said `LABEL_REPORT_AT_USD=${CAP_USD}` — on the run most likely to pause, a backfill
+    // dispatched at the cap, that reads "set it to 55", which `card-labels.yml` refuses. Then it
+    // said "a higher report line, up to $50", which is unfollowable in the case that matters: a
+    // run ALREADY at $50 has no higher input, so retrying at the maximum pauses again.
+    //
+    // So the line states the figure the report line would have to reach, and says plainly whether
+    // a dispatch can reach it. Past the form's ceiling the answer is not a bigger number — the
+    // projection is past what Hugh approved, and that is a decision plus a deliberate change.
+    console.error(`Nothing further has been submitted. Report the figure and hold for Hugh.`);
+    console.error(pauseRemediation(projected, DISPATCH_REPORT_CEILING_USD).text);
     // NON-ZERO. A plain `return` here exited 0, so the one week the report line actually fired
     // would have shown a GREEN step — and the workflow's own comment claims the two guards are
     // visible "in the only place anyone looks". A pause is a hold awaiting a decision, which is
