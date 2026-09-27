@@ -10,7 +10,7 @@ import { ReadAsBar } from "./read-as-bar";
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const labels = { theme: (s: string) => ({ dinosaurs: "Dinosaurs" })[s] ?? s, card: "Regisaur Alpha" };
 const chip = (over: Partial<CardChip> = {}): CardChip => ({
-  oracleId: CARD, name: "Regisaur Alpha", owned: false, price: { kind: "priced", cents: 110 }, ...over,
+  oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 }, ...over,
 });
 
 function bar(props: { card?: CardChip | null; notUsed?: string[]; empty?: boolean } = {}) {
@@ -73,6 +73,11 @@ describe("We read this as", () => {
     bar({ card: chip({ owned: true }) });
     expect(screen.queryByTestId("card-chip-no-price")).toBeNull();
     expect(screen.getAllByTestId("answer-chip")[2].textContent).not.toContain("buy");
+  });
+
+  it("marks an owned card whose every copy is held as held, never free, since the fill buys it", () => {
+    bar({ card: chip({ owned: true, held: { deck: "Atraxa" } }) });
+    expect(screen.getByTestId("card-chip-held").textContent).toBe("none free, in Atraxa");
   });
 
   it("quotes Not used as phrases, apart from the chips, and only when there are any", () => {

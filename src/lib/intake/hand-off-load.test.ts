@@ -13,7 +13,7 @@ const { emptyParams } = await import("./params");
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
-const chip = { oracleId: CARD, name: "Regisaur Alpha", owned: false, price: { kind: "priced", cents: 110 } };
+const chip = { oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 } };
 const ask = (over = {}) => ({ ...emptyParams(), results: true, themes: ["dinosaurs"], card: CARD, budgetDollars: 150, bracket: 2 as const, ...over });
 
 beforeEach(() => {

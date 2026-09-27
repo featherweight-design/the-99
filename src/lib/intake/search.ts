@@ -4,6 +4,8 @@ import { db } from "../../db";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
+import { hardDecks } from "../decks/availability";
+import { loadAvailability } from "../decks/availability-query";
 import { notBuiltBy } from "../decks/built";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
@@ -11,6 +13,7 @@ import type { EdhrecTag } from "../edhrec/parse";
 import { printedIn } from "../sets/printed-in";
 import { loadCommanderPrintings } from "../sets/printed-in-read";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
+import { buysCard } from "./buys-card";
 import { buildPhraseIndex, type PhraseIndex } from "./match";
 import { rankCandidates, type Answers, type Candidate, type CardFacts, type SearchResult, type Tribes } from "./rank";
 import { themeVocabulary, tribesFor, type VocabularyTheme } from "./vocabulary";
@@ -194,7 +197,7 @@ export async function loadSearchFacts(userId: string, asked: Answers): Promise<S
 
   const cardFacts: CardFacts | null = card === null || cardRow === null ? null : {
     oracleId: card,
-    owned: cardRow.owned,
+    free: !buysCard(cardRow),
     priceCents: prices.get(card)?.liveCents ?? null,
     gameChanger: cardRow.gameChanger,
     massLandDenial: flags.get(card)?.massLandDenial ?? false,
@@ -218,13 +221,27 @@ export const isCandidate = (userId: string) =>
  * eligibility (`loadPhraseIndex`), commander-legal and never a basic land. A card a hand-edited
  * URL names outside that is no answer, and reads as null like a card that does not exist.
  */
-export async function loadCardRow(userId: string, oracleId: string): Promise<{ name: string; owned: boolean; gameChanger: boolean } | null> {
+export type CardRow = {
+  name: string;
+  owned: boolean;
+  /** Owned with every copy held by a committed deck; `deck` names the first holder. The fill buys
+   *  such a card exactly as it buys one the player does not own (`loadFillGate`, `trialFill`). */
+  held: { deck: string | null } | null;
+  gameChanger: boolean;
+};
+
+export async function loadCardRow(userId: string, oracleId: string): Promise<CardRow | null> {
   const [row] = (await db.execute(sql`
     select c.name, c.game_changer, c.type_line,
       exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
     from cards c where c.oracle_id = ${oracleId}::uuid and c.commander_legal
   `)).rows as { name: string; game_changer: boolean; type_line: string; owned: boolean }[];
-  return row && !isBasicLand(row.type_line) ? { name: row.name, owned: row.owned, gameChanger: row.game_changer } : null;
+  if (!row || isBasicLand(row.type_line)) return null;
+  // The same claim read the commander's held mark and the fill's charge use, and the same rule:
+  // a copy is free when the row says one is.
+  const a = row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) : undefined;
+  const held = a !== undefined && a.free <= 0 ? { deck: hardDecks(a)[0]?.name ?? null } : null;
+  return { name: row.name, owned: row.owned, held, gameChanger: row.game_changer };
 }
 
 /**

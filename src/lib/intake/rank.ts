@@ -81,7 +81,8 @@ export type BracketFacts = { gameChanger: boolean; massLandDenial: boolean; extr
 
 export type CardFacts = BracketFacts & {
   oracleId: string;
-  owned: boolean;
+  /** Owned with a copy free, so placing it costs nothing. Held or unowned, the fill buys it. */
+  free: boolean;
   /** The cheapest printing stocked now; null when none is. */
   priceCents: number | null;
 };
@@ -217,7 +218,7 @@ export function withinBracket(c: Candidate, card: CardFacts | null, bracket: Bra
 }
 
 export function withinBudget(c: Candidate, card: CardFacts | null, dollars: number): boolean {
-  const cost = (c.owned ? 0 : c.priceCents ?? 0) + (card && !card.owned ? card.priceCents ?? 0 : 0);
+  const cost = (c.owned ? 0 : c.priceCents ?? 0) + (card && !card.free ? card.priceCents ?? 0 : 0);
   return cost <= dollars * 100;
 }
 

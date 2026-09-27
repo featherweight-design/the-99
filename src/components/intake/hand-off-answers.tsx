@@ -10,6 +10,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CardValue } from "./read-as-bar";
 import { helpMeChooseCopy, orList } from "../../lib/copy/help-me-choose";
 import { formatCents } from "../../lib/decks/price";
+import { buysCard } from "../../lib/intake/buys-card";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 
 const copy = helpMeChooseCopy.handOff;
@@ -20,13 +21,14 @@ const copy = helpMeChooseCopy.handOff;
  */
 export function budgetLine(card: HandOffAnswers["card"], cardUnread = false, ownOnly = false): string | null {
   if (cardUnread) return null;
-  // Own-only: the fill buys nothing. An unowned card is the one purchase, and the budget charges it (audit 8).
+  // Own-only: the fill buys nothing. A card it buys (unowned, or every copy held) is the one
+  // purchase, and the budget charges it (audit 8).
   if (ownOnly) {
-    if (card === null || card.owned) return copy.budgetOwn;
+    if (card === null || !buysCard(card)) return copy.budgetOwn;
     return copy.budgetOwnCard(card.name, card.price.kind === "priced" ? formatCents(card.price.cents) : null);
   }
-  // An owned card costs the budget nothing, so it is not paid for first.
-  if (card === null || card.owned) return copy.budgetAlone;
+  // A card with a free copy costs the budget nothing, so it is not paid for first.
+  if (card === null || !buysCard(card)) return copy.budgetAlone;
   return card.price.kind === "priced" ? copy.budgetFirst(card.name, formatCents(card.price.cents)) : copy.budgetUnknown(card.name);
 }
 
