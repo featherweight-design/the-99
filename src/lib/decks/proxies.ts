@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 /**
  * The refusal a failed proxy read produces on the pull path.
@@ -98,6 +99,7 @@ export async function proxiedOracleIds(
     return new Set(result.rows.map((x) => x.oracle_id));
   } catch (err) {
     if (onError === "throw") throw err;
+    recordSoftFailure();
     return new Set<string>();
   }
 }
@@ -158,6 +160,7 @@ export async function proxyCounts(userId: string): Promise<Map<string, ProxyCoun
     `);
     return new Map(result.rows.map((r) => [r.deck_id, { copies: r.copies, covers: r.covers }]));
   } catch {
+    recordSoftFailure();
     return new Map<string, ProxyCount>();
   }
 }

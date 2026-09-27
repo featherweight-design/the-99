@@ -47,6 +47,7 @@ import { isReachablePermits } from "../bracket/verdict-head";
 import { storedPermitsSql } from "../profile/stored-sql";
 import { noticeSummarySql, type NoticeSummary } from "../notices/summary-sql";
 import type { DeckSort } from "./sort";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 // ---------------------------------------------------------------------------
 // WUBRG bitmask helpers (tested)
@@ -334,9 +335,10 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   const ownedIds = cardRows.filter((r) => r.owned).map((r) => r.oracleId);
   const availability =
     ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
-          () => null,
-        )
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => {
+          recordSoftFailure();
+          return null;
+        })
       : null;
 
   // The printed name and the art both come from the player's own copy, which this
@@ -464,7 +466,10 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
 export async function readNoteFlags(
   oracleIds: string[],
 ): Promise<Map<string, CardBracketFlags> | null> {
-  return loadBracketFlags(oracleIds).catch(() => null);
+  return loadBracketFlags(oracleIds).catch(() => {
+    recordSoftFailure();
+    return null;
+  });
 }
 
 /**
@@ -1065,7 +1070,10 @@ export async function listDecksWithStats(
   // clause is not worth a 500 on the deck list.
   const availability =
     opts.includeInUseElsewhere && rows.length > 0
-      ? await loadAvailability(userId).catch(() => null)
+      ? await loadAvailability(userId).catch(() => {
+          recordSoftFailure();
+          return null;
+        })
       : null;
   const inUseElsewhere = availability
     ? inUseElsewhereByDeck(availability.values())
@@ -1108,7 +1116,12 @@ export async function listDecksWithStats(
   );
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
-  const buyRows = canFlip ? await loadDeckBuyRows(userId).catch(() => []) : [];
+  const buyRows = canFlip
+    ? await loadDeckBuyRows(userId).catch(() => {
+        recordSoftFailure();
+        return [];
+      })
+    : [];
   const unfundedByDeck = new Map<string, number>();
   for (const r of buyRows) {
     unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);

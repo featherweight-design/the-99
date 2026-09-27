@@ -2117,3 +2117,22 @@ export const cardLabels = pgTable("card_labels", {
   inputHash: text("input_hash").notNull(),
   labelledAt: timestamp("labelled_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * One counter per reader that moves whenever a table Home or `/decks` reads changes for them.
+ * Those two pages cache their whole payload keyed on it (`src/lib/cache/user-data-stamp.ts`),
+ * so a write invalidates them by construction rather than by remembering to call something.
+ *
+ * WRITTEN ONLY BY THE DATABASE. Every per-user table the two pages read carries the
+ * `user_data_touch` trigger (the migration that adds this table), which bumps the row at COMMIT
+ * rather than per statement. That is what keeps it deadlock-free: a transaction takes the stamp
+ * after every other lock it will ever hold, so a transaction waiting on a stamp row is always
+ * waiting on one that is already committing. `pnpm check:list-cache` fails when a table the
+ * pages read lacks the trigger; `pnpm probe:list-stamp` proves each one moves the stamp.
+ *
+ * No row means no write since the trigger shipped, which reads as stamp 0.
+ */
+export const userDataStamps = pgTable("user_data_stamps", {
+  userId: text("user_id").primaryKey(),
+  stamp: bigint("stamp", { mode: "number" }).notNull().default(0),
+});

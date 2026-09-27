@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { perfRoute } from "../lib/perf/timing";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
@@ -16,6 +17,13 @@ import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
 import { analysisTabEnabled } from "../lib/decks/analysis-flag";
+import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
+import { recordSoftFailure } from "../lib/cache/soft-failure";
+
+/** What the signed-in Home draws, cached whole. First run draws none of it. */
+type HomePayload =
+  | { firstRun: true }
+  | ({ firstRun: false } & Omit<ComponentProps<typeof Dashboard>, "now">);
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -96,90 +104,104 @@ export default async function HomePage() {
   // /decks/import. Showing them the three steps would hide the deck they have.
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/");
-  const [stats, decks] = await Promise.all([
-    perf.timed("collectionStats", () => getCollectionStats(userId)),
-    // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
-    // the order it asks for: the resume block re-sorts by `byTouched` and
-    // nothing else on the page renders this list. `lastPlayed` — what Home took
-    // while the deck rail existed — spends a correlated `max()` over
-    // `deck_games` in its ORDER BY, and that ORDERING became dead work the
-    // moment the rail went.
-    //
-    // The COLUMN it orders by is still read and still needed: `lastPlayedAt` is
-    // one of the three timestamps `byTouched` weighs, and it is what makes a row
-    // print `played`. Only the sorting of the whole list by it is dropped.
-    // Proxy stats on, because this payload's rows are RENDERED here: `ResumeDecks`
-    // draws each deck's status pill, and without the figures a deck whose last
-    // slots are printed reads `To buy` on Home while `/decks` says `Complete`
-    // about the same deck.
-    // Commander art on, for the same reason proxy stats are: these rows are
-    // RENDERED here, and the resume row's portrait is the commander's own art.
-    perf.timed("listDecks", () => listDecksWithStats(userId, "name", {
-      includeProxyStats: true,
-      includeDeckState: true,
-      includeCommanderArt: true,
-      // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
-      // `/decks` reads it under. 0.83ms on staging.
-      includeBracket: analysisTabEnabled(),
-    })),
-  ]);
-  if (stats.uniqueCards === 0 && decks.length === 0) {
-    return <FirstRunChecklist />;
-  }
-
-  const [lastUpdated, ranked, shopping, unplayed] = await Promise.all([
-    perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
-    perf.timed("rankedList", () => getRankedList(userId)),
-    perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
-    // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
-    // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
-    // failure, which walks the plain shuffle.
-    perf.timed("unplayedCounts", () => loadUnplayedCounts(userId)),
-  ]);
-
   // ONE clock for the whole render. The rotation's day boundary and the
   // dashboard's stamp both read it, and two `new Date()` calls either side of an
   // await can straddle UTC midnight — which would draw yesterday's pair beside a
-  // figure stamped today. Read here rather than inside the slice because a helper
-  // reading the clock itself could not be tested.
+  // figure stamped today.
   const now = new Date();
-  // The slice FIRST, then the printings — the two shown rather than every commander the
-  // player could build. `getRankedList` deliberately does not resolve art itself: this
-  // page draws two of its rows on the desktop hero and the rest never reach a screen,
-  // and the lookup is a join over `collection_items × printings × sets`.
-  const slice = readySlice(ranked.items, { userId, now, unplayed });
-  const ready = { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) };
-
-  // One availability read between the in-use clause and the Commitments card.
-  // Fail soft, the same way src/app/commanders/page.tsx does: losing
-  // availability must cost those two things, never the page.
-  let inUse = new Map<string, ReceiptCounts>();
-  let commitments: Commitments | null = null;
-  try {
-    const [{ collection }, availability] = await Promise.all([
-      // React-cached, so on the branch where getRankedList recomputed this is a
-      // cache hit rather than a second query.
-      perf.timed("collectionPool", () => loadCollectionPool(userId)),
-      // No options: the whole-user vantage, as /collection already takes.
-      perf.timed("availability", () => loadAvailability(userId)),
+  // The whole payload is cached for this reader, keyed on their data stamp: see page-cache.ts
+  // for why that is correct after any write, from anywhere. The UTC DATE is in the key because
+  // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
+  // so a pair cached yesterday is never served today.
+  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (): Promise<PageLoad<HomePayload>> => {
+    const [stats, decks] = await Promise.all([
+      perf.timed("collectionStats", () => getCollectionStats(userId)),
+      // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
+      // the order it asks for: the resume block re-sorts by `byTouched` and
+      // nothing else on the page renders this list. `lastPlayed` — what Home took
+      // while the deck rail existed — spends a correlated `max()` over
+      // `deck_games` in its ORDER BY, and that ORDERING became dead work the
+      // moment the rail went.
+      //
+      // The COLUMN it orders by is still read and still needed: `lastPlayedAt` is
+      // one of the three timestamps `byTouched` weighs, and it is what makes a row
+      // print `played`. Only the sorting of the whole list by it is dropped.
+      // Proxy stats on, because this payload's rows are RENDERED here: `ResumeDecks`
+      // draws each deck's status pill, and without the figures a deck whose last
+      // slots are printed reads `To buy` on Home while `/decks` says `Complete`
+      // about the same deck.
+      // Commander art on, for the same reason proxy stats are: these rows are
+      // RENDERED here, and the resume row's portrait is the commander's own art.
+      perf.timed("listDecks", () => listDecksWithStats(userId, "name", {
+        includeProxyStats: true,
+        includeDeckState: true,
+        includeCommanderArt: true,
+        // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
+        // `/decks` reads it under. 0.83ms on staging.
+        includeBracket: analysisTabEnabled(),
+      })),
     ]);
-    // The shown pair, not the whole ranked list — only a rendered hero prints
-    // the clause.
-    inUse = receiptCountsByCommander(ready.shown, collection, availability);
-    commitments = commitmentFigures(availability.values());
-  } catch {
-    // Both consumers render nothing rather than a zero, which would be a claim.
-  }
+    if (stats.uniqueCards === 0 && decks.length === 0) {
+      return { value: { firstRun: true }, store: true };
+    }
+
+    const [lastUpdated, ranked, shopping, unplayed] = await Promise.all([
+      perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
+      perf.timed("rankedList", () => getRankedList(userId)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+      // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
+      // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
+      // failure, which walks the plain shuffle.
+      perf.timed("unplayedCounts", () => loadUnplayedCounts(userId)),
+    ]);
+
+    // The slice FIRST, then the printings — the two shown rather than every commander the
+    // player could build. `getRankedList` deliberately does not resolve art itself: this
+    // page draws two of its rows on the desktop hero and the rest never reach a screen,
+    // and the lookup is a join over `collection_items × printings × sets`.
+    const slice = readySlice(ranked.items, { userId, now, unplayed });
+    const ready = { ...slice, shown: await perf.timed("ownedArt", () => withOwnedCardArt(userId, slice.shown)) };
+
+    // One availability read between the in-use clause and the Commitments card.
+    // Fail soft, the same way src/app/commanders/page.tsx does: losing
+    // availability must cost those two things, never the page.
+    let inUse = new Map<string, ReceiptCounts>();
+    let commitments: Commitments | null = null;
+    try {
+      const [{ collection }, availability] = await Promise.all([
+        // React-cached, so on the branch where getRankedList recomputed this is a
+        // cache hit rather than a second query.
+        perf.timed("collectionPool", () => loadCollectionPool(userId)),
+        // No options: the whole-user vantage, as /collection already takes.
+        perf.timed("availability", () => loadAvailability(userId)),
+      ]);
+      // The shown pair, not the whole ranked list — only a rendered hero prints
+      // the clause.
+      inUse = receiptCountsByCommander(ready.shown, collection, availability);
+      commitments = commitmentFigures(availability.values());
+    } catch {
+      // Both consumers render nothing rather than a zero, which would be a claim.
+      // A fallback, so this render is served and not cached (see soft-failure.ts).
+      recordSoftFailure();
+    }
+
+    return {
+      value: { firstRun: false, stats, lastUpdated, ready, inUse, decks, commitments, shopping },
+      // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
+      store: !ranked.degraded,
+    };
+  });
+  if (data.firstRun) return <FirstRunChecklist />;
 
   return (
     <Dashboard
-      stats={stats}
-      lastUpdated={lastUpdated}
-      ready={ready}
-      inUse={inUse}
-      decks={decks}
-      commitments={commitments}
-      shopping={shopping}
+      stats={data.stats}
+      lastUpdated={data.lastUpdated}
+      ready={data.ready}
+      inUse={data.inUse}
+      decks={data.decks}
+      commitments={data.commitments}
+      shopping={data.shopping}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

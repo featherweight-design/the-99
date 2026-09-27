@@ -19,6 +19,7 @@ import { factsFor } from "../bracket/facts";
 import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { CardFact } from "../copy/card-mark";
+import { recordSoftFailure } from "../cache/soft-failure";
 
 export type BrowsePrinting = {
   setCode: string;           // uppercased for display; stored lowercase
@@ -1048,7 +1049,10 @@ export async function attachBracketFacts(
   read?: (ids: readonly string[]) => Promise<Map<string, CardBracketFlags>>,
 ): Promise<BrowseCard[]> {
   const loadBracketFlags = read ?? (await import("../bracket/flags-read")).loadBracketFlags;
-  const flags = await loadBracketFlags(cards.map((c) => c.oracleId)).catch(() => null);
+  const flags = await loadBracketFlags(cards.map((c) => c.oracleId)).catch(() => {
+    recordSoftFailure();
+    return null;
+  });
   if (!flags) return cards;
   if (flags.size === 0) return cards;
   for (const card of cards) {
@@ -1097,7 +1101,10 @@ export async function attachComboPartners(
   // there is no server page to scope to and any card can scroll into view — and passing all
   // 2,805 ids is the SLOWER of the two forms, not the faster one (913ms against 492ms on
   // staging, for the same 65 answers).
-  const partners = await load({ userId }).catch(() => null);
+  const partners = await load({ userId }).catch(() => {
+    recordSoftFailure();
+    return null;
+  });
   if (!partners || partners.size === 0) return cards;
   for (const card of cards) {
     const hit = partners.get(card.oracleId);

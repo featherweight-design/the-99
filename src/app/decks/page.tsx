@@ -10,6 +10,7 @@ import { loadShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { selectParamSuffix } from "../../lib/decks/selection-param";
 import { DEFAULT_DECK_SORT } from "../../lib/decks/sort";
 import { getCollectionStats } from "../../lib/home/summary";
+import { cachePageForUser } from "../../lib/cache/page-cache";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { noticesEnabled } from "../../lib/notices/flag";
 import { DecksView } from "../../components/decks/decks-view";
@@ -41,58 +42,72 @@ export default async function DecksPage({
   const includeBracket = analysisTabEnabled();
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks");
-  const [decks, shopping, folders] = await Promise.all([
-    // The sort has no default in the reader, so no caller's order can move
-    // under it. The server hands back this order and the client re-sorts from
-    // there without a request.
-    // This is the one caller that draws the in-use-elsewhere clause, so it is
-    // the one that pays for the availability read behind it.
-    perf.timed("listDecks", () => listDecksWithStats(userId, DEFAULT_DECK_SORT, {
-      includeInUseElsewhere: true,
-      // This is the surface that draws `N proxies` and the covered status pill.
-      includeProxyStats: true,
-      // And the deck-state marks: the hollow plate for a deck with no version,
-      // the pending edge for one whose draft has moved, and the change figure
-      // in the detail row.
-      includeDeckState: true,
-      // The tile's wash IS the commander's art, so this surface pays for the
-      // copy the player owns rather than drawing another printing's.
-      includeCommanderArt: true,
-      includeBracket,
-      // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
-      includeNotice: includeBracket && noticesEnabled(),
-    })),
-    // The tile's To buy figure reads its copies and its cost from the same
-    // roll-up, so the count and the price always cover the same cards.
-    perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
-    // The shelf line's own read, and it cannot be derived from the decks above:
-    // a folder holding no decks has no deck row to be named by, and landing on
-    // that empty shelf is the whole loop the create flow teaches.
-    perf.timed("folders", () => listFolders(userId)),
-  ]);
+  // The whole payload is cached for this reader, keyed on their data stamp: see page-cache.ts
+  // for why that is correct after any write, from anywhere.
+  const data = await cachePageForUser(userId, "decks", [], async () => {
+    const [decks, shopping, folders] = await Promise.all([
+      // The sort has no default in the reader, so no caller's order can move
+      // under it. The server hands back this order and the client re-sorts from
+      // there without a request.
+      // This is the one caller that draws the in-use-elsewhere clause, so it is
+      // the one that pays for the availability read behind it.
+      perf.timed("listDecks", () => listDecksWithStats(userId, DEFAULT_DECK_SORT, {
+        includeInUseElsewhere: true,
+        // This is the surface that draws `N proxies` and the covered status pill.
+        includeProxyStats: true,
+        // And the deck-state marks: the hollow plate for a deck with no version,
+        // the pending edge for one whose draft has moved, and the change figure
+        // in the detail row.
+        includeDeckState: true,
+        // The tile's wash IS the commander's art, so this surface pays for the
+        // copy the player owns rather than drawing another printing's.
+        includeCommanderArt: true,
+        includeBracket,
+        // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
+        includeNotice: includeBracket && noticesEnabled(),
+      })),
+      // The tile's To buy figure reads its copies and its cost from the same
+      // roll-up, so the count and the price always cover the same cards.
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+      // The shelf line's own read, and it cannot be derived from the decks above:
+      // a folder holding no decks has no deck row to be named by, and landing on
+      // that empty shelf is the whole loop the create flow teaches.
+      perf.timed("folders", () => listFolders(userId)),
+    ]);
 
-  // Only the zero state prints these two, and `getRankedList` recomputes the
-  // whole score set on a cache miss — real work to do on a page that throws the
-  // answer away as soon as the player owns one deck.
-  const [ranked, stats] =
-    decks.length === 0
-      ? await Promise.all([
-          perf.timed("rankedList", () => getRankedList(userId)),
-          perf.timed("collectionStats", () => getCollectionStats(userId)),
-        ])
-      : [null, null];
+    // Only the zero state prints these two, and `getRankedList` recomputes the
+    // whole score set on a cache miss — real work to do on a page that throws the
+    // answer away as soon as the player owns one deck.
+    const [ranked, stats] =
+      decks.length === 0
+        ? await Promise.all([
+            perf.timed("rankedList", () => getRankedList(userId)),
+            perf.timed("collectionStats", () => getCollectionStats(userId)),
+          ])
+        : [null, null];
+
+    return {
+      value: {
+        decks, folders, shopping,
+        // Nine, clamped by what actually scored. Not a second threshold. It was
+        // Home's Ready to build set until that grew to two weeks deep (2026-09-27);
+        // this zero state deliberately did not move with it (d9, for Hugh).
+        buildable: Math.min(DECKS_ZERO_BUILDABLE, ranked?.items.length ?? 0),
+        // Copies owned, not distinct names: `1,284 cards` is what a player has.
+        cards: stats?.totalCards ?? 0,
+      },
+      // A degraded ranking recomputes on every visit by design; a stored one would freeze it.
+      store: !ranked?.degraded,
+    };
+  });
 
   return (
     <DecksView
-      decks={decks}
-      folders={folders}
-      shopping={shopping}
-      // Nine, clamped by what actually scored. Not a second threshold. It was
-      // Home's Ready to build set until that grew to two weeks deep (2026-09-27);
-      // this zero state deliberately did not move with it (d9, for Hugh).
-      buildable={Math.min(DECKS_ZERO_BUILDABLE, ranked?.items.length ?? 0)}
-      // Copies owned, not distinct names: `1,284 cards` is what a player has.
-      cards={stats?.totalCards ?? 0}
+      decks={data.decks}
+      folders={data.folders}
+      shopping={data.shopping}
+      buildable={data.buildable}
+      cards={data.cards}
       // One clock for the whole page, read on the server. Every relative date
       // below agrees because they are all measured against this instant.
       now={new Date().toISOString()}

@@ -34,6 +34,7 @@ export async function edhrecPageMissing(slug: string, probe: PageProbe = headPro
     const res = await probe(`https://edhrec.com/commanders/${slug}`);
     return res.status === 404;
   } catch {
+    // not a fallback: "not missing" makes a 403 unreachable, which makes the list degraded and unstored.
     return false;
   }
 }

@@ -66,6 +66,7 @@ export async function readCatalogGeneration(): Promise<string> {
       .where(eq(catalogRefreshes.id, CATALOG_ROW_ID));
     return generationKey(row?.millis);
   } catch {
+    // not a fallback: the key loses the generation, and nothing a page draws changes.
     return UNSTAMPED;
   }
 }
@@ -91,6 +92,7 @@ export async function catalogGeneration(): Promise<string> {
     );
     return await cached();
   } catch {
+    // not a fallback: as above, the key alone is affected.
     // The WRAPPER can throw too, not just the query — `unstable_cache` requires Next's
     // incremental cache and raises an invariant without it, which is every call from
     // outside a request. Falling back here is what makes the promise above true: with this
