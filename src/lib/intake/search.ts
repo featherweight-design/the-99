@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { cache } from "react";
 
 import { db } from "../../db";
 import { catalogGeneration } from "../cache/catalog-generation";
@@ -230,7 +231,12 @@ export type CardRow = {
   gameChanger: boolean;
 };
 
-export async function loadCardRow(userId: string, oracleId: string): Promise<CardRow | null> {
+/**
+ * `cache`d per request: the results page reads the card twice in one render, for the chip
+ * (`loadCardChip`) and for the search (`loadSearchFacts`), and the claim read below is the
+ * expensive half. `claims: false` skips it for a caller that only needs to know the card counts.
+ */
+export const loadCardRow = cache(async (userId: string, oracleId: string, claims = true): Promise<CardRow | null> => {
   const [row] = (await db.execute(sql`
     select c.name, c.game_changer, c.type_line,
       exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
@@ -239,10 +245,10 @@ export async function loadCardRow(userId: string, oracleId: string): Promise<Car
   if (!row || isBasicLand(row.type_line)) return null;
   // The same claim read the commander's held mark and the fill's charge use, and the same rule:
   // a copy is free when the row says one is.
-  const a = row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) : undefined;
+  const a = claims && row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) : undefined;
   const held = a !== undefined && a.free <= 0 ? { deck: hardDecks(a)[0]?.name ?? null } : null;
   return { name: row.name, owned: row.owned, held, gameChanger: row.game_changer };
-}
+});
 
 /**
  * The two-card combos the build-around card completes, per partner, counted the way the bracket
