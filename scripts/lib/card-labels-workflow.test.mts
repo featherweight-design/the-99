@@ -207,6 +207,22 @@ describe("the card-labels spend bounds", () => {
     expect(r.errors).toHaveLength(2);
   });
 
+  it("agrees with the script about the highest report line a dispatch may ask for", () => {
+    // `build-card-labels.ts` holds a SECOND COPY of this ceiling, because the pause has to tell
+    // the operator whether a dispatch can resume the run at all — and its previous two wordings
+    // both got that wrong, one naming a figure the form refuses and one implying a retry at the
+    // maximum could work when the run was already there. A second copy of a bound drifts from the
+    // first the moment either moves, and the drift would restore exactly that defect.
+    const enforced = workflow.match(/check 'pause' +"\$pause" +([0-9.]+)/)?.[1];
+    const script = readFileSync(join(process.cwd(), "scripts/build-card-labels.ts"), "utf8")
+      .match(/const DISPATCH_REPORT_CEILING_USD = ([0-9.]+);/)?.[1];
+    expect(enforced).toBeDefined();
+    expect(script).toBeDefined();
+    expect(Number(script)).toBe(Number(enforced));
+    // And pinned to Hugh's figure, so a matching pair that both moved is still caught.
+    expect(Number(enforced)).toBe(50);
+  });
+
   it("notes a pause above the cap without refusing it", () => {
     // Safe — the cap truncates each wave before the projection can refuse one — but almost
     // certainly a mistake, and worth saying rather than blocking a legitimate dispatch.

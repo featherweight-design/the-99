@@ -59,6 +59,16 @@ const REPORT_AT_USD = boundedNumber("LABEL_REPORT_AT_USD", process.env.LABEL_REP
 const FLOOR = boundedNumber("LABEL_FLOOR", process.env.LABEL_FLOOR, 0.95, 0, 1);
 
 /**
+ * The highest report line `card-labels.yml` will accept from a dispatch — Hugh's $50.
+ *
+ * Here so the PAUSE can tell the operator whether a dispatch can actually resume the run, which
+ * is the one thing its previous two wordings both got wrong. It is a SECOND COPY of a figure the
+ * workflow enforces, so `card-labels-workflow.test.mts` asserts the two agree; a remediation that
+ * names a ceiling the form does not have is exactly the defect this replaced.
+ */
+const DISPATCH_REPORT_CEILING_USD = 50;
+
+/**
  * Batch rates for the model actually selected, and a REFUSAL for one this repository has no
  * canonical rate for.
  *
@@ -713,18 +723,28 @@ async function main(): Promise<void> {
   if (projected > REPORT_AT_USD) {
     console.error(`\nPAUSED: the projected total is $${projected.toFixed(2)}, past the `
       + `$${REPORT_AT_USD.toFixed(2)} report line (cap $${CAP_USD.toFixed(2)}).`);
-    // THE REMEDIATION HAS TO BE FOLLOWABLE, which this line was not: it said
-    // `LABEL_REPORT_AT_USD=${CAP_USD}`, and on the run most likely to pause — a backfill
-    // dispatched at the cap — that reads "set it to 55", which `card-labels.yml` refuses,
-    // because Hugh's ceiling for the report line is $50. There was no input satisfying both.
+    // THE REMEDIATION HAS TO BE FOLLOWABLE, and has now been wrong twice in opposite directions.
     //
-    // And raising it to the cap was the wrong advice anyway. The pause fires when the PROJECTION
-    // exceeds the line, so a projection past $50 is a run past what Hugh approved; the answer is
-    // his decision, not a wider bound.
+    // It first said `LABEL_REPORT_AT_USD=${CAP_USD}` — on the run most likely to pause, a backfill
+    // dispatched at the cap, that reads "set it to 55", which `card-labels.yml` refuses. Then it
+    // said "a higher report line, up to $50", which is unfollowable in the case that matters: a
+    // run ALREADY at $50 has no higher input, so retrying at the maximum pauses again.
+    //
+    // So the line states the figure the report line would have to reach, and says plainly whether
+    // a dispatch can reach it. Past the form's ceiling the answer is not a bigger number — the
+    // projection is past what Hugh approved, and that is a decision plus a deliberate change.
     console.error(`Nothing further has been submitted. Report the figure and hold for Hugh.`);
-    console.error(`Once he has approved it, dispatch again with a higher report line — up to `
-      + `$50, which is his ceiling and the dispatch form's. A projection past $50 is past what `
-      + `was approved, so moving THAT is a deliberate code change rather than a dispatch input.`);
+    const needed = Math.ceil(projected * 100) / 100;
+    if (needed <= DISPATCH_REPORT_CEILING_USD) {
+      console.error(`To resume, the report line has to reach $${needed.toFixed(2)}, and `
+        + `card-labels.yml accepts up to $${DISPATCH_REPORT_CEILING_USD.toFixed(2)} — so dispatch `
+        + `again with \`pause\` at $${needed.toFixed(2)} or more, once he has approved it.`);
+    } else {
+      console.error(`To resume, the report line would have to reach $${needed.toFixed(2)}, and `
+        + `card-labels.yml accepts at most $${DISPATCH_REPORT_CEILING_USD.toFixed(2)}. NO DISPATCH `
+        + `CAN DO IT: a projection this size is past what was approved, so resuming needs that `
+        + `ceiling raised deliberately in the workflow, not a different input.`);
+    }
     // NON-ZERO. A plain `return` here exited 0, so the one week the report line actually fired
     // would have shown a GREEN step — and the workflow's own comment claims the two guards are
     // visible "in the only place anyone looks". A pause is a hold awaiting a decision, which is
