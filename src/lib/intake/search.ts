@@ -14,7 +14,7 @@ import type { EdhrecTag } from "../edhrec/parse";
 import { printedIn } from "../sets/printed-in";
 import { loadCommanderPrintings } from "../sets/printed-in-read";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
-import { buysCard } from "./buys-card";
+import { buysCard, buysCopy } from "./buys-card";
 import { buildPhraseIndex, type PhraseIndex } from "./match";
 import { rankCandidates, type Answers, type Candidate, type CardFacts, type SearchResult, type Tribes } from "./rank";
 import { themeVocabulary, tribesFor, type VocabularyTheme } from "./vocabulary";
@@ -246,7 +246,7 @@ export const loadCardRow = cache(async (userId: string, oracleId: string, claims
   // The same claim read the commander's held mark and the fill's charge use, and the same rule:
   // a copy is free when the row says one is.
   const a = claims && row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) : undefined;
-  const held = a !== undefined && a.free <= 0 ? { deck: hardDecks(a)[0]?.name ?? null } : null;
+  const held = row.owned && a !== undefined && buysCopy(true, a) ? { deck: hardDecks(a)[0]?.name ?? null } : null;
   return { name: row.name, owned: row.owned, held, gameChanger: row.game_changer };
 });
 
