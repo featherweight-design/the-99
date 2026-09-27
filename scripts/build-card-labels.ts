@@ -32,7 +32,8 @@ import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { faceResolver } from "../src/lib/labels/parse";
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, planChunks, waveSize, withinCap, worstCaseUsd,
+  boundedNumber, CARDS_PER_REQUEST, meetsFloor, pauseRemediation, planChunks, waveSize,
+  withinCap, worstCaseUsd,
   type Chunk,
 } from "../src/lib/labels/plan";
 import {
@@ -734,17 +735,7 @@ async function main(): Promise<void> {
     // a dispatch can reach it. Past the form's ceiling the answer is not a bigger number — the
     // projection is past what Hugh approved, and that is a decision plus a deliberate change.
     console.error(`Nothing further has been submitted. Report the figure and hold for Hugh.`);
-    const needed = Math.ceil(projected * 100) / 100;
-    if (needed <= DISPATCH_REPORT_CEILING_USD) {
-      console.error(`To resume, the report line has to reach $${needed.toFixed(2)}, and `
-        + `card-labels.yml accepts up to $${DISPATCH_REPORT_CEILING_USD.toFixed(2)} — so dispatch `
-        + `again with \`pause\` at $${needed.toFixed(2)} or more, once he has approved it.`);
-    } else {
-      console.error(`To resume, the report line would have to reach $${needed.toFixed(2)}, and `
-        + `card-labels.yml accepts at most $${DISPATCH_REPORT_CEILING_USD.toFixed(2)}. NO DISPATCH `
-        + `CAN DO IT: a projection this size is past what was approved, so resuming needs that `
-        + `ceiling raised deliberately in the workflow, not a different input.`);
-    }
+    console.error(pauseRemediation(projected, DISPATCH_REPORT_CEILING_USD).text);
     // NON-ZERO. A plain `return` here exited 0, so the one week the report line actually fired
     // would have shown a GREEN step — and the workflow's own comment claims the two guards are
     // visible "in the only place anyone looks". A pause is a hold awaiting a decision, which is

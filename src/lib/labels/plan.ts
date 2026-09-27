@@ -202,3 +202,38 @@ export function boundedNumber(
   if (n < min || n > max) throw new Error(`${name} must be between ${min} and ${max}, got ${n}`);
   return n;
 }
+
+/**
+ * What a paused run should tell the operator, and whether a dispatch can resume it at all.
+ *
+ * Pure and tested because this sentence has been WRONG THREE TIMES, each time in a way that read
+ * fine and could not be followed:
+ *
+ *   1. "re-run with LABEL_REPORT_AT_USD=<cap>" — names 55, which the dispatch form refuses.
+ *   2. "a higher report line, up to $50" — unfollowable for a run already AT 50, which is the
+ *      case most likely to pause.
+ *   3. (this) — the remaining trap would be naming a figure above the ceiling as though asking
+ *      for it were possible.
+ *
+ * So the rule is: state the figure the report line must REACH, and say plainly whether the form
+ * can reach it. Past the ceiling there is no input, only a decision — and the text must not
+ * suggest otherwise, which is what `plan.test.ts` asserts rather than pinning the wording.
+ */
+export function pauseRemediation(
+  projectedUsd: number, dispatchCeilingUsd: number,
+): { canResume: boolean; neededUsd: number; text: string } {
+  // ROUNDED UP to the cent. The comparison the run makes is `projected > line`, so a line set to
+  // a truncated projection still pauses — telling the operator to enter $41.08 for a projection
+  // of $41.081 would send them round the loop again for a rounding error.
+  const neededUsd = Math.ceil(projectedUsd * 100) / 100;
+  const canResume = neededUsd <= dispatchCeilingUsd;
+  const text = canResume
+    ? `To resume, the report line has to reach $${neededUsd.toFixed(2)}, and card-labels.yml `
+      + `accepts up to $${dispatchCeilingUsd.toFixed(2)} — so dispatch again with \`pause\` at `
+      + `$${neededUsd.toFixed(2)} or more, once he has approved it.`
+    : `To resume, the report line would have to reach $${neededUsd.toFixed(2)}, and card-labels.yml `
+      + `accepts at most $${dispatchCeilingUsd.toFixed(2)}. NO DISPATCH CAN DO IT: a projection this `
+      + `size is past what was approved, so resuming needs that ceiling raised deliberately in the `
+      + `workflow, not a different input.`;
+  return { canResume, neededUsd, text };
+}
