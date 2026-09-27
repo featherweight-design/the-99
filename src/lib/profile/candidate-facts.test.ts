@@ -43,9 +43,9 @@ describe("the candidate facts read", () => {
   it("asks for variants the deck holds exactly ONE piece of", async () => {
     executed.length = 0;
     await loadCandidateFacts(["c1"], ["d1"]);
-    // The set question. `h.n = 1` is what makes it "one card away" rather than "assembled"
-    // or "untouched", and it is the whole difference from `assembledCombosQuery`.
-    expect(executed[0]).toContain("h.n = 1");
+    // The set question. Exactly one piece held is what makes it "one card away" rather than
+    // "assembled" or "untouched", and it is the whole difference from `assembledCombosQuery`.
+    expect(executed[0]).toContain("having count(*) = 1");
     expect(executed[0]).toMatch(/card_count\s*=\s*2/);
     // Template-gated variants name a CATEGORY of card, so a decklist cannot assemble one.
     expect(executed[0]).toContain("requires_template_ids");
@@ -96,20 +96,26 @@ describe("the completions statement", () => {
     },
   );
 
-  // THE WIDE COLUMNS STAY OUT OF THE MATERIALISED CTE AND OUT OF THE GROUP KEY.
-  //
-  // `two_card` is referenced three times, so Postgres materialises it; `steps` averages 395
-  // characters against a max of 754. Carrying the four columns there spooled them for every
-  // two-card membership row in the index and then used them as GROUP BY keys, when only the
-  // matched completions need them. Asserting the CTE's own select list is the only way to see
-  // that from the emitted string — every column appears somewhere in the statement either way.
-  it("keeps the CTE narrow: variant_id and oracle_id only", () => {
+  // IT STARTS FROM THE DECK. The first CTE walks the membership index by the deck's own cards,
+  // before any grouping; the version that materialised every two-card membership row first took
+  // ~280ms against ~22ms for the same answer. Asserting the CTE's shape is the only way to see
+  // that from the emitted string.
+  it("reads the membership index from the deck's side first, before any join or group", () => {
     const sql = rendered();
-    const cte = sql.slice(sql.indexOf("with two_card as ("), sql.indexOf("), held as ("));
-    expect(cte).toContain("v.variant_id");
-    expect(cte).toContain("vc.oracle_id");
+    const held = sql.slice(sql.indexOf("with held as ("), sql.indexOf("), matched as ("));
+    expect(held).toMatch(/where vc\.oracle_id = any\(\$\d+::uuid\[\]\)/);
+    expect(held).toContain("v.card_count = 2");
+    expect(held).toContain("having count(*) = 1");
+    expect(sql).not.toContain("two_card");
+  });
+
+  // THE WIDE COLUMNS STAY OUT OF BOTH CTEs AND OUT OF THE GROUP KEY: `steps` averages 395
+  // characters, and only the matched completions need it.
+  it("keeps the CTEs narrow: no wide column before the final join", () => {
+    const sql = rendered();
+    const ctes = sql.slice(sql.indexOf("with held as ("), sql.indexOf("select m.candidate"));
     for (const wide of ["steps", "mana_needed", "notable_prerequisites", "produces"]) {
-      expect(cte).not.toContain(wide);
+      expect(ctes).not.toContain(wide);
     }
   });
 
