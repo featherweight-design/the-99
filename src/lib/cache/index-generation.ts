@@ -4,9 +4,10 @@
  * A mix is five integers resolved down the basis chain, and every rung of that chain reads
  * `commander_support` or `identity_composition` — both written by the monthly `Commander
  * index` job. `cacheForUser` already carries the CATALOG generation, and that is a different
- * stamp: an index rebuild does not touch `catalog_refreshes`, so without this an entry built
- * before a rebuild is served after it for the cache's one-hour ceiling, with the route
- * presenting it as the deck's current comparison.
+ * stamp. An index rebuild does stamp `catalog_refreshes` (`build-commander-index.ts`), but only
+ * at its END, and a catalog copy carries staging's `computed_at` across. This generation is read
+ * off the index itself, so an entry built before a rebuild or a copy is never served after it for
+ * the cache's one-hour ceiling as the deck's current comparison.
  *
  * The window is small and the event is rare — an hour, once a month. It is worth closing
  * anyway because of WHICH hour: the first index run that writes role averages flips every

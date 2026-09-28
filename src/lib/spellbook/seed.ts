@@ -429,7 +429,7 @@ export async function ingestCombos(opts: {
   };
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 type FlagRowInsert = typeof cardBracketFlags.$inferInsert;
 type VariantInsert = typeof spellbookVariants.$inferInsert;
@@ -441,7 +441,17 @@ type MemberInsert = typeof spellbookVariantCards.$inferInsert;
  * their diff is written in a savepoint inside it. Exported for `probe:notices-log`.
  */
 export async function publishFlags(flagRows: readonly FlagRowInsert[], logging: boolean, notices: LogReport) {
-  await db.transaction(async (tx) => {
+  await db.transaction((tx) => publishFlagsIn(tx, flagRows, logging, notices));
+}
+
+/**
+ * `publishFlags`'s body, in a transaction the CALLER owns. The ingest calls it through
+ * `publishFlags`, one transaction as ever; `db:copy:combos` calls it and `publishVariantsIn` in ONE
+ * production transaction, so both halves commit together and only after the copy is verified
+ * (plan `2026-09-28-card-data-replicate.md`, §3a).
+ */
+export async function publishFlagsIn(tx: Tx, flagRows: readonly FlagRowInsert[], logging: boolean, notices: LogReport) {
+  {
     // Never tutor: the verdict classifies tutors from oracle text, so a tutor flag moves nothing.
     const previous: Map<string, FlagFacts> | null = logging
       ? await readBefore(tx, "flags", async (sp) => new Map(
@@ -458,7 +468,7 @@ export async function publishFlags(flagRows: readonly FlagRowInsert[], logging: 
       const next = flagRows.map((r) => ({ oracleId: r.oracleId, massLandDenial: r.massLandDenial ?? false, extraTurn: r.extraTurn ?? false }));
       await writeEntries(tx, diffFlags(previous, next), notices);
     }
-  });
+  }
 }
 
 /**
@@ -473,7 +483,19 @@ export async function publishVariants(
   notices: LogReport,
   nameOf: (oracleId: string) => string,
 ) {
-  await db.transaction(async (tx) => {
+  await db.transaction((tx) => publishVariantsIn(tx, variantRows, cardRows, logging, notices, nameOf));
+}
+
+/** `publishVariants`'s body, in a transaction the caller owns; see `publishFlagsIn`. */
+export async function publishVariantsIn(
+  tx: Tx,
+  variantRows: readonly VariantInsert[],
+  cardRows: readonly MemberInsert[],
+  logging: boolean,
+  notices: LogReport,
+  nameOf: (oracleId: string) => string,
+) {
+  {
     const previous = logging ? await readBefore(tx, "combos", async (sp) => countedCombos(await readCombosBefore(sp))) : null;
     // The child cascades from the parent, so one delete clears both.
     await tx.delete(spellbookVariants);
@@ -484,7 +506,7 @@ export async function publishVariants(
       await tx.insert(spellbookVariantCards).values(cardRows.slice(i, i + CHUNK));
     }
     if (previous) await writeEntries(tx, diffCombos(previous, countedCombos(combosOf(variantRows, cardRows)), nameOf), notices);
-  });
+  }
 }
 
 /**
