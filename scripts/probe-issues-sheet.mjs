@@ -297,21 +297,24 @@ async function walk(browser, vp, csvPath) {
     );
 
     // ── Only the handle and the title block drag it
+    // Measured from where the panel is NOW, so this reads the gesture and not the held height
+    // (which the checks above own).
     const tabs = dialog.getByRole("tablist");
+    const beforeTabDrag = (await panelFacts(dialog)).top;
     const tabMid = await dragDown(page, tabs, 150, dialog);
     const afterTabDrag = await panelFacts(dialog);
     report(
-      tabMid === open.top && afterTabDrag.top === open.top,
+      tabMid === beforeTabDrag && afterTabDrag.top === beforeTabDrag,
       "a drag started on the tabs does not move the panel",
-      `top ${open.top}px, mid-drag ${tabMid}px, after ${afterTabDrag.top}px`,
+      `top ${beforeTabDrag}px, mid-drag ${tabMid}px, after ${afterTabDrag.top}px`,
     );
     const titleMid = await dragDown(page, dialog.getByRole("heading", { name: "Import issues" }), 100, dialog);
     await page.waitForTimeout(200);
     const gone = (await dialog.count()) === 0;
     report(
-      titleMid !== null && titleMid > open.top + 50 && gone,
+      titleMid !== null && titleMid > beforeTabDrag + 50 && gone,
       "a 100px drag on the title block follows the pointer and dismisses",
-      `mid-drag top ${titleMid}px from ${open.top}px, ${gone ? "closed" : "still open"}`,
+      `mid-drag top ${titleMid}px from ${beforeTabDrag}px, ${gone ? "closed" : "still open"}`,
     );
 
     // ── Escape
