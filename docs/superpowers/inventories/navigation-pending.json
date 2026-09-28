@@ -1,0 +1,120 @@
+{
+  "feature": "Navigation pending — the pip, the track and the escalation screen (PR 1)",
+  "note": "Every row is taken on Slow 4G, because on a local server a pending state lasts a frame and the sheet would photograph the page it landed on. The nav slot's pip is not here: it sits in the shell, outside <main>, which no verb in this runner reaches by design; probe:nav-pending presses it at both widths and measures its paint time instead. The direct-load fallback is not here either: a goto resolves at DOMContentLoaded, after the stream has replaced the screen, so the probe reads it with a frame watcher.",
+  "rows": [
+    {
+      "id": "track-button",
+      "label": "Home, 'Update collection' pressed on Slow 4G: the ghost link holds its pending fill with the track along its foot",
+      "view": "src/components/ui/button.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "a[href='/collection/replace']",
+          "settle": 800
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href='/collection/replace']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "overlay-button",
+      "label": "Home to /collection/replace on Slow 4G, 800ms in: the collection screen over Home, beside the rail and above the tab bar",
+      "view": "src/components/shell/pending-overlay.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "a[href='/collection/replace']",
+          "settle": 800
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href='/collection/replace']",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "track-commander-row",
+      "label": "/commanders, a row pressed on Slow 4G: the row's fill and its track",
+      "view": "src/components/commanders/commander-row.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "a[href^='/commanders/']",
+          "settle": 1500
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href^='/commanders/']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "overlay-commander",
+      "label": "/commanders to a commander on Slow 4G, 800ms in: the commanders screen",
+      "view": "src/components/shell/pending-overlay.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "a[href^='/commanders/']",
+          "settle": 1500
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href^='/commanders/']",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "track-set-row",
+      "label": "/collection/sets, a set pressed on Slow 4G: the row's fill and its track",
+      "view": "src/components/sets/set-index-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection/sets",
+          "wait": "a[href^='/collection/sets/']",
+          "settle": 1000
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href^='/collection/sets/']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "kept-deck",
+      "label": "/decks to a deck on Slow 4G: a kept route shows its own screen at press, and no escalation",
+      "view": "src/app/decks/[id]/loading.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "li a[href^='/decks/']",
+          "settle": 1000
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "li a[href^='/decks/']",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

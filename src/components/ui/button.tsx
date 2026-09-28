@@ -77,11 +77,9 @@ type ButtonProps = SharedProps &
       >)
   );
 
-// Each variant's hover, restated for a pending link, which is not under the pointer on a phone
-// and may have left it on a desktop. Ghost takes the canvas's pending fill rather than its accent
-// hover, because accent is status (audit correction 1).
+// A pending ghost link takes the canvas's pending fill rather than its accent hover, because
+// accent is status; a primary link keeps its own fill under the track (audit correction 1).
 const PENDING: Record<string, string> = {
-  [PRIMARY]: "has-[[data-pending]]:bg-[color:var(--fg-body)]",
   // Stated twice so pending also beats the accent hover when the pointer is still on the link:
   // `has-` and `hover:` are equally specific, and stylesheet order would otherwise decide.
   [GHOST]:
@@ -102,10 +100,9 @@ function renderButton(variant: string, props: ButtonProps) {
 
   if (rest.href !== undefined) {
     const { href, ...linkProps } = rest;
-    // A pending link holds its hover state under the track (navigation-pending handoff, P2), so
-    // the press reads as taken while the next page loads. `relative overflow-hidden` holds the
-    // track inside the border box.
-    const pendingClasses = twMerge(classes, "relative overflow-hidden", PENDING[variant]);
+    // `relative overflow-hidden` holds the pending track inside the border box
+    // (navigation-pending handoff, P2).
+    const pendingClasses = twMerge(classes, "relative overflow-hidden", PENDING[variant] ?? "");
     return (
       <Link href={href} className={pendingClasses} {...linkProps}>
         {children}
