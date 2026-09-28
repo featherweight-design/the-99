@@ -104,6 +104,10 @@ export type CardRow = {
  * input size would have worked. All three measured against a real Postgres.
  */
 export async function readCardsByName(db: Db, names: readonly string[]): Promise<CardRow[]> {
+  // An empty ask is not a query. `any('{}'::text[])` is valid and returns nothing, so this is a
+  // round trip saved rather than a bug avoided — but the collect path had this guard inline and
+  // the guard belongs with the read, not with one of its two callers.
+  if (names.length === 0) return [];
   const rows = await db.execute<CardRow>(sql`
     select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
       from ${cards} where name = any(${sql.param([...names])}::text[])

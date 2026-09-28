@@ -40,6 +40,10 @@ import {
 import {
   buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody,
 } from "../src/lib/labels/prompt";
+// `CardRow` comes from the same module as the read that returns it. Two structurally identical
+// copies of a row type is a drift risk I introduced when the read moved: the day one gains a field
+// the other lacks, the shared helper's rows stop satisfying this script for no visible reason.
+import type { CardRow } from "../src/lib/labels/publish";
 import { publishRun, readCardsByName, reclaimIntents, stampWave } from "../src/lib/labels/publish";
 import { validateJob } from "../src/lib/labels/schema";
 import type { Job } from "../src/lib/labels/types";
@@ -113,11 +117,6 @@ const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 
 /** A run id that sorts and is readable; the run TOKEN in each custom id derives from it. */
 const runId = process.env.LABEL_RUN_ID ?? `run-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-
-type CardRow = {
-  oracleId: string; name: string; mana_cost: string | null; type_line: string;
-  oracle_text: string | null; layout: string;
-};
 
 const die = (why: string): never => { console.error(`\nbuild-card-labels REFUSED: ${why}`); process.exit(1); };
 
@@ -246,13 +245,18 @@ async function collectBatch(
 
   // One catalog read for the whole batch, then one staging insert per intent so a row carries
   // the hash of the card as it is NOW rather than as the request rendered it.
+  //
+  // THE SAME SHARED HELPER, and this instance is the more dangerous of the two. It had its own
+  // copy of the bare-array read, so it carried the identical 42809 defect — but on the COLLECT
+  // path, which runs only after a batch has come back. The submit-side bug crashed before
+  // spending anything; this one would have crashed with the money already gone, on the very
+  // invocation that was meant to bank the results.
+  //
+  // Found by a class sweep rather than by the incident, which is the argument for sweeping: one
+  // occurrence of a pattern is rarely the only one, and this one is on the path nobody had
+  // reached yet.
   const allNames = [...got.values()].flatMap((g) => [...g.byName.keys()]);
-  const cards = allNames.length === 0 ? { rows: [] as CardRow[] } : await db.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards where name = any(${allNames})`);
-  const byName = new Map(
-    ((cards as { rows?: CardRow[] }).rows ?? (cards as unknown as CardRow[])).map((c) => [c.name, c]),
-  );
+  const byName = new Map((await readCardsByName(db, allNames)).map((c) => [c.name, c]));
 
   for (const intent of intents) {
     const here = got.get(intent.customId);
