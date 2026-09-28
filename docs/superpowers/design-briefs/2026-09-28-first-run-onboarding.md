@@ -25,7 +25,7 @@ step as a disaster.
 | Review screen | `src/components/collection/review-screen.tsx` (phone header with the `‹` chevron `:51-58`; desktop-only Cancel `:307-314`) |
 | Replace flow | `src/components/collection/replace-flow.tsx` (hides its own title when `embedded`, `:57`; does not hide the review's phone header) |
 | Replace confirm modal | `src/components/collection/confirm-modal.tsx` (warning-icon header, `--danger` input and button, type `REPLACE` to arm) |
-| Replace warning banner (step 1) | `src/components/collection/upload-entry.tsx:194-209` (amber `⚠` banner, `--warning` left rule) |
+| Replace warning banner (`/collection/replace` only) | `src/components/collection/upload-entry.tsx:194-209` (amber `⚠` banner, `--warning` left rule). First run never shows it: its `entry="buttons"` branch skips the warning on purpose (`:151-156`) |
 | Issue Inspector | `src/components/collection/issue-inspector.tsx` (desktop 660x640 modal, phone full-screen at `:111`, `:131`), list in `issue-inspector-list.tsx` |
 | The filters' bottom sheet | `src/components/ui/sheet.tsx` (`Sheet` `:100`: scrim, panel, drag handle with 80px dismissal), as used by `src/components/collection/filter-sheet.tsx` (22px radius, `--surface-inset`, `max-h-[86vh]`, `:179`) and `src/components/decks/deck-filter-sheet.tsx` |
 | Design table | `docs/superpowers/design-tables/collection.md:2062` (`Desktop cancel` row, no phone counterpart) |
@@ -44,7 +44,7 @@ step as a disaster.
    at both widths, that they unlock once a collection is uploaded.
 4. **Import issues on the phone use the bottom sheet the filters use** (the "pop-up shelf").
    This overrides the issue-inspector handoff's locked decision 2, full-screen rather than
-   half-sheet (`design/design_handoff_the99_issue_inspector/README.md:52-56`).
+   half-sheet (`design/design_handoff_the99_issue_inspector/README.md:53-57`).
 5. **The replace confirmation is calmer (5b).** A first import loses its confirm (engineering,
    §5). Replacing an EXISTING collection keeps one, but Hugh: "Users can go back from here by
    replacing their collection, so we shouldn't treat this so harshly." Design owns the
@@ -66,8 +66,10 @@ step as a disaster.
 
 **4.2 Locked navigation (ruling 3).** Draw at 390 and 1300, every theme's `--fg-locked`:
 - *Desktop rail:* today one 14x16 padlock under a 34px divider, once
-  (`CHROME-rail-and-tabs.md:111-121`). The reason lives only in the accessible name. Make the
-  reason visible: a label, a tooltip, a note in the rail, or a pointer to step 1. The rail is
+  (`CHROME-rail-and-tabs.md:111-121`). The reason is in the accessible name and a native
+  `title` tooltip (`nav.tsx:114`), so a hover shows it and nothing else does. Make the reason
+  visible without hovering: a label, a note in the rail, or a pointer to step 1; a drawn tooltip
+  would sit on top of the browser's own unless the `title` goes. The rail is
   narrow, so say what fits.
 - *Phone tab bar:* four dimmed items and nothing else. Draw what a player sees before tapping,
   and what happens when they do tap a locked item (today: nothing).
@@ -77,16 +79,19 @@ step as a disaster.
 **4.3 Import issues sheet on the phone (ruling 4).** Draw the Issue Inspector inside the
 `Sheet` chrome (handle, scrim, drag-to-dismiss) at 390: header, the Unmatched and Parse errors
 tabs, the filter field, and a long list (200+ rows, the handoff's worst case). The handoff
-rejected a half-sheet for its nested scroll inside a draggable sheet; resolve that (height, and
-whether the drag lives on the handle alone). Pick the sheet vocabulary it takes: the collection
+rejected a half-sheet for its nested scroll inside a draggable sheet; resolve that. The shared `Sheet`
+already puts its drag on the handle alone (`sheet.tsx:241-246`), so the list's own scroll does
+not fight a dismiss gesture; the open question is the height. Pick the sheet vocabulary it takes: the collection
 filter sheet's (22px, `--surface-inset`, 86vh) or the shared default (16px, `--surface-rail`,
 78vh). Desktop's modal is unchanged unless Design says otherwise.
 
 **4.4 The calm replace confirm (ruling 5).** Replace only; a first import has no confirm. Today
 it is a danger modal: warning icon, `--danger` border on the input and button, type `REPLACE`
-to arm, and "It can't be undone" in bold. Design decides the whole treatment: whether typing a
+to arm, and the last sentence in bold ("It can't be undone." on the phone, "This can't be
+undone." on desktop, `confirm-modal.tsx:108`, `:111`). Design decides the whole treatment: whether typing a
 token survives, the ink (neutral or `--warning` rather than `--danger`), the icon, the button's
-count label, and whether the step-1 amber banner (`upload-entry.tsx:194`) comes down to match.
+count label, and whether the amber banner on `/collection/replace`'s first step (`upload-entry.tsx:194`)
+comes down to match. First run never shows that banner.
 Draw 390 and 1300. Placeholder copy is fine; `/copy-review` sets the words.
 
 **4.5 The phone exit (ruling 6).** Two parts, at 390:
@@ -120,7 +125,7 @@ Being fixed in a separate lane; listed so they are not drawn twice.
   bar). `CHROME-rail-and-tabs.md:111` (locked chrome), `README.md:96` (zero states, R2),
   `refresh · copy strings.ts`. **Closest folder.**
 - `design/design_handoff_the99_collection/`: upload, review and type-to-confirm replace
-  (`README.md:16-18`, `:69-81`).
+  (`README.md:16-18`, `:69-75`).
 - `design/design_handoff_the99_issue_inspector/`: the Inspector; decision 2 is the one ruling 4
   reverses.
 - `design/design_handoff_the99_collection_filter/`: the bottom sheet the Inspector moves into
