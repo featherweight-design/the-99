@@ -37,6 +37,19 @@ describe("the index copy's floors", () => {
     expect(indexCopySpec.floors({ ...whole(), pairs: whole().pairs.slice(1) })).toContain("pairs 1499 < 1500");
   });
 
+  // The builder's pair half of the role-target refusal: ok pairs carrying no targets past the floor.
+  const pair = (derived: boolean) =>
+    ({ synergyState: "ok", avgRamp: derived ? 8 : null }) as unknown as Snapshot["pairs"][number];
+  it("refuses role targets on under 90% of the ok pairs", () => {
+    const pairs = [...Array.from({ length: 1_300 }, () => pair(true)), ...Array.from({ length: 200 }, () => pair(false))];
+    expect(indexCopySpec.floors({ ...whole(), pairs })).toContain("role targets on 1300 of 1500 ok pairs");
+  });
+
+  it("passes pairs whose role targets reach the floor", () => {
+    const pairs = [...Array.from({ length: 1_400 }, () => pair(true)), ...Array.from({ length: 100 }, () => pair(false))];
+    expect(indexCopySpec.floors({ ...whole(), pairs })).toEqual([]);
+  });
+
   it("refuses an empty format_staples", () => {
     expect(indexCopySpec.floors({ ...whole(), staples: [] })).toContain("format_staples is empty");
   });

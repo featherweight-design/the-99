@@ -17,7 +17,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { recordBuild } from "../src/lib/catalog/builds";
+import { latestBuild, recordBuild } from "../src/lib/catalog/builds";
 import { formatStaples, identityComposition } from "../src/db/schema";
 import {
   MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
@@ -666,6 +666,17 @@ async function main() {
 // Between its own ledger rows, as `db:build:index` is: this step runs after the index it derives
 // from, so its row is the newest `index` row, and a refused or failed derivation leaves that
 // newest row failed for a copy to refuse.
-recordBuild(db, "index", main)
+// Only over an index build that finished ok: this step's own row becomes the newest `index` row,
+// so an ok here after a failed or unfinished `db:build:index` would vouch for a partial index.
+latestBuild(db, "index")
+  .then((prev) => {
+    if (!prev || prev.finishedAt === null || prev.ok !== true) {
+      throw new Error(
+        `build-staples REFUSED: the newest index build is ${prev ? (prev.finishedAt ? "failed" : "unfinished") : "missing"}. ` +
+          `Run db:build:index to success first; a staples row now would vouch for that index.`,
+      );
+    }
+    return recordBuild(db, "index", main);
+  })
   .then(() => process.exit(0))
   .catch((err) => { console.error(err instanceof Error ? err.message : err); process.exit(1); });

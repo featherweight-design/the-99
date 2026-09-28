@@ -213,7 +213,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   **A builder whose output is copied records ITSELF**, through `recordBuild`
   (`src/lib/catalog/builds.ts`): `db:seed:combos` starts its own row and finishes it `ok` or
   failed, and so do both index steps, `db:build:index` and then `db:build:staples`, so the
-  staples row is the newest and a failed derivation leaves it failed. Every run, by hand
+  staples row is the newest and a failed derivation leaves it failed. `db:build:staples` refuses
+  to run at all unless the newest `index` row is a finished `ok`, so a staples run by hand cannot
+  vouch for an index build that failed before it. Every run, by hand
   included, leaves a newer row. Without that, a hand-run ingest that
   replaced the flags and died before the variants left an older `ok` row vouching for tables that
   had moved under it, over an unchanged catalog fingerprint, and the copy would publish them.
@@ -237,11 +239,13 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   - **The three `prose*` columns are left alone** on a row both sides hold. `db:copy:prose`
     installs them behind an input-hash check this copy does not make. A commander the copy
     deletes takes its sentence with it, which is right: the index no longer lists it.
-  - **A pair only a target deck holds is REPORTED, never fatal.** The builder lists every pair a
-    deck holds in THAT database; production's pairs are not in staging's build. The fix is a
-    one-off production index dispatch for that pair.
+  - **A pair only a target deck holds is REPORTED and DELETED, never fatal.** The copy is exact,
+    so that pair's row goes with everything else the source lacks. Staging's builder sweeps every
+    pair `canPair` forms, so a pair missing from it is one the app cannot form; a production-only
+    index dispatch for it would last only until the next copy.
   - The floors re-checked on the snapshot are the builders' own: an `ok` commander exists, role
-    targets reach `ROLE_TARGET_FLOOR` of them, the pairs reach `LEGAL_PAIR_FLOOR`, and
+    targets reach `ROLE_TARGET_FLOOR` of the ok commanders and, when any pair is ok, of the ok
+    pairs, the pairs reach `LEGAL_PAIR_FLOOR`, and
     `format_staples` is not empty (`index-copy.test.mts`). An empty composition is legitimate
     and is not a floor.
 

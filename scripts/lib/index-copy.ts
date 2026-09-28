@@ -87,8 +87,8 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     composition: await tx.select().from(identityComposition),
   }),
   // The builders' own refusals, on what the snapshot holds: an index with no `ok` commander, role
-  // targets reaching under ROLE_TARGET_FLOOR of them, fewer pairs than LEGAL_PAIR_FLOOR, and an
-  // empty staples derivation. An empty composition is legitimate (`db:build:staples` publishes
+  // targets reaching under ROLE_TARGET_FLOOR of the ok commanders or (when any pair is ok) of the ok
+  // pairs, fewer pairs than LEGAL_PAIR_FLOOR, and an empty staples derivation. An empty composition is legitimate (`db:build:staples` publishes
   // one), so it is not a floor.
   floors: (s) => {
     const below: string[] = [];
@@ -96,6 +96,12 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     if (ok.length === 0) below.push("no ok commander in commander_support");
     const derived = ok.filter((r) => r.avgRamp !== null).length;
     if (!roleTargetsPublishable(derived, ok.length)) below.push(`role targets on ${derived} of ${ok.length} ok commanders`);
+    // The pair half of the same refusal; no ok pair at all is legitimate, as the builder says.
+    const okPairs = s.pairs.filter((r) => r.synergyState === "ok");
+    const pairDerived = okPairs.filter((r) => r.avgRamp !== null).length;
+    if (okPairs.length > 0 && !roleTargetsPublishable(pairDerived, okPairs.length)) {
+      below.push(`role targets on ${pairDerived} of ${okPairs.length} ok pairs`);
+    }
     if (s.pairs.length < LEGAL_PAIR_FLOOR) below.push(`pairs ${s.pairs.length} < ${LEGAL_PAIR_FLOOR}`);
     if (s.staples.length === 0) below.push("format_staples is empty");
     return below;
@@ -107,8 +113,10 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     // 1 · Scores are scored against the index, so the old ones go in the same transaction.
     await clearPersistedScoresIn(tx);
 
-    // 2 · A pair a TARGET deck holds is in the builder's pair list there and not in the source's.
-    // Reported, never fatal: the fix is a one-off production index dispatch for that pair.
+    // 2 · A pair a TARGET deck holds that the source lacks. The copy is exact, so such a pair's row
+    // is DELETED with the rest of what the source does not hold, and it is reported here. The
+    // source's builder sweeps every pair `canPair` forms, so a pair missing from it is one the app
+    // cannot form; a production-only index dispatch would last only until the next copy.
     const sourcePairs = new Set(s.pairs.map((p) => `${p.commanderOracleId}|${p.partnerOracleId}`));
     const built = await tx
       .selectDistinct({ a: decks.commanderOracleId, b: decks.partnerOracleId })
