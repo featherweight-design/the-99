@@ -52,10 +52,18 @@ It must answer, concretely enough that Task 2 falls out of it:
   which are advisory. This is the rule that decides whether a stand-in is honest.
 - **Pool words for `tutor` and `counterspell`**, the two new roles, in the same register as the
   existing pool words.
-- **A labelled card compared with an unlabelled one.** The backfill will not be complete on day
-  one, and a card with no label is not a card with no jobs. State the comparison explicitly:
-  fall back to `classifyRoles`, refuse the comparison, or treat absence as unknown — and say
-  what the reader sees in each case.
+- **A labelled card compared with an unlabelled one — RULED (Hugh, 2026-09-28).** If EITHER
+  card lacks a label, **both** are compared by the text reading (`classifyRoles` + `honestJobs`).
+  Always like with like. Labels upgrade a comparison only when both cards carry one. No mixing,
+  and **no hiding unlabelled cards**.
+
+  Two consequences worth stating, because they shape the whole schedule:
+
+  - **The consumer is shippable before any label exists.** With no labels published, every
+    comparison takes the text path, which is exactly today's behaviour — so the consumer can
+    land early and inert, and labels light it up later.
+  - **It degrades to correct, never to wrong.** A partially labelled catalog produces fewer
+    upgraded comparisons, not a mixture of two standards.
 - **Copy entries for every new kind**, through `/copy-review` with a picture, never a
   description.
 
@@ -77,7 +85,11 @@ cold review, with its measurements against staging's 10,128 staged labels. I hav
 independently verified those counts — they are the reviewer's, and the plan attributes them
 rather than adopting them.
 
-### `affects: self | opponents | each | null`
+### `affects: self | opponents | each | null` — LOAD-BEARING (Hugh, 2026-09-28)
+
+**A stand-in must match direction.** Self-mill is never offered for opponent-mill, self-discard
+never for opponent-discard, and so on. This is a **match gate** in `sameJob`, not advice: a
+mismatch disqualifies the stand-in outright.
 
 The reviewer measured **304 self-discard against 146 opponent-discard**, and **129 of 289 mill
 labels are self-mill**. Those are opposite jobs wearing one name: self-mill is a graveyard
@@ -95,7 +107,15 @@ All **32 reanimation cards are labelled like regrowth**. Returning a creature to
 and returning it to hand are not interchangeable, and a tutor to hand is not a tutor to the
 battlefield.
 
-### `method: destroy | exile | bounce | shrink` — for removal
+### `method: destroy | exile | bounce | shrink` — the GIVES-UP LINE, not a gate (Hugh, 2026-09-28)
+
+**Bounce for exile is ALLOWED**, and the row's "gives up" line names what is lost — "returns to
+hand, not exiled" — in the same honest register as the existing rows. So `method` is built, and
+it feeds that line rather than `sameJob`. A reader is told the difference and decides; the engine
+does not decide for them.
+
+The visible wording goes through `/copy-review` with a picture. **Any change to the stand-in
+row's box goes to Design**, not into this plan.
 
 **65 of 74 bounce cards are labelled removal.** Bounce is removal that gives the card back;
 exile is removal that answers recursion. A stand-in that treats them as equal is wrong against
@@ -167,8 +187,9 @@ should be stated rather than discovered.
       for `fog` a protection spell.
 - [ ] **Cover the jobs that currently have zero gold coverage**, whatever the new vocabulary
       does or does not add.
-- [ ] **A per-job precision and recall bar (≥0.8), with a stop rule:** any job under the bar goes
-      back to the prompt before the run. An aggregate figure hides exactly the new jobs this is
+- [ ] **Per-job precision and recall bars (Hugh, 2026-09-28): `tutor` ≥0.9, every other job
+      ≥0.8.** Tutor is higher because its errors reach beyond stand-ins — tutor agreement feeds
+      bracket reach. **Stop rule:** any job under its bar goes back to the prompt before the run. An aggregate figure hides exactly the new jobs this is
       meant to judge.
 - [ ] **Re-baseline the floors from the new re-sample**, read from the artifact rather than
       transcribed — the merged run plan's rounded 0.87 against the artifact's 0.868 is the
