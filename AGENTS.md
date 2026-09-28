@@ -118,7 +118,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     failed or skipped `prose`, because the index copy never depends on the sentences.
 
   A dispatch takes `mode`: `build+copy`, or `copy-only`, which copies staging's last `ok` build or
-  refuses. One workflow-wide concurrency group keeps a second EDHREC request stream, and a second
+  refuses; and `prose`: `generate`, or `skip`, which builds and copies the index and leaves the
+  sentences to the next scheduled build (readers serve a stale sentence rather than none). The
+  first catch-up after the ledger existed was a `build+copy` with `prose=skip`: a `copy-only`
+  refuses on an empty ledger, and generating then would have been paid again five days later. One workflow-wide concurrency group keeps a second EDHREC request stream, and a second
   copy, from ever starting. Needs `COMMANDER_INDEX_ENABLED` set to `'true'` to chain.
 - `pnpm db:build:prose` writes one generated sentence per commander into `commander_support.prose`
   — sentence 1 of "Why this commander", and identical for every player, which is why no collection

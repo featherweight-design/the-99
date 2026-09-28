@@ -19,6 +19,13 @@ on:
         type: choice
         options: [build+copy, copy-only]
         default: build+copy
+      prose:
+        description: >-
+          Generate staging's sentences after the build, or skip them (a catch-up that copies the
+          index and leaves the sentences to the next scheduled build). A chained run always generates.
+        type: choice
+        options: [generate, skip]
+        default: generate
       resume_since:
         description: >-
           ISO timestamp; commanders recomputed at or after it are skipped. Set this
@@ -136,7 +143,8 @@ jobs:
 
   prose:
     needs: build
-    if: needs.build.result == 'success'
+    # A copy-only dispatch skips `build`, and so this; a dispatch can also skip it outright.
+    if: needs.build.result == 'success' && github.event.inputs.prose != 'skip'
     runs-on: ubuntu-latest
     timeout-minutes: 240
     environment: catalog-staging
