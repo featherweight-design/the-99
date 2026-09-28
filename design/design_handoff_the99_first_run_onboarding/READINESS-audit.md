@@ -1,8 +1,8 @@
 # Readiness audit: first-run onboarding (R1, R2)
 
 **Verdict: 🟡 Yellow.** R2 places the pair Hugh's O1 ruling sent back, and honors every point of
-that ruling. Two questions remain for Hugh (O7 and the buildable figure, below). The build can
-proceed once he rules and the engineering corrections are applied. The audit was run against the brief on
+that ruling. Hugh has ruled on R2's two questions (O7 and the buildable figure, below). The build
+can proceed once the engineering corrections are applied and the withdrawn step 2 is ignored. The audit was run against the brief on
 `docs/first-run-onboarding-brief` (#1091), `2026-09-28-first-run-onboarding.md`, and
 `origin/main`.
 
@@ -49,34 +49,24 @@ proceed once he rules and the engineering corrections are applied. The audit was
   - New deck comes first through `flex-row-reverse` (`:85`).
   - Browse, Import and Review commitments are 44px below `sm`.
 
-## Open for Hugh (R2)
+## Ruled by Hugh on R2, 2026-09-28
 
-- **O7: two filled buttons on Home at zero decks.** New deck is a `PrimaryButton` to `/decks/new`
-  (`dashboard.tsx:95-100`). Browse commanders is a `PrimaryButton` to `/commanders`
-  (`decks-zero.tsx:57-62`). They share one viewport at 1300 (6a). At 390 they never share a
-  screen: New deck sits at the fold (6b) and Browse is one scroll down (6c).
-  - **A** (Design's lean): accept two fills, "because the zero state is the one moment Browse
-    outranks New deck." Nothing to build.
-  - **B:** a `tone` prop that draws the pair as ghosts on Home. Engineering recommends against it.
-    It forks the component that ruling 2 exists to keep whole, and it undercuts the buildable
-    line, which "exists to justify Browse commanders being the primary"
-    (`decks-zero.tsx:71-72`).
-  - **C** (not drawn by Design): leave the shared pair alone, and draw Home's own New deck as a
-    ghost while there are no decks. That keeps one fill per page, and the fill goes to the action
-    that outranks the others at zero.
-  - **The two intents are close but not the same.** `/decks/new` with no commander mounts
-    `CreatePicker` (`decks/new/page.tsx:72-75`), an unranked search over the commanders the
-    player owns: "I know my commander." `/commanders` is the ranked discovery list: "show me what
-    my cards can build." Both end at the same create step (`/decks/new?commander=…`). At zero
-    decks, discovery is the better first move, which supports A or C.
-- **The buildable figure on Home.** R2 mounts `<HomeDecksZero buildable cards />`, but frame 6a
-  draws "38 commanders buildable" under Ready to build's "36 more scored 58 or better". That
-  figure is the Ready set's size.
-  - `/decks` caps its figure at 9 on purpose (`DECKS_ZERO_BUILDABLE`, `decks/page.tsx:19`, `:95`).
-  - The shared figure would put "9 commanders buildable" under "36 more…" on the same page.
-  - The Ready set's size would make Home and `/decks` disagree for one account.
-  - Either way, the constant moves out of `decks/page.tsx` into a lib so both pages read one
-    definition.
+- **O7: option C.** While the account has no decks, Home's own header New deck
+  (`dashboard.tsx:95-100`) is drawn as a ghost. That makes Browse commanders, in the shared pair,
+  the page's one filled button. New deck goes back to filled once a deck exists. `DecksZeroActions`
+  is untouched, with no `tone` prop.
+  - The options he chose between: A was two fills (Design's lean), and B was a `tone` prop ghosting
+    the pair on Home, which forks the shared component.
+  - The intents behind the two buttons are close but not the same. `/decks/new` with no commander
+    mounts `CreatePicker` (`decks/new/page.tsx:72-75`), an unranked search over owned commanders.
+    `/commanders` is the ranked discovery list. Both end at `/decks/new?commander=…`.
+- **The buildable figure: omitted on Home.** Ready to build, just above, already states the count,
+  and the shared group already draws no line when it has no figure (`decks-zero.tsx:73`,
+  `buildable > 0`), so Home needs no fork.
+  - Frame 6a's "38 commanders buildable" line is not built.
+  - `/decks` shows the true buildable count rather than the capped 9. `DECKS_ZERO_BUILDABLE`
+    (`decks/page.tsx:19`, `:95`) is retired, and the count is defined once in a lib so the two
+    pages cannot drift.
 
 ## What checks out
 
@@ -182,8 +172,11 @@ Added with R2:
    border, radius and background already match.
 10. **The section's gap** is ResumeDecks' `gap-[12px] min-[1180px]:gap-[11px]`
     (`resume-decks.tsx:326`), with the label's `mt-[6px]`. The frames draw 12 and 11.
-11. **`Dashboard` gains a `buildable` prop** (it has none today), computed in `app/page.tsx` from
-    the same `ranked` list, by whichever rule Hugh picks above.
+11. **Home passes the shared group no buildable figure,** per Hugh's ruling, so the line does not
+    draw. `DecksZeroActions` takes `buildable` as it is (0 or omitted draws nothing), and
+    `Dashboard` gains no `buildable` prop. It does gain a zero-decks flag to ghost its New deck
+    (O7). The true count lives in one lib function, which `/decks` calls in place of
+    `DECKS_ZERO_BUILDABLE`.
 
 ## For `/copy-review`
 
@@ -212,8 +205,8 @@ These do not affect the verdict.
   - Go to step 1 when there is no checklist;
   - the empty-filter title size;
   - the phone banner.
-- **R2 leaves the withdrawn live step 2 in the text.** Design should strike these; the build
-  ignores them. They are:
+- **R2 leaves the withdrawn live step 2 in the text.** Design must strike these in its next
+  round; until then the build ignores them. They are:
   - README D2 and D3 (`:53-68`, including "New state. The checklist stays on Home…");
   - STATES `:12` (the A3 row) and `:15` (the `step(2, 3)` kicker);
   - the live-only strings in `copy strings.ts:12-18`.
