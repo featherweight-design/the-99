@@ -145,6 +145,9 @@ jobs:
 
       - name: Refresh prices
         if: env.JOB == 'all' || env.JOB == 'prices'
+        # The ~51MB feed is parsed whole (`fetchManapoolSingles`), as `price-refresh.yml` does.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: |
           echo "### Prices" >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"
