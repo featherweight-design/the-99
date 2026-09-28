@@ -27,6 +27,7 @@ import type { Figure } from "../../lib/intake/present";
 import type { CommanderMark, ResultRow } from "../../lib/intake/rows";
 import type { TrialFigures } from "../../lib/intake/trial";
 import { priceFactOf } from "./price-fact";
+import { PendingReporter } from "../shell/pending-reporter";
 
 /**
  * The row's press: the create page with this commander, carrying the results screen's own params
@@ -119,6 +120,7 @@ export function ChooseRow({
       className={`${className} no-underline after:absolute after:inset-0 after:content-['']`}
     >
       {children}
+      <PendingReporter href={href} />
     </Link>
   );
 

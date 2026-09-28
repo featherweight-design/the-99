@@ -18,6 +18,7 @@ import { HandOffAnswersBlock } from "../intake/hand-off-answers";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import type { CreateAnswers } from "../../lib/intake/answers";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
+import { PendingReporter } from "../shell/pending-reporter";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -109,6 +110,7 @@ export function CreatePreFilled({
           style={{ fontSize: 18, lineHeight: 1 }}
         >
           ‹
+          <PendingReporter href={backHref} />
         </Link>
 
         <div>
@@ -123,6 +125,7 @@ export function CreatePreFilled({
             }}
           >
             {handOff ? handOffCopy.back : <>‹ Commanders · {name}</>}
+            <PendingReporter href={backHref} />
           </Link>
 
           {/* §Page title "New deck": Cinzel 700 20/28px var(--fg); desktop margin 2px 0 4px */}

@@ -18,6 +18,7 @@ import { aboutMenuCopy } from "../../lib/copy/about";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
+import { PendingReporter } from "./pending-reporter";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -128,6 +129,7 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose }: MenuItemsProps)
       >
         <ItemDiamond />
         <span>{aboutLabel}</span>
+        <PendingReporter href="/about" />
       </Link>
       {buttons.map((item, i) => (
         <button

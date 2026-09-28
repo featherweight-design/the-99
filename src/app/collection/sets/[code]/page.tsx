@@ -17,12 +17,13 @@ import { setPageCopy } from "../../../../lib/copy/set-collections";
 import { SetGridClient } from "../../../../components/sets/set-grid-client";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../../../../components/ui/empty-state";
 import { GhostButton, PrimaryButton } from "../../../../components/ui/button";
+import { PendingReporter } from "../../../../components/shell/pending-reporter";
 
 function Shell({ code, children }: { code: string; children: React.ReactNode }) {
   return (
     <main className="mx-auto w-full max-w-[1180px] px-[16px] pb-[40px] md:px-[34px]">
       <p className="pt-[16px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-        <Link href="/collection/sets">{setPageCopy.breadcrumb(code)}</Link>
+        <Link href="/collection/sets">{setPageCopy.breadcrumb(code)}<PendingReporter href="/collection/sets" /></Link>
       </p>
       {children}
     </main>

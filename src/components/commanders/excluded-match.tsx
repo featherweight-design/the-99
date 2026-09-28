@@ -11,6 +11,7 @@
 import Link from "next/link";
 import type { ExcludedReport } from "../../lib/commanders/excluded-report";
 import { Emphasised } from "./emphasis";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const CORRECTION =
   "font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline";
@@ -49,6 +50,7 @@ export function ExcludedMatchAside({
         {href ? (
           <Link href={href} className={CORRECTION}>
             {report.cta}
+            <PendingReporter href={href} />
           </Link>
         ) : (
           <button type="button" onClick={onCorrect} className={CORRECTION}>
