@@ -294,7 +294,10 @@ async function one(browser, state, width, routes, sql) {
   const context = await ctx();
   const page = await context.newPage();
   await throttle(await context.newCDPSession(page));
-  await page.goto(`${BASE}/`, { waitUntil: "load" });
+  // DOM content, not the load event, with a long timeout: under the slow profile Home's own art
+  // can hold its load event past Playwright's 30s default, which would abort the whole run.
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForLoadState("load", { timeout: LOAD_CAP_MS }).catch(() => {});
   await page.waitForLoadState("networkidle").catch(() => {});
   for (const pass of ["first", "revisit"]) {
     // Home last, and only when it is being measured (MEASURE_ROUTES can leave it out).
