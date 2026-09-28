@@ -274,6 +274,23 @@ describe("generateCommanderProse", () => {
     expect(r).toMatchObject({ restamped: 1, fresh: 0, written: 0 });
   });
 
+  it("counts a legacy-current row on a dry run and writes nothing", async () => {
+    const restamp = vi.fn(async () => {});
+    const complete = vi.fn(async () => ACCEPTED);
+    const r = await generateCommanderProse({
+      complete,
+      dryRun: true,
+      loadCandidates: async () => [
+        candidate({ prose: ACCEPTED, proseInputHash: legacyProseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS) }),
+      ],
+      write: async () => {},
+      restamp,
+    });
+    expect(restamp).not.toHaveBeenCalled();
+    expect(complete).not.toHaveBeenCalled();
+    expect(r).toMatchObject({ restamped: 1, deferred: 0 });
+  });
+
   it("regenerates a row stale under both hashes rather than re-stamping it", async () => {
     const restamp = vi.fn(async () => {});
     const r = await generateCommanderProse({
