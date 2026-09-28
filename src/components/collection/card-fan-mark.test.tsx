@@ -16,8 +16,21 @@ describe("CardFanMark", () => {
     expect(container.querySelector("svg")?.getAttribute("fill")).not.toBe("none");
   });
 
-  it("draws the front card on the accent, as the other fans do", () => {
+  it("lightens back to front, the front card on the accent, as the mock does", () => {
     const { container } = render(<CardFanMark />);
     expect(container.querySelectorAll("rect")[2].style.stroke).toBe("var(--accent)");
+  });
+
+  it("fans the mock's 26x38 cards at -16, 0 and +16 degrees", () => {
+    const { container } = render(<CardFanMark />);
+    const rects = [...container.querySelectorAll("rect")];
+    // Inset by half the 1.5px stroke, so the painted outer edge is the mock's 26x38.
+    for (const rect of rects) {
+      expect(Number(rect.getAttribute("width")) + 1.5).toBe(26);
+      expect(Number(rect.getAttribute("height")) + 1.5).toBe(38);
+    }
+    expect(rects[0].getAttribute("transform")).toContain("rotate(-16");
+    expect(rects[1].getAttribute("transform")).toBeNull();
+    expect(rects[2].getAttribute("transform")).toContain("rotate(16");
   });
 });

@@ -178,7 +178,7 @@ Token map (`src/app/globals.css`): `--bg`=`#14110E`, `--surface`=`#1E1A15`, `--s
 
 | Property | Design → Impl | Verdict |
 |---|---|---|
-| card-fan mark | brand secondary, inline SVG | ✅ (`<CardFanMark size={56}>`, `color: var(--brass-mid)`) |
+| card-fan mark | brand secondary, inline SVG: three FILLED 26×38 cards, radius 5, 1.5px border, -16°/0°/+16° 10px apart, opacity 0.9, 52px phone / 56px desktop, 18/20px above the title | ✅ (`<CardFanMark />`: per-card token fills lightening back to front, front card on `--accent`; was stroke-only 16×24 until prod walk 2026-09-28 item 4) |
 | title font | Cinzel 600 → `font-display font-semibold` | ✅ |
 | title text | `No names match "{query}"` (curly quotes) | ✅ (copy helper renders `“…”`) |
 | body text | Plex Sans, `None of the {n} unmatched names …` | ✅ (copy helper) |

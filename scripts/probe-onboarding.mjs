@@ -42,6 +42,12 @@ const VIEWPORTS = [
   { label: "desktop 1300x900", width: 1300, height: 900, phone: false },
 ];
 
+// PROBE_SHOTS=<dir> also photographs each state at each width, for a PR body.
+const SHOTS = process.env.PROBE_SHOTS;
+async function shot(page, vp, name) {
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, `${vp.phone ? "390" : "1300"}-${name}.png`) });
+}
+
 let failures = 0;
 function report(ok, name, detail) {
   if (!ok) failures += 1;
@@ -129,6 +135,7 @@ async function walk(browser, vp, csvPath) {
     await onPageRole(page, "button", "Upload a CSV").waitFor();
 
     const rest = await geometry(page);
+    await shot(page, vp, "rest");
     report(rest.found, "found the step card, its fan and its text column");
     if (!vp.phone) {
       console.log(
@@ -141,6 +148,7 @@ async function walk(browser, vp, csvPath) {
     const textarea = onPageRole(page, "textbox", "Paste your card list");
     await textarea.waitFor();
     const paste = await geometry(page);
+    await shot(page, vp, "paste");
     const ta = await textarea.boundingBox();
     if (!vp.phone) {
       report(paste.fanTop === rest.fanTop, "3  the fan holds its place when the paste panel opens", `rest ${rest.fanTop}px, paste ${paste.fanTop}px`);
@@ -162,6 +170,7 @@ async function walk(browser, vp, csvPath) {
     const unmatchedHeading = onPage(page, "text=/^Unmatched(:| names:)/").locator("visible=true").first();
     await unmatchedHeading.waitFor({ timeout: 60_000 });
     const review = await geometry(page);
+    await shot(page, vp, "review");
     if (!vp.phone) {
       report(review.fanTop === rest.fanTop, "3  the fan holds its place under a whole review screen", `rest ${rest.fanTop}px, review ${review.fanTop}px`);
     }
@@ -199,6 +208,7 @@ async function walk(browser, vp, csvPath) {
     await dialog.waitFor();
     await dialog.getByRole("textbox").first().fill("zzqx no card is called this");
     await dialog.getByText(/^No names match/).waitFor();
+    await shot(page, vp, "no-match");
     const fan = await dialog.locator("svg:has(rect)").first().evaluate((svg) => {
       const rects = [...svg.querySelectorAll("rect")].map((r) => getComputedStyle(r).fill);
       const box = svg.getBoundingClientRect();

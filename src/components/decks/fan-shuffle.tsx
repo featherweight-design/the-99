@@ -3,7 +3,8 @@ import type { CSSProperties } from "react";
 /**
  * Three cards shuffling through one another while Suggested changes reads (placement addendum
  * v2, canvas :717-727). A new drawing rather than a state of the shipped `CardFanMark`: that mark
- * is a stroke-only SVG, and this one is three filled cards with the front one carrying `99`.
+ * is a static SVG sized for an empty state, with no numeral, and this one animates three cards
+ * with the front one carrying `99`.
  *
  * Decorative: the heading beside it is the live region. Under reduced motion the animation is
  * dropped and each card holds the fanned pose its inline transform gives it.
