@@ -36,6 +36,11 @@ const { DATABASE_URL } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY"]);
 const EMAIL = process.env.PROBE_EMAIL ?? "onboard-probe+clerk_test@the99.app";
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const sql = neon(DATABASE_URL);
+// The two branches this must never run against. `cleanup` deletes the signed-in account's whole
+// collection and every upload it made, so the target is checked, and refused when it cannot be
+// read, before any write (the rule `probe:overview-hold` follows).
+const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
+const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 
 const VIEWPORTS = [
   { label: "phone 390x844", width: 390, height: 844, phone: true },
@@ -204,7 +209,8 @@ async function walk(browser, vp, csvPath) {
 
     // ── The issue inspector, searched to no match
     await onPageRole(page, "button", /^View [\d,]+ issues?$/).click();
-    const dialog = page.getByRole("dialog");
+    // Scoped to the page: the shell's account sheet is also a dialog, and comes first.
+    const dialog = onPageRole(page, "dialog");
     await dialog.waitFor();
     await dialog.getByRole("textbox").first().fill("zzqx no card is called this");
     await dialog.getByText(/^No names match/).waitFor();
@@ -228,6 +234,10 @@ async function walk(browser, vp, csvPath) {
 }
 
 async function main() {
+  const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
+  if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
+    throw new Error(`probe:onboarding refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
+  }
   const names = (await sql`select name from cards where name not like '%//%' order by name limit 3100`).map((r) => r.name);
   if (names.length < 3000) throw new Error(`catalog too small for a staging-shaped CSV: ${names.length} names`);
   const csvPath = csvFixture(names);
