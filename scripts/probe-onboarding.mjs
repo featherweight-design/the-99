@@ -358,7 +358,10 @@ async function zeroDecks(browser, vp) {
     const line = onPage(page, "text=/commanders buildable from/").first();
     const text = (await line.waitFor({ timeout: 60_000 }).then(() => line.innerText(), () => "")) || "";
     const n = Number(text.match(/^(\d+)/)?.[1] ?? NaN);
-    report(n > 9, "R2 /decks states the true buildable count, not the old cap of nine", text);
+    // The true count, read where the ranking wrote it: one score row per ranked commander, and
+    // this account has no deck to hold one back. `> 9` alone passes a page capped at ten.
+    const [{ scored }] = await sql`select count(*)::int as scored from commander_scores where user_id = ${userId}`;
+    report(n > 9 && n === scored, "R2 /decks states the true buildable count, not the old cap of nine", `${text} · scored ${scored}`);
   } finally {
     await cleanup(userId);
     await context.close();
