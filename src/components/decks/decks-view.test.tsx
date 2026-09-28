@@ -401,6 +401,30 @@ describe("DecksView", () => {
     expect(document.querySelector("[data-chassis-row='result']")?.textContent).toContain("4 decks");
   });
 
+  it("writes no URL on a delete until the payload without the folder lands", async () => {
+    // The action's promise resolves on its return value, while the revalidated
+    // payload is still streaming behind it. A `replaceState` at that moment made
+    // the router settle on the OLD tree (Hugh's staging walk, 2026-09-28), so the
+    // delete leaves the URL alone and the fallback comes from the new props.
+    window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
+    const { rerender } = renderWide(view(shelvedDecks(), twoFolders));
+    const line = document.querySelector<HTMLElement>("[data-shelf-line]")!;
+    fireEvent.click(within(line).getByRole("button", { name: /^Actions for/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete folder" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Delete folder" })).toBeNull());
+    expect(window.location.search).toBe(`?folder=${FOLDER_A}`);
+
+    rerender(view(shelvedDecks(), [twoFolders[1]]));
+    expect(window.location.search).toBe("");
+    expect(screen.getByText("Unfiled one")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        document.querySelector("[data-shelf-line] button[aria-current='true']"),
+      ),
+    );
+  });
+
   it("leaves Unfiled when the last folder is deleted under the mounted view", () => {
     // Unfiled has no segment until a folder exists, so a reader standing on it
     // when the last one goes is standing somewhere nothing can show.

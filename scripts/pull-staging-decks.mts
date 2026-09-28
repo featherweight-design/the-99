@@ -152,6 +152,8 @@ let collection: Record<string, unknown>[] = [];
 let folders: Record<string, unknown>[] = [];
 let cards: Record<string, unknown>[] = [];
 let proxies: Record<string, unknown>[] = [];
+let locks: Record<string, unknown>[] = [];
+let releases: Record<string, unknown>[] = [];
 let versions: Record<string, unknown>[] = [];
 let versionCards: Record<string, unknown>[] = [];
 let games: Record<string, unknown>[] = [];
@@ -209,6 +211,11 @@ try {
 
   cards = await byDeck("deck_cards");
   proxies = await byDeck("deck_proxies");
+  // Locks and pull releases change what the claim model answers (a locked card is never offered
+  // to Pull it; a release subtracts a pulled copy from its source's claim), so a snapshot without
+  // them measures a different account. Every row of both belongs to this owner's decks.
+  locks = await byDeck("deck_locks");
+  releases = await rows("select * from pull_releases where user_id = $1", [owner]);
   versions = await byDeck("deck_versions");
   games = await byDeck("deck_games");
   assignments = await byDeck("card_assignments");
@@ -241,7 +248,8 @@ console.log(`From staging, account ${owner.slice(0, 12)}…`);
 for (const [name, rows] of [
   ["decks", decks], ["deck_cards", cards], ["deck_versions", versions],
   ["deck_version_cards", versionCards], ["deck_games", games], ["deck_game_axes", gameAxes],
-  ["deck_proxies", proxies], ["deck_folders", folders], ["card_assignments", assignments],
+  ["deck_proxies", proxies], ["deck_locks", locks], ["pull_releases", releases],
+  ["deck_folders", folders], ["card_assignments", assignments],
   ["fill_passes", fillPasses], ["fill_pass_cards", fillPassCards],
   ["deck_unresolved_rows", unresolved], ["collection_items", collection],
   ["card_art_preferences", artPrefs], ["csv_uploads", uploads],
@@ -316,6 +324,7 @@ try {
     "deck_folders",
     "card_art_preferences",
     "csv_uploads",
+    "pull_releases",
   ] as const;
   let otherRows = 0;
   for (const t of USER_TABLES) {
@@ -357,6 +366,10 @@ try {
   await insert("decks", decks);
   await insert("deck_cards", cards);
   await insert("deck_proxies", proxies);
+  // After deck_cards: inserting a card deletes a DORMANT lock row for it (0061's trigger), so a
+  // lock written first would be forgotten by its own card arriving.
+  await insert("deck_locks", locks);
+  await insert("pull_releases", releases);
   await insert("deck_versions", versions);
   await insert("deck_version_cards", versionCards);
   await insert("deck_games", games);

@@ -49,10 +49,11 @@ let userId = null;
 // that exact value rather than unfiling: the fixture account's decks may already
 // be filed, and a probe that loses a real folder assignment costs more than it
 // measures.
-let borrowedDeck = null;
+const borrowedDecks = [];
 // Every folder the account held BEFORE this run. Nothing in it is ever touched.
 const idsBefore = new Set();
 const RENAMED = `${FOLDER}-renamed`;
+const PHONE_FOLDER = `${FOLDER}-phone`;
 
 let failures = 0;
 const check = (label, actual, expected) => {
@@ -66,6 +67,7 @@ async function main() {
   const browser = await chromium.launch();
   try {
     await run(browser);
+    await runPhone(browser);
   } finally {
     // Teardown belongs here rather than at the end of the happy path: any
     // selector wait that throws would otherwise orphan Chromium.
@@ -73,11 +75,7 @@ async function main() {
   }
 }
 
-async function run(browser) {
-  const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
-  const page = await context.newPage();
-
-  // Clerk's dev instance: only `window.Clerk` plus a `+clerk_test` code signs in.
+async function signIn(page) {
   await setupClerkTestingToken({ page });
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 30_000 });
@@ -106,6 +104,14 @@ async function run(browser) {
     [EMAIL, PASSWORD],
   );
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+}
+
+async function run(browser) {
+  const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+  const page = await context.newPage();
+
+  // Clerk's dev instance: only `window.Clerk` plus a `+clerk_test` code signs in.
+  await signIn(page);
 
   // TWO VISITS, deliberately. The FIRST create after a cold `pnpm dev` reloads
   // the document while Next compiles the route, and that is the bundler rather
@@ -116,6 +122,9 @@ async function run(browser) {
   await page.waitForSelector("main [data-shelf-line]", { timeout: 30_000 });
   await page.goto(`${BASE}/decks`, { waitUntil: "load" });
   await page.waitForSelector("main [data-shelf-line]", { timeout: 30_000 });
+  // Clerk loads its user a beat after the document; reading it at once read null
+  // on about one run in two.
+  await page.waitForFunction(() => window.Clerk?.user?.id, null, { timeout: 30_000 }).catch(() => {});
   userId = await page.evaluate(() => window.Clerk?.user?.id ?? null);
   if (!userId) throw new Error("could not read the signed-in Clerk user id");
   // Every folder this account already has. Anything outside this set after the
@@ -144,7 +153,17 @@ async function run(browser) {
   let rsc = 0;
   page.on("request", (r) => {
     const u = r.url();
-    if (u.includes("/decks") && (u.includes("_rsc") || r.method() === "POST")) rsc += 1;
+    // THE PAGE, not everything under it. A revalidation re-prefetches every
+    // deck tile's own `/decks/<id>` link, 18 of them on a staging-shaped account
+    // of 20 decks, and counting those failed every write on a real account while
+    // measuring nothing about the round trip this probe is for. And not a
+    // PREFETCH: an action posted from `?folder=` re-prefetches the bare `/decks`
+    // link (`next-router-prefetch: 1`, metadata only), which nobody waits on.
+    if (
+      new URL(u).pathname === "/decks"
+      && (u.includes("_rsc") || r.method() === "POST")
+      && !r.headers()["next-router-prefetch"]
+    ) rsc += 1;
   });
 
   // A DOCUMENT LOAD is the thing to tell apart from a soft refresh: it throws
@@ -205,7 +224,7 @@ async function run(browser) {
     [userId, borrowedId],
   );
   check("the borrowed deck was found in the database", borrowed.rows.length, 1);
-  borrowedDeck = borrowed.rows[0] ?? null;
+  if (borrowed.rows[0]) borrowedDecks.push(borrowed.rows[0]);
 
   // File the first deck into it, from All decks.
   // The DECK's own menu, inside the grid: the shelf line's trigger carries the
@@ -300,10 +319,129 @@ async function run(browser) {
     RENAMED,
   );
   check("the deleted shelf leaves the line without a client refresh", gone, true);
+  // The payload, not only the segment: the deck the deleted folder held is
+  // unfiled by the foreign key, and a line still drawing the old tree reads
+  // `Unfiled` one short. That is what Hugh saw on staging (2026-09-28).
+  check("Unfiled counts the deck the deleted folder held", await unfiledOnLine(page), await unfiledInDb());
+  check("the delete leaves ?folder= off the URL", new URL(page.url()).searchParams.has("folder"), false);
   check("the delete costs one server round trip", rsc - rscBeforeDelete, 1);
   check("and the whole sequence reloaded the document never", loads, 0);
   const lateFlashes = await page.evaluate(() => window.__flashes ?? "context was replaced");
   check("eight more moves flash no loading screen", lateFlashes, 0);
+}
+
+/** Decks on no shelf, as the database has them now. */
+async function unfiledInDb() {
+  const r = await pool.query(
+    "select count(*)::int as n from decks where user_id = $1 and folder_id is null",
+    [userId],
+  );
+  return r.rows[0].n;
+}
+
+/** The `Unfiled` segment's count as the wide line draws it. */
+function unfiledOnLine(page) {
+  return page.evaluate(() => {
+    const seg = [...document.querySelectorAll("main [data-shelf-line] button")]
+      .find((b) => b.textContent?.startsWith("Unfiled"));
+    return seg ? Number(seg.textContent.replace("Unfiled", "").trim()) : "no segment";
+  });
+}
+
+/** Every row of the phone's shelf sheet, by its accessible name, then closed again. */
+async function sheetRows(page) {
+  await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().click();
+  const sheet = page.getByRole("dialog", { name: "Shelves" });
+  await sheet.waitFor({ timeout: 10_000 });
+  const rows = await sheet.locator("button[aria-label]").evaluateAll((bs) =>
+    bs.map((b) => b.getAttribute("aria-label")),
+  );
+  await page.getByRole("button", { name: "Close shelves" }).click();
+  await sheet.waitFor({ state: "detached", timeout: 10_000 });
+  return rows;
+}
+
+// THE PHONE, where Hugh's walk found the delete leaving the old tree on screen:
+// the deleted shelf still listed with its deck and `Unfiled` one short, until a
+// reload. The cause was a URL write racing the action's revalidated payload,
+// which settles by timing, so this path is walked with Hugh's exact steps — a
+// folder made, a deck filed into it, that shelf selected, then deleted from it.
+async function runPhone(browser) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  try {
+    await signIn(page);
+    await page.goto(`${BASE}/decks`, { waitUntil: "load" });
+    await page.waitForSelector("main [data-shelf-trigger]", { timeout: 30_000 });
+
+    await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().click();
+    await page.getByRole("dialog", { name: "Shelves" }).getByRole("button", { name: /New folder/ }).click();
+    await page.getByLabel("Folder name").fill(PHONE_FOLDER);
+    await page.getByRole("button", { name: "Create" }).click();
+    // Polled rather than slept, and held to the desktop run's rule: exactly one
+    // row this run made, or stop before touching anything else.
+    let fresh = [];
+    for (let i = 0; i < 20 && fresh.length === 0; i += 1) {
+      await page.waitForTimeout(500);
+      const madeRows = await pool.query(
+        "select id from deck_folders where name = $1 and user_id = $2",
+        [PHONE_FOLDER, userId],
+      );
+      fresh = madeRows.rows.filter((r) => !idsBefore.has(r.id));
+    }
+    fresh.forEach((r) => madeFolderIds.push(r.id));
+    check("390: the create wrote exactly one folder row", fresh.length, 1);
+    if (fresh.length !== 1) throw new Error(`390: expected one new folder row, found ${fresh.length}`);
+
+    const href = await onPage(page, "li a[href^='/decks/']").first().getAttribute("href");
+    const deckId = href?.split("/")[2] ?? null;
+    const borrowed = await pool.query(
+      "select id, folder_id from decks where user_id = $1 and id = $2",
+      [userId, deckId],
+    );
+    // Usually the same deck the desktop run borrowed, which that run's delete has
+    // since unfiled. Recording it again would restore it to null, over the real
+    // shelf the first record holds.
+    const again = borrowedDecks.some((b) => b.id === borrowed.rows[0]?.id);
+    if (borrowed.rows[0] && !again) borrowedDecks.push(borrowed.rows[0]);
+    await onPage(page, "li button[aria-label^='Actions for']").first().click();
+    await onPage(page, "button[aria-label^='Move ']").first().click();
+    await page.getByRole("button", { name: new RegExp(`^${PHONE_FOLDER}$`) }).click();
+    await page.waitForTimeout(2500);
+
+    await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().click();
+    await page.getByRole("dialog", { name: "Shelves" })
+      .getByRole("button", { name: new RegExp(`^${PHONE_FOLDER}, `) }).click();
+    await page.waitForTimeout(1000);
+    await onPage(page, "[data-shelf-trigger] button[aria-label^='Actions for']").first().click();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("button", { name: "Delete folder" }).click();
+    await page.waitForTimeout(3000);
+
+    const unfiled = await unfiledInDb();
+    const unfiledRow = `Unfiled, ${unfiled} ${unfiled === 1 ? "deck" : "decks"}`;
+    const rows = await sheetRows(page);
+    check("390: the deleted shelf leaves the sheet", rows.some((r) => r?.startsWith(`${PHONE_FOLDER},`)), false);
+    check("390: Unfiled counts the deck the deleted folder held", rows.includes(unfiledRow), true);
+    check("390: the selection falls back to All decks", (await onPage(page, "[data-shelf-trigger] button[aria-haspopup=dialog]").first().getAttribute("aria-label"))?.startsWith("Shelf: All decks"), true);
+    check("390: the delete leaves ?folder= off the URL", new URL(page.url()).searchParams.has("folder"), false);
+
+    // A fresh document at the same address, once the router has gone quiet: a
+    // load started while its prefetches are in flight is aborted (ERR_ABORTED),
+    // which says nothing about the page.
+    await page.waitForLoadState("networkidle");
+    // Clerk's dev instance can answer a document load with a handshake redirect,
+    // which aborts the load Playwright was waiting on (ERR_ABORTED) and lands on
+    // the same page a moment later. The shelf control arriving is the real wait.
+    await page.goto(page.url(), { waitUntil: "load" }).catch((error) => {
+      if (!String(error).includes("ERR_ABORTED")) throw error;
+    });
+    await page.waitForSelector("main [data-shelf-trigger]", { timeout: 30_000 });
+    const reloaded = await sheetRows(page);
+    check("390: a reload draws the same shelves", JSON.stringify(reloaded), JSON.stringify(rows));
+  } finally {
+    await context.close();
+  }
 }
 
 main()
@@ -318,18 +456,23 @@ main()
     // A fallback lookup, because the id list is written after the create's own
     // assertions: anything throwing between the two would otherwise leave the
     // folder behind, against this script's own promise to clean up after itself.
-    if (madeFolderIds.length === 0 && userId) {
+    // EVERY RUN, not only when nothing was recorded: the desktop walk always records its folder
+    // before the phone walk starts, so a phone create that committed and then threw before its
+    // id was pushed would be skipped by a "nothing recorded" gate and left on the account.
+    if (userId) {
       const late = await c.query(
         "select id from deck_folders where user_id = $1 and name = any($2::text[])",
-        [userId, [FOLDER, RENAMED]],
+        [userId, [FOLDER, RENAMED, PHONE_FOLDER]],
       );
       // Still only rows that did not exist before this run. A name collision is
       // the case this fallback exists for and also the case where the name names
       // somebody else's folder, so the name alone can never authorise a delete.
-      late.rows.filter((r) => !idsBefore.has(r.id)).forEach((r) => madeFolderIds.push(r.id));
+      late.rows
+        .filter((r) => !idsBefore.has(r.id) && !madeFolderIds.includes(r.id))
+        .forEach((r) => madeFolderIds.push(r.id));
     }
-    if (borrowedDeck) {
-      // Back to the shelf it was on, which may well have been a real one.
+    // Back to the shelf each was on, which may well have been a real one.
+    for (const borrowedDeck of borrowedDecks) {
       await c.query("update decks set folder_id = $1 where id = $2 and user_id = $3", [
         borrowedDeck.folder_id,
         borrowedDeck.id,

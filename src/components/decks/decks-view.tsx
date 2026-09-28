@@ -496,6 +496,14 @@ export function DecksView({
   // survives it is caught on the render after.
   if (!reconciling && shelfMissing) setState({ ...state, shelf: ALL_DECKS });
 
+  // The shelf a delete (or a refused rename) is waiting to see leave. Its segment
+  // and the focused trigger inside it go when the payload lands, and focus would
+  // fall to the body; the effect after the URL one puts it on the shelf control.
+  const shelfLeaving = useRef<Shelf | null>(null);
+  const markShelfLeaving = useCallback((shelf: Shelf) => {
+    shelfLeaving.current = shelf;
+  }, []);
+
   // Crossing to wide unmounts the sheet but would leave `open` true, so
   // crossing back would remount it already open — a modal the reader never
   // asked for, with the search field stealing focus on the way in.
@@ -556,6 +564,15 @@ export function DecksView({
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, [folders]);
 
+  // Focus for a shelf that left under a delete or a refused rename, once it has
+  // actually gone from `folders`.
+  useEffect(() => {
+    const leaving = shelfLeaving.current;
+    if (leaving === null || folders.some((f) => f.id === leaving)) return;
+    shelfLeaving.current = null;
+    requestAnimationFrame(focusShelfControl);
+  }, [folders, focusShelfControl]);
+
   const segments = useMemo(() => shelfSegments(folders, counts), [folders, counts]);
   const selectedShelf = useMemo(
     () =>
@@ -588,21 +605,21 @@ export function DecksView({
         size={size}
         say={say}
         onRenamed={() => {}}
-        onGone={() => {
-          // The folder went while the panel was open: this segment, and the
-          // focused trigger inside it, are removed by the refresh.
-          onShelf(ALL_DECKS);
-          requestAnimationFrame(focusShelfControl);
-        }}
-        onDeleted={() => {
-          // Selection falls back to All decks (STATES D3): the shelf the reader
-          // was standing on has gone, and landing them on it is the one thing
-          // that cannot happen.
-          onShelf(ALL_DECKS);
-          // The segment carrying this menu — and the focused trigger inside it —
-          // is removed by that same render, so focus would fall to the body.
-          requestAnimationFrame(focusShelfControl);
-        }}
+        // NEITHER CALLBACK MOVES THE SHELF OR WRITES THE URL. Both run the moment
+        // the action's return value arrives, while the revalidated payload that
+        // removes this folder is still streaming behind it. Writing the URL there
+        // (`onShelf` → `replaceState`) made the router refetch `/decks` mid-stream
+        // and settle on the OLD tree: the deleted shelf stayed on the line with
+        // its deck, `Unfiled` read one short, and only a reload cleared it (Hugh's
+        // staging walk, 2026-09-28; 3 of 3 at 390 against a staging copy).
+        //
+        // The fallback to All decks (STATES D3) still happens, one step later and
+        // from the payload itself: `shelfMissing` resets the selection once the
+        // folder has left `folders`, and the effect keyed on `folders` strips the
+        // dead `?folder=` after that. Focus waits for the same moment, because
+        // until then the trigger it would leave is still on screen.
+        onGone={() => markShelfLeaving(shelf)}
+        onDeleted={() => markShelfLeaving(shelf)}
       />
     );
   };
