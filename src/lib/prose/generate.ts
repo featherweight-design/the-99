@@ -38,6 +38,15 @@ export type GenerateOptions = {
   suppressed?: (oracleId: string) => boolean;
   /** Attempts per commander before it is left with its null. */
   attempts?: number;
+  /**
+   * At most this many commanders are asked for a sentence in one run; the rest are counted as
+   * `deferred` and picked up by the next run, since a written row is skipped as fresh. A spend
+   * ceiling, so a run the hash check did not expect to be large (a prompt version bump, a moved
+   * tag set) cannot spend without bound.
+   */
+  maxCommanders?: number;
+  /** Count what would be generated, and call nothing. */
+  dryRun?: boolean;
 };
 
 export type GenerateResult = {
@@ -64,6 +73,8 @@ export type GenerateResult = {
    * says which rule did it, and the four rules are fixed by four different changes.
    */
   rejectedBy: Record<ProseRejection, number>;
+  /** Needed a sentence and were not asked for one: the cap was reached, or the run was dry. */
+  deferred: number;
 };
 
 const DEFAULT_ATTEMPTS = 3;
@@ -145,7 +156,9 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
     rejected: 0,
     failed: 0,
     rejectedBy: { length: 0, sentences: 0, "front-loading": 0, hedge: 0 },
+    deferred: 0,
   };
+  let asked = 0;
 
   // In a `finally`, so a run that dies part-way still retires the payloads its writes changed.
   try {
@@ -155,11 +168,17 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
 
       const hash = proseInputHash(c.oracleId, c.name, c.tags);
       if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
+      // Before the dry run and the cap: a re-stamp calls no model, so it is never a commander asked.
       if (c.prose !== null && c.proseInputHash === legacyProseInputHash(c.oracleId, c.name, c.tags)) {
-        await restamp(c.oracleId, hash);
+        if (!opts.dryRun) await restamp(c.oracleId, hash);
         r.restamped++;
         continue;
       }
+      if (opts.dryRun || (opts.maxCommanders !== undefined && asked >= opts.maxCommanders)) {
+        r.deferred++;
+        continue;
+      }
+      asked++;
 
       let accepted: string | null = null;
       let called = false;

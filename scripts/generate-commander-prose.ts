@@ -39,12 +39,30 @@ async function complete(prompt: string): Promise<string | null> {
   }
 }
 
-generateCommanderProse({ complete })
+// `--dry-run` counts what a run would generate and calls nothing. `--max-commanders N` (or
+// PROSE_MAX_COMMANDERS) is the run's spend ceiling: at most N commanders are asked for a
+// sentence, the rest wait for the next run. Each commander costs up to three calls.
+const dryRun = process.argv.includes("--dry-run");
+const capArg = process.argv.indexOf("--max-commanders");
+const capText = capArg >= 0 ? process.argv[capArg + 1] : process.env.PROSE_MAX_COMMANDERS;
+const maxCommanders = capText ? Number(capText) : undefined;
+if (maxCommanders !== undefined && !(Number.isInteger(maxCommanders) && maxCommanders >= 0)) {
+  console.error(`generate-commander-prose: --max-commanders must be a whole number, not ${capText}`);
+  process.exit(1);
+}
+
+generateCommanderProse({ complete, dryRun, maxCommanders })
   .then((r) => {
+    if (dryRun) {
+      console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +
+        `${r.restamped} would be re-stamped, ${r.suppressed} suppressed); at most ${r.deferred * 3} calls. Nothing was called.`);
+      return;
+    }
     console.log(
       `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.restamped} re-stamped from the legacy hash, ` +
       `${r.suppressed} suppressed, ` +
-      `${r.rejected} rejected by the contract, ${r.failed} failed to generate.`,
+      `${r.rejected} rejected by the contract, ${r.failed} failed to generate` +
+      (r.deferred > 0 ? `, ${r.deferred} deferred by the --max-commanders ${maxCommanders} cap.` : "."),
     );
     // Per attempt, not per commander, and broken out by rule. The run that prompted this
     // rejected nearly everything it generated, and working out which of the four rules did

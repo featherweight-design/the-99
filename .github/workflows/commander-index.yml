@@ -155,7 +155,10 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Generate commander prose
+      # Visible before it spends: how many commanders need a sentence, and the most calls that
+      # could cost. Then the real run, under a ceiling (PROSE_MAX_COMMANDERS, default 2,000): each
+      # commander is up to three Sonnet calls, and whatever the cap defers waits for the next build.
+      - name: Count the prose to generate
         run: |
           {
             echo "## Commander prose"
@@ -163,7 +166,11 @@ jobs:
             echo "- Target: \`catalog-staging\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:prose --dry-run | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Generate commander prose
+        env:
+          PROSE_MAX_COMMANDERS: ${{ vars.PROSE_MAX_COMMANDERS || '2000' }}
+        run: pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
 
   copy:
     needs: [gate, build, prose]

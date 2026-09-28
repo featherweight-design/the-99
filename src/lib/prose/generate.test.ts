@@ -24,6 +24,35 @@ function candidate(overrides: Partial<ProseCandidate> = {}): ProseCandidate {
 }
 
 describe("generateCommanderProse", () => {
+  it("asks no more than maxCommanders, and defers the rest to the next run", async () => {
+    const complete = vi.fn(async () => ACCEPTED);
+    const write = vi.fn(async () => {});
+    const r = await generateCommanderProse({
+      complete,
+      loadCandidates: async () => [candidate({ oracleId: "a" }), candidate({ oracleId: "b" }), candidate({ oracleId: "c" })],
+      write,
+      maxCommanders: 2,
+    });
+    expect(r.written).toBe(2);
+    expect(r.deferred).toBe(1);
+    expect(complete).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts what a dry run would generate and calls nothing", async () => {
+    const complete = vi.fn(async () => ACCEPTED);
+    const write = vi.fn(async () => {});
+    const fresh = candidate({ oracleId: "oracle-kess", prose: ACCEPTED, proseInputHash: proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS) });
+    const r = await generateCommanderProse({
+      complete,
+      loadCandidates: async () => [fresh, candidate({ oracleId: "b" })],
+      write,
+      dryRun: true,
+    });
+    expect({ written: r.written, fresh: r.fresh, deferred: r.deferred }).toEqual({ written: 0, fresh: 1, deferred: 1 });
+    expect(complete).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
   it("writes an accepted string with its input hash", async () => {
     const write = vi.fn(async () => {});
     const r = await generateCommanderProse({
