@@ -321,11 +321,9 @@ recommended, and §3 gives the reasons above with their measured cost.
   asserts that newly revealed rows draw their fetched fields. The mutation check drops the fetch
   and watches the probe fail on the rows past the first window.
 
-## 6 · Decisions for Hugh
+## 6 · Decisions (Hugh, 2026-09-28, via d9)
 
-1. **Approve the four-PR shape and its order**, or pick a subset. #1 (lazy art) goes first: the
-   largest byte saving, and no behavior change. #2 alone is a ~20% RSC cut with no behavior
-   change. #3 is the largest single RSC win.
-2. **Accept a skeleton on revealed rows** (#3, #4): one round trip when Show more or a filter
-   brings rows in that the first payload did not draw. Against that, about 1.4s is saved on every
-   `/discover` visit and about 0.8s on every `/collection` visit, on the slow profile.
+1. **All four PRs, in the order in §5, the lazy art first.**
+2. **Revealed rows show the list's existing loading row for one round trip** on #3 and #4,
+   when Show more or a filter brings in rows the first payload did not draw.
+3. **The image cache stamp stays** (§3), as the plan's default.
