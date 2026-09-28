@@ -14,7 +14,7 @@ import {
 } from "../../lib/collection/issue-filter";
 
 const ROW_HEIGHT = 46; // 40px row + 6px gap
-const VIRTUALIZE_THRESHOLD = 150;
+export const VIRTUALIZE_THRESHOLD = 150;
 const FALLBACK_VIRTUAL_HEIGHT = 420; // pre-measure fallback (SSR / first paint)
 
 type Props =
@@ -45,9 +45,12 @@ export function IssueInspectorList(props: Props) {
 
   if (props.rows.length > VIRTUALIZE_THRESHOLD) {
     return (
-      <div ref={ref} className="h-full w-full">
+      <div ref={ref} className="h-full w-full" data-issue-list="">
         <FixedSizeList
           height={height || FALLBACK_VIRTUAL_HEIGHT}
+          // The list is the one scroll body, and a fling at its end stops
+          // there rather than handing off to the page or the sheet (D8).
+          style={{ overscrollBehavior: "contain" }}
           itemCount={props.rows.length}
           itemSize={ROW_HEIGHT}
           width="100%"
@@ -71,7 +74,10 @@ export function IssueInspectorList(props: Props) {
   // handoff. Last row previously clipped at fixed 420px cap — flex-fill
   // means the container's own bottom padding is the only breathing room.
   return (
-    <ul className="flex flex-col gap-[6px] overflow-y-auto h-full w-full">
+    <ul
+      data-issue-list=""
+      className="flex flex-col gap-[6px] overflow-y-auto overscroll-contain h-full w-full"
+    >
       {props.variant === "unmatched"
         ? props.rows.map((r) => (
             <li key={`${r.line}-${r.name}`}>

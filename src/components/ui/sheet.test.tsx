@@ -257,3 +257,94 @@ describe("SheetHeader", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Sheet — header drag (opt-in)", () => {
+  const header = (
+    <div>
+      <h2>Import issues</h2>
+      <button type="button">Close</button>
+      <div role="tablist">
+        <span role="tab" tabIndex={0}>
+          Unmatched
+        </span>
+      </div>
+      <div data-sheet-nodrag="">
+        <span>kept out</span>
+      </div>
+    </div>
+  );
+
+  it("starts a drag from the header's own text", () => {
+    const onDismiss = vi.fn();
+    render(<Sheet {...props} open onDismiss={onDismiss} header={header} headerDrag />);
+    drag(screen.getByText("Import issues"), 80);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("follows the pointer from the header, like the handle", () => {
+    render(<Sheet {...props} open header={header} headerDrag />);
+    const title = screen.getByText("Import issues");
+    fireEvent.pointerDown(title, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(title, { clientY: 40, pointerId: 1 });
+    expect(offset()).toBe(40);
+  });
+
+  it("never starts a drag from a control inside the header", () => {
+    const onDismiss = vi.fn();
+    render(<Sheet {...props} open onDismiss={onDismiss} header={header} headerDrag />);
+    drag(screen.getByRole("button", { name: "Close" }), 200);
+    drag(screen.getByRole("tab"), 200);
+    drag(screen.getByText("kept out"), 200);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(offset()).toBe(0);
+  });
+
+  it("keeps the header in the accessibility tree", () => {
+    // The handle's wrapper is aria-hidden; the header's must not be.
+    render(<Sheet {...props} open header={header} headerDrag />);
+    expect(screen.getByRole("heading", { name: "Import issues" })).toBeInTheDocument();
+    expect(screen.getByText("Import issues").closest("[aria-hidden]")).toBeNull();
+  });
+
+  it("is off by default: a header drag moves nothing", () => {
+    const onDismiss = vi.fn();
+    render(<Sheet {...props} open onDismiss={onDismiss} header={header} />);
+    drag(screen.getByText("Import issues"), 200);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(document.querySelector("[data-sheet-drag]")).toBeNull();
+  });
+});
+
+describe("Sheet — held height (opt-in)", () => {
+  const panel = () => screen.getByRole("dialog");
+
+  it("takes the height it is given and keeps it whatever the body does", () => {
+    const { rerender } = render(
+      <Sheet {...props} open height={488}>
+        <p>short</p>
+      </Sheet>,
+    );
+    expect(panel().style.height).toBe("488px");
+    rerender(
+      <Sheet {...props} open height={488}>
+        {Array.from({ length: 200 }, (_, i) => (
+          <p key={i}>row {i}</p>
+        ))}
+      </Sheet>,
+    );
+    expect(panel().style.height).toBe("488px");
+  });
+
+  it("keeps the height through a drag", () => {
+    render(<Sheet {...props} open height={488} />);
+    fireEvent.pointerDown(handle(), { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle(), { clientY: 30, pointerId: 1 });
+    expect(panel().style.height).toBe("488px");
+    expect(offset()).toBe(30);
+  });
+
+  it("is off by default: no inline height, no inline style at all", () => {
+    render(<Sheet {...props} open />);
+    expect(panel().getAttribute("style")).toBeNull();
+  });
+});

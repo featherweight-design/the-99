@@ -95,7 +95,43 @@ export type SheetProps = {
    * readers the trap exists for.
    */
   beside?: ReactNode;
+  /**
+   * Let the HEADER start a drag as well as the handle. Off by default, so
+   * every sheet that does not ask keeps a handle-only gesture.
+   *
+   * Not done by stretching the handle's wrapper over the header: that wrapper
+   * is `aria-hidden`, and a header inside it would take the title and every
+   * control in it out of the accessibility tree. The header gets its own
+   * `touch-none` wrapper with the same pointer handlers instead, and a press
+   * that lands on an interactive element inside it (see `NO_DRAG`) is left to
+   * that element, so a ✕, a tab or a field in the header still works.
+   */
+  headerDrag?: boolean;
+  /**
+   * A HELD height, in px, that the caller has measured. The sheet takes this
+   * height and keeps it whatever its body does afterwards; `undefined` (the
+   * default) leaves the panel sized by its content as every other sheet is.
+   *
+   * The caller measures rather than the sheet because only the caller knows
+   * what "the content" is: the issues inspector holds the height of the LONGER
+   * of two tabs, one of which is not on screen when it opens.
+   */
+  height?: number;
 };
+
+/**
+ * What a header drag leaves alone: a press inside any of these belongs to the
+ * control, not the gesture. `data-sheet-nodrag` marks a subtree a caller wants
+ * treated the same way without it being one of the listed elements.
+ */
+const NO_DRAG =
+  'button, a, input, textarea, select, label, [role="tab"], [role="button"], [data-sheet-nodrag]';
+
+function startsOnControl(target: EventTarget, within: Element): boolean {
+  if (!(target instanceof Element)) return false;
+  const hit = target.closest(NO_DRAG);
+  return hit !== null && within.contains(hit);
+}
 
 export function Sheet({
   open,
@@ -113,6 +149,8 @@ export function Sheet({
   handleBarClassName = HANDLE_BAR,
   frameClassName,
   beside,
+  headerDrag = false,
+  height,
 }: SheetProps) {
   // Live offset under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
@@ -207,6 +245,19 @@ export function Sheet({
     // `NotFoundError` on a cancelled touch — turning a snap-back into an error.
   };
 
+  const onHeaderPointerDown = (e: React.PointerEvent) => {
+    if (startsOnControl(e.target, e.currentTarget)) return;
+    onHandlePointerDown(e);
+  };
+
+  const panelStyle: React.CSSProperties | undefined =
+    height === undefined && !gestured
+      ? undefined
+      : {
+          ...(height !== undefined ? { height: `${height}px` } : null),
+          ...(gestured ? { transform: `translateY(${dragY}px)`, animation: "none" } : null),
+        };
+
   const body = (
     <>
       <div role="presentation" onClick={onDismiss} className={scrimClassName} />
@@ -231,9 +282,7 @@ export function Sheet({
         // animation outranks a normal inline transform, so a drag begun inside
         // that window updated `dragY` while the panel sat still. Neither current
         // adopter uses the default class, so this is a trap set for the next one.
-        style={
-          gestured ? { transform: `translateY(${dragY}px)`, animation: "none" } : undefined
-        }
+        style={panelStyle}
       >
         {/* Drag handle. `aria-hidden` and unfocusable on purpose: the ✕ below is
             the one accessible close control, and two identically-labelled
@@ -249,7 +298,21 @@ export function Sheet({
           <span className={handleBarClassName} />
         </div>
 
-        {header}
+        {headerDrag && header !== undefined ? (
+          // NOT aria-hidden, unlike the handle: this wraps the title.
+          <div
+            onPointerDown={onHeaderPointerDown}
+            onPointerMove={onHandlePointerMove}
+            onPointerUp={onHandlePointerUp}
+            onPointerCancel={onHandlePointerCancel}
+            className="touch-none"
+            data-sheet-drag="header"
+          >
+            {header}
+          </div>
+        ) : (
+          header
+        )}
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
         {footer}
