@@ -22,6 +22,15 @@
 //     URL reports the branch named, and always refused on production and staging: the reset is a
 //     write, and the figure means nothing on a database other readers are using.
 //
+// Two switches for the slow-network lane (plans/2026-09-28-list-payload-shrink.md):
+//   - MEASURE_PROFILE=slow: every page runs under Chrome's own Slow 4G (562.5ms latency, 180,000
+//     bytes/s down, 84,375 up) plus a 4x CPU throttle, through CDP. That is the profile the
+//     navigation-pending brief measured, so its table and this one can be read side by side.
+//   - MEASURE_ROUTES=collection,discover: only the routes named (by label), since a slow run of all
+//     six at two widths and three runs takes a long time. The card press needs `deck`.
+// The table also prints, per route, the card images a cold load ASKED for and the kilobytes that
+// landed, because an image is not in any RSC figure and can still be most of what a page costs.
+//
 // Where to point it: a `next start` (never `next dev`, whose compile times swamp everything) on a
 // scratch Neon branch holding a `pull:staging` copy, signed in as E2E_AUDIT_USER_EMAIL. The
 // worktree's `.env` DATABASE_URL must name THAT server's database: `env.mjs` loads `.env` over the
@@ -61,6 +70,23 @@ const WIDTHS = [
   { label: "390", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
 ];
 const IMAGE_HOSTS = /(^|\.)scryfall\.io\//;
+const PROFILE = process.env.MEASURE_PROFILE ?? "fast";
+const LOAD_CAP_MS = 90_000;
+if (PROFILE !== "fast" && PROFILE !== "slow") throw new Error(`MEASURE_PROFILE is fast or slow, not ${PROFILE}.`);
+const ONLY = process.env.MEASURE_ROUTES ? new Set(process.env.MEASURE_ROUTES.split(",").map((r) => r.trim())) : null;
+
+/** Chrome DevTools' own Slow 4G preset, and the 4x CPU throttle the brief paired it with. */
+async function throttle(cdp) {
+  if (PROFILE !== "slow") return;
+  await cdp.send("Network.enable");
+  await cdp.send("Network.emulateNetworkConditions", {
+    offline: false,
+    latency: 562.5,
+    downloadThroughput: 180_000,
+    uploadThroughput: 84_375,
+  });
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+}
 
 /** Refuses a database other readers use: the branch it reports, never its URL. */
 async function refuseShared(url, expected) {
@@ -114,6 +140,7 @@ async function signIn(browser) {
 async function capture(page) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Network.enable");
+  await throttle(cdp);
   const reqs = new Map();
   cdp.on("Network.requestWillBeSent", (e) => {
     if (!reqs.has(e.requestId)) reqs.set(e.requestId, { url: e.request.url, type: e.type, method: e.request.method, start: e.timestamp });
@@ -131,13 +158,16 @@ const ms = (t, t0) => (t == null || t0 == null ? null : Math.round((t - t0) * 10
 
 function network(reqs, t0) {
   const doc = reqs.find((r) => r.type === "Document");
-  const images = reqs.filter((r) => IMAGE_HOSTS.test(r.url) && r.end != null);
+  const asked = reqs.filter((r) => IMAGE_HOSTS.test(r.url));
+  const images = asked.filter((r) => r.end != null);
   const scripts = reqs.filter((r) => r.type === "Script");
   const kb = (n) => Math.round(n / 1024);
   return {
     ttfb: doc ? ms(doc.headersAt, t0) : null,
     streamEnd: doc ? ms(doc.end, t0) : null,
     firstImage: images.length ? Math.min(...images.map((r) => ms(r.end, t0))) : null,
+    imagesAsked: asked.length,
+    imageKb: Math.round(images.reduce((n, r) => n + (r.transferred ?? 0), 0) / 1024),
     docKb: doc ? kb(doc.transferred ?? 0) : null,
     jsKb: kb(scripts.reduce((n, r) => n + (r.transferred ?? 0), 0)),
     // The card-detail reads, kept apart: the press's own read is a server action (a POST to the
@@ -175,11 +205,18 @@ async function load(page, cap, url) {
   let t0 = null;
   const first = (e) => { if (t0 == null) t0 = e.timestamp; };
   cap.cdp.on("Network.requestWillBeSent", first);
-  await page.goto(url, { waitUntil: "load", timeout: 120_000 });
+  // The LOAD EVENT waits on every image the document asked for. On the slow profile a page that
+  // asks for 200 card images never reaches it inside any sane timeout, which is the finding rather
+  // than a harness failure: the load is recorded as null past LOAD_CAP_MS and the run goes on.
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  const loaded = await page.waitForLoadState("load", { timeout: LOAD_CAP_MS }).then(() => true, () => false);
   await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   cap.cdp.off("Network.requestWillBeSent", first);
   const content = await page.evaluate(() => (window.__contentAt == null ? null : Math.round(window.__contentAt)));
-  return { content, ...network(cap.all(), t0) };
+  const loadEvent = loaded
+    ? await page.evaluate(() => Math.round(performance.getEntriesByType("navigation")[0]?.loadEventStart ?? 0) || null)
+    : null;
+  return { content, loadEvent, ...network(cap.all(), t0) };
 }
 
 async function dbExec(sql, run) {
@@ -256,10 +293,12 @@ async function one(browser, state, width, routes, sql) {
   // Client navigation from Home, a first visit and then a revisit.
   const context = await ctx();
   const page = await context.newPage();
+  await throttle(await context.newCDPSession(page));
   await page.goto(`${BASE}/`, { waitUntil: "load" });
   await page.waitForLoadState("networkidle").catch(() => {});
   for (const pass of ["first", "revisit"]) {
-    for (const route of [...routes.filter((r) => r.path !== "/"), routes.find((r) => r.path === "/")]) {
+    // Home last, and only when it is being measured (MEASURE_ROUTES can leave it out).
+    for (const route of [...routes.filter((r) => r.path !== "/"), routes.find((r) => r.path === "/")].filter(Boolean)) {
       const pressed = Date.now();
       await page.evaluate((u) => window.next.router.push(u), route.path);
       await page.waitForURL((u) => u.pathname === route.path.split("?")[0], { timeout: 60_000 });
@@ -295,7 +334,9 @@ function table(runs, routes) {
       const db = m((p) => p.routes[route.label]?.db?.ms);
       lines.push(`| ${route.label} | ${m((p) => r("cold")(p)?.ttfb)} / ${m((p) => r("warm")(p)?.ttfb)} | ${m((p) => r("cold")(p)?.content)} / ${m((p) => r("warm")(p)?.content)} | ${m((p) => r("warm")(p)?.streamEnd)} | ${m((p) => r("cold")(p)?.firstImage)} / ${m((p) => r("warm")(p)?.firstImage)} | ${m((p) => p.soft[route.label]?.first)} / ${m((p) => p.soft[route.label]?.revisit)} | ${db == null ? "—" : `${db}ms`} |`);
     }
-    lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
+    lines.push(`\nImages a cold load asked for, and what landed: ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.imagesAsked)} / ${m((p) => p.routes[route.label]?.cold?.imageKb)}KB`).join(" · ")}.`);
+    lines.push(`\nLoad event cold / warm (null: not within ${LOAD_CAP_MS / 1000}s): ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.loadEvent)} / ${m((p) => p.routes[route.label]?.warm?.loadEvent)}`).join(" · ")}.`);
+    if (routes.some((r) => r.label === "deck")) lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
   }
   return lines.join("\n");
 }
@@ -332,6 +373,12 @@ async function main() {
       { label: "commanders", path: "/commanders" },
       { label: "discover", path: "/discover" },
     ];
+    if (ONLY) {
+      const unknown = [...ONLY].filter((l) => !routes.some((r) => r.label === l));
+      if (unknown.length) throw new Error(`MEASURE_ROUTES names no route: ${unknown.join(", ")}.`);
+      routes.splice(0, routes.length, ...routes.filter((r) => ONLY.has(r.label)));
+    }
+    console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}`);
     const runs = [];
     for (let i = 0; i < RUNS; i += 1) {
       const run = {};

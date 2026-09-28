@@ -13,7 +13,7 @@
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -88,15 +88,40 @@ export function GridView({
                the tile's; the bottom two sit against the caption and were square, so a
                card whose Scryfall JPEG carries a white corner matte drew a pale notch
                above the caption. Same defect and same fix as the deck's Card view. */
-            className={`relative shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)] ${TILE_ART_CLIP}`}
+            className={`relative overflow-hidden ${TILE_ART_CLIP}`}
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),
-              backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
             }}
-          />
+          >
+            {/* AN IMG, LOADED LAZILY — not a CSS background. A browser fetches a CSS
+                background for every rendered element whether or not it is on screen, so
+                opening the grid asked for all 200 windowed tiles' art at once: about 22MB
+                of Scryfall `normal` images, which on a slow link kept the page's load
+                event out past 90s (plans/2026-09-28-list-payload-shrink.md, PR 1). A
+                native `loading="lazy"` img asks only near the viewport, and it still
+                starts on the HTML parse, before hydration, where a script-driven observer
+                would wait for the bundle. `object-fit: cover` centred is exactly what
+                `background-size: cover` centred drew. The FILE stays `normal`: `small`
+                is 146px against a 175-178px tile, soft at any density. */}
+            {c.imageUri && (
+              // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
+              <img
+                src={c.imageUri}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            )}
+            {/* The 1px inner edge, drawn OVER the art. An inset shadow on this box would
+                paint under its img child and vanish. `rounded-[inherit]` keeps the edge on
+                the clip's rounded corners. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+            />
+          </div>
 
           {/* Caption, three lines. Everything that used to sit on the art is on the
               meta line: the availability chip, then the bracket marks and the combo

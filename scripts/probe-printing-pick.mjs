@@ -89,7 +89,22 @@ async function signIn(page) {
 }
 
 /** The tile's painted art, which is the thing under test — never a prop, never a class. */
-const tileArt = (tile) => tile.evaluate((el) => {
+const tileArt = (tile) => tile.evaluate(async (el) => {
+  // The grid draws its art as a lazily loaded <img> (the list payload lane, PR 1). What it
+  // PAINTS is the source it resolved, so that is read — once the tile is in view and the
+  // picture has loaded, since a lazy image off screen has asked for nothing yet.
+  const img = el.querySelector("img");
+  if (img) {
+    el.scrollIntoView({ block: "center" });
+    if (!img.complete) {
+      await new Promise((resolve) => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+        setTimeout(resolve, 15_000);
+      });
+    }
+    return img.naturalWidth > 0 ? img.currentSrc : null;
+  }
   const box = el.querySelector("[style*='background-image']");
   return box ? getComputedStyle(box).backgroundImage : null;
 });
