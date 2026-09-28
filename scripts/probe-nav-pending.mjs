@@ -123,7 +123,14 @@ async function run(browser, state, width) {
       };
       requestAnimationFrame(look);
     });
-    await page.goto(`${BASE}/collection`, { waitUntil: "load", timeout: 120_000 });
+    // Not `load`: on Slow 4G that waits on every card image the grid asks for. The screen, or the
+    // page's own content arriving without one, is what this asks about.
+    await page.goto(`${BASE}/collection`, { waitUntil: "commit", timeout: 120_000 });
+    await page.waitForFunction(
+      () => window.__screen || document.querySelector("main [data-testid], main ul, main table"),
+      null,
+      { timeout: 120_000, polling: 50 },
+    );
     const screen = await page.evaluate(() => window.__screen ?? null);
     report(screen === "Reading your collection", "direct load of /collection streams its screen", screen ?? "no screen");
     await page.close();
