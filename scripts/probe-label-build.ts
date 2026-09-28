@@ -196,7 +196,10 @@ async function main(): Promise<void> {
   // the fixture failing rather than the read.
   const none = await readCardsByName(db, [`probe-no-such-card-${randomUUID()}`]);
   report("an unknown name returns no rows rather than throwing", none.length === 0, `${none.length}`);
-  report("an empty ask makes no query at all", (await readCardsByName(db, [])).length === 0);
+  // Named for what it MEASURES. The empty-ask guard saves a round trip rather than avoiding a bug
+  // — without it `any('{}'::text[])` is valid and returns nothing — so no behavioural check can
+  // see it, and calling this one "makes no query" would have claimed coverage it cannot have.
+  report("an empty ask returns nothing", (await readCardsByName(db, [])).length === 0);
 }
 
 main()
