@@ -56,6 +56,19 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
   });
 
+  it("holds Continue at Importing… while a first import runs, since no modal carries the wait", async () => {
+    // Wired end to end through the flow, not only rendered by ReviewScreen: the prop is only
+    // worth anything if the mount site passes it.
+    let settle: (v: undefined) => void = () => {};
+    confirmUpload.mockReturnValueOnce(new Promise((resolve) => (settle = resolve)));
+    const cont = await reachReview(0);
+    await act(async () => fireEvent.click(cont));
+    const held = screen.getByRole("button", { name: "Importing…" });
+    expect(held).toBeDisabled();
+    await act(async () => settle(undefined));
+    expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
+  });
+
   it("keeps the confirm for a replace, and writes nothing until it is answered", async () => {
     const cont = await reachReview(2_933);
     fireEvent.click(cont);
