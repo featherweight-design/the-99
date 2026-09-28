@@ -28,10 +28,14 @@ export function stemImage(uri: string): string {
   return m[3] + (m[4] ?? "");
 }
 
+/** The compact form `stemImage` writes, and nothing else: any other value crossed unchanged. */
+const STEMMED = /^([0-9a-f-]{36})(\?\d+)?$/;
+
 export function unstemImage(wire: string): string {
-  if (wire.startsWith("https://")) return wire;
-  const id = wire.slice(0, 36);
-  return `${HOST}${id[0]}/${id[1]}/${id}.jpg${wire.slice(36)}`;
+  const m = STEMMED.exec(wire);
+  if (!m) return wire;
+  const id = m[1];
+  return `${HOST}${id[0]}/${id[1]}/${id}.jpg${m[2] ?? ""}`;
 }
 
 type WireAvailability = Omit<AvailabilitySummary, "claims"> & { claims: number[] };

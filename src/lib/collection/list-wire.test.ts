@@ -47,6 +47,9 @@ describe("stemImage / unstemImage", () => {
       "https://example.com/art.jpg",
       `https://cards.scryfall.io/large/front/c/1/${ID}.jpg?1`,
       `https://cards.scryfall.io/normal/front/d/1/${ID}.jpg?1`,
+      `http://cards.scryfall.io/normal/front/c/1/${ID}.jpg?1`,
+      "/art/local.jpg",
+      "data:image/png;base64,AAAA",
     ]) {
       expect(stemImage(other)).toBe(other);
       expect(unstemImage(stemImage(other))).toBe(other);
