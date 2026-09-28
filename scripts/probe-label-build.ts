@@ -29,7 +29,7 @@ const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
