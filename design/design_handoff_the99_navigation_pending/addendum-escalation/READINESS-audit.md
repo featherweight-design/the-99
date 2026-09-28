@@ -14,7 +14,7 @@ Audited against `origin/main` at `330135c6d`, with the brief at `docs/superpower
   
   This agrees with brief §3.
 - **The overlay.** It sets `aria-busy` on `<main>` and blocks pointer events from its first frame. Focus stays on the pressed link. It is drawn over `<main>` only, so the rail, the tab bar and the nav pip stay live.
-- **The loading copy.** The canvas's 11 entries match `shellCopy.loading` (`src/lib/copy/shell.ts:22-83`) word for word. Its route map (canvas `:325-329`) covers 16 of the 17 `loading.tsx` files. The one it leaves out is `/decks/new/choose`, a kept route whose file re-exports `ChooseLoading` rather than naming a `shellCopy.loading` key. The retire list is withdrawn (README `:13`, `:54`).
+- **The loading copy.** The canvas's 11 entries match `shellCopy.loading` (`src/lib/copy/shell.ts:22-83`) word for word. Its route map (canvas `:325-329`) assigns a key to 16 of the 17 `loading.tsx` files. The one it leaves out is `/decks/new/choose`, a kept route whose file re-exports `ChooseLoading` rather than naming a `shellCopy.loading` key. Two of its paths are not the app's: it writes `/replace/summary/[uploadId]` for `/collection/replace/summary/[uploadId]` (canvas `:326`), and it has no `/decks/import` (correction 5). The retire list is withdrawn (README `:13`, `:54`).
 - **The kept files.** `decks/[id]`, `decks/[id]/changes`, `decks/[id]/import` and `decks/new/choose` keep their own screen at press (README `:55`). `/collection`'s file goes and the overlay covers it (README `:56`), as Hugh ruled.
 - **Tokens.** No new token. `--bg`, `--accent`, `--accent-strong`, `--fg`, `--fg-muted`, `--fg-faint` and `--elevated-hover` are declared in all six themes.
 - **About.** None owed. This is perceived-performance chrome and adds no capability.
@@ -51,8 +51,9 @@ Audited against `origin/main` at `330135c6d`, with the brief at `docs/superpower
    - The nine that target kept routes wait for those routes to join.
    - Inline text Links carry a reporter child, since `useLinkStatus` must be read inside the Link. A sweep test over every `<Link>` enforces it.
    - A reporter ignores a link whose path is the current one.
-5. **The route map covers every page.**
-   - `/decks/import` maps to `decks`, which is the screen it inherits today.
+5. **The route map covers every page.** The canvas's map is a drawing, not the build's map; the build writes its own from `src/app`.
+   - `/collection/replace/summary/[uploadId]` maps to `collection`. The canvas writes it as `/replace/summary/[uploadId]` (`:326`); use the real path.
+   - `/decks/import` maps to `decks`, which is the screen it inherits today. The canvas does not list it.
    - `/decks/new/choose` is kept, and its screen is `ChooseLoading`: `shellCopy.loading.deckNew` on the form address, and the results header plus `ResultsSkeleton` on a results address. The new test ("every segment with a page resolves a key") exempts the kept routes by name until they join the overlay.
 6. **The pip starts at its peak.** Its pulse runs with a -320ms delay, so it does not snap from 1 to 0.25 at 280ms (canvas `:246-247`).
 7. **Reduced motion.**
