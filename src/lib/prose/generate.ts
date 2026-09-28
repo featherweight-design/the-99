@@ -8,6 +8,7 @@ import {
   buildProsePrompt,
   buildProseRetryPrompt,
   PROSE_PROMPT_VERSION,
+  legacyProseInputHash,
   proseInputHash,
 } from "./prompt";
 import { isSuppressed } from "./suppressed";
@@ -25,6 +26,8 @@ export type GenerateOptions = {
   complete: (prompt: string) => Promise<string | null>;
   loadCandidates?: () => PromiseLike<ProseCandidate[]>;
   write?: (oracleId: string, prose: string, hash: string) => Promise<void>;
+  /** Replaces a row's stored hash and nothing else: the re-stamp from the legacy hash. */
+  restamp?: (oracleId: string, hash: string) => Promise<void>;
   /**
    * Retires every cached list built from the catalog, once the run has written anything.
    * `/commanders` caches its rankings, sentences included, keyed on the catalog generation,
@@ -41,6 +44,11 @@ export type GenerateResult = {
   written: number;
   /** Current rows whose stored hash still matches their inputs. */
   fresh: number;
+  /**
+   * Current under the legacy hash (`legacyProseInputHash`) and re-stamped with the new one, with
+   * no model call: a sentence the old hash called fresh describes the same inputs today.
+   */
+  restamped: number;
   suppressed: number;
   /**
    * At least one attempt produced a string and none of them were accepted. A commander whose
@@ -71,11 +79,47 @@ const loadFromDb = () =>
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId));
 
+const restampInDb = async (oracleId: string, hash: string) => {
+  await db.update(commanderSupport)
+    .set({ proseInputHash: hash })
+    .where(eq(commanderSupport.commanderOracleId, oracleId));
+};
+
 const writeToDb = async (oracleId: string, prose: string, hash: string) => {
   await db.update(commanderSupport)
     .set({ prose, proseInputHash: hash, prosePromptVersion: PROSE_PROMPT_VERSION })
     .where(eq(commanderSupport.commanderOracleId, oracleId));
 };
+
+export type RestampResult = { restamped: number; fresh: number; stale: number };
+
+/**
+ * The one-time move to the set-and-lead hash, with no model call (`db:restamp:prose`): a row
+ * current under `legacyProseInputHash` takes the new stamp, and every other row is left exactly
+ * as it is. `generateCommanderProse` makes the same move row by row; `copyCommanderProse` only
+ * accepts a legacy-stamped source row and never re-stamps the target's own. This lets a database
+ * take the move before its inputs change, which neither of those can do for it.
+ */
+export async function restampCommanderProse(
+  opts: Pick<GenerateOptions, "loadCandidates" | "restamp" | "suppressed"> & { dryRun?: boolean } = {},
+): Promise<RestampResult> {
+  const load = opts.loadCandidates ?? loadFromDb;
+  const restamp = opts.restamp ?? restampInDb;
+  const suppressed = opts.suppressed ?? isSuppressed;
+  const r: RestampResult = { restamped: 0, fresh: 0, stale: 0 };
+  for (const c of await load()) {
+    if (c.prose === null || suppressed(c.oracleId)) continue;
+    const hash = proseInputHash(c.oracleId, c.name, c.tags);
+    if (c.proseInputHash === hash) { r.fresh++; continue; }
+    if (c.proseInputHash === legacyProseInputHash(c.oracleId, c.name, c.tags)) {
+      if (!opts.dryRun) await restamp(c.oracleId, hash);
+      r.restamped++;
+      continue;
+    }
+    r.stale++;
+  }
+  return r;
+}
 
 /**
  * Generate, validate and store one sentence per commander.
@@ -87,6 +131,7 @@ const writeToDb = async (oracleId: string, prose: string, hash: string) => {
 export async function generateCommanderProse(opts: GenerateOptions): Promise<GenerateResult> {
   const load = opts.loadCandidates ?? loadFromDb;
   const write = opts.write ?? writeToDb;
+  const restamp = opts.restamp ?? restampInDb;
   const suppressed = opts.suppressed ?? isSuppressed;
   const attempts = opts.attempts ?? DEFAULT_ATTEMPTS;
   const stamp = opts.stamp ?? stampCatalogRefresh;
@@ -95,6 +140,7 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
   const r: GenerateResult = {
     written: 0,
     fresh: 0,
+    restamped: 0,
     suppressed: 0,
     rejected: 0,
     failed: 0,
@@ -109,6 +155,11 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
 
       const hash = proseInputHash(c.oracleId, c.name, c.tags);
       if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
+      if (c.prose !== null && c.proseInputHash === legacyProseInputHash(c.oracleId, c.name, c.tags)) {
+        await restamp(c.oracleId, hash);
+        r.restamped++;
+        continue;
+      }
 
       let accepted: string | null = null;
       let called = false;

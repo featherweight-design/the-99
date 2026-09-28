@@ -4,8 +4,8 @@ const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../cache/stamp-catalog", () => ({ stampCatalogRefresh: vi.fn(async () => {}) }));
 
-import { generateCommanderProse, type ProseCandidate } from "./generate";
-import { proseInputHash } from "./prompt";
+import { generateCommanderProse, restampCommanderProse, type ProseCandidate } from "./generate";
+import { legacyProseInputHash, proseInputHash } from "./prompt";
 
 const TAGS = [{ slug: "spellslinger", label: "Spellslinger", count: 900 }];
 
@@ -212,6 +212,38 @@ describe("generateCommanderProse", () => {
     expect(r).toMatchObject({ written: 1, fresh: 0 });
   });
 
+  // A sentence current under the legacy hash describes the same inputs today, so it takes the
+  // new stamp with no model call; one stale under both is regenerated as before.
+  it("re-stamps a row current under the legacy hash without calling the model", async () => {
+    const complete = vi.fn(async () => ACCEPTED);
+    const restamp = vi.fn(async () => {});
+    const write = vi.fn(async () => {});
+    const r = await generateCommanderProse({
+      complete,
+      loadCandidates: async () => [
+        candidate({ prose: ACCEPTED, proseInputHash: legacyProseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS) }),
+      ],
+      write,
+      restamp,
+    });
+    expect(complete).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(restamp).toHaveBeenCalledWith("oracle-kess", proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS));
+    expect(r).toMatchObject({ restamped: 1, fresh: 0, written: 0 });
+  });
+
+  it("regenerates a row stale under both hashes rather than re-stamping it", async () => {
+    const restamp = vi.fn(async () => {});
+    const r = await generateCommanderProse({
+      complete: async () => ACCEPTED,
+      loadCandidates: async () => [candidate({ prose: "old sentence", proseInputHash: "stale" })],
+      write: async () => {},
+      restamp,
+    });
+    expect(restamp).not.toHaveBeenCalled();
+    expect(r).toMatchObject({ restamped: 0, written: 1 });
+  });
+
   describe("the catalog stamp", () => {
     // `/commanders` caches its rankings, sentences included, on the catalog generation, and this
     // job runs after the index has stamped: its own writes need their own stamp.
@@ -249,5 +281,30 @@ describe("generateCommanderProse", () => {
       })).rejects.toThrow("connection lost");
       expect(stamp).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe("restampCommanderProse", () => {
+  const NEW = proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS);
+  const LEGACY = legacyProseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS);
+  const rows = () => [
+    candidate({ oracleId: "legacy", prose: ACCEPTED, proseInputHash: legacyProseInputHash("legacy", "Kess, Dissident Mage", TAGS) }),
+    candidate({ prose: ACCEPTED, proseInputHash: NEW }),
+    candidate({ oracleId: "stale", prose: ACCEPTED, proseInputHash: LEGACY }),
+    candidate({ oracleId: "empty" }),
+  ];
+
+  it("re-stamps only the rows current under the legacy hash", async () => {
+    const restamp = vi.fn(async () => {});
+    const r = await restampCommanderProse({ loadCandidates: async () => rows(), restamp, suppressed: () => false });
+    expect(restamp.mock.calls).toEqual([["legacy", proseInputHash("legacy", "Kess, Dissident Mage", TAGS)]]);
+    expect(r).toEqual({ restamped: 1, fresh: 1, stale: 1 });
+  });
+
+  it("writes nothing on a dry run", async () => {
+    const restamp = vi.fn(async () => {});
+    const r = await restampCommanderProse({ loadCandidates: async () => rows(), restamp, suppressed: () => false, dryRun: true });
+    expect(restamp).not.toHaveBeenCalled();
+    expect(r.restamped).toBe(1);
   });
 });

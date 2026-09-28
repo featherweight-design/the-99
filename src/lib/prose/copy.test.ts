@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { copyCommanderProse, type ProseSource, type ProseTarget } from "./copy";
-import { proseInputHash, PROSE_PROMPT_VERSION } from "./prompt";
+import { legacyProseInputHash, proseInputHash, PROSE_PROMPT_VERSION } from "./prompt";
 
 const TAGS = [{ slug: "spellslinger", label: "Spellslinger", count: 900 }];
 const NAME = "Kess, Dissident Mage";
@@ -129,6 +129,20 @@ describe("copyCommanderProse", () => {
       write,
     });
     expect(write).toHaveBeenCalledWith(sourceRow());
+    expect(r).toEqual({ installed: 1, fresh: 0, suppressed: 0, missing: 0, drifted: 0 });
+  });
+
+  // A source stamped before the hash changed still fits a target whose inputs produce that
+  // legacy hash, and lands carrying the new stamp so the target reads it as current.
+  it("installs a legacy-stamped source under the new hash", async () => {
+    const write = vi.fn(async () => {});
+    const legacy = sourceRow({ proseInputHash: legacyProseInputHash(ORACLE, NAME, TAGS) });
+    const r = await copyCommanderProse({
+      loadSource: async () => [legacy],
+      loadTarget: async () => [targetRow()],
+      write,
+    });
+    expect(write).toHaveBeenCalledWith({ ...legacy, proseInputHash: HASH });
     expect(r).toEqual({ installed: 1, fresh: 0, suppressed: 0, missing: 0, drifted: 0 });
   });
 });
