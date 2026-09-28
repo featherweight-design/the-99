@@ -1,7 +1,8 @@
-# Readiness audit: first-run onboarding (R1)
+# Readiness audit: first-run onboarding (R1, R2)
 
-**Verdict: 🟡 Yellow.** It can be built once the engineering corrections below are applied,
-and once Design's R2 places one item (below). Hugh ruled on O1 on 2026-09-28. The audit was run against the brief on
+**Verdict: 🟡 Yellow.** R2 places the pair Hugh's O1 ruling sent back, and honors every point of
+that ruling. Two questions remain for Hugh (O7 and the buildable figure, below). The build can
+proceed once he rules and the engineering corrections are applied. The audit was run against the brief on
 `docs/first-run-onboarding-brief` (#1091), `2026-09-28-first-run-onboarding.md`, and
 `origin/main`.
 
@@ -25,10 +26,57 @@ and once Design's R2 places one item (below). Hugh ruled on O1 on 2026-09-28. Th
   title reads "Replace collection" (`page.tsx:22`) even when there is no collection to replace;
   that goes to `/copy-review`.
 
-## Returning to Design (R2)
+## Returning to Design (R2): done
 
-- **Where the pair goes in Home's resume slot, at both widths.** This is the only item going back
-  to Design. R2 also records the withdrawal of D2 / A3. Everything else stays with engineering.
+- **Where the pair goes in Home's resume slot, at both widths.** R2 draws it in frames 6a (1300),
+  6b and 6c (390), and marks 1c and 1d withdrawn on the canvas (`.dc.html:333`, `:378`; README
+  `:9`).
+- **Checked against the ruling:**
+  - Home goes to the dashboard as soon as the collection is read, and Ready to build stays first
+    (READINESS-r1 `:5`, `:25`).
+  - The pair is one shared component, Browse commanders primary and Import a deck ghost
+    (`:16-17`).
+  - New deck is untouched.
+- **R2 adds three things around the pair:** a "No decks yet" section label, an inset card, and a
+  body sentence (`:12-15`, argued at `:20-23`). They are presentation only, and Hugh sees them with
+  O7.
+- **No card fan on Home.** That is consistent with the dashboard, which uses mono labels and inset
+  cards rather than marks. `CardFanMark` stays private to `DecksZero`.
+- **The phone stack matches the code:** the CTAs, Ready to build, the zero block, then
+  Commitments.
+  - Sections are 12 apart (`dashboard.tsx:116-117`), with 16 above Commitments from its label's
+    `mt-[4px]`.
+  - New deck comes first through `flex-row-reverse` (`:85`).
+  - Browse, Import and Review commitments are 44px below `sm`.
+
+## Open for Hugh (R2)
+
+- **O7: two filled buttons on Home at zero decks.** New deck is a `PrimaryButton` to `/decks/new`
+  (`dashboard.tsx:95-100`). Browse commanders is a `PrimaryButton` to `/commanders`
+  (`decks-zero.tsx:57-62`). They share one viewport at 1300 (6a). At 390 they never share a
+  screen: New deck sits at the fold (6b) and Browse is one scroll down (6c).
+  - **A** (Design's lean): accept two fills, "because the zero state is the one moment Browse
+    outranks New deck." Nothing to build.
+  - **B:** a `tone` prop that draws the pair as ghosts on Home. Engineering recommends against it.
+    It forks the component that ruling 2 exists to keep whole, and it undercuts the buildable
+    line, which "exists to justify Browse commanders being the primary"
+    (`decks-zero.tsx:71-72`).
+  - **C** (not drawn by Design): leave the shared pair alone, and draw Home's own New deck as a
+    ghost while there are no decks. That keeps one fill per page, and the fill goes to the action
+    that outranks the others at zero.
+  - **The two intents are close but not the same.** `/decks/new` with no commander mounts
+    `CreatePicker` (`decks/new/page.tsx:72-75`), an unranked search over the commanders the
+    player owns: "I know my commander." `/commanders` is the ranked discovery list: "show me what
+    my cards can build." Both end at the same create step (`/decks/new?commander=…`). At zero
+    decks, discovery is the better first move, which supports A or C.
+- **The buildable figure on Home.** R2 mounts `<HomeDecksZero buildable cards />`, but frame 6a
+  draws "38 commanders buildable" under Ready to build's "36 more scored 58 or better". That
+  figure is the Ready set's size.
+  - `/decks` caps its figure at 9 on purpose (`DECKS_ZERO_BUILDABLE`, `decks/page.tsx:19`, `:95`).
+  - The shared figure would put "9 commanders buildable" under "36 more…" on the same page.
+  - The Ready set's size would make Home and `/decks` disagree for one account.
+  - Either way, the constant moves out of `decks/page.tsx` into a lib so both pages read one
+    definition.
 
 ## What checks out
 
@@ -120,6 +168,23 @@ must verify each:
    still draws a 13px `--danger` error line (README `:121`, and the token list). Keep that error
    line; the calmer rule governs the confirm's resting content.
 
+Added with R2:
+
+8. **Extract `DecksZeroActions` as a fragment, every class and margin unchanged**
+   (`decks-zero.tsx:56-77`). `/decks` then stays pixel-identical. The group keeps its own
+   `mt-[4px] sm:mt-[2px]` (`:56`) and `sm:mt-[2px]` on the line (`:74`). So under R2's wrapper
+   (`gap-[15px] sm:gap-[16px]`), Home renders body to row at 18 on a phone and 16 on desktop, and
+   row to line at 18 on desktop, not the 14 / 14 / 16 drawn in 6a and 6c. Build it as the
+   extraction gives it and correct the table. Do not add props to strip the group's margins.
+9. **The zero card's padding and gap.** R2 gives `p-[16px] sm:p-[16px_18px]` and `gap-[14px]` "in
+   Commitments' card classes", but Commitments is `p-[14px]` with `gap-[11px]`
+   (`commitments-card.tsx:70`). Build the drawn values and drop the claim, or match Commitments;
+   border, radius and background already match.
+10. **The section's gap** is ResumeDecks' `gap-[12px] min-[1180px]:gap-[11px]`
+    (`resume-decks.tsx:326`), with the label's `mt-[6px]`. The frames draw 12 and 11.
+11. **`Dashboard` gains a `buildable` prop** (it has none today), computed in `app/page.tsx` from
+    the same `ranked` list, by whichever rule Hugh picks above.
+
 ## For `/copy-review`
 
 These do not affect the verdict.
@@ -128,7 +193,9 @@ These do not affect the verdict.
 - The lock is worded three ways: "open once your collection is read", "Add a collection to
   unlock", "Unlocks once a collection is read". Pick one.
 - "Collection opens once your collection is read" repeats itself.
-- "An imported deck arrives built" collides with the app's own meaning of "built".
+- `zero.decksHeading` ("No decks yet") now also serves as a mono section label on Home.
+- "An imported deck arrives built" (`step3LockedAfterRead`) showed only while the live step 2 did,
+  so it is dead since the O1 ruling.
 - "your previous file" assumes a file, but a pasted collection has none.
 - `/collection/replace` is titled "Replace collection" even for an account with no collection
   (the O1 ruling routes Go to step 1 there).
@@ -145,3 +212,13 @@ These do not affect the verdict.
   - Go to step 1 when there is no checklist;
   - the empty-filter title size;
   - the phone banner.
+- **R2 leaves the withdrawn live step 2 in the text.** Design should strike these; the build
+  ignores them. They are:
+  - README D2 and D3 (`:53-68`, including "New state. The checklist stays on Home…");
+  - STATES `:12` (the A3 row) and `:15` (the `step(2, 3)` kicker);
+  - the live-only strings in `copy strings.ts:12-18`.
+- **D7's "the ticked step 1 is the only mark of the change" can no longer be seen** (README
+  `:104-106`, STATES `:30`). The checklist unmounts as soon as the collection is read, so the unlock
+  moment is now Home switching to the dashboard.
+- **O6 still holds:** Home's zero block adds no capability. At most it is an ordinary edit to the
+  `resume` About entry (`about.ts:812`).
