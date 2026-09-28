@@ -212,7 +212,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
   **A builder whose output is copied records ITSELF**, through `recordBuild`
   (`src/lib/catalog/builds.ts`): `db:seed:combos` starts its own row and finishes it `ok` or
-  failed, so every run, by hand included, leaves a newer row. Without that, a hand-run ingest that
+  failed, and so do both index steps, `db:build:index` and then `db:build:staples`, so the
+  staples row is the newest and a failed derivation leaves it failed. Every run, by hand
+  included, leaves a newer row. Without that, a hand-run ingest that
   replaced the flags and died before the variants left an older `ok` row vouching for tables that
   had moved under it, over an unchanged catalog fingerprint, and the copy would publish them.
 

@@ -19,4 +19,11 @@ describe("catalog writers hold the ingest lock", () => {
     const src = readFileSync(join(import.meta.dirname, "..", "seed-combos.ts"), "utf8");
     expect(src).toMatch(/recordBuild\(db, "combos",/);
   });
+
+  // The index is two steps, and each records itself, so the staples row is the newest and a
+  // failed derivation leaves the build refused.
+  it.each([["build-commander-index.ts"], ["build-staples.ts"]])("%s records its own index build", (file) => {
+    const src = readFileSync(join(import.meta.dirname, "..", file), "utf8");
+    expect(src).toMatch(/recordBuild\(db, "index",/);
+  });
 });
