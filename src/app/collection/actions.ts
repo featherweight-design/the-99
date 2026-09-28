@@ -129,9 +129,11 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
 /**
  * What a confirm can answer besides success. `needsConfirm` is the one refusal a caller acts
  * on rather than shows: a `firstImport` confirm found a collection already there, so nothing
- * was written and the caller asks the player before replacing it.
+ * was written and the caller asks the player before replacing it. It carries the collection's
+ * size, counted as the preview counts it, because the preview the caller holds says 0 and the
+ * modal reads its warning (and its REPLACE token) off that figure.
  */
-export type ConfirmOutcome = { needsConfirm: true } | void;
+export type ConfirmOutcome = { needsConfirm: true; currentCollectionCount: number } | void;
 
 export async function confirmUpload(
   uploadId: string,
@@ -168,7 +170,10 @@ export async function confirmUpload(
   // second tab may have imported since. So the server decides, from the collection it just
   // read, and a first-import confirm over a collection that exists writes nothing and hands the
   // choice back to the player. The skip is only as safe as "nothing to lose" is true HERE.
-  if (opts.firstImport && Object.keys(ownedBefore).length > 0) return { needsConfirm: true };
+  if (opts.firstImport) {
+    const currentCollectionCount = Object.values(ownedBefore).reduce((n, q) => n + q, 0);
+    if (currentCollectionCount > 0) return { needsConfirm: true, currentCollectionCount };
+  }
 
   const buyBefore = await loadDeckBuyRows(userId);
 

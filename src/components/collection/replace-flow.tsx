@@ -1,8 +1,9 @@
 "use client";
 // ReplaceFlow — steps 1 → 2 → 3 for the destructive replace path.
 // Step 1: UploadEntry (Task 7). On success advances to step 2.
-// Step 2: ReviewScreen (Task 8). Continue → step 3.
-// Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → /collection.
+// Step 2: ReviewScreen (Task 8). Continue → step 3, or, on a FIRST import (nothing to
+//         replace), straight to confirmUpload() with no step 3.
+// Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,9 @@ export function ReplaceFlow({
     try {
       const outcome = await confirmUpload(preview.uploadId, { firstImport: firstImport && !confirming });
       if (outcome?.needsConfirm) {
+        // The preview was drawn at 0 cards and the modal reads its variant off that figure,
+        // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
+        setPreview({ ...preview, currentCollectionCount: outcome.currentCollectionCount });
         setConfirming(true);
         return;
       }

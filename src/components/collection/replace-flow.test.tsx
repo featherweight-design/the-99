@@ -77,15 +77,19 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
   });
 
   it("falls back to the modal when the server finds a collection after all", async () => {
-    confirmUpload.mockResolvedValueOnce({ needsConfirm: true });
+    confirmUpload.mockResolvedValueOnce({ needsConfirm: true, currentCollectionCount: 2_933 });
     const cont = await reachReview(0);
     await act(async () => fireEvent.click(cont));
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog");
     expect(push).not.toHaveBeenCalled();
+    // The REPLACE variant, sized by what the server found: the preview drawn at 0 would have
+    // asked for IMPORT over a write that deletes a collection.
+    expect(dialog).toHaveTextContent("2,933");
+    expect(dialog).toHaveTextContent(/can.t be undone/);
 
     // Answering the modal is a real confirm: it no longer claims to be a first import.
     confirmUpload.mockResolvedValueOnce(undefined);
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "IMPORT" } });
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "REPLACE" } });
     const buttons = screen.getAllByRole("button").filter((b) => /Import|Replace/i.test(b.textContent ?? ""));
     await act(async () => fireEvent.click(buttons[buttons.length - 1]));
     await waitFor(() => expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: false }));
