@@ -43,7 +43,10 @@ export function ReplaceFlow({
     setPending(true);
     setConfirmError(null);
     try {
-      const outcome = await confirmUpload(preview.uploadId, { firstImport: firstImport && !confirming });
+      // `firstImport` is read off the preview, which a server refusal corrects before the
+      // modal opens, so a confirm from that modal is no longer "first". A retry after a
+      // FAILED first import keeps the claim, and with it the server's guard (Copilot, #1097).
+      const outcome = await confirmUpload(preview.uploadId, { firstImport });
       if (outcome?.needsConfirm) {
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.

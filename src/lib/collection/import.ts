@@ -136,10 +136,11 @@ export async function loadMatchInputs(
 export async function replaceCollection(
   userId: string,
   items: PendingItem[],
-  opts: { confirmUploadId?: string } = {},
-): Promise<{ alreadyConfirmed: boolean }> {
+  opts: { confirmUploadId?: string; onlyIfEmpty?: boolean } = {},
+): Promise<{ alreadyConfirmed: boolean; notEmpty: number | null }> {
   const values = toCollectionItemValues(userId, items);
   let alreadyConfirmed = false;
+  let notEmpty: number | null = null;
   try {
     await db.transaction(async (tx) => {
       // SERIALIZED PER USER, not per upload. The conditional stamp below locks one
@@ -156,6 +157,21 @@ export async function replaceCollection(
       // upload's owned delta with the other's buy state. The collection itself cannot be
       // corrupted, which is what this lock is for.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+      // WITH `onlyIfEmpty`, A COLLECTION THAT EXISTS STOPS THE REPLACE. It is a first import's
+      // promise that nothing is lost, and it is checked HERE, under the lock, because a check
+      // read before the lock is a snapshot another tab's import can land behind: that import
+      // would be deleted with no confirm (Copilot, #1097). It runs before the stamp, so the
+      // upload stays unconfirmed and the player can still confirm it through the modal.
+      if (opts.onlyIfEmpty) {
+        const [{ owned }] = await tx
+          .select({ owned: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })
+          .from(collectionItems)
+          .where(eq(collectionItems.userId, userId));
+        if (owned > 0) {
+          notEmpty = owned;
+          throw new NotEmpty();
+        }
+      }
       if (opts.confirmUploadId) {
         const claimed = await tx.update(csvUploads)
           .set({ confirmedAt: new Date() })
@@ -177,10 +193,13 @@ export async function replaceCollection(
     });
   } catch (err) {
     // Only this module's own sentinel is swallowed; a real failure still reaches the caller.
-    if (!(err instanceof AlreadyConfirmed)) throw err;
+    if (!(err instanceof AlreadyConfirmed) && !(err instanceof NotEmpty)) throw err;
   }
-  return { alreadyConfirmed };
+  return { alreadyConfirmed, notEmpty };
 }
+
+/** Thrown to roll back an `onlyIfEmpty` replace that found a collection; reported as `notEmpty`. */
+class NotEmpty extends Error {}
 
 /**
  * Thrown to roll the transaction back when another request already confirmed this upload.

@@ -165,16 +165,6 @@ export async function confirmUpload(
   // transaction.
   const ownedBefore = await ownedByOracle(userId);
 
-  // A FIRST IMPORT SKIPS THE CONFIRM, because there is nothing to lose (prod walk 2026-09-28,
-  // item 5a). The client says "first" from the count it was drawn with, which can be stale: a
-  // second tab may have imported since. So the server decides, from the collection it just
-  // read, and a first-import confirm over a collection that exists writes nothing and hands the
-  // choice back to the player. The skip is only as safe as "nothing to lose" is true HERE.
-  if (opts.firstImport) {
-    const currentCollectionCount = Object.values(ownedBefore).reduce((n, q) => n + q, 0);
-    if (currentCollectionCount > 0) return { needsConfirm: true, currentCollectionCount };
-  }
-
   const buyBefore = await loadDeckBuyRows(userId);
 
   // A preview written before migration 0008 carries no collectorNumber/finish;
@@ -183,9 +173,16 @@ export async function confirmUpload(
   // The upload row is the lock: the stamp inside that transaction is conditional on
   // `confirmed_at is null`, so a double submit replaces the collection exactly once and
   // the loser is told so rather than raising.
-  const { alreadyConfirmed } = await replaceCollection(userId, pendingItems, {
+  // A FIRST IMPORT SKIPS THE CONFIRM, because there is nothing to lose (prod walk 2026-09-28,
+  // item 5a). The client says "first" from the count it was drawn with, which can be stale: a
+  // second tab may have imported since. So the replace itself refuses, under the per-user lock,
+  // when a collection exists, writes nothing, and the choice goes back to the player. The skip
+  // is only as safe as "nothing to lose" is true AT THE WRITE.
+  const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
     confirmUploadId: uploadId,
+    onlyIfEmpty: opts.firstImport,
   });
+  if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
   if (alreadyConfirmed) return;
 
   // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached figure

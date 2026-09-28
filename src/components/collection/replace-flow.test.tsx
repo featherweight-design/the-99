@@ -101,5 +101,13 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     await act(async () => fireEvent.click(cont));
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("Upload has no matched cards");
+
+    // A retry from that modal is still a first import, so it keeps the server's guard: a
+    // collection another tab imported while the error was up must not be replaced unasked.
+    confirmUpload.mockResolvedValueOnce(undefined);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "IMPORT" } });
+    const buttons = screen.getAllByRole("button").filter((b) => /Import/i.test(b.textContent ?? ""));
+    await act(async () => fireEvent.click(buttons[buttons.length - 1]));
+    await waitFor(() => expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: true }));
   });
 });
