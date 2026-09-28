@@ -31,6 +31,7 @@ import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { FitBar } from "./fit-bar";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { IdentityPips } from "./commander-art";
+import { PendingTrack } from "../shell/pending-track";
 
 const { price: priceCopy, untagged } = discoveryCopy;
 
@@ -279,7 +280,8 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
 
   return (
     <div
-      className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]"
+      // The row holds its hover fill while its link is pending (navigation-pending handoff, P2).
+      className="relative group transition-colors hover:bg-[color:var(--elevated-hover)] has-[[data-pending]]:bg-[color:var(--elevated-hover)]"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
       {/* Stretched link keeps the whole row clickable. The row has no other
@@ -294,8 +296,11 @@ export function CommanderRow({ item }: { item: CommanderRowView }) {
       <Link
         href={item.href}
         aria-label={`${commanderDisplayName(item)} · ${explainedCopy.score.scoreAria(item.score, item.measurableTotal)}`}
-        className="absolute inset-0 z-[1]"
-      />
+        className="absolute inset-0 z-[1] overflow-hidden"
+      >
+        {/* The row's own pending track, along its bottom edge. */}
+        <PendingTrack href={item.href} />
+      </Link>
 
       <div className="relative overflow-hidden" style={{ height: BAND_HEIGHT }}>
         <ArtWash

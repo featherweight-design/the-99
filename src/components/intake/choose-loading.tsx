@@ -1,8 +1,7 @@
 "use client";
-// Help me choose's loading screen, drawn by BOTH loading files a navigation can meet on its way in:
-// the route's own (`choose/loading.tsx`) and `/decks/new`'s, which is the nearest boundary above
-// the route and so is what a navigation from the create page into it shows first. A loading file
-// is handed no params, so this reads the address itself.
+// Help me choose's loading screen, drawn by the route's own `choose/loading.tsx` on a navigation
+// and by the shell's page-load fallback (`ShellLoading`) on a direct load or refresh. Neither is
+// handed params, so this reads the address itself.
 //
 // On a results address it draws the handoff's 5c: the results header and *Finding commanders…*
 // over five still rows. The results bar is NOT drawn here, and neither is the order line's sub:

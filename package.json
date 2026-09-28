@@ -182,7 +182,8 @@
     "probe:font-parity": "node scripts/probe-font-parity.mjs",
     "probe:onboarding": "node scripts/probe-onboarding.mjs",
     "probe:issues-sheet": "node scripts/probe-issues-sheet.mjs",
-    "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test"
+    "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test",
+    "probe:nav-pending": "node scripts/probe-nav-pending.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
