@@ -61,8 +61,33 @@ jobs:
           echo "targets=$targets" >> "$GITHUB_OUTPUT"
           echo "Refreshing: $targets"
 
-  refresh:
+  # Fetch ONCE (card-data replicate plan §4a): the sets list, both bulk files and ManaPool's feed,
+  # with a manifest of their hashes and upstream dates. Both legs ingest these same bytes, so the
+  # two catalogs cannot differ by what upstream happened to serve each of them. No database.
+  fetch:
     needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch the catalog
+        shell: bash
+        run: pnpm --silent catalog:fetch /tmp/catalog-fetch | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: catalog-fetch
+          path: /tmp/catalog-fetch
+          retention-days: 3
+          if-no-files-found: error
+
+  refresh:
+    needs: [plan, fetch]
     strategy:
       matrix:
         target: ${{ fromJSON(needs.plan.outputs.targets) }}
@@ -95,6 +120,8 @@ jobs:
       # MIGRATE_DATABASE_URL precedent of a separate, explicitly-scoped connection string.
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
       JOB: ${{ github.event.inputs.job || 'all' }}
+      # Every ingest reads the fetch job's files instead of the network.
+      CATALOG_FETCH_DIR: /tmp/catalog-fetch
     steps:
       - uses: actions/checkout@v4
 
@@ -107,6 +134,27 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: catalog-fetch
+          path: /tmp/catalog-fetch
+
+      # The sources this run ingests, by `job`. `verify` refuses a file whose bytes are not the
+      # manifest's and a source older than this database last ingested; `record` runs last.
+      - name: Name the sources
+        run: |
+          case "$JOB" in
+            all) echo "SOURCES=" >> "$GITHUB_ENV" ;;
+            sets) echo "SOURCES=sets" >> "$GITHUB_ENV" ;;
+            oracle) echo "SOURCES=oracle_cards" >> "$GITHUB_ENV" ;;
+            printings) echo "SOURCES=default_cards" >> "$GITHUB_ENV" ;;
+            prices) echo "SOURCES=prices" >> "$GITHUB_ENV" ;;
+            *) echo "Unrecognised job: $JOB" >&2; exit 1 ;;
+          esac
+
+      - name: Verify the artifact
+        run: pnpm --silent db:catalog-sources verify $SOURCES | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Start run summary
         run: |
@@ -151,3 +199,6 @@ jobs:
         run: |
           echo "### Prices" >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Record what was ingested
+        run: pnpm --silent db:catalog-sources record $SOURCES | tee -a "$GITHUB_STEP_SUMMARY"
