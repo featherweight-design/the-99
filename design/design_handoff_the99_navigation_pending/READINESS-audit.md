@@ -1,8 +1,11 @@
 # Readiness audit: navigation pending
 
 **Verdict: 🟡 Yellow.** It can be built once the seven corrections below are applied. Engineering
-has ruled on each one, and d9 accepted all seven on 2026-09-28. Four product questions are open
-for Hugh, and nothing is built until he has approved.
+has ruled on each one, and d9 accepted all seven on 2026-09-28. Hugh ruled A–C on 2026-09-28;
+`/collection`, the 1px check and D are still open. Nothing is built until he has approved the audit.
+
+**Ship gate: this build ships only after `LIST_CACHE_ENABLED` is on in production** (Hugh, ruling
+A). That flip waits on his staleness walk on staging.
 
 This audit was run against `origin/main` at `911e97aa6` (#1086), using Next 16.3.4's own docs in
 `node_modules/next/dist/docs`.
@@ -91,11 +94,11 @@ median of 3, first navigation / second navigation after a reload, in ms.
 
 | Route | 1300 | 390 | Rule |
 |---|---|---|---|
-| Home | 641 / 628 | 677 / 652 | delete (see A) |
-| `/decks/[id]` | 692 / 586 | 668 / 571 | keep, as drawn (see B) |
+| Home | 641 / 628 | 677 / 652 | delete; ships behind the cache (A) |
+| `/decks/[id]` | 692 / 586 | 668 / 571 | keep: exception (B) |
 | `/commanders/[slug]` | 538 / 581 | 612 / 573 | delete |
 | `/decks` | 479 / 488 | 465 / 430 | delete |
-| `/collection` | 366 / 348 | 361 / 338 | delete (Hugh's call) |
+| `/collection` | 366 / 348 | 361 / 338 | delete (open for Hugh) |
 | `/decks/new` | 361 / 326 | 367 / 336 | delete |
 | `/collection/replace/summary/[id]` | 253 / 252 | 218 / 195 | delete |
 | `/about` | 151 / 99 | 155 / 90 | delete |
@@ -105,27 +108,36 @@ median of 3, first navigation / second navigation after a reload, in ms.
 | `/collection/sets` | 90 / 74 | 88 / 70 | delete |
 | `/collection/sets/[code]` | 70 / 55 | 59 / 60 | delete |
 | `/collection/replace` | 52 / 44 | 56 / 60 | delete |
-| `/decks/new/choose` (no query) | 31 / 23 | 34 / 36 | keep, as drawn (see C) |
+| `/decks/new/choose` (no query) | 31 / 23 | 34 / 36 | keep: exception (C) |
 
 Every deletion the README left unmeasured lands under ~700ms. This machine reaches the database in
 about 33ms.
 
+## Ruled by Hugh, 2026-09-28
+
+- **A. Home drops its loading screen, and the build ships only once `LIST_CACHE_ENABLED` is on in
+  production.** Home measures 628–677ms here, 23–72ms under the line. Production and staging both
+  run in pdx1, the same region as Neon. Hugh's staging walk on 2026-09-28 (`PERF_TIMING=1`) read
+  uncached Home's server time at 423, 534 and 424ms warm, and 2,243ms on a cold function. The
+  navigation wait runs about 100–200ms above the server total, so warm uncached Home would land
+  around 550–700ms, and a cold start well over. With the cache on, the same walk read Home at 83
+  and 23ms and `/decks` at 21 and 17ms of server time, with no read spans. So the cache is the
+  gate, not the screen.
+- **B. The deck page keeps its loading screen, as an exception to the ~700ms rule.** Since PR 8 it
+  measures 571–692ms locally with no screen, which is under the line. It keeps the screen anyway,
+  for two reasons. It is still the slowest route. And a cold function puts it well past the line:
+  the one staging render in that walk read 1,396ms of server time on a fresh deployment, because
+  `decks/[id]` runs in a function of its own that Home and `/decks` do not warm. That sample was cold,
+  and no warm pdx1 figure exists yet.
+- **C. `/decks/new/choose` keeps its loading screen, as an exception to the ~700ms rule.** With no
+  query it lands in 23–36ms. Its screen is there for the results navigation, which is a query
+  change and was not timed.
+
 ## Open for Hugh
 
-- **A. Home, uncached.** Home measures 628–677ms here, which clears the line by 23–72ms.
-  Production and staging now both run in pdx1, the same region as Neon. Hugh's staging walk on
-  2026-09-28 (`PERF_TIMING=1`, `LIST_CACHE_ENABLED` off) read Home's server time at **423, 534
-  and 424ms warm, and 2,243ms on a cold function**. Locally the navigation wait runs about
-  100–200ms above the server total, so warm uncached Home in production lands around 550–700ms:
-  under the line, but close. A cold start is well over it, with or without a screen. With the cache
-  on, the same walk read Home at 83 and 23ms and `/decks` at 21 and 17ms server time, with no
-  read spans, so turning `LIST_CACHE_ENABLED` on in production removes the question.
-  Engineering's recommendation is to do that before this ships.
-- **B. The deck page.** Since PR 8 it measures 571–692ms with no screen, which is under the
-  rule's line. The handoff keeps its screen anyway. Engineering agrees: it is still the slowest
-  route. The rule alone no longer draws that line.
-- **C. `/decks/new/choose`.** With no query it lands in 23–36ms, so the rule would delete it. Its
-  screen is there for the results navigation, which is a query change and was not timed. It is
-  kept as drawn.
-- **D. Inline and same-route links** show no signal, as recorded above.
-- Already open: `/collection` keep or drop, and the 1px track checked at 1× on a device.
+- **`/collection`:** keep its screen or drop it. It measures 338–366ms with no screen, so the
+  rule drops it.
+- **The 1px track, checked at 1× on a device.** If it is too faint there, it goes to 1.5px, still
+  inside the border.
+- **D. Inline and same-route links** (the card modal's name links, the fits-picker link, filter
+  and view links) show no signal, as recorded above.
