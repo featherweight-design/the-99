@@ -1,11 +1,17 @@
 # Readiness audit: navigation pending
 
-**Verdict: 🟡 Yellow.** It can be built once the seven corrections below are applied. Engineering
-has ruled on each one, and d9 accepted all seven on 2026-09-28. Hugh ruled A–C on 2026-09-28;
-`/collection`, the 1px check and D are still open. Nothing is built until he has approved the audit.
+**Verdict: 🟡 Yellow, and the direction changed on 2026-09-28.** Hugh ruled that **no loading
+screen is removed.** The full screen stays as a fallback behind the pip and the track, taking over
+about 400ms after the press. The escalation goes back to Design as an addendum:
+`docs/superpowers/design-briefs/2026-09-28-navigation-pending-escalation.md`, with the slow-network
+measurements. Read the sections below through that ruling:
+- the delete list and the ~700ms rule retire;
+- `shellCopy.loading` keeps every key;
+- rulings A–C are superseded where they delete a screen;
+- `/collection`, the 1px check and D are resolved or moved into the addendum (see "Open for Hugh");
+- the seven engineering corrections still stand.
 
-**Ship gate: this build ships only after `LIST_CACHE_ENABLED` is on in production** (Hugh, ruling
-A). That flip waits on his staleness walk on staging.
+Nothing is built until Hugh approves the addendum's answer.
 
 This audit was run against `origin/main` at `911e97aa6` (#1086), using Next 16.3.4's own docs in
 `node_modules/next/dist/docs`.
@@ -133,11 +139,8 @@ about 33ms.
   query it lands in 23–36ms. Its screen is there for the results navigation, which is a query
   change and was not timed.
 
-## Open for Hugh
+## Open for Hugh (resolved or moved, 2026-09-28)
 
-- **`/collection`:** keep its screen or drop it. It measures 338–366ms with no screen, so the
-  rule drops it.
-- **The 1px track, checked at 1× on a device.** If it is too faint there, it goes to 1.5px, still
-  inside the border.
-- **D. Inline and same-route links** (the card modal's name links, the fits-picker link, filter
-  and view links) show no signal, as recorded above.
+- **`/collection`:** its fixed screen goes; the ~400ms fallback covers it (Hugh).
+- **The 1px track at 1×:** moved into the addendum, §4.3.
+- **D, inline and same-route links:** moved into the addendum, §4.4, with the wiring cost named.
