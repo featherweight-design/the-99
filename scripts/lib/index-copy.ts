@@ -12,6 +12,7 @@ import {
   identityComposition,
 } from "../../src/db/schema";
 import { canonicalPair } from "../../src/lib/edhrec/pair";
+import { LEGAL_PAIR_FLOOR } from "../../src/lib/edhrec/pair-enumerate";
 import { roleTargetsPublishable } from "../../src/lib/edhrec/role-targets";
 import { clearPersistedScoresIn } from "../../src/lib/edhrec/seed-index";
 import { copyTable, type CopySpec, type CopyTx } from "./catalog-copy";
@@ -86,14 +87,16 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     composition: await tx.select().from(identityComposition),
   }),
   // The builders' own refusals, on what the snapshot holds: an index with no `ok` commander, role
-  // targets reaching under ROLE_TARGET_FLOOR of them, and an empty staples derivation. An empty
-  // composition is legitimate (`db:build:staples` publishes one), so it is not a floor.
+  // targets reaching under ROLE_TARGET_FLOOR of them, fewer pairs than LEGAL_PAIR_FLOOR, and an
+  // empty staples derivation. An empty composition is legitimate (`db:build:staples` publishes
+  // one), so it is not a floor.
   floors: (s) => {
     const below: string[] = [];
     const ok = s.support.filter((r) => r.synergyState === "ok");
     if (ok.length === 0) below.push("no ok commander in commander_support");
     const derived = ok.filter((r) => r.avgRamp !== null).length;
     if (!roleTargetsPublishable(derived, ok.length)) below.push(`role targets on ${derived} of ${ok.length} ok commanders`);
+    if (s.pairs.length < LEGAL_PAIR_FLOOR) below.push(`pairs ${s.pairs.length} < ${LEGAL_PAIR_FLOOR}`);
     if (s.staples.length === 0) below.push("format_staples is empty");
     return below;
   },

@@ -239,8 +239,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     deck holds in THAT database; production's pairs are not in staging's build. The fix is a
     one-off production index dispatch for that pair.
   - The floors re-checked on the snapshot are the builders' own: an `ok` commander exists, role
-    targets reach `ROLE_TARGET_FLOOR` of them, and `format_staples` is not empty. An empty
-    composition is legitimate and is not a floor.
+    targets reach `ROLE_TARGET_FLOOR` of them, the pairs reach `LEGAL_PAIR_FLOOR`, and
+    `format_staples` is not empty (`index-copy.test.mts`). An empty composition is legitimate
+    and is not a floor.
 
   Measured on two scratch branches of staging: 3,382 commanders, 892,874 support cards, 1,717 pairs
   and 447,232 pair cards copied and verified in 84s at 2.1GB resident.
