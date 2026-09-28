@@ -17,7 +17,7 @@ step as a disaster.
 
 | Surface | Files |
 |---|---|
-| First-run checklist (Home when the collection is unread) | `src/components/home/first-run.tsx` (step 1 mounts `ReplaceFlow ... embedded` at `:153`; locked steps 2 and 3 at `:157-158`; the import escape hatch at `:160-172`), mounted from `src/app/page.tsx:194` |
+| First-run checklist (Home when the collection is unread AND the account has no decks, `src/app/page.tsx:144`) | `src/components/home/first-run.tsx` (step 1 mounts `ReplaceFlow ... embedded` at `:153`; locked steps 2 and 3 at `:157-158`; the import escape hatch at `:160-172`), mounted from `src/app/page.tsx:194` |
 | First-run copy | `src/lib/copy/refresh.ts:233-253` (`firstRun.*`: `step2Title`, `step2Locked`, `importPrompt`, `lockedItemAria`) |
 | Locked rail (desktop) | `src/components/shell/nav.tsx`: `NavRail` `:137`, the divider and `LockGlyph` drawn once under the items at `:206-215`, `LockGlyph` at `:58` |
 | Locked tab bar (phone) | `src/components/shell/nav.tsx`: `TabBar` `:234`; locked slots are dimmed to `--fg-locked` and inert, nothing more (`:274`) |
@@ -58,7 +58,12 @@ step as a disaster.
 - *Before the collection is read:* locked, as step 2 is today, but naming both paths. Does the
   locked card name both, or keep one title with the reason?
 - *After it is read:* live, with "Pick a commander" and "Import a deck" as peers or as a
-  primary and a secondary. Design calls which, and where each lands (`/commanders`,
+  primary and a secondary. **Mind the host.** Home swaps the checklist for the dashboard the
+  moment the collection has cards (`src/app/page.tsx:144`), so no live step 2 is ever drawn in
+  the checklist today. The live half lives on `/commanders`, as its guided banner
+  (`src/components/commanders/guided-banner.tsx`, shown while the account has no decks,
+  `src/app/commanders/page.tsx:202`). Design says whether live step 2 is that banner, or whether
+  the checklist stays up after the read until a deck exists. Design calls which, and where each lands (`/commanders`,
   `/decks/import`). Say what happens to step 3 ("Build the 99", "Unlocks with a commander")
   when the player takes the import path, since an imported deck already has one.
 - The checklist without its foot (ruling 1): does the card column close up, or does the space
