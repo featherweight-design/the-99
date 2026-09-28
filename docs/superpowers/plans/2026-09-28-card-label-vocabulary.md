@@ -1,252 +1,248 @@
-# Card label vocabulary — implementation plan
+# Card labels — consumer first, then the vocabulary
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` or
 > `superpowers:executing-plans` to implement this task-by-task.
 
-**Goal:** widen the card-label vocabulary to the set Hugh ruled on (2026-09-28), fix the
-definitions the gap review found, make a vocabulary change invalidate stale labels by
-construction, and re-run the backfill on the new vocabulary.
+**Goal:** ship a consumer that reads card labels, shape the label schema and vocabulary around
+what that consumer needs, and only then pay for a backfill — once.
 
-**Architecture:** the label vocabulary stops being tied by identity to the app's `Role` and
-`Theme` unions and becomes a superset of them, checked one way. The prompt's SYSTEM text enters
-the input hash so a vocabulary edit re-labels what it invalidates.
+**Spec:** Hugh's rulings of 2026-09-28, relayed via d9, after a cold review of the first version
+of this plan. The gap review is summarised in `boards/overnight-decisions-2026-09-27.md`.
 
-**Spec:** Hugh's ruling of 2026-09-28, relayed via d9; gap review summarised in
-`boards/overnight-decisions-2026-09-27.md`.
+## Why the order changed
+
+The first version of this plan widened the vocabulary and re-ran the backfill, with the consumer
+left for later. Hugh reversed it: **the run is paid once, so it must be paid for labels something
+actually reads.**
+
+That is not a preference, it is the state of the code. Verified:
+
+- **Nothing in `src/` reads labels.** Outside `src/lib/labels` itself, the only file mentioning
+  them is `src/db/schema.ts`, which declares the tables.
+- **`jobOf` in `src/lib/swaps/stand-ins.ts:56` still routes through `classifyRoles`** — the
+  regex classifier — via `spellRoles`. The swap engine, the one obvious consumer, does not know
+  labels exist.
+
+So a vocabulary chosen now would be chosen blind. Every field below is included only because a
+named consumer reads it.
 
 ## Global constraints
 
 - **Nothing spends until this plan is approved AND the re-sample is read.** The fresh run gets
-  its own $55 hard stop and $50 pause, separate from the ~$12 already spent.
+  its own $55 hard stop and $50 pause, separate from the ~$11.92 already spent.
 - The re-sample must project **under $50** or it goes back to Hugh.
-- **Keep the re-sample's per-card outputs.** Last time they went to an uncommitted `out/` and a
-  later question about the `[]` distribution could not be asked at all.
-- A fresh backfill run id. The 10,128 old-vocabulary staged rows are discarded; the 400
-  `abandoned` rows are left alone, moot under a new id.
-- PR rules as always: no stacked PRs, split above ~20 files or ~800 lines.
+- **Decouple** the label vocabulary from the app's unions, one-way check (Hugh, 2026-09-28).
+- **Leave `REMOVAL_PATTERNS` alone** (Hugh, 2026-09-28). Whether counterspells should leave the
+  app's removal figure is a separate decision.
+- Per-card outputs from every sample are committed.
+- No stacked PRs; split above ~20 files or ~800 lines.
 
 ---
 
-## The decision this plan rests on: decouple, do not extend the app's unions
+## Task 1 — The consumer spec
 
-`src/lib/labels/types.ts` currently ties the label vocabulary to the app's unions **in both
-directions**:
+**Deliverable:** an amendment to the run plan's Task 5, written before any schema or vocabulary
+change. **This is the task everything else is derived from.**
 
-```ts
-export const ROLES  = [...] as const satisfies readonly Role[];
-export const THEMES = [...] as const satisfies readonly Theme[];
-type _EveryRoleIsListed  = Covers<Exclude<Role,  (typeof ROLES)[number]>>;
-type _EveryThemeIsListed = Covers<Exclude<Theme, (typeof THEMES)[number]>>;
-```
+It must answer, concretely enough that Task 2 falls out of it:
 
-`satisfies` rejects a label member that is not an app member; `Covers<…>` rejects an app member
-missing from labels. **The two lists must be identical.** So adding `tutor`, `counterspell` and
-nine themes to labels would force them into `src/lib/recs/roles.ts` and `src/lib/recs/themes.ts`.
+- **Label-driven `jobOf`.** What replaces `classifyRoles` in `stand-ins.ts`, and what a `Job`
+  becomes when it is read from a label rather than inferred from a regex.
+- **`sameJob`.** When two labelled cards count as the same job — which fields must match, and
+  which are advisory. This is the rule that decides whether a stand-in is honest.
+- **Pool words for `tutor` and `counterspell`**, the two new roles, in the same register as the
+  existing pool words.
+- **A labelled card compared with an unlabelled one.** The backfill will not be complete on day
+  one, and a card with no label is not a card with no jobs. State the comparison explicitly:
+  fall back to `classifyRoles`, refuse the comparison, or treat absence as unknown — and say
+  what the reader sees in each case.
+- **Copy entries for every new kind**, through `/copy-review` with a picture, never a
+  description.
 
-Measured cost of doing that:
+**Then, and only then:** derive the exact list of label fields stand-ins needs. That list is
+Task 2's input, and a field absent from it does not get built.
 
-- **`Role` reaches the database.** Three tables carry the four role targets —
-  `commander_support`, `commander_pair_support`, `identity_composition`. Two more roles means a
-  migration on all three, a change to `deriveAndWriteRoleTargets`, and a re-derivation run.
-- **19 files consume `ROLE_TARGETS`**, including Role Coverage on `/commanders/[slug]` and the
-  decklist. `ROLE_TARGETS` is `Record<Exclude<Role, "land">, number>`, so a new role is a
-  compile error until someone invents a target for it.
-- **`Theme` drives deck-theme detection**, whose `RULES` are regexes over oracle text, and feeds
-  swaps (`stand-ins`, `fits`, `honest`, `gather`) and discovery.
+- [ ] Write the amendment.
+- [ ] Take the copy through `/copy-review`.
+- [ ] Publish the derived field list as the first section of Task 2.
 
-None of that is wanted here. A label says what a CARD does; an app theme says what a DECK is
-about, and the app's role classifier is a coarse regex instrument with its own measured targets.
-Forcing identity makes every label refinement a database migration.
-
-**So: the label vocabulary gets its own unions and a ONE-WAY check** — every app `Role` and
-`Theme` must still be labelable, so nothing upstream goes stale, but labels may name things the
-app has no concept of. That preserves everything the current tie was written to catch (its
-comment: "a rule added there would otherwise leave this a stale third copy with nothing
-failing") and drops only the half that is now in the way.
-
-**If Hugh wants the app's roles widened too, that is a separate plan.** It is a database change
-with user-visible consequences on Role Coverage, and it should not ride along inside a labelling
-change.
+**PR 1 — spec only, no code.**
 
 ---
 
-## Task 1 — Decouple the vocabulary (no vocabulary change yet)
+## Task 2 — The schema, derived from Task 1
 
-**Files:** modify `src/lib/labels/types.ts`; add `src/lib/labels/types.test.ts` cases.
+**Rule: include a field only if the consumer spec reads it.** The candidates below come from the
+cold review, with its measurements against staging's 10,128 staged labels. I have not
+independently verified those counts — they are the reviewer's, and the plan attributes them
+rather than adopting them.
 
-Introduce label-owned unions and keep the one-way guarantee:
+### `affects: self | opponents | each | null`
 
-```ts
-/** Every app Role, plus roles the app has no concept of. */
-export type LabelRole = Role | "tutor" | "counterspell";
-export type LabelTheme = Theme | "graveyardHate" | …;
+The reviewer measured **304 self-discard against 146 opponent-discard**, and **129 of 289 mill
+labels are self-mill**. Those are opposite jobs wearing one name: self-mill is a graveyard
+engine, opponent-mill is a win condition. A stand-in that swaps one for the other is wrong in a
+way no limit currently expresses.
 
-// ONE WAY, deliberately. An app Role missing from the label vocabulary is a compile error —
-// that is what the old two-way tie was for. A LABEL role the app does not have is allowed:
-// a label describes a card, an app role drives Role Coverage and three tables of targets.
-type _EveryAppRoleIsLabelable  = Covers<Exclude<Role,  (typeof ROLES)[number]>>;
-type _EveryAppThemeIsLabelable = Covers<Exclude<Theme, (typeof THEMES)[number]>>;
-```
+This **redefines `restrictedTo` as "what the effect touches"**. Today removal's `restrictedTo`
+holds the target's type across ~1,130 rows, while the run plan's Task 5 rule 2 reads it as the
+DECK's type. Those are different claims and the rule is currently reading the wrong one. The
+redefinition has to be stated in the prompt and re-audited in the gold set.
 
-- [ ] **Step 1** — add `LabelRole`/`LabelTheme`, retype `ROLES`/`THEMES` as
-      `readonly LabelRole[]` / `readonly LabelTheme[]`, keep both `Covers<…>` lines unchanged.
-      No members added yet, so the arrays are byte-identical and the diff is types only.
-- [ ] **Step 2** — `pnpm typecheck`. Expected: clean. This task changes no behaviour.
-- [ ] **Step 3** — prove the remaining guarantee still bites: add a member to the app's `Theme`
-      union locally, confirm `types.ts` fails to compile naming it, revert. Record the error
-      text in the PR body. **Without this the task is unverified** — the whole point is that one
-      direction still fails.
-- [ ] **Step 4** — commit.
+### `to: hand | battlefield | top` — for tutors and recursion
 
-**PR 1 boundary.** Types only, no vocabulary change, no prompt change. Small and separately
-reviewable, and it makes PR 2's diff about the vocabulary rather than about the type surgery.
+All **32 reanimation cards are labelled like regrowth**. Returning a creature to the battlefield
+and returning it to hand are not interchangeable, and a tutor to hand is not a tutor to the
+battlefield.
 
----
+### `method: destroy | exile | bounce | shrink` — for removal
 
-## Task 2 — The vocabulary, the definitions, and the hash
+**65 of 74 bounce cards are labelled removal.** Bounce is removal that gives the card back;
+exile is removal that answers recursion. A stand-in that treats them as equal is wrong against
+an indestructible or recursive target.
 
-**Files:** modify `src/lib/labels/types.ts`, `src/lib/labels/prompt.ts`,
-`src/lib/labels/schema.ts`, `scripts/lib/card-labels-schema.test.mts`,
-`src/lib/labels/prompt.test.ts`.
+- [ ] For each field: name the consumer rule from Task 1 that reads it, or drop the field.
+- [ ] Update `validateJob`, `JOB_FIELDS` and `jobKey`. `jobKey` must stay injective over the new
+      fields — it is the identity of a job and a collision silently merges two.
+- [ ] Decouple the vocabulary (Hugh's ruling): label-owned `LabelRole`/`LabelTheme`, keeping the
+      **one-way** check so every app `Role`/`Theme` must still be labelable.
+- [ ] **Verify the decoupling by revert test, not by typecheck:** add a member to the app's
+      `Theme` union, confirm `types.ts` fails to compile naming it, revert, record the error in
+      the PR body. A green typecheck on unchanged arrays proves nothing.
 
-### 2a — members
+**PR 2 — schema and types.**
 
-- Roles: add **`tutor`** (non-land search) and **`counterspell`**.
-- Themes: add **`graveyardHate`, `discard`, `stax`, `clones`, `theft`, `poison`, `goad`,
-  `doublers`, `fog`**.
-- Ramp kinds: add **`costReduction`** and **`extraLandDrop`**.
-
-`RAMP_KINDS` is label-owned already, so it needs no decoupling.
-
-### 2b — definitions in `SYSTEM`
-
-Every one of these is a prompt edit, and each needs a gold case in Task 3:
-
-- **`removal` tightened**: theft counts; counterspells, tappers and hand attack do not.
-- **`drain`** includes burn to players.
-- **`finisher`** covers extra combats and extra turns.
-- **`protection`** folds in regenerate, phasing and umbra armor.
-- **the monarch** counts as repeatable `draw`.
-- **`mill`** records whose library.
-- **wipes** gains an example worded "destroy each".
-- **rituals are `burstMana`**, stated.
-- **Define every job the prompt names without a definition**: `finisher`, `castFree`, `drain`,
-  `tribal`, and the theme `draw`. The gap review found these named in the vocabulary list and
-  never defined, which is the likeliest cause of the marginal calls (Cheering Fanatic →
-  `castFree`?).
-
-### 2c — reconciling `counterspell` with the app's removal classifier
-
-`src/lib/recs/roles.ts:18` has `REMOVAL_PATTERNS` including `/counter target/`, so the app
-counts a counterspell as removal for Role Coverage. With a `counterspell` label role the two
-classifiers disagree.
-
-**They are reconciled by saying what each is for, not by changing the app.** The label is a
-per-card fact; `classifyRoles` is a coarse deck-level instrument whose removal target (8) was
-measured WITH counterspells included. Dropping `/counter target/` would shift every deck's
-removal count and every Role Coverage figure on `/commanders/[slug]` and the decklist, against
-targets derived on the old definition — a user-visible change that belongs to its own decision.
-
-- [ ] **Step 1** — add a comment at `REMOVAL_PATTERNS` recording that the label vocabulary
-      separates `counterspell`, that this classifier deliberately does not, and why (targets
-      were measured on this definition).
-- [ ] **Step 2** — add the same note to the labels' `SYSTEM` where `removal` is defined, so a
-      reader of either lands on the same explanation.
-
-### 2d — hash the SYSTEM prompt
-
-`labelInputHash` covers `[oracleId, renderCard(card), LABEL_PROMPT_VERSION, model]`. The
-vocabulary lives in `SYSTEM` and reaches the hash **only** through a hand-maintained constant. A
-vocabulary edit without a bump leaves every already-labelled card holding old-vocabulary labels,
-indistinguishable from new ones, and `cardsNeedingLabels` skips them.
-
-```ts
-// The SYSTEM prompt, hashed rather than versioned by hand. The card half already does this —
-// "EXACTLY the string the model is sent, so no sent field can be forgotten here" — and the
-// system half was left to a constant someone has to remember. It was not bumped for the
-// vocabulary widening; nothing would have failed, and the corpus would have been silently mixed.
-createHash("sha256").update(SYSTEM).digest("hex").slice(0, 16),
-```
-
-- [ ] **Step 1** — add the SYSTEM digest to the hash payload, keeping `LABEL_PROMPT_VERSION`
-      for deliberate re-labels that do not change the text.
-- [ ] **Step 2** — test: two different `SYSTEM` strings give different hashes for one card;
-      the same string gives the same hash. **Mutation:** remove the digest from the payload and
-      confirm the first test fails.
-- [ ] **Step 3** — record in the PR body that this makes every existing label stale by design,
-      which is what the fresh run is for.
-
-### 2e — validator
-
-`schema.ts`'s `validateJob` and `JOB_FIELDS` must accept the new kinds, and `jobKey` is
-unchanged (it already serialises `kind` opaquely). Add rejection cases for a theme in the role
-space and vice versa, as the existing tests do.
-
-**PR 2 boundary.** Vocabulary, prompt, validator, hash, and their tests. Estimate ~8 files.
+Why decoupling is needed, measured: `avg_ramp` and its three siblings are columns on
+`commander_support`, `commander_pair_support` and `identity_composition`; **19 files consume
+`ROLE_TARGETS`** (`Record<Exclude<Role, "land">, number>`, so a new role is a compile error until
+someone invents a target); **6 files read `recs/themes`**. Widening the app's unions is a
+database change with user-visible Role Coverage consequences and is **its own plan**, not part of
+this one.
 
 ---
 
-## Task 3 — Gold set cases for every new and changed job
+## Task 3 — The vocabulary and the tightened definitions
 
-**Files:** modify the gold set fixture and `scripts/label-cards-score.mts` if the per-job report
-needs new rows.
+Members as Hugh ruled: roles **`tutor`** (non-land search) and **`counterspell`**; themes
+**graveyard hate, discard, stax, clones, theft, poison, goad, doublers, fog**; ramp kinds
+**`costReduction`** and **`extraLandDrop`**.
 
-- [ ] One hand-checked case per NEW member: `tutor`, `counterspell`, and each of the nine
-      themes, plus `costReduction` and `extraLandDrop`.
-- [ ] One per CHANGED definition, chosen to be wrong under the old wording and right under the
-      new: a theft card (now `removal`), a burn-to-face card (now `drain`), an extra-combat card
-      (now `finisher`), a regenerator (now `protection`), a monarch card (now repeatable
-      `draw`), a "destroy each" wipe, a ritual (`burstMana`).
-- [ ] The score report must break down **per job**, not only in aggregate, or a new job's
-      accuracy is invisible inside a global figure.
+Definitions, each of which needs a gold case in Task 4:
 
-**This is the gate.** Hugh's condition is per-job accuracy from the gold check, so a new member
-without a gold case cannot be judged at all.
+- **`drain`** means damage or life loss aimed **only at opponents** — a Shock is not drain.
+- **`clones` vs token copies** — distinguish copying a permanent from making a token copy.
+- **`doublers`** — define the class.
+- **`fog` vs `protection`** — prevention of combat damage for a turn is not protection.
+- **`stax` explicitly includes mass land denial**, so it agrees with `card_bracket_flags`.
+- **`goad`** — forced combat.
+- **`costReduction` vs `castFree`**, including self-affinity (a cost reduction that only applies
+  to the card itself).
+- **`scry` and `surveil` are not jobs.**
+- Plus the earlier set: `removal` tightened (theft counts; counterspells, tappers, hand attack do
+  not), `finisher` covers extra combats and extra turns, `protection` folds in regenerate,
+  phasing and umbra armor, the monarch is repeatable `draw`, `mill` records whose library, wipes
+  gains a "destroy each" example, rituals are `burstMana`, and every job the prompt names without
+  a definition gets one (`finisher`, `castFree`, `drain`, `tribal`, the theme `draw`).
 
-**PR 3 boundary.** Fixtures and scoring only.
+**Hash the SYSTEM prompt into `labelInputHash`.** Today the vocabulary reaches the hash only via
+`LABEL_PROMPT_VERSION`, a hand-maintained constant — so widening it without a bump would leave
+old-vocabulary labels indistinguishable from new ones and `cardsNeedingLabels` would skip them.
+**This makes every existing label stale by design**, which is what the fresh run is for, and it
+should be stated rather than discovered.
+
+- [ ] Add a note at `REMOVAL_PATTERNS` recording that labels separate `counterspell` and this
+      classifier deliberately does not, because its removal target of 8 was measured with
+      counterspells counted. Mirror the note in `SYSTEM`.
+
+**PR 3 — vocabulary and prompt.**
 
 ---
 
-## Task 4 — Keep the re-sample's per-card outputs
+## Task 4 — The gold set, rebuilt
 
-**Files:** modify `scripts/label-cards-run.mts`.
+- [ ] **Re-audit all 108 existing entries** against the new definitions. Spellseeker becomes
+      `tutor`; every entry touched by a tightened definition is re-judged.
+- [ ] **At least 8 positives and 4 hard negatives per new or changed job.** The negatives are
+      the half that matters: a hard negative for `tutor` is a land search, for `drain` a Shock,
+      for `fog` a protection spell.
+- [ ] **Cover the jobs that currently have zero gold coverage**, whatever the new vocabulary
+      does or does not add.
+- [ ] **A per-job precision and recall bar (≥0.8), with a stop rule:** any job under the bar goes
+      back to the prompt before the run. An aggregate figure hides exactly the new jobs this is
+      meant to judge.
+- [ ] **Re-baseline the floors from the new re-sample**, read from the artifact rather than
+      transcribed — the merged run plan's rounded 0.87 against the artifact's 0.868 is the
+      precedent for why.
 
-`out/` is not committed, so last time the sample's per-card labels were unrecoverable and the
-`[]`-share question could not be answered. Write them to
-`docs/superpowers/benchmarks/<date>-card-labels-sample.json` — committed, one row per card with
-its labels — alongside the existing aggregates.
-
-- [ ] Guard the size: 508 cards of small label arrays is well under a megabyte; assert the file
-      is written and non-empty rather than assuming.
-
-**PR 4 boundary.** One script, one artifact path.
+**PR 4 — fixtures and scoring.**
 
 ---
 
-## Task 5 — The re-sample, then the run (no code)
+## Task 5 — The stratified re-sample
 
-Nothing here spends until Tasks 1–4 are merged and Hugh has approved this plan.
+About **40 regex-selected cards per new job, plus 500 random**. Regex selection is what gets a
+new job enough instances to score; the random half is what keeps the empty rate honest.
 
-- [ ] **Re-sample** on the new vocabulary, ~$2, per-card outputs kept. Report **per-job
-      accuracy** from the gold check and **cost per card**.
-- [ ] **Gate:** the projection must come in under $50. If it does not, back to Hugh.
-- [ ] **Fresh backfill** under a new id (`backfill-YYYY-MM-DD`, the validated shape),
-      `cap=55 pause=50`. One dispatch at a time, each only after the previous run has ended,
-      re-dispatch on a poll timeout only, same id.
-- [ ] Report each run id and its ended figures; flag if measured cost per card drifts above
-      $0.0013.
-- [ ] On publish, run the gold check: floors read from the score artifact, **no tolerance**, and
-      a per-card diff printed on failure.
+Free gates, none of which costs a model call:
+
+- [ ] **Agreement with `card_bracket_flags`** on `tutor`, mass land denial and extra turns. Two
+      independent classifiers over the same cards; disagreement is a finding either way.
+- [ ] **Counterspells, tappers and hand attack are out of `removal`.**
+- [ ] **Tutors are out of `draw`.**
+- [ ] **The empty rate against 12.2%** — the first run's figure. A large move in either direction
+      needs explaining before the run.
+- [ ] **Per-card outputs committed.** Last time they went to an uncommitted `out/` and the
+      `[]`-distribution question could not be asked at all.
+
+**PR 5 — the harness change that commits per-card outputs, then the sample is run.**
+
+---
+
+## Task 6 — Re-estimate the cost from the real prompt
+
+`SYSTEM_TOKENS = 1215` is a constant at `scripts/build-card-labels.ts:501`, measured against the
+OLD system prompt. The new one is materially longer — more members, and a definition for every
+job — so the constant is wrong the moment Task 3 lands, and it feeds `worstCaseUsd`, `waveSize`
+and the ledger reservation.
+
+- [ ] **Derive `SYSTEM_TOKENS` from the real `SYSTEM` string** rather than restating it, so it
+      cannot drift again.
+- [ ] Move the drift flag accordingly.
+- [ ] Re-project the whole-run cost from the re-sample's measured per-card rate, and confirm it
+      lands under $50 before dispatching anything.
+
+**PR 6 — cost derivation.**
+
+---
+
+## Task 7 — Operations
+
+- [ ] **Run between two Monday catalog refreshes.** A refresh mid-run changes the card set, and
+      `planChunks` is index-keyed: a shifted plan is refused, which strands the run.
+- [ ] **`CARD_LABELS_ENABLED` stays off until the backfill publishes**, stated here because two
+      live run ids over one stale card set both pay — `reconcile` and `alreadySpent` are each
+      filtered by `run_id`, so a weekly run would re-plan the same cards and charge again.
+- [ ] **Handle `weekly-2026-W40`'s 127 intents explicitly.** They are `intended`, `batch_id`
+      null, $0, unreserved, and they permanently block that run id. Decide: scoped delete (Hugh's
+      OK), or leave them and never reuse that id. Say which, in the plan, before the run.
+- [ ] **Check account headroom before dispatch.** The first attempt died on the Anthropic
+      account's own spend limit mid-run. The cheapest discriminating check is a one-token
+      `messages.create`; `batches.list` succeeds under the limit and proves nothing.
+- [ ] **One backfill id, typed once**, of the validated `backfill-YYYY-MM-DD` shape.
+- [ ] One dispatch at a time, each only after the previous run has ended; re-dispatch on a poll
+      timeout only, same id.
+- [ ] On publish, run the gold check: floors from the artifact, **no tolerance**, per-card diff
+      on failure.
 - [ ] The production copy still waits for Hugh.
 
 ---
 
 ## What this plan deliberately does not do
 
-- **It does not widen the app's `Role`/`Theme` unions.** That is a database migration across
-  three tables plus a re-derivation plus Role Coverage changes, and it is not needed to label
-  cards. If it is wanted, it is its own plan.
-- **It does not change `REMOVAL_PATTERNS`.** Doing so shifts every Role Coverage figure against
-  targets measured on the current definition. Task 2c records the divergence instead.
-- **It does not reclaim or delete the stranded rows.** A new run id makes them moot; they are
-  `abandoned`, `batch_id` null, and book $0.
+- **It does not widen the app's `Role`/`Theme` unions.** Its own plan, if wanted.
+- **It does not change `REMOVAL_PATTERNS`.** Hugh's ruling; the divergence is documented at both
+  sites instead.
+- **It does not reclaim stranded intents.** A reclaim path was built and abandoned after three
+  consecutive pre-open passes each found a Critical introduced by the previous fix. A fresh run
+  id makes it unnecessary. The design notes, including the unsolved problem that releasing an
+  `expired` row destroys the only record of real spend, are with Hugh as a follow-up.
