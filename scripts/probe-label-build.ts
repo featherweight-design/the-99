@@ -228,6 +228,37 @@ async function main(): Promise<void> {
   const second = await reclaimIntents(db, [strandedKey]);
   report("a row that reached the provider is NOT reclaimed again", second.length === 0, `${second.length}`);
 
+  // EACH CLAUSE ON ITS OWN. `stampWave` sets BOTH a batch id and `submitted`, so the row above is
+  // excluded twice over and the check cannot tell which clause did it — removing either
+  // `batch_id is null` or the status filter left all 22 checks passing, measured. These two rows
+  // each leave exactly one clause standing.
+  const onlyNullId = `${strandedRun}:claude-sonnet-4-5:1`;
+  await db.insert(cardLabelBatches).values({
+    // A batch id with the status still `intended`: only `batch_id is null` can refuse this.
+    intentKey: onlyNullId, runId: strandedRun, model: "claude-sonnet-4-5",
+    customId: `${strandedRun}-1`, asked: [a.name],
+    batchId: "msgbatch_probe_has_an_id", status: "intended",
+  });
+  report("a row with a batch id is refused even while `intended`",
+    (await reclaimIntents(db, [onlyNullId])).length === 0);
+
+  // THE STATUS CLAUSE IS IMPLIED, and that is worth stating rather than leaving a reader hunting
+  // for a case that cannot exist. `card_label_batches_id_with_status_check` is
+  // `status in ('intended','abandoned') or batch_id is not null`, so a row with a null batch id
+  // CANNOT carry a moved-on status. Removing `inArray(status, ...)` from `reclaimIntents` is
+  // therefore unfalsifiable against a valid database — measured: all 22 checks passed with it
+  // gone. It stays as defence in depth against the constraint changing, and what is asserted here
+  // is the constraint itself, which is the thing actually protecting us.
+  let refused = false;
+  try {
+    await db.insert(cardLabelBatches).values({
+      intentKey: `${strandedRun}:claude-sonnet-4-5:2`, runId: strandedRun,
+      model: "claude-sonnet-4-5", customId: `${strandedRun}-2`, asked: [a.name],
+      status: "collected",
+    });
+  } catch { refused = true; }
+  report("the database refuses a moved-on status with no batch id", refused);
+
   // And a key nobody stranded is not invented.
   const absent = await reclaimIntents(db, [`${strandedRun}:claude-sonnet-4-5:999`]);
   report("an unknown key reclaims nothing", absent.length === 0, `${absent.length}`);
