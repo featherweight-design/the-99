@@ -34,7 +34,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { meetsFloor, planChunks } from "../src/lib/labels/plan";
-import { publishRun, readCardsByName, reclaimIntents, stampWave } from "../src/lib/labels/publish";
+import { publishRun, readCardsByName, releaseIntents, stampWave } from "../src/lib/labels/publish";
 import type { Job } from "../src/lib/labels/types";
 
 const db = drizzle(DATABASE_URL);
@@ -183,8 +183,10 @@ async function main(): Promise<void> {
   //
   // MORE THAN ONE NAME, deliberately, and asserted as such — though a single name fails too
   // (`any(($1))`), so this is belt and braces rather than the crux.
+  // Three names, which matters because the bug is about how a LIST is bound. Asserting
+  // `askNames.length > 1` against a literal declared one line up could not fail on any build; the
+  // load-bearing assertion is that all three come back, below.
   const askNames = [a.name, b.name, c.name];
-  report("the fixture asks about more than one name", askNames.length > 1, `${askNames.length}`);
   const read = await readCardsByName(db, askNames);
   report("every asked name comes back", read.length === askNames.length, `${read.length} row(s)`);
   report("and they are the names asked for",
@@ -199,69 +201,78 @@ async function main(): Promise<void> {
   const none = await readCardsByName(db, [`probe-no-such-card-${randomUUID()}`]);
   report("an unknown name returns no rows rather than throwing", none.length === 0, `${none.length}`);
 
-  console.log("7. an intent a crash stranded is reclaimable, and the claim stays atomic");
+  console.log("7. an intent a crash stranded is released, and only one caller gets it");
   // EXACTLY THE STATE THE FIRST DISPATCH LEFT: status `intended`, batch_id null, nothing at the
-  // provider. 127 such rows blocked run weekly-2026-W40 permanently, because `intent_key` is the
-  // primary key so the claim insert conflicts, and the row is absent from `done` so it is
-  // re-planned for ever.
+  // provider. 127 such rows block run weekly-2026-W40, because `intent_key` is the primary key so
+  // the claim insert conflicts, and the row is absent from `done` so it is re-planned for ever.
   const strandedRun = `probe-stranded-${randomUUID()}`;
   const strandedKey = `${strandedRun}:claude-sonnet-4-5:0`;
-  await db.insert(cardLabelBatches).values({
-    intentKey: strandedKey, runId: strandedRun, model: "claude-sonnet-4-5",
-    customId: `${strandedRun}-0`, asked: [a.name],
-  });
+  const plant = async (key: string, extra: Record<string, unknown> = {}) => {
+    await db.insert(cardLabelBatches).values({
+      intentKey: key, runId: strandedRun, model: "claude-sonnet-4-5",
+      customId: `${key}-custom`, asked: [a.name], ...extra,
+    });
+  };
   strandedRunId = strandedRun;
+  await plant(strandedKey);
   const before = await db.select().from(cardLabelBatches)
     .where(eq(cardLabelBatches.intentKey, strandedKey));
   report("the stranded row is `intended` with no batch id",
     before[0]?.status === "intended" && before[0]?.batchId === null,
     `${before[0]?.status}, batchId ${String(before[0]?.batchId)}`);
 
-  const first = await reclaimIntents(db, [strandedKey]);
-  report("it is reclaimed", first.length === 1 && first[0] === strandedKey, `${first.length}`);
+  const first = await releaseIntents(db, [strandedKey]);
+  report("it is released", first.length === 1 && first[0] === strandedKey, `${first.length}`);
+  const afterRelease = await db.select().from(cardLabelBatches)
+    .where(eq(cardLabelBatches.intentKey, strandedKey));
+  report("and the row is GONE, so the insert claim can take it again",
+    afterRelease.length === 0, `${afterRelease.length} row(s)`);
 
-  // ATOMIC, not read-then-write. Once a wave has been stamped with a batch id the row is no
-  // longer reclaimable — this is the clause that stops two invocations handing one chunk to two
-  // `batches.create` calls, and a `where` that omitted `batch_id is null` would pass every other
-  // check here.
-  await stampWave(db, [strandedKey], "msgbatch_probe_stranded");
-  const second = await reclaimIntents(db, [strandedKey]);
-  report("a row that reached the provider is NOT reclaimed again", second.length === 0, `${second.length}`);
+  // A row that reached the provider is never released. `stampWave` sets a batch id AND
+  // `submitted`, which excludes it twice over — so the case below isolates the clause that does
+  // the work, because with both present either one could be removed and this still pass.
+  const sentToProvider = `${strandedRun}:claude-sonnet-4-5:1`;
+  await plant(sentToProvider);
+  await stampWave(db, [sentToProvider], "msgbatch_probe_stranded");
+  report("a row that reached the provider is not released",
+    (await releaseIntents(db, [sentToProvider])).length === 0);
 
-  // EACH CLAUSE ON ITS OWN. `stampWave` sets BOTH a batch id and `submitted`, so the row above is
-  // excluded twice over and the check cannot tell which clause did it — removing either
-  // `batch_id is null` or the status filter left all 22 checks passing, measured. These two rows
-  // each leave exactly one clause standing.
-  const onlyNullId = `${strandedRun}:claude-sonnet-4-5:1`;
-  await db.insert(cardLabelBatches).values({
-    // A batch id with the status still `intended`: only `batch_id is null` can refuse this.
-    intentKey: onlyNullId, runId: strandedRun, model: "claude-sonnet-4-5",
-    customId: `${strandedRun}-1`, asked: [a.name],
-    batchId: "msgbatch_probe_has_an_id", status: "intended",
-  });
-  report("a row with a batch id is refused even while `intended`",
-    (await reclaimIntents(db, [onlyNullId])).length === 0);
+  const withId = `${strandedRun}:claude-sonnet-4-5:2`;
+  await plant(withId, { batchId: "msgbatch_probe_has_an_id", status: "intended" });
+  report("nor one carrying a batch id while still `intended`",
+    (await releaseIntents(db, [withId])).length === 0);
 
-  // THE STATUS CLAUSE IS IMPLIED, and that is worth stating rather than leaving a reader hunting
-  // for a case that cannot exist. `card_label_batches_id_with_status_check` is
-  // `status in ('intended','abandoned') or batch_id is not null`, so a row with a null batch id
-  // CANNOT carry a moved-on status. Removing `inArray(status, ...)` from `reclaimIntents` is
-  // therefore unfalsifiable against a valid database — measured: all 22 checks passed with it
-  // gone. It stays as defence in depth against the constraint changing, and what is asserted here
-  // is the constraint itself, which is the thing actually protecting us.
+  // THE STATUS CLAUSE IS IMPLIED, and saying so beats claiming coverage it cannot have.
+  // `card_label_batches_id_with_status_check` is `status in ('intended','abandoned') or batch_id
+  // is not null`, so a null-batch-id row CANNOT carry a moved-on status; removing
+  // `inArray(status, ...)` from `releaseIntents` is unfalsifiable against a valid database. What
+  // is asserted instead is the constraint, which is the thing actually protecting us.
   let refused = false;
-  try {
-    await db.insert(cardLabelBatches).values({
-      intentKey: `${strandedRun}:claude-sonnet-4-5:2`, runId: strandedRun,
-      model: "claude-sonnet-4-5", customId: `${strandedRun}-2`, asked: [a.name],
-      status: "collected",
-    });
-  } catch { refused = true; }
+  try { await plant(`${strandedRun}:claude-sonnet-4-5:3`, { status: "collected" }); }
+  catch { refused = true; }
   report("the database refuses a moved-on status with no batch id", refused);
 
-  // And a key nobody stranded is not invented.
-  const absent = await reclaimIntents(db, [`${strandedRun}:claude-sonnet-4-5:999`]);
-  report("an unknown key reclaims nothing", absent.length === 0, `${absent.length}`);
+  const absent = await releaseIntents(db, [`${strandedRun}:claude-sonnet-4-5:999`]);
+  report("an unknown key releases nothing", absent.length === 0, `${absent.length}`);
+
+  console.log("8. two callers race one stranded intent and exactly one wins");
+  // THE EXCLUSION, ON TWO CONNECTIONS. Single-connection checks cannot see this: the first
+  // implementation was an UPDATE setting `status = "intended"` — a value its own `where` already
+  // accepted — so under READ COMMITTED the loser's statement re-evaluated its predicate against
+  // the committed row, still matched, and BOTH callers would have called `batches.create` for one
+  // chunk. Every single-connection check passed. A delete cannot do that: a row exists once.
+  const raced = `${strandedRun}:claude-sonnet-4-5:4`;
+  await plant(raced);
+  const dbA = drizzle(DATABASE_URL);
+  const dbB = drizzle(DATABASE_URL);
+  const [ra, rb] = await Promise.all([
+    releaseIntents(dbA, [raced]),
+    releaseIntents(dbB, [raced]),
+  ]);
+  report("exactly one caller takes it", ra.length + rb.length === 1,
+    `A ${ra.length}, B ${rb.length}`);
+  const gone = await db.select().from(cardLabelBatches).where(eq(cardLabelBatches.intentKey, raced));
+  report("and the row is gone once, not twice", gone.length === 0, `${gone.length} row(s)`);
 }
 
 main()

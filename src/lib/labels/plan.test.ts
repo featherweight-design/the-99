@@ -285,26 +285,35 @@ describe("what a paused run tells the operator", () => {
 describe("an intent whose batch id is still unknown", () => {
   const hour = 60 * 60 * 1000;
 
-  it("is reclaimable, and not reported, when the search was exhaustive and it is young", () => {
-    expect(classifyNullIntent(true, 5 * 60 * 1000)).toEqual({ reclaimable: true, abandon: false });
+  it("is reclaimed once an exhaustive search has held for the grace period", () => {
+    // The state the first real dispatch left: hours old, provider holds nothing.
+    expect(classifyNullIntent(true, 2 * hour)).toBe("reclaim");
   });
 
-  it("is reclaimable AND reported once it is old", () => {
-    // The age splits the reporting, not the permission: the provider still holds nothing for it.
-    expect(classifyNullIntent(true, 2 * hour)).toEqual({ reclaimable: true, abandon: true });
+  it("WAITS while it is too recent to trust the absence", () => {
+    // THE INVERTED CASE, and the one an earlier version got backwards. A `create` that succeeded
+    // may not be listed yet, so a young intent's absence is not evidence — re-submitting on it is
+    // the double charge. `wait` is "call me again", never a refusal.
+    expect(classifyNullIntent(true, 5 * 60 * 1000)).toBe("wait");
   });
 
-  it("is NOT reclaimable when the search was inconclusive, at any age", () => {
-    // THE SAFETY RULE. A truncated provider listing does not prove a batch was never created, so
-    // re-submitting is the double charge the claim exists to prevent. The run dies instead, which
-    // is correct. Both ages, because a young intent is the tempting case.
-    expect(classifyNullIntent(false, 5 * 60 * 1000)).toEqual({ reclaimable: false, abandon: true });
-    expect(classifyNullIntent(false, 2 * hour)).toEqual({ reclaimable: false, abandon: true });
+  it("is unresolved when the search could not be exhaustive, at any age", () => {
+    // Both ages, because the young one is the tempting case to treat as a retry.
+    expect(classifyNullIntent(false, 5 * 60 * 1000)).toBe("unresolved");
+    expect(classifyNullIntent(false, 2 * hour)).toBe("unresolved");
   });
 
-  it("treats the grace boundary as exclusive", () => {
-    // `<` not `<=`, and they differ only here.
-    expect(classifyNullIntent(true, RECLAIM_GRACE_MS - 1).abandon).toBe(false);
-    expect(classifyNullIntent(true, RECLAIM_GRACE_MS).abandon).toBe(true);
+  it("never returns `reclaim` without an exhaustive search", () => {
+    // The safety property stated directly rather than inferred from the rows above: no age makes
+    // an inconclusive search re-submittable.
+    for (const age of [0, 1, hour - 1, hour, hour * 24, hour * 24 * 40]) {
+      expect(classifyNullIntent(false, age)).not.toBe("reclaim");
+    }
+  });
+
+  it("treats the grace boundary as inclusive of reclaim", () => {
+    // `>=` not `>`, and they differ only here.
+    expect(classifyNullIntent(true, RECLAIM_GRACE_MS - 1)).toBe("wait");
+    expect(classifyNullIntent(true, RECLAIM_GRACE_MS)).toBe("reclaim");
   });
 });

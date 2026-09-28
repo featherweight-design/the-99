@@ -44,7 +44,7 @@ import {
 // copies of a row type is a drift risk I introduced when the read moved: the day one gains a field
 // the other lacks, the shared helper's rows stop satisfying this script for no visible reason.
 import type { CardRow } from "../src/lib/labels/publish";
-import { publishRun, readCardsByName, reclaimIntents, stampWave } from "../src/lib/labels/publish";
+import { publishRun, readCardsByName, releaseIntents, stampWave } from "../src/lib/labels/publish";
 import { validateJob } from "../src/lib/labels/schema";
 import type { Job } from "../src/lib/labels/types";
 
@@ -304,7 +304,7 @@ async function collectBatch(
  */
 async function reconcile(): Promise<{
   done: Set<string>; waiting: number; abandoned: string[]; askedByKey: Map<string, string[]>;
-  reclaimable: Set<string>;
+  reclaimable: Set<string>; tooRecent: string[];
 }> {
   // EVERY intent already collected for this run, from any earlier invocation. Seeding `done`
   // from this process's work alone was a double charge: run 1 submits wave 1, run 2 collects it
@@ -323,7 +323,7 @@ async function reconcile(): Promise<{
   const open = await db.select().from(cardLabelBatches)
     .where(and(eq(cardLabelBatches.runId, runId), sql`${cardLabelBatches.status} <> 'collected'`));
   if (open.length === 0) {
-    return { done, waiting: 0, abandoned: [], askedByKey, reclaimable: new Set() };
+    return { done, waiting: 0, abandoned: [], askedByKey, reclaimable: new Set(), tooRecent: [] };
   }
 
   console.log(`reconciling ${open.length} open intent(s) from ${runId}`);
@@ -345,6 +345,16 @@ async function reconcile(): Promise<{
   let searchWasComplete = false;
   /** Set when any listed batch is still running, which makes "not found" inconclusive. */
   let anyStillProcessing = false;
+  /**
+   * Set when an ENDED batch's results could not be read.
+   *
+   * Without this the search below could still declare itself exhaustive while a batch it never
+   * managed to read might hold the very custom id being looked for — so an intent the provider
+   * ACCEPTED would be judged "never submitted". That was survivable while the only consequence
+   * was a re-plan into an insert conflict and a refusal; once such an intent can be RECLAIMED it
+   * becomes a second `batches.create` for a request already charged.
+   */
+  let anyUnreadable = false;
   const unresolved = new Set(open.filter((o) => o.batchId === null).map((o) => o.customId));
   if (unresolved.size > 0) {
     // PAGINATED UNTIL EXHAUSTED, or until every lost id is accounted for. One page of 100 does
@@ -364,8 +374,10 @@ async function reconcile(): Promise<{
             unresolved.delete(r.custom_id);
           }
         } catch (err) {
-          // One unreadable batch must not blind the lookup to the others.
+          // One unreadable batch must not blind the lookup to the OTHERS — but it does make the
+          // search inconclusive, because this batch's custom ids were never matched.
           console.warn(`  could not read ${batch.id}: ${(err as Error).message}`);
+          anyUnreadable = true;
         }
       }
       // A batch still PROCESSING has no readable results, so it is skipped above — which means
@@ -374,12 +386,14 @@ async function reconcile(): Promise<{
       // exhausted page as proof would re-plan work that is in flight.
       if (page.data.some((b) => b.processing_status !== "ended")) anyStillProcessing = true;
       cursor = page.data.at(-1)?.id;
+      // Every lost id accounted for: exhaustive whatever else was on the pages.
       if (unresolved.size === 0) { searchWasComplete = true; break; }
-      if (!page.has_more) { searchWasComplete = !anyStillProcessing; break; }
+      if (!page.has_more) { searchWasComplete = !anyStillProcessing && !anyUnreadable; break; }
     } while (pages < 50);
     console.log(`  searched ${pages} page(s) of provider batches; `
       + `${unresolved.size} id(s) still unaccounted for`
-      + (anyStillProcessing ? "; a batch is still processing, so absence proves nothing" : ""));
+      + (anyStillProcessing ? "; a batch is still processing, so absence proves nothing" : "")
+      + (anyUnreadable ? "; an ended batch could not be read, so absence proves nothing" : ""));
   } else {
     searchWasComplete = true;
   }
@@ -403,6 +417,8 @@ async function reconcile(): Promise<{
    * still dies, which is correct.
    */
   const reclaimable = new Set<string>();
+  /** Exhaustive search, but too recent to trust an absence. Not death — come back shortly. */
+  const tooRecent: string[] = [];
 
   // Intents whose id is still unknown after the lookup above. Resolved by AGE, not by
   // guessing: a batch the provider would still list is recent, so a young unresolved intent
@@ -419,8 +435,12 @@ async function reconcile(): Promise<{
     // THE DECISION IS PURE and lives in `plan.ts`, because `reconcile` needs the provider and so
     // nothing here could test it — the shape of every defect this feature has shipped.
     const verdict = classifyNullIntent(searchWasComplete, Date.now() - intent.intendedAt.getTime());
-    if (verdict.reclaimable) reclaimable.add(intent.intentKey);
-    if (!verdict.abandon) continue;
+    if (verdict === "reclaim") { reclaimable.add(intent.intentKey); continue; }
+    if (verdict === "wait") { tooRecent.push(intent.intentKey); continue; }
+    // `unresolved` only: the search could not prove the provider never took this one, so it is
+    // reported and the run refuses. A reclaimable intent must NOT land here — `main` dies on any
+    // abandoned intent, and an earlier version put every intent over the grace period in this
+    // branch, which made the reclaim unreachable for precisely the rows it exists to rescue.
     await db.update(cardLabelBatches).set({ status: "abandoned" })
       .where(eq(cardLabelBatches.intentKey, intent.intentKey));
     abandoned.push(intent.intentKey);
@@ -457,10 +477,14 @@ async function reconcile(): Promise<{
   }
 
   if (reclaimable.size > 0) {
-    console.log(`  ${reclaimable.size} intent(s) are reclaimable — the provider holds no batch for `
-      + `them and the search was exhaustive, so they were never submitted`);
+    console.log(`  ${reclaimable.size} intent(s) are reclaimable — an exhaustive search found no `
+      + `batch for them and they are past the grace period, so they were never submitted`);
   }
-  return { done, waiting, abandoned, askedByKey, reclaimable };
+  if (tooRecent.length > 0) {
+    console.log(`  ${tooRecent.length} intent(s) have no batch id but are too recent to judge: a `
+      + `create that succeeded may not be listed yet. Re-run after the grace period.`);
+  }
+  return { done, waiting, abandoned, askedByKey, reclaimable, tooRecent };
 }
 
 /**
@@ -487,22 +511,21 @@ async function submit(chunks: Chunk[], reclaimable: Set<string>): Promise<void> 
   // see. A session advisory lock was the first attempt and it is INERT here: `drizzle(url)` pools
   // connections, session locks are per connection, and a second connection took the same lock —
   // measured, both returned true.
+  // RELEASE FIRST, so the claim below is the only claim. `reconcile` has proved these were never
+  // submitted; deleting their rows hands them back to the INSERT, whose primary-key conflict is
+  // the exclusion primitive that already works. Whoever's DELETE returns the key owns it — the
+  // loser's DELETE returns nothing, its INSERT conflicts, and it dies, which is correct.
+  if (reclaimable.size > 0) {
+    const asking = chunks.filter((c) => reclaimable.has(c.intentKey)).map((c) => c.intentKey);
+    const released = await releaseIntents(db, asking);
+    console.log(`  released ${released.length} of ${asking.length} stranded intent(s) for re-claim`);
+  }
+
   const claimed = await db.insert(cardLabelBatches).values(chunks.map((c) => ({
     intentKey: c.intentKey, runId, model: MODEL, customId: c.customId, asked: c.names,
   }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
 
   const mine = new Set(claimed.map((r) => r.intentKey));
-
-  // A ROW THE PROVIDER NEVER TOOK MAY BE CLAIMED AGAIN, atomically, through the shared helper.
-  // `reconcile` has already proved these were never submitted; `reclaimIntents` enforces the rest
-  // inside its own statement, so a concurrent invocation that got there first keeps the chunk and
-  // this one is told it did not. Without this the run is stuck for ever on its own crash.
-  const stale = chunks.filter((c) => !mine.has(c.intentKey) && reclaimable.has(c.intentKey));
-  if (stale.length > 0) {
-    const retaken = await reclaimIntents(db, stale.map((c) => c.intentKey));
-    for (const k of retaken) mine.add(k);
-    console.log(`  reclaimed ${retaken.length} of ${stale.length} intent(s) the provider never took`);
-  }
 
   const unclaimed = chunks.filter((c) => !mine.has(c.intentKey));
   if (unclaimed.length > 0) {
@@ -589,10 +612,11 @@ async function main(): Promise<void> {
 
   // RECONCILE FIRST, always, before anything is planned or priced. An in-flight batch this
   // run cannot see is work it would submit again.
-  const { done, waiting, abandoned, askedByKey, reclaimable } = dryRun
+  const { done, waiting, abandoned, askedByKey, reclaimable, tooRecent } = dryRun
     ? {
       done: new Set<string>(), waiting: 0, abandoned: [] as string[],
       askedByKey: new Map<string, string[]>(), reclaimable: new Set<string>(),
+      tooRecent: [] as string[],
     }
     : await reconcile();
   if (abandoned.length > 0) {
@@ -601,6 +625,15 @@ async function main(): Promise<void> {
     for (const k of abandoned) console.error(`  ${k}`);
     return die(`unresolvable intents. Re-run with LABEL_RUN_ID=<new id> to relabel their cards, `
       + `accepting that the originals may already have been charged.`);
+  }
+  // TOO RECENT TO JUDGE is "call me again", not a failure: re-submitting on a listing that may
+  // not have caught up is the double charge, and refusing outright would stall a run that only
+  // needs a few minutes.
+  if (tooRecent.length > 0) {
+    console.log(`\n${tooRecent.length} intent(s) too recent to judge. Nothing submitted.`);
+    console.log(`Re-run with LABEL_RUN_ID=${runId} after the grace period.`);
+    process.exitCode = EXIT_MORE_WORK;
+    return;
   }
   if (waiting > 0) {
     console.log(`\n${waiting} chunk(s) still processing. Nothing submitted, nothing published.`);

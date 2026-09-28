@@ -116,32 +116,43 @@ export async function readCardsByName(db: Db, names: readonly string[]): Promise
 }
 
 /**
- * Re-claim intents a crash left behind, and do it ATOMICALLY.
+ * RELEASE intents a crash stranded, by DELETING their rows, and return the ones this call took.
  *
- * `submit` writes its claim rows before calling `batches.create`, so two invocations cannot both
- * submit the same chunks — and `intent_key` is the primary key. A crash in between therefore
- * leaves rows no later run can get past: absent from `done`, so re-planned, and the claim insert
- * then conflicts on every one. The first real dispatch left 127 such rows and they blocked that
- * run id permanently.
+ * A delete rather than an update, because the exclusion has to be real. The first version set
+ * `status = "intended"` — a value its own `where` already accepted — which excludes nothing: under
+ * READ COMMITTED a second concurrent UPDATE blocks on the row lock, re-evaluates its predicate
+ * against the committed row, still finds `batch_id is null` and `status = 'intended'`, matches, and
+ * returns the key. Both callers would then hand the same chunk to `batches.create`. Its docstring
+ * claimed the loser would see `submitted`, which only `stampWave` writes and only AFTER the
+ * provider call.
  *
- * The caller must already have proved these were never submitted — exhaustive provider search, no
- * batch for the custom id. This function enforces the rest INSIDE the statement: `batch_id is
- * null` and a status that has not moved on. A concurrent invocation that reclaimed the row a
- * moment ago has set it `submitted`, so this UPDATE matches nothing, returns nothing, and that
- * process owns the chunk. Whichever statement matches first wins, decided by the database.
+ * A row can be deleted once. So whichever statement's `returning()` names the key owns it, decided
+ * by the database — the same guarantee the INSERT claim gets from the primary key, which is exactly
+ * why the release hands the row back to that claim instead of trying to be a second one.
  *
- * Read-then-write would hand one chunk to two `batches.create` calls, which is the double charge
- * the claim exists to prevent. `asked` is left alone: it is read only for collected rows.
+ * Deleting also fixes what the update left stale: the re-INSERT writes the chunk's CURRENT `asked`.
+ * The old comment said `asked` was read only for collected rows; `collectBatch` reads it while a
+ * row is still `submitted`, so a reclaimed chunk re-sent after a catalog change would have had
+ * every name in its reply resolve to null, stage nothing, and show up only as a floor shortfall on
+ * a wave that had been paid for.
+ *
+ * The caller must already have proved these were never submitted. The predicate re-checks the rest
+ * inside the statement: `batch_id is null` (nothing that reached the provider), and a status the
+ * check constraint already implies from that.
+ *
+ * `expired` rows are deliberately NOT released. They were charged, and `alreadySpent` reserves them
+ * at worst case by counting rows with that status — deleting them would silently hand the budget
+ * back. That leaves the expired path still unable to re-submit under its own run id, which is a
+ * real limitation recorded where it happens rather than papered over here.
  */
-export async function reclaimIntents(db: Db, intentKeys: string[]): Promise<string[]> {
+export async function releaseIntents(db: Db, intentKeys: string[]): Promise<string[]> {
   if (intentKeys.length === 0) return [];
-  const retaken = await db.update(cardLabelBatches)
-    .set({ status: "intended", intendedAt: new Date() })
+  const gone = await db.delete(cardLabelBatches)
     .where(and(
       inArray(cardLabelBatches.intentKey, intentKeys),
       isNull(cardLabelBatches.batchId),
       inArray(cardLabelBatches.status, ["intended", "abandoned"]),
     ))
     .returning({ intentKey: cardLabelBatches.intentKey });
-  return retaken.map((r) => r.intentKey);
+  return gone.map((r) => r.intentKey);
 }

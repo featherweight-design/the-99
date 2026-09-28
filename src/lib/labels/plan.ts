@@ -239,31 +239,38 @@ export function pauseRemediation(
 }
 
 /** What to do with an intent whose batch id is still unknown after the provider lookup. */
-export type NullIntentVerdict = { reclaimable: boolean; abandon: boolean };
+export type NullIntentVerdict = "reclaim" | "wait" | "unresolved";
 
-/** An hour: long enough that a batch the provider would still list has appeared. */
+/**
+ * How long absence from the provider's listing has to persist before it is believed.
+ *
+ * A `create` that succeeded may not appear in `list` immediately, so "not there" is only evidence
+ * once some time has passed. An hour is far beyond any plausible lag and far inside the 29 days
+ * results are kept.
+ */
 export const RECLAIM_GRACE_MS = 60 * 60 * 1000;
 
 /**
- * Whether an intent with no batch id may be submitted again, and whether to report it.
+ * What to do with an intent whose batch id is still unknown, and the AGE TEST IS INVERTED from
+ * the obvious reading — which is the whole point of writing it down.
  *
- * Pure, and here rather than inline in `reconcile`, because `reconcile` needs the provider and so
- * NOTHING could test this — which is the shape of every defect this feature has shipped. The rule
- * it encodes is the one that keeps the claim safe.
+ * The obvious reading says a young intent is a safe retry and an old one is suspicious. It is the
+ * other way round. The danger is re-submitting a request the provider already accepted and
+ * charged for, and the only evidence against that is its absence from an exhaustive listing — an
+ * absence a JUST-CREATED batch can also produce, because `create` returning and `list` showing it
+ * are not the same instant. So:
  *
- * `searchWasComplete` is the whole safety argument. "I could not find a batch for this custom id"
- * only means "it was never submitted" if the search was EXHAUSTIVE; a truncated listing proves
- * nothing, and re-submitting a request a successful `create` already accepted is the double charge
- * the claim exists to prevent. So an inconclusive search reclaims nothing, the claim insert
- * conflicts, and the run dies — which is the correct outcome, not a bug to route around.
+ *   `unresolved`  the search was not exhaustive. Absence proves nothing; refuse and report.
+ *   `wait`        exhaustive, but too recent to trust. Come back later — do not re-submit.
+ *   `reclaim`     exhaustive and old enough that list lag is excluded. Never submitted; re-send.
  *
- * The age is a REPORTING split and never a licence: a young intent is an ordinary retry, an old
- * one is named in the output. Both are reclaimable when the search was exhaustive, and neither is
- * when it was not.
+ * An earlier version had this backwards twice over: it made a young intent reclaimable (trusting
+ * a listing that may not have caught up) and an OLD one `abandoned` — and `main` dies on any
+ * abandoned intent, so the reclaim it had just built was unreachable for exactly the rows it was
+ * written to rescue. The 127 stranded by the first real dispatch are hours old.
  */
 export function classifyNullIntent(searchWasComplete: boolean, ageMs: number): NullIntentVerdict {
-  return {
-    reclaimable: searchWasComplete,
-    abandon: !(searchWasComplete && ageMs < RECLAIM_GRACE_MS),
-  };
+  if (!searchWasComplete) return "unresolved";
+  return ageMs >= RECLAIM_GRACE_MS ? "reclaim" : "wait";
 }
+
