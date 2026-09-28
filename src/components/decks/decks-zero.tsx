@@ -63,8 +63,7 @@ export function DecksZero({ buildable, cards }: { buildable: number; cards: numb
  * buildable line. ONE component for `/decks` and Home's "No decks yet" section, so the two
  * cannot drift (first-run ruling O1, 2026-09-28). A fragment, every class and margin as it
  * was inline here, so `/decks` renders identically; each host supplies the column around it.
- * Home passes no `buildable`, so its line never draws (Ready to build already states the
- * count there).
+ * Home passes no `buildable`, so its line never draws there (Hugh's ruling, 2026-09-28).
  */
 export function DecksZeroActions({ buildable = 0, cards = 0 }: { buildable?: number; cards?: number }) {
   const c = refreshCopy.zero;

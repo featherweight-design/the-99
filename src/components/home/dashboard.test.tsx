@@ -167,7 +167,7 @@ describe("Dashboard at zero decks", () => {
     expect(screen.queryByText(/Pick up where you left off/i)).toBeNull();
   });
 
-  it("draws no buildable line on Home: Ready to build already states the count", () => {
+  it("draws no buildable line on Home (Hugh's ruling; /decks states the count)", () => {
     render(<Dashboard {...BASE} decks={[]} />);
     expect(screen.queryByText(/commanders buildable from/)).toBeNull();
   });

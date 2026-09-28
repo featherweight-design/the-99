@@ -7,8 +7,9 @@ import { DecksZeroActions } from "@/components/decks/decks-zero";
  * the dashboard as soon as the collection is read, and this is where its two ways in live.
  *
  * The actions are `/decks`' own `DecksZeroActions`, never a copy, so the two surfaces cannot
- * drift. Home passes no buildable figure: Ready to build, just above, already states the
- * count, and the shared line draws nothing without one. No card fan: it marks a whole empty
+ * drift. Home passes no buildable figure because Hugh ruled it off Home (2026-09-28); the
+ * shared line draws nothing without one. Ready to build's "N more scored X or better" is a
+ * different figure, and Home states no buildable count at all. No card fan: it marks a whole empty
  * surface, and here it would sit under Ready to build's portraits. Left-aligned, like every
  * Home section.
  *

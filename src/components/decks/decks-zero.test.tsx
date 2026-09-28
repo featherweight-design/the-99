@@ -14,7 +14,8 @@ describe("DecksZeroActions", () => {
     render(<DecksZero buildable={230} cards={3250} />);
     expect(screen.getByRole("link", { name: "Browse commanders" })).toHaveAttribute("href", "/commanders");
     expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute("href", "/decks/import");
-    // The true count, not the retired cap of nine.
+    // Draws whatever figure it is handed. That /decks hands it the TRUE count rather than
+    // the retired cap of nine is a fact about the page's loader, proved by probe:onboarding.
     expect(screen.getByText("230 commanders buildable from 3,250 cards")).toBeInTheDocument();
   });
 });
