@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@600;700&amp;family=Metamorphous&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  a { color: #FF4D9A; text-decoration: none; border-bottom: 1px solid rgba(255,77,154,0.35); }
+  a:hover { color: #FF62A9; border-bottom-color: #FF62A9; }
+  [data-theme="kamigawa"] {
+    --font-display:'Chakra Petch',sans-serif;
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-dim:#843052;
+  }
+  :root, [data-theme="amonkhet"] {
+    --font-display:'Cinzel',serif;
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-dim:#6B482A;
+  }
+  [data-theme="ixalan"] {
+    --font-display:'Trirong',serif;
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-dim:#3E5220;
+  }
+  [data-theme="phyrexia"] {
+    --font-display:'Syncopate',sans-serif;
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-dim:#213834;
+  }
+  [data-theme="kaldheim"] {
+    --font-display:'Metamorphous',serif;
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#2C405F;
+  }
+  [data-theme="eldraine"] {
+    --font-display:'Cormorant Garamond',serif;
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-dim:#4A3568;
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;padding:40px;background:#0B0A0C;min-height:100vh;">
+
+  <section style="max-width:1700px;margin:0 0 44px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">HOW IT WORKS R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#7A8095;">an addendum to About R6 &middot; placement &middot; the method key &middot; rows &middot; entry links &middot; phone</span>
+    </div>
+    <div style="border:2px solid #FF4D9A;border-radius:14px;background:#141620;padding:24px 28px;">
+      <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:29px;margin:0 0 14px;line-height:1.28;text-wrap:pretty;">A <span style="color:#FF4D9A;">closing appendix</span> on /about: eight rows, one per thing the app decides, each built in the <span style="color:#FF4D9A;">shape the Analysis tab’s sheet already uses</span>. The four methods are <span style="color:#FF4D9A;">words, not new shapes</span>, and an entry that makes one of these decisions links down to its row.</h1>
+      <p style="font-size:14.5px;line-height:1.7;color:#AEB4C6;margin:0 0 18px;max-width:1300px;text-wrap:pretty;">Brief: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">2026-09-28-how-it-works.md</span> and its inventory (branch <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">docs/about-how-it-works-brief</span>). §3 is taken as locked. Page chrome, rail, sheet, index and jump mark are R6’s, unchanged. Frames are <b style="color:#E6E8F0;font-weight:600;">1300&times;820</b> and <b style="color:#E6E8F0;font-weight:600;">390&times;844</b>. <b style="color:#E6E8F0;font-weight:600;">One thing needs a ruling before build</b>: two answers fit none of the four methods (open 1, below).</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">§4.1 placement &middot; appendix</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The chapters run <b style="color:#E6E8F0;font-weight:600;">in the order you would use the app</b>, and this runs by decision, so a fifth chapter would break the ordering it sits in. A page of its own would split the search and the contents, and it is a new route, which the brief rules out. So it goes after 04 with <b style="color:#E6E8F0;font-weight:600;">no numeral</b>, below a hairline in the contents. The intro gains one clause.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">§4.2 the marks &middot; words</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Four mono tags: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">rules text</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">other decks</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">model-written</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">your input</span>. All four are drawn alike. <b style="color:#E6E8F0;font-weight:600;">Every shape in the app already has a meaning</b>: the dot is ownership, the diamond is availability, and the ⓘ disc is “the app wrote this”. A fourth shape would be a fourth thing to learn, and a tag reads the same in a 560px sheet.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">§4.3 entry links &middot; yes, one each</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Every entry that shows one of these decisions gets <b style="color:#E6E8F0;font-weight:600;">one quiet line after its keys</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">How this is decided ↓</span>. It links to one row only, the row behind the entry’s main figure. Nineteen entries have one. The row lists its entries back, under <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">explained in</span>. The landing reuses R6’s jump mark.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">§4.4 phone &middot; same rows, stacked</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Nothing is cut. A closed row is the title, then its tags and its verdict on a second line, at 52px or more. An open row stacks each label over its sentence. The key is a single column. The phone contents gains a fifth row, which is a link and a disclosure like the chapter rows.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s1" style="max-width:1700px;margin-bottom:52px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The method key, and the same tags in the Analysis tab’s sheet</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">The key sits under the appendix heading and defines each tag once. The tag is a single component, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">MethodTag</span>, that takes one of four keys. Its label, and the key’s definition, both come from <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">howItWorksCopy.methods</span>. §1b shows the reuse. The sheet’s rows gain the tags after their label, and nothing else about them moves.</p>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="1a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">The key, at the reading column’s 760</span></div>
+        <div style="width:800px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:20px;">
+          <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px 16px 16px;">
+            <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--fg-faint);">Four ways an answer is reached</h3>
+            <dl style="margin:10px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;">
+              <sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);padding-top:10px;">
+                  <dt style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1;padding:3px 7px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ m.tag }}</span></dt>
+                  <dd style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ m.def }}</dd>
+                </div>
+              </sc-for>
+            </dl>
+          </div>
+          <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;">MethodTag &middot; spec</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ methods }}" as="m" hint-placeholder-count="4"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ m.tag }}</span></sc-for>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A8095;margin-left:10px;">mono 10 (10.5 in the key) &middot; padding 3/6 &middot; radius 4 &middot; 1px --border-strong &middot; --fg-muted &middot; no fill &middot; 5px apart</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1b">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1b</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Later: “How we make these decisions”, with the tags</span></div>
+        <div style="width:560px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--fg);">How we make these decisions</span><span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:13px;">&#10005;</span></div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:16px 18px 18px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+            <p style="margin:0;color:var(--fg-body);">Four things decide a bracket. One of them is a published list, so we can be exact. The other three we work out from your cards, with Commander Spellbook’s index and our own reading of the rules text. Here is where each answer comes from, and what it might miss.</p>
+            <dl style="margin:0;display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ hwmd }}" as="h" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--border);padding-top:10px;">
+                  <dt style="display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;"><span style="font-weight:600;font-size:12px;color:var(--fg);">{{ h.label }}</span><sc-for list="{{ h.tags }}" as="t" hint-placeholder-count="1"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ t }}</span></sc-for><sc-if value="{{ h.gap }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px dashed #7A8095;border-radius:4px;color:#7A8095;white-space:nowrap;">no method fits &middot; open 1</span></sc-if></dt>
+                  <dd style="margin:0;">{{ h.from }}</dd>
+                  <sc-if value="{{ h.misses }}" hint-placeholder-val="{{ false }}"><dd style="margin:0;">{{ h.misses }}</dd></sc-if>
+                </div>
+              </sc-for>
+            </dl>
+            <p style="margin:0;color:var(--fg-faint);">If someone at the table disagrees with your bracket, the argument is usually about one of these four. Knowing which one we are least sure of is how you settle it.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:320px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">why no colour, no shape</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The locked rule is that nothing is a score. <b style="color:#E6E8F0;font-weight:600;">A tag coloured by trust would be a score</b>, so all four share one ink. The row’s own sentences say how sure it is. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">model-written</span> is set exactly like the others, because it is a method and not a warning.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">1b is not this round’s build</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It is drawn to show the tag fits the sheet, as §4.2 asks. The tags go in the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">dt</span> after the label. The <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">from</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">misses</span> lines are unchanged, including <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">deck-analysis.ts:539</span>, whose wrong source (brief §5.1) is engineering’s to fix.</div>
+        </div>
+        <div style="border:1px solid #7A8095;border-style:dashed;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#E6E8F0;margin-bottom:7px;">open 1 &middot; a ruling, not a design call</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;"><b style="color:#E6E8F0;font-weight:600;">Game Changers and prices fit none of the four.</b> Each is someone else’s published list, Wizards’ (through Scryfall) and ManaPool’s. It is not rules text, not other players’ decks, not written by a model, and not your input. The brief locks four and says every row names one. R1 draws them untagged and marks the gap. Two ways to close it: add a fifth, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">published list</span>, or let these two go untagged, with their <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">comes from</span> line naming the list.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s2" style="max-width:1700px;margin-bottom:52px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The appendix at 1300, reached from the contents</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">The frame is scrolled to the end of chapter 04. Rows open with a disclosure and start closed, because eight open rows would be four screens of reference at the foot of the page. A closed row still names two of its four things, its method and its verdict, so scanning the column tells you what kind of answer each one is. A hash link to a row opens it.</p>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="2a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#2a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">2a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, every row closed</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+            <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+            <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:28px 34px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;max-width:760px;">
+                <div style="padding-top:14px;">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:var(--font-display);font-size:15.5px;font-weight:600;color:var(--fg);">Themes</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">in the account menu</span></div>
+                  <div style="margin-top:10px;height:64px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">last entry of 04 &middot; as built</div>
+                </div>
+                <section style="margin-top:28px;border-top:1px solid var(--border);padding-top:18px;">
+                  <h2 style="margin:0;font-family:var(--font-display);font-size:21px;font-weight:700;color:var(--fg);">How the app reaches its answers</h2>
+                  <p style="margin:4px 0 0;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Grouped by what the app decides. Each row says where an answer comes from, how it is decided, how often it refreshes, and what it might miss.</p>
+                  <div style="margin-top:14px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px 16px 14px;">
+                    <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--fg-faint);">Four ways an answer is reached</h3>
+                    <dl style="margin:8px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px;">
+                      <sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+                        <div style="display:flex;align-items:baseline;gap:10px;border-top:1px solid var(--border);padding-top:8px;">
+                          <dt style="flex:none;width:100px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ m.tag }}</span></dt>
+                          <dd style="margin:0;font-size:12.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ m.short }}</dd>
+                        </div>
+                      </sc-for>
+                    </dl>
+                  </div>
+                  <div style="margin-top:16px;">
+                    <sc-for list="{{ rowsClosed }}" as="r" hint-placeholder-count="8">
+                      <div style="border-top:1px solid var(--border);">
+                        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-height:44px;padding:6px 10px;margin:0 -10px;border-radius:6px;background:{{ r.wash }};">
+                          <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--fg);">{{ r.title }}</h3>
+                          <span style="display:flex;gap:5px;flex-wrap:wrap;"><sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="2"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ t }}</span></sc-for><sc-if value="{{ r.noTags }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px dashed #7A8095;border-radius:4px;color:#7A8095;white-space:nowrap;">no method fits &middot; open 1</span></sc-if></span>
+                          <span style="flex:1;"></span>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.verdict }}</span>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:14px;text-align:right;">{{ r.chev }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </section>
+              </div>
+              <nav aria-label="Contents" style="width:216px;flex:none;height:764px;display:flex;flex-direction:column;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg-faint);">Find an entry</span></div>
+                <div style="margin-top:10px;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;color:var(--fg-muted);"><span style="flex:1;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">04</span> Playing and tuning</span></div>
+                    <sc-for list="{{ rail04 }}" as="e" hint-placeholder-count="5"><div style="padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;color:var(--fg-muted);">{{ e }}</div></sc-for>
+                  </div>
+                  <div style="border-top:1px solid var(--border);padding-top:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;background:var(--elevated);color:var(--fg);"><span style="flex:1;min-width:0;">How the app reaches its answers</span></div>
+                    <sc-for list="{{ rowsClosed }}" as="r" hint-placeholder-count="8"><div style="padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;color:var(--fg-muted);">{{ r.title }}</div></sc-for>
+                  </div>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="width:330px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">heading, no numeral</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It is the chapter <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">h2</span> (Cinzel 21, 16 on a phone) and the chapter hairline, with <b style="color:#E6E8F0;font-weight:600;">no mono numeral</b>. The numeral is what makes a chapter a step in the loop, and this is not a step. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">id="how-it-works"</span>.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the row, closed</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It is one <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">button</span> of at least 44px, with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-expanded</span>, wrapping an <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">h3</span>. The title is Plex Sans 14/600 <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span>, which is the sheet’s <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">dt</span> scaled to the page. It is sans rather than Cinzel so a row never reads as an entry. The tags follow the title. The verdict sits at the right in mono 10.5 <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-faint</span> and is one word: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">exact</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">partial</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">exact and partial</span> or <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">written</span>. None of them is coloured.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">contents</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">After 04 there is a hairline, then a group row with no numeral and no count, then the eight row titles in entry-row type. Rows are not <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">AboutEntry</span>s. They carry no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">since</span> and no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">new</span>, and they are never listed in the sheet or the index. <b style="color:#E6E8F0;font-weight:600;">Search matches row titles too</b>, so the count’s denominator grows by 8.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s3" style="max-width:1700px;margin-bottom:52px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The phone reduction, at 390</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">Nothing is dropped. What changes is the arrangement: the tags wrap under the title, the verdict joins them, and an open row stacks each label over its sentence instead of beside it. At 358px a 128px label column would leave the sentences about 210px.</p>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="3a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#3a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">3a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, the key and closed rows</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+          <div style="padding:0 16px;">
+            <section style="margin-top:18px;border-top:1px solid var(--border);padding-top:18px;">
+              <h2 style="margin:0;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--fg);">How the app reaches its answers</h2>
+              <p style="margin:4px 0 0;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Grouped by what the app decides. Each row says where an answer comes from, how it is decided, how often it refreshes, and what it might miss.</p>
+              <div style="margin-top:12px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px 12px;">
+                <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--fg-faint);">Four ways an answer is reached</h3>
+                <dl style="margin:6px 0 0;display:flex;flex-direction:column;">
+                  <sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+                    <div style="display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);padding:8px 0;">
+                      <dt style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ m.tag }}</span></dt>
+                      <dd style="margin:0;font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ m.short }}</dd>
+                    </div>
+                  </sc-for>
+                </dl>
+              </div>
+              <div style="margin-top:12px;">
+                <sc-for list="{{ rowsClosed }}" as="r" hint-placeholder-count="8">
+                  <div style="border-top:1px solid var(--border);">
+                    <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:9px 8px;margin:0 -8px;border-radius:6px;">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                        <h3 style="margin:0;font-size:14.5px;font-weight:600;line-height:1.35;color:var(--fg);">{{ r.title }}</h3>
+                        <span style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;"><sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="2"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ t }}</span></sc-for><sc-if value="{{ r.noTags }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px dashed #7A8095;border-radius:4px;color:#7A8095;">open 1</span></sc-if><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:4px;">{{ r.verdict }}</span></span>
+                      </div>
+                      <span style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:flex-end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.chev }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+            <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div id="3b">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#3b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">3b</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, landed on Roles and targets</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+          <div style="padding:20px 16px 0;">
+            <sc-for list="{{ rowsPhoneLanded }}" as="r" hint-placeholder-count="3">
+              <div style="border-top:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:9px 8px;margin:0 -8px;border-radius:6px;background:{{ r.wash }};">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                    <h3 style="margin:0;font-size:14.5px;font-weight:600;line-height:1.35;color:var(--fg);">{{ r.title }}</h3>
+                    <span style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;"><sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="2"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ t }}</span></sc-for><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-left:4px;">{{ r.verdict }}</span></span>
+                  </div>
+                  <span style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:flex-end;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.chev }}</span>
+                </div>
+                <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                  <dl style="margin:6px 0 0;display:flex;flex-direction:column;gap:12px;padding-bottom:16px;">
+                    <sc-for list="{{ r.fields }}" as="f" hint-placeholder-count="4">
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <dt style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.label }}</dt>
+                        <dd style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ f.text }}</dd>
+                      </div>
+                    </sc-for>
+                    <div style="display:flex;flex-direction:column;gap:3px;">
+                      <dt style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">explained in</dt>
+                      <dd style="margin:0;display:flex;flex-direction:column;"><sc-for list="{{ r.entries }}" as="e" hint-placeholder-count="3"><a href="#3b" style="min-height:44px;display:flex;align-items:center;font-size:13.5px;border-bottom:none;color:var(--accent);">{{ e }}</a></sc-for></dd>
+                    </div>
+                  </dl>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+            <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div id="3c">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#3c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">3c</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone contents, fifth row</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+          <div style="padding:20px 16px;">
+            <h1 style="font-family:var(--font-display);font-weight:700;font-size:23px;line-height:1.2;color:var(--fg);margin:0;">What The 99 does</h1>
+            <p style="margin:10px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Four chapters, in the order you would use them, then how the app reaches its answers. Each entry shows the thing it describes and links to where it lives.</p>
+            <nav aria-label="Contents" style="margin-top:18px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Contents</div>
+              <div style="margin-top:8px;height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:14px;color:var(--fg-faint);">Find an entry</span></div>
+              <div style="margin-top:4px;">
+                <sc-for list="{{ phChapters }}" as="ch" hint-placeholder-count="4">
+                  <div style="border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;min-height:44px;"><span style="flex:1;display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;color:var(--accent);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ ch.id }}</span>{{ ch.title }}</span><span style="min-width:64px;height:44px;display:flex;align-items:center;justify-content:flex-end;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ ch.fig }}<span style="font-size:10px;">▾</span></span></div></div>
+                </sc-for>
+                <div style="border-bottom:1px solid var(--border);margin-top:8px;border-top:1px solid var(--border-strong);">
+                  <div style="display:flex;align-items:center;min-height:44px;"><span style="flex:1;display:flex;align-items:center;min-height:44px;font-size:14px;color:var(--accent);">How the app reaches its answers</span><span style="min-width:64px;height:44px;display:flex;align-items:center;justify-content:flex-end;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">8 rows<span style="font-size:10px;">▴</span></span></div>
+                  <sc-for list="{{ rowsClosed }}" as="r" hint-placeholder-count="8"><div style="min-height:44px;display:flex;align-items:center;padding-left:26px;font-size:13.5px;color:var(--fg-body);">{{ r.title }}</div></sc-for>
+                </div>
+              </div>
+            </nav>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+            <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:300px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">measurements</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Closed row: 52px or more, 9/8 padding, title 14.5/600, with the tags and verdict on a second line 6px under it. A 44px disclosure sits at the right. Open body: label is mono 10.5 over its sentence at 13.5/1.55, 12px between fields. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">explained in</span> links are 44px rows. The jump wash spills 8px into the gutter, as R6.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">intro, one clause</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">pageIntro</span> gains “, then how the app reaches its answers”. It is the appendix’s only door from the top of the page, alongside the contents. It goes to /copy-review with the rest.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s4" style="max-width:1700px;margin-bottom:52px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">One open row per method, at the 760 column</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">This is the sheet’s row shape carried onto the page. The sheet has <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">dt</span> then <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">from</span> then <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">misses</span>. The page has the same <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">dl</span> with its four things labelled, because four unlabelled sentences in a row read as a paragraph. <b style="color:#E6E8F0;font-weight:600;">The sheet’s lesson holds</b>: an exact row’s last line is one short statement, and a partial row’s names what it misses. 4e is Brackets, whose last field is the sheet’s own rows. 4f is the open-1 case.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,800px);gap:24px;">
+      <sc-for list="{{ perMethod }}" as="p" hint-placeholder-count="6">
+        <div id="{{ p.id }}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#{{ p.id }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">{{ p.id }}</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">{{ p.label }}</span></div>
+          <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:6px 20px 8px;">
+            <div style="border-top:1px solid var(--border);margin-top:14px;">
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-height:44px;padding:6px 10px;margin:0 -10px;border-radius:6px;">
+                <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--fg);">{{ p.r.title }}</h3>
+                <span style="display:flex;gap:5px;flex-wrap:wrap;"><sc-for list="{{ p.r.tags }}" as="t" hint-placeholder-count="2"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ t }}</span></sc-for><sc-if value="{{ p.r.noTags }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px dashed #7A8095;border-radius:4px;color:#7A8095;white-space:nowrap;">no method fits &middot; open 1</span></sc-if></span>
+                <span style="flex:1;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ p.r.verdict }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:14px;text-align:right;">▴</span>
+              </div>
+              <dl style="margin:4px 0 0;display:grid;grid-template-columns:128px minmax(0,1fr);gap:9px 16px;padding-bottom:14px;">
+                <sc-for list="{{ p.r.fields }}" as="f" hint-placeholder-count="4">
+                  <dt style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);padding-top:2px;">{{ f.label }}</dt>
+                  <dd style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ f.text }}<sc-for list="{{ f.sub }}" as="s" hint-placeholder-count="0"><div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);"><span style="font-weight:600;font-size:12.5px;color:var(--fg);">{{ s.label }}</span><span style="display:block;margin-top:2px;">{{ s.text }}</span></div></sc-for></dd>
+                </sc-for>
+                <sc-if value="{{ p.r.hasEntries }}" hint-placeholder-val="{{ true }}">
+                  <dt style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);padding-top:2px;">explained in</dt>
+                  <dd style="margin:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;line-height:1.55;"><sc-for list="{{ p.r.entries }}" as="e" hint-placeholder-count="3"><a href="#{{ p.id }}">{{ e }}</a></sc-for></dd>
+                </sc-if>
+              </dl>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:12.5px;line-height:1.6;color:#9BA1B4;max-width:780px;text-wrap:pretty;">{{ p.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s5" style="max-width:1700px;margin-bottom:52px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§5</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">From an entry to its row, and back</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">5a shows the entry with its link line after the keys. It is the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">ProvenanceOpener</span>’s quiet tone, with <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">↓</span> for a jump down the page where the sheet’s opener uses <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">→</span> to open a sheet. 5b shows the landing: the row opens, R6’s jump wash takes its head, focus moves to its <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">h3</span>, and it lands 20px from the top. The rail’s current row moves to the row. Back returns to the entry.</p>
+    <div style="display:flex;flex-direction:column;gap:28px;">
+      <div id="5a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#5a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">5a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, the entry, with the link line</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+            <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+            <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:28px 34px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;max-width:760px;">
+                <div style="padding-top:14px;border-top:1px solid var(--border);">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:0 -10px;padding:0 10px;"><h3 style="margin:0;font-family:var(--font-display);font-size:15.5px;font-weight:600;color:var(--fg);">Why a card is filed under Ramp</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+                  <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">The strip counts cards by the job they do, because that is usually how a deck comes up short: one board wipe is a problem in a way eleven creatures rarely is. The recommended mix comes from what other decks with your commander actually run, where we have enough of them, and from a common starting point where we do not. The strip says which. Either way it is not a rule: a role over its number is fine and says so by saying nothing.</p>
+                  <div style="margin-top:10px;height:150px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">figure &middot; the role strip, as built</div>
+                  <ol style="margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;">
+                    <li style="display:flex;align-items:flex-start;gap:8px;"><span style="flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">the second figure is the recommendation, so 12 ramp against 10 is a surplus rather than an error. Nothing is capped.</span></li>
+                    <li style="display:flex;align-items:flex-start;gap:8px;"><span style="flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">a short role is the one thing here that names what to do next, and `consider` goes straight to cards that would fill it.</span></li>
+                  </ol>
+                  <div style="margin-top:10px;display:flex;"><span style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);outline:2px solid #FF4D9A;outline-offset:6px;border-radius:2px;"><span style="border-bottom:1px dotted var(--border-dashed);">How this is decided</span><span aria-hidden="true">↓</span></span></div>
+                </div>
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:var(--font-display);font-size:15.5px;font-weight:600;color:var(--fg);">Building toward decks like yours</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+                  <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Fill, the last 31 and the Add panel all build toward what other decks with your commander actually run, rather than one recipe for every deck.</p>
+                </div>
+              </div>
+              <nav aria-label="Contents" style="width:216px;flex:none;display:flex;flex-direction:column;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg-faint);">Find an entry</span></div>
+                <div style="margin-top:10px;display:flex;flex-direction:column;">
+                  <div style="padding:7px 10px;font-size:13px;color:var(--fg-muted);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">03</span> Building the 99</div>
+                  <sc-for list="{{ rail03 }}" as="e" hint-placeholder-count="6"><div style="padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;background:{{ e.bg }};color:{{ e.fg }};">{{ e.t }}</div></sc-for>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="5b" style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#5b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">5b</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, landed on #how-roles</span></div>
+          <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+            <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+              <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+              <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:20px 34px 28px;align-items:flex-start;">
+                <div style="flex:1;min-width:0;max-width:760px;">
+                  <sc-for list="{{ rowsLanded }}" as="r" hint-placeholder-count="4">
+                    <div style="border-top:1px solid var(--border);">
+                      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-height:44px;padding:6px 10px;margin:0 -10px;border-radius:6px;background:{{ r.wash }};">
+                        <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--fg);">{{ r.title }}</h3>
+                        <span style="display:flex;gap:5px;flex-wrap:wrap;"><sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="2"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px solid var(--border-strong);border-radius:4px;color:var(--fg-muted);white-space:nowrap;">{{ t }}</span></sc-for><sc-if value="{{ r.noTags }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 6px;border:1px dashed #7A8095;border-radius:4px;color:#7A8095;white-space:nowrap;">no method fits &middot; open 1</span></sc-if></span>
+                        <span style="flex:1;"></span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.verdict }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);width:14px;text-align:right;">{{ r.chev }}</span>
+                      </div>
+                      <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                        <dl style="margin:4px 0 0;display:grid;grid-template-columns:128px minmax(0,1fr);gap:9px 16px;padding-bottom:14px;">
+                          <sc-for list="{{ r.fields }}" as="f" hint-placeholder-count="4">
+                            <dt style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);padding-top:2px;">{{ f.label }}</dt>
+                            <dd style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ f.text }}</dd>
+                          </sc-for>
+                          <dt style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);padding-top:2px;">explained in</dt>
+                          <dd style="margin:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;line-height:1.55;"><sc-for list="{{ r.entries }}" as="e" hint-placeholder-count="3"><a href="#5a">{{ e }}</a></sc-for></dd>
+                        </dl>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                <nav aria-label="Contents" style="width:216px;flex:none;display:flex;flex-direction:column;padding-top:8px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                  <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg-faint);">Find an entry</span></div>
+                  <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+                    <div style="padding:7px 10px;font-size:13px;color:var(--fg-muted);">How the app reaches its answers</div>
+                    <sc-for list="{{ railRowsLanded }}" as="e" hint-placeholder-count="8"><div style="padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;background:{{ e.bg }};color:{{ e.fg }};">{{ e.t }}</div></sc-for>
+                  </div>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="width:330px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">one link, one row</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">An entry links to the row behind its main figure, and to no other. Discover shows a fit score and a themes line, and it links to <b style="color:#E6E8F0;font-weight:600;">Themes</b>, because the themes line is what only Discover shows. The map is in the copy file (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">entryRow</span>), keyed by entry id, so an entry with no key draws no line.</div>
+          </div>
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the row opens itself</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">A hash that names a row (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#how-roles</span>) opens that row before the scroll, so the landing measures the open height. Other open rows stay open. Once opened, a row stays open for the visit. The wash clears on R6’s rule: when the row leaves the upper band.</div>
+          </div>
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">Written text has no entry yet</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">No entry on About explains the Overview or Suggested changes today, so that row draws no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">explained in</span>. The Analysis launch entries (R6 open 2) should key to it when they land.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kamigawa&quot;,&quot;amonkhet&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const T = { rules: "rules text", decks: "other decks", model: "model-written", you: "your input" };
+    const L = { from: "comes from", how: "decided by", refresh: "refreshes", exact: "exact or partial" };
+    const methods = [
+      { tag: T.rules, short: "Read from a card’s own rules text and type line.", def: "Read from a card’s own rules text and type line. It is a reading, so a card worded in an unusual way can slip past it." },
+      { tag: T.decks, short: "Measured from other players’ decks, on EDHREC and Commander Spellbook.", def: "Measured from decks other players have built, as EDHREC and Commander Spellbook record them. It is as good as their data, and as fresh as our last read of it." },
+      { tag: T.model, short: "Written by a model, then checked before it is shown.", def: "Written by a model, from figures the app has already worked out. Every answer is checked before it is shown. It is written rather than measured." },
+      { tag: T.you, short: "What you told the app: your cards, your decks, your choices.", def: "What you have told the app: your collection, your decks, and the choices you make in them. It is exactly as right as what you entered." },
+    ];
+    const rows = [
+      { id: "brackets", title: "Brackets", tags: [T.rules, T.decks], verdict: "partial",
+        fields: [
+          { label: L.from, text: "The Commander Format Panel’s bracket rules, which we transcribe. Game Changers are Wizards’ list, as Scryfall carries it. Land denial and extra turns combine Commander Spellbook’s estimate with our reading of the rules text. Two-card infinites come from Commander Spellbook. Tutors come from the rules text." },
+          { label: L.how, text: "The lowest bracket your cards satisfy. 1 and 2 stay a range, and so do 4 and 5: which one it is, is yours to say. Whether a deck is 3 or 4 turns on whether it can find every piece of one combo, and a piece in the command zone counts as found." },
+          { label: L.refresh, text: "Worked out when you press Analyze, and kept. An edit makes it stale; time never does. Card data and combos refresh weekly." },
+          { label: L.exact, text: "Partial, count by count:", sub: [
+            { label: "Game Changers", text: "Exact." },
+            { label: "Mass land denial", text: "Between them they name 22 of the 24 cards we would expect. We miss Wave of Vitriol and Cataclysm." },
+            { label: "Extra turns", text: "We miss turns made by one card looping on itself, like Nexus of Fate." },
+            { label: "Two-card infinites", text: "We miss combos needing three or more cards, and ones that only work with a particular printing." },
+            { label: "Tutors", text: "Not measured yet. ⚠ brief §5.5: engineering states it, then this line quotes it." },
+          ] },
+        ], entries: ["The marks on a decklist row", "The other half of a combo"] },
+      { id: "roles", title: "Roles and targets", tags: [T.rules, T.decks], verdict: "partial",
+        fields: [
+          { label: L.from, text: "A card’s role is read from its rules text and type line. The deck’s targets come from EDHREC: what decks with your commander run, weighted by how often they run it." },
+          { label: L.how, text: "Each role is a pattern in the rules text, and one card can fill several. A target comes from the closest group of decks we can measure: your pair, then your commander, then decks in your colors, then decks with as many colors. With none, it falls back to 10 ramp, 10 draw, 8 removal, 3 wipes and 37 lands, and the strip says which it used." },
+          { label: L.refresh, text: "Roles are read live. The measured targets update monthly. The fallback never moves." },
+          { label: L.exact, text: "Partial. We state no miss rate for the role reading. The fit score, Role Coverage on a commander’s page and the thinnest role in Why this commander all use the fallback, never the measured targets." },
+        ], entries: ["Why a card is filed under Ramp", "Building toward decks like yours", "Why this commander, and what the deck would be made of", "How much we fill in for you"] },
+      { id: "themes", title: "Themes", tags: [T.decks, T.rules], verdict: "exact and partial",
+        fields: [
+          { label: L.from, text: "Two different things. A commander’s themes are EDHREC’s tags. A card’s themes are 21 patterns we read from its rules text." },
+          { label: L.how, text: "Commander themes drive Discover’s line, Help me choose and Something new, and what you have played counts every deck you have, drafts included. Card themes drive only stand-ins and Find a deck." },
+          { label: L.refresh, text: "Commander themes update monthly. Card themes are read live." },
+          { label: L.exact, text: "Commander themes are exact to EDHREC. Card themes are partial, and we state no miss rate." },
+        ], entries: ["Commanders worth acquiring, and what each order means"] },
+      { id: "recommendations", title: "Commander recommendations", tags: [T.decks, T.you], verdict: "exact",
+        fields: [
+          { label: L.from, text: "Your collection, set against each commander’s list on EDHREC." },
+          { label: L.how, text: "A fit score adds Pool 15, Roles 25 and Synergy 60. Pool is full at 200 legal cards. Synergy is how much of the commander’s list you own. With no list, the score is out of 40. Something new needs you to own 30% of the list. Ready to build shows two of the top 28, changing daily at midnight UTC." },
+          { label: L.refresh, text: "Your collection is read live. The lists update monthly." },
+          { label: L.exact, text: "The arithmetic is exact. Its Roles part uses the fallback targets." },
+        ], entries: ["Ready to build, on Home", "How a fit score is made", "Commanders you can build today", "Help me choose"] },
+      { id: "availability", title: "Availability and claims", tags: [T.you], verdict: "exact",
+        fields: [
+          { label: L.from, text: "Your collection and your decks, with the copies you have assigned and the ones you have pulled." },
+          { label: L.how, text: "A committed deck claims from its newest version. A deck never committed claims softly, from its list. Commanders claim too. When decks share a copy, the one that sleeved it first keeps it, unless you give it to another." },
+          { label: L.refresh, text: "Live." },
+          { label: L.exact, text: "Exact." },
+        ], entries: ["Free, in a draft, in use, over-committed", "When a card you own isn’t free", "Which deck gets a shared copy", "What a replace did to your decks", "Where your collection is committed"] },
+      { id: "prices", title: "Prices", tags: [], noTags: true, verdict: "exact",
+        fields: [
+          { label: L.from, text: "ManaPool’s singles feed." },
+          { label: L.how, text: "One printing per card: one in stock first, then non-foil over foil, then the cheapest. No figure means ManaPool has never stocked it. Foil-only is a real state. Sold out means the newest price is from an earlier week." },
+          { label: L.refresh, text: "Weekly, Monday 09:00 UTC." },
+          { label: L.exact, text: "Exact to the feed." },
+        ], entries: ["What a card costs to buy", "Set completion: what you are missing", "What you would need to buy"] },
+      { id: "stand-ins", title: "Stand-ins and Find a deck", tags: [T.rules, T.decks], verdict: "partial",
+        fields: [
+          { label: L.from, text: "The rules text, your deck’s colors, Commander Spellbook, card themes and EDHREC." },
+          { label: L.how, text: "A stand-in shares a job at the same or lower mana value, and a card with no role gets none. Find a deck puts a combo the card completes first, then a theme it joins, then EDHREC synergy, then the name. A staple’s decks are listed by name alone." },
+          { label: L.refresh, text: "Live." },
+          { label: L.exact, text: "Partial, because it rests on the role and theme readings above." },
+        ], entries: ["Cheaper stand-ins", "Find a deck for it"] },
+      { id: "written", title: "Written text and credits", tags: [T.model], verdict: "written",
+        fields: [
+          { label: L.from, text: "A model writes the opening sentence of Why this commander, the Overview, Suggested changes and Look deeper." },
+          { label: L.how, text: "In the Overview and Suggested changes the figures are the app’s, and the model only phrases them. Look deeper turns your words into the app’s own theme, card, budget and bracket choices, and never names a commander. Every answer is checked, and one that fails is not shown. Credits: 10 a day for the owner and 3 for friends, over a rolling 24 hours, shared by the Overview, Suggested changes and Look deeper. Only an answer that arrives spends one. The commander sentence costs you nothing." },
+          { label: L.refresh, text: "The commander sentence updates monthly. The Overview and Suggested changes are written when you press, and the Overview is kept until the list changes." },
+          { label: L.exact, text: "Neither. It is written, not measured." },
+        ], entries: [] },
+    ];
+    const shape = (openId, washId) => rows.map(r => ({
+      ...r, noTags: !!r.noTags, open: r.id === openId, chev: r.id === openId ? "▴" : "▾",
+      wash: r.id === washId ? "var(--elevated)" : "transparent",
+      hasEntries: r.entries.length > 0,
+      fields: r.fields.map(f => ({ ...f, sub: f.sub || [] })),
+    }));
+    const byId = Object.fromEntries(shape(null, null).map(r => [r.id, r]));
+    const landed = shape("roles", "roles");
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      methods,
+      railIcons: [1, 2, 3, 4, 5],
+      tabs: ["HOME", "COLLECTION", "COMMANDERS", "DECKS", "YOU"],
+      rowsClosed: shape(null, null),
+      rowsLanded: landed.slice(1, 5),
+      rowsPhoneLanded: landed.slice(1, 3),
+      rail04: ["Where your collection is committed", "Which deck gets a shared copy", "Cards you are proxying", "Themes"],
+      rail03: [
+        { t: "How much we fill in for you", bg: "transparent", fg: "var(--fg-muted)" },
+        { t: "The marks on a decklist row", bg: "transparent", fg: "var(--fg-muted)" },
+        { t: "Locked cards", bg: "transparent", fg: "var(--fg-muted)" },
+        { t: "Why a card is filed under Ramp", bg: "var(--elevated)", fg: "var(--fg)" },
+        { t: "Building toward decks like yours", bg: "transparent", fg: "var(--fg-muted)" },
+        { t: "The other half of a combo", bg: "transparent", fg: "var(--fg-muted)" },
+      ],
+      railRowsLanded: rows.map(r => ({ t: r.title, bg: r.id === "roles" ? "var(--elevated)" : "transparent", fg: r.id === "roles" ? "var(--fg)" : "var(--fg-muted)" })),
+      phChapters: [
+        { id: "01", title: "Your collection", fig: "8 entries" },
+        { id: "02", title: "Finding a commander", fig: "8 entries" },
+        { id: "03", title: "Building the 99", fig: "19 entries" },
+        { id: "04", title: "Playing and tuning", fig: "9 entries" },
+      ],
+      hwmd: [
+        { label: "Game changers", tags: [], gap: true, from: "Wizards publishes the list, and we check your 99 against it. This count is exact.", misses: "" },
+        { label: "Mass land denial", tags: [T.decks, T.rules], gap: false, from: "There is no official list, so we combine Commander Spellbook’s estimate and our own reading of the rules text. Between them they name 22 of the 24 cards we would expect.", misses: "We miss Wave of Vitriol and Cataclysm, which wreck everyone’s lands without saying so in words we can match." },
+        { label: "Extra turns", tags: [T.rules], gap: false, from: "We read the rules text: {EXTRA_TURN_DETECTION.basis}.", misses: "We miss turns made by one card looping on itself, like Nexus of Fate." },
+        { label: "Two-card infinites", tags: [T.decks], gap: false, from: "We use {COMBO_DETECTION.basis}.", misses: "We miss combos needing three or more cards, and ones that only work with a particular printing." },
+      ],
+      perMethod: [
+        { id: "4a", label: "rules text · Roles and targets", r: byId.roles, note: "The row pairs the reading with the measurement, which is what most rows do. The last field names the three places that use the fallback (brief §5.4). It is true today, and a reader who sees 10/10/8/3 on a commander page and a different number on the deck is owed the reason." },
+        { id: "4b", label: "other decks · Commander recommendations", r: byId.recommendations, note: "The fit score is the only score on this page, and it was already on the app. The row explains its sum rather than scoring anything. Its verdict is exact, and the fallback caveat sits inside that one field rather than making the row partial." },
+        { id: "4c", label: "model-written · Written text and credits", r: byId.written, note: "This is the one row whose last field is neither exact nor partial. It says so plainly, and its tag is set like every other. No entry explains these surfaces yet, so there is no explained in line." },
+        { id: "4d", label: "your input · Availability and claims", r: byId.availability, note: "An exact row is short on purpose. “Live.” and “Exact.” are the flat statements that, beside the caveats in 4a, show which answers are sure. It is the sheet’s Game Changers contrast carried across eight rows." },
+        { id: "4e", label: "the sheet’s own rows · Brackets", r: byId.brackets, note: "The last field holds the sheet’s detection rows, each count with its own line. They are built from the same constants (MLD_DETECTION and the rest), so the page and the sheet cannot drift apart. Tutors is drawn as a placeholder: its accuracy is stated nowhere (brief §5.5), and this line waits for engineering." },
+        { id: "4f", label: "open 1 · Prices, which fits no method", r: byId.prices, note: "Drawn untagged, with the gap marked in canvas ink, which is not product. If a fifth method is ruled in, published list goes here and on Game Changers, and nothing else moves." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
