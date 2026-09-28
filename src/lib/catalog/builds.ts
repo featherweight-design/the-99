@@ -91,7 +91,17 @@ export async function recordBuild<T>(
   report: (result: T) => string | null = () => null,
   deps: { start: typeof startBuild; finish: typeof finishBuild } = { start: startBuild, finish: finishBuild },
 ): Promise<T> {
-  const row = await deps.start(db, kind);
+  let row: BuildRow;
+  try {
+    row = await deps.start(db, kind);
+  } catch (err) {
+    // A database migrations have not reached (0074): the build runs unrecorded, with a warning,
+    // as `catalog_refreshes` is written. That is safe because a copy reads the same table and
+    // refuses on its absence. Any other failure to record stops the build.
+    if (!isMissingTable(err)) throw err;
+    console.warn(`catalog_builds does not exist here yet (migration 0074): this ${kind} build is not recorded, and no copy of it can run.`);
+    return run();
+  }
   let result: T;
   try {
     result = await run();
@@ -102,4 +112,10 @@ export async function recordBuild<T>(
   }
   await deps.finish(db, row.id, kind, true, report(result));
   return result;
+}
+
+/** Postgres `undefined_table`, whether raised directly or wrapped by the query builder. */
+function isMissingTable(err: unknown): boolean {
+  const code = (e: unknown) => (e && typeof e === "object" && "code" in e ? (e as { code: unknown }).code : undefined);
+  return code(err) === "42P01" || code((err as { cause?: unknown } | null)?.cause) === "42P01";
 }

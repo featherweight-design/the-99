@@ -50,4 +50,21 @@ describe("recordBuild", () => {
       .rejects.toThrow("variants broke");
     expect(calls).toEqual(["start", "finish b1 combos failed"]);
   });
+
+  // A catalog database migrations have not reached: the ingest still runs, unrecorded, rather
+  // than failing before it starts. Any other ledger failure stops it.
+  it("runs unrecorded when the ledger table does not exist yet", async () => {
+    const run = vi.fn(async () => 5);
+    const missing = Object.assign(new Error("wrapped"), { cause: { code: "42P01" } });
+    const deps = { start: vi.fn(async () => { throw missing; }), finish: vi.fn() } as never;
+    expect(await recordBuild({} as never, "combos", run, () => null, deps)).toBe(5);
+    expect(run).toHaveBeenCalledOnce();
+  });
+
+  it("stops the build when recording fails for any other reason", async () => {
+    const run = vi.fn(async () => 5);
+    const deps = { start: vi.fn(async () => { throw Object.assign(new Error("denied"), { code: "42501" }); }), finish: vi.fn() } as never;
+    await expect(recordBuild({} as never, "combos", run, () => null, deps)).rejects.toThrow("denied");
+    expect(run).not.toHaveBeenCalled();
+  });
 });
