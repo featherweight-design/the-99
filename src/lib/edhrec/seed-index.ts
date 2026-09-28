@@ -318,17 +318,24 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
  * the whole rebuild, and the reasoning for that is at the call site.
  */
 async function clearPersistedScores(): Promise<void> {
-  await db.transaction(async (tx) => {
-    // EXCLUSIVE against every in-flight score write — see `SCORE_INDEX_LOCK`.
-    // Without it the delete can land between a writer's generation check and
-    // its inserts, and those pre-rebuild rows survive the clear. In a
-    // transaction because `pg_advisory_xact_lock` is released at commit, and a
-    // bare statement would hold it for no span at all.
-    await tx.execute(
-      sql`select pg_advisory_xact_lock(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
-    );
-    await tx.delete(commanderScores);
-  });
+  await db.transaction((tx) => clearPersistedScoresIn(tx));
+}
+
+/**
+ * The clear's body, on a transaction the caller owns. `db:copy:index` runs it inside its
+ * publish, so old scores are never served against the copied index and a copy that fails to
+ * clear them rolls back whole.
+ */
+export async function clearPersistedScoresIn(tx: Pick<typeof db, "execute" | "delete">): Promise<void> {
+  // EXCLUSIVE against every in-flight score write — see `SCORE_INDEX_LOCK`.
+  // Without it the delete can land between a writer's generation check and
+  // its inserts, and those pre-rebuild rows survive the clear. In a
+  // transaction because `pg_advisory_xact_lock` is released at commit, and a
+  // bare statement would hold it for no span at all.
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${SCORE_INDEX_LOCK}, 0))`,
+  );
+  await tx.delete(commanderScores);
 }
 
 /**
