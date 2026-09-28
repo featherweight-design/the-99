@@ -135,7 +135,11 @@ export function FirstRunChecklist() {
 
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px]">
         {/* Step 1 — live */}
-        <div className="flex flex-none flex-col items-center gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] p-[18px_16px] text-center sm:flex-row sm:gap-[18px] sm:p-[18px] sm:text-left">
+        <div className="flex flex-none flex-col items-center gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] p-[18px_16px] text-center sm:flex-row sm:items-start sm:gap-[18px] sm:p-[18px] sm:text-left">
+          {/* `sm:items-start` on the card above keeps this pinned while the text
+              column grows by a paste panel or a whole review screen. The
+              handoff's `align-items: center` was drawn for the rest state only;
+              Hugh ruled on 2026-09-28 that the fan stays top-aligned throughout. */}
           <CardFan />
           <div className="flex w-full min-w-0 flex-col items-center gap-[12px] sm:w-auto sm:flex-auto sm:items-stretch sm:gap-[7px]">
             <span className="font-display text-[19px] font-semibold text-[color:var(--fg)]">
@@ -149,8 +153,17 @@ export function FirstRunChecklist() {
             </p>
             {/* ReplaceFlow rather than UploadEntry: preview and confirm are its
                 steps to own, and first run reaches them by the same route the
-                replace page does. */}
-            <ReplaceFlow currentCardCount={0} entry="buttons" embedded />
+                replace page does.
+
+                The wrapper undoes this card's centring for everything the flow
+                draws after its buttons. The card is `items-center` and, on the
+                phone, `text-center`, both drawn for the rest state; left to leak,
+                they shrank the paste panel to its content (a narrow textarea) and
+                centred the review screen's `Unmatched` / `Parse errors` headings
+                over lists that are not. Prod walk 2026-09-28, items 9 and 10. */}
+            <div className="w-full self-stretch text-left">
+              <ReplaceFlow currentCardCount={0} entry="buttons" embedded />
+            </div>
           </div>
         </div>
 

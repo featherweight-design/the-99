@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
@@ -62,6 +62,26 @@ describe("FirstRunChecklist", () => {
     render(<FirstRunChecklist />);
     expect(screen.queryByRole("heading", { name: "Replace collection" })).toBeNull();
     expect(screen.queryByText("‹ Collection")).toBeNull();
+  });
+
+  // Class-level only: jsdom lays nothing out, so these say the rule is in place and
+  // `probe:onboarding` says it lands. Prod walk 2026-09-28, items 3, 9 and 10.
+  it("pins the card fan to the top of step 1 from sm, not the card's middle", () => {
+    render(<FirstRunChecklist />);
+    const card = screen.getByRole("button", { name: "Upload a CSV" }).closest(".rounded-\\[14px\\]");
+    expect(card?.className).toContain("sm:items-start");
+  });
+
+  it("does not let the step card's centring reach the paste panel", () => {
+    render(<FirstRunChecklist />);
+    fireEvent.click(screen.getByRole("button", { name: "Paste a list" }));
+    const textarea = screen.getByRole("textbox", { name: "Paste your card list" });
+    // The nearest alignment rule above the textarea must be the flow's own left-aligned,
+    // full-width wrapper, not the card's `text-center` / `items-center`.
+    const wrapper = textarea.closest(".text-left, .text-center");
+    expect(wrapper?.className).toContain("text-left");
+    expect(wrapper?.className).toContain("w-full");
+    expect(wrapper?.className).toContain("self-stretch");
   });
 
   it("hides the card fan from the accessibility tree", () => {

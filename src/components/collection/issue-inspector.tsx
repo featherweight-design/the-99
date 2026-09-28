@@ -478,9 +478,7 @@ function EmptyFilter({
       className="flex flex-col items-center text-center gap-[10px] py-[36px]"
       style={{ color: "var(--fg-muted)" }}
     >
-      <div style={{ color: "var(--accent-mid)" }}>
-        <CardFanMark size={56} />
-      </div>
+      <CardFanMark />
       <p
         className="font-display font-semibold text-[16px]"
         style={{ color: "var(--fg)" }}
