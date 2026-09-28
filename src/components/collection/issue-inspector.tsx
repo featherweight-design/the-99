@@ -199,7 +199,9 @@ export function IssueInspector({
         {issueInspectorCopy.header.title}
       </h2>
       <p
-        className="font-mono text-[11.5px] mt-[4px]"
+        // 11px on the phone, as frame 3a draws it, so a usual filename and its
+        // count fit one line at 390; desktop keeps 11.5.
+        className="font-mono text-[11px] md:text-[11.5px] mt-[4px]"
         style={{ color: "var(--fg-faint)" }}
       >
         {issueInspectorCopy.header.subtitle(

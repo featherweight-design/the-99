@@ -24,7 +24,7 @@
 //
 //   PROBE_BASE=http://localhost:3314 pnpm probe:issues-sheet
 //   PROBE_SHOTS=<dir> also photographs each state at each width.
-import { writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { neon } from "@neondatabase/serverless";
@@ -94,7 +94,9 @@ function csvFixture(names, { unmatched, bad, tag }) {
   for (const name of names) lines.push(`${quote(name)},1`);
   for (let i = 0; i < unmatched; i += 1) lines.push(`${quote(`Probe Nonexistent Card ${i}`)},1`);
   for (let i = 0; i < bad; i += 1) lines.push(`${quote(names[i])},x`);
-  const file = join(tmpdir(), `probe-issues-sheet-${tag}-${process.pid}.csv`);
+  // Named as a player's file would be, in a per-run directory: the subtitle carries the
+  // filename, and its one-line check is about a usual name, not a 33-character probe tag.
+  const file = join(mkdtempSync(join(tmpdir(), `probe-issues-sheet-${tag}-`)), "collection.csv");
   writeFileSync(file, lines.join("\n"));
   return file;
 }
@@ -141,6 +143,59 @@ async function dragDown(page, locator, distance, dialog) {
   const mid = (await dialog.count()) ? (await dialog.boundingBox())?.y ?? null : null;
   await page.mouse.up();
   return mid;
+}
+
+// The virtualised rows as laid out: every rendered row, in order, against its neighbour and
+// against the slot react-window gave it. The slot is the row wrapper's parent, positioned
+// absolutely; a slot shorter than its row is how the old fixed 46px cut the meta line off.
+async function rowFacts(dialog) {
+  return dialog.locator("[data-issue-list]").first().evaluate((list) => {
+    const rows = [...list.querySelectorAll("[data-issue-row]")]
+      .map((wrap) => {
+        const row = wrap.firstElementChild;
+        const slot = wrap.parentElement;
+        const r = row.getBoundingClientRect();
+        const s = slot.getBoundingClientRect();
+        return {
+          top: r.top,
+          bottom: r.bottom,
+          slotBottom: s.bottom,
+          scroll: row.scrollHeight,
+          client: row.clientHeight,
+          height: r.height,
+        };
+      })
+      .sort((a, b) => a.top - b.top);
+    const overlaps = [];
+    for (let i = 0; i + 1 < rows.length; i += 1) {
+      if (rows[i].bottom > rows[i + 1].top + 0.5) overlaps.push(`${rows[i].bottom}>${rows[i + 1].top}`);
+    }
+    const clipped = rows.filter((r) => r.scroll > r.client || r.bottom > r.slotBottom + 0.5).length;
+    const heights = [...new Set(rows.map((r) => Math.round(r.height)))];
+    return { count: rows.length, overlaps, clipped, heights };
+  });
+}
+
+async function subtitleFacts(dialog) {
+  return dialog.evaluate((el) => {
+    const p = el.querySelector("h2")?.nextElementSibling;
+    if (!p) return null;
+    const range = document.createRange();
+    range.selectNodeContents(p);
+    const lines = new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+    return { size: getComputedStyle(p).fontSize, lines, text: p.textContent };
+  });
+}
+
+async function rowChecks(dialog, vp) {
+  const rows = await rowFacts(dialog);
+  report(rows.count >= 5, `the 170-row list is virtualised and draws rows (${vp.phone ? "390" : "1300"})`, `${rows.count} rendered`);
+  report(
+    rows.overlaps.length === 0,
+    "no rendered row overlaps the next",
+    rows.overlaps.length ? `${rows.overlaps.length} overlaps, first ${rows.overlaps[0]}` : `row heights ${rows.heights.join("/")}px`,
+  );
+  report(rows.clipped === 0, "no row's own content is clipped, by itself or by its slot", `${rows.clipped} clipped`);
 }
 
 async function titleFacts(dialog) {
@@ -236,6 +291,9 @@ async function walk(browser, vp, csvPath) {
       const box = await panelFacts(dialog);
       await shot(page, vp, "open");
       report(box.width === 660 && box.height === 640, "the desktop modal is 660x640, unchanged", `${box.width}x${box.height}`);
+      const sub = await subtitleFacts(dialog);
+      report(sub?.size === "11.5px", "the subtitle keeps 11.5px on desktop", sub?.size);
+      await rowChecks(dialog, vp);
       await filter().fill(NO_MATCH);
       await dialog.getByText(/^No names match/).waitFor();
       await shot(page, vp, "no-match");
@@ -260,6 +318,10 @@ async function walk(browser, vp, csvPath) {
     report(open.bg === open.inset, "its ground resolves to --surface-inset", `${open.bg} vs ${open.inset}`);
     report(open.height <= 0.86 * open.viewport + 0.5, "it is at most 86vh tall", `${open.height}px against ${0.86 * open.viewport}px`);
     const held = open.height;
+    const sub = await subtitleFacts(dialog);
+    report(sub?.size === "11px", "the subtitle is 11px on the phone (frame 3a)", sub?.size);
+    report(sub?.lines === 1, "and fits one line at 390", `${sub?.lines} line(s): ${sub?.text}`);
+    await rowChecks(dialog, vp);
 
     // ── The list is the one scroll body
     const list = dialog.locator("[data-issue-list]").first();
@@ -275,6 +337,8 @@ async function walk(browser, vp, csvPath) {
     const afterWheel = await panelFacts(dialog);
     report(scrolled > 0, "a wheel over the list scrolls the list", `scrollTop ${scrolled}px`);
     report(afterWheel.top === open.top && afterWheel.height === held, "and the panel stays put", `top ${open.top} → ${afterWheel.top}, height ${held} → ${afterWheel.height}`);
+    // Again mid-list, where the rows on screen were measured after a scroll rather than on open.
+    await rowChecks(dialog, vp);
 
     // ── Held through a tab switch and a no-match filter
     await dialog.getByRole("tab", { name: /Parse errors/ }).click();
