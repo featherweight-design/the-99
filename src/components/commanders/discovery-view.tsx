@@ -15,22 +15,18 @@ import {
   discoverSort,
   laneQuery,
   parseLaneParams,
-  type LaneOrder,
   type LaneParams,
 } from "../../lib/commanders/lane-params";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
-// Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
-// reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
-// and pulls `ws` and the neon driver in with it. A type-only clause is erased at
-// compile time, so none of that reaches the client bundle.
-import type { DiscoveryItem } from "../../lib/discovery/list";
+import { inSets as inSetsOf, ordered, searchRows, upper } from "../../lib/discovery/window";
 // Not type-only: `decodeDiscovery` runs on the client. Safe to import as a
-// value for the same reason the clause above is not — `encode.ts` imports
-// nothing but types from `list.ts`, so the database module never comes with it.
+// value because `encode.ts` imports nothing but types from `list.ts`, which
+// reaches `src/db/index.ts` (whose body throws when DATABASE_URL is unset), so
+// the database module never comes with it. `window.ts` holds to the same rule.
 import { decodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
-import { filePrintedIn, isPrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
+import { filePrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
 import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
 import { printedInLabel } from "./rack/chip-line";
 import { FilterRack } from "./rack/filter-rack";
@@ -69,46 +65,6 @@ const emptyCopy = discoveryCopy.empty;
 const EMPTY_MATCHES: ExcludedMatch[] = [];
 /** One empty selection, so a memo reading it holds still across renders. */
 const NO_SETS: string[] = [];
-
-// `filterByColors` matches against `colorIdentity`, which is upper-case
-// throughout the catalog; `lane-params` writes the URL in lower case. The lift
-// happens once, here, exactly as the owned lane does it.
-const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
-
-/**
- * The lane's client-side ordering — three of its five orders, over rows the
- * client already holds. A round trip for a sort of a list in memory is the
- * request this lane's cache exists to avoid, and the payload carries every
- * figure they rank on. None of these touches `rank`, which stays the position in
- * the server's own ranking.
- *
- * The other two, `bestfit` and `new`, fall through untouched: they ARE the
- * server's ranking, and the payload already arrives in that order. That
- * fallthrough is the whole of the fix — the build before this one re-sorted
- * every payload by a separate order control, so the ranking the reader asked for
- * never reached the screen.
- *
- * `popularity` sorts on the EDHREC deck count, which is the figure the row
- * prints under that name. It is NOT the server's own order: the server ranks on
- * support or on novelty, so returning the list untouched here would have printed
- * `Popularity` over whichever of those was active and called it the deck count.
- *
- * A row with no figure sorts last in both figure orders. An undated set and an
- * uncounted commander are absences, and an absence ordered as a zero would be
- * the claim that nobody has built it.
- */
-function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
-  if (order === "name") {
-    return [...rows].sort((a, b) => a.name.localeCompare(b.name, "en"));
-  }
-  if (order === "recent") {
-    return [...rows].sort((a, b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? ""));
-  }
-  if (order === "popularity") {
-    return [...rows].sort((a, b) => (b.deckCount ?? -1) - (a.deckCount ?? -1));
-  }
-  return rows;
-}
 
 /**
  * The parameters with `order` corrected to the ranking the server actually
@@ -270,15 +226,9 @@ export function DiscoveryView({
   );
 
   // Search narrows before colour, so the colour figures below describe the list
-  // the reader is actually looking at. Name matching only, case-insensitive.
-  // Nothing is trimmed off the middle: a player typing "ur-dragon" has typed
-  // part of a name, and normalising punctuation here would be a second matcher
-  // disagreeing with the server's.
-  const searched = useMemo(() => {
-    const q = params.q.trim().toLowerCase();
-    if (q === "") return discovery.items;
-    return discovery.items.filter((r) => r.name.toLowerCase().includes(q));
-  }, [discovery.items, params.q]);
+  // the reader is actually looking at. The steps live in `lib/discovery/window`,
+  // which the server reads too, to know the URL's first window.
+  const searched = useMemo(() => searchRows(discovery.items, params.q), [discovery.items, params.q]);
 
   // `Printed in` (decision 9). With no index the selection is not applied: there is nothing to
   // apply it against, and the control is not drawn either.
@@ -290,10 +240,7 @@ export function DiscoveryView({
     [codesBySlug, params],
   );
   const inSets = useCallback(
-    <T extends { slug: string }>(rows: T[]): T[] =>
-      setCodes.length === 0 || !codesBySlug
-        ? rows
-        : rows.filter((r) => isPrintedIn(codesBySlug, r.slug, setCodes)),
+    <T extends { slug: string }>(rows: T[]): T[] => inSetsOf(rows, codesBySlug, setCodes),
     [codesBySlug, setCodes],
   );
   // Search, then sets, then colour, so each figure below answers for the control it names.
