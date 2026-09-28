@@ -72,16 +72,22 @@ function useHeldSheetHeight(
     const panel = panelRef.current;
     if (!panel) return;
     const cap = Math.floor(window.innerHeight * SHEET_CAP);
-    if (anyVirtualised) {
-      setHeld(cap);
-      return;
+    let next = cap;
+    if (!anyVirtualised) {
+      const list = panel.querySelector<HTMLElement>(
+        "[data-issue-list]:not([data-issue-measure] *)",
+      );
+      const listBox = list?.clientHeight ?? 0;
+      const listContent = list?.scrollHeight ?? 0;
+      const other = measureRef.current?.getBoundingClientRect().height ?? 0;
+      const chrome = panel.getBoundingClientRect().height - listBox;
+      next = Math.min(cap, Math.ceil(chrome + Math.max(listContent, other)));
     }
-    const list = panel.querySelector<HTMLElement>("[data-issue-list]:not([data-issue-measure] *)");
-    const listBox = list?.clientHeight ?? 0;
-    const listContent = list?.scrollHeight ?? 0;
-    const other = measureRef.current?.getBoundingClientRect().height ?? 0;
-    const chrome = panel.getBoundingClientRect().height - listBox;
-    setHeld(Math.min(cap, Math.ceil(chrome + Math.max(listContent, other))));
+    // A measured value has to reach state from a layout effect: it exists only
+    // after layout, and setting it here re-renders before paint, so the reader
+    // never sees the unheld frame. It runs once per visit (`held` gates it).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHeld(next);
   }, [enabled, held, panelRef, measureRef, anyVirtualised]);
   return held;
 }
