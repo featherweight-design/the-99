@@ -123,8 +123,7 @@ neither it nor `db:copy:labels` is one transaction.
      floors can still have refused its role pass, or degraded more than 5% of commanders or
      pairs (`seed-index.ts:663-666`, `:732-739`, `:876-889`).
    - **So each builder records its outcome** in a small ledger table on the database it built,
-     `catalog_builds`. That needs a migration, and the number (next free is 0074) is to be
-     assigned by d9. Each row holds:
+     `catalog_builds`. Its migration is **0074**, assigned by d9 on 2026-09-28. Each row holds:
      - `kind`: `index` or `combos`;
      - `started_at` and `finished_at`;
      - `ok`, set only by the builder's own success path, with every refusal it already applies
@@ -307,7 +306,7 @@ run. It runs after PR 3 merges and the secret is set:
 
 **PR 1:**
 - **Contents:**
-  - the `catalog_builds` migration (number from d9) and the ledger writes in both builders;
+  - migration **0074** (`drizzle/0074_*`, `drizzle/meta/0074_snapshot.json`, `drizzle/meta/_journal.json`) for `catalog_builds`, and the ledger writes in both builders;
   - `scripts/lib/catalog-copy.ts` (§3), including the input-fingerprint pin test and the
     `catalog-ingest` lock in the catalog ingest;
   - `stampCatalogRefreshIn(tx)`;
