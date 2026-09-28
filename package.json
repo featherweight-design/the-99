@@ -141,6 +141,7 @@
     "db:build:labels": "tsx scripts/build-card-labels.ts",
     "db:copy:labels": "tsx scripts/copy-card-labels.ts",
     "db:catalog-build": "tsx scripts/catalog-build.ts",
+    "db:index-due": "tsx scripts/index-due.ts",
     "db:copy:combos": "tsx scripts/copy-combos.ts",
     "db:copy:index": "tsx scripts/copy-index.ts",
     "probe:catalog-copy": "tsx scripts/probe-catalog-copy.ts",

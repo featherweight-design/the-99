@@ -1,13 +1,9 @@
 name: Price refresh
 
-# Weekly, not monthly: price is the one catalog field that genuinely moves, and
-# a monthly cadence would make the number wrong more often than right. The body
-# is ~51MB, which is past a Vercel function's practical reach, so this runs on a
-# runner like the other ingests.
+# No schedule since 2026-09-28: prices are the last step of the daily `Catalog refresh`, in both
+# legs, so a day's prices always follow that day's catalog. This workflow stays for a one-off
+# dispatch. The body is ~51MB, past a Vercel function's practical reach, so it runs on a runner.
 on:
-  schedule:
-    # 09:00 UTC every Monday.
-    - cron: '0 9 * * 1'
   workflow_dispatch:
     inputs:
       target:
@@ -27,9 +23,8 @@ jobs:
   # while production refreshed on schedule every Monday. Catalog refresh learned the same
   # lesson first; this is that fix, ported.
   plan:
-    # Kill switch for the schedule; a manual dispatch always runs. Set the
-    # PRICE_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
-    if: vars.PRICE_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    # Dispatch only; the daily prices run inside `Catalog refresh`.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       targets: ${{ steps.pick.outputs.targets }}

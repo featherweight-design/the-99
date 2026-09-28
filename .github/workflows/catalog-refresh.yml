@@ -5,11 +5,12 @@ name: Catalog refresh
 # runner gives us hours instead of minutes.
 on:
   schedule:
-    # 09:00 UTC every Monday. Monthly was inherited from the Vercel cron this replaced, when
-    # the 300s maxDuration made an ingest expensive; a full run now takes ~1 minute. Weekly
-    # caps catalog staleness at 7 days, and a Monday lands within days of both a Friday set
-    # release and the prerelease weekend before it, when cards first become physically ownable.
-    - cron: '0 9 * * 1'
+    # 09:00 UTC DAILY (card-data replicate plan, 2026-09-28). A full run takes ~1 minute, so
+    # daily costs nothing, and it is the one root every replicated job hangs off: `Combo refresh`
+    # and `Commander index` chain on its success by `workflow_run`, never by cron spacing, because
+    # GitHub runs a cron hours late when it is busy. Prices are this workflow's last step, so a
+    # day's prices always follow that day's catalog.
+    - cron: '0 9 * * *'
   release:
     types: [published]
   workflow_dispatch:
@@ -25,7 +26,7 @@ on:
         # are filtered out as FK orphans, so that run reports its orphan count loudly.
         description: Which ingest to run (`printings` alone assumes a current oracle catalog)
         type: choice
-        options: [all, sets, printings, oracle]
+        options: [all, sets, printings, oracle, prices]
         default: all
 
 permissions:
@@ -141,3 +142,9 @@ jobs:
                  >> "$GITHUB_STEP_SUMMARY"
           fi
           pnpm --silent db:seed:printings | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh prices
+        if: env.JOB == 'all' || env.JOB == 'prices'
+        run: |
+          echo "### Prices" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"

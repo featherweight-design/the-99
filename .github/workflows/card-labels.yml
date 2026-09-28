@@ -341,23 +341,43 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
-      - name: Note that production is not updated by this run
+  # Staging's labels, installed on production by the catalog copy harness. PAY ONCE: this job
+  # never calls a model; `db:copy:labels` installs a label only when its input hash matches the
+  # hash production's own card text produces.
+  copy:
+    needs: label
+    if: needs.label.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: catalog-production
+    concurrency:
+      group: card-labels-copy
+      cancel-in-progress: false
+    defaults:
+      run:
         shell: bash
-        # A quoted heredoc: the previous version escaped a quote inside a double-quoted `echo` and
-        # left the string open, so `bash -n` failed and every run went red AFTER the model spend.
+    env:
+      CATALOG_COPY_SOURCE_URL: ${{ secrets.CATALOG_COPY_SOURCE_URL }}
+      CATALOG_COPY_TARGET_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      # Production's Neon branch. A guard, not a credential: the target must report exactly this.
+      CATALOG_COPY_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+    steps:
+      - name: Fail loudly without the copy secret
         run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<'NOTE'
-
-          **These labels are on `catalog-staging` only.** Production is not updated by this run
-          and currently has no labels.
-
-          That is harmless today: Task 4c notes the labels change nothing player-visible until a
-          consumer reads them, and the first consumer is behind `SWAP_TOOLS_ENABLED`. So
-          production can wait.
-
-          It cannot be automated yet. `db:copy:labels` needs BOTH database URLs in one job, and
-          neither `catalog-staging` nor `catalog-production` holds the other's — so it needs one
-          new secret with staging's URL, readable from a production job. **Task 4c forbids running
-          the copy from a local invocation**, so this is deliberately NOT a manual workaround: the
-          copy waits for the job, and the job waits for the secret.
-          NOTE
+          if [ -z "$CATALOG_COPY_SOURCE_URL" ]; then
+            echo "::error::CATALOG_COPY_SOURCE_URL is not set in the catalog-production environment."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Copy labels to production
+        run: |
+          echo "### Label copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:labels 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
