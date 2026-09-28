@@ -89,7 +89,7 @@ proceed once he rules and the engineering corrections are applied. The audit was
   - the phone has an exit (D11).
 - **§4.1–4.5 and the state list** are drawn at the widths the brief asks for (canvas `:83` onward, through frame 5b at `:571`),
   including all six themes' `--fg-locked` and the unlock moment.
-- **Buildability.** Every component the handoff names exists. All 20 tokens the canvas reads
+- **Buildability.** Every component the handoff names exists. R2's frames 6a to 6c read only tokens declared in all six themes, and add none. All 20 tokens the canvas reads
   are declared in all six themes (`--tabbar-h` is a single `html`-level value, `globals.css:495`). It needs no new token.
 - **O4: out of scope.** `filter-sheet.tsx:169` draws the scrim as the literal
   `rgba(16,13,10,0.74)`. Moving it onto the themed mix is a follow-up, not this build.
