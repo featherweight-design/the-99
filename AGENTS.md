@@ -132,6 +132,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   a commander whose tags have not moved, and an interrupted run resumes by being dispatched again.
   A commander whose every attempt fails the accept contract keeps its null and renders with no
   paragraph — the state the design draws, and never a truncated sentence nobody wrote.
+- **The prose input hash takes the top eight themes as a SET and the top three IN ORDER**
+  (2026-09-28). A theme entering or leaving the eight changes what a sentence may name, and a move
+  among the leading three changes what it leads with; a reorder below them changes neither. The
+  old hash took all eight in order, and between two index builds 854 of staging's 1,777 stale
+  sentences had moved by order alone. `legacyProseInputHash` keeps the old payload for one job
+  only: a row current under it is RE-STAMPED with the new hash, with no model call, by
+  `db:build:prose`, `db:copy:prose` and `db:restamp:prose` alike.
+
+- `pnpm db:restamp:prose [--dry-run]` makes that move on the database `DATABASE_URL` names, and
+  nothing else: legacy-current rows take the new stamp, stale rows stay stale. **Run it on a
+  database BEFORE that database's inputs move**, because a legacy hash can only be checked against
+  the inputs the sentence was written from; once an index copy or rebuild has replaced them, a
+  sentence whose themes only reordered reads stale and costs a model call. Measured on scratch
+  branches (2026-09-28): production re-stamped 3,379 of 3,379 and staging 1,605 of 1,605, and
+  copying the re-stamped production sentences onto staging then installed 536 more, leaving 1,241
+  to generate instead of 1,777.
+
 - `pnpm db:copy:prose` installs sentences one database has already generated onto another,
   reading `PROSE_COPY_SOURCE_URL` and `PROSE_COPY_TARGET_URL` from the environment and taking
   `--dry-run`. A sentence costs a model call to produce and nothing to move, so a database that

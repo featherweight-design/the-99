@@ -31,6 +31,7 @@
     "db:build:index": "tsx scripts/build-commander-index.ts",
     "db:build:prose": "tsx scripts/generate-commander-prose.ts",
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
+    "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:pair-index": "tsx scripts/probe-pair-index.ts",
     "probe:printed-in": "tsx scripts/probe-printed-in.ts",

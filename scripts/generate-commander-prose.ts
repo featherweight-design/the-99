@@ -42,7 +42,8 @@ async function complete(prompt: string): Promise<string | null> {
 generateCommanderProse({ complete })
   .then((r) => {
     console.log(
-      `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.suppressed} suppressed, ` +
+      `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.restamped} re-stamped from the legacy hash, ` +
+      `${r.suppressed} suppressed, ` +
       `${r.rejected} rejected by the contract, ${r.failed} failed to generate.`,
     );
     // Per attempt, not per commander, and broken out by rule. The run that prompted this

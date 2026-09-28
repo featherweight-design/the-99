@@ -1,5 +1,5 @@
 import type { EdhrecTag } from "../edhrec/parse";
-import { proseInputHash } from "./prompt";
+import { legacyProseInputHash, proseInputHash } from "./prompt";
 import { isSuppressed } from "./suppressed";
 
 /** A sentence generated elsewhere, with the hash of the inputs it was generated from. */
@@ -72,9 +72,16 @@ export async function copyCommanderProse(opts: CopyOptions): Promise<CopyResult>
 
     const row = bySourceOracleId.get(t.oracleId);
     if (row === undefined) { r.missing++; continue; }
-    if (row.proseInputHash !== hash) { r.drifted++; continue; }
-
-    await opts.write(row);
+    // A source still stamped with the legacy hash is installed when that hash matches the
+    // target's inputs, and lands stamped with the new one: the same sentence for the same inputs.
+    if (row.proseInputHash === hash) {
+      await opts.write(row);
+    } else if (row.proseInputHash === legacyProseInputHash(t.oracleId, t.name, t.tags)) {
+      await opts.write({ ...row, proseInputHash: hash });
+    } else {
+      r.drifted++;
+      continue;
+    }
     r.installed++;
   }
 

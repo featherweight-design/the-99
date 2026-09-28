@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { CLAIM_BY } from "./accept";
-import { buildProsePrompt, buildProseRetryPrompt, proseInputHash, shortName } from "./prompt";
+import {
+  buildProsePrompt,
+  buildProseRetryPrompt,
+  legacyProseInputHash,
+  proseInputHash,
+  shortName,
+} from "./prompt";
 
 const TAGS = [
   { slug: "spellslinger", label: "Spellslinger", count: 900 },
@@ -180,5 +186,46 @@ describe("proseInputHash", () => {
     expect(
       proseInputHash("oracle-kess", KESS, [{ slug: "s", label: "Spell\nslinger", count: 9 }]),
     ).toBe(proseInputHash("oracle-kess", KESS, [{ slug: "s", label: "Spell slinger", count: 9 }]));
+  });
+
+  // The top eight enter as a SET and the top three IN ORDER (2026-09-28): a reorder below the
+  // lead changes neither what a sentence may name nor what it leads with.
+  describe("the set-and-lead payload", () => {
+    const EIGHT = ["a", "b", "c", "d", "e", "f", "g", "h"].map((slug, i) => ({
+      slug,
+      label: slug.toUpperCase(),
+      count: 800 - i * 100,
+    }));
+    const withCounts = (counts: Record<string, number>) =>
+      EIGHT.map((t) => ({ ...t, count: counts[t.slug] ?? t.count }));
+
+    it("holds when two themes below the top three swap places", () => {
+      const swapped = withCounts({ e: 350, f: 450 });
+      expect(proseInputHash("o", KESS, swapped)).toBe(proseInputHash("o", KESS, EIGHT));
+      expect(legacyProseInputHash("o", KESS, swapped)).not.toBe(legacyProseInputHash("o", KESS, EIGHT));
+    });
+
+    it("moves when two of the top three swap places", () => {
+      expect(proseInputHash("o", KESS, withCounts({ b: 750, a: 700 }))).not.toBe(
+        proseInputHash("o", KESS, EIGHT),
+      );
+    });
+
+    it("moves when the third and fourth swap places", () => {
+      expect(proseInputHash("o", KESS, withCounts({ c: 550, d: 650 }))).not.toBe(
+        proseInputHash("o", KESS, EIGHT),
+      );
+    });
+
+    it("moves when a theme leaves the top eight", () => {
+      const ninth = [...EIGHT, { slug: "i", label: "I", count: 50 }];
+      expect(proseInputHash("o", KESS, ninth)).toBe(proseInputHash("o", KESS, EIGHT));
+      expect(proseInputHash("o", KESS, withCounts({ h: 10 }).concat({ slug: "i", label: "I", count: 50 })))
+        .not.toBe(proseInputHash("o", KESS, EIGHT));
+    });
+
+    it("is not the legacy hash, so nothing reads a legacy stamp as current", () => {
+      expect(proseInputHash("o", KESS, EIGHT)).not.toBe(legacyProseInputHash("o", KESS, EIGHT));
+    });
   });
 });

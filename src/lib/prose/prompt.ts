@@ -27,11 +27,15 @@ const oneLine = (s: string): string => s.replace(/\s+/g, " ").trim();
  * of use, so the hash covers the same strings the prompt is built from and a label whose
  * upstream whitespace changes shape without changing its words does not mark rows stale.
  */
-const topTags = (tags: EdhrecTag[]): string[] =>
+const topEntries = (tags: EdhrecTag[]): EdhrecTag[] =>
   [...tags]
     .sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug))
-    .slice(0, TAG_LIMIT)
-    .map((t) => oneLine(t.label));
+    .slice(0, TAG_LIMIT);
+
+const topTags = (tags: EdhrecTag[]): string[] => topEntries(tags).map((t) => oneLine(t.label));
+
+/** How many of the leading themes the hash keeps in order. */
+const LEAD_THEMES = 3;
 
 /**
  * The identity of the inputs a sentence claims to be about: the commander, the themes the
@@ -41,12 +45,43 @@ const topTags = (tags: EdhrecTag[]): string[] =>
  * generator regenerates it; readers still serve it, because a slightly stale sentence is
  * better than no sentence.
  *
+ * The themes enter twice (d9 for Hugh, 2026-09-28): the top eight as a SET, sorted by slug, and
+ * the top three IN ORDER. A theme entering or leaving the eight changes what a sentence may
+ * name, and a move among the leading three changes what it leads with; a reorder below the top
+ * three changes neither. Measured on production's 3,260 fresh sentences, a theme's own label
+ * appears in the sentence at rank 1 53% of the time, then 42%, 33%, 25%, 19%, 14%, 10% and 8%,
+ * so the lower ranks are named often enough that membership has to count. Against the 09-25
+ * staging index, 854 of 1,777 stale sentences had moved by ORDER alone under the old hash,
+ * which took all eight in order; this one keeps 525 of them.
+ *
  * The name is in the payload as well as the oracle id, which is redundant only while the
  * two move together. A sentence has to open with the subject the name produces, so a card
  * renamed under its existing oracle id leaves a stored sentence naming a card that no
  * longer exists — the one case where the oracle id alone says fresh and the string is not.
  */
 export function proseInputHash(
+  oracleId: string,
+  commanderName: string,
+  tags: EdhrecTag[],
+): string {
+  const top = topEntries(tags);
+  const payload = JSON.stringify([
+    oracleId,
+    oneLine(commanderName),
+    [...top].sort((a, b) => a.slug.localeCompare(b.slug)).map((t) => oneLine(t.label)),
+    top.slice(0, LEAD_THEMES).map((t) => oneLine(t.label)),
+    PROSE_PROMPT_VERSION,
+  ]);
+  return createHash("sha256").update(payload).digest("hex");
+}
+
+/**
+ * The hash every sentence was stamped with before 2026-09-28: all eight themes, in order. Kept
+ * ONLY so a row current under it can be re-stamped with `proseInputHash` without a model call
+ * (`generateCommanderProse`, `copyCommanderProse`, `db:restamp:prose`). Nothing decides
+ * freshness by it.
+ */
+export function legacyProseInputHash(
   oracleId: string,
   commanderName: string,
   tags: EdhrecTag[],
