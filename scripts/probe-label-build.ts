@@ -2,7 +2,13 @@
 //
 // WHAT ONLY A DATABASE CAN ANSWER HERE. Every rule that decides money is pure and unit-tested
 // in `src/lib/labels/plan.test.ts` — the cap, the waves, the floor, the ids. What no unit test
-// reaches is whether the transaction wrote what those rules decided, and four facts live there:
+// reaches is whether the transaction wrote what those rules decided, and five facts live there:
+//
+//   THE CARD READ ACTUALLY RUNS. Its names are bound as ONE array parameter, which a bare
+//   interpolation does not do — it renders a row constructor and raises 42809. That took the first
+//   real dispatch down, past typecheck, lint, 11,297 tests and `--dry-run`, because both copies of
+//   the read sat a few lines above the provider call and this file's API exclusion silently
+//   covered a database read too.
 //
 //   AN INTENT SURVIVES A CRASH BEFORE THE ID EXISTS. Anthropic assigns `batch_id` only when
 //   `batches.create` RETURNS, so the row goes down first with a null id. A run that dies in
@@ -34,7 +40,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { meetsFloor, planChunks } from "../src/lib/labels/plan";
-import { publishRun, stampWave } from "../src/lib/labels/publish";
+import { publishRun, readCardsByName, stampWave } from "../src/lib/labels/publish";
 import type { Job } from "../src/lib/labels/types";
 
 const db = drizzle(DATABASE_URL);
@@ -171,6 +177,64 @@ async function main(): Promise<void> {
   report("the floor refuses a shortfall", !verdict.ok);
   const stillThere = await db.select().from(cardLabelsStaging).where(eq(cardLabelsStaging.runId, otherRun));
   report("and the staged rows are still there to inspect", stillThere.length === 1);
+
+  console.log("6. the card read both paths share, executed — the read that took the dispatch down");
+  // THE POINT OF THIS SECTION. `readCardsByName` lived inline, twice, and nothing executed either
+  // copy. Three names rather than one, because the bug is about how a LIST is bound — though a
+  // single name fails too (`any(($1))`), so that is belt and braces rather than the crux. The
+  // load-bearing assertion is that all three come back.
+  const askNames = [a.name, b.name, c.name];
+  // CAUGHT AND NAMED. With the fix reverted this read THROWS, which used to abort `main` and land
+  // in `.catch` as one unattributed failure — the run failed, but no line said the read was why.
+  // A probe whose output cannot be read is worth less than one that fails loudly at the right name.
+  //
+  // EVERY read here goes through `attempt`, so a throw is a NAMED failure rather than an abort into
+  // `main().catch` — which is what the bare-array mutation used to produce: the run failed, and no
+  // line said the read was why.
+  const attempt = async (what: string, names: readonly string[]) => {
+    try {
+      const rows = await readCardsByName(db, names);
+      report(`the read runs — ${what}`, true, `${rows.length} row(s)`);
+      return rows;
+    } catch (e) {
+      report(`the read runs — ${what}`, false, (e as Error).message.slice(0, 90));
+      return null;
+    }
+  };
+  const read = await attempt("three names", askNames);
+  // SET MEMBERSHIP, NOT LENGTH EQUALITY. A name can belong to more than one oracle row — this
+  // script has an `ambiguous` branch for exactly that — so `any(...)` may return more rows than
+  // names asked, or fewer if two asked names coincide. Neither is a fault in the read, and a
+  // length check would fail the probe on a working build the first time the catalog produced one.
+  // Zero commander-legal names are shared today, which is luck rather than a guarantee.
+  report("every asked name comes back",
+    read !== null && askNames.every((n) => read.some((r) => r.name === n)),
+    read === null ? "no rows" : `${read.length} row(s) for ${askNames.length} name(s)`);
+  report("and nothing comes back that was not asked for",
+    read !== null && read.every((r) => askNames.includes(r.name)),
+    read?.map((r) => r.name).join(" | ") ?? "");
+  // EVERY FIELD THE PROMPT RENDERS, because `labelInputHash` hashes `renderCard`'s output: a
+  // column dropped from the select leaves that field undefined, changes the hash for every card in
+  // the catalog, and re-labels all 31,830 at full price. Checking two of the five would have passed
+  // over exactly that. `mana_cost` and `oracle_text` are nullable, so they are asserted as
+  // PRESENT-OR-NULL rather than as strings — a missing key and a null value are different things
+  // and only one of them is correct.
+  report("with every field the prompt renders",
+    read !== null && read.length > 0 && read.every((r) =>
+      typeof r.oracleId === "string" && typeof r.name === "string"
+      && typeof r.type_line === "string" && typeof r.layout === "string"
+      && "mana_cost" in r && "oracle_text" in r),
+    read?.map((r) => Object.keys(r).length).join("/") + " keys");
+  // A name nobody holds returns nothing rather than throwing, which is what lets the callers'
+  // `byName.get(...)` drop it. NOT a NUL byte — Postgres rejects those with 22021, which would be
+  // the fixture failing rather than the read.
+  const none = await attempt("an unknown name", [`probe-no-such-card-${randomUUID()}`]);
+  report("an unknown name returns no rows", none !== null && none.length === 0, `${none?.length}`);
+  // Named for what it MEASURES. The empty-ask guard saves a round trip rather than avoiding a bug
+  // — without it `any('{}'::text[])` is valid and returns nothing — so no behavioural check can
+  // see it, and calling this one "makes no query" would have claimed coverage it cannot have.
+  const empty = await attempt("an empty ask", []);
+  report("an empty ask returns nothing", empty !== null && empty.length === 0);
 }
 
 main()

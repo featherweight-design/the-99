@@ -39,7 +39,11 @@ import {
 import {
   buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody,
 } from "../src/lib/labels/prompt";
-import { publishRun, stampWave } from "../src/lib/labels/publish";
+// `CardRow` comes from the same module as the read that returns it — two structurally identical
+// row types drift, and the day one gains a field the other lacks the shared helper silently stops
+// satisfying this script.
+import type { CardRow } from "../src/lib/labels/publish";
+import { publishRun, readCardsByName, stampWave } from "../src/lib/labels/publish";
 import { validateJob } from "../src/lib/labels/schema";
 import type { Job } from "../src/lib/labels/types";
 
@@ -112,11 +116,6 @@ const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 
 /** A run id that sorts and is readable; the run TOKEN in each custom id derives from it. */
 const runId = process.env.LABEL_RUN_ID ?? `run-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-
-type CardRow = {
-  oracleId: string; name: string; mana_cost: string | null; type_line: string;
-  oracle_text: string | null; layout: string;
-};
 
 const die = (why: string): never => { console.error(`\nbuild-card-labels REFUSED: ${why}`); process.exit(1); };
 
@@ -245,13 +244,11 @@ async function collectBatch(
 
   // One catalog read for the whole batch, then one staging insert per intent so a row carries
   // the hash of the card as it is NOW rather than as the request rendered it.
+  // THE SHARED HELPER, and this is the more dangerous of the two copies: it runs only after a
+  // batch has come BACK, so its 42809 would have fired with the money already spent, on the very
+  // invocation meant to bank the results. Found by sweeping the class rather than by the incident.
   const allNames = [...got.values()].flatMap((g) => [...g.byName.keys()]);
-  const cards = allNames.length === 0 ? { rows: [] as CardRow[] } : await db.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards where name = any(${allNames})`);
-  const byName = new Map(
-    ((cards as { rows?: CardRow[] }).rows ?? (cards as unknown as CardRow[])).map((c) => [c.name, c]),
-  );
+  const byName = new Map((await readCardsByName(db, allNames)).map((c) => [c.name, c]));
 
   for (const intent of intents) {
     const here = got.get(intent.customId);
@@ -463,11 +460,12 @@ async function submit(chunks: Chunk[]): Promise<void> {
       + `billable. Wait for the other process, or start a new run.`);
   }
 
-  const cards = await db.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards where name = any(${chunks.flatMap((c) => c.names)})
-  `);
-  const byName = new Map((cards.rows ?? (cards as unknown as CardRow[])).map((c) => [c.name, c]));
+  // THE SHARED HELPER. This is the read that took run 36361018105 down with Postgres 42809, four
+  // lines above `batches.create` — so nothing was submitted and nothing spent. Keeping a copy here
+  // is the failure `stampWave` already taught: the probe went green on its own copy while the
+  // script ran code nothing exercised.
+  const rows = await readCardsByName(db, chunks.flatMap((c) => c.names));
+  const byName = new Map(rows.map((c) => [c.name, c]));
   const requests = chunks.map((c) => buildRequest(
     c.customId, MODEL, c.names.map((n) => byName.get(n)).filter((c2): c2 is CardRow => c2 !== undefined),
   ));

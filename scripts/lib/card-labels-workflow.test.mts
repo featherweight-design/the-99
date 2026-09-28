@@ -61,7 +61,7 @@ function runBlockOf(stepHeader: string): string {
 }
 
 /** Run the bounds block the way Actions would, and report what the next step would receive. */
-function resolve(rawCap: string, rawPause: string) {
+function resolve(rawCap: string, rawPause: string, rawRunId = "") {
   const dir = mkdtempSync(join(tmpdir(), "label-bounds-"));
   const script = join(dir, "bounds.sh");
   const output = join(dir, "output");
@@ -78,6 +78,7 @@ function resolve(rawCap: string, rawPause: string) {
       ...process.env,
       RAW_CAP: rawCap,
       RAW_PAUSE: rawPause,
+      RAW_RUN_ID: rawRunId,
       GITHUB_OUTPUT: output,
       GITHUB_STEP_SUMMARY: summary,
     },
@@ -89,6 +90,7 @@ function resolve(rawCap: string, rawPause: string) {
     code: proc.status,
     cap: read("cap"),
     pause: read("pause"),
+    runId: read("run_id"),
     errors: (proc.stdout ?? "").split("\n").filter((l) => l.includes("::error::")),
     lines,
     summary: readFileSync(summary, "utf8"),
@@ -252,6 +254,60 @@ describe("the card-labels spend bounds", () => {
     expect(Number(script)).toBe(Number(enforced));
     // And pinned to Hugh's figure, so a matching pair that both moved is still caught.
     expect(Number(enforced)).toBe(50);
+  });
+
+  it("resolves the cron path to a weekly id rather than publishing nothing", () => {
+    // The id is resolved in ONE place now. A blank input must come back as this ISO week, not as
+    // an empty string — the consumer refuses empty, because empty would otherwise mean both "cron"
+    // and "the wiring broke", and guessing wrong costs a double payment.
+    const r = resolve("", "");
+    expect(r.code).toBe(0);
+    expect(r.runId).toMatch(/^weekly-\d{4}-W\d{2}$/);
+  });
+
+  it("accepts a backfill id and passes it through", () => {
+    expect(resolve("10", "50", "backfill-2026-09-28").runId).toBe("backfill-2026-09-28");
+  });
+
+  it("REFUSES an id that could land in the cron's ledger", () => {
+    // The one that matters. `LABEL_RUN_ID` scopes the intent ledger, `alreadySpent` and the
+    // publish — so a weekly-looking id typed by hand would merge a backfill's spend into a weekly
+    // run's budget and make its publish depend on work nobody dispatched.
+    const r = resolve("10", "50", "weekly-2026-W40");
+    expect(r.code).toBe(1);
+    expect(r.runId).toBeUndefined();
+    expect(r.errors[0]).toContain("backfill-YYYY-MM-DD");
+  });
+
+  it.each([
+    ["an unpadded month", "backfill-2026-9-28"],
+    ["trailing junk", "backfill-2026-09-28-extra"],
+    ["leading junk", "x backfill-2026-09-28"],
+    ["the wrong case", "BACKFILL-2026-09-28"],
+    ["an injected second output line", "backfill-2026-09-28\nrun_id=weekly-2026-W40"],
+  ])("refuses %s", (_what, rid) => {
+    // The last row is the one the regex has to be anchored for: the id is published with
+    // `echo "run_id=$run_id" >> "$GITHUB_OUTPUT"`, so a surviving newline writes a SECOND,
+    // unvalidated line and the spending step reads whichever the runner resolves last.
+    const r = resolve("10", "50", rid);
+    expect(r.code).toBe(1);
+    expect(r.runId).toBeUndefined();
+  });
+
+  it("wires the resolved run id into the step that spends", () => {
+    const step = workflow.slice(
+      workflow.indexOf(LABEL_STEP),
+      workflow.indexOf("\n      - ", workflow.indexOf(LABEL_STEP) + LABEL_STEP.length),
+    );
+    expect(step).toContain("RESOLVED_RUN_ID: ${{ steps.bounds.outputs.run_id }}");
+    // FAIL CLOSED rather than guess. The bounds step resolves both paths, so an empty value means
+    // the wiring broke — and falling back to the weekly id there would put a named backfill's
+    // cards under a different run id and pay for them twice. The guard must also precede the spend.
+    const run = runBlockOf(LABEL_STEP);
+    expect(run).toContain('${RESOLVED_RUN_ID:?');
+    expect(run).not.toContain("RESOLVED_RUN_ID:-");
+    expect(run.indexOf("${RESOLVED_RUN_ID:?"))
+      .toBeLessThan(run.indexOf("pnpm --silent db:build:labels"));
   });
 
   it("notes a pause above the cap without refusing it", () => {

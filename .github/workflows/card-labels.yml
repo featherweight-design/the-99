@@ -14,7 +14,7 @@ name: Card labels
 # rather than correctness, which is why it reads as one beside its siblings.
 on:
   schedule:
-    # DAILY at 14:00 UTC, with a run id keyed to the ISO WEEK — and the daily cadence is what makes
+    # DAILY at 14:00 UTC. The CRON's run id is keyed to the ISO WEEK; a dispatch may name its own — and the daily cadence is what makes
     # a timeout recoverable rather than abandoned.
     #
     # Monday's run is the one that finds work: it is after `Catalog refresh` (09:00) and `Combo
@@ -35,6 +35,10 @@ on:
         default: ''
       pause:
         description: 'Pause and report if the projection passes this (max 50). Blank uses the weekly 5.'
+        required: false
+        default: ''
+      run_id:
+        description: 'Backfill run id, e.g. backfill-2026-09-28. Blank uses this ISO week (the cron behaviour).'
         required: false
         default: ''
 
@@ -105,6 +109,7 @@ jobs:
           # what keeps it that way, and it costs nothing.
           RAW_CAP: ${{ github.event.inputs.cap }}
           RAW_PAUSE: ${{ github.event.inputs.pause }}
+          RAW_RUN_ID: ${{ github.event.inputs.run_id }}
         run: |
           # An empty input is the CRON PATH, and also a dispatch that left the box alone: both
           # take the weekly figures. `inputs.*` is empty (never absent) on a schedule, so one
@@ -143,8 +148,55 @@ jobs:
           check 'pause' "$pause" 50 || ok=1
           [ "$ok" -eq 0 ] || exit 1
 
+          # THE RUN ID, and why a backfill must name its own rather than take the calendar's.
+          #
+          # `LABEL_RUN_ID` scopes three things: the intent ledger, `alreadySpent`, and the publish.
+          # The cron derives it from the ISO WEEK, which is right for a weekly job and wrong for a
+          # backfill in two ways that both cost money:
+          #
+          #   THE CAP IS PER RUN ID. `alreadySpent` sums `card_label_batches` rows filtered by
+          #   `run_id`, so a backfill crossing a week boundary re-plans every card with the budget
+          #   reset to zero. Hugh's $55 bounds a run id, not a backfill.
+          #   A CARD IS ONLY SKIPPED ONCE A COMPLETE RUN PUBLISHES IT. So a cap too low to finish
+          #   means no run ever publishes and every week re-pays for everything — cap-sized,
+          #   indefinitely, with each run individually inside its cap and nothing looking wrong.
+          #
+          # A named id fixes both: one id for the whole backfill whatever the calendar does.
+          #
+          # WHAT NON-COLLISION DOES NOT BUY, stated because the comment below offered it as the
+          # safety property and it is not one. Two live run ids over the same stale cards BOTH pay:
+          # `reconcile` and `alreadySpent` are each filtered by `run_id`, so a weekly run started
+          # while a named backfill has chunks submitted and unpublished sees neither its spend nor
+          # its in-flight work, plans the same cards, and charges for them again. Nothing in this
+          # job prevents that. It is inert only because `CARD_LABELS_ENABLED` is unset, so the cron
+          # cannot fire — DO NOT enable the schedule while a backfill is unpublished. A guard (a
+          # weekly run refusing when another run id holds open intents) is a follow-up, kept out of
+          # here deliberately to hold this change small.
+          #
+          # The pattern is narrow ON PURPOSE, and anchored. It must not be possible to type a
+          # weekly-looking id and land in the cron's ledger — that would merge a backfill's spend
+          # into a weekly run's budget and make its publish depend on work nobody dispatched. The
+          # anchors also matter because the value is published with `echo >> "$GITHUB_OUTPUT"`, so
+          # an unanchored match would let a newline write a second, unvalidated line.
+          run_id="${RAW_RUN_ID:-}"
+          if [ -n "$run_id" ]; then
+            if ! [[ "$run_id" =~ ^backfill-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+              echo "::error::run_id must look like backfill-YYYY-MM-DD, got '$run_id'"
+              exit 1
+            fi
+          else
+            # RESOLVED HERE, so the value published is never empty and the step that spends can
+            # REFUSE an empty one. Left to the consumer as `${RESOLVED_RUN_ID:-weekly-…}`, an empty
+            # value was ambiguous: it means "the cron" and it also means "this wiring is broken".
+            # Actions sets the env var to the empty string when an output is missing, so a renamed
+            # or reordered bounds step would silently put a NAMED backfill onto the weekly id — the
+            # same double-pay the timeout message was just corrected for. One place computes the id.
+            run_id="weekly-$(date -u +%G-W%V)"
+          fi
+
           echo "cap=$cap"     >> "$GITHUB_OUTPUT"
           echo "pause=$pause" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
           {
             echo "### Spend bounds"
             echo ""
@@ -200,6 +252,7 @@ jobs:
           # The kill switch, so the TIMEOUT message can say truthfully whether anything will
           # resume the run. Absent or anything but 'true' means the cron is skipped.
           CRON_ENABLED: ${{ vars.CARD_LABELS_ENABLED }}
+          RESOLVED_RUN_ID: ${{ steps.bounds.outputs.run_id }}
           LABEL_CAP_USD: ${{ steps.bounds.outputs.cap }}
           LABEL_REPORT_AT_USD: ${{ steps.bounds.outputs.pause }}
         run: |
@@ -210,7 +263,8 @@ jobs:
           # `alreadySpent` and the publish are all scoped to `LABEL_RUN_ID`. With a fresh timestamp
           # per run and no re-invocation, a scheduled run submitted a wave, exited, and its results
           # were never collected: the same cards were PAID FOR AGAIN every week while nothing was
-          # ever published. The id is derived from the ISO week, so today's run resumes this week's.
+          # ever published. The CRON's id is the ISO week, so today's scheduled run resumes this week's;
+          # a dispatch that named `run_id` resumes THAT id instead, and the timeout message says so.
           #
           # And the branching is on the CODE, not on the output. Reading stdout produced three
           # findings in three rounds — `published` also matched "nothing published" on the waiting
@@ -232,7 +286,12 @@ jobs:
           : "${LABEL_CAP_USD:?empty — the bounds step did not run or did not publish its outputs}"
           : "${LABEL_REPORT_AT_USD:?empty — the bounds step did not run or did not publish its outputs}"
 
-          export LABEL_RUN_ID="weekly-$(date -u +%G-W%V)"
+          # FAIL CLOSED. The bounds step resolves this for both paths — a validated
+          # `backfill-YYYY-MM-DD` or the ISO week — so it is never legitimately empty, and an empty
+          # value means the wiring broke rather than "use the weekly id". Guessing the weekly id
+          # here would put a named backfill's cards under a different run id and pay for them twice.
+          : "${RESOLVED_RUN_ID:?empty — the bounds step did not run or did not publish run_id}"
+          export LABEL_RUN_ID="$RESOLVED_RUN_ID"
           echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           for attempt in $(seq 1 40); do
@@ -257,15 +316,26 @@ jobs:
             # the schedule is gated on `CARD_LABELS_ENABLED`, which is UNSET today, so the cron is
             # skipped and nothing resumes anything. An operator reading that waits for a run that
             # never happens, on a backfill that is half paid for.
+            # RESUME BY THE RUN ID THIS RUN ACTUALLY USED, which is not always the ISO week any
+            # more. This message used to say "any later run computing the same ISO-week id finds
+            # them" and "dispatch again, in the same ISO week" — true for the cron and FALSE for a
+            # named backfill. Intent keys are `${runId}:${model}:${index}`, so a blank box on the
+            # next dispatch produces `weekly-…`, matches none of the backfill's keys, and — since
+            # nothing is published until a run completes — plans and submits the same cards again.
+            # Paid twice, by an operator following the instructions.
             echo "gave up after 40 passes (~80 minutes). Intents are recorded under"
-            echo "$LABEL_RUN_ID, and nothing is re-submitted: any later run computing the same"
-            echo "ISO-week id finds them and carries on."
-            if [ "$CRON_ENABLED" = "true" ]; then
-              echo "The schedule is ON, so tomorrow's run resumes this by itself."
+            echo "$LABEL_RUN_ID, and nothing is re-submitted: a later run using THAT SAME id"
+            echo "finds them and carries on."
+            if [[ "$LABEL_RUN_ID" == backfill-* ]]; then
+              echo ""
+              echo "This run was dispatched with a named run id. To continue it, dispatch again"
+              echo "and enter run_id=$LABEL_RUN_ID. Leaving the box blank starts a DIFFERENT run"
+              echo "under this ISO week, which would re-submit and re-pay for these same cards."
+            elif [ "$CRON_ENABLED" = "true" ]; then
+              echo "The schedule is ON and this run uses the weekly id, so tomorrow's run resumes it."
             else
-              echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so the cron is skipped"
-              echo "and NOTHING will resume this on its own. Dispatch this workflow again, in the"
-              echo "same ISO week, to continue the run."
+              echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so nothing will resume"
+              echo "this on its own. Dispatch again in the same ISO week to continue."
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
