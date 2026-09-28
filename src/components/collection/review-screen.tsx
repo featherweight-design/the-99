@@ -16,11 +16,14 @@ export function ReviewScreen({
   preview,
   onCancel,
   onContinue,
+  pending = false,
   embedded,
 }: {
   preview: UploadPreview;
   onCancel: () => void;
   onContinue: () => void;
+  /** A first import confirms from this button, with no modal to carry the wait. */
+  pending?: boolean;
   embedded?: boolean;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -316,9 +319,12 @@ export function ReviewScreen({
           <PrimaryButton
             type="button"
             onClick={onContinue}
-            className="text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px]"
+            disabled={pending}
+            className="text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px] disabled:opacity-60 disabled:cursor-wait"
           >
-            {isInitialImport ? "Continue to import →" : "Continue to replace →"}
+            {/* "Importing…" is the confirm modal's own pending label, which this button now
+                carries when a first import skips the modal. */}
+            {pending ? "Importing…" : isInitialImport ? "Continue to import →" : "Continue to replace →"}
           </PrimaryButton>
         </div>
       </div>

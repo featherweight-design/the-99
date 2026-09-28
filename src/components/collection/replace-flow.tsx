@@ -29,18 +29,33 @@ export function ReplaceFlow({
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  // A FIRST import goes straight through: with no collection there is nothing to replace,
+  // so the Replace modal would only ask the player to confirm losing nothing (prod walk
+  // 2026-09-28, item 5a). "First" is the count the server read when it built the preview,
+  // not a caller's prop (first run passes a literal 0). The server re-checks at the confirm,
+  // and when a collection turns out to exist after all it writes nothing and this opens the
+  // modal instead.
+  const firstImport = preview?.currentCollectionCount === 0;
+
   async function onConfirm() {
     if (!preview || pending) return;
     setPending(true);
     setConfirmError(null);
     try {
-      await confirmUpload(preview.uploadId);
+      const outcome = await confirmUpload(preview.uploadId, { firstImport: firstImport && !confirming });
+      if (outcome?.needsConfirm) {
+        setConfirming(true);
+        return;
+      }
       // The receipt, not the collection. A typed REPLACE is the most destructive action in
       // the app and was the only one with no receipt; the summary route is keyed on the
       // upload id, so it survives a reload and stays linkable.
       router.push(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");
+      // A skipped confirm has no surface of its own to say it failed, so it opens the modal,
+      // whose error slot is where a failed confirm has always been reported.
+      setConfirming(true);
     } finally {
       setPending(false);
     }
@@ -81,7 +96,8 @@ export function ReplaceFlow({
           setConfirming(false);
           setPreview(null);
         }}
-        onContinue={() => setConfirming(true)}
+        onContinue={() => (firstImport ? void onConfirm() : setConfirming(true))}
+        pending={pending && !confirming}
         embedded={embedded}
       />
       {confirming && (

@@ -126,7 +126,17 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
 
 
 
-export async function confirmUpload(uploadId: string): Promise<void> {
+/**
+ * What a confirm can answer besides success. `needsConfirm` is the one refusal a caller acts
+ * on rather than shows: a `firstImport` confirm found a collection already there, so nothing
+ * was written and the caller asks the player before replacing it.
+ */
+export type ConfirmOutcome = { needsConfirm: true } | void;
+
+export async function confirmUpload(
+  uploadId: string,
+  opts: { firstImport?: boolean } = {},
+): Promise<ConfirmOutcome> {
   const userId = await requireUserId();
   const [upload] = await db.select().from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
@@ -152,6 +162,14 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
   const ownedBefore = await ownedByOracle(userId);
+
+  // A FIRST IMPORT SKIPS THE CONFIRM, because there is nothing to lose (prod walk 2026-09-28,
+  // item 5a). The client says "first" from the count it was drawn with, which can be stale: a
+  // second tab may have imported since. So the server decides, from the collection it just
+  // read, and a first-import confirm over a collection that exists writes nothing and hands the
+  // choice back to the player. The skip is only as safe as "nothing to lose" is true HERE.
+  if (opts.firstImport && Object.keys(ownedBefore).length > 0) return { needsConfirm: true };
+
   const buyBefore = await loadDeckBuyRows(userId);
 
   // A preview written before migration 0008 carries no collectorNumber/finish;
