@@ -10,7 +10,8 @@
 //    DISCLOSURE, never a control (manifest-affordance addendum, Hugh 2026-09-28): every read row is
 //    a ruled line at least 32px desktop / 36px phone, with no fill and no top or side border, a
 //    default cursor, nothing that changes under the pointer, and a PRESS on it changes nothing.
-//  - No games (a second deck, found by query, and the run FAILS when there is none): the dashed
+//  - No games (a deck with no games, found by query, which may be the never-run deck itself; the
+//    run FAILS when there is none): the dashed
 //    row's `Log a game →`, the manifest's only target, measures exactly 44px on the phone and at
 //    least 38px on desktop. `py-[12px]` put back reads 43px and fails.
 //  - Results, from a fixture set: one card per item; the FULL rationale drawn on desktop and the
