@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { IssueInspectorList, VIRTUALIZE_THRESHOLD } from "./issue-inspector-list";
 
@@ -39,20 +39,60 @@ describe("IssueInspectorList — virtualised rows", () => {
     expect(tops.slice(0, 4)).toEqual([0, 76, 152, 228]);
   });
 
-  it("sizes the rows a filter hands it by measuring them, not by the index they took", async () => {
-    stubRowHeight(64);
+  it("keeps a measured row's size when a filter moves it to another index", async () => {
+    // Rendered rows are measured again on every render, so a store keyed by
+    // INDEX and one keyed by ROW agree about everything on screen. They part
+    // over rows a filter moved OFF screen, whose sizes still set the offsets of
+    // every row below them. So: ten tall rows measured on open, then a new
+    // order that pushes them past the rendered window, then a scroll to just
+    // below them. The first short row's slot must sit under ten TALL rows.
+    const TALL = 90;
+    const SHORT = 50;
+    const byName = (name: string) => (name.startsWith("Tall") ? TALL : SHORT);
+    const real = HTMLElement.prototype.getBoundingClientRect;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      const box = (h: number) =>
+        ({ x: 0, y: 0, top: 0, left: 0, right: 300, bottom: h, width: 300, height: h, toJSON() {} }) as DOMRect;
+      if (this.hasAttribute("data-issue-row")) return box(byName(this.textContent ?? ""));
+      if (this.hasAttribute("data-issue-list")) return box(300); // the list's viewport
+      return real.call(this);
+    });
+    const row = (name: string, line: number) => ({ name, setCode: "abc", line, quantity: 1 });
+    const talls = Array.from({ length: 10 }, (_, i) => row(`Tall ${i}`, 1000 + i));
+    const shorts = Array.from({ length: 180 }, (_, i) => row(`Short ${i}`, 2000 + i));
+    const fresh = Array.from({ length: 20 }, (_, i) => row(`Fresh ${i}`, 3000 + i));
+
+    // Open: the talls lead, and a 300px window plus its overscan measures all ten.
     const { container, rerender } = render(
-      <IssueInspectorList variant="unmatched" rows={rows(VIRTUALIZE_THRESHOLD + 50)} query="" />,
+      <IssueInspectorList variant="unmatched" rows={[...talls, ...shorts]} query="" />,
     );
     await act(async () => {});
-    expect(slotTops(container)[1]).toBe(70);
-    // A filter hands the list new rows; their sizes are measured, not inherited by index.
-    vi.restoreAllMocks();
-    stubRowHeight(90);
-    rerender(
-      <IssueInspectorList variant="unmatched" rows={rows(VIRTUALIZE_THRESHOLD + 40).reverse()} query="" />,
-    );
+    const names = () => [...container.querySelectorAll("[data-issue-row]")].map((r) => r.textContent ?? "");
+    expect(names().filter((n) => n.startsWith("Tall"))).toHaveLength(10);
+
+    // A filter puts twenty unmeasured rows first: the talls move to indexes
+    // 20–29, out of the rendered window. At those indexes an index-keyed store
+    // holds whatever sat there on open (short rows, mostly never measured).
+    rerender(<IssueInspectorList variant="unmatched" rows={[...fresh, ...talls, ...shorts]} query="" />);
     await act(async () => {});
-    expect(slotTops(container)[1]).toBe(96);
+    expect(names().some((n) => n.startsWith("Tall"))).toBe(false);
+
+    // Twenty fresh rows: the rendered ones measured (50 + 6), the rest estimated
+    // (70). Then the ten talls at 96 each. That is where Short 0 starts.
+    const renderedFresh = names().filter((n) => n.startsWith("Fresh")).length;
+    const expectedTop = renderedFresh * 56 + (20 - renderedFresh) * 70 + 10 * (TALL + 6);
+    const outer = container.querySelector("[data-issue-list]")!.firstElementChild as HTMLElement;
+    Object.defineProperty(outer, "clientHeight", { configurable: true, value: 300 });
+    Object.defineProperty(outer, "scrollHeight", { configurable: true, value: 100_000 });
+    outer.scrollTop = expectedTop + 10;
+    fireEvent.scroll(outer, { target: { scrollTop: expectedTop + 10 } });
+    await act(async () => {});
+    const short0 = [...container.querySelectorAll<HTMLElement>("[data-issue-row]")].find(
+      (r) => r.textContent?.startsWith("Short 0"),
+    );
+    expect(short0, "Short 0 is not in the rendered window").toBeDefined();
+    expect(parseFloat(short0!.parentElement!.style.top)).toBe(expectedTop);
   });
 });
