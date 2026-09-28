@@ -14,9 +14,9 @@ cached chunks or not. Every other route stays under 1s on a repeat visit.
   and the art URL. On `/collection` the art URL is the largest single field.
 - Keep every row for filtering, sorting and search, and send the draw-only fields for the first
   window only. That cuts `/discover` by **70%** (362KB → 109KB gzipped) and `/collection` by
-  **48%** (284KB → 147KB), and filtering stays instant.
-- A field trim with no change in behavior takes `/collection` down **24%** on its own. It is the
-  safe first PR.
+  **46%** (284KB → 153KB), and filtering stays instant.
+- A field trim with no change in behavior takes `/collection` down **20%** on its own (24% if the
+  image cache stamp goes too, which is Hugh's call, §6). It is the safe first PR.
 - The recommendation is four PRs (§5). The first is a trim with no behavior change.
 
 ## 1 · How this was measured
@@ -39,10 +39,11 @@ cached chunks or not. Every other route stays under 1s on a repeat visit.
 - **Costing an option.** Each option is priced by transforming the captured rows the way the
   change would, then compressing the result. The figures are what the change would ship, not an
   estimate of it.
-- **Time.** On the brief's slow-network table, the repeat-visit time rises about **6ms per
-  gzipped KB** above `/commanders` (41KB, 875ms): `/collection` gives (2367−875)/(289−41) and
-  `/discover` gives (2644−875)/(357−41) = 5.6. The predicted times below apply that slope. They
-  are estimates to be re-measured with `measure:load` after each PR, not results.
+- **Time.** On the brief's slow-network table, each route's repeat-visit time rises with its
+  payload above `/commanders` (41KB, 875ms): **6.0ms per gzipped KB** for `/collection`
+  ((2367−875)/(289−41)) and **5.6ms** for `/discover` ((2644−875)/(357−41)). Each route's
+  predictions below apply its own slope. They are estimates to be re-measured with `measure:load`
+  after each PR, not results.
 
 ## 2 · What is in each payload
 
@@ -71,12 +72,13 @@ and all 2,820 ship.
 | `cmc` | 3.0KB | 3KB | **nothing** |
 | `comboPartner` | 2.6KB | 5KB | `.name` only; `.oracleId` is unread |
 | `preferredPrinting` | 2.6KB | 12KB | **nothing** (the modal reads its own fetched card) |
-| `layout`, `quantity`, `printedName`, `facts`, `comboOtherPartners` | ≤2.5KB each | | drawn |
+| `layout`, `printedName` | 2.5KB, 2.1KB | | drawn, and read by search (`matchesName` → `printedNameOf`, `browse.ts:745,822`) and by the name sort and every sort's tiebreak (`printedFaceName`, `browse.ts:765-769,892,921`) |
+| `quantity`, `facts`, `comboOtherPartners` | ≤2.2KB each | | drawn |
 
 - **`availability` is the costliest raw field.** 1,173 of 2,820 rows carry claims, 1,441 claims in
-  all, over only 20 decks. Every claim repeats its deck's uuid and name, plus eight fields no
+  all, over only 20 decks. Every claim repeats its deck's uuid and name, plus nine fields no
   list surface reads: `since`, `senior`, `granted`, `pending`, `quantity`, `commander`,
-  `versionNumber`, `commanderCopies`. It compresses well, which is why it costs 31KB gzipped
+  `locked`, `versionNumber`, `commanderCopies`. It compresses well, which is why it costs 31KB gzipped
   rather than 455KB.
 - **Images are not in the RSC figure, but they share the link.** The grid draws art as a CSS
   background for all 200 windowed tiles at once, with no lazy loading. Five sampled `normal`
@@ -138,7 +140,7 @@ repeat-visit time uses the §1 slope and is an estimate.
 - **`/discover` has almost nothing to trim.** Dropping the derivable `rank`, `score` and
   `measurableTotal` saves 2% (362 → 355KB). The dictionary encoding in #497 already took the easy
   bytes.
-- **Predicted:** `/collection` about 2.37s → 2.0s (stamp kept) or 1.9s (dropped).
+- **Predicted:** `/collection` about 2.37s → 2.04s (stamp kept) or 1.96s (dropped).
 
 ### B · Send the draw-only fields for the first window, and fetch the rest as rows reveal
 
@@ -150,26 +152,40 @@ first window, and a revealed row fetches them.
 | `/discover`: `prose` only for the first 25 rows | 235.7KB | 35% | ~1.9s |
 | `/discover`: `prose` and art only for the first 25 | 141.1KB | 61% | ~1.4s |
 | `/discover`: every draw-only column only for the first 25 (prose, art, gap line, price, fit parts; derivables dropped) | **109.3KB** | **70%** | **~1.25s** |
-| `/collection`: A, plus art, facts, combo partner, layout and printed name for the first 200 only | 150.7KB | 47% | ~1.6s |
-| `/collection`: the same with a first window of 60 | 146.7KB | 48% | ~1.55s |
+| `/collection`: A, plus art, facts and combo partner for the first 200 only | 153.3KB | 46% | ~1.6s |
+| `/collection`: the same with a first window of 60 | 149.4KB | 47% | ~1.55s |
 
 - **Rows stay on the client, so filtering stays instant.** Search, colors, sets, availability
   and every client-side order still run over all rows. Only a row entering the window may need
-  its drawn fields.
+  its drawn fields. Every field a filter, a search or a sort reads stays on every row. That is
+  why `printedName` and `layout` are NOT deferred on `/collection`: search and the name sort read
+  both, so deferring them would drop Secret Lair renames from search and reshuffle name order as
+  batches arrived.
 - **A fetch per reveal.** Show more, a filter or a search that brings new rows into the window
   fetches their drawn fields in one batch, keyed by slug or oracle id. On the slow profile that
-  is one round trip (~560ms) with skeleton rows, against today's 2.4s on every visit.
-- **The batch is a GET route handler, never a server action.** This is the `probe:card-prefetch`
-  lesson: Next runs a page's server actions one at a time, so a read issued as an action queues
-  behind the reader's writes, and it made the next action on the page ~800ms slower. The route
-  reads through the same `cacheForUser` entry the page does, so it costs one cache hit, not a
-  recompute.
+  is one round trip (~560ms) with skeleton rows, against today's 2.4s (`/collection`) and 2.6s
+  (`/discover`) on every visit.
+- **The batch is a GET route handler, never a server action.** Next runs a page's server
+  actions one at a time (AGENTS.md, `probe:card-prefetch`), so a read issued as an action would
+  queue with the reader's writes. The card prefetch also recorded a pending action slowing the
+  NEXT action on the page (a press went 315 → 815ms; `card-detail-provider.tsx:16-22`, where
+  the mechanism inside Next is noted as not pinned down). The route reads through the same
+  `cacheForUser` entry the page does, so it costs one cache hit, not a recompute.
 - **The server must know the first window.** It is the window of the URL's own sort and
-  filters. The server already parses those params on `/discover` (`parseLaneParams`), and
-  `/collection` would parse its `q c t s avail sort dir view`. The same pure `filterCards` /
-  `sortCards` run on both sides, so they agree by construction. A client whose stored view
-  differs from the URL (the collection view toggle falls back to localStorage) gets one fetch
-  for its first window. That is the only case where the first paint waits on a fetch.
+  filters.
+  - **`/collection`** filters and sorts through the pure `filterCards` / `sortCards` in
+    `browse.ts`. The server can run the same two functions over the URL's `q c t s avail sort
+    dir`, so both sides agree by construction.
+  - **`/discover`** computes its window inside the client-only `discovery-view.tsx`, with a
+    module-private `ordered` (:100), an inline search, `filterByColors` and `isPrintedIn`
+    (:275-305). The server page calls none of them; its `parseLaneParams` feeds only
+    `discoverSort`. So PR #2 first extracts that window logic into a shared module both sides
+    import. It is a pure move, and it is listed in §5.
+  - **The view does not change the window.** Grid and rows draw the same first 200 cards, so the
+    window's fields ship whatever the view. Rows view simply does not draw the art it received,
+    200 rows' worth. The view resolves from `?view=`, then localStorage, then the viewport
+    (`browser.tsx:286`), which the server cannot know. So the plan does not tailor the payload
+    to the view.
 - **The printing-pick patch** (`collection-client.tsx:56-75`) layers art over rows. It has to
   layer over fetched fields too, which is one merge in the same place.
 - **Cost.** A route per surface, a small per-visit cache of fetched fields (the discovery-cache
@@ -190,15 +206,16 @@ first window, and a revealed row fetches them.
   slow profile each would cost at least one round trip (~560ms). The count lines, the
   "Drop … and you get N back" fixes and Printed in's promised counts are all client-computed
   over the whole list today, and each would need a server answer.
-- **The saving over B is about 100KB.** That is roughly 0.6s once per visit on the slow
-  profile, bought with a round trip on every control press. Not recommended.
+- **The saving over B** is about 100KB on `/discover` (~0.55s) and 136KB on `/collection`
+  (~0.8s), once per visit on the slow profile. It is bought with a round trip on every control
+  press. Not recommended.
 
 ### D · Move filtering and sorting to the server
 
 - **This option is C's other half.** Alone, with the whole list still shipped, it saves nothing.
 - **It costs a round trip per control press**, and it rebuilds the counts and suggestions in §C
   as server answers.
-- Not recommended: B keeps filtering on the client and gives up only about 100KB of C's saving.
+- Not recommended: B keeps filtering on the client and gives up only 100–136KB of C's saving.
 
 ### E · Drop the precomputed alternate rankings
 
@@ -231,9 +248,12 @@ first window, and a revealed row fetches them.
   keyed by slug. A cached ranking reused on a flip back to `bestfit` reuses the fields already
   fetched. The `o=new` payload shrinks by the same share (177KB today). The cache's rules are
   unchanged: one visit, a fresh server payload wins, and the URL is written on a hit.
-- **`probe:payload`** (`scripts/probe-payload-size.mts`) holds both lists under a 1.6MB raw budget.
-  Each PR here should lower that budget to what it ships, so a regression fails CI rather than
-  a phone.
+- **`probe:payload`** (`scripts/probe-payload-size.mts`) holds `/discover` and the `/commanders`
+  owned lane under a 1.6MB raw budget. It does NOT cover `/collection`, and no workflow runs it:
+  it is a by-hand check against a database. PR #2 lowers the `/discover` budget to what it
+  ships. PR #1 adds a `/collection` budget (through `loadBrowseCards` and the wire encoder), and
+  #3 lowers it. So a regression fails the probe, which each PR's body shows run. Wiring it into
+  CI would need a database in CI, and that is out of scope here.
 
 ## 5 · PR boundaries and recommendation
 
@@ -243,8 +263,8 @@ and §3 gives the reasons above with their measured cost.
 | # | PR | Measured saving | Predicted slow repeat visit | Behavior change |
 |---|---|---:|---:|---|
 | 1 | **`/collection` trim** (A with the stamp kept): drop the four unread fields and the `setCodes` duplicate, slim `availability` onto a deck dictionary, stem the image URL; `/discover` drops its derivables and three unread meta fields | `/collection` −20%, `/discover` −2% | ~2.0s / ~2.6s | none |
-| 2 | **`/discover` first window** (B): every draw-only column for the URL's first 25; a GET route returns the rest by slug in batches; skeleton rows while a batch is pending; the discovery cache keeps fetched fields per visit | −70% (362 → 109KB) | ~1.25s | revealed rows can show a skeleton for one round trip |
-| 3 | **`/collection` first window** (B on top of #1): art, facts, combo partner, layout and printed name for the URL's first window; a GET route by oracle id; the printing-pick patch merges over fetched fields | −47% of today (284 → 151KB) | ~1.6s | same as #2 |
+| 2 | **`/discover` first window** (B): extract the window logic (`ordered`, search, colors, Printed in) out of `discovery-view.tsx` into a shared module first, as a pure move; then every draw-only column for the URL's first 25, and a GET route returns the rest by slug in batches; skeleton rows while a batch is pending; the discovery cache keeps fetched fields per visit | −70% (362 → 109KB) | ~1.25s | revealed rows can show a skeleton for one round trip |
+| 3 | **`/collection` first window** (B on top of #1): art, facts and combo partner for the URL's first window (`printedName` and `layout` stay on every row, because search and sort read them); a GET route by oracle id; the printing-pick patch merges over fetched fields | −46% of today (284 → 153KB) | ~1.6s | same as #2 |
 | 4 | **Lazy grid art on `/collection`**: tile art loads as tiles near the viewport (IntersectionObserver or `loading="lazy"` on an `<img>`), not all 200 at once | not in the RSC figure; the first grid screen stops asking for ~20MB of art | the image wait, measured by `measure:load`'s first-card-image column | none visible |
 
 - **Ordering.** #1 is safe and lands first. #2 carries the most saving and is independent of #1.
@@ -256,7 +276,7 @@ and §3 gives the reasons above with their measured cost.
   - `measure:load` on a `pull:staging` scratch branch under the brief's slow profile, repeat
     visits at 1300 and 390;
   - the gzipped payload from this plan's method;
-  - a lowered `probe:payload` budget.
+  - the `probe:payload` budget it sets or lowers, and that probe's run.
 - **#2 and #3 each get a browser probe that presses Show more, a filter and a search**, and
   asserts that newly revealed rows draw their fetched fields. The mutation check drops the fetch
   and watches the probe fail on the rows past the first window.
@@ -266,7 +286,7 @@ and §3 gives the reasons above with their measured cost.
 1. **Approve the four-PR shape**, or pick a subset. #1 alone is a ~20% cut with no behavior
    change. #2 is the largest single win.
 2. **Accept a skeleton on revealed rows** (#2, #3): one round trip when Show more or a filter
-   brings rows in that the first payload did not draw, against ~1.1s saved on every visit on the
-   slow profile.
+   brings rows in that the first payload did not draw. Against that, about 1.4s is saved on every
+   `/discover` visit and about 0.8s on every `/collection` visit, on the slow profile.
 3. **Keep or drop the image cache stamp** in #1: 4% more on `/collection` against possibly stale
    art after Scryfall re-scans an image.
