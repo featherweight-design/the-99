@@ -172,8 +172,12 @@ Two smaller instances of the same gap, both flagged on the canvas:
   `--fg-locked`, and they are repeated in the aria description.
 - Colour is never the only carrier: ownership is a word, the applied state is a stamp with a glyph,
   the failure class is a named tag, the cut is struck through as well as dimmed, and a done
-  manifest row has a ✓ as well as a fill.
-- Targets: 46px note field desktop / 48px phone; 38px manifest rows / 44px phone; **32px apply and
+  manifest row has a ✓ and a brighter label ink (`--fg`), with no fill. *Amended 2026-09-28 by
+  the manifest-affordance addendum (`addendum-manifest-affordance/`): the manifest is a
+  disclosure, and a row is a ruled line led by a dot pending and a ✓ read.*
+- Targets: 46px note field desktop / 48px phone; the manifest's ONLY target is `Log a game →`, at
+  44px phone / 38px desktop (its read rows are not targets: 32px desktop / 36px phone, amended
+  2026-09-28); **32px apply and
   dismiss on desktop, 44px on phone**; 56px action row in all six states; 44px phone primaries.
   Apply is never adjacent to a destructive control.
 - **R2 density pass (suggestion card only).** Four rows at 9px padding, 22×31 thumbnails, no column
