@@ -9,7 +9,7 @@
  * these.
  */
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cards, cardLabelsStaging } from "../../db/schema";
@@ -136,6 +136,20 @@ export async function readCardsByName(db: Db, names: readonly string[]): Promise
  * every name in its reply resolve to null, stage nothing, and show up only as a floor shortfall on
  * a wave that had been paid for.
  *
+ * `olderThan` IS THE LOAD-BEARING CLAUSE, and without it this function is worse than the deadlock
+ * it cures. A FRESH CLAIM ROW IS INDISTINGUISHABLE FROM A STRANDED ONE: `submit` inserts with
+ * `batch_id` null and the status column defaults to `'intended'` (`schema.ts`), and `stampWave`
+ * only moves it after `batches.create` RETURNS. So a release with no age test matches another
+ * invocation's live claim — delete it while that caller sits inside `batches.create`, insert the
+ * same key with nothing to conflict against, and submit the chunk a second time. That is the exact
+ * double charge the claim exists to prevent, newly made possible by the thing meant to fix it:
+ * before this function existed, the second caller's insert conflicted and it died.
+ *
+ * A live claim is young by construction — it was written moments ago by a caller now waiting on the
+ * provider — while a stranded row has outlived the grace period, which is the same evidence that
+ * made it reclaimable. So the age is what tells them apart, and the caller passes a cutoff rather
+ * than this function inventing one.
+ *
  * The caller must already have proved these were never submitted. The predicate re-checks the rest
  * inside the statement: `batch_id is null` (nothing that reached the provider), and a status the
  * check constraint already implies from that.
@@ -145,13 +159,16 @@ export async function readCardsByName(db: Db, names: readonly string[]): Promise
  * back. That leaves the expired path still unable to re-submit under its own run id, which is a
  * real limitation recorded where it happens rather than papered over here.
  */
-export async function releaseIntents(db: Db, intentKeys: string[]): Promise<string[]> {
+export async function releaseIntents(
+  db: Db, intentKeys: string[], olderThan: Date,
+): Promise<string[]> {
   if (intentKeys.length === 0) return [];
   const gone = await db.delete(cardLabelBatches)
     .where(and(
       inArray(cardLabelBatches.intentKey, intentKeys),
       isNull(cardLabelBatches.batchId),
       inArray(cardLabelBatches.status, ["intended", "abandoned"]),
+      lt(cardLabelBatches.intendedAt, olderThan),
     ))
     .returning({ intentKey: cardLabelBatches.intentKey });
   return gone.map((r) => r.intentKey);

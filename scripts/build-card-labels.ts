@@ -33,7 +33,7 @@ import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schem
 import { faceResolver } from "../src/lib/labels/parse";
 import {
   boundedNumber, CARDS_PER_REQUEST, classifyNullIntent, meetsFloor, pauseRemediation,
-  planChunks, waveSize,
+  planChunks, RECLAIM_GRACE_MS, waveSize,
   withinCap, worstCaseUsd,
   type Chunk,
 } from "../src/lib/labels/plan";
@@ -356,6 +356,25 @@ async function reconcile(): Promise<{
    */
   let anyUnreadable = false;
   const unresolved = new Set(open.filter((o) => o.batchId === null).map((o) => o.customId));
+  /**
+   * The earliest instant a batch could contain one of our lost ids, less a clock-skew margin.
+   *
+   * `submit` writes the intent row BEFORE calling `batches.create`, so any batch holding one of
+   * these custom ids was created after that row. A batch older than the oldest unresolved intent
+   * therefore cannot hold any of them, and is skipped entirely below.
+   *
+   * That is not an optimisation, it is the fix for two defects. `results()` raises 404 for any
+   * batch past the provider's 29-day window — this script says so itself, in `collectBatch` — so
+   * sweeping the whole account history meant one aged batch anywhere in the workspace marked the
+   * search inconclusive and made reclaim unreachable PERMANENTLY. And `anyStillProcessing` was
+   * account-wide, so this run's own in-flight wave refused the reclaim of every intent that did
+   * not fit in it. Neither batch can hold a null-id intent of ours; both used to veto it.
+   */
+  const oldestUnresolved = open
+    .filter((o) => o.batchId === null)
+    .reduce<Date | null>((m, o) => (m === null || o.intendedAt < m ? o.intendedAt : m), null);
+  const couldHoldOurs = (createdAt: string): boolean => oldestUnresolved === null
+    || new Date(createdAt).getTime() >= oldestUnresolved.getTime() - 5 * 60 * 1000;
   if (unresolved.size > 0) {
     // PAGINATED UNTIL EXHAUSTED, or until every lost id is accounted for. One page of 100 does
     // NOT prove the provider has no matching batch — other activity can push a lost batch past
@@ -367,6 +386,9 @@ async function reconcile(): Promise<{
       const page = await client.messages.batches.list({ limit: 100, ...(cursor ? { after_id: cursor } : {}) });
       pages++;
       for (const batch of page.data) {
+        // Older than every lost id, so it cannot hold one. Not read, and its state votes on
+        // nothing — an expired batch's 404 used to block the reclaim for good.
+        if (!couldHoldOurs(batch.created_at)) continue;
         if (batch.processing_status !== "ended") continue;
         try {
           for await (const r of await client.messages.batches.results(batch.id)) {
@@ -384,7 +406,12 @@ async function reconcile(): Promise<{
       // its `custom_id`s cannot be matched. If any such batch exists, the absence of a match
       // proves nothing: the lost request may be running inside it right now. Treating an
       // exhausted page as proof would re-plan work that is in flight.
-      if (page.data.some((b) => b.processing_status !== "ended")) anyStillProcessing = true;
+      // SCOPED, for the same reason: a batch too old to hold one of our lost ids proves nothing
+      // about them either way, and this run's own freshly submitted wave is NOT excluded here —
+      // a `create` that returned before its stamp landed is exactly the case this protects.
+      if (page.data.some((b) => b.processing_status !== "ended" && couldHoldOurs(b.created_at))) {
+        anyStillProcessing = true;
+      }
       cursor = page.data.at(-1)?.id;
       // Every lost id accounted for: exhaustive whatever else was on the pages.
       if (unresolved.size === 0) { searchWasComplete = true; break; }
@@ -511,7 +538,7 @@ async function reconcile(): Promise<{
  * provider, rather than as absent and re-submits. Writing the rows after the call is the
  * shape that pays twice.
  */
-async function submit(chunks: Chunk[], reclaimable: Set<string>): Promise<void> {
+async function submit(chunks: Chunk[]): Promise<void> {
   // THE INSERT IS THE CLAIM, and only what this process actually inserted is submitted.
   //
   // Two invocations sharing a `LABEL_RUN_ID` — copied by hand from a previous run's output, so an
@@ -525,16 +552,6 @@ async function submit(chunks: Chunk[], reclaimable: Set<string>): Promise<void> 
   // see. A session advisory lock was the first attempt and it is INERT here: `drizzle(url)` pools
   // connections, session locks are per connection, and a second connection took the same lock —
   // measured, both returned true.
-  // RELEASE FIRST, so the claim below is the only claim. `reconcile` has proved these were never
-  // submitted; deleting their rows hands them back to the INSERT, whose primary-key conflict is
-  // the exclusion primitive that already works. Whoever's DELETE returns the key owns it — the
-  // loser's DELETE returns nothing, its INSERT conflicts, and it dies, which is correct.
-  if (reclaimable.size > 0) {
-    const asking = chunks.filter((c) => reclaimable.has(c.intentKey)).map((c) => c.intentKey);
-    const released = await releaseIntents(db, asking);
-    console.log(`  released ${released.length} of ${asking.length} stranded intent(s) for re-claim`);
-  }
-
   const claimed = await db.insert(cardLabelBatches).values(chunks.map((c) => ({
     intentKey: c.intentKey, runId, model: MODEL, customId: c.customId, asked: c.names,
   }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
@@ -679,6 +696,27 @@ async function main(): Promise<void> {
       + `EXCLUDED — the model's reply could not be attributed to one of them:`);
     for (const c of ambiguous.slice(0, 10)) console.warn(`  ${c.name} (${c.oracleId})`);
     if (ambiguous.length > 10) console.warn(`  ...and ${ambiguous.length - 10} more`);
+  }
+
+  // RELEASED HERE, ONCE, AND FOR ALL OF THEM — not inside `submit` for the current wave only.
+  //
+  // The evidence is already in hand: an exhaustive search found no batch for these and they are
+  // past the grace period. Releasing only the wave's share left the rest depending on a LATER pass
+  // re-proving it — and that pass runs with this run's own wave in flight, which made
+  // `anyStillProcessing` true and refused them. With the default weekly cap a wave is ~115
+  // requests against the 127 stranded by the first dispatch, so the remainder mattered.
+  //
+  // The cutoff is what keeps this from deleting a live claim: a row another invocation wrote
+  // moments ago is younger than the grace period and is not matched. See `releaseIntents`.
+  if (reclaimable.size > 0) {
+    const cutoff = new Date(Date.now() - RECLAIM_GRACE_MS);
+    const released = await releaseIntents(db, [...reclaimable], cutoff);
+    console.log(`released ${released.length} of ${reclaimable.size} stranded intent(s) for re-claim`);
+    if (released.length < reclaimable.size) {
+      console.log(`  ${reclaimable.size - released.length} were not released — another invocation `
+        + `holds them, or they are younger than the grace period. Their chunks will be refused by `
+        + `the claim, which is correct.`);
+    }
   }
 
   console.log(`${cards.length} card(s) need labels (stored hash differs or absent)`);
@@ -855,7 +893,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  await submit(wave, reclaimable);
+  await submit(wave);
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);
   process.exitCode = EXIT_MORE_WORK;

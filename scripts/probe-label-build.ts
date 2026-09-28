@@ -43,6 +43,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { meetsFloor, planChunks } from "../src/lib/labels/plan";
 import { publishRun, readCardsByName, releaseIntents, stampWave } from "../src/lib/labels/publish";
+import { RECLAIM_GRACE_MS } from "../src/lib/labels/plan";
 import type { Job } from "../src/lib/labels/types";
 
 const db = drizzle(DATABASE_URL);
@@ -187,7 +188,7 @@ async function main(): Promise<void> {
   // `batches.create`, and this file's own header excluded "anything that needs the API" — which
   // silently excluded a DATABASE READ as well. So nothing ever executed it, and a bare JS array
   // interpolated into a `sql` template renders `any(($1, $2, $3))`: Postgres 42809, on the first
-  // real dispatch, past typecheck, lint, 11,282 tests and `--dry-run`.
+  // real dispatch, past typecheck, lint, 11,297 tests and `--dry-run`.
   //
   // MORE THAN ONE NAME, deliberately, and asserted as such — though a single name fails too
   // (`any(($1))`), so this is belt and braces rather than the crux.
@@ -215,10 +216,14 @@ async function main(): Promise<void> {
   // the claim insert conflicts, and the row is absent from `done` so it is re-planned for ever.
   const strandedRun = `probe-stranded-${randomUUID()}`;
   const strandedKey = `${strandedRun}:claude-sonnet-4-5:0`;
+  // STATED AGE, because the release is age-scoped and a default `intended_at` of now() is a LIVE
+  // claim rather than a stranded row. `stale()` is the cutoff every case below releases against.
+  const graceCutoff = () => new Date(Date.now() - RECLAIM_GRACE_MS);
+  const longAgo = new Date(Date.now() - 3 * RECLAIM_GRACE_MS);
   const plant = async (key: string, extra: Record<string, unknown> = {}) => {
     await db.insert(cardLabelBatches).values({
       intentKey: key, runId: strandedRun, model: "claude-sonnet-4-5",
-      customId: `${key}-custom`, asked: [a.name], ...extra,
+      customId: `${key}-custom`, asked: [a.name], intendedAt: longAgo, ...extra,
     });
   };
   strandedRunId = strandedRun;
@@ -229,7 +234,7 @@ async function main(): Promise<void> {
     before[0]?.status === "intended" && before[0]?.batchId === null,
     `${before[0]?.status}, batchId ${String(before[0]?.batchId)}`);
 
-  const first = await releaseIntents(db, [strandedKey]);
+  const first = await releaseIntents(db, [strandedKey], graceCutoff());
   report("it is released", first.length === 1 && first[0] === strandedKey, `${first.length}`);
   const afterRelease = await db.select().from(cardLabelBatches)
     .where(eq(cardLabelBatches.intentKey, strandedKey));
@@ -243,12 +248,12 @@ async function main(): Promise<void> {
   await plant(sentToProvider);
   await stampWave(db, [sentToProvider], "msgbatch_probe_stranded");
   report("a row that reached the provider is not released",
-    (await releaseIntents(db, [sentToProvider])).length === 0);
+    (await releaseIntents(db, [sentToProvider], graceCutoff())).length === 0);
 
   const withId = `${strandedRun}:claude-sonnet-4-5:2`;
   await plant(withId, { batchId: "msgbatch_probe_has_an_id", status: "intended" });
   report("nor one carrying a batch id while still `intended`",
-    (await releaseIntents(db, [withId])).length === 0);
+    (await releaseIntents(db, [withId], graceCutoff())).length === 0);
 
   // THE STATUS CLAUSE IS IMPLIED, and saying so beats claiming coverage it cannot have.
   // `card_label_batches_id_with_status_check` is `status in ('intended','abandoned') or batch_id
@@ -260,7 +265,25 @@ async function main(): Promise<void> {
   catch { refused = true; }
   report("the database refuses a moved-on status with no batch id", refused);
 
-  const absent = await releaseIntents(db, [`${strandedRun}:claude-sonnet-4-5:999`]);
+  // A LIVE CLAIM MUST SURVIVE, and this is the case whose absence made the release worse than the
+  // deadlock it cures. `submit` inserts with `batch_id` null and the status defaulting to
+  // `intended`, and only stamps after `batches.create` RETURNS — so a fresh claim is byte-identical
+  // to a stranded row on every other clause. Without the age cutoff this release deletes another
+  // invocation's in-flight claim, its own insert then finds nothing to conflict with, and the chunk
+  // is submitted and charged twice. Planted with the column's real default rather than a stated
+  // date, because that is what `submit` writes.
+  const liveClaim = `${strandedRun}:claude-sonnet-4-5:5`;
+  await db.insert(cardLabelBatches).values({
+    intentKey: liveClaim, runId: strandedRun, model: "claude-sonnet-4-5",
+    customId: `${liveClaim}-custom`, asked: [a.name],
+  });
+  report("a live claim written moments ago is NOT released",
+    (await releaseIntents(db, [liveClaim], graceCutoff())).length === 0);
+  const survived = await db.select().from(cardLabelBatches)
+    .where(eq(cardLabelBatches.intentKey, liveClaim));
+  report("and its row is still there for its own caller to stamp", survived.length === 1);
+
+  const absent = await releaseIntents(db, [`${strandedRun}:claude-sonnet-4-5:999`], graceCutoff());
   report("an unknown key releases nothing", absent.length === 0, `${absent.length}`);
 
   console.log("8. two callers race one stranded intent and exactly one wins");
@@ -274,8 +297,8 @@ async function main(): Promise<void> {
   const dbA = drizzle(DATABASE_URL);
   const dbB = drizzle(DATABASE_URL);
   const [ra, rb] = await Promise.all([
-    releaseIntents(dbA, [raced]),
-    releaseIntents(dbB, [raced]),
+    releaseIntents(dbA, [raced], graceCutoff()),
+    releaseIntents(dbB, [raced], graceCutoff()),
   ]);
   report("exactly one caller takes it", ra.length + rb.length === 1,
     `A ${ra.length}, B ${rb.length}`);
@@ -296,8 +319,8 @@ main()
       () => db.delete(cardLabelsStaging).where(inArray(cardLabelsStaging.runId, [runId, otherRun])),
       () => db.delete(cardLabelBatches).where(eq(cardLabelBatches.runId, runId)),
       // Section 7's stranded run, on its OWN step so a failure here cannot skip the rest — and
-      // guarded on the handle, which is set immediately after the insert rather than at the end,
-      // so a throw part-way through still leaves it deletable.
+      // guarded on the handle, which is set BEFORE the first insert rather than after it, so a
+      // throw anywhere in the section still leaves every row it planted deletable.
       () => strandedRunId === null
         ? Promise.resolve()
         : db.delete(cardLabelBatches).where(eq(cardLabelBatches.runId, strandedRunId)),
