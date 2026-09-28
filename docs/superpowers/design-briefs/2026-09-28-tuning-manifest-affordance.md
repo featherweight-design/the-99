@@ -30,8 +30,9 @@ From `design/design_handoff_the99_deck_tuning/STATES-tuning-panel.md`, rows 2 to
 | Results | collapsed to one mono line, `read from …` (lowercase, `readFrom` in `deck-tuning.ts:163`) |
 
 These stay as they are:
-- **The empty-games row** is drawn dashed, with *none logged* and a *Log a game →* link. That link
-  is the only control in the list and must keep reading as one.
+- **The empty-games row** is drawn dashed, with *none logged* and a *Log a game →* control. It is a
+  `<button>` (it opens the log form rather than navigating, `manifest-rows.tsx:39`), whatever its
+  styling, and it is the only control in the list, so it must keep reading as one.
 - **Each row's count** is in mono on the right (`12 games`, `on 3 of 12 games`, …).
 - **The generating state is load-bearing** (READINESS §3, around line 113). It is the honest wait,
   and a spinner would hide it.
