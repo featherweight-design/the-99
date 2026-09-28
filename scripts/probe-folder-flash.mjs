@@ -378,13 +378,20 @@ async function runPhone(browser) {
     await page.getByRole("dialog", { name: "Shelves" }).getByRole("button", { name: /New folder/ }).click();
     await page.getByLabel("Folder name").fill(PHONE_FOLDER);
     await page.getByRole("button", { name: "Create" }).click();
-    await page.waitForTimeout(2000);
-    const madeRows = await pool.query(
-      "select id from deck_folders where name = $1 and user_id = $2",
-      [PHONE_FOLDER, userId],
-    );
-    madeRows.rows.filter((r) => !idsBefore.has(r.id)).forEach((r) => madeFolderIds.push(r.id));
-    check("390: the create wrote exactly one folder row", madeRows.rows.length, 1);
+    // Polled rather than slept, and held to the desktop run's rule: exactly one
+    // row this run made, or stop before touching anything else.
+    let fresh = [];
+    for (let i = 0; i < 20 && fresh.length === 0; i += 1) {
+      await page.waitForTimeout(500);
+      const madeRows = await pool.query(
+        "select id from deck_folders where name = $1 and user_id = $2",
+        [PHONE_FOLDER, userId],
+      );
+      fresh = madeRows.rows.filter((r) => !idsBefore.has(r.id));
+    }
+    fresh.forEach((r) => madeFolderIds.push(r.id));
+    check("390: the create wrote exactly one folder row", fresh.length, 1);
+    if (fresh.length !== 1) throw new Error(`390: expected one new folder row, found ${fresh.length}`);
 
     const href = await onPage(page, "li a[href^='/decks/']").first().getAttribute("href");
     const deckId = href?.split("/")[2] ?? null;
@@ -392,7 +399,11 @@ async function runPhone(browser) {
       "select id, folder_id from decks where user_id = $1 and id = $2",
       [userId, deckId],
     );
-    if (borrowed.rows[0]) borrowedDecks.push(borrowed.rows[0]);
+    // Usually the same deck the desktop run borrowed, which that run's delete has
+    // since unfiled. Recording it again would restore it to null, over the real
+    // shelf the first record holds.
+    const again = borrowedDecks.some((b) => b.id === borrowed.rows[0]?.id);
+    if (borrowed.rows[0] && !again) borrowedDecks.push(borrowed.rows[0]);
     await onPage(page, "li button[aria-label^='Actions for']").first().click();
     await onPage(page, "button[aria-label^='Move ']").first().click();
     await page.getByRole("button", { name: new RegExp(`^${PHONE_FOLDER}$`) }).click();

@@ -483,10 +483,6 @@ export function DecksView({
   // (`showsUnfiled`), so deleting the last folder while the reader stands on it
   // leaves a shelf that nothing on screen can show as selected — the same state
   // `shelfFromParams` refuses to read from a URL.
-  const shelfLeaving = useRef<Shelf | null>(null);
-  const markShelfLeaving = useCallback((shelf: Shelf) => {
-    shelfLeaving.current = shelf;
-  }, []);
   const shelfMissing =
     state.shelf !== null
     && (state.shelf === UNFILED
@@ -499,6 +495,14 @@ export function DecksView({
   // there, so the pass it queues needs no correction; a stale shelf that
   // survives it is caught on the render after.
   if (!reconciling && shelfMissing) setState({ ...state, shelf: ALL_DECKS });
+
+  // The shelf a delete (or a refused rename) is waiting to see leave. Its segment
+  // and the focused trigger inside it go when the payload lands, and focus would
+  // fall to the body; the effect after the URL one puts it on the shelf control.
+  const shelfLeaving = useRef<Shelf | null>(null);
+  const markShelfLeaving = useCallback((shelf: Shelf) => {
+    shelfLeaving.current = shelf;
+  }, []);
 
   // Crossing to wide unmounts the sheet but would leave `open` true, so
   // crossing back would remount it already open — a modal the reader never
@@ -542,16 +546,6 @@ export function DecksView({
   // Keyed on the FOLDER LIST and measured against the live URL, not against
   // `shelfMissing`: the render-time reset above clears that flag before any
   // effect runs, so an effect watching it would never fire.
-  // The shelf a delete (or a refused rename) is waiting to see leave. Its
-  // segment and the focused trigger inside it go when the payload lands, and
-  // focus would fall to the body; this puts it on the shelf control instead.
-  useEffect(() => {
-    const leaving = shelfLeaving.current;
-    if (leaving === null || folders.some((f) => f.id === leaving)) return;
-    shelfLeaving.current = null;
-    requestAnimationFrame(focusShelfControl);
-  }, [folders, focusShelfControl]);
-
   useEffect(() => {
     const live = new URLSearchParams(window.location.search);
     const named = live.get(FOLDER_PARAM);
@@ -569,6 +563,15 @@ export function DecksView({
     const query = live.toString();
     window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
   }, [folders]);
+
+  // Focus for a shelf that left under a delete or a refused rename, once it has
+  // actually gone from `folders`.
+  useEffect(() => {
+    const leaving = shelfLeaving.current;
+    if (leaving === null || folders.some((f) => f.id === leaving)) return;
+    shelfLeaving.current = null;
+    requestAnimationFrame(focusShelfControl);
+  }, [folders, focusShelfControl]);
 
   const segments = useMemo(() => shelfSegments(folders, counts), [folders, counts]);
   const selectedShelf = useMemo(
@@ -607,7 +610,7 @@ export function DecksView({
         // removes this folder is still streaming behind it. Writing the URL there
         // (`onShelf` → `replaceState`) made the router refetch `/decks` mid-stream
         // and settle on the OLD tree: the deleted shelf stayed on the line with
-        // its deck, `Unfiled` read 0, and only a reload cleared it (Hugh's
+        // its deck, `Unfiled` read one short, and only a reload cleared it (Hugh's
         // staging walk, 2026-09-28; 3 of 3 at 390 against a staging copy).
         //
         // The fallback to All decks (STATES D3) still happens, one step later and
