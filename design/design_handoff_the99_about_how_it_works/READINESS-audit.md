@@ -1,22 +1,18 @@
 # Readiness audit: About, "How the app reaches its answers" (R1)
 
-**Verdict: 🟠 Orange, with two items for Hugh (not Design).** Everything else is Yellow: it can be
-built once the engineering corrections below are applied. The audit was run against the #1089
+**Verdict: 🟡 Yellow.** Hugh ruled both of his items on 2026-09-28 (below). It can be built once the
+engineering corrections below are applied. The audit was run against the #1089
 brief (`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`), its inventory, and
 `origin/main`.
 
-## For Hugh
+## Ruled by Hugh, 2026-09-28
 
-- **Prices, and the Game Changers sub-row, fit none of the four locked methods.** Both are
-  someone else's published list: ManaPool's feed, and Wizards' list as Scryfall carries it.
-  The copy draws Prices with no tag (`copy strings.ts:98`), which breaks §3's "every row names
-  one or more". The two options:
-  - Add a fifth method, `published list`. Design leans this way (`READINESS-r1.md:83-87`).
-  - Relax the rule, so Prices shows no mark.
-- **Whether the batched bump announces the appendix** (Design's open 5, `READINESS-r1.md`).
-  The brief says only that it rides the next batched bump with no bump of its own. It does
-  not say whether that bump's sheet names it. Rows are not entries, so by default the sheet
-  would say nothing.
+- **A fifth method, `published list`,** for rows that report someone else's list: Prices
+  (ManaPool's feed) and the Game Changers sub-row (Wizards' list, read through Scryfall). The rule
+  becomes five methods, and every row still names at least one. The build adds the tag in both
+  places: the appendix and the "How we make these decisions" sheet.
+- **The batched `ABOUT_VERSION` bump's sheet announces the appendix in one line,** with no bump of
+  its own.
 
 ## What checks out
 
@@ -30,7 +26,8 @@ brief (`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`), its invento
   - credits 10/3 per rolling 24 hours;
   - Game Changers via Scryfall.
 - **§3.**
-  - Exactly four method marks, used consistently, with EDHREC and Commander Spellbook named in
+  - Four method marks as drawn, used consistently (a fifth, `published list`, is added by Hugh's
+    ruling above), with EDHREC and Commander Spellbook named in
     the key.
   - No new score or percentage.
   - Card labels are excluded.
@@ -42,7 +39,7 @@ brief (`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`), its invento
   - on the phone, the same rows stacked.
 - **About and version.** No route, no new `AboutEntry`, `ABOUT_VERSION` stays 9, and all 21
   entry keys exist. The page can host the appendix after `CHAPTERS.map`. Design's open 5 (does
-  the bump announce the appendix) is Hugh's, above.
+  the bump announce the appendix) is ruled: one line on the sheet.
 - **Tokens and parts.** Every token is declared in all six themes. `ProvenanceOpener`,
   `CURRENT_BAND`, `JumpMark` and the detection copy exist.
 
@@ -96,7 +93,7 @@ restated as fact.
 
 ## Against Design's READINESS-r1
 
-- **Agree** with its opens 1–4.
-- **Open 5** is Hugh's, above.
+- **Agree** with its opens 2–4.
+- **Opens 1 and 5** are ruled by Hugh, above.
 - **Its self-assessment missed** the Prices clock time and cadence, the Brackets cadence, and
   the new-set clause.
