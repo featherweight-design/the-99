@@ -217,6 +217,29 @@ async function main() {
     check("a copy waits for a running catalog ingest", outcome === "copied" && publishStarted >= released,
       `${outcome}; publish began ${publishStarted - released}ms after the ingest let go`);
 
+    // The source half: an ingest publishes in more than one transaction, so a copy reading the
+    // source mid-ingest would snapshot a mixed generation. The copy must not START reading until
+    // a lock held on the source lets go.
+    let srcReleased = 0;
+    let readStarted = 0;
+    let srcLocked!: () => void;
+    const srcLockHeld = new Promise<void>((r) => { srcLocked = r; });
+    const srcHolder = withCatalogIngestLock(SOURCE_URL, async () => {
+      srcLocked();
+      await new Promise((r) => setTimeout(r, 6000));
+      srcReleased = Date.now();
+    });
+    await srcLockHeld;
+    const reading: CopySpec<CombosSnapshot> = {
+      ...combosCopySpec,
+      readSource: async (tx) => { readStarted = Date.now(); return combosCopySpec.readSource(tx); },
+    };
+    const srcOutcome = await attempt(reading);
+    await srcHolder;
+    check("a copy does not read the source while an ingest there holds the lock",
+      srcOutcome === "copied" && readStarted >= srcReleased,
+      `${srcOutcome}; the read began ${readStarted - srcReleased}ms after the source ingest let go`);
+
     // ---- 8 · a read-only source role -----------------------------------------------------------
     // Production's copy reads staging as `catalog_copy_reader`: SELECT only and
     // `default_transaction_read_only = on`. Nothing in the copy may need more than that, and the

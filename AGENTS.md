@@ -178,7 +178,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     (`src/lib/catalog/fingerprint.ts`: the `cards` columns a replicated builder reads) must equal
     the source's now AND the target's. Ids alone are not enough: a card whose text moved on one
     side has the same id and a different classification.
-  - **One source instant**: every read in one repeatable-read, read-only transaction.
+  - **One source instant**: every read in one repeatable-read, read-only transaction, opened
+    only once the SOURCE's `catalog-ingest` lock is held, on its own connection. A snapshot is
+    fixed at its first statement, and an ingest publishes in more than one transaction, so a read
+    that began mid-ingest would be one consistent instant of a mixed generation.
   - **One target transaction**, under the `catalog-ingest` advisory lock, with the target's
     fingerprint re-read inside it, the publish, a count-and-md5 VERIFY of every replaced table
     against the source's, and the `catalog_refreshes` stamp. A mismatch rolls the whole publish
@@ -228,7 +231,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   an unfinished one; a target whose card TEXT differs under equal ids, and a source that moved
   since its build; the floors; a verified copy that makes the target's three tables equal the
   source's, grows its notice log and moves its stamp; a tampering publish refused and rolled back;
-  a copy that waits for a running ingest's lock; and, with `PROBE_COPY_SOURCE_READER_URL` naming a
+  a copy that waits for a running ingest's lock on the target, and one that does not start reading the source while an ingest there holds it; and, with `PROBE_COPY_SOURCE_READER_URL` naming a
   SELECT-only, `default_transaction_read_only` role on the source, a copy through that role, which
   is how production reads staging. The lock check lets go a fixed 6s after the copy finishes
   READING, never on a clock: its first version slept 8s and passed with the lock removed, because

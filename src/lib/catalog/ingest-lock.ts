@@ -19,11 +19,17 @@ export async function withCatalogIngestLock<T>(connectionString: string, run: ()
   try {
     await client.query("begin");
     await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [CATALOG_INGEST_LOCK]);
+    let result: T;
     try {
-      return await run();
-    } finally {
-      await client.query("commit").catch(() => {});
+      result = await run();
+    } catch (err) {
+      await client.query("rollback").catch(() => {});
+      throw err;
     }
+    // A commit that fails is reported, never swallowed: the lock's outcome is then unknown, and a
+    // run that reports success over it would hide that.
+    await client.query("commit");
+    return result;
   } finally {
     client.release();
     await pool.end();

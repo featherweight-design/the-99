@@ -33,6 +33,7 @@ import * as schema from "../../src/db/schema";
 import { stampCatalogRefreshIn } from "../../src/lib/cache/stamp-catalog";
 import { buildRefusal, latestBuild, type BuildKind, type BuildRow } from "../../src/lib/catalog/builds";
 import { fingerprintKey, readCatalogFingerprint } from "../../src/lib/catalog/fingerprint";
+import { withCatalogIngestLock } from "../../src/lib/catalog/ingest-lock";
 import { requireEnv } from "./env.mjs";
 
 neonConfig.webSocketConstructor = ws;
@@ -150,14 +151,19 @@ export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void 
     log(`copy ${spec.kind}: ${sourceBranch} -> ${targetBranch}${dryRun ? " (dry run)" : ""}`);
 
     // ---- the source, as one instant ------------------------------------------------------
-    const snap = await source.db.transaction(async (tx) => {
+    // Under the source's `catalog-ingest` lock, held on its own connection and taken BEFORE the
+    // read transaction opens: a repeatable-read snapshot is fixed at its first statement, so a
+    // lock taken inside it would wait out an ingest and still read the instant before it. An
+    // ingest publishes in more than one transaction (flags, then variants), and a snapshot taken
+    // between them is a mixed generation the ledger cannot see.
+    const snap = await withCatalogIngestLock(env.CATALOG_COPY_SOURCE_URL, () => source.db.transaction(async (tx) => {
       const build = await latestBuild(tx, spec.kind);
       const fingerprint = fingerprintKey(await readCatalogFingerprint(tx));
       const data = await spec.readSource(tx);
       const figures: Record<string, TableFigure> = {};
       for (const t of spec.tables) figures[t.name] = await readTableFigure(tx, t.name, t.cols);
       return { build, fingerprint, data, figures };
-    }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    }, { isolationLevel: "repeatable read", accessMode: "read only" }));
 
     const targetFingerprint = fingerprintKey(await readCatalogFingerprint(target.db));
     log(`source build: ${describeBuild(snap.build)}`);
