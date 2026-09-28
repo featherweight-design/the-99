@@ -688,6 +688,24 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   one, because the fault was intermittent. One caveat
   it taught: the FIRST create after a cold `pnpm dev` does reload the document, and that is Next
   compiling the route, not the app.
+
+  **It walks Hugh's delete at 390 too** (2026-09-28): a folder made, a deck filed into it, that
+  shelf selected, then deleted from it. His staging walk found the phone's sheet still listing the
+  deleted shelf with its deck and `Unfiled` one short, until a reload. The stamp and the page cache
+  were both right. The cause was the delete's callback writing the URL (`onShelf` →
+  `replaceState`) as soon as the action's RETURN VALUE arrived, while its revalidated payload was
+  still streaming: the router refetched mid-stream and settled on the old tree. **An action's
+  promise resolves before its payload lands, so nothing that writes the URL belongs in its
+  callback.** The fallback to All decks now comes from the payload (`shelfMissing` and the URL
+  effect keyed on `folders`). The probe reads the sheet's rows, the `Unfiled` count against the
+  database, and the same rows after a fresh load. It is a race, so the mutation (the URL write put
+  back) was run three times and failed all three.
+
+  Its round trips count the `/decks` page alone, never a prefetch. A revalidation re-prefetches
+  every tile's `/decks/<id>` link (18 per write on a 20-deck staging copy), and an action posted
+  from `?folder=` re-prefetches the bare `/decks` link (`next-router-prefetch: 1`). Counting either
+  failed every write on a real account while measuring nothing. Point it at a staging-shaped
+  scratch branch or `local-dev`, **never production**.
 - `pnpm probe:stats` proves the deck-stats loader against a real Postgres by calling the
   real `loadDeckStats` — a deck the player does not own is refused, both commanders are
   folded into the curve and the spread despite not being `deck_cards` rows, a grouped game
