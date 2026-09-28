@@ -52,8 +52,9 @@ const SHEET_CAP = 0.86;
  *   held   = min(86vh, chrome + the longer of the two lists' content heights)
  *
  * and the copy unmounts. A list past the virtualisation threshold is taller than
- * any cap it could meet (151 rows × 46px), so either tab past it holds at the
- * cap without measuring. Measuring the real DOM rather than multiplying a row
+ * any cap it could meet: 151 rows at the smallest measured row (64px on a
+ * phone, plus the 6px gap) is over 10,000px, so either tab past it holds at
+ * the cap without measuring. Measuring the real DOM rather than multiplying a row
  * height is deliberate: an unmatched row and a parse-error row are different
  * heights, and a constant would drift the moment either row's type moved.
  *
@@ -262,7 +263,12 @@ export function IssueInspector({
             ref={filterInputRef}
             type="text"
             containerClassName="flex-1 h-[44px] md:h-[40px]"
-            className="text-[14px]"
+            // 16px on the phone, where the field takes focus as the sheet
+            // opens: below 16px iOS Safari zooms the page on focus, just as
+            // the held height is measured. This departs from frame 3a's 14px
+            // on purpose (the repo convention, as quick-add-bar.tsx); desktop
+            // keeps 14.
+            className="text-[16px] md:text-[14px]"
             value={rawQuery}
             onChange={(e) => setRawQuery(e.target.value)}
             placeholder={
