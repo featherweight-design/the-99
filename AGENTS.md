@@ -182,7 +182,21 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   - **One target transaction**, under the `catalog-ingest` advisory lock, with the target's
     fingerprint re-read inside it, the publish, a count-and-md5 VERIFY of every replaced table
     against the source's, and the `catalog_refreshes` stamp. A mismatch rolls the whole publish
-    back. Timestamps are compared to the millisecond, because a copied row travels as a JS `Date`.
+    back.
+
+  **Copied timestamps are exact to the millisecond, not the microsecond**, deliberately. Rows
+  travel as Drizzle values and a `timestamp` column maps to a JS `Date`, so a `computed_at` of
+  `.060711` lands as `.06`, and verification compares timestamps at that precision. No reader
+  compares a timestamp across databases, and each database's own `max(computed_at)` still moves
+  with every copy, so the difference is invisible; carrying them as text instead would mean a
+  second, untyped row path beside every table's Drizzle one.
+
+  **An expected refusal: `the source's catalog moved since the build`.** The fingerprint covers
+  every card, so any catalog refresh that lands after a build (a set added mid-spoiler season, or
+  a daily refresh) makes a LATER copy of that older build refuse. That is the copy working: the
+  build's facts were derived from a catalog neither side holds any more. The remedy is to rebuild
+  on staging, then copy. The chained workflow copies straight after each build and never meets
+  it; a manual copy-only dispatch can.
 
   A refusal exits 2, any other failure 1. The copy job must also set `DATABASE_URL` to the
   target, because the publish bodies' module imports `src/db`; nothing queries through it.

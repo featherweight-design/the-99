@@ -17,6 +17,10 @@
 //      against the source snapshot's. A mismatch rolls the whole publish back.
 //   7. THE STAMP is written on that same transaction, so readers' caches retire with the commit.
 //
+// One deliberate difference: a copied `timestamp` is exact to the MILLISECOND, because rows travel
+// as JS `Date`s (`copyTable` says why, and verifies at that precision). No reader compares a
+// timestamp across databases.
+//
 // It connects with its OWN pools. `src/db` is a module-scope pool on DATABASE_URL, and a builder's
 // publish bodies import it transitively; the copy job sets DATABASE_URL to the verified target so
 // that import can load, and nothing here ever queries through it.
