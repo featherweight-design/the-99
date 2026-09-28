@@ -116,6 +116,9 @@ must verify each:
    §C `:39-40`, "—"). Build it at `text-[17px] md:text-[19px]` in the display face.
 5. **The calmer replace banner** is drawn at 1300 only (4c). Mirror D10 for the phone.
 6. **Add the phone Cancel row** to the design table, `collection.md:2062`.
+7. **D9's "no `--danger` anywhere" applies to the idle and pending confirm only.** The state table
+   still draws a 13px `--danger` error line (README `:121`, and the token list). Keep that error
+   line; the calmer rule governs the confirm's resting content.
 
 ## For `/copy-review`
 
