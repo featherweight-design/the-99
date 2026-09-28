@@ -86,7 +86,6 @@ function useHeldSheetHeight(
     // A measured value has to reach state from a layout effect: it exists only
     // after layout, and setting it here re-renders before paint, so the reader
     // never sees the unheld frame. It runs once per visit (`held` gates it).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHeld(next);
   }, [enabled, held, panelRef, measureRef, anyVirtualised]);
   return held;
