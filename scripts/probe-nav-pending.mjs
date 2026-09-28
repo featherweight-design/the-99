@@ -20,7 +20,7 @@
 // else. Never production.
 //
 //   PROBE_BASE=http://localhost:3061 pnpm probe:nav-pending
-import { setupClerkTestingToken } from "@clerk/testing/playwright";
+import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -191,6 +191,7 @@ async function run(browser, state, width) {
   await context.close();
 }
 
+await clerkSetup();
 const browser = await chromium.launch();
 try {
   const state = await signIn(browser);
