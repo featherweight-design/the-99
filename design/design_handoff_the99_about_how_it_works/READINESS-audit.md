@@ -54,7 +54,7 @@ still run weekly and there is no release index (`catalog-refresh.yml`, `price-re
 `0 9 * * 1`), so copy saying "daily" would state a cadence the app doesn't run.
 
 1. **Prices refresh** becomes "Daily." The drawn "Weekly, Monday 09:00 UTC." (`:101`) breaks the
-   brief's no-clock-time rule, and the cadence is now daily.
+   brief's no-clock-time rule, and #1090 makes the cadence daily.
 2. **Brackets refresh** becomes "Card data refreshes daily and combos weekly." It currently
    says weekly for both (`:62`).
 3. **Roles, Themes and Recommendations** gain "and about two weeks after each new set"
