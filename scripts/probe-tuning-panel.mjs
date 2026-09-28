@@ -6,8 +6,14 @@
 // WHAT IT PROVES, per width:
 //  - The panel mounts on the Analysis tab, LAST, below the mix (placement addendum v2): its top
 //    sits under the mix strip's bottom. Reached by PRESSING the tab, since the tab has no address.
-//  - Never run: the heading at 19px desktop / 17px phone in the display face, and every manifest
-//    row at its tap floor, 38px desktop and 44px phone.
+//  - Never run: the heading at 19px desktop / 17px phone in the display face. The manifest is a
+//    DISCLOSURE, never a control (manifest-affordance addendum, Hugh 2026-09-28): every read row is
+//    a ruled line at least 32px desktop / 36px phone, with no fill and no top or side border, a
+//    default cursor, nothing that changes under the pointer, and a PRESS on it changes nothing.
+//  - No games (a deck with no games, found by query, which may be the never-run deck itself; the
+//    run FAILS when there is none): the dashed
+//    row's `Log a game →`, the manifest's only target, measures exactly 44px on the phone and at
+//    least 38px on desktop. `py-[12px]` put back reads 43px and fails.
 //  - Results, from a fixture set: one card per item; the FULL rationale drawn on desktop and the
 //    SHORT one on the phone, each hidden at the other width; the thumbnails 22x31 at both widths;
 //    the bracket flag drawn with its chip; the primary 44px tall on a phone; and nothing wider
@@ -103,6 +109,28 @@ async function findDeck(page) {
   return rows[0] ?? null;
 }
 
+/** A deck of the account's with a stored reading, no runs and no games: the one state that draws
+ *  the dashed row with its `Log a game →` button. */
+async function findNoGamesDeck(page) {
+  await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector(`${PAGE} a[href^='/decks/']`, { timeout: 20_000 }).catch(() => {});
+  const ids = await page.evaluate((scope) => {
+    const root = document.querySelector(scope);
+    return [...(root?.querySelectorAll("a[href^='/decks/']") ?? [])]
+      .map((a) => a.getAttribute("href").split("/")[2])
+      .filter((id) => /^[0-9a-f-]{36}$/.test(id));
+  }, PAGE);
+  if (ids.length === 0) return null;
+  const rows = await sql`
+    select d.id from decks d
+    join deck_profiles p on p.deck_id = d.id
+    where d.id = any(${ids}::uuid[])
+      and not exists (select 1 from deck_suggestion_runs r where r.deck_id = d.id)
+      and not exists (select 1 from deck_games g where g.deck_id = d.id)
+    order by d.id limit 1`;
+  return rows[0] ?? null;
+}
+
 // The handle is the CALLER's and is filled before each write it covers, so a throw part-way
 // through still leaves `finally` holding everything that was written.
 async function writeFixture(deck, handle) {
@@ -169,7 +197,17 @@ const measure = (page) =>
     const section = root.querySelector('section[aria-labelledby="tuning-heading"]');
     const heading = root.querySelector("#tuning-heading");
     const strip = [...root.querySelectorAll('section[aria-label="Recommended mix"]')].find(drawn);
-    const rows = [...(section?.querySelectorAll('[data-testid="manifest-row"]') ?? [])].map(box);
+    const rows = [...(section?.querySelectorAll('[data-testid="manifest-row"][data-kind="read"]') ?? [])].map((el) => {
+      const cs = getComputedStyle(el);
+      const clear = (c) => c === "rgba(0, 0, 0, 0)" || c === "transparent";
+      return {
+        ...box(el),
+        fill: !clear(cs.backgroundColor),
+        sides: [cs.borderTopWidth, cs.borderLeftWidth, cs.borderRightWidth].some((w) => parseFloat(w) > 0),
+        cursor: cs.cursor,
+      };
+    });
+    const logGame = [...(section?.querySelectorAll('[data-testid="manifest-row"][data-kind="no-games"] button') ?? [])].find(drawn);
     const cards = [...(section?.querySelectorAll("article") ?? [])];
     const paragraphs = cards.flatMap((c) => [...c.querySelectorAll("p")]);
     const primary = [...(section?.querySelectorAll("button") ?? [])].find((b) => /^Suggest/.test(b.textContent.trim()));
@@ -179,6 +217,7 @@ const measure = (page) =>
       strip: strip ? box(strip) : null,
       heading: heading ? { size: getComputedStyle(heading).fontSize, family: getComputedStyle(heading).fontFamily } : null,
       rows,
+      logGame: logGame ? box(logGame) : null,
       cards: cards.length,
       drawnReasons: paragraphs.filter(drawn).map((p) => p.textContent.length),
       flags: cards.filter((c) => c.querySelector('[data-testid="bracket-flag"]')).length,
@@ -205,9 +244,17 @@ async function walk(page, deck, width, phase) {
   const size = width.desktop ? "19px" : "17px";
   report(`${tag}: heading ${size}`, m.heading?.size === size, `read ${m.heading?.size}`);
   report(`${tag}: nothing past the viewport`, m.overflow <= 0, `${m.overflow}px over`);
-  if (phase === "never run") {
-    const floor = width.desktop ? 38 : 44;
-    report(`${tag}: manifest rows at ${floor}px`, m.rows.length > 0 && m.rows.every((r) => r.h >= floor), `rows ${m.rows.map((r) => r.h).join(", ") || "none"}`);
+  if (phase === "no games") {
+    const want = width.desktop ? "at least 38px" : "exactly 44px";
+    const ok = m.logGame !== null && (width.desktop ? m.logGame.h >= 38 : m.logGame.h === 44);
+    report(`${tag}: Log a game is ${want}`, ok, m.logGame ? `read ${m.logGame.h}px` : "no Log a game button drawn");
+  } else if (phase === "never run") {
+    const floor = width.desktop ? 32 : 36;
+    report(`${tag}: read rows at least ${floor}px`, m.rows.length > 0 && m.rows.every((r) => r.h >= floor), `rows ${m.rows.map((r) => r.h).join(", ") || "none"}`);
+    report(`${tag}: no read row has a fill`, m.rows.length > 0 && m.rows.every((r) => !r.fill), `${m.rows.filter((r) => r.fill).length} filled`);
+    report(`${tag}: no read row has a top or side border`, m.rows.length > 0 && m.rows.every((r) => !r.sides), `${m.rows.filter((r) => r.sides).length} bordered`);
+    report(`${tag}: no read row takes a pointer cursor`, m.rows.length > 0 && m.rows.every((r) => r.cursor !== "pointer"), m.rows.map((r) => r.cursor).join(", "));
+    await pressNothing(page, tag);
   } else {
     report(`${tag}: one card per item`, m.cards === 2, `${m.cards} cards`);
     // The fixture's full reason is 190 characters and its short ones under 40: which is DRAWN
@@ -221,6 +268,35 @@ async function walk(page, deck, width, phase) {
   }
 }
 
+/** Hover a read row and then press it: neither may change what the panel draws, the address, or
+ *  open anything. Read off the panel's markup and each row's computed ink and fill. */
+async function pressNothing(page, tag) {
+  const row = page.locator(`${PAGE} section[aria-labelledby="tuning-heading"] [data-testid="manifest-row"][data-kind="read"]`).first();
+  const snap = () =>
+    page.evaluate((scope) => {
+      const section = document.querySelector(scope)?.querySelector('section[aria-labelledby="tuning-heading"]');
+      const row = section?.querySelector('[data-testid="manifest-row"][data-kind="read"]');
+      const cs = row ? getComputedStyle(row) : null;
+      return {
+        html: section?.innerHTML ?? "",
+        ink: cs ? `${cs.backgroundColor} ${cs.color} ${cs.textDecorationLine} ${cs.opacity}` : "",
+        url: location.href,
+        dialogs: document.querySelectorAll('[role="dialog"]').length,
+      };
+    }, PAGE);
+  await page.mouse.move(0, 0);
+  const before = await snap();
+  await row.hover();
+  await page.waitForTimeout(250);
+  const hovered = await snap();
+  report(`${tag}: a read row does not change under the pointer`, hovered.ink === before.ink, `before "${before.ink}", hovered "${hovered.ink}"`);
+  await row.click({ force: true });
+  await page.waitForTimeout(400);
+  const pressed = await snap();
+  const same = pressed.html === before.html && pressed.url === before.url && pressed.dialogs === before.dialogs;
+  report(`${tag}: pressing a read row changes nothing`, same, same ? "panel, address and dialogs unchanged" : "something moved");
+}
+
 async function run() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -231,6 +307,10 @@ async function run() {
     const deck = await findDeck(page);
     if (!report("an analyzed deck with no runs", deck !== null, deck ? deck.id : "none among the account's decks")) return;
     for (const width of WIDTHS) await walk(page, deck, width, "never run");
+    const noGames = await findNoGamesDeck(page);
+    if (report("an analyzed deck with no games and no runs", noGames !== null, noGames ? noGames.id : "none among the account's decks")) {
+      for (const width of WIDTHS) await walk(page, noGames, width, "no games");
+    }
     await writeFixture(deck, handle);
     for (const width of WIDTHS) await walk(page, deck, width, "results");
   } finally {

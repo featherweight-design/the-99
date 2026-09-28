@@ -158,6 +158,10 @@ export const deckTuningCopy = {
     intentCount: "your words",
     collection: "What you own, and what a card costs",
     collectionCount: "your collection",
+    // Visually hidden after each row's label (manifest-affordance addendum): the mark is drawn
+    // aria-hidden, so these say what the dot and the ✓ show.
+    rowRead: "read",
+    rowUnread: "not read yet",
     progress: (done: number, total: number) => `${done} of ${total} read`,
     // The collapsed form above results: parts joined with " · ".
     readFrom: (parts: readonly string[]) => `read from ${parts.join(" · ")}`,

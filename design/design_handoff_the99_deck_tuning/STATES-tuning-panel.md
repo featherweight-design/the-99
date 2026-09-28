@@ -17,7 +17,7 @@ same corner, and only the body changes shape — downward.
 | # | State | When | Body | Primary | Note beside it |
 |---|---|---|---|---|---|
 | 1 | **Below threshold** | `games < PATTERN_MIN` | What it needs, and what the games so far already lean toward, with its denominator (`cards in hand, 2 of 2`) | `Suggest changes` — **disabled, no error** | `one more game — 2 of 3` |
-| 2 | **Ready** | at or above threshold, no run yet, or after a `Stop` | The strongest Fix in `--warning`, then **the four-row manifest, unchecked** | `Suggest changes` | `takes a few seconds · nothing changes until you say so` |
+| 2 | **Ready** | at or above threshold, no run yet, or after a `Stop` | The strongest Fix in `--warning`, then **the four-row manifest, unchecked** (drawn as the pending dot, manifest-affordance addendum) | `Suggest changes` | `takes a few seconds · nothing changes until you say so` |
 | 3 | **Generating** | run in flight | **The same four rows, ticking as each read completes** | `Reading…` non-interactive + neutral `Stop` | `3 of 4 read` |
 | 4 | **Results** | run returned ≥1 usable suggestion | Manifest collapsed to one mono line, then the cards | `Suggest again` | `3 of 3 still open · these stay until you replace them` |
 | 5 | **Nothing has changed** | run returned the same set, or nothing new | **The reason, three countable lines**, then what would change it | `Suggest again anyway` | `3 of 3 from Tuesday still open` |
@@ -41,7 +41,7 @@ See `READINESS.md`.
 4. **Nothing unmounts mid-write.** During generation the manifest stays on screen and legible; on a
    re-run, the previous results stay until new ones land. A failed re-run leaves the old
    suggestions exactly where they were.
-5. **A cancel is not a failure.** `Stop` returns to state 2 with the manifest unchecked, no error,
+5. **A cancel is not a failure.** `Stop` returns to state 2 with the manifest unchecked (the pending dot), no error,
    no tag.
 6. **Every failure states what survived.** Games, note, list, and any suggestions on screen.
 7. **Retry is always a button.** No automatic retry, ever — manual-only governs the second attempt
@@ -49,7 +49,7 @@ See `READINESS.md`.
 8. **The threshold is `PATTERN_MIN`**, imported from #9. It is stated once, in the mono note, as a
    count with its denominator — never as a progress meter and never as a rule the player must
    satisfy.
-9. **The manifest is one list at three densities** (unchecked / ticking / collapsed to a line), so
+9. **The manifest is one list at three densities** (unchecked / ticking / collapsed to a line; unchecked is the pending dot), so
    the results are visibly the answer to the thing the player just watched.
 10. **Progress is a real count.** `3 of 4 read`, ticked on actual completion. No indeterminate bar,
     no invented staging, no percentage.
