@@ -1,6 +1,9 @@
 # Plan: build card data once, replicate to production
 
-> **Status: awaiting Hugh's approval (through d9).** No code before it lands.
+> **Status: APPROVED by Hugh on 2026-09-28 (through d9), with two changes folded in below.**
+> - The catalog and prices are FETCHED ONCE and loaded into both databases from the same bytes (§2,
+>   §4a), so the two sides never differ.
+> - §7 is corrected: player-triggered EDHREC reads stay per environment.
 >
 > **Revised the same day for Hugh's cadence ruling** (d9, 2026-09-28):
 > - The catalog and prices refresh DAILY.
@@ -66,12 +69,18 @@ dependency, not by the clock.
 | **Combo refresh** (`db:seed:combos`) | 54 Spellbook `/estimate-bracket` requests (sequential, ~1 min, near their 80/min limit) **plus a 656MB bulk download**, streamed and classified | `card_bracket_flags`, `spellbook_variants`, `spellbook_variant_cards`; appends `deck_data_changes` | **REPLICATE.** Halves the load on a volunteer API and the 656MB pull, and closes the 163-vs-572 flag gap. |
 | **Commander prose** (`db:build:prose`) | ~3,300 Anthropic calls, only for commanders whose input hash moved | `commander_support.prose*` | **Already copied** (`db:copy:prose`). The direction reverses: generate on staging, copy to production (§4). |
 | **Card labels** (`db:build:labels`) | Anthropic batch, ~$41 once and ~$6 a week | `card_labels` | **Already copied** (`db:copy:labels`) and already staging-only. Only the production wiring is missing (§4). |
-| **Catalog refresh** (`db:seed:sets`, `db:seed`, `db:seed:printings`) | Two Scryfall bulk files, ~24MB + ~77MB gzipped, ~1 minute | `sets`, `cards`, `printings`, `skipped_printings`; appends `deck_data_changes` | **KEEP PER ENVIRONMENT, now DAILY.** One cheap download, and it is the base the copies are checked against: they must be able to prove the two catalogs agree, which a copied catalog cannot. |
-| **Price refresh** (`db:seed:prices`) | One ManaPool request, ~51MB | `printing_prices` | **KEEP PER ENVIRONMENT, now DAILY**, right after that day's catalog. Keyed on `printings.scryfall_id`, which already differs by 81 rows between the two sides, so each side pricing its own printings is the more correct shape, not only the cheaper one. |
+| **Catalog refresh** (`db:seed:sets`, `db:seed`, `db:seed:printings`) | Scryfall's sets list and two bulk files, ~24MB + ~77MB gzipped | `sets`, `cards`, `printings`, `skipped_printings`; appends `deck_data_changes` | **FETCH ONCE, INGEST ON EACH SIDE, DAILY** (§4a). One download, loaded into both databases from the same bytes. Each side keeps its own ingest (upsert, never delete, its own `deck_data_changes`, its own stamp), so production's foreign keys and notices are unaffected. |
+| **Price refresh** (`db:seed:prices`) | One ManaPool request, ~51MB | `printing_prices` | **FETCH ONCE, INGEST ON EACH SIDE, DAILY**, right after that day's catalog (§4a). |
 
 What replication saves: every index run, monthly or release, stops spending ~4,750 EDHREC
 requests twice. Every weekly combo run stops downloading 656MB and sweeping Spellbook twice. The
-two daily jobs that stay per environment cost one or two requests each.
+daily catalog and price fetch now happens once, not once per side.
+
+**The two catalogs are now identical by construction.** Last week's 81-printing gap was drift: two
+ingests ran a day apart against different Scryfall files. After today's refresh on both sides,
+the printings match (103,327 each, and an md5 over every `scryfall_id` is identical). A shared
+download keeps it that way. It also means the copy's input-fingerprint check (§3, item 3) cannot
+trip merely because Scryfall published between two downloads.
 
 ## 3. The shape of a copy
 
@@ -214,16 +223,37 @@ cron spacing (§1).
 
 | When | Staging | Production |
 |---|---|---|
-| Daily, `Catalog refresh` (cron 09:00 UTC) | `refresh` job: sets, cards, printings | the same, in the same matrix |
-| same run, after `refresh` succeeds | `prices` job (`needs: refresh`): `db:seed:prices` | the same |
+| Daily, `Catalog refresh` (cron 09:00 UTC) | `fetch` job, once for both sides (§4a): downloads the sets list, both bulk files and the price feed | (shared) |
+| same run, `needs: fetch` | `refresh` leg, reading the fetched files: sets, cards, printings, then prices | the same, from the same files |
 | `Combo refresh`, chained with `workflow_run` on a successful `Catalog refresh`, gated to Mondays | `build`: `db:seed:combos`, which writes its `catalog_builds` row | `copy`: `db:copy:combos` |
 | `Commander index`, chained the same way, gated to "monthly due" OR "release due" (below) | `build`: `db:build:index`, then `db:build:staples`, which writes its `catalog_builds` row. Then `prose`: `db:build:prose` | `copy`: `db:copy:index`, then `db:copy:prose` |
 | `Card labels` (unchanged daily cron) | `label` | new `copy`: `db:copy:labels` |
 
-**Catalog and prices.** `Price refresh`'s cron goes away; its workflow keeps `workflow_dispatch`
-for a one-off. The price step becomes a second matrix job in `Catalog refresh`, with `needs:
-refresh`, so a day's prices always follow that day's catalog on both sides. Both jobs stay per
-environment.
+**Catalog and prices: see §4a.** `Price refresh`'s cron goes away, and its workflow keeps
+`workflow_dispatch` for a one-off. Prices become a step after the catalog ingest in each leg of
+`Catalog refresh`, loaded from the same fetched feed, so a day's prices always follow that day's
+catalog on both sides.
+
+### 4a. Fetch once, ingest on each side (PR 4)
+
+`Catalog refresh` gains a `fetch` job that runs once, before the matrix, and needs no database.
+- **What it downloads:** Scryfall's sets list, the `oracle_cards` and `default_cards` bulk files
+  (with their index records), and ManaPool's singles feed.
+- **Where they go:** a workflow artifact, with a manifest recording each file's source URL,
+  Scryfall's `updated_at`, the byte length and a sha256.
+- **The legs:** each leg (`staging`, `production`) downloads that ONE artifact, verifies the
+  manifest's hashes, and runs its ingests reading the files instead of the network: sets, cards,
+  printings, then prices.
+- **The code change is one seam per ingest.** The network reads (`fetchBulkIndex`,
+  `streamBulkEntries`, the sets fetch, `fetchManapoolSingles`) take a source that is either the
+  live URL (today's behaviour, and still what a local `pnpm db:seed` uses) or a local file named by
+  `CATALOG_FETCH_DIR`. Everything after the read (transform, upsert, the orphan refusal, the
+  denominators, the notices, the stamp) is unchanged and runs per database.
+- **Refusals:** a leg refuses a manifest whose hashes do not match, or whose `updated_at` is older
+  than the one its database last ingested. That keeps a re-run of an old artifact from rolling a
+  catalog back.
+- **Unchanged:** a dispatch naming one `target` still fetches and ingests for that side only. The
+  existing `job` input (`sets`/`printings`/`oracle`) still selects ingests.
 
 **Why `workflow_run`, and why that is now safe.** It fires once per catalog run, not per matrix
 leg, and it can only see the run's aggregate conclusion. That is exactly the condition needed
@@ -285,9 +315,9 @@ drop a daily catalog run to protect a weekly one.
 Production's index and combo gaps are filled by the copy, never by a second EDHREC or Spellbook
 run. It runs after PR 3 merges and the secret is set:
 
-1. **Confirm the catalogs agree.** Today's catalog run (d9 dispatched both at 17:34 UTC, beside
-   the late 17:27 scheduled one) should bring production's 81 missing printings in. Run
-   `db:copy:index --dry-run`: it prints both input fingerprints, which must match.
+1. **Confirm the catalogs agree.** Today's refresh on both sides already made the printings
+   identical. Run `db:copy:index --dry-run`, which prints both input fingerprints; they must
+   match.
 2. **Give the ledger its first rows.** The ledger is new, so staging holds no `ok` build rows yet,
    and a `copy-only` would refuse (§3, item 7). The honest fix is one staging `build+copy` of each
    workflow. That spends one EDHREC index run and one Spellbook run on staging, which staging is
@@ -345,6 +375,17 @@ run. It runs after PR 3 merges and the secret is set:
     and Star Trek dates;
   - the YAML is exercised by §5's runs.
 
+**PR 4:**
+- **Contents:** the fetch-once seam and job (§4a).
+- **Proof:**
+  - unit tests on each ingest's file source against a small fixture file, and on the manifest's
+    refusals (a hash mismatch, an older `updated_at`);
+  - one dispatched `Catalog refresh`, whose two legs must end with identical `scryfall_id` and
+    input fingerprints.
+- **Why its own PR:** it touches every catalog and price ingest and the catalog workflow, which
+  would carry PR 3 past the split threshold. It is independent of PRs 1 to 3 and can land in any
+  order after PR 1.
+
 **No About entry.** Nothing a reader sees changes; production simply stops being behind. Each PR
 is under the split threshold. Production is written only by the workflow, after PR 3 and the
 secret.
@@ -353,7 +394,9 @@ secret.
 
 - A shared database, or production reading staging at request time.
 - Copying the catalog or prices (§2).
-- `edhrec_cache`, a per-environment fetch cache. After this plan, production makes no EDHREC
-  requests to cache.
+- `edhrec_cache`, the per-environment 30-day cache in front of LIVE EDHREC reads. This plan moves
+  the index BUILD off production. The build uses `fetchEdhrecUncached` and never touched the
+  cache. Player-triggered reads (the fill, the deck page's suggestions, the recommendations) still
+  fetch from EDHREC through each environment's own cache, and they stay per environment.
 - Making GitHub's schedule punctual. §1 records the delay, and the dependency chain makes it
   harmless.
