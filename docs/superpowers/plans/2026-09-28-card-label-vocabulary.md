@@ -215,13 +215,91 @@ and the ledger reservation.
 
 ---
 
-## Task 7 — Operations
+## Task 7 — Recover a stranded claim without help
+
+**The state to end:** a run interrupted between the intent claim and `batches.create` leaves
+`intended` rows with a null `batch_id` that no later run under that id can pass — they are absent
+from `done`, so they are re-planned, and the claim insert then conflicts on the primary key and
+the run dies. It happened twice on 2026-09-28: 127 rows on `weekly-2026-W40`, then 400 on
+`backfill-2026-09-28` when the account's spend limit refused a create.
+
+**This replaces the separate follow-up issue.** It is also the riskiest task here, and the plan
+says so plainly: a reclaim was built and abandoned after **three consecutive pre-open passes each
+found a Critical that the previous fix had introduced.** What follows is the specification those
+three failures produced. Each bullet is a constraint, not a suggestion, and each was paid for.
+
+### Evidence — when a row may be re-sent
+
+- **Only when an exhaustive provider search holds no batch for its `custom_id`.** "I could not
+  find it" is not "it does not exist"; re-sending a request a successful `create` accepted is the
+  double charge the claim exists to prevent.
+- **Scope the search to batches created at or after the oldest unresolved intent**, less a small
+  skew margin. `submit` writes the intent row *before* `batches.create`, so an older batch cannot
+  hold that custom id. Without this scoping, `results()` raising 404 on any batch past the
+  provider's 29-day window marks the search inconclusive **for ever**, and an account-wide
+  "still processing" flag is set by the run's own in-flight wave — each blocking the recovery
+  permanently. Both were live defects.
+- **The age test is inverted from the intuitive reading.** A `create` that returned may not be
+  listed yet, so a YOUNG absence is the untrustworthy one. Re-send only after an exhaustive
+  search has held past a grace period; a recent one is "come back later", never a refusal.
+
+### Exclusion — how two invocations are kept apart
+
+- **The release must change existence: DELETE the row and let the existing insert-claim retake
+  it.** An `UPDATE ... SET status='intended' WHERE status='intended'` excludes nothing — under
+  READ COMMITTED the loser re-evaluates, still matches, and both callers call `batches.create`.
+  Measured on two connections: `A 1, B 1`.
+- **Guard on age, or the release deletes a LIVE claim.** A fresh claim is `batch_id` null with
+  the status defaulting to `intended` — byte-identical to a stranded row until `stampWave` runs,
+  which is *after* the provider call. Without an age cutoff the recovery enables the very double
+  charge it exists to prevent.
+- **Deleting also refreshes `asked`.** `collectBatch` reads `intent.asked` while a row is still
+  `submitted`, so a re-sent chunk carrying pre-crash names resolves every reply to null and
+  surfaces only as an unexplained floor shortfall on a wave that was paid for.
+
+### Reachability
+
+- **The verdict must reach the release.** One attempt classified old intents as both reclaimable
+  and abandoned, and `main` dies on any abandoned intent — so the recovery never ran for exactly
+  the rows it existed to rescue. Trace the decision from the pure function to the caller.
+- **Release all reclaimable intents at once, before planning**, not the current wave's share.
+  Releasing per wave leaves the rest to a later pass that refuses them.
+
+### The unsolved part, stated rather than hidden
+
+**`expired` rows must NOT be released.** They were charged, and `alreadySpent` reserves them at
+worst case by *counting rows with that status* — deleting them destroys the only record of real
+spend and hands the budget back. That is worse than the deadlock it would cure. A correct fix
+needs a release that preserves the reservation, which means separating a spend row from a claim
+row: a change to the ledger's shape, and **out of scope here**. Until then the `expired` path
+still cannot resume under its own run id, and its message must say so rather than promise
+re-submission.
+
+### Acceptance
+
+- [ ] A probe that **races two connections** on one stranded intent and asserts exactly one wins.
+      Nothing else catches the exclusion defect; every single-connection check passed over it.
+- [ ] A probe case planting a **live claim** (the column's real default, not a stated date) and
+      asserting it survives a release.
+- [ ] The pure verdict unit-tested, including that no age makes an inconclusive search
+      re-sendable.
+- [ ] Mutation-checked: the UPDATE form restored, the age guard removed, the scoping removed —
+      each must fail a named check.
+
+**PR 7 — recovery. Late, and it does not block the run:** a fresh run id has no stranded rows in
+its path, so the backfill proceeds whether or not this lands.
+
+---
+
+## Task 8 — Operations
 
 - [ ] **Run between two Monday catalog refreshes.** A refresh mid-run changes the card set, and
       `planChunks` is index-keyed: a shifted plan is refused, which strands the run.
 - [ ] **`CARD_LABELS_ENABLED` stays off until the backfill publishes**, stated here because two
       live run ids over one stale card set both pay — `reconcile` and `alreadySpent` are each
       filtered by `run_id`, so a weekly run would re-plan the same cards and charge again.
+- [ ] **Account headroom is no longer the blocker** — the limit was raised on 2026-09-28 — but
+      check it anyway before each dispatch, because the failure mode is mid-run and expensive.
 - [ ] **Handle `weekly-2026-W40`'s 127 intents explicitly.** They are `intended`, `batch_id`
       null, $0, unreserved, and they permanently block that run id. Decide: scoped delete (Hugh's
       OK), or leave them and never reuse that id. Say which, in the plan, before the run.
@@ -242,7 +320,5 @@ and the ledger reservation.
 - **It does not widen the app's `Role`/`Theme` unions.** Its own plan, if wanted.
 - **It does not change `REMOVAL_PATTERNS`.** Hugh's ruling; the divergence is documented at both
   sites instead.
-- **It does not reclaim stranded intents.** A reclaim path was built and abandoned after three
-  consecutive pre-open passes each found a Critical introduced by the previous fix. A fresh run
-  id makes it unnecessary. The design notes, including the unsolved problem that releasing an
-  `expired` row destroys the only record of real spend, are with Hugh as a follow-up.
+- **It does not widen the gold set beyond the jobs in scope.** Coverage of jobs this plan does
+  not touch is worth having and is not this plan's work.
