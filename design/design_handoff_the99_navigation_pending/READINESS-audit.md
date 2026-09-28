@@ -113,11 +113,14 @@ about 33ms.
 ## Open for Hugh
 
 - **A. Home, uncached.** Home measures 628–677ms here, which clears the line by 23–72ms.
-  Production and staging now both run in pdx1, the same region as Neon, so production's round
-  trips are close to this machine's. Uncached Home in production is therefore probably also just
-  under 700ms. That is still the longest the old page would sit with only a pip. It is measured on
-  staging with `LIST_CACHE_ENABLED` briefly off, and the figure goes here before the build. With
-  the cache on, Home is ~62ms, and the question goes away.
+  Production and staging now both run in pdx1, the same region as Neon. Hugh's staging walk on
+  2026-09-28 (`PERF_TIMING=1`, `LIST_CACHE_ENABLED` off) read Home's server time at **423, 534
+  and 424ms warm, and 2,243ms on a cold function**. Locally the navigation wait runs about
+  100–200ms above the server total, so warm uncached Home in production lands around 550–700ms:
+  under the line, but close. A cold start is well over it, with or without a screen. With the cache
+  on, the same walk read Home at 83 and 23ms and `/decks` at 21 and 17ms server time, with no
+  read spans, so turning `LIST_CACHE_ENABLED` on in production removes the question.
+  Engineering's recommendation is to do that before this ships.
 - **B. The deck page.** Since PR 8 it measures 571–692ms with no screen, which is under the
   rule's line. The handoff keeps its screen anyway. Engineering agrees: it is still the slowest
   route. The rule alone no longer draws that line.
