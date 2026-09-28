@@ -130,6 +130,12 @@ async function cleanup(userId) {
   if (!userId) return;
   await sql`delete from collection_items where user_id = ${userId}`;
   await sql`delete from csv_uploads where user_id = ${userId}`;
+  // The ranked lists this walk loads write the account's scores as they render, and a confirm
+  // warms them again in `after()`, which can land once this has run. So clear, let a warm
+  // still in flight finish, and clear again: the next run starts from an empty account.
+  await sql`delete from commander_scores where user_id = ${userId}`;
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await sql`delete from commander_scores where user_id = ${userId}`;
 }
 
 async function walk(browser, vp, csvPath) {
