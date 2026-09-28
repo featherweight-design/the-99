@@ -10,7 +10,8 @@
 //      pointer events through and is gone within a few frames.
 //   3. Home's "Update collection" ghost link: its track paints, and at DPR 1 it is 2px tall (a
 //      1.5px strip has no whole device pixel there). A screenshot of the button is saved.
-//   4. A kept route (a deck page, from /decks): its own screen shows and the escalation never does.
+//   4. A kept route (a deck's import page, by its header button, which reports): its own screen
+//      shows and the escalation never does.
 //
 // Mutations it is built to fail: the shell's <Suspense> removed (check 1 reads no screen), and the
 // 400ms gate set to 0 (check 2 reads the screen before the pip).
@@ -91,6 +92,7 @@ const WATCH = () => {
         seen.hit = overlay.contains(at);
       }
       if (seen.overlay != null && seen.overlayGone == null && !overlay) seen.overlayGone = now;
+      if (seen.ownScreen == null && document.querySelector("main [role=status] h1")) seen.ownScreen = now;
       if (now < 30_000) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -171,19 +173,25 @@ async function run(browser, state, width) {
     await page.close();
   }
 
-  // 4. A kept route: its own screen, never the escalation.
+  // 4. A kept route shows neither signal: its own loading.tsx commits at press, so pending ends
+  //    before the 120ms mark (the handoff's rule). Pressed through the deck header's "Update from
+  //    a list" button link, which carries a track and REPORTS (a deck tile does not until PR 2),
+  //    so "no mark" is the boundary working and not a link that never told anyone. The provider's
+  //    own kept rule, for a pending that outlasts 400ms, is unit-tested.
   {
     const { page, throttle } = await slowPage(context);
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle", timeout: 120_000 });
-    const deck = page.locator('main a[href^="/decks/"]:not([href="/decks/new"]):not([href="/decks/import"])').first();
-    const href = await deck.getAttribute("href");
+    const deckHref = await page.locator("main li a[href^='/decks/']").first().getAttribute("href");
+    await page.goto(`${BASE}${deckHref}`, { waitUntil: "networkidle", timeout: 120_000 });
+    const link = page.locator(`main a[href="${deckHref}/import"]`).filter({ visible: true }).first();
     await throttle(true);
     await page.evaluate(() => window.__navArm());
-    await deck.click();
-    await page.waitForURL((u) => u.pathname === href, { timeout: 120_000 });
-    await page.waitForFunction(() => !document.querySelector("main [role=status]"), null, { timeout: 120_000, polling: 50 }).catch(() => {});
+    await link.click();
+    await page.waitForURL((u) => u.pathname === `${deckHref}/import`, { timeout: 120_000 });
+    await page.waitForTimeout(1_000);
     const nav = await page.evaluate(() => window.__nav);
-    report(nav.overlay == null, `a kept route (${href}) never escalates`, nav.overlay == null ? "" : `screen at ${Math.round(nav.overlay)}ms`);
+    report(nav.ownScreen != null, `a kept route (${deckHref}/import) shows its own screen at press`, nav.ownScreen == null ? "none" : `at ${Math.round(nav.ownScreen)}ms`);
+    report(nav.mark == null && nav.overlay == null, "and neither the mark nor the escalation", `mark ${nav.mark == null ? "none" : Math.round(nav.mark) + "ms"}, screen ${nav.overlay == null ? "none" : Math.round(nav.overlay) + "ms"}`);
     await throttle(false);
     await page.close();
   }
