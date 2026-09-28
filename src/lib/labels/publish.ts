@@ -1,5 +1,5 @@
 /**
- * The two writes a label run makes that must be exactly scoped, extracted so a PROBE can call
+ * The database work a label run does that must be exactly scoped, extracted so a PROBE can call
  * the real thing.
  *
  * They lived inside `scripts/build-card-labels.ts`, which runs `main()` at module scope — so a
@@ -12,7 +12,7 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 
-import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../../db/schema";
+import { cardLabelBatches, cardLabels, cards, cardLabelsStaging } from "../../db/schema";
 
 /**
  * The connection is INJECTED rather than imported, because `src/db` reads `DATABASE_URL` at
@@ -77,4 +77,43 @@ export async function publishRun(db: Db, runId: string): Promise<number> {
     await tx.delete(cardLabelsStaging).where(eq(cardLabelsStaging.runId, runId));
     return ids.length;
   });
+}
+
+/** One catalog row as the label prompt needs it. */
+export type CardRow = {
+  oracleId: string; name: string; mana_cost: string | null;
+  type_line: string; oracle_text: string | null; layout: string;
+};
+
+/**
+ * The cards a wave is about to ask the model about, by NAME.
+ *
+ * Here, rather than inline, because this read took down the first real dispatch and NOTHING
+ * executed it. `probe:label-build`'s header excludes "anything that needs the API" — and both
+ * copies of this read sat a few lines above the provider call, so that exclusion silently covered
+ * a database read too. No test, no probe and no `--dry-run` ever ran it. The probe calls THIS now,
+ * against a real Postgres, with more than one name.
+ *
+ * `sql.param` AND the cast, because neither alone works and the failure is not the obvious one:
+ *
+ *   `any(${names})`                     -> `any(($1, $2, $3))`         42809, a row constructor
+ *   `any(${names}::text[])`             -> `any(($1, $2, $3)::text[])` 42809, still a row constructor
+ *   `any(${sql.param(names)}::text[])`                                 one array parameter, correct
+ *
+ * A one-element array is not a lucky case either — it renders `any(($1))` and fails too — so no
+ * input size would ever have worked. All three measured against a real Postgres, because the
+ * cast-only form looks right and `src/lib/combos/near-miss.ts` looks like a precedent for it: its
+ * `${present}` is itself a `sql.param`, which is easy to miss.
+ *
+ * An empty ask is not a query. `any('{}'::text[])` is valid and returns nothing, so the guard saves
+ * a round trip rather than avoiding a bug — and it belongs with the read rather than with one of
+ * its two callers.
+ */
+export async function readCardsByName(db: Db, names: readonly string[]): Promise<CardRow[]> {
+  if (names.length === 0) return [];
+  const rows = await db.execute<CardRow>(sql`
+    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
+      from ${cards} where name = any(${sql.param([...names])}::text[])
+  `);
+  return rows.rows ?? (rows as unknown as CardRow[]);
 }
