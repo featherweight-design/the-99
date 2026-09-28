@@ -80,6 +80,34 @@ describe("NavigationPendingProvider", () => {
     expect(overlay()).toBeNull();
   });
 
+  it("waits its own 400ms, and shows nothing for a kept route, when pressed while a screen fades out", () => {
+    press("/commanders");
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    state.path = "/commanders";
+    press("/commanders", false);
+    expect(overlay()?.className).toContain("pointer-events-none");
+    // Pressed within the fade: a kept route.
+    press("/decks/abc");
+    act(() => vi.advanceTimersByTime(2000));
+    expect(overlay()).toBeNull();
+    press("/decks/abc", false);
+    // A fresh run into an overlay route waits the full 400ms again.
+    press("/discover");
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS - 1));
+    expect(overlay()).toBeNull();
+    act(() => vi.advanceTimersByTime(1));
+    expect(overlay()?.textContent).toContain("Casting a wider net");
+  });
+
+  it("escalates at once when a run past 400ms moves from a kept route to an overlay route", () => {
+    press("/decks/abc");
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(overlay()).toBeNull();
+    state.pending.set("/decks/abc", false);
+    press("/discover");
+    expect(overlay()?.textContent).toContain("Casting a wider net");
+  });
+
   it("never starts a run for a link to the page already open", () => {
     press("/");
     act(() => vi.advanceTimersByTime(2000));
@@ -107,7 +135,7 @@ describe("NavigationPendingProvider", () => {
     expect(overlay()).toBeNull();
   });
 
-  it("ends a run on the pathname alone when the pressed link unmounts without reporting", () => {
+  it("ends a run when the page lands, even while the pressed link still reads pending", () => {
     press("/commanders");
     act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
     state.path = "/commanders";

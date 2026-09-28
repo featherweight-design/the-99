@@ -62,7 +62,7 @@ build in this PR; every row reads ✅.
 
 | State | Trigger | Rendered | |
 |---|---|---|---|
-| Press under 120ms | `useLinkStatus().pending` clears before the delay | nothing painted | ✅ |
+| Press under 120ms | `useLinkStatus().pending` clears before the delay | the slot's or link's pending fill and ink for that moment (audit 7: at once), and no mark | ✅ |
 | Pending | pending ≥ 120ms | pip or track | ✅ |
 | Escalated | pending ≥ 400ms, target not kept | the overlay | ✅ |
 | Kept route | target is `decks/[id]`, `…/changes`, `…/import`, `decks/new/choose` | its own `loading.tsx`, no overlay | ✅ |

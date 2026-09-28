@@ -2,6 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { shellCopy } from "../lib/copy/shell";
 import { pendingRouteFor } from "../lib/shell/pending-routes";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
@@ -54,5 +55,6 @@ describe("route loading boundaries", () => {
 
   it("gives discover its own words rather than the home boundary's", () => {
     expect(pendingRouteFor("/discover")).toEqual({ kind: "overlay", key: "discover" });
+    expect(shellCopy.loading.discover).not.toEqual(shellCopy.loading.home);
   });
 });

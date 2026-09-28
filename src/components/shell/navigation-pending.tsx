@@ -40,6 +40,8 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   // another (only the last link stays pending) ends the first without ending the run.
   const pending = useRef(new Map<string, string>());
   const running = useRef(false);
+  // The run has been pending 400ms: from here any overlay route it points at shows at once.
+  const due = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [shown, setShown] = useState<LoadingKey | null>(null);
@@ -53,6 +55,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     running.current = false;
+    due.current = false;
     setTarget(null);
     // Shown: fade out over the committed page. Never shown: nothing to undo.
     if (shownRef.current) setLeaving(true);
@@ -73,19 +76,26 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   );
 
   useEffect(() => {
-    // The page committed: a report for the route it landed on is over, whether or not its link
-    // has said so (a link on the old page may unmount before it does).
-    for (const [id, to] of pending.current) if (to === pathname) pending.current.delete(id);
     if (pending.current.size === 0) {
       if (running.current) end();
       return;
     }
-    setTarget([...pending.current.values()].at(-1)!);
-    if (running.current) return;
+    const last = [...pending.current.values()].at(-1)!;
+    setTarget(last);
+    if (running.current) {
+      // A run that began on a kept route and moved to an overlay route after 400ms shows now.
+      const route = pendingRouteFor(last);
+      if (due.current && route.kind === "overlay") setShown(route.key);
+      return;
+    }
     running.current = true;
+    // A new run owes nothing to the last one's screen, even one still fading out: it waits its
+    // own 400ms, and a run into a kept route never shows one at all.
+    setShown(null);
     setLeaving(false);
     timer.current = setTimeout(() => {
       timer.current = null;
+      due.current = true;
       if (pending.current.size === 0) return;
       const route = pendingRouteFor([...pending.current.values()].at(-1)!);
       if (route.kind === "overlay") setShown(route.key);

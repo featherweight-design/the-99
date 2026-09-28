@@ -759,8 +759,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-pending-pip { animation: dots 1.2s ease-in-out -320ms infinite; }
 .anim-pending-sweep { animation: pending-sweep 900ms linear -260ms infinite; }
 .pending-track { height: 1.5px; }
-/* A 1.5px strip has no whole device pixel to land on at 1x; there it is drawn at 2px
-   (escalation correction 8). Above 1.5dppx 1.5px resolves to whole pixels. */
+/* A 1.5px strip has no whole device pixel to land on at 1x and smears there, so it is drawn at
+   2px up to 1.5dppx (escalation correction 8). At 2x it is exactly 3 device pixels; at other
+   high densities the rasterizer rounds it, and at 3x a 4.5px strip is too fine to smear visibly. */
 @media (max-resolution: 1.5dppx) {
   .pending-track { height: 2px; }
 }
