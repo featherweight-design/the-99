@@ -110,11 +110,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     monthly from the 3rd when no `ok` index build has started that month, or 14 days after an
     `expansion` or `commander` set releases when no `ok` build has started since. Reality Fracture
     (released 2026-10-02) comes due on 2026-10-16. A dispatch is always due.
-  - `build` brackets `db:build:index` and `db:build:staples` with `db:catalog-build start|finish
-    index`, so the ledger records `ok` only when both succeeded.
+  - `build` first runs `db:restamp:prose` on staging, then brackets `db:build:index` and
+    `db:build:staples` with `db:catalog-build start|finish index`, so the ledger records `ok` only
+    when both succeeded.
   - `prose` writes staging's sentences for that build (`db:build:prose`), and runs only when the
     build succeeded.
-  - `copy`, in `catalog-production`, runs `db:copy:index` and then `db:copy:prose`. It runs over a
+  - `copy`, in `catalog-production`, runs `db:restamp:prose` on production FIRST, then
+    `db:copy:index` and then `db:copy:prose`. The re-stamp is a hard dependency of the index copy:
+    a legacy prose hash can only be checked against the inputs its sentence was written from, so
+    it has to run before the copy replaces them. A refusal fails the job before anything is copied. It runs over a
     failed or skipped `prose`, because the index copy never depends on the sentences.
 
   A dispatch takes `mode`: `build+copy`, or `copy-only`, which copies staging's last `ok` build or

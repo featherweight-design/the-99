@@ -102,6 +102,12 @@ jobs:
       # `finish ... ok` is written only when both builders succeeded.
       - name: Record the build
         run: pnpm --silent db:catalog-build start index
+      # Before anything moves staging's index: a legacy prose hash can only be checked against the
+      # inputs its sentence was written from (`db:restamp:prose`, no model call, idempotent).
+      - name: Re-stamp staging's prose
+        env:
+          RESTAMP_TARGET_BRANCH: br-polished-pond-a6e63y0b
+        run: pnpm --silent db:restamp:prose | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Build the commander index
         id: index
         # Bounded below the job's 180 minutes, so a run that overstays is stopped HERE and the
@@ -219,6 +225,14 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # FIRST, and a hard dependency of the index copy: production's sentences are re-stamped
+      # against the inputs they were written from before the copy replaces those inputs. A failed
+      # or refused re-stamp fails this step, and no later step runs.
+      - name: Re-stamp production's prose
+        env:
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+          RESTAMP_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+        run: pnpm --silent db:restamp:prose | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Copy the index to production
         run: |
           echo "## Index copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"

@@ -59,6 +59,12 @@ describe("indexDue", () => {
     expect(indexDue(at("2026-10-20"), quiet, [OCT_MONTHLY]).due).toBe(false);
   });
 
+  // The October catch-up dispatches on or after the 1st, before the monthly rule opens on the
+  // 3rd. That build has to count as October's, or the chained run on the 3rd builds again.
+  it("counts a catch-up built on the 1st as that month's monthly build", () => {
+    expect(indexDue(at("2026-10-03"), SETS, [at("2026-10-01")]).due).toBe(false);
+  });
+
   it("is due on an empty ledger, which is the first run's catch-up", () => {
     expect(indexDue(at("2026-10-01"), SETS, []).due).toBe(false);
     expect(indexDue(at("2026-10-20"), SETS, []).due).toBe(true);
