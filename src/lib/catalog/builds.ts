@@ -6,9 +6,11 @@ import { fingerprintKey, readCatalogFingerprint } from "./fingerprint";
 
 /**
  * The build ledger (`catalog_builds`, migration 0074): what a copy reads to decide whether the
- * source holds a build it may publish. Written only by `db:catalog-build start|finish` around a
- * build, which the build workflows call (plan PR 3), so a build run by hand without it records
- * nothing and a copy of it refuses.
+ * source holds a build it may publish. A builder records ITSELF through `recordBuild`, so every
+ * invocation, scheduled or by hand, leaves a newer row: a run that dies part-way leaves that row
+ * failed or unfinished as the newest, and a copy refuses it rather than trusting an older `ok`
+ * over tables that have since moved. `db:catalog-build start|finish` remains for a build made of
+ * several steps that a workflow brackets.
  */
 export type BuildKind = "index" | "combos";
 type Db = NeonDatabase<typeof schema>;
@@ -75,4 +77,29 @@ export function buildRefusal(
     return `the catalogs disagree (source built ${build.catalogFingerprint}, target ${target}); refresh the stale catalog`;
   }
   return null;
+}
+
+/**
+ * Runs one build between its own ledger rows: started before `run`, finished `ok` only when it
+ * returns, and finished failed when it throws, which is rethrown. A finish that cannot be written
+ * after a failed run is reported beside that failure and never replaces it.
+ */
+export async function recordBuild<T>(
+  db: Db,
+  kind: BuildKind,
+  run: () => Promise<T>,
+  report: (result: T) => string | null = () => null,
+  deps: { start: typeof startBuild; finish: typeof finishBuild } = { start: startBuild, finish: finishBuild },
+): Promise<T> {
+  const row = await deps.start(db, kind);
+  let result: T;
+  try {
+    result = await run();
+  } catch (err) {
+    await deps.finish(db, row.id, kind, false, String(err instanceof Error ? err.message : err))
+      .catch((finishErr) => console.error(`build ${row.id} could not be closed as failed: ${String(finishErr)}`));
+    throw err;
+  }
+  await deps.finish(db, row.id, kind, true, report(result));
+  return result;
 }

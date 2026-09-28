@@ -12,4 +12,11 @@ describe("catalog writers hold the ingest lock", () => {
     const src = readFileSync(join(import.meta.dirname, "..", file), "utf8");
     expect(src).toMatch(/withCatalogIngestLock\(\s*process\.env\.DATABASE_URL!,/);
   });
+
+  // A builder whose output a copy publishes records its own ledger rows, so a run by hand that
+  // dies part-way leaves a newest row the copy refuses rather than an older `ok` vouching for it.
+  it("seed-combos.ts records its own build", () => {
+    const src = readFileSync(join(import.meta.dirname, "..", "seed-combos.ts"), "utf8");
+    expect(src).toMatch(/recordBuild\(db, "combos",/);
+  });
 });

@@ -210,6 +210,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `finish` closes that row, with `CATALOG_BUILD_REPORT` as its report. A build that dies between
   the two leaves an unfinished row, and the copy refuses it.
 
+  **A builder whose output is copied records ITSELF**, through `recordBuild`
+  (`src/lib/catalog/builds.ts`): `db:seed:combos` starts its own row and finishes it `ok` or
+  failed, so every run, by hand included, leaves a newer row. Without that, a hand-run ingest that
+  replaced the flags and died before the variants left an older `ok` row vouching for tables that
+  had moved under it, over an unchanged catalog fingerprint, and the copy would publish them.
+
 - `pnpm db:copy:combos [--dry-run]` publishes staging's combo build to production. It is NOT a
   table copy: it runs the ingest's own `publishFlagsIn` and `publishVariantsIn` against the
   target, with logging on, so production's `deck_data_changes` records the diff between ITS
