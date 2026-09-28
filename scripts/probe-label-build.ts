@@ -34,12 +34,14 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { meetsFloor, planChunks } from "../src/lib/labels/plan";
-import { publishRun, stampWave } from "../src/lib/labels/publish";
+import { publishRun, readCardsByName, reclaimIntents, stampWave } from "../src/lib/labels/publish";
 import type { Job } from "../src/lib/labels/types";
 
 const db = drizzle(DATABASE_URL);
 const runId = `probe-${randomUUID()}`;
 const otherRun = `probe-other-${randomUUID()}`;
+/** Section 7's own run, recorded so the cleanup can delete its row without re-deriving the id. */
+let strandedRunId: string | null = null;
 
 let failures = 0;
 /** Card `c`'s real label, captured before the fixture overwrites it, restored in the finally. */
@@ -171,6 +173,64 @@ async function main(): Promise<void> {
   report("the floor refuses a shortfall", !verdict.ok);
   const stillThere = await db.select().from(cardLabelsStaging).where(eq(cardLabelsStaging.runId, otherRun));
   report("and the staged rows are still there to inspect", stillThere.length === 1);
+
+  console.log("6. submit's card read, executed — the read that took the first dispatch down");
+  // THE POINT OF THIS SECTION. `readCardsByName` lived inline in `submit`, four lines above
+  // `batches.create`, and this file's own header excluded "anything that needs the API" — which
+  // silently excluded a DATABASE READ as well. So nothing ever executed it, and a bare JS array
+  // interpolated into a `sql` template renders `any(($1, $2, $3))`: Postgres 42809, on the first
+  // real dispatch, past typecheck, lint, 11,282 tests and `--dry-run`.
+  //
+  // MORE THAN ONE NAME, deliberately, and asserted as such — though a single name fails too
+  // (`any(($1))`), so this is belt and braces rather than the crux.
+  const askNames = [a.name, b.name, c.name];
+  report("the fixture asks about more than one name", askNames.length > 1, `${askNames.length}`);
+  const read = await readCardsByName(db, askNames);
+  report("every asked name comes back", read.length === askNames.length, `${read.length} row(s)`);
+  report("and they are the names asked for",
+    askNames.every((n) => read.some((r) => r.name === n)),
+    read.map((r) => r.name).join(", "));
+  report("with the prompt's fields populated",
+    read.every((r) => typeof r.oracleId === "string" && typeof r.type_line === "string"));
+  // A name nobody holds returns nothing rather than throwing, which is what lets `submit`'s
+  // `byName.get(...)` filter drop it.
+  // A name no catalog row can hold. NOT a NUL byte — Postgres rejects those with 22021
+  // `invalid byte sequence`, which is the fixture failing rather than the read under test.
+  const none = await readCardsByName(db, [`probe-no-such-card-${randomUUID()}`]);
+  report("an unknown name returns no rows rather than throwing", none.length === 0, `${none.length}`);
+
+  console.log("7. an intent a crash stranded is reclaimable, and the claim stays atomic");
+  // EXACTLY THE STATE THE FIRST DISPATCH LEFT: status `intended`, batch_id null, nothing at the
+  // provider. 127 such rows blocked run weekly-2026-W40 permanently, because `intent_key` is the
+  // primary key so the claim insert conflicts, and the row is absent from `done` so it is
+  // re-planned for ever.
+  const strandedRun = `probe-stranded-${randomUUID()}`;
+  const strandedKey = `${strandedRun}:claude-sonnet-4-5:0`;
+  await db.insert(cardLabelBatches).values({
+    intentKey: strandedKey, runId: strandedRun, model: "claude-sonnet-4-5",
+    customId: `${strandedRun}-0`, asked: [a.name],
+  });
+  strandedRunId = strandedRun;
+  const before = await db.select().from(cardLabelBatches)
+    .where(eq(cardLabelBatches.intentKey, strandedKey));
+  report("the stranded row is `intended` with no batch id",
+    before[0]?.status === "intended" && before[0]?.batchId === null,
+    `${before[0]?.status}, batchId ${String(before[0]?.batchId)}`);
+
+  const first = await reclaimIntents(db, [strandedKey]);
+  report("it is reclaimed", first.length === 1 && first[0] === strandedKey, `${first.length}`);
+
+  // ATOMIC, not read-then-write. Once a wave has been stamped with a batch id the row is no
+  // longer reclaimable — this is the clause that stops two invocations handing one chunk to two
+  // `batches.create` calls, and a `where` that omitted `batch_id is null` would pass every other
+  // check here.
+  await stampWave(db, [strandedKey], "msgbatch_probe_stranded");
+  const second = await reclaimIntents(db, [strandedKey]);
+  report("a row that reached the provider is NOT reclaimed again", second.length === 0, `${second.length}`);
+
+  // And a key nobody stranded is not invented.
+  const absent = await reclaimIntents(db, [`${strandedRun}:claude-sonnet-4-5:999`]);
+  report("an unknown key reclaims nothing", absent.length === 0, `${absent.length}`);
 }
 
 main()
@@ -185,6 +245,12 @@ main()
     for (const step of [
       () => db.delete(cardLabelsStaging).where(inArray(cardLabelsStaging.runId, [runId, otherRun])),
       () => db.delete(cardLabelBatches).where(eq(cardLabelBatches.runId, runId)),
+      // Section 7's stranded run, on its OWN step so a failure here cannot skip the rest — and
+      // guarded on the handle, which is set immediately after the insert rather than at the end,
+      // so a throw part-way through still leaves it deletable.
+      () => strandedRunId === null
+        ? Promise.resolve()
+        : db.delete(cardLabelBatches).where(eq(cardLabelBatches.runId, strandedRunId)),
       // Card `c` is RESTORED to what it held, or removed if it held nothing. Never deleted by
       // hash: `untouched` is this fixture's marker, and a blanket delete on it would take a
       // real row with the same value.

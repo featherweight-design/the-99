@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, modelToken, pauseRemediation, planChunks,
+  boundedNumber, CARDS_PER_REQUEST, classifyNullIntent, meetsFloor, modelToken,
+  pauseRemediation, planChunks, RECLAIM_GRACE_MS,
   runToken, waveSize,
   withinCap,
   worstCaseUsd,
@@ -278,5 +279,32 @@ describe("what a paused run tells the operator", () => {
     // The boundary in both directions, because `<=` and `<` read identically and differ here.
     expect(pauseRemediation(50, CEILING).canResume).toBe(true);
     expect(pauseRemediation(50.01, CEILING).canResume).toBe(false);
+  });
+});
+
+describe("an intent whose batch id is still unknown", () => {
+  const hour = 60 * 60 * 1000;
+
+  it("is reclaimable, and not reported, when the search was exhaustive and it is young", () => {
+    expect(classifyNullIntent(true, 5 * 60 * 1000)).toEqual({ reclaimable: true, abandon: false });
+  });
+
+  it("is reclaimable AND reported once it is old", () => {
+    // The age splits the reporting, not the permission: the provider still holds nothing for it.
+    expect(classifyNullIntent(true, 2 * hour)).toEqual({ reclaimable: true, abandon: true });
+  });
+
+  it("is NOT reclaimable when the search was inconclusive, at any age", () => {
+    // THE SAFETY RULE. A truncated provider listing does not prove a batch was never created, so
+    // re-submitting is the double charge the claim exists to prevent. The run dies instead, which
+    // is correct. Both ages, because a young intent is the tempting case.
+    expect(classifyNullIntent(false, 5 * 60 * 1000)).toEqual({ reclaimable: false, abandon: true });
+    expect(classifyNullIntent(false, 2 * hour)).toEqual({ reclaimable: false, abandon: true });
+  });
+
+  it("treats the grace boundary as exclusive", () => {
+    // `<` not `<=`, and they differ only here.
+    expect(classifyNullIntent(true, RECLAIM_GRACE_MS - 1).abandon).toBe(false);
+    expect(classifyNullIntent(true, RECLAIM_GRACE_MS).abandon).toBe(true);
   });
 });

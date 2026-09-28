@@ -237,3 +237,33 @@ export function pauseRemediation(
       + `workflow, not a different input.`;
   return { canResume, neededUsd, text };
 }
+
+/** What to do with an intent whose batch id is still unknown after the provider lookup. */
+export type NullIntentVerdict = { reclaimable: boolean; abandon: boolean };
+
+/** An hour: long enough that a batch the provider would still list has appeared. */
+export const RECLAIM_GRACE_MS = 60 * 60 * 1000;
+
+/**
+ * Whether an intent with no batch id may be submitted again, and whether to report it.
+ *
+ * Pure, and here rather than inline in `reconcile`, because `reconcile` needs the provider and so
+ * NOTHING could test this — which is the shape of every defect this feature has shipped. The rule
+ * it encodes is the one that keeps the claim safe.
+ *
+ * `searchWasComplete` is the whole safety argument. "I could not find a batch for this custom id"
+ * only means "it was never submitted" if the search was EXHAUSTIVE; a truncated listing proves
+ * nothing, and re-submitting a request a successful `create` already accepted is the double charge
+ * the claim exists to prevent. So an inconclusive search reclaims nothing, the claim insert
+ * conflicts, and the run dies — which is the correct outcome, not a bug to route around.
+ *
+ * The age is a REPORTING split and never a licence: a young intent is an ordinary retry, an old
+ * one is named in the output. Both are reclaimable when the search was exhaustive, and neither is
+ * when it was not.
+ */
+export function classifyNullIntent(searchWasComplete: boolean, ageMs: number): NullIntentVerdict {
+  return {
+    reclaimable: searchWasComplete,
+    abandon: !(searchWasComplete && ageMs < RECLAIM_GRACE_MS),
+  };
+}

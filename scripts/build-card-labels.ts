@@ -32,14 +32,15 @@ import { db } from "../src/db";
 import { cardLabelBatches, cardLabels, cardLabelsStaging } from "../src/db/schema";
 import { faceResolver } from "../src/lib/labels/parse";
 import {
-  boundedNumber, CARDS_PER_REQUEST, meetsFloor, pauseRemediation, planChunks, waveSize,
+  boundedNumber, CARDS_PER_REQUEST, classifyNullIntent, meetsFloor, pauseRemediation,
+  planChunks, waveSize,
   withinCap, worstCaseUsd,
   type Chunk,
 } from "../src/lib/labels/plan";
 import {
   buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, renderBody,
 } from "../src/lib/labels/prompt";
-import { publishRun, stampWave } from "../src/lib/labels/publish";
+import { publishRun, readCardsByName, reclaimIntents, stampWave } from "../src/lib/labels/publish";
 import { validateJob } from "../src/lib/labels/schema";
 import type { Job } from "../src/lib/labels/types";
 
@@ -299,6 +300,7 @@ async function collectBatch(
  */
 async function reconcile(): Promise<{
   done: Set<string>; waiting: number; abandoned: string[]; askedByKey: Map<string, string[]>;
+  reclaimable: Set<string>;
 }> {
   // EVERY intent already collected for this run, from any earlier invocation. Seeding `done`
   // from this process's work alone was a double charge: run 1 submits wave 1, run 2 collects it
@@ -316,7 +318,9 @@ async function reconcile(): Promise<{
 
   const open = await db.select().from(cardLabelBatches)
     .where(and(eq(cardLabelBatches.runId, runId), sql`${cardLabelBatches.status} <> 'collected'`));
-  if (open.length === 0) return { done, waiting: 0, abandoned: [], askedByKey };
+  if (open.length === 0) {
+    return { done, waiting: 0, abandoned: [], askedByKey, reclaimable: new Set() };
+  }
 
   console.log(`reconciling ${open.length} open intent(s) from ${runId}`);
   // Listed ONCE, not per intent: the ambiguous branch needs the same page of batches for every
@@ -378,6 +382,23 @@ async function reconcile(): Promise<{
 
   const abandoned: string[] = [];
   let waiting = 0;
+  /**
+   * Intents this run may CLAIM AGAIN, because the provider provably never took them.
+   *
+   * The gap this closes cost the first real dispatch. `submit` writes its claim rows BEFORE
+   * calling `batches.create` — deliberately, so two invocations cannot both submit the same
+   * chunks — and `intent_key` is the primary key. A crash in between left 127 rows no later run
+   * could get past: absent from `done`, so re-planned, and the claim insert then conflicts on
+   * every one and the run dies "already claimed by another process". Permanently, for that run
+   * id, and the ISO-week id cannot be changed without waiting a week.
+   *
+   * A row qualifies ONLY when the provider search was EXHAUSTIVE and returned no batch for its
+   * custom id. That is the whole safety argument: "I could not find it" is not "it does not
+   * exist", and re-submitting a request a successful `create` already accepted is the double
+   * charge the claim exists to prevent. An inconclusive search reclaims nothing and the run
+   * still dies, which is correct.
+   */
+  const reclaimable = new Set<string>();
 
   // Intents whose id is still unknown after the lookup above. Resolved by AGE, not by
   // guessing: a batch the provider would still list is recent, so a young unresolved intent
@@ -387,7 +408,15 @@ async function reconcile(): Promise<{
     // A young intent is re-planned only when the search was EXHAUSTIVE, so "not found" means
     // "never submitted" rather than "not on the page I looked at". Otherwise it is abandoned and
     // reported: re-submitting a request the provider already accepted is the double charge.
-    if (searchWasComplete && Date.now() - intent.intendedAt.getTime() < 60 * 60 * 1000) continue;
+    //
+    // Reclaimable either way when the search was exhaustive. The age split decides how it is
+    // REPORTED, not whether it may be re-submitted: a young intent is an ordinary retry, an old
+    // one is worth naming. Both are provably absent from the provider.
+    // THE DECISION IS PURE and lives in `plan.ts`, because `reconcile` needs the provider and so
+    // nothing here could test it — the shape of every defect this feature has shipped.
+    const verdict = classifyNullIntent(searchWasComplete, Date.now() - intent.intendedAt.getTime());
+    if (verdict.reclaimable) reclaimable.add(intent.intentKey);
+    if (!verdict.abandon) continue;
     await db.update(cardLabelBatches).set({ status: "abandoned" })
       .where(eq(cardLabelBatches.intentKey, intent.intentKey));
     abandoned.push(intent.intentKey);
@@ -423,7 +452,11 @@ async function reconcile(): Promise<{
     for (const i of intents) done.add(i.intentKey);
   }
 
-  return { done, waiting, abandoned, askedByKey };
+  if (reclaimable.size > 0) {
+    console.log(`  ${reclaimable.size} intent(s) are reclaimable — the provider holds no batch for `
+      + `them and the search was exhaustive, so they were never submitted`);
+  }
+  return { done, waiting, abandoned, askedByKey, reclaimable };
 }
 
 /**
@@ -436,7 +469,7 @@ async function reconcile(): Promise<{
  * provider, rather than as absent and re-submits. Writing the rows after the call is the
  * shape that pays twice.
  */
-async function submit(chunks: Chunk[]): Promise<void> {
+async function submit(chunks: Chunk[], reclaimable: Set<string>): Promise<void> {
   // THE INSERT IS THE CLAIM, and only what this process actually inserted is submitted.
   //
   // Two invocations sharing a `LABEL_RUN_ID` — copied by hand from a previous run's output, so an
@@ -455,6 +488,18 @@ async function submit(chunks: Chunk[]): Promise<void> {
   }))).onConflictDoNothing().returning({ intentKey: cardLabelBatches.intentKey });
 
   const mine = new Set(claimed.map((r) => r.intentKey));
+
+  // A ROW THE PROVIDER NEVER TOOK MAY BE CLAIMED AGAIN, atomically, through the shared helper.
+  // `reconcile` has already proved these were never submitted; `reclaimIntents` enforces the rest
+  // inside its own statement, so a concurrent invocation that got there first keeps the chunk and
+  // this one is told it did not. Without this the run is stuck for ever on its own crash.
+  const stale = chunks.filter((c) => !mine.has(c.intentKey) && reclaimable.has(c.intentKey));
+  if (stale.length > 0) {
+    const retaken = await reclaimIntents(db, stale.map((c) => c.intentKey));
+    for (const k of retaken) mine.add(k);
+    console.log(`  reclaimed ${retaken.length} of ${stale.length} intent(s) the provider never took`);
+  }
+
   const unclaimed = chunks.filter((c) => !mine.has(c.intentKey));
   if (unclaimed.length > 0) {
     console.error(`\n${unclaimed.length} of ${chunks.length} chunk(s) were already claimed by `
@@ -463,11 +508,18 @@ async function submit(chunks: Chunk[]): Promise<void> {
       + `billable. Wait for the other process, or start a new run.`);
   }
 
-  const cards = await db.execute<CardRow>(sql`
-    select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
-      from cards where name = any(${chunks.flatMap((c) => c.names)})
-  `);
-  const byName = new Map((cards.rows ?? (cards as unknown as CardRow[])).map((c) => [c.name, c]));
+  // THE SHARED HELPER, which the probe also calls against a real Postgres.
+  //
+  // This read is what took down the first real dispatch (run 36361018105): a bare JS array
+  // interpolated into a `sql` template renders as a ROW CONSTRUCTOR — `any(($1, $2, $3))` — and
+  // Postgres rejects it with 42809. It sits four lines above `batches.create`, so nothing was
+  // submitted and nothing spent; the claim rows already written then blocked the run id.
+  //
+  // It lived INLINE, where no test, no probe and no `--dry-run` could execute it. Keeping a copy
+  // here is the exact failure `stampWave` already taught: the probe went green on its own copy
+  // while the script ran code nothing exercised.
+  const rows = await readCardsByName(db, chunks.flatMap((c) => c.names));
+  const byName = new Map(rows.map((c) => [c.name, c]));
   const requests = chunks.map((c) => buildRequest(
     c.customId, MODEL, c.names.map((n) => byName.get(n)).filter((c2): c2 is CardRow => c2 !== undefined),
   ));
@@ -533,8 +585,11 @@ async function main(): Promise<void> {
 
   // RECONCILE FIRST, always, before anything is planned or priced. An in-flight batch this
   // run cannot see is work it would submit again.
-  const { done, waiting, abandoned, askedByKey } = dryRun
-    ? { done: new Set<string>(), waiting: 0, abandoned: [] as string[], askedByKey: new Map<string, string[]>() }
+  const { done, waiting, abandoned, askedByKey, reclaimable } = dryRun
+    ? {
+      done: new Set<string>(), waiting: 0, abandoned: [] as string[],
+      askedByKey: new Map<string, string[]>(), reclaimable: new Set<string>(),
+    }
     : await reconcile();
   if (abandoned.length > 0) {
     console.error(`\n${abandoned.length} intent(s) ABANDONED — submitted, id lost, and no longer`);
@@ -749,7 +804,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  await submit(wave);
+  await submit(wave, reclaimable);
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);
   process.exitCode = EXIT_MORE_WORK;
