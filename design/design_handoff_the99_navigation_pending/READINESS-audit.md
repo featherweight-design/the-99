@@ -19,10 +19,11 @@ This audit was run against `origin/main` at `911e97aa6` (#1086), using Next 16.3
 - **Tests and copy.**
   - `route-loading.test.ts:37-44` asserts one boundary per page, and the discover-words test is at
     `:46-49`.
-  - `shellCopy.loading` holds exactly the 11 keys the README names. Nothing outside the loading
-    files reads the 8 it retires.
+  - `shellCopy.loading` holds exactly the 11 keys the README names. Outside the loading files, only
+    the test the README drops reads the 8 it retires (`route-loading.test.ts:48` reads `discover`
+    and `home`). So that test's removal and the keys' removal must land together.
   - `LoadingScreen`'s docstring says "the eight segments". That was already wrong, since it has
-    16 users.
+    17 non-test users (16 `loading.tsx` files and `choose-loading.tsx`).
 - **`useLinkStatus`** exists (`04-functions/use-link-status.md`; the export is in
   `client/app-dir/link.d.ts`). It has to be read inside a descendant of the `<Link>`. It reports
   pending until history updates.
@@ -56,14 +57,17 @@ This audit was run against `origin/main` at `911e97aa6` (#1086), using Next 16.3
    `:has()`. The slot needs `position: relative` for the pip. The rail's `transition-colors` must
    not fade the fill out on landing, because the README says "no exit".
 5. **Reduced motion.** There is no global reduced-motion rule, only the per-class list at
-   `globals.css:745`. `pipIn` and the sweep join that list. Under reduced motion the pip is drawn
-   still, at full opacity as the canvas's T1 draws it, and it keeps the 120ms delay so a ~95ms
-   navigation never flashes it. "Still regions" have no mechanism in the code today. The build
+   `globals.css:745`, which sets `animation: none`. The pip and the track must NOT join that list
+   as written: the 120ms delay is itself a CSS animation delay, so `animation: none` removes it,
+   and a ~95ms navigation would flash the mark on its first frame. Under reduced motion they get
+   their own rule instead: a step animation (`0s` duration, 120ms delay, `both` fill) from hidden
+   to shown. It keeps the delay and has no motion. The pip is then drawn still at full opacity, as
+   the canvas's T1 draws it, and the track is held as a still `--fg-muted` hairline. "Still regions" have no mechanism in the code today. The build
    treats reduced motion as the only still case, and adds nothing further.
 6. **Stale docs are swept by hand.** `docs/superpowers/design-tables/appshell.md:1952-1985`
-   describes `app/loading.tsx` and quotes its copy. `check:copy-drift` cannot see a string that was
-   deleted outright. The two `ChooseLoading` comments (`choose-loading.tsx:2-5`,
-   `choose/loading.tsx:1`) go stale too.
+   describes the loading states and quotes "Reading your collection" (`shellCopy.loading.collection`,
+   a retired key). `check:copy-drift` cannot see a string that was deleted outright. The comment at
+   `choose-loading.tsx:2-5` ("drawn by BOTH loading files") also goes stale.
 7. **What is delayed.** The README says 120ms, and the canvas's T1 says "0ms: press takes its
    pending colour at once". Both hold, for different parts. The slot's fill and ink change at once,
    and the pip and the track appear after 120ms.
@@ -108,7 +112,7 @@ about 33ms.
 
 ## Open for Hugh
 
-- **A. Home, uncached.** Home measures 628–677ms here, which clears the line by 25–70ms.
+- **A. Home, uncached.** Home measures 628–677ms here, which clears the line by 23–72ms.
   Production and staging now both run in pdx1, the same region as Neon, so production's round
   trips are close to this machine's. Uncached Home in production is therefore probably also just
   under 700ms. That is still the longest the old page would sit with only a pip. It is measured on
