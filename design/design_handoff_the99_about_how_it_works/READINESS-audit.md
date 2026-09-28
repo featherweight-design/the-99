@@ -1,6 +1,6 @@
 # Readiness audit: About, "How the app reaches its answers" (R1)
 
-**Verdict: 🟠 Orange, with one item for Hugh (not Design).** Everything else is Yellow: it can be
+**Verdict: 🟠 Orange, with two items for Hugh (not Design).** Everything else is Yellow: it can be
 built once the engineering corrections below are applied. The audit was run against the #1089
 brief (`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`), its inventory, and
 `origin/main`.
@@ -13,6 +13,10 @@ brief (`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`), its invento
   one or more". The two options:
   - Add a fifth method, `published list`. Design leans this way (`READINESS-r1.md:83-87`).
   - Relax the rule, so Prices shows no mark.
+- **Whether the batched bump announces the appendix** (Design's open 5, `READINESS-r1.md`).
+  The brief says only that it rides the next batched bump with no bump of its own. It does
+  not say whether that bump's sheet names it. Rows are not entries, so by default the sheet
+  would say nothing.
 
 ## What checks out
 
@@ -38,14 +42,16 @@ brief (`docs/superpowers/design-briefs/2026-09-28-how-it-works.md`), its invento
   - on the phone, the same rows stacked.
 - **About and version.** No route, no new `AboutEntry`, `ABOUT_VERSION` stays 9, and all 21
   entry keys exist. The page can host the appendix after `CHAPTERS.map`. Design's open 5 (does
-  the bump announce the appendix) is settled by the brief: rows are not entries, so the bump
-  announces nothing.
+  the bump announce the appendix) is Hugh's, above.
 - **Tokens and parts.** Every token is declared in all six themes. `ProvenanceOpener`,
   `CURRENT_BAND`, `JumpMark` and the detection copy exist.
 
 ## Engineering corrections
 
 The first three exist because Design worked from the brief before its #1090 cadence update.
+**They ship with #1090's schedules, never before.** On `main` today the catalog and prices
+still run weekly and there is no release index (`catalog-refresh.yml`, `price-refresh.yml`:
+`0 9 * * 1`), so copy saying "daily" would state a cadence the app doesn't run.
 
 1. **Prices refresh** becomes "Daily." The drawn "Weekly, Monday 09:00 UTC." (`:101`) breaks the
    brief's no-clock-time rule, and the cadence is now daily.
@@ -54,8 +60,13 @@ The first three exist because Design worked from the brief before its #1090 cade
 3. **Roles, Themes and Recommendations** gain "and about two weeks after each new set"
    (`:72`, `:79`, `:86`).
 4. **Map the sub-row keys and fix the state names.** The detection keys are `landDenial` and
-   `combos`, not `massLandDenial` and `twoCardCombos`. README:164's state names are not the
-   code's: the phone's open set is `opened` in `contents-r6.tsx:310`.
+   `combos`, not `massLandDenial` and `twoCardCombos`. None of README:164-165's state names is
+   the code's:
+   - the phone's open set is `opened` (`contents-r6.tsx:310`), not `openChapters`;
+   - there is no `jumpedId`, because the jump is the `data-jumped` DOM attribute
+     (`jump-mark.tsx:7`);
+   - there is no `currentId`; the code uses `place` (`contents-r6.tsx:35`) and `current`
+     (`contents-rail.tsx:38`).
 5. **Tutors' "Not measured yet"** waits on brief §5.5, which gives the tutor classifier a stated
    accuracy.
 6. **Keep the sequencing.** The Roles and Recommendations lines say three surfaces use the
@@ -86,6 +97,6 @@ restated as fact.
 ## Against Design's READINESS-r1
 
 - **Agree** with its opens 1–4.
-- **Open 5** is settled by the brief, above.
+- **Open 5** is Hugh's, above.
 - **Its self-assessment missed** the Prices clock time and cadence, the Brackets cadence, and
   the new-set clause.
