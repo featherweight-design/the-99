@@ -27,7 +27,7 @@ async function main() {
   if (command === "finish") {
     if (outcome !== "ok" && outcome !== "failed") throw new Error(`outcome must be ok or failed, not ${outcome}`);
     const id = readFileSync(idFile, "utf8").trim();
-    await finishBuild(db, id, outcome === "ok", process.env.CATALOG_BUILD_REPORT ?? null);
+    await finishBuild(db, id, kind as BuildKind, outcome === "ok", process.env.CATALOG_BUILD_REPORT ?? null);
     console.log(`build ${id} finished · ${kind} · ${outcome}`);
     return;
   }

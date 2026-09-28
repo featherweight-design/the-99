@@ -1,7 +1,9 @@
 // The combo copy's spec, shared by `db:copy:combos` and `probe:catalog-copy`. See copy-combos.ts.
 import { cardBracketFlags, cards, spellbookVariantCards, spellbookVariants } from "../../src/db/schema";
 import { emptyLogReport, logTableExists } from "../../src/lib/notices/log";
-import { classifierCollapse, FLOORS, publishFlagsIn, publishVariantsIn } from "../../src/lib/spellbook/seed";
+import {
+  classifierCollapse, fieldCollapse, fieldPopulation, FLOORS, publishFlagsIn, publishVariantsIn,
+} from "../../src/lib/spellbook/seed";
 import { copyTable, type CopySpec } from "./catalog-copy";
 
 
@@ -36,7 +38,7 @@ export const combosCopySpec: CopySpec<CombosSnapshot> = {
       etRule: s.flags.filter((f) => has(f.extraTurnSources, "oracle_rule")).length,
       tutorRule: s.flags.filter((f) => has(f.tutorSources, "oracle_rule")).length,
     };
-    const below = classifierCollapse(counts, 1, FLOORS);
+    const below = [...classifierCollapse(counts, 1, FLOORS), ...fieldCollapse(fieldPopulation(s.variants), FLOORS)];
     if (s.variants.length < FLOORS.variantsKept) below.push(`variants ${s.variants.length} < ${FLOORS.variantsKept}`);
     return below;
   },

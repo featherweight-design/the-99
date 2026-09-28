@@ -51,17 +51,13 @@ type StampTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * changed its tables (plan `2026-09-28-card-data-replicate.md`, §3 item 9). `stampCatalogRefresh`
  * is bound to `src/db` and so to `DATABASE_URL`, which a two-connection copy never trusts.
  *
- * In a SAVEPOINT, and still non-fatal: a failed statement would otherwise abort the whole publish
- * transaction, trading a cache hint for the copy it describes.
+ * FATAL, unlike the ingests' stamp. The ingests tolerate a database without the table because they
+ * run without `db:migrate`; a copy's target is migrated by definition, and a copy that published
+ * without moving the stamp would leave every reader's cached list on the facts it just replaced.
+ * A failure here throws and rolls the whole publish back.
  */
 export async function stampCatalogRefreshIn(tx: StampTx): Promise<void> {
-  try {
-    await tx.transaction((sp) =>
-      sp.insert(catalogRefreshes)
-        .values({ id: CATALOG_ROW_ID, refreshedAt: new Date() })
-        .onConflictDoUpdate({ target: catalogRefreshes.id, set: { refreshedAt: sql`excluded.refreshed_at` } }),
-    );
-  } catch (error) {
-    console.warn(`catalog generation not stamped on the copy target: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  await tx.insert(catalogRefreshes)
+    .values({ id: CATALOG_ROW_ID, refreshedAt: new Date() })
+    .onConflictDoUpdate({ target: catalogRefreshes.id, set: { refreshedAt: sql`excluded.refreshed_at` } });
 }

@@ -84,9 +84,9 @@ const same = (a: Record<string, string>, b: Record<string, string>) =>
 const branchOf = async (db: typeof target.db) =>
   ((await db.execute(sql`select current_setting('neon.branch_id', true) as b`)).rows[0] as { b: string }).b;
 
-async function recordBuild(ok: boolean) {
-  const row = await startBuild(source.db, "combos");
-  await finishBuild(source.db, row.id, ok, null);
+async function recordBuild(ok: boolean, kind: "combos" | "index" = "combos") {
+  const row = await startBuild(source.db, kind);
+  await finishBuild(source.db, row.id, kind, ok, null);
 }
 
 async function main() {
@@ -123,6 +123,12 @@ async function main() {
     check("a source whose newest build has not finished is refused",
       (await attempt(combosCopySpec)).includes("not finished"));
     await source.db.execute(sql`delete from catalog_builds`);
+    const open = await startBuild(source.db, "combos");
+    const refused = async (f: () => Promise<unknown>) => { try { await f(); return false; } catch { return true; } };
+    check("finishing a build as the other kind fails", await refused(() => finishBuild(source.db, open.id, "index", true, null)));
+    await finishBuild(source.db, open.id, "combos", true, null);
+    check("finishing an already finished build fails", await refused(() => finishBuild(source.db, open.id, "combos", true, null)));
+    await source.db.execute(sql`delete from catalog_builds`);
 
     // ---- 3 · the catalogs: ids equal, one card's TEXT different ---------------------------
     await recordBuild(true);
@@ -139,6 +145,11 @@ async function main() {
     // ---- 4 · the floors ----------------------------------------------------------------------
     check("an empty source is under the builders' floors",
       combosCopySpec.floors({ flags: [], variants: [], members: [] }).length > 0);
+    // The field floors too: the real source's variants with their steps stripped.
+    const real = await source.db.transaction((tx) => combosCopySpec.readSource(tx));
+    const stripped = { ...real, variants: real.variants.map((v) => ({ ...v, steps: null })) };
+    check("a source whose variants lost their steps is under the field floor",
+      combosCopySpec.floors(stripped).some((b) => b.startsWith("steps ")) && combosCopySpec.floors(real).length === 0);
     // And the harness acts on them: a source under a floor is refused before any target write.
     const underFloor: CopySpec<CombosSnapshot> = { ...combosCopySpec, floors: () => ["forced by the probe"] };
     check("a source under a floor is refused by the copy itself",
@@ -187,12 +198,15 @@ async function main() {
     let publishStarted = 0;
     let readsDone!: () => void;
     const afterReads = new Promise<void>((r) => { readsDone = r; });
+    let locked!: () => void;
+    const lockHeld = new Promise<void>((r) => { locked = r; });
     const holder = withCatalogIngestLock(TARGET_URL, async () => {
+      locked();
       await afterReads;
       await new Promise((r) => setTimeout(r, 6000));
       released = Date.now();
     });
-    await new Promise((r) => setTimeout(r, 500));
+    await lockHeld;
     const timed: CopySpec<CombosSnapshot> = {
       ...combosCopySpec,
       readSource: async (tx) => { try { return await combosCopySpec.readSource(tx); } finally { readsDone(); } },
