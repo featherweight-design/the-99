@@ -100,6 +100,9 @@ export function ReplaceFlow({
       <ReviewScreen
         preview={preview}
         onCancel={() => {
+          // A press that lands while the write is in flight is ignored, as the disabled
+          // controls say: the confirm would still land and still open its receipt.
+          if (pending) return;
           setConfirming(false);
           setPreview(null);
         }}

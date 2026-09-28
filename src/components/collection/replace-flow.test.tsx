@@ -65,6 +65,13 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     await act(async () => fireEvent.click(cont));
     const held = screen.getByRole("button", { name: "Importing…" });
     expect(held).toBeDisabled();
+    // Nothing leaves the review mid-write, at either width: the write would land anyway.
+    for (const name of ["Cancel", "Back to upload"]) {
+      const control = screen.getByRole("button", { name });
+      expect(control).toBeDisabled();
+      fireEvent.click(control);
+    }
+    expect(screen.getByRole("button", { name: "Importing…" })).toBeInTheDocument();
     await act(async () => settle(undefined));
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
   });
