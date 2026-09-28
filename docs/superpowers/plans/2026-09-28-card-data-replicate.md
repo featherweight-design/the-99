@@ -65,11 +65,15 @@ nor `db:copy:labels` is one transaction).
    either is empty, when they are equal, or when the target's does not equal
    `CATALOG_COPY_TARGET_BRANCH`. That last check is the `PULL_TARGET_BRANCH` rule: "not the
    source" is not "safe to write to", and a mistyped URL naming some other database stops here.
-3. **The catalogs must agree first.** Every copied table is keyed on `cards.oracle_id` (the only
-   other key, Spellbook's `variant_id`, is text from upstream). The harness compares the md5
-   fingerprint of the sorted oracle ids on both sides and **refuses** when they differ. The fix
-   is then to refresh the stale catalog, never to copy around it. Nothing in this plan copies a
-   table keyed on printing ids.
+3. **The catalogs must agree first.** Most copied rows reference `cards.oracle_id`. The
+   exceptions are `spellbook_variants`, keyed on Spellbook's own text id;
+   `identity_composition`, keyed on a `condition` text derived from the index; and
+   `format_staples`, keyed on `(oracle_id, condition)`. Those `condition` keys are built from
+   the source's own index and are replaced whole, so no target-side key has to match them. For
+   everything that references a card, the harness compares the md5 fingerprint of the sorted
+   oracle ids on both sides and **refuses** when they differ. The fix is then to refresh the
+   stale catalog, never to copy around it. Nothing in this plan copies a table keyed on
+   printing ids.
 4. **A consistent source.** All source reads happen in one `repeatable read, read only`
    transaction, so a staging job committing mid-copy cannot hand production a mixture of two
    builds (the `pull:staging` rule).
@@ -95,8 +99,17 @@ that does, without first checking the target branch on that same connection.
 ### 3a. `db:copy:combos` (PR 1)
 
 Reads `card_bracket_flags`, `spellbook_variants` and `spellbook_variant_cards` from the staging
-snapshot. It then calls the builder's own `publishFlags` and `publishVariants` against
-production **with logging on**. This is not a raw table copy, and that is deliberate.
+snapshot. It then runs the builder's own publish logic against production **with logging on**.
+This is not a raw table copy, and that is deliberate.
+
+Today `publishFlags` and `publishVariants` (`src/lib/spellbook/seed.ts:443` and `:469`) each open
+and commit their OWN transaction. Called as they stand, the copy could neither be one transaction
+nor verify before commit, and a failure in the second would leave production with new flags over
+old variants. So PR 1 splits each into a body that takes a transaction: `publishFlagsIn(tx, …)`
+and `publishVariantsIn(tx, …)`.
+- **The builder** keeps its two transactions, calling each body in its own, exactly as now.
+- **The copy** calls both bodies inside ONE production transaction, runs the verification of §3,
+  item 6, and commits only after that passes.
 `deck_data_changes` is production's own log: its `seq` is what `deck_profiles.seen_seq` compares
 against, and the entries are the DIFF between production's previous flags and combos and the new
 ones. A raw copy would either skip the log or bring staging's `seq` numbers, which mean nothing in
@@ -127,13 +140,23 @@ from its own previous state, inside the same transaction as the write.
 
 ## 4. Workflow wiring (PR 3)
 
-The per-environment matrix goes away on the two replicated jobs. It becomes two jobs in sequence,
-under the workflow's existing concurrency group:
+The per-environment matrix goes away on the two replicated jobs. It becomes jobs in sequence
+under ONE workflow-level concurrency group, so two runs' copies can never overlap:
+- `Commander index` already has one (`commander-index`).
+- `Combo refresh` does not: its only group is per target, at job level. It gains a
+  workflow-level `combo-refresh`.
 
 - **`Commander index`**
   - `build` (environment `catalog-staging`): runs `db:build:index`, then `db:build:staples`.
-  - `copy` (environment `catalog-production`, `needs: build`, and only when `build` succeeded):
-    runs `db:copy:index`, then `db:copy:prose`.
+  - `prose` (environment `catalog-staging`, `needs: build`, only when `build` succeeded): runs
+    `db:build:prose` against staging's fresh tags. It is a job inside the same run, never a
+    `workflow_run` chain, so the sentences exist before the copy reads them. A chain would fire
+    only after the copy had finished, and would carry staging's OLD input hashes into a copy that
+    installs only matching rows. It is its own job so it keeps its own timeout (240 minutes).
+  - `copy` (environment `catalog-production`, `needs: [build, prose]`): runs `db:copy:index`, then
+    `db:copy:prose`. Its condition is `needs.build.result == 'success'`, so a failed or partial
+    prose run never withholds the index. The prose copy then installs whatever sentences exist,
+    and a commander whose sentence failed keeps its null, as today.
   - A failed staging build copies nothing, and production keeps its previous index. That is the
     point of the ordering. The old `continue-on-error` on the scheduled staging leg goes with it:
     it existed so a staging failure could not starve production, and production no longer builds.
@@ -141,10 +164,10 @@ under the workflow's existing concurrency group:
   - `build` (staging): runs `db:seed:combos`.
   - `copy` (production, `needs: build`): runs `db:copy:combos`.
 - **`Commander prose`**
-  - The chain moves to STAGING, because staging is now where the index is built.
+  - Loses its `workflow_run` chain, which is now the `prose` job above.
+  - A dispatch keeps its `target` input for the rare direct run.
   - Production receives the sentences through the `db:copy:prose` step above, so an Anthropic
     call is paid once.
-  - A dispatch keeps its `target` input for the rare direct run.
 - **`Card labels`**
   - Gains a `copy` job (production, `needs: label`) that runs `db:copy:labels`.
   - It replaces the step that currently writes "production is not updated".
