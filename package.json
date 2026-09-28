@@ -107,6 +107,7 @@
     "probe:card-note": "node scripts/probe-card-note.mjs",
     "probe:deck-grid": "node scripts/probe-deck-grid.mjs",
     "probe:list-scroll": "node scripts/probe-list-scroll.mjs",
+    "probe:grid-art": "node scripts/probe-grid-art.mjs",
     "probe:printing-pick": "node scripts/probe-printing-pick.mjs",
     "probe:catalog-stamp": "tsx scripts/probe-catalog-stamp.ts",
     "probe:commander-art": "tsx scripts/probe-commander-art.ts",

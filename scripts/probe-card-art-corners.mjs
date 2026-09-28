@@ -117,7 +117,12 @@ async function readArtBoxes(page) {
   for (const handle of handles) {
     const info = await handle.evaluate((el) => {
       const cs = getComputedStyle(el);
-      const url = (cs.backgroundImage.match(/url\("?([^")]+)"?\)/) ?? [])[1];
+      // Either way a surface paints its art: a CSS background, or (the /collection grid,
+      // since its art loads lazily) an <img> clipped by its box — whose radius is the box's.
+      const isImg = el.tagName === "IMG";
+      const url = isImg
+        ? el.currentSrc || el.getAttribute("src")
+        : (cs.backgroundImage.match(/url\("?([^")]+)"?\)/) ?? [])[1];
       if (!url || !url.includes("cards.scryfall.io")) return null;
       const r = el.getBoundingClientRect();
       if (r.width < 40 || r.height < 40) return null;
@@ -127,7 +132,8 @@ async function readArtBoxes(page) {
       // banner crops its art and has no caption under it, so it is a different
       // ruling as well as a different element.
       if (Math.abs(r.width / r.height - 63 / 88) > 0.02) return null;
-      return { url, w: r.width, h: r.height, radius: cs.borderBottomLeftRadius };
+      const clip = isImg && el.parentElement ? getComputedStyle(el.parentElement) : cs;
+      return { url, w: r.width, h: r.height, radius: clip.borderBottomLeftRadius };
     });
     if (info) boxes.push({ ...info, handle });
   }
@@ -186,6 +192,13 @@ async function cornerSamples(page, box) {
   // nominally visible: it left a 250.03px tile with its foot 0.03px past a 900px viewport,
   // and a clip one hundredth of a pixel outside the image is refused outright.
   await box.handle.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  // A lazy <img> starts loading only once it is near the viewport, so a corner sampled at once
+  // reads the box's own ground. Wait for the picture itself (or its failure) first.
+  await box.handle.evaluate((el) =>
+    el.tagName === "IMG" && !el.complete
+      ? new Promise((resolve) => { el.addEventListener("load", resolve, { once: true }); el.addEventListener("error", resolve, { once: true }); })
+      : null,
+  );
   await page.waitForTimeout(250);
   const rect = await box.handle.evaluate((el) => {
     const r = el.getBoundingClientRect();
@@ -296,7 +309,8 @@ try {
       // subject is a painted pixel.
       await page.waitForFunction(
         () => [...document.querySelectorAll("main *")].some((el) =>
-          (getComputedStyle(el).backgroundImage || "").includes("cards.scryfall.io")),
+          (getComputedStyle(el).backgroundImage || "").includes("cards.scryfall.io")
+          || (el.tagName === "IMG" && el.complete && (el.currentSrc || "").includes("cards.scryfall.io"))),
         null,
         { timeout: 30_000 },
       );

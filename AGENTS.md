@@ -2013,12 +2013,34 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     nothing on a database others are using, so it runs only when the URL reports the named branch,
     and never on production or staging.
 
+  **`MEASURE_PROFILE=slow`** runs every page under Chrome's own Slow 4G (562.5ms latency, 180,000
+  bytes/s down) plus a 4x CPU throttle, through CDP: the profile the navigation-pending brief
+  measured, so the two tables read side by side. **`MEASURE_ROUTES=collection,discover`** measures
+  only the routes named, since a slow run of all six takes a long time. It also prints the card
+  images each cold load ASKED for and the kilobytes that landed, and the load event, recorded as
+  null past 90s rather than failing the run. That null is a finding: before the grid's art loaded
+  lazily, a cold `/collection` at 1300 asked for 200 images (20.3MB) and never reached its load
+  event on the slow profile.
+
   **Two traps it was built around.** Playwright turns the HTTP cache OFF for a context carrying a
   route, and Clerk's testing token is one. So the harness signs in once, carries the session into
   contexts with no route, and only then is "warm" warm. The first version read 0 cached scripts on
   every warm load. And React's `cache` is not request-scoped inside a server action: the first
   timing module keyed its spans on it, and the card-details action logged its total with none of
   its spans. So `perfRoute` returns an explicit tracker instead.
+
+- `pnpm probe:grid-art` proves the `/collection` grid asks only for the art it can show, at
+  1300x900 and at 390x844 with `?view=grid`. The tile's art was a CSS background, which a browser
+  fetches for every rendered element on screen or not, so the grid asked for all 200 windowed
+  tiles' `normal` images at once. It is a native `loading="lazy"` img now: it starts on the HTML
+  parse, before hydration, where a script-driven observer would wait for the bundle. The probe
+  counts the Scryfall requests the page made, never an attribute, and holds them under half the
+  window: Chrome loads a lazy image within a FIXED distance of the viewport (1250px fast, 2500px
+  slow), so a first load asks for rows below the fold by design (66 of 200 at 1300, 22 at 390).
+  It also reads the first tile's art as painted, `cover` and centred, under the 1px inner edge,
+  which moved onto an overlay because an inset shadow on the art box would paint under its img.
+  And scrolling to the foot must ask for more. `probe:printing-pick` and `probe:card-art-corners`
+  read the grid's art through the img since, scrolled in and loaded first. Makes no writes.
 
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
