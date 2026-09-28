@@ -25,10 +25,10 @@
   - import issues on the phone use the filter sheet (D8);
   - the replace confirm is calmer (D9);
   - the phone has an exit (D11).
-- **§4.1–4.5 and the state list** are drawn at the widths the brief asks for (canvas `:83-570`),
+- **§4.1–4.5 and the state list** are drawn at the widths the brief asks for (canvas `:83` onward, through frame 5b at `:571`),
   including all six themes' `--fg-locked` and the unlock moment.
-- **Buildability.** Every component the handoff names exists. All 17 tokens it uses are
-  declared in all six themes. It needs no new token.
+- **Buildability.** Every component the handoff names exists. All 20 tokens the canvas reads
+  are declared in all six themes (`--tabbar-h` is a single `html`-level value, `globals.css:495`). It needs no new token.
 - **O4: out of scope.** `filter-sheet.tsx:169` draws the scrim as the literal
   `rgba(16,13,10,0.74)`. Moving it onto the themed mix is a follow-up, not this build.
 - **O6.** No new About entry. `import-issues` (`about.ts:180`) and `deck-import` (`:627`)
@@ -40,13 +40,14 @@
 **It restores everything.** Replacing with the previous file brings the account back to where it
 was.
 
-- **What a replace deletes.** `replaceCollection` (`src/lib/collection/import.ts:136-181`)
+- **What a replace deletes.** `replaceCollection` (`src/lib/collection/import.ts:136-183`)
   deletes only `collection_items` and `commander_scores` (`:171-173`), then reinserts.
 - **Nothing set in the app lives in `collection_items`.** Every one of its columns comes from
   the file (`schema.ts:215-230`), and nothing else in `src/` writes that table.
 - **Untouched by a replace.** Deck lists and versions, assignments (`card_assignments`), pulls,
-  proxies and locks are all keyed on decks. Art picks (`card_art_preferences`) have no foreign
-  key, so a pick goes dormant and comes back once that printing is owned again.
+  proxies and locks are all keyed on decks. Art picks (`card_art_preferences`) have no link to
+  `collection_items`; they are joined per card when read (`browse.ts:1004-1009`), so a pick goes
+  dormant and comes back once that printing is owned again.
 - **Recomputed live.** Owned counts and availability (`availability-query.ts:233-241`).
   Commander scores are rewritten after the confirm, and recomputed lazily as a fallback.
 - **Per-upload receipts.** Each upload keeps its own arrivals receipt on its own `csv_uploads`
@@ -58,7 +59,8 @@ was.
 - A catalog refresh in between can match rows differently.
 - A pasted collection is "your previous list", not a file.
 - **The body sentence is false:** "Decks and commander recommendations rebuild from the new
-  list" (`copy strings.ts:39`, and already shipped at `confirm-modal.tsx:111`). Decks are never
+  list" (`copy strings.ts:39`, and its phone form `bodyShort` at `:40`; the desktop confirm already
+  ships it as "…rebuild from the new collection", `confirm-modal.tsx:111`). Decks are never
   rebuilt; what each deck needs to buy is recomputed.
 
 ## O3: focusable locked slots (engineering and accessibility)
@@ -69,9 +71,9 @@ must verify each:
 
 - **Drop `aria-disabled`.** The slot now opens a note, so a screen reader announcing it as
   unavailable is wrong. Use `aria-expanded` with `aria-controls`.
-- **Keep the note's text mounted.** `aria-describedby` points at a note that only mounts when it
-  opens, so the description is empty until then. Keep the sentence in the document (screen-reader
-  only is fine).
+- **Keep the note's text in the document.** The handoff gives `aria-describedby=note`. If the
+  build mounts the note only when it opens, the description is empty until then, so keep the
+  sentence in the document at all times (screen-reader only is fine).
 - **Remove `title`** (`nav.tsx:114`), or the browser's tooltip draws over the designed note.
 - **Say it once.** Trim the accessible name to the label plus "locked", so it does not repeat
   the note (`lockedItemAria`, `refresh.ts:252`).
@@ -93,8 +95,10 @@ must verify each:
    (`page.tsx:144`). So an account that imported a deck first sees locked chrome with no step 1.
    Also give the button a destination off Home, and say where D5's desktop page line appears
    there. O1's answer may settle this.
-4. **Walk item 11: the empty-filter title** is 16px today (`issue-inspector.tsx:485`) against the
-   mock's 19px desktop and 17px phone in Cinzel. This handoff does not redraw that state (STATES
+4. **The empty-filter title** (item 11 of Hugh's production walk, relayed by d9; the brief does not
+   list it) is 16px today (`issue-inspector.tsx:485`) against the Issue Inspector mock's 19px
+   desktop and 17px phone in Cinzel (`design_handoff_the99_issue_inspector/The 99 - Issue
+   Inspector.dc.html:316`, `:334`). This handoff does not redraw that state (STATES
    §C `:39-40`, "—"). Build it at `text-[17px] md:text-[19px]` in the display face.
 5. **The calmer replace banner** is drawn at 1300 only (4c). Mirror D10 for the phone.
 6. **Add the phone Cancel row** to the design table, `collection.md:2062`.
