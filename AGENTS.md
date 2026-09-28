@@ -223,6 +223,28 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   expects. The builders' floors (`classifierCollapse`, `variantsKept`) are re-checked on the
   source snapshot first.
 
+- `pnpm db:copy:index [--dry-run]` publishes staging's commander index build to production: the
+  commander and pair headers, both card lists, `format_staples` and `identity_composition`,
+  replaced EXACTLY in one transaction. Exact because `readIndexGeneration` keys on
+  `max(computed_at)`: a row only the target held, dated later, would pin that maximum and stop the
+  copy retiring cached pages. Four rules sit inside that transaction:
+
+  - **The target's `commander_scores` are cleared first**, by the builder's own clear
+    (`clearPersistedScoresIn`, under `SCORE_INDEX_LOCK`), so no score outlives the index it was
+    scored against, and a copy that fails rolls the clear back with everything else.
+  - **The three `prose*` columns are left alone** on a row both sides hold. `db:copy:prose`
+    installs them behind an input-hash check this copy does not make. A commander the copy
+    deletes takes its sentence with it, which is right: the index no longer lists it.
+  - **A pair only a target deck holds is REPORTED, never fatal.** The builder lists every pair a
+    deck holds in THAT database; production's pairs are not in staging's build. The fix is a
+    one-off production index dispatch for that pair.
+  - The floors re-checked on the snapshot are the builders' own: an `ok` commander exists, role
+    targets reach `ROLE_TARGET_FLOOR` of them, and `format_staples` is not empty. An empty
+    composition is legitimate and is not a floor.
+
+  Measured on two scratch branches of staging: 3,382 commanders, 892,874 support cards, 1,717 pairs
+  and 447,232 pair cards copied and verified in 84s at 2.1GB resident.
+
 - **The four catalog ingests hold the `catalog-ingest` lock for their whole run**
   (`withCatalogIngestLock`: `seed-sets`, `seed-cards`, `seed-printings`, `seed-prices`). It is a
   transaction-scoped advisory lock on a dedicated connection, never a session lock, because the
@@ -245,7 +267,12 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   verify removed, the build refusal removed, the named-target check removed, the floor refusal
   removed, and (in the unit pin) `game_changer` dropped from the fingerprint and a raw
   `cc.rarity` read added to a builder. It writes ledger rows, flags, variants and one
-  card's text, and puts the text back in a `finally`.
+  card's text, and puts the text back in a `finally`. Its index section proves `db:copy:index` over a
+  target a staging build would never produce: a commander only the target lists (dated ahead), a
+  moved header column, a sentence on a shared row, a stored score, and a pair only a target deck
+  holds. A publish that verifies wrong rolls the score clear back; a good one leaves the six tables
+  equal to the source's, deletes the target-only commander, keeps the sentence, clears the scores
+  and reports the pair. It adds a deck and a score under a per-run user, deleted in the `finally`.
 - **`job=printings` alone is the sharp tool, and its blast radius is every set.** The ingest
   refuses to publish denominators from a run that skipped orphans, and skipping the oracle
   refresh is what produces orphans — so the two together used to blank `base_set_size` for
