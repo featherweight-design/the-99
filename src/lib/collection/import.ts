@@ -157,21 +157,6 @@ export async function replaceCollection(
       // upload's owned delta with the other's buy state. The collection itself cannot be
       // corrupted, which is what this lock is for.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
-      // WITH `onlyIfEmpty`, A COLLECTION THAT EXISTS STOPS THE REPLACE. It is a first import's
-      // promise that nothing is lost, and it is checked HERE, under the lock, because a check
-      // read before the lock is a snapshot another tab's import can land behind: that import
-      // would be deleted with no confirm (Copilot, #1097). It runs before the stamp, so the
-      // upload stays unconfirmed and the player can still confirm it through the modal.
-      if (opts.onlyIfEmpty) {
-        const [{ owned }] = await tx
-          .select({ owned: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })
-          .from(collectionItems)
-          .where(eq(collectionItems.userId, userId));
-        if (owned > 0) {
-          notEmpty = owned;
-          throw new NotEmpty();
-        }
-      }
       if (opts.confirmUploadId) {
         const claimed = await tx.update(csvUploads)
           .set({ confirmedAt: new Date() })
@@ -182,6 +167,25 @@ export async function replaceCollection(
           // back, and the rollback is what makes the guard a lock rather than a hint.
           alreadyConfirmed = true;
           throw new AlreadyConfirmed();
+        }
+      }
+      // WITH `onlyIfEmpty`, A COLLECTION THAT EXISTS STOPS THE REPLACE. It is a first import's
+      // promise that nothing is lost, and it is checked HERE, under the lock, because a check
+      // read before the lock is a snapshot another tab's import can land behind: that import
+      // would be deleted with no confirm (Copilot, #1097). It runs AFTER the stamp, and both
+      // halves of that order matter. After: a second submit of the SAME upload, waiting here
+      // while the first commits, meets `alreadyConfirmed` and serves its receipt, rather than
+      // reading the collection its own twin just wrote as somebody else's. And the throw
+      // rolls the stamp back with everything else, so an upload refused for a DIFFERENT
+      // import's collection stays unconfirmed and the modal can still confirm it.
+      if (opts.onlyIfEmpty) {
+        const [{ owned }] = await tx
+          .select({ owned: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })
+          .from(collectionItems)
+          .where(eq(collectionItems.userId, userId));
+        if (owned > 0) {
+          notEmpty = owned;
+          throw new NotEmpty();
         }
       }
       await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));

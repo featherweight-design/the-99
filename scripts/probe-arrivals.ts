@@ -260,6 +260,17 @@ async function main() {
     } finally {
       holder.release();
     }
+    // A second submit of the SAME first-import upload, queued behind the first, is a duplicate
+    // rather than a rival: it meets the stamp and reports `alreadyConfirmed`, never the
+    // collection its twin just wrote as a reason to ask (Copilot on #1097, round 3).
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+    const twin = await newUpload();
+    const [twinA, twinB] = await Promise.all([
+      replaceCollection(USER, items, { confirmUploadId: twin, onlyIfEmpty: true }),
+      replaceCollection(USER, items, { confirmUploadId: twin, onlyIfEmpty: true }),
+    ]);
+    check("two submits of one first import: one writes, the other is already confirmed",
+      [twinA, twinB].map((r) => `${r.alreadyConfirmed}/${r.notEmpty}`).sort().join(" "), "false/null true/null");
     // The guard passes an empty collection, or it would refuse every first import.
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
     const clean = await replaceCollection(USER, items, { confirmUploadId: await newUpload(), onlyIfEmpty: true });
