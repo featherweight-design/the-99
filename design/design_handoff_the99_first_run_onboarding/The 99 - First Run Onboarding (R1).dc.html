@@ -71,10 +71,158 @@
 <section data-theme="{{ theme }}" style="padding:56px 64px 96px;display:flex;flex-direction:column;gap:64px;color:#B8B2A7;">
 
   <header style="max-width:1300px;display:flex;flex-direction:column;gap:10px;">
-    <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#8B8270;">DESIGN/DESIGN_HANDOFF_THE99_FIRST_RUN_ONBOARDING · R1 · 2026-09-28</p>
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#8B8270;">DESIGN/DESIGN_HANDOFF_THE99_FIRST_RUN_ONBOARDING · R2 · 2026-09-28 · R2 FRAMES FIRST (6a–6c), R1 BELOW</p>
     <h1 style="margin:0;font-family:var(--font-display);font-size:34px;font-weight:700;color:#EDE6D8;">First-run onboarding fixes</h1>
     <p style="max-width:860px;font-size:14px;line-height:1.6;text-wrap:pretty;">Brief: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E9E4DA;">docs/superpowers/design-briefs/2026-09-28-first-run-onboarding.md</span>. Rulings §3.1–3.6 are Hugh's; the frames below are Design's answers to §4.1–4.5. Copy in the frames is placeholder where marked, and /copy-review sets the words. Not redrawn, per §5: top alignment, the filled fan, the first import with no confirm, left-aligned issue headings and the full-width paste box.</p>
   </header>
+
+  <div id="r2" style="display:flex;flex-direction:column;gap:22px;">
+    <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">R2 · O1 RULED · HOME WITH A READ COLLECTION AND NO DECKS</h2>
+    <div style="max-width:1300px;border:1px solid #E9E4DA;border-radius:12px;padding:18px 22px;display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;text-wrap:pretty;">
+      <p><strong style="color:#EDE6D8;">The call: the resume slot becomes a peer section called “No decks yet”.</strong> It has the same mono section label as Ready to build and Commitments. Under it is one inset card: decks-zero’s body sentence, then the shared action group, meaning the pair and the buildable-from line. <strong style="color:#EDE6D8;">The card fan is dropped</strong>, because it marks a whole surface that is empty, and here it would sit directly under two commander portraits. <strong style="color:#EDE6D8;">The body is kept</strong>, because it is the one sentence on Home that says what a deck is here. The “Pick up where you left off” label is not drawn, because it would claim a history the player does not have.</p>
+      <p>The shared piece is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E9E4DA;">DecksZeroActions</span>, extracted from <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E9E4DA;">decks-zero.tsx:56-77</span> with its classes unchanged. Its own responsive classes do the phone: the buttons stack full-width at 44 below <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E9E4DA;">sm</span> and sit in a row at 32 above it. Home adds no layout of its own to the pair. Frames <a href="#1c" style="border-bottom:1px solid #8B8270;">1c</a> and <a href="#1d" style="border-bottom:1px solid #8B8270;">1d</a> are withdrawn.</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+      <div id="6a" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#6a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">6a</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Home · collection read, no decks · 1300</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+            <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <sc-for list="{{ railLive }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ i.bg }};color:{{ i.c }};"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for>
+            </div>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);"></span>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <header style="display:flex;align-items:flex-end;gap:16px;padding:22px 26px 0;">
+              <div style="flex:1;min-width:0;">
+                <p style="margin-bottom:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--fg-faint);">1,284 CARDS · READ TODAY</p>
+                <h1 style="margin:0;font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1;color:var(--fg);">Welcome back</h1>
+              </div>
+              <span style="height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:12.5px;">↻ Update collection</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;">New deck</span>
+            </header>
+            <div style="flex:1;min-height:0;display:flex;gap:20px;padding:20px 26px 26px;">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:11px;">
+                <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--fg-faint);">READY TO BUILD</h2>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+                  <sc-for list="{{ heroes }}" as="h" hint-placeholder-count="2">
+                    <div style="height:252px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);overflow:hidden;display:flex;flex-direction:column;">
+                      <div style="height:128px;flex:none;background:var(--surface-sunken);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">hero art · as built</div>
+                      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:6px;">
+                        <span style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--fg);">{{ h.name }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ h.fit }}</span>
+                        <div style="display:flex;gap:8px;margin-top:6px;"><span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Start this deck</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:12.5px;">See the pool</span></div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">36 more scored 58 or better</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">All commanders</span></div>
+
+                <section style="display:flex;flex-direction:column;gap:11px;margin-top:6px;outline:2px dashed #E9E4DA;outline-offset:8px;border-radius:4px;">
+                  <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--fg-faint);">NO DECKS YET</h2>
+                  <div style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);">
+                    <p style="max-width:520px;font-size:14px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Pick a commander and we’ll assemble the 99 from cards you already own, then track what’s missing.</p>
+                    <div style="display:flex;flex-direction:column;gap:16px;">
+                      <div style="display:flex;flex-direction:row;gap:10px;"><span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;">Browse commanders</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Import a deck</span></div>
+                      <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">38 commanders buildable from 1,284 cards</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div style="width:316px;flex:none;display:flex;flex-direction:column;gap:11px;">
+                <h2 style="margin:4px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--fg-faint);">COMMITMENTS</h2>
+                <div style="display:flex;flex-direction:column;gap:11px;padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">Cards in use</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">0 of 1,284</span></div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">Spoken for twice</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--danger);">0 cards</span></div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">To buy, all decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);">0 · $0.00</span></div>
+                  <span style="margin-top:2px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Review commitments</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">In the slot, in the order.</strong> The section mounts where <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ResumeDecks</span> would, under Ready to build and inside the left column. Commitments keeps the 316px rail. The dashed outline is canvas ink. Label: §SectionLabel with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">mt-[6px]</span>, the resume label’s own margin. Card: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-inset</span>, 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border</span>, radius 14, padding 16/18, gap 14. That is Commitments’ card, so the two read as siblings.</p>
+          <p><strong style="color:#EDE6D8;">Left-aligned, not centred.</strong> decks-zero centres because it is the whole surface. Here the block sits in a column of left-aligned sections. The body is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">zero.decksBody</span> at decks-zero’s own 14/1.65 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span>, capped at 520px. Below it, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">DecksZeroActions</span> draws exactly as on /decks: the pair in a row, 10 apart at 32, and the line 16 under it.</p>
+          <p><strong style="color:#EDE6D8;">Two filled buttons on the page (O7).</strong> New deck is Home’s one bone fill (ruling 14), and Browse commanders is decks-zero’s. The lock asks for the same component, so R2 draws both filled and does not fork a ghost variant. Showing the zero block only while <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decks.length === 0</span> keeps the exception to this one state. This needs Hugh’s ruling.</p>
+        </div>
+      </div>
+
+      <div id="6b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#6b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">6b</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Home · 390 · at the fold</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
+          <div style="padding:14px 16px 0;">
+            <p style="margin-bottom:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--fg-faint);">1,284 CARDS · READ TODAY</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:23px;font-weight:700;line-height:1.15;color:var(--fg);">Welcome back</h1>
+          </div>
+          <div style="display:flex;gap:8px;padding:12px 16px 0;"><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">New deck</span><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">↻ Update collection</span></div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px 0;">
+            <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--fg-faint);">READY TO BUILD</h2>
+            <sc-for list="{{ heroes }}" as="h" hint-placeholder-count="2">
+              <div style="height:268px;flex:none;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);overflow:hidden;display:flex;flex-direction:column;">
+                <div style="height:132px;flex:none;background:var(--surface-sunken);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">hero art · as built</div>
+                <div style="padding:12px 14px;display:flex;flex-direction:column;gap:6px;">
+                  <span style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--fg);">{{ h.name }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ h.fit }}</span>
+                  <div style="display:flex;gap:8px;margin-top:6px;"><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:13.5px;">Start this deck</span><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13.5px;">See the pool</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);padding:8px 8px 14px;display:flex;">
+            <sc-for list="{{ tabsLive }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for>
+          </div>
+        </div>
+        <div style="max-width:390px;font-size:13px;line-height:1.55;text-wrap:pretty;"><p>Nothing changes above the fold, because Ready to build stays first (O1). The phone order is the dashboard’s own: CTAs, then Ready to build, then the zero block, then Commitments. The block is one scroll down, in <a href="#6c" style="border-bottom:1px solid #8B8270;">6c</a>.</p></div>
+      </div>
+
+      <div id="6c" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#6c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">6c</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Home · 390 · scrolled to the zero block</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:0 16px;">
+            <div style="height:120px;flex:none;border-radius:0 0 14px 14px;border:1px solid var(--border);border-top:0;background:var(--surface-inset);padding:0 14px 12px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ heroTail }}</span>
+              <div style="display:flex;gap:8px;margin-top:6px;"><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:13.5px;">Start this deck</span><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg-body);font-size:13.5px;">See the pool</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">36 more scored 58 or better</span><span style="margin-left:auto;height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:13px;">All commanders</span></div>
+
+            <section style="display:flex;flex-direction:column;gap:12px;margin-top:6px;outline:2px dashed #E9E4DA;outline-offset:6px;border-radius:4px;">
+              <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--fg-faint);">NO DECKS YET</h2>
+              <div style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);">
+                <p style="font-size:13.5px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Pick a commander and we’ll assemble the 99 from cards you already own.</p>
+                <div style="display:flex;flex-direction:column;gap:15px;">
+                  <div style="display:flex;flex-direction:column;gap:9px;"><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Browse commanders</span><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">Import a deck</span></div>
+                  <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">38 commanders buildable from 1,284 cards</p>
+                </div>
+              </div>
+            </section>
+
+            <h2 style="margin:4px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;color:var(--fg-faint);">COMMITMENTS</h2>
+            <div style="display:flex;flex-direction:column;gap:11px;padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">Cards in use</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">0 of 1,284</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">Spoken for twice</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--danger);">0 cards</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">To buy, all decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);">0 · $0.00</span></div>
+              <span style="margin-top:2px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Review commitments</span>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);padding:8px 8px 14px;display:flex;">
+            <sc-for list="{{ tabsLive }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">The phone is decks-zero’s own phone form.</strong> It uses the short body, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decksBodyShort</span> at 13.5, then the pair stacked full-width at 44, 9 apart, primary first. That comes from the shared component’s classes, not from Home.</p>
+          <p>The card padding drops to 16 all round. The block ends above the 74px bar, with Commitments still reachable in the same scroll.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <div style="display:flex;flex-direction:column;gap:22px;">
     <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">§4.1 + §4.2 · STEP 2, BOTH STATES, WITH THE CHROME AROUND IT</h2>
@@ -182,7 +330,7 @@
       </div>
 
       <div id="1c" style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1c</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Collection read, no deck · step 2 live · 1300</span></div>
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1c</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Collection read, no deck · step 2 live · 1300</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#C6533F;border:1px solid #C6533F;border-radius:4px;padding:2px 7px;">WITHDRAWN · O1 · SEE <a href="#6a" style="color:#C6533F;">6a</a></span></div>
         <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
           <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
             <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
@@ -227,7 +375,7 @@
       </div>
 
       <div id="1d" style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1d" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1d</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Step 2 live · 390</span></div>
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1d" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1d</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Step 2 live · 390</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#C6533F;border:1px solid #C6533F;border-radius:4px;padding:2px 7px;">WITHDRAWN · SEE <a href="#6b" style="color:#C6533F;">6b</a></span></div>
         <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
           <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
           <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
@@ -643,6 +791,11 @@ class Component extends DCLogic {
     return {
       theme: this.props.theme ?? "amonkhet",
       themes,
+      heroes: [
+        { name: "Meren of Clan Nel Toth", fit: "81 /100 fit · 74 of your cards fit" },
+        { name: "Lathril, Blade of the Elves", fit: "77 /100 fit · 69 of your cards fit" },
+      ],
+      heroTail: "77 /100 fit · 69 of your cards fit",
       lockables,
       lockablesFocus: lockables.map((i, k) => ({ ...i, sh: k === 1 ? "0 0 0 2px var(--accent)" : "none" })),
       railLive: bar(false, 0, "var(--elevated)"),

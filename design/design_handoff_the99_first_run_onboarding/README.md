@@ -1,4 +1,15 @@
-# Handoff: First-run onboarding fixes (R1)
+# Handoff: First-run onboarding fixes (R2)
+
+**R2 (2026-09-28), after Hugh's O1 ruling.**
+- **New frames:**
+  - 6a: Home with a read collection and no decks, at 1300;
+  - 6b and 6c: the same at 390, at the fold and scrolled.
+- **Placement:** the resume slot becomes the "No decks yet" section. It is decks-zero's body plus a shared
+  `DecksZeroActions` (extracted from `decks-zero.tsx:56-77`), with no card fan.
+- **Withdrawn:** 1c and 1d (D2 / A3).
+- **Open:** O7, two filled buttons at zero decks.
+
+The spec is in READINESS-r1.md §R2. The file names keep "R1".
 
 Repo path: `design/design_handoff_the99_first_run_onboarding/`. It is a stateful addendum to
 `design/design_handoff_the99_refresh/`, which drew first run and the locked chrome.
