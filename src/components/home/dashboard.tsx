@@ -14,6 +14,7 @@ import type { Commitments } from "../../lib/home/commitments";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
 import { CommitmentsCard } from "./commitments-card";
+import { HomeDecksZero } from "./home-decks-zero";
 import { ReadyToBuild } from "./ready-to-build";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 
@@ -60,6 +61,7 @@ export function Dashboard(props: DashboardProps) {
   // Both arrive at the copy module pre-formatted: it formats no numbers by
   // contract, and the greeting's freshness figure is a word, not a date.
   const cards = props.stats.totalCards.toLocaleString("en-US");
+  const noDecks = props.decks.length === 0;
   const when = formatWhen(props.lastUpdated, new Date(props.now));
 
   return (
@@ -91,13 +93,25 @@ export function Dashboard(props: DashboardProps) {
             {refreshCopy.home.updateCollection}
           </GhostButton>
           {/* Ruling 14: the page's one filled button, and bone rather than
-              accent — accent means in use / to buy. */}
-          <PrimaryButton
-            href="/decks/new"
-            className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
-          >
-            {refreshCopy.home.newDeck}
-          </PrimaryButton>
+              accent — accent means in use / to buy. EXCEPT at zero decks (Hugh's O7,
+              option C, 2026-09-28): the "No decks yet" section's Browse commanders is the
+              page's one fill then, so New deck is drawn as a ghost, and returns to the fill
+              once a deck exists. The shared pair is untouched; only this button changes. */}
+          {noDecks ? (
+            <GhostButton
+              href="/decks/new"
+              className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
+            >
+              {refreshCopy.home.newDeck}
+            </GhostButton>
+          ) : (
+            <PrimaryButton
+              href="/decks/new"
+              className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
+            >
+              {refreshCopy.home.newDeck}
+            </PrimaryButton>
+          )}
         </div>
       </header>
 
@@ -120,12 +134,18 @@ export function Dashboard(props: DashboardProps) {
               what it is handed and the ordering stays testable without a DOM.
               `decks.length` rides alongside as the footer's total — the figure
               the deleted `Your decks · 17` heading used to carry. */}
-          <ResumeDecks
-            decks={resumeDecks(props.decks)}
-            shopping={props.shopping}
-            total={props.decks.length}
-            now={new Date(props.now)}
-          />
+          {/* At zero decks the resume slot holds the ways in instead (first-run R2): the
+              same pair as `/decks`, through one shared component. */}
+          {noDecks ? (
+            <HomeDecksZero />
+          ) : (
+            <ResumeDecks
+              decks={resumeDecks(props.decks)}
+              shopping={props.shopping}
+              total={props.decks.length}
+              now={new Date(props.now)}
+            />
+          )}
         </div>
 
         {/* The column exists only when the card does. Null when the availability

@@ -1137,52 +1137,12 @@ real padlock icon at these dimensions.
 Accessibility (READINESS "not blocking, eyes on it"): locked step cards and locked nav items
 carry `firstRun.lockedItemAria(label)` as the accessible name, not just visual dimming.
 
-### First-run — Import escape hatch
+### First-run — Import escape hatch (RETIRED)
 
-Desktop: a bottom-pinned row with a prompt and a hairline button. Mobile: the button alone,
-full-width, with **no** prompt text and **no** top divider.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | — (button only) | flex |
-| align-items | — | center |
-| gap | — | 10 |
-| margin-top | — | auto |
-| padding-top | — | 12 |
-| border-top-width | — | 1 |
-| border-top-style | — | solid |
-| border-top-color | — | `var(--border)` (`#211C16`) |
-
-#### Import prompt (desktop only)
-
-Copy: `firstRun.importPrompt`.
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | — | `var(--font-mono)` |
-| font-size | — | 11 |
-| color | — | `var(--fg-faint)` |
-
-#### "Import a deck" button
-
-Copy: `zero.importDeck` (`'Import a deck'`).
-
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| justify-content | center | — |
-| width | 100% | — |
-| height | 44 | 32 |
-| padding-left / right | — | 13 |
-| border-width | 1 | 1 |
-| border-style | solid | solid |
-| border-color | `var(--border-strong)` | `var(--border-strong)` |
-| border-radius | 10 | 8 |
-| font-family | `var(--font-sans)` | `var(--font-sans)` |
-| font-size | 14 | 12.5 |
-| color | `var(--fg)` | `var(--fg)` |
-| flex | none | — |
+Deleted by first-run ruling 1 (2026-09-28, `design_handoff_the99_first_run_onboarding` D4):
+step 1 is the collection alone, the row and its `mt-auto` are gone, and `firstRun.importPrompt`
+no longer exists. Import is named by the locked step 2 ("Pick a commander or import a deck")
+and reached from Home once the collection is read.
 
 ### First-run — locked navigation (Home's effect on the chrome)
 
@@ -1207,7 +1167,7 @@ Derived from the frames plus the conditional notes in `refresh · copy strings.t
 
 | State | Triggering condition | Component rendered | Key props required |
 |---|---|---|---|
-| First run | No collection read AND no decks | `HomeFirstRun` — three-step checklist, step 1 live, steps 2–3 locked, Import escape hatch, nav dimmed | `step`(1,3), `heading`, `step1Title`, `step1Body`/`step1BodyShort`, `step2Title`+`step2Locked`, `step3Title`+`step3Locked`, `importPrompt` (desktop) |
+| First run | No collection read AND no decks | `HomeFirstRun` — three-step checklist, step 1 live, steps 2–3 locked (step 2 names both paths), nav dimmed; no import row (first-run ruling 1) | `step`(1,3), `heading`, `step1Title`, `step1Body`/`step1BodyShort`, `step2Title`+`step2Locked`, `step3Title`+`step3Locked` |
 | Populated | Collection read AND ≥1 buildable commander AND ≥1 deck | `HomeHeader` + `ReadyToBuild` + `ResumeRows` + `CommitmentsCard`, all four at BOTH widths | `kicker(cards, when)`, ready candidates, resume decks, commitments aggregate |
 | Ready card, commander has cards in use | `inUse > 0` | in-use clause rendered in the meta row, `var(--accent)` | `inUse(n)` |
 | Ready card, nothing in use | `inUse === 0` | in-use clause **omitted entirely** — free says nothing (copy file comment; `availability.ts` rule) | — |
@@ -1216,7 +1176,7 @@ Derived from the frames plus the conditional notes in `refresh · copy strings.t
 | No buildable commanders at all | Collection read, zero candidates above the threshold | **not drawn** | — |
 | More decks than the resume block shows | `total > 4` | the block's footer: `{n} more decks` + `All {total} decks`, at BOTH widths | `moreDecks(n)`, `allDecks(total)` |
 | Four decks or fewer | `total <= 4` | every deck is drawn and the footer is absent — a figure of nought is an absence, not a zero | — |
-| Home with collection read but zero decks | `deckCount === 0` | **the resume block is absent, heading and all.** The two CTAs carry the empty case; an empty box under "pick up where you left off" is the app asserting a history the player has not got. This was the handoff's own open question and it is the shipped behaviour it was asking about | — |
+| Home with collection read but zero decks | `deckCount === 0` | the resume slot holds `HomeDecksZero` ("No decks yet": body + the shared `DecksZeroActions`, no buildable line), and the header's New deck is a ghost so Browse commanders is the fill (first-run R2; Hugh's O1 and O7 rulings, 2026-09-28). `ResumeDecks`' null return stays as a guard | `zero.decksHeading`, `zero.decksBody`/`decksBodyShort`, `browseCommanders`, `importDeck` |
 | Deck row per status | one of the six shipped values | the status pill's fill. The 3px left keyline was the deck rail's and went with it | `status.draft` … `status.complete` |
 | Over-committed cards present | `overCommitted > 0` | Commitments row 2, `var(--danger)` | `overCommittedValue(n)` — singular/plural |
 | No over-committed cards | `overCommitted === 0` | **not drawn** — does the row show `0 cards`, or vanish? | — |

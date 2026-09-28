@@ -152,6 +152,9 @@ async function walk(browser, vp, csvPath) {
     const rest = await geometry(page);
     await shot(page, vp, "rest");
     report(rest.found, "found the step card, its fan and its text column");
+    // First-run rulings 1 and 2: step 2 names both paths, and there is no import foot.
+    report(await onPage(page, "text=Pick a commander or import a deck").first().isVisible(), "R1 locked step 2 names both paths");
+    report(!(await onPage(page, "text=Already have a deck elsewhere?").count()), "R1 step 1 has no import foot");
     if (!vp.phone) {
       console.log(
         `  rest: fan top ${rest.fanTop}px in its card; text column ${rest.columnHeight}px against a ${rest.fanHeight}px fan`,
@@ -307,6 +310,64 @@ async function firstImport(browser, vp) {
   }
 }
 
+// ── First-run R2: a read collection and no decks (Hugh's O1 and O7 rulings, 2026-09-28).
+// Home is the dashboard; its resume slot holds /decks' own pair; New deck is a ghost so
+// Browse commanders is the one fill; and /decks states the true buildable count.
+async function zeroDecks(browser, vp) {
+  console.log(`\n── ${vp.label}: a collection and no decks`);
+  const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+  const page = await context.newPage();
+  const userId = await signIn(page);
+  try {
+    await cleanup(userId);
+    // Enough owned commanders that the true count clears the retired cap of nine.
+    await sql`insert into collection_items (user_id, oracle_id, quantity, set_code)
+      select ${userId}, oracle_id, 1, 'probe' from cards
+      where type_line like 'Legendary Creature%' order by oracle_id limit 60`;
+    await clearAboutSheet(page, userId);
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    const heading = onPageRole(page, "heading", "No decks yet");
+    const drawn = await heading.waitFor({ timeout: 60_000 }).then(() => true, () => false);
+    report(drawn, "R2 Home draws the No decks yet section");
+    // A "fill" is the bone fill, `--fg` as a background, resolved in this theme. Any other
+    // background (Ready to build's art panels) is not a button's fill.
+    const fills = await onPage(page, "a").evaluateAll((links) => {
+      const probe = document.createElement("div");
+      probe.style.background = "var(--fg)";
+      document.body.append(probe);
+      const bone = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return links
+        .filter((a) => a.getBoundingClientRect().width > 0)
+        .filter((a) => getComputedStyle(a).backgroundColor === bone)
+        .map((a) => a.textContent?.trim());
+    });
+    // Ready to build's cards carry a fill each (ruling 14 is one per REGION); O7 is about the
+    // header's New deck against the zero section's pair, so those two are what is read.
+    report(
+      fills.includes("Browse commanders") && !fills.includes("New deck"),
+      "R2 Browse commanders is filled and the header's New deck is a ghost",
+      fills.join(" | "),
+    );
+    const importLink = onPageRole(page, "link", "Import a deck");
+    report((await importLink.getAttribute("href")) === "/decks/import", "R2 Import a deck sits beside it");
+    report(!(await onPage(page, "text=/commanders buildable from/").count()), "R2 Home draws no buildable line");
+    await shot(page, vp, "zero-decks");
+
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const line = onPage(page, "text=/commanders buildable from/").first();
+    const text = (await line.waitFor({ timeout: 60_000 }).then(() => line.innerText(), () => "")) || "";
+    const n = Number(text.match(/^(\d+)/)?.[1] ?? NaN);
+    // The true count, read where the ranking wrote it: one score row per ranked commander, and
+    // this account has no deck to hold one back. `> 9` alone passes a page capped at ten.
+    const [{ scored }] = await sql`select count(*)::int as scored from commander_scores where user_id = ${userId}`;
+    report(n > 9 && n === scored, "R2 /decks states the true buildable count, not the old cap of nine", `${text} · scored ${scored}`);
+  } finally {
+    await cleanup(userId);
+    await context.close();
+  }
+}
+
 async function main() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
   if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
@@ -320,6 +381,7 @@ async function main() {
   try {
     for (const vp of VIEWPORTS) await walk(browser, vp, csvPath);
     for (const vp of VIEWPORTS) await firstImport(browser, vp);
+    for (const vp of VIEWPORTS) await zeroDecks(browser, vp);
   } finally {
     await browser.close();
   }

@@ -8,7 +8,6 @@
 // wins, which is why the locked cards are --surface-rail on --border and the
 // step-1 card is --surface-inset.
 
-import { GhostButton } from "@/components/ui/button";
 import { ReplaceFlow } from "../collection/replace-flow";
 import { refreshCopy } from "../../lib/copy/refresh";
 
@@ -169,20 +168,10 @@ export function FirstRunChecklist() {
 
         <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
-
-        {/* Import escape hatch. The prompt is a desktop nicety; on a phone the
-            button stands alone with no rule above it. */}
-        <div className="mt-auto flex items-center gap-[10px] sm:border-t sm:border-[color:var(--border)] sm:pt-[12px]">
-          <span className="hidden font-mono text-[11px] text-[color:var(--fg-faint)] sm:inline">
-            {c.importPrompt}
-          </span>
-          <GhostButton
-            href="/decks/import"
-            className="flex h-[44px] w-full flex-none items-center justify-center rounded-[10px] text-[14px] font-normal sm:h-[32px] sm:w-auto sm:justify-start sm:rounded-[8px] sm:px-[13px] sm:text-[12.5px]"
-          >
-            {refreshCopy.zero.importDeck}
-          </GhostButton>
-        </div>
+        {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the
+            "Already have a deck elsewhere?" row and its `mt-auto` are deleted rather than
+            replaced, so the stack closes up and the space below it stays page. Import is
+            named by step 2 instead, and reached from Home once the collection is read. */}
       </div>
     </div>
   );

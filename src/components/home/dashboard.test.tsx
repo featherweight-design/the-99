@@ -154,3 +154,35 @@ describe("Dashboard body", () => {
     expect(screen.getByText("18 · $94.80")).toBeInTheDocument();
   });
 });
+
+// First-run R2 and Hugh's O1/O7 rulings, 2026-09-28: Home at a read collection and no decks.
+describe("Dashboard at zero decks", () => {
+  const filled = (el: HTMLElement) => el.className.includes("bg-[color:var(--fg)]");
+
+  it("puts the ways in where the resume block would be", () => {
+    render(<Dashboard {...BASE} decks={[]} />);
+    expect(screen.getByRole("heading", { name: "No decks yet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Browse commanders" })).toHaveAttribute("href", "/commanders");
+    expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute("href", "/decks/import");
+    expect(screen.queryByText(/Pick up where you left off/i)).toBeNull();
+  });
+
+  it("draws no buildable line on Home (Hugh's ruling; /decks states the count)", () => {
+    render(<Dashboard {...BASE} decks={[]} />);
+    expect(screen.queryByText(/commanders buildable from/)).toBeNull();
+  });
+
+  // Ready to build's cards carry a fill each (one per region); none are drawn here.
+  it("makes Browse commanders the fill and draws the header's New deck as a ghost", () => {
+    render(<Dashboard {...BASE} decks={[]} />);
+    const fills = screen.getAllByRole("link").filter(filled);
+    expect(fills.map((a) => a.textContent)).toEqual(["Browse commanders"]);
+    expect(filled(screen.getByRole("link", { name: "New deck" }))).toBe(false);
+  });
+
+  it("gives New deck the fill back, and drops the section, once a deck exists", () => {
+    render(<Dashboard {...BASE} decks={[deck()]} />);
+    expect(filled(screen.getByRole("link", { name: "New deck" }))).toBe(true);
+    expect(screen.queryByRole("heading", { name: "No decks yet" })).toBeNull();
+  });
+});
