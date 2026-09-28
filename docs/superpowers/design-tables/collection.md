@@ -2183,7 +2183,7 @@ literals in the components.
 | Context | Copy |
 |---------|------|
 | Mobile | `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.` |
-| Desktop | `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Decks and commander recommendations rebuild from the new collection. This can't be undone.` |
+| Desktop | `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Your deck lists stay as they are; recommendations and availability update from the new collection. This can't be undone.` |
 
 ### Type-to-Confirm Section
 | Property | Mobile | Desktop |
@@ -2389,7 +2389,7 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 ### Replace — Step 3 Copy
 - `Type REPLACE to confirm` (label; "REPLACE" in #C6533F). On initial import (`currentCollectionCount === 0`) the label becomes `Type IMPORT to confirm` — see §Copy (confirm instruction) above.
 - Mobile body: `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.`
-- Desktop body: `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Decks and commander recommendations rebuild from the new collection. This can't be undone.`
+- Desktop body: `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Your deck lists stay as they are; recommendations and availability update from the new collection. This can't be undone.`
 
 ---
 

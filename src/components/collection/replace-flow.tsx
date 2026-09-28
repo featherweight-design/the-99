@@ -1,8 +1,9 @@
 "use client";
 // ReplaceFlow — steps 1 → 2 → 3 for the destructive replace path.
 // Step 1: UploadEntry (Task 7). On success advances to step 2.
-// Step 2: ReviewScreen (Task 8). Continue → step 3.
-// Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → /collection.
+// Step 2: ReviewScreen (Task 8). Continue → step 3, or, on a FIRST import (nothing to
+//         replace), straight to confirmUpload() with no step 3.
+// Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,18 +30,39 @@ export function ReplaceFlow({
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  // A FIRST import goes straight through: with no collection there is nothing to replace,
+  // so the Replace modal would only ask the player to confirm losing nothing (prod walk
+  // 2026-09-28, item 5a). "First" is the count the server read when it built the preview,
+  // not a caller's prop (first run passes a literal 0). The server re-checks at the confirm,
+  // and when a collection turns out to exist after all it writes nothing and this opens the
+  // modal instead.
+  const firstImport = preview?.currentCollectionCount === 0;
+
   async function onConfirm() {
     if (!preview || pending) return;
     setPending(true);
     setConfirmError(null);
     try {
-      await confirmUpload(preview.uploadId);
+      // `firstImport` is read off the preview, which a server refusal corrects before the
+      // modal opens, so a confirm from that modal is no longer "first". A retry after a
+      // FAILED first import keeps the claim, and with it the server's guard (Copilot, #1097).
+      const outcome = await confirmUpload(preview.uploadId, { firstImport });
+      if (outcome?.needsConfirm) {
+        // The preview was drawn at 0 cards and the modal reads its variant off that figure,
+        // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
+        setPreview({ ...preview, currentCollectionCount: outcome.currentCollectionCount });
+        setConfirming(true);
+        return;
+      }
       // The receipt, not the collection. A typed REPLACE is the most destructive action in
       // the app and was the only one with no receipt; the summary route is keyed on the
       // upload id, so it survives a reload and stays linkable.
       router.push(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");
+      // A skipped confirm has no surface of its own to say it failed, so it opens the modal,
+      // whose error slot is where a failed confirm has always been reported.
+      setConfirming(true);
     } finally {
       setPending(false);
     }
@@ -78,10 +100,14 @@ export function ReplaceFlow({
       <ReviewScreen
         preview={preview}
         onCancel={() => {
+          // A press that lands while the write is in flight is ignored, as the disabled
+          // controls say: the confirm would still land and still open its receipt.
+          if (pending) return;
           setConfirming(false);
           setPreview(null);
         }}
-        onContinue={() => setConfirming(true)}
+        onContinue={() => (firstImport ? void onConfirm() : setConfirming(true))}
+        pending={pending && !confirming}
         embedded={embedded}
       />
       {confirming && (

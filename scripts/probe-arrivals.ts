@@ -226,6 +226,55 @@ async function main() {
     const shapes = [`${second}x2`, `${first}x1`];
     check("two concurrent replaces leave exactly one of the two lists",
       shapes.includes(final.shape ?? ""), true);
+
+    // 8. A FIRST IMPORT'S GUARD, AT THE WRITE (prod walk 2026-09-28, item 5a; Copilot on #1097).
+    //    A first import skips the confirm because there is nothing to lose, and `onlyIfEmpty`
+    //    is the replace refusing when there is. The race it exists for: another tab's import
+    //    holds the lock and is about to commit a collection, while this confirm waits. A check
+    //    read before the lock saw an empty collection and would delete that import with no
+    //    confirm. Read under the lock, it sees the committed rows and writes nothing.
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+    const firstTry = await newUpload();
+    const holder = await pool.connect();
+    try {
+      await holder.query("begin");
+      await holder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [USER]);
+      await holder.query(
+        "insert into collection_items (user_id, oracle_id, quantity, set_code) values ($1, $2, 1, 'probe')",
+        [USER, first],
+      );
+      const waiting = replaceCollection(USER, items, { confirmUploadId: firstTry, onlyIfEmpty: true });
+      // Long enough for the confirm to reach the lock and block on it.
+      await new Promise((resolve) => setTimeout(resolve, 750));
+      await holder.query("commit");
+      const refused = await waiting;
+      check("a first-import confirm behind another import refuses, naming what it found", refused.notEmpty, 1);
+      const { rows: [kept] } = await fixture.execute<{ shape: string; stamped: number }>(sql`
+        select
+          (select string_agg(oracle_id::text || 'x' || quantity, ',') from collection_items
+            where user_id = ${USER}) as shape,
+          (select count(*)::int from csv_uploads where id = ${firstTry} and confirmed_at is not null) as stamped
+      `);
+      check("and the other import's collection is untouched", kept.shape, `${first}x1`);
+      check("and its upload stays unconfirmed, so the modal can still confirm it", kept.stamped, 0);
+    } finally {
+      holder.release();
+    }
+    // A second submit of the SAME first-import upload, queued behind the first, is a duplicate
+    // rather than a rival: it meets the stamp and reports `alreadyConfirmed`, never the
+    // collection its twin just wrote as a reason to ask (Copilot on #1097, round 3).
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+    const twin = await newUpload();
+    const [twinA, twinB] = await Promise.all([
+      replaceCollection(USER, items, { confirmUploadId: twin, onlyIfEmpty: true }),
+      replaceCollection(USER, items, { confirmUploadId: twin, onlyIfEmpty: true }),
+    ]);
+    check("two submits of one first import: one writes, the other is already confirmed",
+      [twinA, twinB].map((r) => `${r.alreadyConfirmed}/${r.notEmpty}`).sort().join(" "), "false/null true/null");
+    // The guard passes an empty collection, or it would refuse every first import.
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
+    const clean = await replaceCollection(USER, items, { confirmUploadId: await newUpload(), onlyIfEmpty: true });
+    check("a first-import confirm over an empty collection goes through", clean.notEmpty, null);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
     await fixture.execute(sql`delete from csv_uploads where user_id = ${USER}`);

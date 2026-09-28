@@ -12,6 +12,10 @@
 //      the paste panel to its content.
 //   4  the issue inspector's `No names match` state draws FILLED cards, so the front one
 //      covers the one behind. It drew stroke-only rects, which read as crossing outlines.
+//   5a a FIRST import (nothing to lose) confirms straight from Continue, holding it at a
+//      disabled `Importing…`, with no Replace modal. A collection that exists by the confirm
+//      (a second tab imported) makes the server write nothing and the flow open the REPLACE
+//      modal instead: the skip is only as safe as "nothing to lose" is true on the server.
 //
 // FIXTURE. First run shows only to an account with no collection, and both local-dev fixture
 // accounts own ~2,700 rows, so this signs in as a DEDICATED empty account on Clerk's
@@ -126,6 +130,12 @@ async function cleanup(userId) {
   if (!userId) return;
   await sql`delete from collection_items where user_id = ${userId}`;
   await sql`delete from csv_uploads where user_id = ${userId}`;
+  // The ranked lists this walk loads write the account's scores as they render, and a confirm
+  // warms them again in `after()`, which can land once this has run. So clear, let a warm
+  // still in flight finish, and clear again: the next run starts from an empty account.
+  await sql`delete from commander_scores where user_id = ${userId}`;
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await sql`delete from commander_scores where user_id = ${userId}`;
 }
 
 async function walk(browser, vp, csvPath) {
@@ -233,6 +243,70 @@ async function walk(browser, vp, csvPath) {
   }
 }
 
+
+// Holds every server action for `ms`, so the pending state is on screen long enough to read.
+// A first import of two cards otherwise replaces and navigates inside one frame.
+async function holdActions(page, ms) {
+  await page.route("**/*", async (route) => {
+    const req = route.request();
+    if (req.method() === "POST" && req.headers()["next-action"]) await new Promise((r) => setTimeout(r, ms));
+    await route.continue();
+  });
+}
+
+async function pasteToReview(page, text) {
+  await onPageRole(page, "button", "Paste a list").click();
+  await onPageRole(page, "textbox", "Paste your card list").fill(text);
+  await onPageRole(page, "button", /^Preview/).click();
+  const cont = onPageRole(page, "button", /^Continue to (import|replace)/);
+  await cont.waitFor({ timeout: 60_000 });
+  return cont;
+}
+
+async function firstImport(browser, vp) {
+  console.log(`\n── ${vp.label}: the first import`);
+  const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+  const page = await context.newPage();
+  const userId = await signIn(page);
+  try {
+    // A. Empty collection: Continue confirms, holds at Importing…, and lands on the receipt.
+    await cleanup(userId);
+    await clearAboutSheet(page, userId);
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    const cont = await pasteToReview(page, "3 Sol Ring\n1 Command Tower");
+    await holdActions(page, 1500);
+    await cont.click();
+    const held = onPageRole(page, "button", "Importing…");
+    const heldSeen = await held.waitFor({ timeout: 1000 }).then(() => true, () => false);
+    report(heldSeen && (await held.isDisabled()), "5a Continue holds at a disabled Importing… while the import runs");
+    report(!(await onPageRole(page, "dialog").isVisible().catch(() => false)), "5a no Replace modal opens on a first import");
+    await page.waitForURL(/\/collection\/replace\/summary\//, { timeout: 60_000 });
+    const [{ n }] = await sql`select count(*)::int n from collection_items where user_id = ${userId}`;
+    report(n > 0, "5a the first import wrote the collection", `${n} rows`);
+    await page.unroute("**/*");
+
+    // B. The preview says empty, but a collection exists by the confirm (a second tab
+    // imported): the server writes nothing and the modal opens.
+    await cleanup(userId);
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    const cont2 = await pasteToReview(page, "3 Sol Ring");
+    const [card] = await sql`select oracle_id from cards where name = 'Command Tower' limit 1`;
+    await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${userId}, ${card.oracle_id}, 1, 'cmr')`;
+    await cont2.click();
+    const dialog = onPageRole(page, "dialog");
+    const opened = await dialog.waitFor({ timeout: 15_000 }).then(() => true, () => false);
+    report(opened, "5a a collection found at the confirm opens the Replace modal instead");
+    const warning = opened ? await dialog.innerText() : "";
+    report(/can.t be undone/i.test(warning) && /REPLACE/.test(warning), "5a and it is the REPLACE variant, not the import one", warning.slice(0, 80).replace(/\s+/g, " "));
+    const rows = await sql`select oracle_id from collection_items where user_id = ${userId}`;
+    report(rows.length === 1 && rows[0].oracle_id === card.oracle_id, "5a and the confirm wrote nothing", `${rows.length} rows`);
+    report(!/\/summary\//.test(page.url()), "5a and did not navigate to a receipt");
+  } finally {
+    await cleanup(userId);
+    await context.close();
+  }
+}
+
 async function main() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
   if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
@@ -245,6 +319,7 @@ async function main() {
   const browser = await chromium.launch();
   try {
     for (const vp of VIEWPORTS) await walk(browser, vp, csvPath);
+    for (const vp of VIEWPORTS) await firstImport(browser, vp);
   } finally {
     await browser.close();
   }

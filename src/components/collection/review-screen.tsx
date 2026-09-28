@@ -16,11 +16,14 @@ export function ReviewScreen({
   preview,
   onCancel,
   onContinue,
+  pending = false,
   embedded,
 }: {
   preview: UploadPreview;
   onCancel: () => void;
   onContinue: () => void;
+  /** A first import confirms from this button, with no modal to carry the wait. */
+  pending?: boolean;
   embedded?: boolean;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -53,7 +56,7 @@ export function ReviewScreen({
         className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]"
         style={{ borderBottom: "1px solid var(--border)" }}
       >
-        <button type="button" onClick={onCancel} aria-label="Back to upload" className="text-[20px] text-[color:var(--accent)]">‹</button>
+        <button type="button" onClick={onCancel} disabled={pending} aria-label="Back to upload" className="text-[20px] text-[color:var(--accent)] disabled:opacity-60">‹</button>
         <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>Review import</span>
         <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
       </div>
@@ -309,16 +312,22 @@ export function ReviewScreen({
           <GhostButton
             type="button"
             onClick={onCancel}
-            className="hidden md:inline-block text-[14px] px-[20px] py-[12px]"
+            // A write already in flight cannot be taken back: leaving the review would not
+            // stop it, and its receipt would open anyway (Copilot, #1097).
+            disabled={pending}
+            className="hidden md:inline-block text-[14px] px-[20px] py-[12px] disabled:opacity-60"
           >
             Cancel
           </GhostButton>
           <PrimaryButton
             type="button"
             onClick={onContinue}
-            className="text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px]"
+            disabled={pending}
+            className="text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px] disabled:opacity-60 disabled:cursor-wait"
           >
-            {isInitialImport ? "Continue to import →" : "Continue to replace →"}
+            {/* "Importing…" is the confirm modal's own pending label, which this button now
+                carries when a first import skips the modal. */}
+            {pending ? "Importing…" : isInitialImport ? "Continue to import →" : "Continue to replace →"}
           </PrimaryButton>
         </div>
       </div>

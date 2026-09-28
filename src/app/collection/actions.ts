@@ -126,7 +126,19 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
 
 
 
-export async function confirmUpload(uploadId: string): Promise<void> {
+/**
+ * What a confirm can answer besides success. `needsConfirm` is the one refusal a caller acts
+ * on rather than shows: a `firstImport` confirm found a collection already there, so nothing
+ * was written and the caller asks the player before replacing it. It carries the collection's
+ * size, counted as the preview counts it, because the preview the caller holds says 0 and the
+ * modal reads its warning (and its REPLACE token) off that figure.
+ */
+export type ConfirmOutcome = { needsConfirm: true; currentCollectionCount: number } | void;
+
+export async function confirmUpload(
+  uploadId: string,
+  opts: { firstImport?: boolean } = {},
+): Promise<ConfirmOutcome> {
   const userId = await requireUserId();
   const [upload] = await db.select().from(csvUploads)
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
@@ -152,6 +164,7 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
   const ownedBefore = await ownedByOracle(userId);
+
   const buyBefore = await loadDeckBuyRows(userId);
 
   // A preview written before migration 0008 carries no collectorNumber/finish;
@@ -160,9 +173,16 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   // The upload row is the lock: the stamp inside that transaction is conditional on
   // `confirmed_at is null`, so a double submit replaces the collection exactly once and
   // the loser is told so rather than raising.
-  const { alreadyConfirmed } = await replaceCollection(userId, pendingItems, {
+  // A FIRST IMPORT SKIPS THE CONFIRM, because there is nothing to lose (prod walk 2026-09-28,
+  // item 5a). The client says "first" from the count it was drawn with, which can be stale: a
+  // second tab may have imported since. So the replace itself refuses, under the per-user lock,
+  // when a collection exists, writes nothing, and the choice goes back to the player. The skip
+  // is only as safe as "nothing to lose" is true AT THE WRITE.
+  const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
     confirmUploadId: uploadId,
+    onlyIfEmpty: opts.firstImport,
   });
+  if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
   if (alreadyConfirmed) return;
 
   // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached figure
