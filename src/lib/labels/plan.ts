@@ -273,4 +273,3 @@ export function classifyNullIntent(searchWasComplete: boolean, ageMs: number): N
   if (!searchWasComplete) return "unresolved";
   return ageMs >= RECLAIM_GRACE_MS ? "reclaim" : "wait";
 }
-
