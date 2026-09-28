@@ -15,9 +15,14 @@ cached chunks or not. Every other route stays under 1s on a repeat visit.
 - Keep every row for filtering, sorting and search, and send the draw-only fields for the first
   window only. That cuts `/discover` by **70%** (362KB → 109KB gzipped) and `/collection` by
   **46%** (284KB → 153KB), and filtering stays instant.
-- A field trim with no change in behavior takes `/collection` down **20%** on its own (24% if the
-  image cache stamp goes too, which is Hugh's call, §6). It is the safe first PR.
-- The recommendation is four PRs (§5). The first is a trim with no behavior change.
+- A field trim with no change in behavior takes `/collection` down **20%** on its own. The image
+  cache stamp stays (§3).
+- The grid's ART is the largest byte cost of all, and none of it is in the RSC figure: every one of
+  the 200 windowed tiles fetches a ~110KB `normal` image at once, about **22MB**. Loading art only
+  for tiles near the viewport takes a first desktop screen to about 2MB. No smaller Scryfall size is
+  sharp at the tile's width, so the saving comes from loading less, not from smaller files (§2).
+- The recommendation is four PRs (§5). The first is the lazy art. The second is the trim. Neither
+  changes behavior.
 
 ## 1 · How this was measured
 
@@ -81,9 +86,40 @@ and all 2,820 ship.
   `locked`, `versionNumber`, `commanderCopies`. It compresses well, which is why it costs 31KB gzipped
   rather than 455KB.
 - **Images are not in the RSC figure, but they share the link.** The grid draws art as a CSS
-  background for all 200 windowed tiles at once, with no lazy loading. Five sampled `normal`
-  images were 84–156KB each, so a first grid screen asks for roughly 20MB of art. That dwarfs
-  the payload on a slow link. It is recorded in §5 as its own item.
+  background (`grid-view.tsx:95`) on all 200 windowed tiles. A browser fetches a CSS background
+  for every rendered element, whether or not it is in view. So opening the grid asks for 200
+  images at once, and Scryfall sends each one with a one-year `max-age`: every FIRST visit pays in
+  full, and a repeat visit mostly hits the browser cache.
+
+  **Which size is sharp enough.** The tile width comes from the grid's own CSS, not a browser
+  measurement. At 390 it is two columns in a 362px track with a 12px gap: **175px**. At 1300 the
+  track is 1,300 − 62 (rail) − 68 (padding) = 1,170px. A 178px floor with 20px gaps fits six
+  columns: **178px**. The tile's aspect is 63/88, so the art is about 245px tall. Scryfall's sizes
+  against that, with bytes averaged over 39 of the first 200 cards, fetched once each:
+
+  | Size | Pixels | Mean bytes | Pixels per CSS px at a 178px tile | Sharp at |
+  |---|---|---:|---:|---|
+  | `small` (`printings.image_uri_small`) | 146×204 | 14.1KB | 0.82 | nothing; it is upscaled even at 1× |
+  | `normal` (shipped) | 488×680 | 109.7KB | 2.74 | 1× and 2×; about 0.93 of a 3× phone's 525 device px |
+  | `large` | 672×936 | 179.8KB | 3.78 | 3× |
+
+  `small` sits under the tile's own CSS width, so a `srcset` or `image-set()` offering it at 1×
+  would still draw a soft card, on the widest screens most of all. `normal` is the right file.
+  `art_crop` is the art alone, without the frame and the name, and the tile draws the whole card,
+  so it is a design change rather than a size choice. The saving here comes from **how many**
+  images load, not how big they are.
+
+  **First-screen bytes.** With art loaded only near the viewport, the first screen holds about three
+  rows. That is ~18 tiles at 1300 and ~6 at 390, which is derived from the tile height and the
+  page's furniture, not counted. So:
+
+  | | Today (all 200) | Lazy, 1300 (~18) | Lazy, 390 (~6) |
+  |---|---:|---:|---:|
+  | `normal` | ~21.9MB | ~2.0MB | ~0.66MB |
+
+  An observer margin of one extra screen would roughly double the lazy figures and still cut the
+  total by about 80–90%. Rows view draws no art (`rows-view.tsx` reads no `imageUri`), so this
+  item is the grid's alone.
 
 ### `/discover` — 3,069 rows, 362KB gzipped (1.03MB raw)
 
@@ -134,13 +170,13 @@ repeat-visit time uses the §1 slope and is an estimate.
   from the shipped type, so the compiler finds any reader. A grep already confirms none among
   the collection components. Tuples buy nothing over keyed objects once gzip has run, so they
   are not worth their decoder.
-- **Dropping the stamp.** It is Scryfall's image cache-buster. Without it a re-scanned image can
-  stay stale in the browser, so keeping it (20%) is the default. Hugh decides if 4% more is worth
-  that.
+- **The stamp stays.** It is Scryfall's image cache-buster, and the one-year `max-age` above is
+  why it matters. Without it a re-scanned image stays stale in the browser for up to a year. That
+  is a correctness cost, and 4% of the payload does not buy it.
 - **`/discover` has almost nothing to trim.** Dropping the derivable `rank`, `score` and
   `measurableTotal` saves 2% (362 → 355KB). The dictionary encoding in #497 already took the easy
   bytes.
-- **Predicted:** `/collection` about 2.37s → 2.04s (stamp kept) or 1.96s (dropped).
+- **Predicted:** `/collection` about 2.37s → 2.04s.
 
 ### B · Send the draw-only fields for the first window, and fetch the rest as rows reveal
 
@@ -179,7 +215,7 @@ first window, and a revealed row fetches them.
   - **`/discover`** computes its window inside the client-only `discovery-view.tsx`, with a
     module-private `ordered` (:100), an inline search, `filterByColors` and `isPrintedIn`
     (:275-305). The server page calls none of them; its `parseLaneParams` feeds only
-    `discoverSort`. So PR #2 first extracts that window logic into a shared module both sides
+    `discoverSort`. So PR #3 first extracts that window logic into a shared module both sides
     import. It is a pure move, and it is listed in §5.
   - **The view does not change the window.** Grid and rows draw the same first 200 cards, so the
     window's fields ship whatever the view. Rows view simply does not draw the art it received,
@@ -250,25 +286,29 @@ first window, and a revealed row fetches them.
   unchanged: one visit, a fresh server payload wins, and the URL is written on a hit.
 - **`probe:payload`** (`scripts/probe-payload-size.mts`) holds `/discover` and the `/commanders`
   owned lane under a 1.6MB raw budget. It does NOT cover `/collection`, and no workflow runs it:
-  it is a by-hand check against a database. PR #2 lowers the `/discover` budget to what it
-  ships. PR #1 adds a `/collection` budget (through `loadBrowseCards` and the wire encoder), and
-  #3 lowers it. So a regression fails the probe, which each PR's body shows run. Wiring it into
+  it is a by-hand check against a database. PR #3 lowers the `/discover` budget to what it
+  ships. PR #2 adds a `/collection` budget (through `loadBrowseCards` and the wire encoder), and
+  #4 lowers it. So a regression fails the probe, which each PR's body shows run. Wiring it into
   CI would need a database in CI, and that is out of scope here.
 
 ## 5 · PR boundaries and recommendation
 
-**Recommended:** A, then B on each route, then the image item. C, D and E are not recommended,
-and §3 gives the reasons above with their measured cost.
+**Recommended:** the lazy art first, then A, then B on each route. C, D and E are not
+recommended, and §3 gives the reasons above with their measured cost.
 
 | # | PR | Measured saving | Predicted slow repeat visit | Behavior change |
 |---|---|---:|---:|---|
-| 1 | **`/collection` trim** (A with the stamp kept): drop the four unread fields and the `setCodes` duplicate, slim `availability` onto a deck dictionary, stem the image URL; `/discover` drops its derivables and three unread meta fields | `/collection` −20%, `/discover` −2% | ~2.0s / ~2.6s | none |
-| 2 | **`/discover` first window** (B): extract the window logic (`ordered`, search, colors, Printed in) out of `discovery-view.tsx` into a shared module first, as a pure move; then every draw-only column for the URL's first 25, and a GET route returns the rest by slug in batches; skeleton rows while a batch is pending; the discovery cache keeps fetched fields per visit | −70% (362 → 109KB) | ~1.25s | revealed rows can show a skeleton for one round trip |
-| 3 | **`/collection` first window** (B on top of #1): art, facts and combo partner for the URL's first window (`printedName` and `layout` stay on every row, because search and sort read them); a GET route by oracle id; the printing-pick patch merges over fetched fields | −46% of today (284 → 153KB) | ~1.6s | same as #2 |
-| 4 | **Lazy grid art on `/collection`**: tile art loads as tiles near the viewport (IntersectionObserver or `loading="lazy"` on an `<img>`), not all 200 at once | not in the RSC figure; the first grid screen stops asking for ~20MB of art | the image wait, measured by `measure:load`'s first-card-image column | none visible |
+| 1 | **Lazy grid art on `/collection`**: tile art loads as tiles near the viewport (an `<img loading="lazy">` in place of the CSS background, or an IntersectionObserver), not all 200 at once; the file stays `normal` (§2) | not in the RSC figure: a first grid screen goes from ~21.9MB of art to ~2.0MB at 1300 and ~0.66MB at 390 | unchanged (the art is cached on a repeat visit); a first visit's art wait, read from `measure:load`'s first-card-image column | none visible |
+| 2 | **`/collection` trim** (A with the stamp kept): drop the four unread fields and the `setCodes` duplicate, slim `availability` onto a deck dictionary, stem the image URL; `/discover` drops its derivables and three unread meta fields | `/collection` −20%, `/discover` −2% | ~2.0s / ~2.6s | none |
+| 3 | **`/discover` first window** (B): extract the window logic (`ordered`, search, colors, Printed in) out of `discovery-view.tsx` into a shared module first, as a pure move; then every draw-only column for the URL's first 25, and a GET route returns the rest by slug in batches; skeleton rows while a batch is pending; the discovery cache keeps fetched fields per visit | −70% (362 → 109KB) | ~1.25s | revealed rows can show a skeleton for one round trip |
+| 4 | **`/collection` first window** (B on top of #2): art, facts and combo partner for the URL's first window (`printedName` and `layout` stay on every row, because search and sort read them); a GET route by oracle id; the printing-pick patch merges over fetched fields | −46% of today (284 → 153KB) | ~1.6s | same as #3 |
 
-- **Ordering.** #1 is safe and lands first. #2 carries the most saving and is independent of #1.
-  #3 builds on #1's wire type. #4 is independent and small.
+- **Ordering.** #1 goes first. It is the smallest change and saves by far the most bytes, about
+  20MB on a first desktop visit against about 55KB of gzipped RSC for the trim. It does not move the repeat-visit
+  figure in the brief, because Scryfall's one-year `max-age` already serves repeat visits their
+  art from the cache. It moves the first visit, and what a phone on a metered plan pays. #2 is
+  safe and follows. #3 carries the most RSC saving and is independent of #2. #4 builds on #2's
+  wire type.
 - **None of these needs a design round.** No layout changes. The skeleton row for a pending batch
   reuses each list's existing loading row, the "logic changes need no Design round" ruling. If
   Hugh wants the pending state drawn, that is the one question for Design.
@@ -277,16 +317,15 @@ and §3 gives the reasons above with their measured cost.
     visits at 1300 and 390;
   - the gzipped payload from this plan's method;
   - the `probe:payload` budget it sets or lowers, and that probe's run.
-- **#2 and #3 each get a browser probe that presses Show more, a filter and a search**, and
+- **#3 and #4 each get a browser probe that presses Show more, a filter and a search**, and
   asserts that newly revealed rows draw their fetched fields. The mutation check drops the fetch
   and watches the probe fail on the rows past the first window.
 
 ## 6 · Decisions for Hugh
 
-1. **Approve the four-PR shape**, or pick a subset. #1 alone is a ~20% cut with no behavior
-   change. #2 is the largest single win.
-2. **Accept a skeleton on revealed rows** (#2, #3): one round trip when Show more or a filter
+1. **Approve the four-PR shape and its order**, or pick a subset. #1 (lazy art) goes first: the
+   largest byte saving, and no behavior change. #2 alone is a ~20% RSC cut with no behavior
+   change. #3 is the largest single RSC win.
+2. **Accept a skeleton on revealed rows** (#3, #4): one round trip when Show more or a filter
    brings rows in that the first payload did not draw. Against that, about 1.4s is saved on every
    `/discover` visit and about 0.8s on every `/collection` visit, on the slow profile.
-3. **Keep or drop the image cache stamp** in #1: 4% more on `/collection` against possibly stale
-   art after Scryfall re-scans an image.
