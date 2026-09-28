@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@600;700&amp;family=Metamorphous&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: #E9E4DA; text-decoration: none; }
+  a:hover { color: #FFFFFF; }
+  p { margin: 0; }
+  :root, [data-theme="amonkhet"] {
+    --font-display:'Cinzel',serif;
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --font-display:'Chakra Petch',sans-serif;
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="ixalan"] {
+    --font-display:'Trirong',serif;
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E; --fg-disabled:#3E473A;
+    --accent:#A3C445; --success:#5EA990; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="phyrexia"] {
+    --font-display:'Syncopate',sans-serif;
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A; --fg-disabled:#403E45;
+    --accent:#52827A; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="kaldheim"] {
+    --font-display:'Metamorphous',serif;
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="eldraine"] {
+    --font-display:'Cormorant Garamond',serif;
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475; --fg-disabled:#443F4D;
+    --accent:#AE88E6; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+</style>
+</helmet>
+<section data-theme="{{ theme }}" style="padding:56px 64px 96px;display:flex;flex-direction:column;gap:64px;color:#B8B2A7;">
+
+  <header style="max-width:1300px;display:flex;flex-direction:column;gap:10px;">
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#8B8270;">DESIGN/DESIGN_HANDOFF_THE99_FIRST_RUN_ONBOARDING · R1 · 2026-09-28</p>
+    <h1 style="margin:0;font-family:var(--font-display);font-size:34px;font-weight:700;color:#EDE6D8;">First-run onboarding fixes</h1>
+    <p style="max-width:860px;font-size:14px;line-height:1.6;text-wrap:pretty;">Brief: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E9E4DA;">docs/superpowers/design-briefs/2026-09-28-first-run-onboarding.md</span>. Rulings §3.1–3.6 are Hugh's; the frames below are Design's answers to §4.1–4.5. Copy in the frames is placeholder where marked, and /copy-review sets the words. Not redrawn, per §5: top alignment, the filled fan, the first import with no confirm, left-aligned issue headings and the full-width paste box.</p>
+  </header>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">§4.1 + §4.2 · STEP 2, BOTH STATES, WITH THE CHROME AROUND IT</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+      <div id="1a" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1a</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Collection unread · step 2 locked · 1300</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+            <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);"><span style="width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;"></span></span>
+              <div style="width:48px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 9px;border-radius:12px;background:var(--surface-sunken);border:1px solid var(--border);">
+                <sc-for list="{{ lockables }}" as="i" hint-placeholder-count="4"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--fg-locked);"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for>
+                <span style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="position:relative;display:inline-block;width:12px;height:14px;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--fg-locked);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--fg-locked);border-radius:3px;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--fg-locked);">LOCKED</span></span>
+              </div>
+            </div>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);"></span>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:radial-gradient(640px 340px at 40% -40px, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%);">
+            <div style="padding:26px 28px 0;">
+              <p style="margin-bottom:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--fg-faint);">STEP 1 OF 3</p>
+              <h1 style="margin:0;font-family:var(--font-display);font-size:27px;font-weight:700;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+              <p style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg-muted);"><span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--fg-locked);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--fg-locked);border-radius:3px;"></span></span>Collection, Commanders, Discover and Decks open once your collection is read.</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;padding:20px 28px 26px;">
+              <div style="display:flex;align-items:center;gap:18px;padding:18px;border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);">
+                <div aria-hidden="true" style="position:relative;width:74px;height:82px;flex:none;">
+                  <span style="position:absolute;top:12px;left:6px;width:44px;height:60px;transform:rotate(-14deg);border-radius:5px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--surface-inset) 50%, var(--elevated));"></span>
+                  <span style="position:absolute;top:9px;left:14px;width:44px;height:60px;border-radius:5px;border:1px solid var(--border-strong);background:var(--elevated);"></span>
+                  <span style="position:absolute;top:12px;left:24px;width:44px;height:60px;transform:rotate(13deg);border-radius:5px;border:1px solid var(--accent);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--accent);">99</span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;">
+                  <span style="font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--fg);">Add your collection</span>
+                  <p style="font-size:13px;line-height:1.6;color:var(--fg-muted);">Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox. We read owned counts, sets and finishes.</p>
+                  <div style="display:flex;gap:8px;margin-top:4px;"><span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;">Upload a CSV</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Paste a list</span></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:15px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+                <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);">2</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--fg-locked);">Pick a commander or import a deck</span><span style="font-size:12.5px;color:var(--fg-locked);">Unlocks once a collection is read</span></div>
+                <span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--border-strong);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--border-strong);border-radius:3px;"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:15px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+                <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);">3</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--fg-locked);">Build the 99</span><span style="font-size:12.5px;color:var(--fg-locked);">Unlocks with a commander</span></div>
+                <span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--border-strong);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--border-strong);border-radius:3px;"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">Step 2 locked names both paths</strong> in one title, "Pick a commander or import a deck", with the reason under it. The foot is gone (ruling 1), so this card is the only place a player learns import exists, and it has to say so before it unlocks.</p>
+          <p><strong style="color:#EDE6D8;">The column closes up.</strong> The foot's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">mt-auto</span> row is deleted, not replaced. Step 1 keeps its own height; the space below the stack stays page, which is what engineering's top-alignment fix expects.</p>
+          <p><strong style="color:#EDE6D8;">The rail's reason is visible twice.</strong> The four locked slots sit in one sunken well, with the padlock and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LOCKED</span> at its foot. The full reason is a line under the heading, since 62px cannot hold a sentence. Hover, focus or click on the well opens the note in <a href="#2a" style="border-bottom:1px solid #8B8270;">2a</a>.</p>
+        </div>
+      </div>
+
+      <div id="1b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1b</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Collection unread · 390</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
+          <div style="padding:16px 16px 0;">
+            <p style="margin-bottom:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--fg-faint);">STEP 1 OF 3</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:23px;font-weight:700;line-height:1.15;color:var(--fg);">Welcome to The 99</h1>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:11px;padding:16px 16px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 16px;border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);text-align:center;">
+              <div aria-hidden="true" style="position:relative;width:88px;height:92px;">
+                <span style="position:absolute;top:14px;left:8px;width:50px;height:68px;transform:rotate(-14deg);border-radius:6px;border:1px solid var(--border-strong);background:color-mix(in srgb, var(--surface-inset) 50%, var(--elevated));"></span>
+                <span style="position:absolute;top:10px;left:18px;width:50px;height:68px;border-radius:6px;border:1px solid var(--border-strong);background:var(--elevated);"></span>
+                <span style="position:absolute;top:14px;left:30px;width:50px;height:68px;transform:rotate(13deg);border-radius:6px;border:1px solid var(--accent);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+              </div>
+              <span style="font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--fg);">Add your collection</span>
+              <p style="font-size:13.5px;line-height:1.6;color:var(--fg-muted);">Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox.</p>
+              <div style="width:100%;display:flex;flex-direction:column;gap:8px;"><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Upload a CSV</span><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">Paste a list</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 15px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+              <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);">2</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--fg-locked);">Pick a commander or import a deck</span><span style="font-size:12px;color:var(--fg-locked);">Unlocks once a collection is read</span></div>
+              <span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--border-strong);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--border-strong);border-radius:3px;"></span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 15px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+              <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);">3</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--fg-locked);">Build the 99</span><span style="font-size:12px;color:var(--fg-locked);">Unlocks with a commander</span></div>
+              <span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--border-strong);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--border-strong);border-radius:3px;"></span></span>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:88px;background:var(--surface-rail);border-top:1px solid var(--border);padding:7px 8px 14px;">
+            <div style="position:relative;height:14px;margin-left:74.8px;">
+              <span style="position:absolute;left:8px;right:8px;top:7px;height:6px;border:1px solid var(--border-strong);border-bottom:0;border-radius:3px 3px 0 0;"></span>
+              <span style="position:absolute;left:50%;top:0;transform:translateX(-50%);display:flex;align-items:center;gap:5px;padding:0 7px;background:var(--surface-rail);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:14px;letter-spacing:.08em;color:var(--fg-locked);white-space:nowrap;"><span style="position:relative;display:inline-block;width:9px;height:11px;"><span style="position:absolute;left:2px;top:0;width:5px;height:6px;border:1.2px solid var(--fg-locked);border-bottom:0;border-radius:3px 3px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:9px;height:6.5px;border:1.2px solid var(--fg-locked);border-radius:2px;"></span></span>ADD A COLLECTION TO UNLOCK</span>
+            </div>
+            <div style="display:flex;">
+              <sc-for list="{{ tabsLocked }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">A bracket over the four locked tabs</strong> carries the reason in words, always on screen. The bar grows 14px while locked; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--tabbar-h</span> becomes 88px in first run only.</p>
+          <p>Fits the 390×800 budget. The stack ends at 756px, above the bar.</p>
+        </div>
+      </div>
+
+      <div id="1c" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1c</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Collection read, no deck · step 2 live · 1300</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+            <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <sc-for list="{{ railLive }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ i.bg }};color:{{ i.c }};"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for>
+            </div>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);"></span>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:radial-gradient(640px 340px at 40% -40px, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%);">
+            <div style="padding:26px 28px 0;">
+              <p style="margin-bottom:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--fg-faint);">STEP 2 OF 3</p>
+              <h1 style="margin:0;font-family:var(--font-display);font-size:27px;font-weight:700;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;padding:20px 28px 26px;">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+                <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid color-mix(in oklab, var(--success) 45%, transparent);font-size:12px;color:var(--success);">✓</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--fg-body);">Collection read</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">1,284 cards · moxfield.csv</span></div>
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Replace</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:16px;padding:18px;border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);">
+                <span style="width:22px;height:22px;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">2</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;">
+                  <span style="font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--fg);">Pick a commander or import a deck</span>
+                  <p style="max-width:640px;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">We rank the commanders your cards can already build. If you play a list from somewhere else, bring it in instead.</p>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;">Pick a commander</span><span style="height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Import a deck</span><span style="margin-left:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">38 commanders buildable from 1,284 cards</span></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:15px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+                <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);">3</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--fg-locked);">Build the 99</span><span style="font-size:12.5px;color:var(--fg-locked);">Unlocks with a commander. An imported deck arrives built.</span></div>
+                <span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--border-strong);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--border-strong);border-radius:3px;"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">Primary and secondary, not peers.</strong> Pick a commander is the bone fill and goes to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/commanders</span>. Import a deck is the hairline and goes to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/decks/import</span>. This is the one-filled-button rule, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">buildableFrom</span> figure beside it is what justifies the primary (omitted when the figure is 0).</p>
+          <p><strong style="color:#EDE6D8;">Step 1 collapses to a done row</strong>, with ✓ in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span>, the count and file in mono, and Replace to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection/replace</span>. The checklist stays on Home until the first deck exists. This state is new: today it unmounts as soon as the collection is read.</p>
+          <p><strong style="color:#EDE6D8;">Step 3 belongs to the commander path only.</strong> An import creates a deck, so the checklist is finished and Home renders its normal state. Step 3 is never ticked or skipped on that path. Its locked line says so ahead of time (placeholder words). The rail and tab bar simply come alive; the ticked step 1 is the only mark of the change.</p>
+        </div>
+      </div>
+
+      <div id="1d" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#1d" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">1d</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Step 2 live · 390</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
+          <div style="padding:16px 16px 0;">
+            <p style="margin-bottom:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--fg-faint);">STEP 2 OF 3</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:23px;font-weight:700;line-height:1.15;color:var(--fg);">Welcome to The 99</h1>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:11px;padding:16px 16px 0;">
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 10px 10px 15px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+              <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid color-mix(in oklab, var(--success) 45%, transparent);font-size:12px;color:var(--success);">✓</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--fg-body);">Collection read</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1,284 cards · moxfield.csv</span></div>
+              <span style="height:44px;display:inline-flex;align-items:center;padding:0 14px;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:13.5px;">Replace</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 16px 18px;border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);text-align:center;">
+              <span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">2</span>
+              <span style="font-family:var(--font-display);font-size:19px;font-weight:600;line-height:1.25;color:var(--fg);">Pick a commander or import a deck</span>
+              <p style="font-size:13.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">We rank the commanders your cards can already build. Or bring in a list you play.</p>
+              <div style="width:100%;display:flex;flex-direction:column;gap:8px;"><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Pick a commander</span><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">Import a deck</span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">38 commanders buildable from 1,284 cards</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 15px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);">
+              <span style="width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-disabled);">3</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--fg-locked);">Build the 99</span><span style="font-size:12px;line-height:1.4;color:var(--fg-locked);">Unlocks with a commander. An imported deck arrives built.</span></div>
+              <span style="position:relative;display:inline-block;width:12px;height:14px;flex:none;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--border-strong);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--border-strong);border-radius:3px;"></span></span>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);padding:8px 8px 14px;display:flex;">
+            <sc-for list="{{ tabsLive }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for>
+          </div>
+        </div>
+        <div style="max-width:390px;font-size:13px;line-height:1.55;text-wrap:pretty;"><p>On the phone the two actions stack at 44px, primary first. The bar drops its bracket and goes back to 74px; nothing announces the unlock.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">§4.2 · WHAT A LOCKED ITEM DOES WHEN YOU REACH FOR IT, AND EVERY THEME'S --FG-LOCKED</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+      <div id="2a" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#2a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">2a</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Rail · locked slot hovered or focused · 1300 (crop)</span></div>
+        <div style="position:relative;width:560px;height:420px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+            <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);"><span style="width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;"></span></span>
+              <div style="width:48px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 9px;border-radius:12px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+                <sc-for list="{{ lockablesFocus }}" as="i" hint-placeholder-count="4"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--fg-locked);box-shadow:{{ i.sh }};"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for>
+                <span style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="position:relative;display:inline-block;width:12px;height:14px;"><span style="position:absolute;left:2.5px;top:0;width:7px;height:7.5px;border:1.5px solid var(--fg-locked);border-bottom:0;border-radius:4px 4px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:12px;height:8.5px;border:1.5px solid var(--fg-locked);border-radius:3px;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--fg-locked);">LOCKED</span></span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;padding:26px 28px 0;background:radial-gradient(640px 340px at 40% -40px, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%);">
+            <p style="margin-bottom:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--fg-faint);">STEP 1 OF 3</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:27px;font-weight:700;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+          </div>
+          <div style="position:absolute;left:74px;top:146px;width:268px;padding:14px 16px 16px;border-radius:10px;background:var(--surface-raised);border:1px solid var(--border-strong);box-shadow:0 18px 40px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:8px;">
+            <span style="position:absolute;left:-6px;top:28px;width:10px;height:10px;transform:rotate(45deg);background:var(--surface-raised);border-left:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);"></span>
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--fg-faint);">LOCKED</p>
+            <p style="font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><span style="color:var(--fg);">Commanders</span> opens once your collection is read. So do Collection, Discover and Decks.</p>
+            <span style="align-self:flex-start;margin-top:2px;height:32px;display:inline-flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:12.5px;">Go to step 1</span>
+          </div>
+        </div>
+        <div style="max-width:560px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">Locked slots become focusable.</strong> Today they are out of the tab order. They become <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">button[aria-disabled="true"][aria-describedby]</span>, so a keyboard user reaches the reason as well. Hover, focus or click opens the note, anchored to the slot. Escape, blur or pointer-out closes it.</p>
+          <p><strong style="color:#EDE6D8;">Go to step 1</strong> moves focus to Upload a CSV, and scrolls to it if needed. It is hairline because step 1 already holds the page's one fill. The slot's focus ring is the app's 2px accent ring.</p>
+        </div>
+      </div>
+
+      <div id="2b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#2b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">2b</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Tab bar · Decks tapped · 390</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
+          <div style="padding:16px 16px 0;opacity:1;">
+            <p style="margin-bottom:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--fg-faint);">STEP 1 OF 3</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:23px;font-weight:700;line-height:1.15;color:var(--fg);">Welcome to The 99</h1>
+            <div style="margin-top:16px;height:330px;border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);"></div>
+            <div style="margin-top:11px;height:56px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);"></div>
+            <div style="margin-top:11px;height:56px;border-radius:14px;border:1px solid var(--border);background:var(--surface-rail);"></div>
+          </div>
+          <div style="position:absolute;left:12px;right:12px;bottom:98px;padding:14px 16px 16px;border-radius:12px;background:var(--surface-raised);border:1px solid var(--border-strong);box-shadow:0 -12px 36px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:10px;">
+            <span style="position:absolute;right:37px;bottom:-6px;width:10px;height:10px;transform:rotate(45deg);background:var(--surface-raised);border-right:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);"></span>
+            <p style="font-size:14px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><span style="color:var(--fg);">Decks</span> opens once your collection is read. So do Collection, Commanders and Discover.</p>
+            <span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">Go to step 1</span>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:88px;background:var(--surface-rail);border-top:1px solid var(--border);padding:7px 8px 14px;">
+            <div style="position:relative;height:14px;margin-left:74.8px;">
+              <span style="position:absolute;left:8px;right:8px;top:7px;height:6px;border:1px solid var(--border-strong);border-bottom:0;border-radius:3px 3px 0 0;"></span>
+              <span style="position:absolute;left:50%;top:0;transform:translateX(-50%);display:flex;align-items:center;gap:5px;padding:0 7px;background:var(--surface-rail);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:14px;letter-spacing:.08em;color:var(--fg-locked);white-space:nowrap;"><span style="position:relative;display:inline-block;width:9px;height:11px;"><span style="position:absolute;left:2px;top:0;width:5px;height:6px;border:1.2px solid var(--fg-locked);border-bottom:0;border-radius:3px 3px 0 0;"></span><span style="position:absolute;left:0;bottom:0;width:9px;height:6.5px;border:1.2px solid var(--fg-locked);border-radius:2px;"></span></span>ADD A COLLECTION TO UNLOCK</span>
+            </div>
+            <div style="display:flex;">
+              <sc-for list="{{ tabsTapped }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};box-shadow:{{ t.sh }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">A tap no longer does nothing.</strong> The slot takes a 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-strong</span> outline, not a fill, so it never reads as the current route. A note rises 10px above the bar, with its caret on the tapped slot. It names that slot first.</p>
+          <p>Tap outside it, tap the slot again, or Go to step 1 to close it. It has no timeout. It is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role="status"</span>, so the sentence is announced once.</p>
+        </div>
+      </div>
+
+      <div id="2c" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#2c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">2c</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Locked rail and tab bar · six themes</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,390px);gap:16px;">
+          <sc-for list="{{ themes }}" as="th" hint-placeholder-count="6">
+            <div data-theme="{{ th.key }}" style="display:flex;flex-direction:column;gap:8px;">
+              <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:#8B8270;">{{ th.name }} · --fg-locked {{ th.locked }}</p>
+              <div style="display:flex;gap:0;height:250px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+                <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+                  <span style="height:24px;display:flex;align-items:center;margin-bottom:14px;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--accent);">99</span>
+                  <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);"><span style="width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;"></span></span>
+                  <div style="margin-top:4px;width:48px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 0 7px;border-radius:12px;background:var(--surface-sunken);border:1px solid var(--border);">
+                    <sc-for list="{{ lockables }}" as="i" hint-placeholder-count="4"><span style="width:38px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--fg-locked);"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for>
+                    <span style="margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--fg-locked);">LOCKED</span>
+                  </div>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;">
+                  <div style="padding:16px 14px 0;display:flex;flex-direction:column;gap:10px;">
+                    <span style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--fg);">Welcome to The 99</span>
+                    <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-rail);"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-family:var(--font-display);font-size:13.5px;font-weight:600;color:var(--fg-locked);">Pick a commander or import a deck</span><span style="font-size:11.5px;color:var(--fg-locked);">Unlocks once a collection is read</span></div></div>
+                  </div>
+                  <div style="background:var(--surface-rail);border-top:1px solid var(--border);padding:5px 4px 8px;">
+                    <p style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--fg-locked);">ADD A COLLECTION TO UNLOCK</p>
+                    <div style="display:flex;margin-top:4px;"><sc-for list="{{ tabsLocked }}" as="t" hint-placeholder-count="5"><span style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:{{ t.c }};"><span style="width:12px;height:12px;border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;">{{ t.label }}</span></span></sc-for></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="max-width:1202px;font-size:13px;line-height:1.55;text-wrap:pretty;"><p>Every word in the lock uses <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span>, including the rail padlock, which moves up from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-disabled</span> because it now sits with a word and is no longer decoration. The well's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> separates from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-rail</span> in all six themes, and Phyrexia is the faintest. Its 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border</span> is what holds the group. The tab-bar strip is simplified here: the bracket is drawn in <a href="#1b" style="border-bottom:1px solid #8B8270;">1b</a>.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">§4.3 · IMPORT ISSUES IN THE FILTERS' SHEET · 390</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+      <div id="3a" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#3a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">3a</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Short list · height taken from content</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:20px 18px 14px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--fg);">Review import</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">moxfield.csv</span></div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px;"><div style="height:62px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);"></div><div style="height:50px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"></div><div style="height:120px;border-radius:8px;background:var(--surface);"></div></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 74%, transparent);"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:488px;display:flex;flex-direction:column;border-radius:22px 22px 0 0;border-top:1px solid var(--border-strong);background:var(--surface-inset);">
+            <div style="display:flex;justify-content:center;padding-top:12px;"><span style="width:38px;height:4px;border-radius:2px;background:var(--border-strong);"></span></div>
+            <div style="position:relative;padding:12px 60px 10px 16px;">
+              <h2 style="margin:0;font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--fg);">Import issues</h2>
+              <p style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">moxfield.csv · 7 of 1,291 rows skipped</p>
+              <span style="position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-raised);border:1px solid var(--border-strong);font-size:14px;color:var(--fg-muted);">✕</span>
+            </div>
+            <p style="margin:0 16px 10px;font-size:12px;line-height:1.5;color:var(--fg-muted);">Skipped rows are left out. Every other row becomes your collection.</p>
+            <div style="padding:0 16px;">
+              <div style="display:flex;gap:18px;border-bottom:1px solid var(--border);">
+                <span style="display:flex;align-items:center;gap:8px;padding:10px 4px 13px;font-size:14px;font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent);">Unmatched<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:999px;padding:2px 8px;color:var(--warning);background:color-mix(in oklab, var(--warning) 14%, transparent);">5</span></span>
+                <span style="display:flex;align-items:center;gap:8px;padding:10px 4px 13px;font-size:14px;font-weight:600;color:var(--fg-faint);">Parse errors<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:999px;padding:2px 8px;color:var(--danger);background:color-mix(in oklab, var(--danger) 16%, transparent);">2</span></span>
+              </div>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:10px;"><span style="flex:1;height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);font-size:14px;color:var(--fg-faint);"><span>⌕</span>Filter 5 unmatched names…</span><span style="min-width:56px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">5 of 5</span></div>
+            </div>
+            <div style="flex:1;min-height:0;padding:14px 16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+              <sc-for list="{{ rowsShort }}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;padding:9px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);"><span style="min-width:0;"><span style="display:block;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.meta }}</span></span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.q }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">The collection filter sheet's vocabulary.</strong> It uses 22px, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-inset</span>, the 38×4 handle at 2px radius under 12px, and the same route family. Ruling 4 names that sheet.</p>
+          <p><strong style="color:#EDE6D8;">Height is measured once, on open,</strong> from the longer of the two tabs, capped at 86vh, and then held. Filtering and switching tabs never resize the sheet under the thumb. That is the set-list lesson from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filter-sheet.tsx</span>.</p>
+        </div>
+      </div>
+
+      <div id="3b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#3b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">3b</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">214 rows · held at 86vh · drag region marked</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:20px 18px 14px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--fg);">Review import</span></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 74%, transparent);"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:726px;display:flex;flex-direction:column;border-radius:22px 22px 0 0;border-top:1px solid var(--border-strong);background:var(--surface-inset);">
+            <div style="position:absolute;left:4px;right:4px;top:4px;height:86px;border:1.5px dashed #E86BA8;border-radius:18px 18px 6px 6px;pointer-events:none;"></div>
+            <span style="position:absolute;left:14px;top:-22px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#E86BA8;">DRAG REGION · HANDLE + TITLE BLOCK</span>
+            <div style="display:flex;justify-content:center;padding-top:12px;"><span style="width:38px;height:4px;border-radius:2px;background:var(--border-strong);"></span></div>
+            <div style="position:relative;padding:12px 60px 10px 16px;">
+              <h2 style="margin:0;font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--fg);">Import issues</h2>
+              <p style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">collection.csv · 245 of 2,960 rows skipped</p>
+              <span style="position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-raised);border:1px solid var(--border-strong);font-size:14px;color:var(--fg-muted);">✕</span>
+            </div>
+            <p style="margin:0 16px 10px;font-size:12px;line-height:1.5;color:var(--fg-muted);">Skipped rows are left out. Every other row becomes your collection.</p>
+            <div style="padding:0 16px;">
+              <div style="display:flex;gap:18px;border-bottom:1px solid var(--border);">
+                <span style="display:flex;align-items:center;gap:8px;padding:10px 4px 13px;font-size:14px;font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent);">Unmatched<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:999px;padding:2px 8px;color:var(--warning);background:color-mix(in oklab, var(--warning) 14%, transparent);">214</span></span>
+                <span style="display:flex;align-items:center;gap:8px;padding:10px 4px 13px;font-size:14px;font-weight:600;color:var(--fg-faint);">Parse errors<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:999px;padding:2px 8px;color:var(--danger);background:color-mix(in oklab, var(--danger) 16%, transparent);">31</span></span>
+              </div>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:10px;"><span style="flex:1;height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);font-size:14px;color:var(--fg-faint);"><span>⌕</span>Filter 214 unmatched names…</span><span style="min-width:72px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">214 of 214</span></div>
+            </div>
+            <div style="position:relative;flex:1;min-height:0;padding:14px 16px 0;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+              <sc-for list="{{ rowsLong }}" as="r" hint-placeholder-count="12"><div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;padding:9px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);"><span style="min-width:0;"><span style="display:block;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.meta }}</span></span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.q }}</span></div></sc-for>
+              <span style="position:absolute;right:5px;top:22px;width:3px;height:36px;border-radius:2px;background:var(--border-strong);"></span>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">The nested scroll is resolved by ownership.</strong> Only the handle and the title block, inside the dashed line, start a drag, and they are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">touch-none</span>. The tabs, filter and list never move the sheet. The list is the one scroll body, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">overscroll-behavior: contain</span>, so a fling at the top stops there and never hands off to a dismiss.</p>
+          <p>At 844 the list shows about 11 rows, and virtualisation above 150 is unchanged. The ✕ stays, because the inspector names it as its dismiss. The scrim, Escape and an 80px handle drag are the same action. It is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">z-50</span>, over the tab bar. Desktop's 660×640 modal is unchanged.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">§4.4 · THE CALM REPLACE CONFIRM · REPLACE ONLY</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+      <div id="4a" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#4a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">4a</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Replace confirm · 1300</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+            <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><sc-for list="{{ railCollection }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ i.bg }};color:{{ i.c }};"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for></div>
+          </div>
+          <div style="flex:1;padding:36px 56px 0;display:flex;flex-direction:column;gap:16px;">
+            <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--fg-faint);">STEP 2 OF 3 · moxfield.csv · 1,241 rows</p>
+            <h1 style="margin:0;font-family:var(--font-display);font-size:29px;font-weight:700;color:var(--fg);">Review before you replace</h1>
+            <div style="display:flex;gap:16px;"><div style="flex:1.4;height:86px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);"></div><div style="flex:1;height:86px;border-radius:12px;background:var(--surface);border:1px solid var(--border);"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;"><div style="height:300px;border-radius:8px;background:var(--surface);"></div><div style="height:300px;border-radius:8px;background:var(--surface);"></div></div>
+          </div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 74%, transparent);"></div>
+          <div role="dialog" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;padding:30px 34px 30px;border-radius:16px;background:var(--surface-rail);border:1px solid var(--border-strong);box-shadow:0 40px 100px rgba(0,0,0,.7);">
+            <h2 style="margin:0;font-family:var(--font-display);font-size:25px;font-weight:700;line-height:1.15;color:var(--fg);">Replace your collection?</h2>
+            <div style="margin-top:18px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px;padding:14px 16px;border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);">
+              <div><p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--fg-faint);">NOW</p><p style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--fg);">1,284</p><p style="margin-top:2px;font-size:12px;color:var(--fg-muted);">cards in your collection</p></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">→</span>
+              <div><p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--fg-faint);">AFTER</p><p style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--fg);">1,212</p><p style="margin-top:2px;font-size:12px;color:var(--fg-muted);">cards from moxfield.csv</p></div>
+            </div>
+            <p style="margin-top:18px;font-size:15px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">Decks and commander recommendations rebuild from the new list. To go back, replace it again with your previous file.</p>
+            <div style="margin-top:24px;display:flex;gap:12px;"><span style="height:46px;display:inline-flex;align-items:center;padding:0 22px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;font-weight:600;">Keep current</span><span style="flex:1;height:46px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Replace with 1,212 cards</span></div>
+          </div>
+        </div>
+        <div style="max-width:1300px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">Typing REPLACE does not survive.</strong> The gate existed because the step could not be undone, and Hugh has ruled that it can. Continue → on the review screen is already the first deliberate press, and this dialog is the second. A third, typed gate would treat a reversible step as a disaster, which is what ruling 5 rejects.</p>
+          <p><strong style="color:#EDE6D8;">Neutral ink throughout.</strong> There is no icon, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span> and no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>, since colour is status and nothing here has one. The primary is the ordinary bone fill. The "can't be undone" sentence goes, and a now → after figure pair replaces it. The pair is what a player actually weighs.</p>
+          <p><strong style="color:#EDE6D8;">The button counts what you get:</strong> "Replace with 1,212 cards" (the matched count), where today it counts what you lose. Focus opens on Keep current, so Enter never replaces. Escape and the backdrop close it, but not while pending, as today. Pending reads "Replacing…". Copy is placeholder, and /copy-review sets it.</p>
+        </div>
+      </div>
+
+      <div id="4b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#4b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">4b</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Replace confirm · 390</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:20px 18px 14px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--fg);">Review import</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">moxfield.csv</span></div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px;"><div style="height:62px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);"></div><div style="height:50px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"></div><div style="height:200px;border-radius:8px;background:var(--surface);"></div></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 70%, transparent);"></div>
+          <div role="dialog" style="position:absolute;left:0;right:0;bottom:0;padding:12px 22px 30px;border-radius:22px 22px 0 0;border-top:1px solid var(--border-strong);background:var(--surface-rail);box-shadow:0 -20px 50px rgba(0,0,0,.5);">
+            <div style="width:40px;height:4px;margin:0 auto 18px;border-radius:999px;background:var(--border-strong);"></div>
+            <h2 style="margin:0;font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1.15;color:var(--fg);">Replace your collection?</h2>
+            <div style="margin-top:16px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);">
+              <div><p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--fg-faint);">NOW</p><p style="margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--fg);">1,284</p><p style="margin-top:2px;font-size:11.5px;color:var(--fg-muted);">cards</p></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">→</span>
+              <div><p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--fg-faint);">AFTER</p><p style="margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--fg);">1,212</p><p style="margin-top:2px;font-size:11.5px;color:var(--fg-muted);">from moxfield.csv</p></div>
+            </div>
+            <p style="margin-top:16px;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Decks and recommendations rebuild from the new list. To go back, replace it again with your previous file.</p>
+            <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;"><span style="height:48px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:15px;font-weight:600;">Replace with 1,212 cards</span><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;font-weight:600;">Keep current</span></div>
+          </div>
+        </div>
+        <div style="max-width:390px;font-size:13px;line-height:1.55;text-wrap:pretty;"><p>The same content in the phone sheet. Keep current becomes a 44px hairline rather than faint text, because it is the safe answer and should not look like a footnote. The primary sits on top, as today. The handle is decorative here, as it is today, and this sheet does not adopt the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sheet</span> drag.</p></div>
+      </div>
+
+      <div id="4c" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#4c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">4c</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">/collection/replace · the banner comes down to a note · 1300 (crop)</span></div>
+        <div style="position:relative;width:1300px;height:500px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+            <span style="height:39px;display:flex;align-items:center;margin-bottom:20px;font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--accent);">99</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><sc-for list="{{ railCollection }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ i.bg }};color:{{ i.c }};"><span style="width:{{ i.s }};height:{{ i.s }};border:1.5px solid currentColor;border-radius:{{ i.r }};transform:rotate({{ i.rot }});"></span></span></sc-for></div>
+          </div>
+          <div style="flex:1;display:flex;justify-content:center;">
+            <div style="width:100%;max-width:760px;padding:28px 48px 0;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--fg-faint);">‹ Collection</span>
+              <h1 style="margin:8px 0 0;font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--fg);">Replace collection</h1>
+              <div style="margin-top:20px;padding:14px 18px;border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">A new file replaces your current <span style="color:var(--fg);font-weight:600;">1,284</span> cards; nothing is merged. You see every match before anything changes.</div>
+              <div style="margin-top:18px;display:flex;align-items:center;gap:28px;padding:40px;border-radius:12px;border:1.5px dashed var(--border-dashed);background:var(--surface-sunken);">
+                <span style="width:58px;height:58px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--accent);color:var(--accent);font-size:26px;">↑</span>
+                <div><p style="font-size:17px;font-weight:600;color:var(--fg);">Drop a CSV here, or browse</p><p style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--fg-faint);">Moxfield · Archidekt · Deckbox · ManaBox · plain CSV</p><span style="margin-top:14px;display:inline-flex;align-items:center;height:42px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Browse files</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:1300px;font-size:13px;line-height:1.55;text-wrap:pretty;"><p><strong style="color:#EDE6D8;">Yes, the amber banner comes down to match.</strong> It becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> with a 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border</span>, with no ⚠, no left rule and no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated-hover</span>. The count keeps its weight, because the count is the news. It only renders when <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">currentCardCount &gt; 0</span>; the zero-collection sentence is dropped, because a first import has no confirm and nothing to warn about. The drop-zone's title is drawn with placeholder words, since <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collectionChassisCopy.upload.dropWide</span> is unchanged.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;font-weight:500;color:#8B8270;">§4.5 · THE PHONE EXIT, AND WHERE THE REVIEW SITS · 390</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;">
+
+      <div id="5a" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#5a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">5a</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">First run · review inside the step-1 card</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
+          <div style="padding:10px 16px 0;"><p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--fg-faint);">STEP 1 OF 3</p></div>
+          <div style="margin:8px 16px 0;border-radius:14px;border:1px solid var(--accent);background:var(--surface-inset);overflow:hidden;">
+            <div style="padding:14px 14px 0;">
+              <span style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--fg);">Add your collection</span>
+              <p style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;color:var(--fg-faint);">REVIEWING · moxfield.csv · 1,313 rows</p>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);"><span style="width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in oklab, var(--success) 15%, transparent);color:var(--success);font-size:15px;">✓</span><div><p style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1;color:var(--fg);">1,284</p><p style="margin-top:2px;font-size:11.5px;color:var(--fg-faint);">cards matched &amp; ready</p></div></div>
+              <div style="margin-top:10px;display:flex;gap:8px;">
+                <div style="flex:1;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"><p style="font-family:'IBM Plex Mono',monospace;font-size:16px;line-height:1;color:var(--warning);">21</p><p style="margin-top:3px;font-size:11px;color:var(--fg-faint);">unmatched</p></div>
+                <div style="flex:1;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"><p style="font-family:'IBM Plex Mono',monospace;font-size:16px;line-height:1;color:var(--danger);">8</p><p style="margin-top:3px;font-size:11px;color:var(--fg-faint);">parse errors</p></div>
+                <div style="flex:1;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"><p style="font-family:'IBM Plex Mono',monospace;font-size:16px;line-height:1;color:var(--fg);">1,313</p><p style="margin-top:3px;font-size:11px;color:var(--fg-faint);">rows read</p></div>
+              </div>
+              <p style="margin-top:14px;margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--warning);">UNMATCHED: 21 SKIPPED</p>
+              <div style="display:flex;flex-direction:column;gap:6px;"><sc-for list="{{ rowsPreview }}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);"><span style="min-width:0;"><span style="display:block;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.meta }}</span></span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.q }}</span></div></sc-for></div>
+              <span style="margin-top:12px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:13.5px;">View all 29 issues</span>
+            </div>
+            <div style="margin-top:14px;padding:12px 14px 14px;background:var(--surface-rail);border-top:1px solid var(--border-strong);">
+              <p style="text-align:center;font-size:11.5px;color:var(--fg-faint);">Imports 1,284 cards · skips 29 rows</p>
+              <div style="margin-top:10px;display:flex;gap:10px;"><span style="height:46px;display:flex;align-items:center;justify-content:center;padding:0 18px;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">Cancel</span><span style="flex:1;height:46px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:15px;font-weight:600;">Continue to import →</span></div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:88px;background:var(--surface-rail);border-top:1px solid var(--border);padding:7px 8px 14px;">
+            <div style="position:relative;height:14px;margin-left:74.8px;">
+              <span style="position:absolute;left:8px;right:8px;top:7px;height:6px;border:1px solid var(--border-strong);border-bottom:0;border-radius:3px 3px 0 0;"></span>
+              <span style="position:absolute;left:50%;top:0;transform:translateX(-50%);padding:0 7px;background:var(--surface-rail);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:14px;letter-spacing:.08em;color:var(--fg-locked);white-space:nowrap;">ADD A COLLECTION TO UNLOCK</span>
+            </div>
+            <div style="display:flex;"><sc-for list="{{ tabsLocked }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for></div>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">Embedded, the review has no header of its own.</strong> The step-1 card keeps its title and gains a mono <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">REVIEWING · file · rows</span> line. The fan hides, the card goes left-aligned, and the "Review import ‹" row never renders mid-card. The frame is scrolled by the heading's height, and the preview is cut to 3 rows for the frame (it is 8 in the build).</p>
+          <p><strong style="color:#EDE6D8;">The confirm bar becomes the card's foot</strong>, in flow and not sticky, with Cancel beside Continue. Cancel returns step 1 to Upload a CSV / Paste a list and discards the preview.</p>
+        </div>
+      </div>
+
+      <div id="5b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:baseline;gap:10px;"><a href="#5b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#E9E4DA;border-radius:5px;padding:3px 8px;">5b</a><span style="font-size:14px;font-weight:600;color:#EDE6D8;">/collection/replace · review with its exit</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:26px;flex:none;background:var(--surface-rail);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">9:41</div>
+          <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;color:var(--fg);">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);background:var(--surface);"></span></div>
+          <div style="flex:none;display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--border);"><span style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--fg);">Review import</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">moxfield.csv</span></div>
+          <div style="padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--success);"><span style="width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in oklab, var(--success) 15%, transparent);color:var(--success);font-size:15px;">✓</span><div><p style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1;color:var(--fg);">1,212</p><p style="margin-top:2px;font-size:11.5px;color:var(--fg-faint);">cards matched &amp; ready</p></div></div>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <div style="flex:1;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"><p style="font-family:'IBM Plex Mono',monospace;font-size:16px;line-height:1;color:var(--warning);">21</p><p style="margin-top:3px;font-size:11px;color:var(--fg-faint);">unmatched</p></div>
+              <div style="flex:1;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"><p style="font-family:'IBM Plex Mono',monospace;font-size:16px;line-height:1;color:var(--danger);">8</p><p style="margin-top:3px;font-size:11px;color:var(--fg-faint);">parse errors</p></div>
+              <div style="flex:1;padding:10px 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"><p style="font-family:'IBM Plex Mono',monospace;font-size:16px;line-height:1;color:var(--fg);">1,241</p><p style="margin-top:3px;font-size:11px;color:var(--fg-faint);">rows read</p></div>
+            </div>
+            <p style="margin-top:16px;margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--warning);">UNMATCHED: 21 SKIPPED</p>
+            <div style="display:flex;flex-direction:column;gap:6px;"><sc-for list="{{ rowsPreview }}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);"><span style="min-width:0;"><span style="display:block;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.meta }}</span></span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.q }}</span></div></sc-for></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:74px;padding:12px 18px 14px;background:var(--surface-rail);border-top:1px solid var(--border-strong);">
+            <p style="text-align:center;font-size:11.5px;color:var(--fg-faint);">Skips 29 rows · replaces your 1,284 cards with 1,212</p>
+            <div style="margin-top:10px;display:flex;gap:10px;"><span style="height:46px;display:flex;align-items:center;justify-content:center;padding:0 18px;border-radius:10px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;">Cancel</span><span style="flex:1;height:46px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--fg);color:var(--bg);font-size:15px;font-weight:600;">Continue to replace →</span></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);padding:8px 8px 14px;display:flex;">
+            <sc-for list="{{ tabsCollection }}" as="t" hint-placeholder-count="5"><span style="flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};"><span style="width:{{ t.s }};height:{{ t.s }};border:1.5px solid currentColor;border-radius:{{ t.r }};transform:rotate({{ t.rot }});"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;">{{ t.label }}</span></span></sc-for>
+          </div>
+        </div>
+        <div style="max-width:390px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;text-wrap:pretty;">
+          <p><strong style="color:#EDE6D8;">The ‹ chevron goes.</strong> It meant "back to upload" but sat beside a title and read as leave-the-page. Cancel is now the one exit and does exactly what the chevron did. The title row keeps the filename.</p>
+          <p><strong style="color:#EDE6D8;">On this route the bar is sticky on the phone too</strong> (today it is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">md:sticky</span> only), pinned at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">bottom: var(--tabbar-h)</span>, so the exit is always in reach. The content reserves the bar's 104px.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const icons = [
+      { label: "Home", r: "4px", rot: "0deg", s: "16px" },
+      { label: "Collection", r: "2px", rot: "0deg", s: "15px" },
+      { label: "Commanders", r: "50%", rot: "0deg", s: "16px" },
+      { label: "Discover", r: "2px", rot: "45deg", s: "12px" },
+      { label: "Decks", r: "3px", rot: "0deg", s: "15px" },
+    ];
+    const bar = (locked, active, activeBg, tapped) =>
+      icons.map((i, k) => {
+        const isLocked = locked && k > 0;
+        return {
+          ...i,
+          bg: !isLocked && k === active ? activeBg : "transparent",
+          c: isLocked ? "var(--fg-locked)" : k === active ? "var(--fg)" : "var(--fg-faint)",
+          sh: k === tapped ? "inset 0 0 0 1px var(--border-strong)" : "none",
+        };
+      });
+    const lockables = icons.slice(1).map((i) => ({ ...i, sh: "none" }));
+    const row = (name, line, set, q) => ({ name, meta: `L${line} · ${set} · no match`, q: `×${q}` });
+    const long = [
+      row("Lightning Bolt (Retro Frame)", 14, "SLD", 1), row("Brainstorm // Foil Etched", 22, "STA", 1),
+      row("Sol Ring - Commander Collection", 31, "CC1", 2), row("Rhystic Study (JP)", 48, "PCY", 1),
+      row("Cultivate [Showcase]", 57, "M21", 3), row("Swords to Plowshares*", 63, "EMA", 1),
+      row("Arcane Signet (Borderless)", 71, "ELD", 2), row("Counterspell - Alt Art", 84, "MH2", 1),
+      row("Llanowar Elves (Serialized)", 96, "DMU", 1), row("Command Tower [Ext]", 102, "CMR", 4),
+      row("Kodama's Reach - Promo", 119, "PLST", 1), row("Farseek // Etched", 127, "MM3", 1),
+    ];
+    const themes = [
+      { key: "amonkhet", name: "AMONKHET", locked: "#6E6654" },
+      { key: "kamigawa", name: "KAMIGAWA", locked: "#606476" },
+      { key: "ixalan", name: "IXALAN", locked: "#626E5E" },
+      { key: "phyrexia", name: "PHYREXIA", locked: "#64616A" },
+      { key: "kaldheim", name: "KALDHEIM", locked: "#5F6D6E" },
+      { key: "eldraine", name: "ELDRAINE", locked: "#6A6475" },
+    ];
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      themes,
+      lockables,
+      lockablesFocus: lockables.map((i, k) => ({ ...i, sh: k === 1 ? "0 0 0 2px var(--accent)" : "none" })),
+      railLive: bar(false, 0, "var(--elevated)"),
+      railCollection: bar(false, 1, "var(--elevated)"),
+      tabsLocked: bar(true, 0, "var(--surface-inset)"),
+      tabsTapped: bar(true, 0, "var(--surface-inset)", 4),
+      tabsLive: bar(false, 0, "var(--surface-inset)"),
+      tabsCollection: bar(false, 1, "var(--surface-inset)"),
+      rowsShort: long.slice(0, 5),
+      rowsLong: long,
+      rowsPreview: long.slice(0, 3),
+    };
+  }
+}
+</script>
+</body>
+</html>
