@@ -177,6 +177,7 @@
     "fetch:fonts": "tsx scripts/fetch-fonts.mts",
     "probe:font-parity": "node scripts/probe-font-parity.mjs",
     "probe:onboarding": "node scripts/probe-onboarding.mjs",
+    "probe:issues-sheet": "node scripts/probe-issues-sheet.mjs",
     "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test"
   },
   "dependencies": {

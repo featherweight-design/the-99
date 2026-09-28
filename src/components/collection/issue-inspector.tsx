@@ -1,7 +1,14 @@
 "use client";
-// Issue Inspector — full-list modal (desktop) / full-screen sheet (mobile) for
-// the review page's unmatched-names and parse-errors lists. Opens against the
+// Issue Inspector — full-list modal (desktop) / bottom sheet (phone) for the
+// review page's unmatched-names and parse-errors lists. Opens against the
 // already-loaded UploadPreview payload; no fetch, no route.
+//
+// Phone (first-run onboarding handoff D8): the shared `Sheet` in the collection
+// filter sheet's vocabulary — 22px top, --surface-inset, the 38×4 handle under
+// 12px — with a HELD height and a drag that starts from the handle or the title
+// block only. Desktop's 660×640 modal is unchanged. The two are mounted by
+// `useIsDesktop` rather than a `hidden md:block` pair, because both are
+// aria-modal and a hidden duplicate would put two dialogs in the a11y tree.
 //
 // A11y (READINESS #5 baseline + Yellow-item locks):
 // - Focus trap via useDialogA11y; Esc closes; backdrop click closes (desktop).
@@ -14,7 +21,7 @@
 //   only the zero-match state (no per-keystroke SR noise).
 // - Filter debounced 120ms per brief.md §2; input value stays responsive.
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
@@ -26,6 +33,64 @@ import { IssueInspectorList } from "./issue-inspector-list";
 import { CardFanMark } from "./card-fan-mark";
 import { PrimaryButton } from "../ui/button";
 import { SearchField } from "../ui/text-field";
+import { Sheet } from "../ui/sheet";
+import { useIsDesktop } from "../ui/use-is-desktop";
+import { VIRTUALIZE_THRESHOLD } from "./issue-inspector-list";
+
+/** The phone sheet's height cap, as a fraction of the viewport (86vh). */
+const SHEET_CAP = 0.86;
+
+/**
+ * The phone sheet's held height, measured ONCE on open (handoff D8).
+ *
+ * Mechanism: on the first layout the panel renders at its natural height with
+ * the opening tab's list in place, and the OTHER tab's list is rendered beside
+ * it in an invisible, inert, absolutely-positioned copy of the same width. Then,
+ * before paint:
+ *
+ *   chrome = panel height − the visible list's box
+ *   held   = min(86vh, chrome + the longer of the two lists' content heights)
+ *
+ * and the copy unmounts. A list past the virtualisation threshold is taller than
+ * any cap it could meet: 151 rows at the smallest measured row (64px on a
+ * phone, plus the 6px gap) is over 10,000px, so either tab past it holds at
+ * the cap without measuring. Measuring the real DOM rather than multiplying a row
+ * height is deliberate: an unmatched row and a parse-error row are different
+ * heights, and a constant would drift the moment either row's type moved.
+ *
+ * Held means held: the value is state set once, never recomputed, so filtering
+ * and switching tabs change what is inside the panel and never its box.
+ */
+function useHeldSheetHeight(
+  enabled: boolean,
+  panelRef: React.RefObject<HTMLDivElement | null>,
+  measureRef: React.RefObject<HTMLDivElement | null>,
+  anyVirtualised: boolean,
+) {
+  const [held, setHeld] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!enabled || held !== null) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const cap = Math.floor(window.innerHeight * SHEET_CAP);
+    let next = cap;
+    if (!anyVirtualised) {
+      const list = panel.querySelector<HTMLElement>(
+        "[data-issue-list]:not([data-issue-measure] *)",
+      );
+      const listBox = list?.clientHeight ?? 0;
+      const listContent = list?.scrollHeight ?? 0;
+      const other = measureRef.current?.getBoundingClientRect().height ?? 0;
+      const chrome = panel.getBoundingClientRect().height - listBox;
+      next = Math.min(cap, Math.ceil(chrome + Math.max(listContent, other)));
+    }
+    // A measured value has to reach state from a layout effect: it exists only
+    // after layout, and setting it here re-renders before paint, so the reader
+    // never sees the unheld frame. It runs once per visit (`held` gates it).
+    setHeld(next);
+  }, [enabled, held, panelRef, measureRef, anyVirtualised]);
+  return held;
+}
 
 type Tab = "unmatched" | "errors";
 
@@ -40,6 +105,8 @@ export function IssueInspector({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const filterInputRef = useRef<HTMLInputElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useIsDesktop();
   const [tab, setTab] = useState<Tab>(initialTab);
   // Two-state debounce: rawQuery drives the input; query drives filtering/
   // counts/highlights. 120ms per brief.md §2 — small enough to feel live at
@@ -80,6 +147,15 @@ export function IssueInspector({
   const skipped = unmatchedTotal + errorsTotal + (preview.skippedByDesignCount ?? 0);
   const isInitialImport = preview.currentCollectionCount === 0;
 
+  const heldHeight = useHeldSheetHeight(
+    !isDesktop,
+    dialogRef,
+    measureRef,
+    unmatchedTotal > VIRTUALIZE_THRESHOLD || errorsTotal > VIRTUALIZE_THRESHOLD,
+  );
+  // The other tab's list, rendered invisibly until the held height is taken.
+  const measuring = !isDesktop && heldHeight === null;
+
   // Memoize so per-keystroke rawQuery re-renders (which don't yet change
   // `query` — 120ms debounce hasn't fired) don't repeat the filter work.
   const filteredUnmatched = useMemo(
@@ -105,6 +181,256 @@ export function IssueInspector({
         ? "var(--fg-body)"
         : "var(--fg-faint)";
 
+  const clearFilter = () => {
+    setRawQuery("");
+    setQuery("");
+    filterInputRef.current?.focus();
+  };
+
+  // Title + subtitle. On the phone this is the sheet's header, and with the
+  // handle it is the whole drag region (D8); the ✕ is NOT in it, because it
+  // renders last in the DOM for the tab order below.
+  const titleBlock = (
+    <div className="p-[12px_60px_10px_16px] md:p-[22px_66px_12px_26px]">
+      <h2
+        id="issue-inspector-title"
+        className="font-display font-bold text-[19px] md:text-[22px]"
+        style={{ color: "var(--fg)" }}
+      >
+        {issueInspectorCopy.header.title}
+      </h2>
+      <p
+        // 11px on the phone, as frame 3a draws it, so a usual filename and its
+        // count fit one line at 390; desktop keeps 11.5.
+        className="font-mono text-[11px] md:text-[11.5px] mt-[4px]"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {issueInspectorCopy.header.subtitle(
+          preview.filename,
+          skipped,
+          preview.rowCount,
+        )}
+      </p>
+    </div>
+  );
+
+  const content = (
+    <>
+      {/* Header help line — or hoisted zero-note when a tab is empty. */}
+      {isUnmatchedDisabled || isErrorsDisabled ? (
+        <div
+          className="mx-[16px] md:mx-[26px] mb-[10px] rounded-lg p-[10px_12px] flex items-start gap-[10px]"
+          style={{
+            background: "var(--surface-sunken)",
+            borderLeft: "3px solid var(--success)",
+          }}
+        >
+          <span
+            aria-hidden
+            className="rounded-full flex-none mt-[6px]"
+            style={{ width: 8, height: 8, background: "var(--success)" }}
+          />
+          <p className="text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
+            {isErrorsDisabled
+              ? issueInspectorCopy.zeroState.noParseErrors
+              : issueInspectorCopy.zeroState.noUnmatched}
+          </p>
+        </div>
+      ) : (
+        <p
+          className="mx-[16px] md:mx-[26px] mb-[10px] text-[12px]"
+          style={{ color: "var(--fg-muted)" }}
+        >
+          {isInitialImport
+            ? issueInspectorCopy.header.helpInitial
+            : issueInspectorCopy.header.help}
+        </p>
+      )}
+
+      {/* Tabs + filter row */}
+      <div className="px-[16px] md:px-[26px]">
+        <TabList
+          tab={tab}
+          unmatchedTotal={unmatchedTotal}
+          errorsTotal={errorsTotal}
+          onSwitch={switchTab}
+        />
+
+        <div className="mt-[12px] flex items-center gap-[10px]">
+          {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile).
+              Focus: border → --accent + 3px ring color-mix(in oklab, var(--accent) 16%, transparent) via focus-within. */}
+          <SearchField
+            ref={filterInputRef}
+            type="text"
+            containerClassName="flex-1 h-[44px] md:h-[40px]"
+            // 16px on the phone, where the field takes focus as the sheet
+            // opens: below 16px iOS Safari zooms the page on focus, just as
+            // the held height is measured. This departs from frame 3a's 14px
+            // on purpose (the repo convention, as quick-add-bar.tsx); desktop
+            // keeps 14.
+            className="text-[16px] md:text-[14px]"
+            value={rawQuery}
+            onChange={(e) => setRawQuery(e.target.value)}
+            placeholder={
+              tab === "unmatched"
+                ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
+                : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
+            }
+            aria-label={
+              tab === "unmatched"
+                ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
+                : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
+            }
+            autoComplete="off"
+            spellCheck={false}
+            trailing={
+              /* Always rendered; hidden via visibility when the input is empty
+                 so its 22px doesn't reflow the input width (which made the
+                 field jump as the last character was deleted). */
+              <button
+                type="button"
+                onClick={clearFilter}
+                aria-label={issueInspectorCopy.filter.clearAriaLabel}
+                aria-hidden={rawQuery === "" || undefined}
+                tabIndex={rawQuery === "" ? -1 : 0}
+                className="flex-none rounded-full flex items-center justify-center bg-[color:var(--border)] text-[color:var(--fg-muted)]"
+                style={{
+                  width: 22,
+                  height: 22,
+                  fontSize: 12,
+                  visibility: rawQuery === "" ? "hidden" : "visible",
+                }}
+              >
+                ✕
+              </button>
+            }
+          />
+          {/* Visual count — no aria-live (would announce every keystroke).
+              Fixed min-width + right-align + tabular-nums so the text can't
+              narrow as digit counts change (e.g. "110 of 110" → "7 of 110"),
+              which was previously letting the filter container grow into
+              the recovered space and causing a visible input jump. 150px is
+              desktop's; the phone's is 72 (D8), which still holds
+              "214 of 214" and leaves the field its width at 390. */}
+          <span
+            className="font-mono text-[11px] flex-none whitespace-nowrap tabular-nums text-right min-w-[72px] md:min-w-[150px]"
+            style={{ color: countColor }}
+          >
+            {issueInspectorCopy.filter.count(activeShown, activeTotal)}
+          </span>
+          {/* SR-only live region — announces only the zero-match state. */}
+          <span className="sr-only" aria-live="polite" aria-atomic="true">
+            {showEmptyFilter
+              ? `No matches for ${query}. ${activeTotal.toLocaleString()} total in this tab.`
+              : ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Panels — tabpanel gets h-full + flex so IssueInspectorList's plain
+          <ul> can flex-fill (fixes last-row clipping at fixed height cap). */}
+      <div className="flex-1 min-h-0 p-[14px_16px_20px] md:p-[16px_26px_22px] flex flex-col">
+        <div
+          role="tabpanel"
+          id={`issue-inspector-panel-${tab}`}
+          aria-labelledby={`issue-inspector-tab-${tab}`}
+          // `relative` anchors the phone's measuring copy; `overflow-y-auto`
+          // lets the empty-filter state scroll inside a short held sheet
+          // rather than pushing a second scroll body onto the sheet itself.
+          className="relative flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-contain"
+        >
+          {showEmptyFilter ? (
+            <EmptyFilter
+              query={query}
+              total={activeTotal}
+              onClear={clearFilter}
+              bodyText={
+                tab === "unmatched"
+                  ? issueInspectorCopy.emptyFilter.body(unmatchedTotal)
+                  : issueInspectorCopy.emptyFilterErrors.body(errorsTotal)
+              }
+            />
+          ) : tab === "unmatched" ? (
+            <IssueInspectorList
+              variant="unmatched"
+              rows={filteredUnmatched}
+              query={query}
+            />
+          ) : (
+            <IssueInspectorList
+              variant="errors"
+              rows={filteredErrors}
+              query={query}
+            />
+          )}
+          {measuring && (
+            // The OTHER tab's list at its natural height, the same width, never
+            // painted and out of the a11y tree. See `useHeldSheetHeight`.
+            <div
+              ref={measureRef}
+              aria-hidden
+              inert
+              data-issue-measure=""
+              className="invisible pointer-events-none absolute inset-x-0 top-0"
+            >
+              {tab === "unmatched" ? (
+                <IssueInspectorList variant="errors" rows={preview.parseErrors} query="" />
+              ) : (
+                <IssueInspectorList variant="unmatched" rows={preview.unmatchedRows} query="" />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+
+  const closeButton = (
+    // Close button — rendered LAST in DOM so keyboard Tab order matches the
+    // handoff spec (filter → clear → tabs → close). Positioned absolutely
+    // against the `relative` dialog (desktop) or sheet panel (phone), where it
+    // sits in the title block's corner: 12px handle padding + 4px bar + the
+    // title block's 12px (D8, frame 3a).
+    <button
+      type="button"
+      onClick={onClose}
+      aria-label={issueInspectorCopy.header.closeAriaLabel}
+      // §Close: --surface-raised circle, 1px --border-strong, hover accent.
+      // Color is a utility, not inline style: an inline color outranks the
+      // hover: variant and the accent hover never lands.
+      className="absolute top-[28px] right-[16px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)]"
+      style={{ width: 32, height: 32, fontSize: 15 }}
+    >
+      ✕
+    </button>
+  );
+
+  if (!isDesktop) {
+    return (
+      <Sheet
+        open
+        onDismiss={onClose}
+        ariaLabel={issueInspectorCopy.header.title}
+        panelRef={dialogRef}
+        header={titleBlock}
+        headerDrag
+        height={heldHeight ?? undefined}
+        footer={closeButton}
+        // z-50, over the tab bar (z-40), as the collection filter sheet.
+        frameClassName="fixed inset-0 z-50 flex flex-col justify-end"
+        // D8 names this scrim rather than the filter sheet's literal rgba,
+        // which is one theme's --bg (READINESS O4).
+        scrimClassName="absolute inset-0 bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
+        handleClassName="flex touch-none justify-center pt-[12px] pb-0"
+        handleBarClassName="h-[4px] w-[38px] rounded-[2px] bg-[color:var(--border-strong)]"
+        // The collection filter sheet's box (filter-sheet.tsx), which D8 names.
+        panelClassName="relative z-10 flex max-h-[86vh] flex-col rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)]"
+      >
+        {content}
+      </Sheet>
+    );
+  }
+
   return (
     <div
       // §Backdrop: color-mix(in oklab, var(--bg) 72%, transparent) over the blurred (blur(3px)) review page.
@@ -123,201 +449,16 @@ export function IssueInspector({
         aria-modal="true"
         aria-labelledby="issue-inspector-title"
         onClick={(e) => e.stopPropagation()}
-        // Mobile: full-screen sheet on --bg (design's var(--bg)).
         // Desktop: 660px × 640px (fixed height, not max-height — the dialog
         // must not shrink as filter results narrow), --surface-rail, 1px
         // --border-strong, radius 16px, shadow --modal-shadow.
-        // `relative` anchors the absolutely-positioned close button below.
+        // `relative` anchors the absolutely-positioned close button.
         className="relative flex flex-col w-full h-full md:w-[660px] md:h-[640px] md:rounded-2xl bg-[color:var(--bg)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
         style={{ boxShadow: "var(--modal-shadow)" }}
       >
-        {/* Header — title + subtitle only. Close button renders at the end of
-            the dialog (below) so DOM tab order goes filter → clear → tabs →
-            close (per handoff A11y tab-order spec). Close is anchored top-right
-            via absolute positioning against the `relative` dialog container. */}
-        <div className="p-[18px_60px_10px_20px] md:p-[22px_66px_12px_26px]">
-          <h2
-            id="issue-inspector-title"
-            className="font-display font-bold text-[19px] md:text-[22px]"
-            style={{ color: "var(--fg)" }}
-          >
-            {issueInspectorCopy.header.title}
-          </h2>
-          <p
-            className="font-mono text-[11.5px] mt-[4px]"
-            style={{ color: "var(--fg-faint)" }}
-          >
-            {issueInspectorCopy.header.subtitle(
-              preview.filename,
-              skipped,
-              preview.rowCount,
-            )}
-          </p>
-        </div>
-
-        {/* Header help line — or hoisted zero-note when a tab is empty. */}
-        {isUnmatchedDisabled || isErrorsDisabled ? (
-          <div
-            className="mx-[20px] md:mx-[26px] mb-[10px] rounded-lg p-[10px_12px] flex items-start gap-[10px]"
-            style={{
-              background: "var(--surface-sunken)",
-              borderLeft: "3px solid var(--success)",
-            }}
-          >
-            <span
-              aria-hidden
-              className="rounded-full flex-none mt-[6px]"
-              style={{ width: 8, height: 8, background: "var(--success)" }}
-            />
-            <p className="text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
-              {isErrorsDisabled
-                ? issueInspectorCopy.zeroState.noParseErrors
-                : issueInspectorCopy.zeroState.noUnmatched}
-            </p>
-          </div>
-        ) : (
-          <p
-            className="mx-[20px] md:mx-[26px] mb-[10px] text-[12px]"
-            style={{ color: "var(--fg-muted)" }}
-          >
-            {isInitialImport
-              ? issueInspectorCopy.header.helpInitial
-              : issueInspectorCopy.header.help}
-          </p>
-        )}
-
-        {/* Tabs + filter row */}
-        <div className="px-[20px] md:px-[26px]">
-          <TabList
-            tab={tab}
-            unmatchedTotal={unmatchedTotal}
-            errorsTotal={errorsTotal}
-            onSwitch={switchTab}
-          />
-
-          <div className="mt-[12px] flex items-center gap-[10px]">
-            {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile).
-                Focus: border → --accent + 3px ring color-mix(in oklab, var(--accent) 16%, transparent) via focus-within. */}
-            <SearchField
-              ref={filterInputRef}
-              type="text"
-              containerClassName="flex-1 h-[44px] md:h-[40px]"
-              className="text-[14px]"
-              value={rawQuery}
-              onChange={(e) => setRawQuery(e.target.value)}
-              placeholder={
-                tab === "unmatched"
-                  ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
-                  : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
-              }
-              aria-label={
-                tab === "unmatched"
-                  ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
-                  : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
-              }
-              autoComplete="off"
-              spellCheck={false}
-              trailing={
-                /* Always rendered; hidden via visibility when the input is empty
-                   so its 22px doesn't reflow the input width (which made the
-                   field jump as the last character was deleted). */
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRawQuery("");
-                    setQuery("");
-                    filterInputRef.current?.focus();
-                  }}
-                  aria-label={issueInspectorCopy.filter.clearAriaLabel}
-                  aria-hidden={rawQuery === "" || undefined}
-                  tabIndex={rawQuery === "" ? -1 : 0}
-                  className="flex-none rounded-full flex items-center justify-center bg-[color:var(--border)] text-[color:var(--fg-muted)]"
-                  style={{
-                    width: 22,
-                    height: 22,
-                    fontSize: 12,
-                    visibility: rawQuery === "" ? "hidden" : "visible",
-                  }}
-                >
-                  ✕
-                </button>
-              }
-            />
-            {/* Visual count — no aria-live (would announce every keystroke).
-                Fixed min-width + right-align + tabular-nums so the text can't
-                narrow as digit counts change (e.g. "110 of 110" → "7 of 110"),
-                which was previously letting the filter container grow into
-                the recovered space and causing a visible input jump. */}
-            <span
-              className="font-mono text-[11px] flex-none whitespace-nowrap tabular-nums text-right min-w-[150px]"
-              style={{ color: countColor }}
-            >
-              {issueInspectorCopy.filter.count(activeShown, activeTotal)}
-            </span>
-            {/* SR-only live region — announces only the zero-match state. */}
-            <span className="sr-only" aria-live="polite" aria-atomic="true">
-              {showEmptyFilter
-                ? `No matches for ${query}. ${activeTotal.toLocaleString()} total in this tab.`
-                : ""}
-            </span>
-          </div>
-        </div>
-
-        {/* Panels — tabpanel gets h-full + flex so IssueInspectorList's plain
-            <ul> can flex-fill (fixes last-row clipping at fixed height cap). */}
-        <div className="flex-1 min-h-0 p-[14px_20px_20px] md:p-[16px_26px_22px] flex flex-col">
-          <div
-            role="tabpanel"
-            id={`issue-inspector-panel-${tab}`}
-            aria-labelledby={`issue-inspector-tab-${tab}`}
-            className="flex-1 min-h-0 flex flex-col"
-          >
-            {showEmptyFilter ? (
-              <EmptyFilter
-                query={query}
-                total={activeTotal}
-                onClear={() => {
-                  setRawQuery("");
-                  setQuery("");
-                  filterInputRef.current?.focus();
-                }}
-                bodyText={
-                  tab === "unmatched"
-                    ? issueInspectorCopy.emptyFilter.body(unmatchedTotal)
-                    : issueInspectorCopy.emptyFilterErrors.body(errorsTotal)
-                }
-              />
-            ) : tab === "unmatched" ? (
-              <IssueInspectorList
-                variant="unmatched"
-                rows={filteredUnmatched}
-                query={query}
-              />
-            ) : (
-              <IssueInspectorList
-                variant="errors"
-                rows={filteredErrors}
-                query={query}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Close button — rendered LAST in DOM so keyboard Tab order matches
-            the handoff spec (filter → clear → tabs → close). Positioned
-            absolutely against the `relative` dialog container. */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={issueInspectorCopy.header.closeAriaLabel}
-          // §Close: --surface-raised circle, 1px --border-strong, hover accent.
-          // Color is a utility, not inline style: an inline color outranks the
-          // hover: variant and the accent hover never lands.
-          className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)]"
-          style={{ width: 32, height: 32, fontSize: 15 }}
-        >
-          ✕
-        </button>
+        {titleBlock}
+        {content}
+        {closeButton}
       </div>
     </div>
   );
@@ -480,7 +621,9 @@ function EmptyFilter({
     >
       <CardFanMark />
       <p
-        className="font-display font-semibold text-[16px]"
+        // Display face at 17px on the phone and 19px from md, as the Issue
+        // Inspector mock draws it (first-run READINESS correction 4).
+        className="font-display font-semibold text-[17px] md:text-[19px]"
         style={{ color: "var(--fg)" }}
       >
         {issueInspectorCopy.emptyFilter.title(query)}
