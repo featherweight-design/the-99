@@ -156,8 +156,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       # Visible before it spends: how many commanders need a sentence, and the most calls that
-      # could cost. Then the real run, under a ceiling (PROSE_MAX_COMMANDERS, default 2,000): each
-      # commander is up to three Sonnet calls, and whatever the cap defers waits for the next build.
+      # could cost. Then the real run under two ceilings, whichever binds first: measured dollars
+      # (PROSE_MAX_USD, default $6, priced from each reply's usage) and commanders
+      # (PROSE_MAX_COMMANDERS, default 2,000). Whatever a ceiling defers waits for the next build.
       - name: Count the prose to generate
         run: |
           {
@@ -170,6 +171,7 @@ jobs:
       - name: Generate commander prose
         env:
           PROSE_MAX_COMMANDERS: ${{ vars.PROSE_MAX_COMMANDERS || '2000' }}
+          PROSE_MAX_USD: ${{ vars.PROSE_MAX_USD || '6' }}
         run: pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
 
   copy:

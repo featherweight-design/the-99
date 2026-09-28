@@ -38,6 +38,19 @@ describe("generateCommanderProse", () => {
     expect(complete).toHaveBeenCalledTimes(2);
   });
 
+  it("stops cleanly when the caller's spend stop says so, deferring the rest", async () => {
+    let spent = 0;
+    const complete = vi.fn(async () => { spent += 1; return ACCEPTED; });
+    const r = await generateCommanderProse({
+      complete,
+      loadCandidates: async () => [candidate({ oracleId: "a" }), candidate({ oracleId: "b" }), candidate({ oracleId: "c" })],
+      write: vi.fn(async () => {}),
+      shouldStop: () => spent >= 2,
+    });
+    expect({ written: r.written, deferred: r.deferred }).toEqual({ written: 2, deferred: 1 });
+    expect(complete).toHaveBeenCalledTimes(2);
+  });
+
   it("counts what a dry run would generate and calls nothing", async () => {
     const complete = vi.fn(async () => ACCEPTED);
     const write = vi.fn(async () => {});

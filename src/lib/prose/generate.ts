@@ -47,6 +47,12 @@ export type GenerateOptions = {
   maxCommanders?: number;
   /** Count what would be generated, and call nothing. */
   dryRun?: boolean;
+  /**
+   * Asked before each commander; true stops the run cleanly, deferring the rest to the next run.
+   * The spend stop: the caller measures what the calls so far cost and answers whether one more
+   * commander could cross its cap.
+   */
+  shouldStop?: () => boolean;
 };
 
 export type GenerateResult = {
@@ -73,7 +79,7 @@ export type GenerateResult = {
    * says which rule did it, and the four rules are fixed by four different changes.
    */
   rejectedBy: Record<ProseRejection, number>;
-  /** Needed a sentence and were not asked for one: the cap was reached, or the run was dry. */
+  /** Needed a sentence and were not asked for one: a cap was reached, or the run was dry. */
   deferred: number;
 };
 
@@ -174,7 +180,7 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
         r.restamped++;
         continue;
       }
-      if (opts.dryRun || (opts.maxCommanders !== undefined && asked >= opts.maxCommanders)) {
+      if (opts.dryRun || (opts.maxCommanders !== undefined && asked >= opts.maxCommanders) || opts.shouldStop?.()) {
         r.deferred++;
         continue;
       }
