@@ -19,7 +19,7 @@ That is not a preference, it is the state of the code. Verified:
 
 - **Nothing in `src/` reads labels.** Outside `src/lib/labels` itself, the only file mentioning
   them is `src/db/schema.ts`, which declares the tables.
-- **`jobOf` in `src/lib/swaps/stand-ins.ts:56` still routes through `classifyRoles`** — the
+- **`jobOf` in `src/lib/swaps/stand-ins.ts:57` still routes through `classifyRoles`** — the
   regex classifier — via `spellRoles`. The swap engine, the one obvious consumer, does not know
   labels exist.
 
@@ -29,8 +29,12 @@ named consumer reads it.
 ## Global constraints
 
 - **Nothing spends until this plan is approved AND the re-sample is read.** The fresh run gets
-  its own $55 hard stop and $50 pause, separate from the ~$11.92 already spent.
-- The re-sample must project **under $50** or it goes back to Hugh.
+  its own $55 hard stop and $50 pause, separate from the ~$11.92 already spent (844 collected requests, 10,128 cards, measured from
+  `card_label_batches` token columns by d9 on 2026-09-28).
+- **The re-sample's WHOLE-RUN PROJECTION must come in under $50** or it goes back to Hugh. Not
+  the re-sample's own cost: at ~900–1,000 cards and the measured $0.001291 that is about $1.20
+  and could never trip a $50 bar. The figure that matters is Task 6's projection of the full run
+  from the re-sample's measured per-card rate.
 - **Decouple** the label vocabulary from the app's unions, one-way check (Hugh, 2026-09-28).
 - **Leave `REMOVAL_PATTERNS` alone** (Hugh, 2026-09-28). Whether counterspells should leave the
   app's removal figure is a separate decision.
@@ -103,7 +107,7 @@ redefinition has to be stated in the prompt and re-audited in the gold set.
 
 ### `to: hand | battlefield | top` — for tutors and recursion
 
-All **32 reanimation cards are labelled like regrowth**. Returning a creature to the battlefield
+The reviewer measured that all **32 reanimation cards are labelled like regrowth**. Returning a creature to the battlefield
 and returning it to hand are not interchangeable, and a tutor to hand is not a tutor to the
 battlefield.
 
@@ -117,7 +121,7 @@ does not decide for them.
 The visible wording goes through `/copy-review` with a picture. **Any change to the stand-in
 row's box goes to Design**, not into this plan.
 
-**65 of 74 bounce cards are labelled removal.** Bounce is removal that gives the card back;
+The reviewer measured **65 of 74 bounce cards labelled removal**. Bounce is removal that gives the card back;
 exile is removal that answers recursion. A stand-in that treats them as equal is wrong against
 an indestructible or recursive target.
 
@@ -138,11 +142,41 @@ which is exactly today's behaviour. It puts the label-driven code in front of re
 proving it changes nothing — so when labels arrive, the only new variable is the labels.
 
 Why decoupling is needed, measured: `avg_ramp` and its three siblings are columns on
-`commander_support`, `commander_pair_support` and `identity_composition`; **19 files consume
-`ROLE_TARGETS`** (`Record<Exclude<Role, "land">, number>`, so a new role is a compile error until
-someone invents a target); **6 files read `recs/themes`**. Widening the app's unions is a
+`commander_support`, `commander_pair_support` and `identity_composition`; **13 files import
+`ROLE_TARGETS` as a value** (`Record<Exclude<Role, "land">, number>`, so a new role is a compile
+error until someone invents a target); **6 files read `recs/themes`**.
+
+*(The first draft said 19. That was `grep -l`, which AGENTS.md warns against by name — it counts
+files that only mention the symbol in a comment. Counted by import it is 13, and the conclusion
+is unchanged.)* Widening the app's unions is a
 database change with user-visible Role Coverage consequences and is **its own plan**, not part of
 this one.
+
+---
+
+## Task 2b — BUILD the consumer
+
+The Goal says "ship a consumer", and Tasks 1 and 2 produce a spec and a schema. **Neither builds
+anything**, and without this task a builder works through every PR here and ends with no
+label-driven comparison. This is that task.
+
+The build itself is the merged run plan's Task 5
+(`docs/superpowers/plans/2026-09-25-card-labels-run.md:314`), which already names the files —
+`gather.ts`, `stand-ins.ts`, `read.ts`. **This plan does not restate it; it gives it a PR and a
+gate**, because that plan was written before the consumer-first ordering and is not sequenced
+against anything here.
+
+- [ ] Implement label-driven `jobOf` and `sameJob` per Task 1's spec, reading only the fields
+      Task 2 built.
+- [ ] `affects` is a **match gate** (ruling 2). `method` feeds the **gives-up line** and is not a
+      gate (ruling 3).
+- [ ] The text path is untouched and remains the behaviour whenever either card lacks a label
+      (ruling 1).
+- [ ] **Prove inertness before labels exist:** with `card_labels` empty, the full test suite and
+      the swaps probes produce identical results to `origin/main`. That is the claim the inert
+      ship rests on, and it is checkable rather than asserted.
+
+**PR 2b — the consumer. This is what ships inert to staging.**
 
 ---
 
@@ -190,8 +224,12 @@ should be stated rather than discovered.
 - [ ] **At least 8 positives and 4 hard negatives per new or changed job.** The negatives are
       the half that matters: a hard negative for `tutor` is a land search, for `drain` a Shock,
       for `fog` a protection spell.
-- [ ] **Cover the jobs that currently have zero gold coverage**, whatever the new vocabulary
-      does or does not add.
+- [ ] **Cover the jobs that currently have zero gold coverage.** Computed from
+      `scripts/lib/card-labels-gold.mts` against `ROLES`/`THEMES`, they are **`etbDraw`, `blink`,
+      `finisher`, `deathTrigger`, `tribal`**. Task 3 touches `finisher` and `tribal`; the other
+      three it does not. **All five are owed anyway**, because the gate is a per-job bar and a
+      job with no gold cases has no measurable precision or recall — it would pass by being
+      unmeasurable, which is the one way a bar can be worse than no bar.
 - [ ] **Per-job precision and recall bars (Hugh, 2026-09-28): `tutor` ≥0.9, every other job
       ≥0.8.** Tutor is higher because its errors reach beyond stand-ins — tutor agreement feeds
       bracket reach. **Stop rule:** any job under its bar goes back to the prompt before the run. An aggregate figure hides exactly the new jobs this is
@@ -215,7 +253,9 @@ Free gates, none of which costs a model call:
       independent classifiers over the same cards; disagreement is a finding either way.
 - [ ] **Counterspells, tappers and hand attack are out of `removal`.**
 - [ ] **Tutors are out of `draw`.**
-- [ ] **The empty rate against 12.2%** — the first run's figure. A large move in either direction
+- [ ] **The empty rate against 12.2%** — 464 of 3,792 on the first backfill's collected cards, read
+      off staging by d9 on 2026-09-28. Not in any committed artifact, which is itself the reason
+      Task 5 commits per-card outputs. A large move in either direction
       needs explaining before the run.
 - [ ] **Per-card outputs committed.** Last time they went to an uncommitted `out/` and the
       `[]`-distribution question could not be asked at all.
@@ -231,9 +271,17 @@ OLD system prompt. The new one is materially longer — more members, and a defi
 job — so the constant is wrong the moment Task 3 lands, and it feeds `worstCaseUsd`, `waveSize`
 and the ledger reservation.
 
-- [ ] **Derive `SYSTEM_TOKENS` from the real `SYSTEM` string** rather than restating it, so it
-      cannot drift again.
-- [ ] Move the drift flag accordingly.
+- [ ] **Re-MEASURE the billed count for the new `SYSTEM`, do not compute one from the string.**
+      The constant's own comment (`build-card-labels.ts:492`) says 1,215 is the block **as
+      billed**, deliberately not `SYSTEM.length / 4`, which gives 1,084. A derivation is
+      therefore either that estimate — which **understates** the figure the $55 hard stop is
+      enforced against — or the one-char-per-token bound used for `PER_CARD_TOKENS`, which
+      overstates about fourfold and shrinks `waveSize`. Both change a safety property. Use the
+      provider's token-counting endpoint, which costs nothing, and update the constant to what it
+      returns.
+- [ ] **Pin it with a test** that recomputes the count for the current `SYSTEM` and fails when it
+      moves — so the next vocabulary edit cannot leave the constant stale, which is the real
+      failure and the reason this task exists.
 - [ ] Re-project the whole-run cost from the re-sample's measured per-card rate, and confirm it
       lands under $50 before dispatching anything.
 
@@ -293,6 +341,15 @@ what makes the second one true.
 Its own cap, sized to the pool: **1,500–3,000 cards at the measured ~$0.0012 is $1.80–$3.60**.
 Set the cap at **$6** — roughly double the estimate, enough that a longer new prompt does not
 truncate the run, and far below anything that needs a second thought. Pause at $5.
+
+### Its PR and its run id
+
+**PR 6b — the card-set filter on `cardsNeedingLabels`.** The only code the trial needs.
+
+The trial dispatches under **its own `backfill-YYYY-MM-DD` id, distinct from the full run's**,
+using the date it is run on. Task 8's "one backfill id, typed once" governs the FULL run; the
+trial is a separate run with a separate cap, and conflating them would put the trial's spend
+inside the full run's ledger. Neither id may be `backfill-2026-09-28`.
 
 ### What Hugh does
 
@@ -398,13 +455,18 @@ its path, so the backfill proceeds whether or not this lands.
 - [ ] **`CARD_LABELS_ENABLED` stays off until the backfill publishes**, stated here because two
       live run ids over one stale card set both pay — `reconcile` and `alreadySpent` are each
       filtered by `run_id`, so a weekly run would re-plan the same cards and charge again.
-- [ ] **Account headroom is no longer the blocker** — the limit was raised on 2026-09-28 — but
-      check it anyway before each dispatch, because the failure mode is mid-run and expensive.
+- [ ] **Do not reuse `backfill-2026-09-28`.** It already holds **400 stranded intents** from the
+      run the spend limit interrupted, and it passes the workflow's own
+      `^backfill-[0-9]{4}-[0-9]{2}-[0-9]{2}$` regex — so a run typed on that date lands straight
+      on them and dies at the claim. Task 7 is explicitly excused from blocking the run on the
+      grounds that "a fresh run id has no stranded rows in its path"; that is only true of an id
+      that has never been used. Pick an unused date, or dispose of the 400 first.
 - [ ] **Handle `weekly-2026-W40`'s 127 intents explicitly.** They are `intended`, `batch_id`
       null, $0, unreserved, and they permanently block that run id. Decide: scoped delete (Hugh's
       OK), or leave them and never reuse that id. Say which, in the plan, before the run.
-- [ ] **Check account headroom before dispatch.** The first attempt died on the Anthropic
-      account's own spend limit mid-run. The cheapest discriminating check is a one-token
+- [ ] **Check account headroom before each dispatch.** The limit was raised on 2026-09-28, so it
+      is not the current blocker — but the first attempt died on it mid-run, which is the
+      expensive way to find out. The cheapest discriminating check is a one-token
       `messages.create`; `batches.list` succeeds under the limit and proves nothing.
 - [ ] **One backfill id, typed once**, of the validated `backfill-YYYY-MM-DD` shape.
 - [ ] One dispatch at a time, each only after the previous run has ended; re-dispatch on a poll
@@ -420,5 +482,6 @@ its path, so the backfill proceeds whether or not this lands.
 - **It does not widen the app's `Role`/`Theme` unions.** Its own plan, if wanted.
 - **It does not change `REMOVAL_PATTERNS`.** Hugh's ruling; the divergence is documented at both
   sites instead.
-- **It does not widen the gold set beyond the jobs in scope.** Coverage of jobs this plan does
-  not touch is worth having and is not this plan's work.
+- **It does not add gold coverage for jobs beyond the five named in Task 4.** Those five are
+  owed because the per-job bar cannot judge a job with no cases; anything further is worth having
+  and is not this plan's work.
