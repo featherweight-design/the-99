@@ -96,10 +96,21 @@ async function walk(browser, width, height) {
       `${asked.size} images asked for, ${shown} tiles on screen (ceiling ${ceiling}), ${tiles} tiles in the window`);
     if (tiles < 50) report(`${label}: the window is big enough to tell`, false, `${tiles} tiles; need 50 or more`);
 
-    const first = await page.evaluate((sel) => {
-      const tile = document.querySelector(`main ${sel}`);
-      const img = tile?.querySelector("img");
+    // The first tile WITH ART: `imageUri` is nullable, and a card with none draws the identity
+    // gradient and no img, which is correct and says nothing about how art is drawn. It is
+    // brought into view and loaded before it is read, since a lazy image off screen has asked
+    // for nothing yet.
+    const first = await page.evaluate(async (sel) => {
+      const img = [...document.querySelectorAll(`main ${sel}`)].map((t) => t.querySelector("img")).find(Boolean);
       if (!img) return null;
+      img.scrollIntoView({ block: "center" });
+      if (!img.complete) {
+        await new Promise((resolve) => {
+          img.addEventListener("load", resolve, { once: true });
+          img.addEventListener("error", resolve, { once: true });
+          setTimeout(resolve, 15_000);
+        });
+      }
       const edge = img.nextElementSibling;
       const cs = getComputedStyle(img);
       const box = img.parentElement.getBoundingClientRect();
@@ -113,7 +124,7 @@ async function walk(browser, width, height) {
           && getComputedStyle(edge).position === "absolute" : false,
       };
     }, TILE);
-    report(`${label}: the first tile's art paints`, first?.painted === true, JSON.stringify(first));
+    report(`${label}: the first tile with art paints`, first?.painted === true, JSON.stringify(first));
     report(`${label}: drawn as the background was (cover, centred, filling its box)`,
       first?.fit === "cover" && first?.position === "50% 50%" && first?.fills === true,
       `${first?.fit} ${first?.position} fills ${first?.fills}`);
