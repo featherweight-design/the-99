@@ -96,8 +96,9 @@ export type RestampResult = { restamped: number; fresh: number; stale: number };
 /**
  * The one-time move to the set-and-lead hash, with no model call (`db:restamp:prose`): a row
  * current under `legacyProseInputHash` takes the new stamp, and every other row is left exactly
- * as it is. `generateCommanderProse` and `copyCommanderProse` make the same move row by row, so
- * this only lets a database take it before either of them next runs against it.
+ * as it is. `generateCommanderProse` makes the same move row by row; `copyCommanderProse` only
+ * accepts a legacy-stamped source row and never re-stamps the target's own. This lets a database
+ * take the move before its inputs change, which neither of those can do for it.
  */
 export async function restampCommanderProse(
   opts: Pick<GenerateOptions, "loadCandidates" | "restamp" | "suppressed"> & { dryRun?: boolean } = {},

@@ -138,10 +138,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   old hash took all eight in order, and between two index builds 854 of staging's 1,777 stale
   sentences had moved by order alone. `legacyProseInputHash` keeps the old payload for one job
   only: a row current under it is RE-STAMPED with the new hash, with no model call, by
-  `db:build:prose`, `db:copy:prose` and `db:restamp:prose` alike.
+  `db:build:prose` and `db:restamp:prose`. `db:copy:prose` accepts a legacy-stamped SOURCE row
+  whose hash fits the target's inputs and installs it under the new hash, but it never touches
+  the target's own rows.
 
 - `pnpm db:restamp:prose [--dry-run]` makes that move on the database `DATABASE_URL` names, and
-  nothing else: legacy-current rows take the new stamp, stale rows stay stale. **Run it on a
+  nothing else: legacy-current rows take the new stamp, stale rows stay stale, and a re-run
+  re-stamps nothing. It FAILS CLOSED on its target: `RESTAMP_TARGET_BRANCH` is never defaulted,
+  and the database must report exactly that branch by `neon.branch_id` or it exits 2 having read
+  and written nothing. **Run it on a
   database BEFORE that database's inputs move**, because a legacy hash can only be checked against
   the inputs the sentence was written from; once an index copy or rebuild has replaced them, a
   sentence whose themes only reordered reads stale and costs a model call. Measured on scratch
