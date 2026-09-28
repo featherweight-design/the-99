@@ -41,3 +41,27 @@ export async function stampCatalogRefresh(): Promise<void> {
     );
   }
 }
+
+/** A drizzle transaction on ANY neon-serverless connection with this schema, not only `src/db`'s. */
+type StampTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * The same stamp, written through a caller's TRANSACTION on a connection of its choosing: what a
+ * catalog copy uses, so the stamp lands on the branch the copy verified, in the publish that
+ * changed its tables (plan `2026-09-28-card-data-replicate.md`, §3 item 9). `stampCatalogRefresh`
+ * is bound to `src/db` and so to `DATABASE_URL`, which a two-connection copy never trusts.
+ *
+ * In a SAVEPOINT, and still non-fatal: a failed statement would otherwise abort the whole publish
+ * transaction, trading a cache hint for the copy it describes.
+ */
+export async function stampCatalogRefreshIn(tx: StampTx): Promise<void> {
+  try {
+    await tx.transaction((sp) =>
+      sp.insert(catalogRefreshes)
+        .values({ id: CATALOG_ROW_ID, refreshedAt: new Date() })
+        .onConflictDoUpdate({ target: catalogRefreshes.id, set: { refreshedAt: sql`excluded.refreshed_at` } }),
+    );
+  } catch (error) {
+    console.warn(`catalog generation not stamped on the copy target: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}

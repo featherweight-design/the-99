@@ -1,7 +1,10 @@
 import "./lib/env.mjs";
+import { withCatalogIngestLock } from "../src/lib/catalog/ingest-lock";
 import { seedPrintings, unsizedRunFailure } from "../src/lib/scryfall/seed-printings";
 
-seedPrintings()
+// Held for the whole ingest, so a catalog copy can never publish between this run's check and
+// its writes, or mid-run (plan `2026-09-28-card-data-replicate.md`, §3 item 8).
+withCatalogIngestLock(process.env.DATABASE_URL!, () => seedPrintings())
   .then((r) => {
     console.log(
       `Seeded ${r.upserted} printings (${r.representatives} representative, ` +

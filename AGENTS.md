@@ -165,6 +165,64 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   commander is skipped before any of that, exactly as the generator skips it: a source
   generated before an id joined the list still holds that sentence, so the copy is the one
   path that could put a pulled sentence back.
+- **Catalog builds are made once, on staging, and COPIED to production** (plan
+  `2026-09-28-card-data-replicate.md`, Hugh 2026-09-28). Fetching the same EDHREC and Spellbook
+  data twice was the waste; the copy is what replaces the second fetch. Every copy goes through
+  one harness, `scripts/lib/catalog-copy.ts`, and fails closed at each step, in this order:
+
+  - **One way, named target.** `CATALOG_COPY_SOURCE_URL`, `CATALOG_COPY_TARGET_URL` and
+    `CATALOG_COPY_TARGET_BRANCH` are never defaulted, and the target must report exactly the named
+    Neon branch by `neon.branch_id` (the `pull:staging` rule). A same-branch pair is refused.
+  - **A successful build of the catalog both sides hold.** The source's newest `catalog_builds`
+    row of that kind must be finished and ok, and the catalog INPUT fingerprint it recorded
+    (`src/lib/catalog/fingerprint.ts`: the `cards` columns a replicated builder reads) must equal
+    the source's now AND the target's. Ids alone are not enough: a card whose text moved on one
+    side has the same id and a different classification.
+  - **One source instant**: every read in one repeatable-read, read-only transaction.
+  - **One target transaction**, under the `catalog-ingest` advisory lock, with the target's
+    fingerprint re-read inside it, the publish, a count-and-md5 VERIFY of every replaced table
+    against the source's, and the `catalog_refreshes` stamp. A mismatch rolls the whole publish
+    back. Timestamps are compared to the millisecond, because a copied row travels as a JS `Date`.
+
+  A refusal exits 2, any other failure 1. The copy job must also set `DATABASE_URL` to the
+  target, because the publish bodies' module imports `src/db`; nothing queries through it.
+
+- `pnpm db:catalog-build start|finish <index|combos> [ok|failed]` writes the build ledger the
+  copy reads (`catalog_builds`, migration 0074). `start` records the catalog fingerprint the build
+  runs against and keeps the row's id in `CATALOG_BUILD_ID_FILE` (default `.catalog-build-id`);
+  `finish` closes that row, with `CATALOG_BUILD_REPORT` as its report. A build that dies between
+  the two leaves an unfinished row, and the copy refuses it.
+
+- `pnpm db:copy:combos [--dry-run]` publishes staging's combo build to production. It is NOT a
+  table copy: it runs the ingest's own `publishFlagsIn` and `publishVariantsIn` against the
+  target, with logging on, so production's `deck_data_changes` records the diff between ITS
+  previous flags and the new ones on its own sequence, which is what its readers' `seen_seq`
+  expects. The builders' floors (`classifierCollapse`, `variantsKept`) are re-checked on the
+  source snapshot first.
+
+- **The four catalog ingests hold the `catalog-ingest` lock for their whole run**
+  (`withCatalogIngestLock`: `seed-sets`, `seed-cards`, `seed-printings`, `seed-prices`). It is a
+  transaction-scoped advisory lock on a dedicated connection, never a session lock, because the
+  Neon pooler runs in transaction mode. A copy's publish takes the same lock, so a copy never
+  interleaves with a catalog refresh on the target: it waits, then re-reads the fingerprint.
+
+- `pnpm probe:catalog-copy` proves the harness and `db:copy:combos` against TWO SCRATCH branches
+  cut from staging (`PROBE_COPY_SOURCE_URL`/`_BRANCH`, `PROBE_COPY_TARGET_URL`/`_BRANCH`; it
+  refuses production, staging and local-dev by id). Every refusal is a fact about what two
+  databases hold and the rollback is a fact about what one committed, so no unit test reaches
+  them. Its sections: a wrong named target and a same-branch pair; no build, a failed build and
+  an unfinished one; a target whose card TEXT differs under equal ids, and a source that moved
+  since its build; the floors; a verified copy that makes the target's three tables equal the
+  source's, grows its notice log and moves its stamp; a tampering publish refused and rolled back;
+  a copy that waits for a running ingest's lock; and, with `PROBE_COPY_SOURCE_READER_URL` naming a
+  SELECT-only, `default_transaction_read_only` role on the source, a copy through that role, which
+  is how production reads staging. The lock check lets go a fixed 6s after the copy finishes
+  READING, never on a clock: its first version slept 8s and passed with the lock removed, because
+  the source reads alone outlast that. Seven mutations fail it: the lock removed, the
+  verify removed, the build refusal removed, the named-target check removed, the floor refusal
+  removed, and (in the unit pin) `game_changer` dropped from the fingerprint and a raw
+  `cc.rarity` read added to a builder. It writes ledger rows, flags, variants and one
+  card's text, and puts the text back in a `finally`.
 - **`job=printings` alone is the sharp tool, and its blast radius is every set.** The ingest
   refuses to publish denominators from a run that skipped orphans, and skipping the oracle
   refresh is what produces orphans — so the two together used to blank `base_set_size` for

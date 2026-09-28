@@ -1404,6 +1404,37 @@ export const catalogRefreshes = pgTable("catalog_refreshes", {
 ]);
 
 /**
+ * One row per staging BUILD of a replicated catalog job — the commander index or the combo
+ * refresh — so a copy to production can refuse a build that did not succeed, or whose catalog
+ * moved under it (plan `2026-09-28-card-data-replicate.md`, §3 item 7).
+ *
+ * The source's own tables cannot answer that: an index build that clears the pair and staples
+ * floors can still have refused its role pass or degraded past its 5% ceilings. So a build is
+ * bracketed by `db:catalog-build start` before it and `finish` after it, `ok` only on its own
+ * success path; a row left with `ok` null or false is a build a copy must never publish. Until the
+ * build workflows call it (plan PR 3), no row exists and every copy refuses with "no build".
+ *
+ * `catalog_fingerprint` is the catalog INPUT fingerprint taken at the START of the build
+ * (`src/lib/catalog/fingerprint.ts`). A copy compares it with both catalogs' current one, so a
+ * catalog refresh that landed mid-build refuses the copy rather than shipping facts derived from
+ * two different catalogs.
+ */
+export const catalogBuilds = pgTable("catalog_builds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: text("kind").notNull(),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+  ok: boolean("ok"),
+  catalogFingerprint: text("catalog_fingerprint").notNull(),
+  report: text("report"),
+}, (t) => [
+  check("catalog_builds_kind_check", sql`${t.kind} in ('index', 'combos')`),
+  // A finished build says whether it succeeded; an unfinished one says nothing yet.
+  check("catalog_builds_finished_check", sql`(${t.finishedAt} is null) = (${t.ok} is null)`),
+  index("catalog_builds_kind_started_idx").on(t.kind, t.startedAt),
+]);
+
+/**
  * The deck notices change log (sub-project 9): one row per bracket-relevant change the weekly
  * ingests publish under the catalog, on its OWN sequence. `catalog_refreshes` cannot key it: it
  * is one overwritten row, and most of its six writers move nothing a verdict reads.
