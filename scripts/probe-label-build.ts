@@ -2,7 +2,15 @@
 //
 // WHAT ONLY A DATABASE CAN ANSWER HERE. Every rule that decides money is pure and unit-tested
 // in `src/lib/labels/plan.test.ts` — the cap, the waves, the floor, the ids. What no unit test
-// reaches is whether the transaction wrote what those rules decided, and four facts live there:
+// reaches is whether the transaction wrote what those rules decided, and six facts live there:
+//
+//   THE CARD READ ACTUALLY RUNS. Its names are bound as ONE array parameter, which a bare
+//   interpolation does not do — it renders a row constructor and raises 42809. That took down the
+//   first real dispatch, past typecheck, lint, 11,296 tests and `--dry-run`, because the read sat
+//   four lines above the provider call and this file's API exclusion silently covered it too.
+//   A STRANDED INTENT IS RELEASED, AND ONLY ONCE. The release is a DELETE, so two callers racing
+//   one intent cannot both take it — measured on two connections; the UPDATE it replaced let both
+//   through, and every single-connection check passed over that.
 //
 //   AN INTENT SURVIVES A CRASH BEFORE THE ID EXISTS. Anthropic assigns `batch_id` only when
 //   `batches.create` RETURNS, so the row goes down first with a null id. A run that dies in

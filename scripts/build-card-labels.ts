@@ -470,7 +470,21 @@ async function reconcile(): Promise<{
     if (collected === "expired") {
       await db.update(cardLabelBatches).set({ status: "expired", batchId })
         .where(inArray(cardLabelBatches.intentKey, intents.map((i) => i.intentKey)));
-      console.warn(`  ${batchId}: results expired — its ${intents.length} chunk(s) will be re-submitted`);
+      // NOT re-submittable under THIS run id, and the old wording promised the opposite.
+      //
+      // An expired row keeps its non-null `batch_id`, so it is excluded from `reclaimable` and
+      // refused by `releaseIntents` — while being absent from `done`, so it is re-planned, and the
+      // claim insert then conflicts on its primary key and the run dies "already claimed". The same
+      // deadlock the release fixes for stranded intents, still standing here.
+      //
+      // It is left standing DELIBERATELY rather than overlooked: `alreadySpent` reserves these at
+      // worst case by counting rows with this status, because their cost is real and unknowable
+      // once the results are gone. Releasing them would delete the only record of that spend and
+      // hand the budget back — a worse bug than the deadlock. Fixing it properly needs a release
+      // that preserves the reservation, which is a change to the ledger's shape and a follow-up.
+      console.warn(`  ${batchId}: results expired — its ${intents.length} chunk(s) CANNOT be `
+        + `re-submitted under ${runId}, because their cost is reserved against this run and `
+        + `releasing them would lose it. Start a new LABEL_RUN_ID to relabel those cards.`);
       continue;
     }
     for (const i of intents) done.add(i.intentKey);
