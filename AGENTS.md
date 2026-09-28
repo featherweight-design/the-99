@@ -126,7 +126,16 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `Commander index`, on staging, straight after the build whose tags the prompt and the input hash
   are built from; `copy` then installs the sentences on production, so each costs one model call,
   once. The `Commander prose` workflow is dispatch-only since 2026-09-28, for generating against
-  one database by hand. A row whose stored `prose_input_hash` still matches its inputs is skipped,
+  one database by hand.
+
+  **Every run is bounded by MEASURED DOLLARS** (Hugh, 2026-09-28). Each reply's `usage` is priced
+  through `scripts/eval/lib/pricing.mts` as it lands, and the run stops cleanly once one more
+  commander (three attempts, worst case) could cross `PROSE_MAX_USD`, default $6; a
+  `--max-commanders` / `PROSE_MAX_COMMANDERS` ceiling (default 2,000 in the workflow) stands beside
+  it. What a ceiling defers is written by the next run, since a written row reads as fresh.
+  `--dry-run` counts what a run would generate and calls nothing; the staging job prints that
+  count to its summary before the real run. Its last three runs averaged 1.15 attempts per
+  commander (40 sentences from 46 attempts, 38 from 45, 19 from 24). A row whose stored `prose_input_hash` still matches its inputs is skipped,
   so a re-run costs nothing for a commander whose tags have not moved, and an interrupted run
   resumes by being dispatched again. A commander whose every attempt fails the accept contract
   keeps its null and renders with no paragraph — the state the design draws, and never a truncated
