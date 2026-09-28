@@ -11,7 +11,7 @@ and once Design's R2 places one item (below). Hugh ruled on O1 on 2026-09-28. Th
   and Ready to build stays first.
 - **With no decks, Home's decks area shows the same pair as the empty state on `/decks`:** Browse
   commanders (primary) and Import a deck (ghost), with the `buildableFrom` line. It must be the
-  same component as the action group in `DecksZero` (`decks-zero.tsx:55-77`), so the two cannot
+  same component as the action group in `DecksZero` (`decks-zero.tsx:56-77`), so the two cannot
   drift. That group is written inline in `DecksZero` today, so the build extracts it. The gap is
   `ResumeDecks`, which returns null when there are no decks (`resume-decks.tsx:323`).
 - **New deck stays start-from-scratch** (`dashboard.tsx:96`). Import is not folded into it:
