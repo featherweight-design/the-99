@@ -32,11 +32,14 @@ partial, with the misses named.
 
 ## §3 Locked
 
-- **Four methods, and every row names one or more:**
+- **Five methods, and every row names one or more:**
   - read from the card's rules text;
   - measured from other players' decks, with EDHREC and Commander Spellbook named;
   - written by a model;
-  - your own input.
+  - your own input;
+  - a published list, for a row reporting someone else's list: Prices (ManaPool's feed) and Game
+    Changers (Wizards' list, read through Scryfall). Added by Hugh on 2026-09-28, after Design's R1
+    showed that neither fits the other four.
 - **Nothing is new as a score or percentage.** The fit score is the only score, and it already
   exists.
 - **Card labels are excluded** until something in the app reads them. Nothing does yet.
@@ -45,12 +48,13 @@ partial, with the misses named.
   a stated time would be false in practice. The cadences are the ones #1090 sets.
 - **The words go through `/copy-review` after Design.**
 - **It rides the next batched `ABOUT_VERSION` bump.** It is reference content, not a new
-  capability, so it gets no bump of its own.
+  capability, so it gets no bump of its own. That bump's one-time sheet announces the section in
+  one line (Hugh, 2026-09-28).
 
 ## §4 Open for Design
 
 1. **Placement:** a fifth chapter, a closing appendix, or its own page reached from the intro.
-2. **How the four methods are marked.** The marks should be reusable later in the Analysis tab's
+2. **How the methods are marked.** The marks should be reusable later in the Analysis tab's
    "How we make these decisions" sheet. That sheet is the precedent to mirror:
    `src/lib/copy/deck-analysis.ts:513-574`. Its `detection` rows each carry a `from` line, and three
    carry a `misses` line. Game Changers deliberately has none, because it is exact, and that
