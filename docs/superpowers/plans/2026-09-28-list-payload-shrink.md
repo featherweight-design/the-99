@@ -30,6 +30,11 @@ cached chunks or not. Every other route stays under 1s on a repeat visit.
   local-dev, migrated to main) holding a fresh `pull:staging` snapshot of the reference account:
   20 decks and 3,250 collection rows, which `/collection` collapses to 2,820 cards. Nothing was
   written to staging or production. The catalog and the commander index are local-dev's.
+  **That matters for `/discover`**, whose rows and sentences come from the index: its figures here
+  are a local-dev index under a staging collection. PR 3 re-measures on a scratch fork of STAGING
+  (the account's rows copied onto the fixture login there), and its PR states both. `/collection`'s
+  figures depend on the account's own cards and read catalog fields both databases share, and
+  #1107 measured them again on the same copy: 228.8KB gzipped against the 228.3KB predicted.
 - **Server.** `next start` of `main` at `4237f1f` (not `next dev`, whose payloads differ).
 - **Capture.** Signed in as the fixture account in a real browser, each route's RSC payload was
   fetched with `RSC: 1` from inside the page and saved whole. This is the full route tree. A
@@ -161,8 +166,8 @@ repeat-visit time uses the §1 slope and is an estimate.
 |---|---:|---:|
 | Shipped | 283.7KB | — |
 | Drop `keywords`, `cmc`, `preferredPrinting`, `setCodes` (derive from `setCounts`), `comboPartner.oracleId` | 255.8KB | 10% |
-| + `availability` as the four counts, with claims as indexes into one deck dictionary (id, name) and maturity as the index's sign | 237.0KB | 16% |
-| + `imageUri` as the Scryfall id plus its cache stamp, with the prefix restored on the client (the `/discover` stem rule) | 228.3KB | 20% |
+| + `availability` as the four counts, with claims as indexes into one deck dictionary (id, name), each claim `index * 2 + sleeved` (a sign would lose deck 0's: `-0` serialises as `0`) | 237.0KB | 16% |
+| + `imageUri` as the Scryfall id plus its cache stamp (the `?NNN` query Scryfall puts on its own image URLs), with the prefix restored on the client; a URL of any other shape crosses whole | 228.3KB | 20% |
 | + drop the cache stamp as well | 215.4KB | 24% |
 | Positional tuples instead of objects | 216.5KB | 24% (no gain over the line above) |
 
@@ -173,9 +178,12 @@ repeat-visit time uses the §1 slope and is an estimate.
 - **The stamp stays.** It is Scryfall's image cache-buster, and the one-year `max-age` above is
   why it matters. Without it a re-scanned image stays stale in the browser for up to a year. That
   is a correctness cost, and 4% of the payload does not buy it.
-- **`/discover` has almost nothing to trim.** Dropping the derivable `rank`, `score` and
-  `measurableTotal` saves 2% (362 → 355KB). The dictionary encoding in #497 already took the easy
-  bytes.
+- **`/discover` has almost nothing to trim, and #1107 trims none of it.** Dropping `rank`, `score`
+  and `measurableTotal` would save 2% (362 → 355KB), and none of the three is safely derivable:
+  `score` and `measurableTotal` would need a second copy of `computeFit` on the client, and `rank`
+  is the SERVER's order, which `CommanderRow` deliberately draws after the client reorders by
+  name, recent or popularity. So all three stay. The dictionary encoding in #497 already took the
+  easy bytes.
 - **Predicted:** `/collection` about 2.37s → 2.04s.
 
 ### B · Send the draw-only fields for the first window, and fetch the rest as rows reveal
@@ -205,8 +213,19 @@ first window, and a revealed row fetches them.
   actions one at a time (AGENTS.md, `probe:card-prefetch`), so a read issued as an action would
   queue with the reader's writes. The card prefetch also recorded a pending action slowing the
   NEXT action on the page (a press went 315 → 815ms; `card-detail-provider.tsx:16-22`, where
-  the mechanism inside Next is noted as not pinned down). The route reads through the same
-  `cacheForUser` entry the page does, so it costs one cache hit, not a recompute.
+  the mechanism inside Next is noted as not pinned down).
+- **The batch's source is the FULL list, kept in the cache; the window is cut at the request.**
+  `/discover` caches `{ encoded, oracleIds }` under `discoveryKey(sort)`, which is deliberately
+  independent of `q`, colors and `p`, and that stays true. The entry keeps every column for every
+  row (about 0.5MB of the 2MB ceiling, which `probe:payload` guards). The page, and only the page,
+  blanks the draw-only columns of every row outside the URL's first window before it ships. The
+  batch route reads the same entry and returns those columns for the ids asked, so it costs one
+  cache hit and never recomputes, and no URL-dependent window ever reaches a shared entry.
+  `/collection` does the same with its `browse-6` entry.
+- **The route follows `/api/card-detail`'s contract.** The reader comes from the Clerk session,
+  never the request. The ids are validated (format, a cap per batch) and answered only from that
+  reader's own cached list, so an id outside it returns nothing. The response is
+  `Cache-Control: private, no-store`, because every field is user-dependent.
 - **The server must know the first window.** It is the window of the URL's own sort and
   filters.
   - **`/collection`** filters and sorts through the pure `filterCards` / `sortCards` in
