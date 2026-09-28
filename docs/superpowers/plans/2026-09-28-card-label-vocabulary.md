@@ -132,6 +132,11 @@ an indestructible or recursive target.
 
 **PR 2 — schema and types.**
 
+**Ship the consumer INERT on staging as soon as Tasks 1–2 land** (Hugh, 2026-09-28). Ruling 1
+makes this safe by construction: with no labels published, every comparison takes the text path,
+which is exactly today's behaviour. It puts the label-driven code in front of real decks while
+proving it changes nothing — so when labels arrive, the only new variable is the labels.
+
 Why decoupling is needed, measured: `avg_ramp` and its three siblings are columns on
 `commander_support`, `commander_pair_support` and `identity_composition`; **19 files consume
 `ROLE_TARGETS`** (`Record<Exclude<Role, "land">, number>`, so a new role is a compile error until
@@ -233,6 +238,80 @@ and the ledger reservation.
       lands under $50 before dispatching anything.
 
 **PR 6 — cost derivation.**
+
+---
+
+## Task 6b — The Gishath trial run (Hugh, 2026-09-28)
+
+**The last check before the ~$50 run**, on a pool small enough to look at in one sitting.
+
+**When:** after the re-sample passes its per-job bars (`tutor` ≥0.9, others ≥0.8) and before the
+full run. The consumer (Tasks 1–2) is already live on staging and inert everywhere else.
+
+### Which cards — defined by the code, not re-derived
+
+`loadStandIns`' own header states the pool exactly: "the pool is exactly those three" — the
+commander's support list ordered by its figure, the player's own copies, and the cheapest
+unlisted cards, the last cut to `UNLISTED_POOL` (600). Plus the deck's own cards, since a cut
+card is one side of every comparison.
+
+**Derive the trial's card set by calling that query, not by writing a predicate that means the
+same thing.** A second copy of a selection rule drifts from the first — `probe:build-from` took
+three review rounds learning exactly this, and the fix was to ask the page rather than restate
+its filter. So: run the real gather for each card in `HD - Gishath` and union the candidates.
+
+Size, from local-dev: Gishath's `commander_support_cards` holds **245** rows, `UNLISTED_POOL` is
+**600**, the deck is ~99, plus Hugh's owned cards inside the colour identity. **Order 1,500–3,000
+distinct cards.**
+
+### What it needs — ONE change, not two
+
+- **A card-set filter on `cardsNeedingLabels`.** Today it selects every Commander-legal card.
+  The trial needs it restricted to a supplied set of oracle ids.
+- **The publish needs nothing.** `publishRun(db, runId)` is already scoped to a run id, and its
+  gate is `chunks.length === 0` — every chunk of the run done. A small run COMPLETES, so it
+  publishes normally. The "all or nothing" that blocks a partial full run is exactly what makes
+  a scoped trial publish cleanly.
+
+### How the trial's labels relate to the full run
+
+**They are reused, and this falls out of the existing design rather than needing a mechanism.**
+`cardsNeedingLabels` skips a card whose stored `card_labels.input_hash` equals what its current
+inputs produce. The trial publishes real `card_labels` rows, so the full run **skips those
+1,500–3,000 cards and does not pay for them again**.
+
+The converse is also correct and worth stating: if the prompt changes between the trial and the
+full run, the hash differs and those cards are re-labelled — which is what should happen, because
+they would otherwise be old-vocabulary labels hiding inside a new-vocabulary corpus.
+
+**So the trial cannot make the full run skip a card it should label, nor double-pay one it
+already labelled.** Both directions are the hash doing its job, and Task 3's SYSTEM hashing is
+what makes the second one true.
+
+### Cost
+
+Its own cap, sized to the pool: **1,500–3,000 cards at the measured ~$0.0012 is $1.80–$3.60**.
+Set the cap at **$6** — roughly double the estimate, enough that a longer new prompt does not
+truncate the run, and far below anything that needs a second thought. Pause at $5.
+
+### What Hugh does
+
+Tests stand-ins for `HD - Gishath` on staging, against the same deck he walked before, with
+label-driven comparisons live for that pool and the text path everywhere else.
+
+### What would STOP the full run
+
+State these before running it, so the trial cannot be rationalised afterwards:
+
+- **A per-job bar missed on the trial's own cards** — `tutor` under 0.9, any other job under 0.8.
+- **Stand-ins visibly worse than the text path** for a deck Hugh knows well. That is the whole
+  point of choosing a deck he has walked before.
+- **`affects` disagreeing with the card in an obvious case** — a self-mill card offered for an
+  opponent-mill cut is ruling 2 broken, and it is a gate, not advice.
+- **An empty rate far from the first run's 12.2%** on a real pool, in either direction, without
+  an explanation.
+
+Any of those goes back to the prompt or to Hugh, not on to the $50 run.
 
 ---
 
