@@ -239,14 +239,13 @@ export const refreshCopy = {
     step1BodyShort: 'Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox.',
     uploadCsv: 'Upload a CSV',
     pasteList: 'Paste a list',
-    step2Title: 'Pick a commander',
+    // Names BOTH paths while it is still locked (first-run ruling 2, 2026-09-28): with the
+    // import foot gone this card is the only place a first-run player learns import exists.
+    step2Title: 'Pick a commander or import a deck',
     // Locked steps state what unlocks them. Not "coming soon", not blank.
     step2Locked: 'Unlocks once a collection is read',
     step3Title: 'Build the 99',
     step3Locked: 'Unlocks with a commander',
-    // Import is reachable during first run — arriving with a decklist and no
-    // CSV must not be a dead end.
-    importPrompt: 'Already have a deck elsewhere?',
     // Locked rail and tab items are dimmed and inert; the accessible name still
     // carries the reason.
     lockedItemAria: (label: string) => `${label}: unlocks once a collection is read`,

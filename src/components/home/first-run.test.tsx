@@ -33,7 +33,7 @@ describe("FirstRunChecklist", () => {
     // Each step's name is its own reason — step 3 waits on a commander, not on
     // the collection.
     expect(
-      screen.getByRole("group", { name: "Pick a commander Unlocks once a collection is read" }),
+      screen.getByRole("group", { name: "Pick a commander or import a deck Unlocks once a collection is read" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("group", { name: "Build the 99 Unlocks with a commander" }),
@@ -46,13 +46,13 @@ describe("FirstRunChecklist", () => {
     expect(screen.getByRole("button", { name: "Paste a list" })).toBeInTheDocument();
   });
 
-  it("lets a player who already has a decklist out of the checklist", () => {
+  it("names both paths in the locked step 2, and has no import foot", () => {
+    // First-run rulings 1 and 2 (2026-09-28): step 1 is the collection alone, and step 2
+    // is now the only place a first-run player learns import exists.
     render(<FirstRunChecklist />);
-    expect(screen.getByText("Already have a deck elsewhere?")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute(
-      "href",
-      expect.stringContaining("import"),
-    );
+    expect(screen.getByText("Pick a commander or import a deck")).toBeInTheDocument();
+    expect(screen.queryByText("Already have a deck elsewhere?")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Import a deck" })).toBeNull();
   });
 
   it("draws no Replace collection heading inside its own step-1 card", () => {

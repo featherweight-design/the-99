@@ -317,9 +317,10 @@ export function ResumeDecks({
   /** The page's one server clock, for every stamp below. */
   now: Date;
 }) {
-  // A heading over nothing is worse than silence — and at 0 decks the two CTAs
-  // above carry the empty case. An empty box under the words "pick up where you
-  // left off" is the app asserting a history the player has not got.
+  // A heading over nothing is worse than silence. At 0 decks the dashboard mounts
+  // `HomeDecksZero` in this slot instead (first-run R2), so this is only a guard: an
+  // empty box under the words "pick up where you left off" is the app asserting a
+  // history the player has not got.
   if (decks.length === 0) return null;
 
   return (
