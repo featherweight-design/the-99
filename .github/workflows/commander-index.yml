@@ -98,16 +98,14 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      # The ledger row a copy reads: `start` records the catalog this build runs against, and
-      # `finish ... ok` is written only when both builders succeeded.
-      - name: Record the build
-        run: pnpm --silent db:catalog-build start index
       # Before anything moves staging's index: a legacy prose hash can only be checked against the
       # inputs its sentence was written from (`db:restamp:prose`, no model call, idempotent).
       - name: Re-stamp staging's prose
         env:
           RESTAMP_TARGET_BRANCH: br-polished-pond-a6e63y0b
         run: pnpm --silent db:restamp:prose | tee -a "$GITHUB_STEP_SUMMARY"
+      # Both builders record their own ledger rows (`recordBuild`), so the staples row is the
+      # newest and a copy refuses a build whose derivation failed.
       - name: Build the commander index
         id: index
         # Bounded below the job's 180 minutes, so a run that overstays is stopped HERE and the
@@ -140,12 +138,6 @@ jobs:
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:staples | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Close the build as ok
-        if: success()
-        run: pnpm --silent db:catalog-build finish index ok
-      - name: Close the build as failed
-        if: failure()
-        run: pnpm --silent db:catalog-build finish index failed
 
   prose:
     needs: build

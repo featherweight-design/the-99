@@ -110,9 +110,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
     monthly from the 3rd when no `ok` index build has started that month, or 14 days after an
     `expansion` or `commander` set releases when no `ok` build has started since. Reality Fracture
     (released 2026-10-02) comes due on 2026-10-16. A dispatch is always due.
-  - `build` first runs `db:restamp:prose` on staging, then brackets `db:build:index` and
-    `db:build:staples` with `db:catalog-build start|finish index`, so the ledger records `ok` only
-    when both succeeded.
+  - `build` first runs `db:restamp:prose` on staging, then `db:build:index` and
+    `db:build:staples`, each of which records its own ledger row; the staples row is the newest,
+    so a copy refuses a build whose derivation failed.
   - `prose` writes staging's sentences for that build (`db:build:prose`), and runs only when the
     build succeeded.
   - `copy`, in `catalog-production`, runs `db:restamp:prose` on production FIRST, then
@@ -1928,8 +1928,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - The `Combo refresh` workflow builds Spellbook's index ONCE, on staging, and copies it to
   production (card-data replicate plan, 2026-09-28). It chains on every successful scheduled
   `Catalog refresh` and builds on Mondays alone, judged by the catalog run's own start, so a
-  catalog run GitHub started late is still that day's. Its `build` job brackets `db:seed:combos`
-  with `db:catalog-build start|finish combos` on staging, and its `copy` job runs `db:copy:combos`
+  catalog run GitHub started late is still that day's. Its `build` job runs `db:seed:combos` on
+  staging, which records its own ledger row, and its `copy` job runs `db:copy:combos`
   in `catalog-production`. A dispatch takes `mode`: `build+copy`, or `copy-only`. One
   workflow-level concurrency group, `combo-refresh`, keeps two runs' copies from overlapping.
   Needs `COMBO_REFRESH_ENABLED` set to `'true'` to chain. Chaining on the catalog is also what

@@ -75,23 +75,14 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # The ledger row a copy reads: `start` records the catalog this build runs against, and
-      # `finish ... ok` is written only when the ingest succeeded, so a copy never publishes a
-      # refused or half-run build.
-      - name: Record the build
-        run: pnpm --silent db:catalog-build start combos
+      # The ingest records its own ledger row (`recordBuild`), finished ok only when it succeeded,
+      # so a copy never publishes a refused or half-run build.
       - name: Refresh combos
         run: |
           echo "### Combo refresh — \`catalog-staging\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:seed:combos | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-      - name: Close the build as ok
-        if: success()
-        run: pnpm --silent db:catalog-build finish combos ok
-      - name: Close the build as failed
-        if: failure()
-        run: pnpm --silent db:catalog-build finish combos failed
 
   copy:
     needs: [gate, build]
