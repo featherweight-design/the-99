@@ -39,7 +39,7 @@ describe("IssueInspectorList — virtualised rows", () => {
     expect(tops.slice(0, 4)).toEqual([0, 76, 152, 228]);
   });
 
-  it("re-reads a row that grows after its first measurement", async () => {
+  it("sizes the rows a filter hands it by measuring them, not by the index they took", async () => {
     stubRowHeight(64);
     const { container, rerender } = render(
       <IssueInspectorList variant="unmatched" rows={rows(VIRTUALIZE_THRESHOLD + 50)} query="" />,
