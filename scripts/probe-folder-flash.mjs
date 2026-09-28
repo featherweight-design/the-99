@@ -456,7 +456,10 @@ main()
     // A fallback lookup, because the id list is written after the create's own
     // assertions: anything throwing between the two would otherwise leave the
     // folder behind, against this script's own promise to clean up after itself.
-    if (madeFolderIds.length === 0 && userId) {
+    // EVERY RUN, not only when nothing was recorded: the desktop walk always records its folder
+    // before the phone walk starts, so a phone create that committed and then threw before its
+    // id was pushed would be skipped by a "nothing recorded" gate and left on the account.
+    if (userId) {
       const late = await c.query(
         "select id from deck_folders where user_id = $1 and name = any($2::text[])",
         [userId, [FOLDER, RENAMED, PHONE_FOLDER]],
@@ -464,7 +467,9 @@ main()
       // Still only rows that did not exist before this run. A name collision is
       // the case this fallback exists for and also the case where the name names
       // somebody else's folder, so the name alone can never authorise a delete.
-      late.rows.filter((r) => !idsBefore.has(r.id)).forEach((r) => madeFolderIds.push(r.id));
+      late.rows
+        .filter((r) => !idsBefore.has(r.id) && !madeFolderIds.includes(r.id))
+        .forEach((r) => madeFolderIds.push(r.id));
     }
     // Back to the shelf each was on, which may well have been a real one.
     for (const borrowedDeck of borrowedDecks) {
