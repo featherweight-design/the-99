@@ -184,6 +184,14 @@ jobs:
               echo "::error::run_id must look like backfill-YYYY-MM-DD, got '$run_id'"
               exit 1
             fi
+          else
+            # RESOLVED HERE, so the value published is never empty and the step that spends can
+            # REFUSE an empty one. Left to the consumer as `${RESOLVED_RUN_ID:-weekly-…}`, an empty
+            # value was ambiguous: it means "the cron" and it also means "this wiring is broken".
+            # Actions sets the env var to the empty string when an output is missing, so a renamed
+            # or reordered bounds step would silently put a NAMED backfill onto the weekly id — the
+            # same double-pay the timeout message was just corrected for. One place computes the id.
+            run_id="weekly-$(date -u +%G-W%V)"
           fi
 
           echo "cap=$cap"     >> "$GITHUB_OUTPUT"
@@ -278,10 +286,12 @@ jobs:
           : "${LABEL_CAP_USD:?empty — the bounds step did not run or did not publish its outputs}"
           : "${LABEL_REPORT_AT_USD:?empty — the bounds step did not run or did not publish its outputs}"
 
-          # A DISPATCH MAY NAME ITS OWN; the cron's id is unchanged and still the ISO week. The
-          # value arrives already validated against an anchored `^backfill-YYYY-MM-DD$`, so it
-          # cannot collide with a weekly id however it was typed.
-          export LABEL_RUN_ID="${RESOLVED_RUN_ID:-weekly-$(date -u +%G-W%V)}"
+          # FAIL CLOSED. The bounds step resolves this for both paths — a validated
+          # `backfill-YYYY-MM-DD` or the ISO week — so it is never legitimately empty, and an empty
+          # value means the wiring broke rather than "use the weekly id". Guessing the weekly id
+          # here would put a named backfill's cards under a different run id and pay for them twice.
+          : "${RESOLVED_RUN_ID:?empty — the bounds step did not run or did not publish run_id}"
+          export LABEL_RUN_ID="$RESOLVED_RUN_ID"
           echo "### Card labels — \`catalog-staging\` — run \`$LABEL_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           for attempt in $(seq 1 40); do
@@ -316,7 +326,7 @@ jobs:
             echo "gave up after 40 passes (~80 minutes). Intents are recorded under"
             echo "$LABEL_RUN_ID, and nothing is re-submitted: a later run using THAT SAME id"
             echo "finds them and carries on."
-            if [ -n "${RESOLVED_RUN_ID:-}" ]; then
+            if [[ "$LABEL_RUN_ID" == backfill-* ]]; then
               echo ""
               echo "This run was dispatched with a named run id. To continue it, dispatch again"
               echo "and enter run_id=$LABEL_RUN_ID. Leaving the box blank starts a DIFFERENT run"

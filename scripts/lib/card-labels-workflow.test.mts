@@ -256,10 +256,13 @@ describe("the card-labels spend bounds", () => {
     expect(Number(enforced)).toBe(50);
   });
 
-  it("leaves the run id blank on the cron path, so the ISO week still applies", () => {
-    // Blank must reach the script as blank: the export is `${RESOLVED_RUN_ID:-weekly-...}`, so an
-    // empty value is what keeps the weekly behaviour and a non-empty one overrides it.
-    expect(resolve("", "").runId).toBe("");
+  it("resolves the cron path to a weekly id rather than publishing nothing", () => {
+    // The id is resolved in ONE place now. A blank input must come back as this ISO week, not as
+    // an empty string — the consumer refuses empty, because empty would otherwise mean both "cron"
+    // and "the wiring broke", and guessing wrong costs a double payment.
+    const r = resolve("", "");
+    expect(r.code).toBe(0);
+    expect(r.runId).toMatch(/^weekly-\d{4}-W\d{2}$/);
   });
 
   it("accepts a backfill id and passes it through", () => {
@@ -297,8 +300,14 @@ describe("the card-labels spend bounds", () => {
       workflow.indexOf("\n      - ", workflow.indexOf(LABEL_STEP) + LABEL_STEP.length),
     );
     expect(step).toContain("RESOLVED_RUN_ID: ${{ steps.bounds.outputs.run_id }}");
-    // And the fallback must still be the ISO week, or the cron silently changes behaviour.
-    expect(runBlockOf(LABEL_STEP)).toContain('${RESOLVED_RUN_ID:-weekly-$(date -u +%G-W%V)}');
+    // FAIL CLOSED rather than guess. The bounds step resolves both paths, so an empty value means
+    // the wiring broke — and falling back to the weekly id there would put a named backfill's
+    // cards under a different run id and pay for them twice. The guard must also precede the spend.
+    const run = runBlockOf(LABEL_STEP);
+    expect(run).toContain('${RESOLVED_RUN_ID:?');
+    expect(run).not.toContain("RESOLVED_RUN_ID:-");
+    expect(run.indexOf("${RESOLVED_RUN_ID:?"))
+      .toBeLessThan(run.indexOf("pnpm --silent db:build:labels"));
   });
 
   it("notes a pause above the cap without refusing it", () => {
