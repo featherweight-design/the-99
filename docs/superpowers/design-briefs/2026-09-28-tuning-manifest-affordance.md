@@ -27,7 +27,7 @@ From `design/design_handoff_the99_deck_tuning/STATES-tuning-panel.md`, rows 2 to
 |---|---|
 | Ready (no run yet, or after `Stop`) | the rows, **unchecked** |
 | Generating | the same rows, **ticking as each read lands** (real completion, never a timer), with `3 of 4 read` beside the primary |
-| Results | collapsed to one mono line, *Read from …* |
+| Results | collapsed to one mono line, `read from …` (lowercase, `readFrom` in `deck-tuning.ts:163`) |
 
 These stay as they are:
 - **The empty-games row** is drawn dashed, with *none logged* and a *Log a game →* link. That link
@@ -47,7 +47,9 @@ These stay as they are:
 2. **The row's border.** Does a row keep its border and fill? A bordered row reads as a pressable
    tile, and that is part of the problem. If the border goes, say what separates the rows.
 3. Whether the **44px phone row** still earns its height once it is no longer a target. The
-   empty-games row keeps a 44px target for *Log a game →* either way.
+   empty-games row needs a 44px target for *Log a game →* either way. Today that target is not
+   met: the 44px is the row's `min-h`, while the button inside it is `py-[12px]` on 12.5px text,
+   about 43px tall (`manifest-rows.tsx:39-45`). Draw the button a true 44px target.
 
 Out of scope: the copy (unchanged), the panel's other states, and the collapsed Results line.
 
