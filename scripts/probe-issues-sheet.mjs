@@ -1,26 +1,37 @@
 // probe:issues-sheet — the Import issues inspector on a phone, as a bottom sheet, and the
 // desktop modal it leaves alone. First-run onboarding handoff D8 + READINESS corrections 2 and 4.
 //
-// At 390x844, every ruling below is a fact about laid-out geometry or a pointer, which jsdom
-// has neither of:
+// Every ruling below is a fact about laid-out geometry or a pointer, which jsdom has neither of.
+//
+// At 390x844, on a LONG upload (past the 150-row virtualisation threshold):
 //   - it is a BOTTOM SHEET: the panel's bottom is the viewport's, its top corners are 22px and
 //     its ground resolves to --surface-inset, at most 86vh tall;
-//   - its height is HELD: switching tabs and typing a filter that matches nothing leave the
-//     panel's height unchanged to the pixel (a 110-row tab and a 3-row tab differ by ~500px,
-//     so an unheld sheet cannot pass by accident);
+//   - the subtitle is 11px (frame 3a) and a usual filename fits one line;
+//   - the virtualised rows neither overlap the next nor clip, on open and again mid-list;
 //   - the list is the one scroll body: a wheel over it scrolls it and the panel stays put;
+//   - its height is HELD at the cap: switching to the 3-row parse-errors tab and typing a
+//     filter that matches nothing leave it unchanged to the pixel;
 //   - only the handle and the title block drag it: a drag started on the TABS moves nothing,
 //     and 100px on the title dismisses it;
-//   - Escape dismisses it;
+//   - it reopens at the same height, and Escape dismisses it;
 //   - the no-match title is 17px in the display face (correction 4).
-// At 1300x900 the modal is 660x640 as before and that title is 19px.
+// At 390x844, on a SHORT upload (frame 3a), opened on the shorter tab: the height is taken from
+// content under the cap, is unchanged on switching tabs, and is exactly the LONGER tab's, so
+// the measuring copy of the tab not on screen is what set it.
+// At 1300x900 the modal is 660x640 as before, the subtitle keeps 11.5px, the virtualised rows
+// neither overlap nor clip, and the no-match title is 19px.
 //
 // FIXTURE. The issues come from a first-run upload, so this signs in as the DEDICATED empty
 // account on Clerk's DEVELOPMENT instance (`onboard-probe+clerk_test@the99.app`, override with
-// PROBE_EMAIL), as probe:onboarding does, and uploads the same staging-shaped CSV: ~3,100 real
-// catalog names, 110 names no card carries and 3 malformed rows. Every run deletes the
-// account's `csv_uploads` and `collection_items` in a `finally`, which returns it to first run.
-// Point it at `local-dev`, NEVER production; staging and production are refused by branch id.
+// PROBE_EMAIL), as probe:onboarding does, and uploads two CSVs named `collection.csv`, each
+// built from ~3,100 real catalog names:
+//   - LONG: 170 names no card carries and 3 malformed rows. Some catalog names do not match
+//     either, so Unmatched reads more than 170 (232 on local-dev: "235 of 3,273 rows skipped").
+//   - SHORT: 200 catalog names, 2 names no card carries and 6 malformed rows (5 unmatched
+//     against 6 parse errors on local-dev), small enough together to fit under 86vh.
+// Every run deletes the account's `csv_uploads` and `collection_items` in a `finally`, which
+// returns it to first run. Point it at `local-dev`, NEVER production; staging and production
+// are refused by branch id.
 //
 //   PROBE_BASE=http://localhost:3314 pnpm probe:issues-sheet
 //   PROBE_SHOTS=<dir> also photographs each state at each width.
