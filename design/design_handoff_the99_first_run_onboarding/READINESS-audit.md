@@ -1,26 +1,40 @@
 # Readiness audit: first-run onboarding (R1)
 
-**Verdict: 🟡 Yellow.** It can be built once the engineering corrections below are applied.
-**O1 stays open for Hugh.** The audit was run against the brief on
+**Verdict: 🟡 Yellow.** It can be built once the engineering corrections below are applied,
+and once Design's R2 places one item (below). Hugh ruled on O1 on 2026-09-28. The audit was run against the brief on
 `docs/first-run-onboarding-brief` (#1091), `2026-09-28-first-run-onboarding.md`, and
 `origin/main`.
 
-## Open for Hugh
+## Ruled by Hugh, 2026-09-28
 
-- **O1: what Home shows between reading the collection and the first deck.** Hugh is weighing
-  two options:
-  - the checklist stays on Home until the first deck exists (Design's new A3 state,
-    `README.md:51-52`, `READINESS-r1.md:5-9`);
-  - the dashboard straight away, with the empty "your decks" area offering "Start a deck" and
-    "Import a deck".
+- **O1. Home shows the dashboard as soon as the collection is read.** There is no new Home state,
+  and Ready to build stays first.
+- **With no decks, Home's decks area shows the same pair as the empty state on `/decks`:** Browse
+  commanders (primary) and Import a deck (ghost), with the `buildableFrom` line. It must be the
+  same component as the action group in `DecksZero` (`decks-zero.tsx:55-77`), so the two cannot
+  drift. That group is written inline in `DecksZero` today, so the build extracts it. The gap is
+  `ResumeDecks`, which returns null when there are no decks (`resume-decks.tsx:323`).
+- **New deck stays start-from-scratch** (`dashboard.tsx:96`). Import is not folded into it:
+  "New deck" does not suggest import, and `/decks` already shows both.
+- **Design's live step 2 (D2 / A3, frames 1c and 1d) is withdrawn.** The checklist unmounts once
+  the collection is read, as it does today. The locked step 2 still names both paths (ruling 2).
+- **This settles correction 3.** For an account with decks but no collection, Go to step 1 goes
+  to `/collection/replace`. Checked: that page mounts `ReplaceFlow`
+  (`app/collection/replace/page.tsx:7`), the same flow the checklist's step 1 mounts
+  (`home/first-run.tsx:12`), and the dashboard already links there (`dashboard.tsx:87`). Its
+  title reads "Replace collection" (`page.tsx:22`) even when there is no collection to replace;
+  that goes to `/copy-review`.
 
-  Either one decides where live step 2 is drawn.
+## Returning to Design (R2)
+
+- **Where the pair goes in Home's resume slot, at both widths.** This is the only item going back
+  to Design. R2 also records the withdrawal of D2 / A3. Everything else stays with engineering.
 
 ## What checks out
 
 - **§3.** All six rulings are honored:
   - step 1 is the collection only (README `:24`, D4);
-  - step 2 offers two paths (D1, D2);
+  - step 2 names two paths (D1; the live form, D2, is withdrawn by Hugh's O1 ruling);
   - the locked nav explains itself (D5–D7);
   - import issues on the phone use the filter sheet (D8);
   - the replace confirm is calmer (D9);
@@ -90,11 +104,11 @@ must verify each:
    handle wrapper over the header, but that wrapper is `aria-hidden` (`sheet.tsx:238-247`), which
    would hide the title and tabs. Pass pointer handlers into the header instead. The "measured
    once, then held" height is also new behavior for `Sheet`.
-3. **Where Go to step 1 goes when there is no checklist.** The nav locks when the collection is
-   empty (`shell.tsx:35`), but Home shows the checklist only when the account also has no decks
-   (`page.tsx:144`). So an account that imported a deck first sees locked chrome with no step 1.
-   Also give the button a destination off Home, and say where D5's desktop page line appears
-   there. O1's answer may settle this.
+3. **Where Go to step 1 goes when there is no checklist. Settled by Hugh's O1 ruling:**
+   `/collection/replace`. The nav locks when the collection is empty (`shell.tsx:35`), but Home
+   shows the checklist only when the account also has no decks (`page.tsx:144`), so an account
+   that imported a deck first sees locked chrome with no step 1. The build still has to say where
+   D5's desktop page line appears for that account.
 4. **The empty-filter title** (item 11 of Hugh's production walk, relayed by d9; the brief does not
    list it) is 16px today (`issue-inspector.tsx:485`) against the Issue Inspector mock's 19px
    desktop and 17px phone in Cinzel (`design_handoff_the99_issue_inspector/The 99 - Issue
@@ -113,12 +127,15 @@ These do not affect the verdict.
 - "Collection opens once your collection is read" repeats itself.
 - "An imported deck arrives built" collides with the app's own meaning of "built".
 - "your previous file" assumes a file, but a pasted collection has none.
+- `/collection/replace` is titled "Replace collection" even for an account with no collection
+  (the O1 ruling routes Go to step 1 there).
 - Every string is a placeholder, `step2Title` changes meaning, and `importPrompt` is deleted
   (O5).
 
 ## Against Design's READINESS-r1
 
-- **Agree** on O1 and O4–O6, and that O2 and O3 belong to engineering.
+- **Agree** on O4–O6, and that O2 and O3 belong to engineering. O1 is ruled by Hugh, and the
+  ruling withdraws D2 / A3.
 - **O2** can close, and **O3** needs the changes above.
 - **Not raised there:**
   - the header drag hidden from screen readers;
