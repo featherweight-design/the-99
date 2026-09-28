@@ -184,13 +184,28 @@ async function main(): Promise<void> {
   // single name fails too (`any(($1))`), so that is belt and braces rather than the crux. The
   // load-bearing assertion is that all three come back.
   const askNames = [a.name, b.name, c.name];
-  const read = await readCardsByName(db, askNames);
+  // CAUGHT AND NAMED. With the fix reverted this read THROWS, which used to abort `main` and land
+  // in `.catch` as one unattributed failure — the run failed, but no line said the read was why.
+  // A probe whose output cannot be read is worth less than one that fails loudly at the right name.
+  let read: Awaited<ReturnType<typeof readCardsByName>> = [];
+  let threw: string | null = null;
+  try { read = await readCardsByName(db, askNames); } catch (e) { threw = (e as Error).message; }
+  report("the read runs at all", threw === null, threw?.slice(0, 90) ?? "");
   report("every asked name comes back", read.length === askNames.length, `${read.length} row(s)`);
   report("and they are the names asked for",
     askNames.every((n) => read.some((r) => r.name === n)),
     read.map((r) => r.name).join(" | "));
-  report("with the prompt's fields populated",
-    read.every((r) => typeof r.oracleId === "string" && typeof r.type_line === "string"));
+  // EVERY FIELD THE PROMPT RENDERS, because `labelInputHash` hashes `renderCard`'s output: a
+  // column dropped from the select leaves that field undefined, changes the hash for every card in
+  // the catalog, and re-labels all 31,830 at full price. Checking two of the five would have passed
+  // over exactly that. `mana_cost` and `oracle_text` are nullable, so they are asserted as
+  // PRESENT-OR-NULL rather than as strings — a missing key and a null value are different things
+  // and only one of them is correct.
+  report("with every field the prompt renders",
+    read.every((r) => typeof r.oracleId === "string" && typeof r.name === "string"
+      && typeof r.type_line === "string" && typeof r.layout === "string"
+      && "mana_cost" in r && "oracle_text" in r),
+    read.map((r) => Object.keys(r).length).join("/") + " keys");
   // A name nobody holds returns nothing rather than throwing, which is what lets the callers'
   // `byName.get(...)` drop it. NOT a NUL byte — Postgres rejects those with 22021, which would be
   // the fixture failing rather than the read.

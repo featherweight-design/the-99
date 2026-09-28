@@ -7,6 +7,9 @@
  * with the script's scoping deleted, which is the worst kind of green: it asserted the shape of
  * code nothing runs. Both are here now, both are called by the script, and the probe calls
  * these.
+ *
+ * A third, `readCardsByName`, joined them for the same reason and is called from both of the
+ * places that used to hold their own copy of it.
  */
 
 import { eq, inArray, sql } from "drizzle-orm";
@@ -97,11 +100,12 @@ export type CardRow = {
  * `sql.param` AND the cast, because neither alone works and the failure is not the obvious one:
  *
  *   `any(${names})`                     -> `any(($1, $2, $3))`         42809, a row constructor
- *   `any(${names}::text[])`             -> `any(($1, $2, $3)::text[])` 42809, still a row constructor
+ *   `any(${names}::text[])`             -> `any(($1, $2, $3)::text[])` 42846, cast a record to text[]
  *   `any(${sql.param(names)}::text[])`                                 one array parameter, correct
  *
  * A one-element array is not a lucky case either — it renders `any(($1))` and fails too — so no
- * input size would ever have worked. All three measured against a real Postgres, because the
+ * input size would ever have worked. All three measured against a real Postgres (and the middle
+ * one's code was recorded wrong here at first — it is 42846, a different failure, not 42809), because the
  * cast-only form looks right and `src/lib/combos/near-miss.ts` looks like a precedent for it: its
  * `${present}` is itself a `sql.param`, which is easy to miss.
  *

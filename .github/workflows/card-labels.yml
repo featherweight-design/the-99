@@ -14,7 +14,7 @@ name: Card labels
 # rather than correctness, which is why it reads as one beside its siblings.
 on:
   schedule:
-    # DAILY at 14:00 UTC, with a run id keyed to the ISO WEEK — and the daily cadence is what makes
+    # DAILY at 14:00 UTC. The CRON's run id is keyed to the ISO WEEK; a dispatch may name its own — and the daily cadence is what makes
     # a timeout recoverable rather than abandoned.
     #
     # Monday's run is the one that finds work: it is after `Catalog refresh` (09:00) and `Combo
@@ -163,6 +163,16 @@ jobs:
           #
           # A named id fixes both: one id for the whole backfill whatever the calendar does.
           #
+          # WHAT NON-COLLISION DOES NOT BUY, stated because the comment below offered it as the
+          # safety property and it is not one. Two live run ids over the same stale cards BOTH pay:
+          # `reconcile` and `alreadySpent` are each filtered by `run_id`, so a weekly run started
+          # while a named backfill has chunks submitted and unpublished sees neither its spend nor
+          # its in-flight work, plans the same cards, and charges for them again. Nothing in this
+          # job prevents that. It is inert only because `CARD_LABELS_ENABLED` is unset, so the cron
+          # cannot fire — DO NOT enable the schedule while a backfill is unpublished. A guard (a
+          # weekly run refusing when another run id holds open intents) is a follow-up, kept out of
+          # here deliberately to hold this change small.
+          #
           # The pattern is narrow ON PURPOSE, and anchored. It must not be possible to type a
           # weekly-looking id and land in the cron's ledger — that would merge a backfill's spend
           # into a weekly run's budget and make its publish depend on work nobody dispatched. The
@@ -245,7 +255,8 @@ jobs:
           # `alreadySpent` and the publish are all scoped to `LABEL_RUN_ID`. With a fresh timestamp
           # per run and no re-invocation, a scheduled run submitted a wave, exited, and its results
           # were never collected: the same cards were PAID FOR AGAIN every week while nothing was
-          # ever published. The id is derived from the ISO week, so today's run resumes this week's.
+          # ever published. The CRON's id is the ISO week, so today's scheduled run resumes this week's;
+          # a dispatch that named `run_id` resumes THAT id instead, and the timeout message says so.
           #
           # And the branching is on the CODE, not on the output. Reading stdout produced three
           # findings in three rounds — `published` also matched "nothing published" on the waiting
@@ -295,15 +306,26 @@ jobs:
             # the schedule is gated on `CARD_LABELS_ENABLED`, which is UNSET today, so the cron is
             # skipped and nothing resumes anything. An operator reading that waits for a run that
             # never happens, on a backfill that is half paid for.
+            # RESUME BY THE RUN ID THIS RUN ACTUALLY USED, which is not always the ISO week any
+            # more. This message used to say "any later run computing the same ISO-week id finds
+            # them" and "dispatch again, in the same ISO week" — true for the cron and FALSE for a
+            # named backfill. Intent keys are `${runId}:${model}:${index}`, so a blank box on the
+            # next dispatch produces `weekly-…`, matches none of the backfill's keys, and — since
+            # nothing is published until a run completes — plans and submits the same cards again.
+            # Paid twice, by an operator following the instructions.
             echo "gave up after 40 passes (~80 minutes). Intents are recorded under"
-            echo "$LABEL_RUN_ID, and nothing is re-submitted: any later run computing the same"
-            echo "ISO-week id finds them and carries on."
-            if [ "$CRON_ENABLED" = "true" ]; then
-              echo "The schedule is ON, so tomorrow's run resumes this by itself."
+            echo "$LABEL_RUN_ID, and nothing is re-submitted: a later run using THAT SAME id"
+            echo "finds them and carries on."
+            if [ -n "${RESOLVED_RUN_ID:-}" ]; then
+              echo ""
+              echo "This run was dispatched with a named run id. To continue it, dispatch again"
+              echo "and enter run_id=$LABEL_RUN_ID. Leaving the box blank starts a DIFFERENT run"
+              echo "under this ISO week, which would re-submit and re-pay for these same cards."
+            elif [ "$CRON_ENABLED" = "true" ]; then
+              echo "The schedule is ON and this run uses the weekly id, so tomorrow's run resumes it."
             else
-              echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so the cron is skipped"
-              echo "and NOTHING will resume this on its own. Dispatch this workflow again, in the"
-              echo "same ISO week, to continue the run."
+              echo "THE SCHEDULE IS OFF — CARD_LABELS_ENABLED is not 'true', so nothing will resume"
+              echo "this on its own. Dispatch again in the same ISO week to continue."
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
