@@ -28,6 +28,10 @@ import ws from "ws";
 import { loadDiscovery } from "../src/lib/discovery/list";
 import { encodeDiscovery } from "../src/lib/discovery/encode";
 import { loadCommanderRankings } from "../src/lib/commanders/rankings";
+import { loadBrowseCards } from "../src/lib/collection/browse";
+import { encodeCollection } from "../src/lib/collection/list-wire";
+import { loadAvailability } from "../src/lib/decks/availability-query";
+import { gzipSync } from "node:zlib";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -44,6 +48,16 @@ const CEILING_BYTES = 2_000_000;
  * goes stale silently. The run prints the figure; read it there.
  */
 const BUDGET_BYTES = 1_600_000;
+
+/**
+ * `/collection`'s SHIPPED list, the encoded wire, as raw JSON. Not the cache's ceiling (the
+ * cached entry is the unencoded list, held to BUDGET_BYTES above) but what the reader's
+ * connection pays for, which is the list payload plan's subject
+ * (plans/2026-09-28-list-payload-shrink.md, PR 2). Set a little over the worst account measured
+ * when it landed, so a field added back to every card fails here rather than on a phone. The run
+ * prints the figure; read it there.
+ */
+const COLLECTION_WIRE_BUDGET_BYTES = 1_250_000;
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -220,6 +234,41 @@ async function main() {
       worstOwned.bytes <= BUDGET_BYTES,
       `${(worstOwned.bytes / 1e6).toFixed(3)} MB, ` +
         `${((worstOwned.bytes / CEILING_BYTES) * 100).toFixed(1)}% of the 2 MB ceiling`,
+    );
+
+    // /COLLECTION, the other list the plan measured. Two figures per account: the cache entry
+    // (the unencoded list `cacheForUser` stores, against the ceiling) and the wire the page ships.
+    let worstEntry = { bytes: 0, cards: 0 };
+    let worstWire = { bytes: 0, gzip: 0, cards: 0 };
+    for (const account of accounts) {
+      const list = await loadBrowseCards(account.user_id);
+      const availability = await loadAvailability(account.user_id);
+      const entry = Buffer.byteLength(JSON.stringify(list));
+      const wireText = JSON.stringify(encodeCollection(list, availability));
+      const wire = Buffer.byteLength(wireText);
+      if (entry > worstEntry.bytes) worstEntry = { bytes: entry, cards: list.length };
+      if (wire > worstWire.bytes) worstWire = { bytes: wire, gzip: gzipSync(wireText, { level: 9 }).length, cards: list.length };
+    }
+    console.log(
+      `\ncollection: worst of ${accounts.length} — ${worstWire.cards} cards · wire ` +
+        `${(worstWire.bytes / 1e6).toFixed(3)} MB (${(worstWire.gzip / 1e3).toFixed(1)} KB gzipped) · ` +
+        `cache entry ${(worstEntry.bytes / 1e6).toFixed(3)} MB`,
+    );
+    check(
+      "the collection measured a non-empty list somewhere",
+      worstWire.cards > 0,
+      `${worstWire.cards} cards`,
+    );
+    check(
+      "the collection's cache entry is inside the budget",
+      worstEntry.bytes <= BUDGET_BYTES,
+      `${(worstEntry.bytes / 1e6).toFixed(3)} MB, ` +
+        `${((worstEntry.bytes / CEILING_BYTES) * 100).toFixed(1)}% of the 2 MB ceiling`,
+    );
+    check(
+      "the collection's shipped wire is inside its budget",
+      worstWire.bytes <= COLLECTION_WIRE_BUDGET_BYTES,
+      `${(worstWire.bytes / 1e6).toFixed(3)} MB against ${(COLLECTION_WIRE_BUDGET_BYTES / 1e6).toFixed(3)} MB`,
     );
 
   } catch (err) {

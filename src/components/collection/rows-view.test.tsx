@@ -11,17 +11,14 @@ const card: BrowseListCard = {
   oracleId: "o1",
   name: "Smothering Tithe",
   typeLine: "Enchantment",
-  manaCost: "{3}{W}", cmc: 4,
-  keywords: [],
+  manaCost: "{3}{W}",
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
   printedName: null,
   quantity: 1,
   setCounts: [],
-  setCodes: ["RVR"],
   primarySetCode: "RVR",
-  preferredPrinting: null,
 };
 
 // `/collection` reads from off every decklist, so `free` really is `owned − hard`
@@ -184,7 +181,6 @@ describe("RowsView cost track", () => {
       ...card,
       typeLine: "Basic Land — Forest",
       manaCost: null,
-      cmc: 0,
     });
     expect(trackOf(container)?.textContent).toBe("");
   });
@@ -203,7 +199,7 @@ describe("RowsView cost track accessibility", () => {
 
   // Silence is indistinguishable from a missing label, so a land says so.
   it("says a land has no mana cost rather than falling silent", () => {
-    renderRows({ ...card, typeLine: "Basic Land — Forest", manaCost: null, cmc: 0 });
+    renderRows({ ...card, typeLine: "Basic Land — Forest", manaCost: null });
     expect(screen.getByRole("button", { name: /no mana cost/ })).toBeInTheDocument();
   });
 });

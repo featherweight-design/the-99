@@ -45,7 +45,14 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
 });
 
 /** The same card as the browse list carries it — through the real trimmer. */
-const listCard = (over: Partial<BrowseCard> = {}): BrowseListCard => toListCards([card(over)])[0];
+// A `setCodes` override with no printings is given printings in those sets, since that is what
+// the loader derives `setCodes` from, and the list's set filter reads the printings' codes.
+const listCard = (over: Partial<BrowseCard> = {}): BrowseListCard =>
+  toListCards([card(
+    over.setCodes && !over.printings
+      ? { ...over, printings: over.setCodes.map((setCode) => printing({ setCode })) }
+      : over,
+  )])[0];
 
 const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263", finish: "nonfoil",

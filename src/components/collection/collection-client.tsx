@@ -19,18 +19,22 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CollectionBrowser } from "./browser";
 import type { BrowseListCard, CardArt } from "../../lib/collection/browse";
 import type { OwnedSetMeta } from "../../lib/collection/set-filter";
+import { decodeCollection, type CollectionWire } from "../../lib/collection/list-wire";
 
 export function CollectionClient({
-  cards,
+  wire,
   ownedSets,
   availabilityOk,
   hasCollection,
 }: {
-  cards: BrowseListCard[];
+  wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
   availabilityOk: boolean;
   hasCollection: boolean;
 }) {
+  // Decoded once per payload: the same wire identity is the same list, so everything below
+  // that compares `cards` by identity keeps working.
+  const cards: BrowseListCard[] = useMemo(() => decodeCollection(wire), [wire]);
   // Keyed by oracle id, and only ever holding cards the reader picked for in this visit.
   const [picks, setPicks] = useState<ReadonlyMap<string, CardArt>>(() => new Map());
 

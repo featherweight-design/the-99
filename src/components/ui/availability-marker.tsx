@@ -19,8 +19,8 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import {
   availabilityState,
   hardDecks,
-  type Availability,
   type AvailabilityState,
+  type AvailabilitySummary,
   type HardDeck,
 } from "../../lib/decks/availability";
 
@@ -33,7 +33,7 @@ export type MarkerOpts = {
 };
 
 /** Prose for the accessible name, or null when the card is free. */
-export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
+export function markerAria(a: AvailabilitySummary, opts?: MarkerOpts): string | null {
   const c = availabilityCopy.marker;
   const hard = hardDecks(a);
 
@@ -90,7 +90,7 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
  */
 function label(
   state: AvailabilityState,
-  a: Availability,
+  a: AvailabilitySummary,
   opts: MarkerOpts,
 ): { prefix: string; deck?: HardDeck } | null {
   const c = availabilityCopy.marker;
@@ -252,7 +252,7 @@ export function AvailabilityMarker({
   className,
   ...opts
 }: {
-  availability: Availability;
+  availability: AvailabilitySummary;
   density?: "row" | "chip";
   /**
    * Chip density only. `false` drops the scrim AND the absolute positioning,

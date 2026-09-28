@@ -54,7 +54,7 @@ export function buildSetOptions(
 
   // Every owned set, regardless of the current filters.
   const owned = new Set<string>();
-  for (const c of cards) for (const code of c.setCodes) owned.add(code.toUpperCase());
+  for (const c of cards) for (const [code] of c.setCounts) owned.add(code.toUpperCase());
 
   // Counts under the other filters only.
   const surviving = filterCards(cards, {

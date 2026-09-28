@@ -7,6 +7,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import type { BrowseListCard, CardArt } from "../../lib/collection/browse";
+import { encodeCollection, type CollectionWire } from "../../lib/collection/list-wire";
 
 let fireArtChange: ((oracleId: string, art: CardArt | null) => void) | undefined;
 
@@ -42,23 +43,28 @@ const card = (oracleId: string, name: string): BrowseListCard => ({
   name,
   typeLine: "Enchantment",
   manaCost: "{3}{W}",
-  cmc: 2,
-  keywords: [],
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: "https://cards.scryfall.io/normal/rvr.jpg",
   printedName: null,
   quantity: 1,
   setCounts: [],
-  setCodes: ["RVR"],
   primarySetCode: "RVR",
-  preferredPrinting: null,
 });
 
-function mount(cards?: BrowseListCard[]) {
+/** The list as the page ships it: each card's own availability becomes the map it is encoded from. */
+function wireOf(cards: BrowseListCard[]) {
+  const byCard = new Map(cards.flatMap((c) => (c.availability ? [[c.oracleId, c.availability] as const] : [])));
+  return encodeCollection(cards, byCard);
+}
+
+function mount(input?: BrowseListCard[] | CollectionWire) {
+  const wire = input === undefined || Array.isArray(input)
+    ? wireOf(input ?? [card("o1", "Smothering Tithe"), card("o2", "Sol Ring")])
+    : input;
   return render(
     <CollectionClient
-      cards={cards ?? [card("o1", "Smothering Tithe"), card("o2", "Sol Ring")]}
+      wire={wire}
       ownedSets={[]}
       availabilityOk
       hasCollection
@@ -127,7 +133,7 @@ describe("CollectionClient", () => {
     // the patch has to retire on it rather than on the content having changed.
     view.rerender(
       <CollectionClient
-        cards={[card("o1", "Smothering Tithe"), card("o2", "Sol Ring")]}
+        wire={wireOf([card("o1", "Smothering Tithe"), card("o2", "Sol Ring")])}
         ownedSets={[]}
         availabilityOk
         hasCollection
@@ -141,8 +147,9 @@ describe("CollectionClient", () => {
   // The same array, re-rendered, is not a new read. Retiring on that would throw the pick
   // away on any parent render between the write and the server catching up.
   it("keeps its patches when the same payload re-renders", () => {
-    const cards = [card("o1", "Smothering Tithe"), card("o2", "Sol Ring")];
-    const view = mount(cards);
+    // The same WIRE: one payload, decoded once, is one list.
+    const wire = wireOf([card("o1", "Smothering Tithe"), card("o2", "Sol Ring")]);
+    const view = mount(wire);
     act(() => {
       fireArtChange?.("o1", {
         primarySetCode: "ELD",
@@ -151,7 +158,7 @@ describe("CollectionClient", () => {
       });
     });
     view.rerender(
-      <CollectionClient cards={cards} ownedSets={[]} availabilityOk hasCollection />,
+      <CollectionClient wire={wire} ownedSets={[]} availabilityOk hasCollection />,
     );
     expect(screen.getByTestId("o1").textContent).toContain("ELD");
   });

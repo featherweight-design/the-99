@@ -11,6 +11,7 @@ import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/
 import { CardFan } from "../../components/marks";
 import { CollectionClient } from "../../components/collection/collection-client";
 import { cacheForUser } from "../../lib/cache/user-lists";
+import { encodeCollection } from "../../lib/collection/list-wire";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import {
   EmptyState,
@@ -53,6 +54,10 @@ export default async function CollectionPage() {
     // (`cache/deployment.ts`), a deploy retires the previous build's entry on its own, and
     // a new field needs no new `browse-N`. The record of why each one moved:
     //
+    // "browse-6" because the list card lost `keywords`, `cmc`, `preferredPrinting`, `setCodes`
+    // and `comboPartner.oracleId` (list payload plan, PR 2). An entry the previous deploy wrote
+    // carried them, which cost nothing here but the size that change existed to cut.
+    //
     // "browse-5" because the payload gained `comboOtherPartners`, the figure the marker's
     // tooltip counts. An entry written by the previous deploy carries no such field, so every
     // marker would say `You own both` where it should say `and 3 others` until the hour
@@ -70,7 +75,7 @@ export default async function CollectionPage() {
     // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
-    cacheForUser(userId, ["browse-5"], () => loadBrowseCards(userId)),
+    cacheForUser(userId, ["browse-6"], () => loadBrowseCards(userId)),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
@@ -81,11 +86,10 @@ export default async function CollectionPage() {
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client
-  // boundary as a prop, and every consumer below wants one card's entry.
-  const cardsWithAvailability = cards.map((c) => ({
-    ...c,
-    availability: availability?.get(c.oracleId) ?? null,
-  }));
+  // boundary as a prop, and every consumer below wants one card's entry. Encoded
+  // on the way (`list-wire.ts`): each deck a claim names crosses once, and each
+  // image as its Scryfall id and stamp. The client decodes it back.
+  const wire = encodeCollection(cards, availability);
 
   // Empty collection — shell's state, kept intact.
   if (stats.uniqueCards === 0) {
@@ -170,7 +174,7 @@ export default async function CollectionPage() {
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
       <CollectionClient
-        cards={cardsWithAvailability}
+        wire={wire}
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
         hasCollection={stats.totalCards > 0}

@@ -15,17 +15,14 @@ const base: BrowseListCard = {
   oracleId: "o",
   name: "Card",
   typeLine: "Artifact",
-  manaCost: "{1}", cmc: 2,
-  keywords: [],
+  manaCost: "{1}",
   rarity: "common",
   colorIdentity: [],
   imageUri: null,
   printedName: null,
   quantity: 1,
   setCounts: [],
-  setCodes: ["ABC"],
   primarySetCode: "ABC",
-  preferredPrinting: null,
 };
 
 // `free` is given, never derived: the query computes it from a vantage the
