@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -102,6 +103,8 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
     }, OVERLAY_AFTER_MS);
   }, [reports, pathname, end]);
 
+  const context = useMemo(() => ({ report, pathname }), [report, pathname]);
+
   const onLeft = useCallback(() => {
     setShown(null);
     setLeaving(false);
@@ -134,7 +137,7 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   }, []);
 
   return (
-    <Report.Provider value={report}>
+    <Report.Provider value={context}>
       <MainRef.Provider value={mainRef}>
         {children}
         {screen ? (

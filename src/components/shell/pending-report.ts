@@ -1,7 +1,6 @@
 "use client";
 
 import { useLinkStatus } from "next/link";
-import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useId } from "react";
 
 import { pathOf } from "../../lib/shell/pending-routes";
@@ -13,7 +12,10 @@ import { pathOf } from "../../lib/shell/pending-routes";
  */
 export type Reporter = (id: string, href: string, pending: boolean) => void;
 
-export const Report = createContext<Reporter | null>(null);
+/** What the provider hands its marks: where to report, and the page the press is leaving. */
+export type PendingContext = { report: Reporter; pathname: string };
+
+export const Report = createContext<PendingContext | null>(null);
 
 /** Resolve a link's href against the page it is pressed on: a bare query or hash is this page. */
 export function targetOf(href: string, pathname: string): string {
@@ -29,9 +31,10 @@ export function usePendingReport(href: string): boolean {
   // A link to the page already open (a query or hash change on it) is not a navigation this
   // feature marks: `useLinkStatus` still reads pending while the page re-renders, so the mark
   // takes the same rule the provider does, rather than drawing for a press it will not escalate.
-  const pathname = usePathname();
-  const pending = linkPending && targetOf(href, pathname) !== pathname;
-  const report = useContext(Report);
+  // The pathname comes from the provider, not `usePathname`, so a mark reads no router of its own.
+  const ctx = useContext(Report);
+  const pending = linkPending && (!ctx || targetOf(href, ctx.pathname) !== ctx.pathname);
+  const report = ctx?.report;
   const id = useId();
   useEffect(() => {
     report?.(id, href, pending);
