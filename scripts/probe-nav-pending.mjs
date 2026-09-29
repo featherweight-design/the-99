@@ -22,6 +22,9 @@
 //      pass on a build with no 400ms gate. Checks 1 and 2 prove the gate. Needs a server with
 //      ABOUT_SHEET_ENABLED off, the only mode that offers the dismiss; on one with it on, the
 //      check fails and says so, and the rest of the run carries on.
+//   8. A row link's track, on a commander row (/commanders) and a set row (/collection/sets): the
+//      track paints inside the pressed row at 120ms or later. A screenshot cannot hold it, since
+//      the window between 120ms and the 400ms screen is too short to shoot reliably.
 //
 // Mutations it is built to fail: the shell's <Suspense> removed (check 1 reads no screen), and the
 // 400ms gate set to 0 (check 2 reads the screen before the pip).
@@ -256,6 +259,37 @@ async function run(browser, state, width, userId) {
     await page.waitForURL((u) => u.pathname === "/about", { timeout: 120_000 });
     const nav = await page.evaluate(() => window.__nav);
     report(nav.overlay != null && nav.overlay >= 390, "the account menu's About press escalates after the menu closes", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
+    await throttle(false);
+    await page.close();
+  }
+
+  // 8. A row link's track: pressed on a commander row and a set row, it paints INSIDE that row, at
+  //    120ms or later, like the ghost link's in check 3 and the nav slot's pip in check 2.
+  for (const [path, selector] of [
+    ["/commanders", "a[href^='/commanders/']"],
+    ["/collection/sets", "a[href^='/collection/sets/']"],
+  ]) {
+    const { page, throttle } = await slowPage(context);
+    await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const row = page.locator(`main ${selector}`).filter({ visible: true }).first();
+    await row.waitFor({ state: "visible", timeout: 120_000 });
+    await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
+    await throttle(true);
+    await page.evaluate(() => window.__navArm());
+    await row.click();
+    const inRow = await page
+      .waitForFunction((sel) => {
+        const nav = window.__nav;
+        if (nav.mark == null) return null;
+        const link = [...document.querySelectorAll(`main ${sel}`)].find((a) => a.querySelector("[data-pending]"));
+        return { mark: nav.mark, inRow: Boolean(link) };
+      }, selector, { timeout: 5_000, polling: 16 })
+      .then((h) => h.jsonValue(), () => null);
+    report(
+      inRow != null && inRow.inRow && inRow.mark >= 110,
+      `a ${path === "/commanders" ? "commander" : "set"} row's track paints inside the row, at 120ms or later`,
+      inRow == null ? "no mark" : `mark at ${Math.round(inRow.mark)}ms, ${inRow.inRow ? "inside the row" : "not inside the row"}`,
+    );
     await throttle(false);
     await page.close();
   }
