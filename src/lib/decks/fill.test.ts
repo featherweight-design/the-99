@@ -480,9 +480,12 @@ describe("planFill", () => {
     const plan = planFill([
       ...Array.from({ length: 12 }, (_, i) => c({ oracleId: `g${i}`, manaCost: "{2}", inclusionPct: 90 - i })),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
-    ], { ...boros, commanderCosts: ["{R}{R}{W}"] } as never);
+    ], { ...boros, commanderCosts: ["{R}{R}{R}{W}"] } as never);
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
-    expect(q("mountain")).toBeGreaterThan(q("plains"));
+    // A RATIO, not an inequality. `{R}{R}{R}{W}` is 3:1, so the pip split is 28/9 — while the
+    // no-pips fallback is an even 19/18, which `mountain > plains` also satisfies. Asserting only
+    // the inequality left the "commanders dropped from the census" mutation green.
+    expect(q("mountain")).toBeGreaterThanOrEqual(25);
     expect(q("mountain") + q("plains")).toBe(37);
   });
 
