@@ -626,6 +626,20 @@ ${lockedClaim}            -- Whether free COUNTS this claim, which is the same q
                  coalesce(sh.hard_senior, 0),
                  greatest(o.owned - coalesce(rt.granted_total, 0), 0)
                )
+               -- A BREW'S OWN PAGE takes the same cap. Every hard claim is ahead of it, but
+               -- those decks still cannot take copies that do not exist: twelve committed
+               -- decks wanting eleven Command Towers are one short among THEMSELVES, and that
+               -- shortfall is theirs. Uncapped, it landed on the brew, which read "short 2"
+               -- on a singleton it can only ever need one of, and a Wastes row asking six read
+               -- short seven (HD - Thorin on staging, 2026-09-29). With the cap a deck is never
+               -- short by more than it asks, which is "loadDeckBuyRows"' own floor.
+               when exists (select 1 from skip_deck)
+               then least(
+                 coalesce(c.hard_unreserved, 0),
+                 greatest(o.owned - coalesce(rt.granted_total, 0), 0)
+               )
+               -- No vantage deck (/collection and the rest): free is the whole collection's
+               -- reading, and a figure below zero IS the over-commitment across decks.
                else coalesce(c.hard_unreserved, 0)
           end
       )::int as free,
