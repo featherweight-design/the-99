@@ -71,7 +71,7 @@ Mono = `'IBM Plex Mono', monospace` in the canvas (app: the mono font variable).
 | 1.11 | Error line (no copy key in K) | font-size | 13px | 13px | S:49 |
 | 1.11 | Error line | color | `var(--danger)` (the one place red appears) | same | S:49, A:157-161 |
 | 1.11 | Error line | position | under the body | same | S:49 |
-| 1.11 | Error line | renders | only on a failed replace | same | S:49 |
+| 1.11 | Error line | renders | on any failed confirm: a failed replace, or a failed first import, which opens this dialog to report it (#1097) | same | S:49 |
 | 1.12 | Button group | margin-top | 24px | 20px | C:618, C:644 |
 | 1.12 | Button group | direction / gap | row, gap 12px | column, gap 10px | C:618, C:644 |
 | 1.12 | Button group | order | Keep current, then Replace | Replace (primary) on top, then Keep current | C:618, C:644, S:47 |
@@ -93,7 +93,7 @@ Mono = `'IBM Plex Mono', monospace` in the canvas (app: the mono font variable).
 | 1.14 | Replace | pending | label becomes `replaceConfirm.pending`; disabled | same | S:48, K:43 |
 | 1.15 | Dialog | Escape / backdrop | close when idle; refused while pending | same | R:137, S:48, C:624 |
 | 1.16 | Type-to-confirm input | renders | — (removed) | — (removed) | R:130, K:44 |
-| 1.17 | Dialog | renders | only on a replace (collection already has cards); never on a first import | same | S:50 |
+| 1.17 | Dialog | renders | on a replace (collection already has cards), and on a FAILED first import, where it reports the error in its import variant (`replaceCopy.importConfirm`); a first import that succeeds never opens it | same | S:50 |
 | 1.18 | Hover states | — | — (not drawn) | — | — |
 
 ## 2. Replace note on the upload entry (4c, and the phone mirror)

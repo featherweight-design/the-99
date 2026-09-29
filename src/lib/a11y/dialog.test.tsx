@@ -58,6 +58,28 @@ describe("useDialogA11y closeOnEscape", () => {
   });
 });
 
+describe("useDialogA11y focus trap with nothing to focus", () => {
+  // The replace confirm disables both of its buttons while it writes (#1110). With no focusable
+  // left, a Tab must not walk out of the aria-modal dialog.
+  it("holds Tab inside a dialog whose every control is disabled", () => {
+    const el = document.createElement("div");
+    el.tabIndex = -1;
+    const button = document.createElement("button");
+    button.disabled = true;
+    el.appendChild(button);
+    document.body.appendChild(el);
+    appended.push(el);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, vi.fn());
+    });
+    el.focus();
+    const tab = new KeyboardEvent("keydown", { key: "Tab", cancelable: true, bubbles: true });
+    el.dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBe(true);
+  });
+});
+
 describe("useDialogA11y scroll lock", () => {
   it("locks body scroll by default", () => {
     renderDialog();

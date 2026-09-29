@@ -43,6 +43,11 @@ export const replaceCopy = {
   importConfirm: {
     title: "Import this collection?",
     keep: "Go back",
+    /** The sentences this variant said before the calm redraw: there is no previous list to go
+     *  back to, so the replace body's way back would be false here. */
+    body: (matched: number, file: string) =>
+      `This imports the ${cards(matched)} in ${file} as your collection. Decks and commander recommendations build from it.`,
+    bodyShort: (matched: number, file: string) => `This imports the ${cards(matched)} in ${file} as your collection.`,
     confirm: (matched: number) => `Import ${cards(matched)}`,
     importing: "Importing…",
   },

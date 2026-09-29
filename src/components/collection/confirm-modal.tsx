@@ -37,12 +37,16 @@ export function ConfirmModal({
   const words = isInitialImport
     ? {
         title: replaceCopy.importConfirm.title,
+        body: replaceCopy.importConfirm.body(preview.matchedCardCount, preview.filename),
+        bodyShort: replaceCopy.importConfirm.bodyShort(preview.matchedCardCount, preview.filename),
         keep: replaceCopy.importConfirm.keep,
         confirm: replaceCopy.importConfirm.confirm(preview.matchedCardCount),
         pending: replaceCopy.importConfirm.importing,
       }
     : {
         title: c.title,
+        body: c.body,
+        bodyShort: c.bodyShort,
         keep: c.keep,
         confirm: c.replace(preview.matchedCardCount),
         pending: c.replacing,
@@ -111,8 +115,8 @@ export function ConfirmModal({
 
         {/* §1.10 Body — names how to go back */}
         <p className="m-0 mt-[16px] md:mt-[18px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65] text-pretty text-[color:var(--fg-body)]">
-          <span className="md:hidden">{c.bodyShort}</span>
-          <span className="hidden md:inline">{c.body}</span>
+          <span className="md:hidden">{words.bodyShort}</span>
+          <span className="hidden md:inline">{words.body}</span>
         </p>
 
         {/* §1.11 The one red on the dialog, and only on a failed confirm (correction 7) */}

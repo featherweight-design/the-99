@@ -410,7 +410,13 @@ export function useDialogA11y(
       }
       if (e.key !== "Tab") return;
       const focusables = visibleFocusables(root);
-      if (focusables.length === 0) return;
+      // A modal whose every control is disabled (the replace confirm while it writes) has
+      // nowhere to send focus, and letting Tab through would walk out of an `aria-modal`
+      // surface into the page behind. Hold it where it is instead.
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       // A dialog that took initial focus on ITS OWN root holds focus on an

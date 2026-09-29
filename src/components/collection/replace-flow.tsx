@@ -5,7 +5,7 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUpload, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
@@ -42,7 +42,10 @@ export function ReplaceFlow({
   const reviewId = preview?.uploadId ?? null;
   const reviewFile = preview?.filename;
   const reviewRows = preview?.rowCount;
-  useEffect(() => {
+  // A LAYOUT effect: the parent's card changes shape with the review (the fan steps aside, the
+  // padding goes), so its state has to land before the frame paints, or the review opens once
+  // in the rest-state card and closes once in the reviewing one.
+  useLayoutEffect(() => {
     onReviewing?.(reviewId && reviewFile !== undefined && reviewRows !== undefined ? { file: reviewFile, rows: reviewRows } : null);
   }, [onReviewing, reviewId, reviewFile, reviewRows]);
 

@@ -91,6 +91,24 @@ describe("ConfirmModal", () => {
     expect(screen.getByRole("button", { name: "Replace with 1 card" })).toBeInTheDocument();
   });
 
+  // A failed FIRST import reopens this dialog (#1097); with no previous collection, the replace
+  // body's way back would be false.
+  it("tells a failed first import what it imports, never how to go back", () => {
+    render(
+      <ConfirmModal
+        preview={{ ...preview, currentCollectionCount: 0 }}
+        pending={false}
+        error="Confirm failed"
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("This imports the 120 cards in collection.csv as your collection.");
+    expect(dialog).not.toHaveTextContent(/previous list/);
+    expect(screen.getByRole("button", { name: "Import 120 cards" })).toBeInTheDocument();
+  });
+
   it("confirms on one press", () => {
     const onConfirm = vi.fn();
     render(<ConfirmModal preview={preview} pending={false} error={null} onClose={vi.fn()} onConfirm={onConfirm} />);
