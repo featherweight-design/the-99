@@ -35,9 +35,9 @@ buildCommanderIndex({
     // entry standing for up to the hour ceiling. A failed run has still written what it wrote.
     //
     // At the end of the run rather than keyed on the index generation, deliberately: that
-    // generation is `max(computed_at)`, which moves with every commander written, so a key on it
-    // would rebuild every warm entry once a minute for the whole run (up to three hours), each
-    // time against a half-written index.
+    // generation (`cache/index-generation.ts`) is built partly from `max(computed_at)`, which moves
+    // with every commander written, so a key on it would rebuild every warm entry about once a
+    // minute for the whole run (up to three hours), each time against a half-written index.
     //
     // It lives HERE rather than inside `buildCommanderIndex` because every I/O edge of that
     // function is injectable precisely so the unit tests can drive it; a direct call would

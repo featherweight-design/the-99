@@ -5,7 +5,7 @@
  * `commander_support` or `identity_composition` — both written by the monthly `Commander
  * index` job. `cacheForUser` already carries the CATALOG generation, and that is a different
  * stamp. An index rebuild does stamp `catalog_refreshes` (`build-commander-index.ts`), but only
- * at its END, and a catalog copy carries staging's `computed_at` across. This generation is read
+ * when the run ends (on every exit, pass, fail or throw), and a catalog copy carries staging's `computed_at` across. This generation is read
  * off the index itself, so an entry built before a rebuild or a copy is never served after it for
  * the cache's one-hour ceiling as the deck's current comparison.
  *

@@ -268,8 +268,8 @@ page's suggestions, synergy and mix), and the answer is to **keep the tag**:
 - **The one real window was a failed index run.** The index job clears every reader's scores and
   rewrites the support lists, and its catalog stamp, which retires every `cacheForUser` entry, ran
   only when the run passed its floors. It now runs on every exit, pass, fail or throw.
-- **Not the index generation in the key.** That generation is `max(computed_at)`, which moves
-  with every commander written, so keying on it would rebuild every warm entry once a minute for
+- **Not the index generation in the key.** That generation is built partly from
+  `max(computed_at)` across the index tables, which moves with every commander written, so keying on it would rebuild every warm entry once a minute for
   a run of up to three hours, each time against a half-written index. Prose writers already stamp
   the catalog themselves (`prose/generate.ts`, `copy-commander-prose.ts`), and since #1109 the
   deployment id rides in every `cacheForUser` key.

@@ -444,11 +444,13 @@ export async function buildCommanderIndex(
   // generation. Before 2026-09-28 that stamp ran only when the run passed its checks, so a run
   // that failed its floors left warm entries standing for up to the hour ceiling.
   //
-  // Not an index-generation token in the key: that generation is `max(computed_at)`, which
-  // moves with every commander written, so a key on it would rebuild every warm entry once a
-  // minute for the whole run, each time against a half-written index. During a run a warm
-  // reader keeps the previous index's answer, which is consistent; a miss recomputes against
-  // the index as it stands. This workflow has no Next request context, which is why nothing
+  // Not an index-generation token in these three keys: that generation
+  // (`cache/index-generation.ts`) is built partly from `max(computed_at)` across the index
+  // tables, which moves with every commander written, so a key on it would rebuild every warm
+  // entry about once a minute for the whole run, each time against a half-written index. During
+  // a run a warm reader of these three keeps the previous index's answer; a miss recomputes
+  // against the index as it stands. The deck page's suggestions and the review page's mix DO key
+  // on the index generation, so they accept that churn for their own reasons (see their pages). This workflow has no Next request context, which is why nothing
   // here calls `revalidateUserLists`.
   //
   // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE on its own, and that
