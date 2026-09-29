@@ -6,6 +6,14 @@ import type { ProfileSkeleton } from "../profile/types";
 
 const DECK_TOTAL = 100;
 
+/** The asserted land count, for a deck with no measured composition. `FLAT_TARGETS` in
+ *  `mix.ts` reads it too, and so does About's Roles row, so the three can never disagree. Kept
+ *  here rather than there because `mix.ts` already imports this module. */
+export const FLAT_LAND = 37;
+
+/** The fallback for a pair is one fewer, for the reason `landTarget` gives. */
+const fallbackLand = (hasPartner: boolean) => FLAT_LAND - (hasPartner ? 1 : 0);
+
 export function deckBodySize(hasPartner: boolean): number {
   return DECK_TOTAL - (hasPartner ? 2 : 1);
 }
@@ -13,7 +21,8 @@ export function deckBodySize(hasPartner: boolean): number {
 /**
  * How many lands the deck is built toward.
  *
- * MEASURED when the skeleton carries a composition, and 37/36 only as the fallback. Those two
+ * MEASURED when the skeleton carries a composition, and `FLAT_LAND` (one fewer for a pair) only as
+ * the fallback. Those two
  * were the asserted baseline, and the measured figure is an average over thousands of real
  * decklists for this commander's own condition — the same replacement this sub-project makes
  * for the four functional roles.
@@ -34,7 +43,7 @@ export function deckBodySize(hasPartner: boolean): number {
  */
 export function landTarget(hasPartner: boolean, skeleton?: ProfileSkeleton | null): number {
   const composition = skeleton?.composition;
-  if (!composition) return hasPartner ? 36 : 37;
+  if (!composition) return fallbackLand(hasPartner);
   const measured = composition.targets.land;
   // A NON-FINITE measured figure falls back rather than propagating. It should be unreachable
   // — `compositionFrom` rejects a row with a null in it — but that guard tests for `null`
@@ -42,7 +51,7 @@ export function landTarget(hasPartner: boolean, skeleton?: ProfileSkeleton | nul
   // wrong number, it is NO CEILING AT ALL: every `counts.land >= landCeiling` comparison
   // against NaN is false, so the land sweeps run until the collection is exhausted and the
   // deck arrives with every basic the player owns.
-  if (!Number.isFinite(measured)) return hasPartner ? 36 : 37;
+  if (!Number.isFinite(measured)) return fallbackLand(hasPartner);
   const pairBasis = composition.of === "pair";
   const adjusted = Math.round(measured) - (hasPartner && !pairBasis ? 1 : 0);
   // EACH TARGET ROUNDED BEFORE SUMMING, which is what `roleFloors` in `fill.ts` does — rounding
@@ -53,7 +62,7 @@ export function landTarget(hasPartner: boolean, skeleton?: ProfileSkeleton | nul
   // And the same finite guard the land figure gets. Without it the cap is NaN and `Math.min`
   // propagates it — the function returns the very thing the comment above says it prevents.
   if (!roleValues.every((v) => typeof v === "number" && Number.isFinite(v))) {
-    return hasPartner ? 36 : 37;
+    return fallbackLand(hasPartner);
   }
   const roleFloor = roleValues.reduce((a, b) => a + Math.round(b), 0);
   return Math.max(0, Math.min(adjusted, deckBodySize(hasPartner) - roleFloor));

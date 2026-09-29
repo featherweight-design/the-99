@@ -1,6 +1,6 @@
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 
-import { landTarget } from "./deck-size";
+import { FLAT_LAND, landTarget } from "./deck-size";
 
 // ---------------------------------------------------------------------------
 // Recommended mix constants + role-cell state helper
@@ -89,8 +89,8 @@ const LABELS: Record<MixRole, string> = {
 
 /** The asserted baseline, kept for the fallback and for nothing else. These were the whole of
  *  the recommendation until the role pass measured its four. */
-const FLAT_TARGETS: Record<MixRole, number> = {
-  ramp: 10, draw: 10, removal: 8, wipes: 3, land: 37,
+export const FLAT_TARGETS: Readonly<Record<MixRole, number>> = {
+  ramp: 10, draw: 10, removal: 8, wipes: 3, land: FLAT_LAND,
 };
 
 /** Whole cards, rounded half-up and floored at 0. A bucket's mean is a `real`, and a strip

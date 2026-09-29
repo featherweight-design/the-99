@@ -21,6 +21,9 @@ import { KeyNumeral } from "./numeral";
 import { ContentsList, ContentsRail } from "./contents-rail";
 import { ContentsListR6, ContentsRailR6 } from "./contents-r6";
 import { JumpMark } from "./jump-mark";
+import { HowItWorks } from "./how-it-works";
+import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
+import { introWithAppendix } from "../../lib/copy/how-it-works";
 import { RecordVisit } from "./record-visit";
 import { unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import {
@@ -246,6 +249,9 @@ export function AboutPage({
 }) {
   // Only the entries this deployment draws: one tied to a switch that is off is not on the page.
   const visible = visibleEntries();
+  // "How the app reaches its answers" (plan 2026-09-28): its section, its clause in the intro,
+  // and the jump mark its rows share with the entries. Off, the page is exactly as it was.
+  const howItWorks = howItWorksEnabled();
   // With the sheet, "new" is the one rule the sheet and the proxy read, so the page marks exactly
   // what the sheet announced. Without it the page keeps the version rule it always had.
   const seenState: SeenState = { version: seen, ids: seenIds };
@@ -330,13 +336,13 @@ export function AboutPage({
         {aboutCopy.pageTitle}
       </h1>
       <p className="mt-[10px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)]">
-        {aboutCopy.pageIntro}
+        {howItWorks ? introWithAppendix(aboutCopy.pageIntro) : aboutCopy.pageIntro}
         {sheetMode && ` ${aboutCopy.pageIntroSheet}`}
       </p>
 
       {sheetMode && newEntries.length > 0 && <WhatsNewIndex entries={newEntries} />}
       {sheetMode && <RecordVisit behind={behind} />}
-      {sheetMode && <JumpMark />}
+      {(sheetMode || howItWorks) && <JumpMark />}
 
       {sheetMode ? (
         <ContentsListR6 chapters={contentsChapters} />
@@ -374,6 +380,8 @@ export function AboutPage({
           </ul>
         </section>
       ))}
+
+      {howItWorks && <HowItWorks />}
 
       {/* The pinned bar's own height, given back to the document.
           `<main>` reserves `--tabbar-h` and nothing more, so the bar sat ON
