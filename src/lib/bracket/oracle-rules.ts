@@ -179,3 +179,16 @@ export const EXTRA_TURN_DETECTION = {
   ],
   basis: "no misses among the 56 cards whose text mentions one",
 } as const;
+
+/**
+ * The tutor reading. One mechanism: Spellbook's estimate has no tutor answer, and the stored flag
+ * is sourced to `oracle_rule` alone. Both figures are `pnpm measure:tutors` against staging's
+ * catalog (2026-09-29): its named fixture, 22 of 22 agreeing, and the 974 cards whose text
+ * searches a library. The fixture shows no miss, so there is no `knownMisses`, and the sheet says
+ * how small the set is instead of implying the reading is exact.
+ */
+export const TUTOR_DETECTION = {
+  methods: ["our reading of the rules text"],
+  basis: "right on all 22 cards of a curated set",
+  searchers: 974,
+} as const;

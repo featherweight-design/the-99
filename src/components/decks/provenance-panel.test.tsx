@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { TUTOR_DETECTION } from "../../lib/bracket/rules";
 import { BRACKET_RULES_SOURCE, SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -37,13 +38,20 @@ describe("How we make these decisions", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("draws four rows, and a misses line on every one but game changers", () => {
+  it("draws five rows, and a misses line on every one but game changers", () => {
     draw();
     expect(screen.getAllByRole("term").map((t) => t.textContent)).toEqual([
-      "Game changers", "Mass land denial", "Extra turns", "Two-card infinites",
+      "Game changers", "Mass land denial", "Extra turns", "Two-card infinites", "Tutors",
     ]);
     expect(screen.getByText(copy.detection.extraTurns.misses)).toBeTruthy();
     expect(screen.getByText(copy.detection.combos.misses)).toBeTruthy();
+  });
+
+  // Brief §5.5: the tutor row states its measured basis, and the size of the set it was measured on.
+  it("gives tutors a row with the measured basis and the size of the set", () => {
+    draw();
+    expect(screen.getByText(copy.detection.tutors.from).textContent).toContain(TUTOR_DETECTION.basis);
+    expect(screen.getByText(copy.detection.tutors.misses).textContent).toContain("974");
   });
 
   // The rules are a blog post and can move, so the row links the post and dates the last read.
@@ -70,7 +78,7 @@ describe("How we make these decisions", () => {
     const tags = screen.getAllByRole("term").map((t) =>
       [...t.querySelectorAll("[data-method]")].map((el) => el.getAttribute("data-method")),
     );
-    expect(tags).toEqual([["list"], ["rules", "decks"], ["rules", "decks"], ["decks"]]);
+    expect(tags).toEqual([["list"], ["rules", "decks"], ["rules", "decks"], ["decks"], ["rules"]]);
     expect(screen.getAllByRole("term")[0].textContent).toContain("published list");
   });
 

@@ -2,7 +2,7 @@
 //
 // TWO PIECES LAND HERE AHEAD OF THE COMPONENTS THAT DRAW THEM, because both carry MEASURED
 // facts and the rest of the round's copy does not: the bracket names, which are WotC's and may
-// not be paraphrased, and the four detection statements, which quote figures that live in code.
+// not be paraphrased, and the five detection statements, which quote figures that live in code.
 // The verdict block's own strings arrive with the block.
 //
 // THE DETECTION SENTENCES ARE TEMPLATED ON THE CONSTANTS, NEVER TRANSCRIBED. The handoff's copy
@@ -18,6 +18,7 @@ import {
   COMBO_DETECTION,
   EXTRA_TURN_DETECTION,
   MLD_DETECTION,
+  TUTOR_DETECTION,
 } from "../bracket/rules";
 import type { Bracket } from "../bracket/types";
 
@@ -520,7 +521,8 @@ export const deckAnalysisCopy = {
     lead:
       "Four things decide a bracket. One of them is a published list, so we can be exact. The "
       + "other three we work out from your cards, with Commander Spellbook's index and our own "
-      + "reading of the rules text. Here is where each answer comes from, and what it might miss.",
+      + "reading of the rules text. Tutors set no limit, but they decide whether a combo is in "
+      + "reach, so they are here too. Here is where each answer comes from, and what it might miss.",
     /** The source a row links to, where one exists to link. */
     source: (name: string) => `${name} ↗`,
     /** The published rules, dated, because the rules are a blog post and can move. */
@@ -528,7 +530,7 @@ export const deckAnalysisCopy = {
   },
 
   /**
-   * "How we make these decisions" — four rows, one per rule.
+   * "How we make these decisions" — four rows, one per rule, and a fifth for tutors (brief §5.5).
    *
    * Game changers carries NO misses line, deliberately: it is the contrast that makes the other
    * three legible. A reader who sees three caveats and one flat statement learns which figure is
@@ -570,6 +572,14 @@ export const deckAnalysisCopy = {
       misses:
         "We miss combos needing three or more cards, and ones that only work with a " +
         "particular printing.",
+    },
+    tutors: {
+      // Brief §5.5: the fifth row, in the other rows' form. Its figure is measured
+      // (`TUTOR_DETECTION`); the misses line names the set's size because the set shows no miss.
+      from: `We read the rules text, and it is ${TUTOR_DETECTION.basis}.`,
+      misses:
+        `That set is small: ${TUTOR_DETECTION.searchers.toLocaleString("en-US")} cards search a ` +
+        "library, and we have not checked the rest one by one.",
     },
     why:
       "If someone at the table disagrees with your bracket, the argument is usually about one " +

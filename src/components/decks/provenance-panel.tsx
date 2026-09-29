@@ -101,6 +101,7 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
       misses: d.combos.misses,
       link: { name: SPELLBOOK_SOURCE.name, url: SPELLBOOK_SOURCE.url },
     },
+    { key: "tutors", label: copy.findings.labels.tutors, from: d.tutors.from, methods: m.tutors, misses: d.tutors.misses },
   ];
 
   return (

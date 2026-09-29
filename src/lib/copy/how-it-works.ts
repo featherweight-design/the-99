@@ -74,7 +74,6 @@ export const howItWorksRowsCopy = {
   verdicts: { exact: "exact", partial: "partial", mixed: "exact and partial", written: "written" },
   rowToggle: (title: string) => `How the app decides ${title.toLowerCase()}`,
   bracketsLead: "Partial, count by count:",
-  tutorsSub: "Read from the rules text. We have not measured how often it misses.",
 
   rows: [
     {
@@ -234,7 +233,8 @@ export function introWithAppendix(intro: string): string {
 /**
  * The Brackets row's five counts, one sub-row each. Four are the sentences "How we make these
  * decisions" shows, read from the same keys, so the page and the sheet cannot disagree about how a
- * count is reached. The fifth is tutors, which the sheet does not carry: no bracket limits them.
+ * count is reached. The fifth is tutors, which the sheet carries too (brief §5.5), though no bracket
+ * limits them.
  */
 export function bracketSubRows(): { label: string; methods: readonly HowMethod[]; lines: string[] }[] {
   const d = deckAnalysisCopy.detection;
@@ -246,6 +246,6 @@ export function bracketSubRows(): { label: string; methods: readonly HowMethod[]
     { label: l.massLandDenial, methods: m.landDenial, lines: lines(d.landDenial.from, d.landDenial.misses) },
     { label: l.extraTurns, methods: m.extraTurns, lines: lines(d.extraTurns.from, d.extraTurns.misses) },
     { label: l.twoCardCombos, methods: m.combos, lines: lines(d.combos.from, d.combos.misses) },
-    { label: l.tutors, methods: ["rules"], lines: lines(howItWorksRowsCopy.tutorsSub) },
+    { label: l.tutors, methods: m.tutors, lines: lines(d.tutors.from, d.tutors.misses) },
   ];
 }
