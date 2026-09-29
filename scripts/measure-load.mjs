@@ -29,8 +29,9 @@
 //   - MEASURE_ROUTES=collection,discover: only the routes named (by label), since a slow run of all
 //     six at two widths and three runs takes a long time. The card press needs `deck`.
 //   - MEASURE_WIDTHS=390: only the widths named (1300, 390).
-//   - MEASURE_LOADS=0: skip each route's cold and warm loads and run only the client navigation
-//     pass. With MEASURE_ROUTES=discover,home that pass goes Home, /discover, Home, so Home's soft
+//   - MEASURE_LOADS=0: skip each route's cold and warm loads (and with them the card press, which
+//     runs on the deck's loaded page) and run only the client navigation pass. The table then
+//     prints the soft figures alone. With MEASURE_ROUTES=discover,home that pass goes Home, /discover, Home, so Home's soft
 //     first visit is the one a /discover list is still mounted under.
 // The table also prints, per route, the card images a cold load ASKED for and the kilobytes that
 // landed, because an image is not in any RSC figure and can still be most of what a page costs.
@@ -80,7 +81,9 @@ if (PROFILE !== "fast" && PROFILE !== "slow") throw new Error(`MEASURE_PROFILE i
 const ONLY_WIDTHS = process.env.MEASURE_WIDTHS ? new Set(process.env.MEASURE_WIDTHS.split(",").map((w) => w.trim())) : null;
 const MEASURED_WIDTHS = ONLY_WIDTHS ? WIDTHS.filter((w) => ONLY_WIDTHS.has(w.label)) : WIDTHS;
 if (ONLY_WIDTHS && MEASURED_WIDTHS.length !== ONLY_WIDTHS.size) throw new Error(`MEASURE_WIDTHS takes ${WIDTHS.map((w) => w.label).join(", ")}.`);
-const LOADS = process.env.MEASURE_LOADS !== "0";
+const LOADS_ENV = process.env.MEASURE_LOADS ?? "1";
+if (LOADS_ENV !== "0" && LOADS_ENV !== "1") throw new Error(`MEASURE_LOADS is 0 or 1, not ${LOADS_ENV}.`);
+const LOADS = LOADS_ENV === "1";
 const ONLY = process.env.MEASURE_ROUTES ? new Set(process.env.MEASURE_ROUTES.split(",").map((r) => r.trim())) : null;
 
 /** Chrome DevTools' own Slow 4G preset, and the 4x CPU throttle the brief paired it with. */
@@ -338,6 +341,13 @@ function table(runs, routes) {
     const per = runs.map((r) => r[width.label]);
     const m = (f) => median(per.map(f));
     lines.push(`\n**${width.label}** (median of ${runs.length})\n`);
+    if (!LOADS) {
+      // MEASURE_LOADS=0 ran no page loads and no card press, so only the soft figures exist.
+      lines.push("| Route | Soft first / revisit |");
+      lines.push("|---|---|");
+      for (const route of routes) lines.push(`| ${route.label} | ${m((p) => p.soft[route.label]?.first)} / ${m((p) => p.soft[route.label]?.revisit)} |`);
+      continue;
+    }
     lines.push("| Route | TTFB cold / warm | Content cold / warm | Stream end warm | First image cold / warm | Soft first / revisit | DB exec warm |");
     lines.push("|---|---|---|---|---|---|---|");
     for (const route of routes) {
