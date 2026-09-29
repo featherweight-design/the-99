@@ -69,6 +69,17 @@ describe("How the app reaches its answers: the rows", () => {
     }
   });
 
+  // Each names the input its rule actually reads (round 3 of #1134): `classifyRoles` takes a land
+  // from the type line alone, `all_claims` drops a proxied card's claim, and `priceState` calls a
+  // row sold out when its `as_of` is not the newest refresh, which two runs in one day can do.
+  it("names what each rule really reads", () => {
+    expect(row("how-roles").how).toMatch(/land is read from its type line/);
+    expect(row("how-availability").from).toMatch(/proxies/);
+    expect(row("how-availability").how).toMatch(/proxy claims nothing/);
+    expect(row("how-prices").how).toMatch(/earlier refresh/);
+    expect(row("how-prices").how).not.toMatch(/earlier day/);
+  });
+
   it("carries no em-dash in anything it renders", () => {
     for (const s of everyString) expect(s).not.toContain("—");
   });

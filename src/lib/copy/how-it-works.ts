@@ -99,7 +99,8 @@ export const howItWorksRowsCopy = {
         "A card’s role is read from its rules text and type line. The deck’s targets come from " +
         "EDHREC: what decks with your commander run, weighted by how often they run it.",
       how:
-        "Each role is a pattern in the rules text, and one card can fill several. A target comes " +
+        "A land is read from its type line; ramp, draw, removal and wipes are patterns in the " +
+        "rules text, and one card can fill several. A target comes " +
         "from the closest group of decks we can measure: your pair, then your commander, then " +
         "decks in your colors, then decks with as many colors. With none, it falls back to " +
         `${f.ramp} ramp, ${f.draw} draw, ${f.removal} removal, ${f.wipes} wipes and ${f.land} ` +
@@ -149,11 +150,13 @@ export const howItWorksRowsCopy = {
       title: "Availability and claims",
       methods: ["you"],
       verdict: "exact",
-      from: "Your collection and your decks, with the copies you have assigned and the ones you have pulled.",
+      from:
+        "Your collection and your decks, with the copies you have assigned, the ones you have " +
+        "pulled, and the cards you have marked as proxies.",
       how:
         "A committed deck claims from its newest version. A deck never committed claims softly, " +
         "from its list. Commanders claim too. When decks share a copy, the one that sleeved it " +
-        "first keeps it, unless you give it to another.",
+        "first keeps it, unless you give it to another. A card you mark as a proxy claims nothing.",
       refresh: "Live.",
       exact: "Exact.",
     },
@@ -166,7 +169,7 @@ export const howItWorksRowsCopy = {
       how:
         "One printing per card: one in stock first, then non-foil over foil, then the cheapest. " +
         "No figure means ManaPool has never stocked it. Foil-only is a real state. Sold out means " +
-        "the newest price is from an earlier day.",
+        "the newest price is from an earlier refresh.",
       refresh: "Daily.",
       exact: "Exact to the feed.",
     },
