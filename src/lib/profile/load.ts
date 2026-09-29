@@ -669,12 +669,17 @@ export async function loadSkeletonForCommanders(
   ] as const;
   const hit = chain.find(([, value]) => value != null);
 
-  const roleTargets = pickRoleTargets({
+  // The rungs are built ONCE and handed both to this skeleton and to the profile path's
+  // `candidates`: two copies of the same four reads could drop a rung from one while the other,
+  // which `probe:bracket` walks, kept it, and a created deck would be built to different targets
+  // than the profile then grades it against.
+  const roles = {
     pair: roleTargetsFrom(pairRow ?? undefined),
     commander: roleTargetsFrom(commanderRow ?? undefined),
     identity: identityRoles,
     count: countRoles,
-  });
+  };
+  const roleTargets = pickRoleTargets(roles);
 
   const commanderDeckCount = pairRow?.deckCount ?? commanderRow?.deckCount ?? null;
   return {
@@ -693,12 +698,7 @@ export async function loadSkeletonForCommanders(
         identity: compositionFrom(identityRow ?? undefined),
         count: compositionFrom(countRow ?? undefined),
       },
-      roles: {
-        pair: roleTargetsFrom(pairRow ?? undefined),
-        commander: roleTargetsFrom(commanderRow ?? undefined),
-        identity: identityRoles,
-        count: countRoles,
-      },
+      roles,
       thinCondition,
     },
     condition,
