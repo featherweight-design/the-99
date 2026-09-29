@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deckBodySize, landTarget } from "./deck-size";
+import { FLAT_LAND, deckBodySize, landTarget } from "./deck-size";
+import { FLAT_TARGETS } from "./mix";
 
 describe("deckBodySize", () => {
   it("is 99 for a single commander", () => {
@@ -124,4 +125,13 @@ it("falls back rather than returning a NaN cap from non-finite role targets", ()
     condition: "G", thinCondition: false, staples: [], commanderDeckCount: 1000,
   };
   expect(landTarget(false, s)).toBe(37);
+});
+
+// The About Roles row and the strip's fallback read FLAT_TARGETS; the fill reads landTarget. One
+// constant behind both is what keeps the page from naming a land count the fill does not use.
+
+it("builds the fallback land count from the one constant the strip and About read", () => {
+  expect(FLAT_TARGETS.land).toBe(FLAT_LAND);
+  expect(landTarget(false)).toBe(FLAT_LAND);
+  expect(landTarget(true)).toBe(FLAT_LAND - 1);
 });
