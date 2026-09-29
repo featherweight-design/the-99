@@ -1,4 +1,5 @@
 import { buildFillPlan } from "../../app/decks/actions";
+import { costsOf } from "../decks/costs-of";
 import { loadAvailability } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { capToBody } from "../decks/fill";
@@ -42,7 +43,11 @@ export async function trialFill(
   answers: DeckAnswers,
 ): Promise<TrialFigures> {
   const card = answers.cardOracleId;
-  const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), { answers });
+  // The card is placed beside the plan below, so its pips are in the finished deck's census, as
+  // they are in the create this trial predicts.
+  const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
+    answers, selectedCosts: await costsOf(card ? [card] : []),
+  });
   // The plan fills a whole body beside the card, so the card's row would make it 100: cap it
   // exactly as `createDeck` and `fillDeck` do.
   const rows = capToBody([...(card ? [{ oracleId: card, quantity: 1 }] : []), ...plan.rows], deckBodySize(false));

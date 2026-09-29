@@ -16,6 +16,7 @@ import {
   deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { costsOf } from "../../lib/decks/costs-of";
 import { isUuid } from "../../lib/uuid";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
@@ -121,9 +122,14 @@ export async function buildFillPlan(
      * The same defect the commanders had, by a different route.
      *
      * CENSUS ONLY, like `commanderCosts`: these cards are already placed, so counting them
-     * toward a role floor would spend a slot on work the caller has done. */
-    selectedCosts?: readonly (string | null)[];
-  } = {},
+     * toward a role floor would spend a slot on work the caller has done.
+     *
+     * REQUIRED, like `manaCost` on the commanders: as an optional field `fillDeck`'s retry and
+     * `trialFill` both excluded a build-around card without its cost, so a retried create split
+     * the basics differently from the create. A caller whose excluded cards arrive another way
+     * (`planFromPool`'s held rows ride `held`) passes `[]` and says why. `costsOf` loads them. */
+    selectedCosts: readonly (string | null)[];
+  },
 ): Promise<FillPlan> {
   const commander = commanders[0];
   const hasPartner = commanders.length > 1;
@@ -766,6 +772,9 @@ export async function fillDeck(deckId: string): Promise<void> {
     partner ? [commander, partner] : [commander],
     new Set(buildAround ? [buildAround] : []),
     {
+      // The build-around card is placed beside the plan below, so its pips belong to the census
+      // exactly as they did in the create this retries.
+      selectedCosts: await costsOf(buildAround ? [buildAround] : []),
       ...(answers === null ? {} : { answers }),
       // The retry fills the way the create was asked to: from the player's own cards.
       ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, failClosed: true, excludeDeckId: deck.id } : {}),
@@ -2261,6 +2270,9 @@ async function planFromPool(
       // that costs.
       {
         pool,
+        // Nothing is placed beside this plan: the excluded ids are the deck's own rows, and their
+        // pips reach the census through `held`, so listing them here would count them twice.
+        selectedCosts: [],
         // So this deck's own claims are not counted as competition for itself when the pool
         // is narrowed to cards with a free copy.
         excludeDeckId: deckId,
