@@ -329,14 +329,19 @@ export function DiscoveryView({
   const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted);
   const resolvedWanted = wanted.map(resolve);
   const complete = resolvedWanted.every((r) => r !== null);
-  const [held, setHeld] = useState<DiscoveryRow[]>(wanted);
-  if (complete && held !== wanted) setHeld(wanted);
-  const rows = (complete ? resolvedWanted : held.map(resolve)).filter(
-    (r): r is DiscoveryItem => r !== null,
-  );
+  // The last rows drawn WHOLE, kept as drawn: a change of order resolves against another
+  // ranking's fields, which the rows on screen may not have.
+  const [held, setHeld] = useState<{ from: DiscoveryRow[]; rows: DiscoveryItem[] }>(() => ({
+    from: wanted,
+    rows: resolvedWanted.filter((r): r is DiscoveryItem => r !== null),
+  }));
+  if (complete && held.from !== wanted) {
+    setHeld({ from: wanted, rows: resolvedWanted as DiscoveryItem[] });
+  }
+  const rows = complete ? (resolvedWanted as DiscoveryItem[]) : held.rows;
   // The window the reader can see, for the reveal's focus and announcement: a row whose fields
   // are still arriving is not revealed yet, so neither is it announced or focused.
-  const settledShown = complete ? shown : held.length;
+  const settledShown = complete ? shown : held.rows.length;
 
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const prevShown = useRef(settledShown);
