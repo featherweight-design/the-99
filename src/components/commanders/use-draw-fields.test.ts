@@ -182,6 +182,20 @@ describe("useDrawFields", () => {
     await waitFor(() => expect(net.calls.at(-1)!.url).toContain("s=c0"));
   });
 
+  it("reports a stale page when the reader later wants a row a background batch left out", async () => {
+    const onStale = vi.fn();
+    const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) })) as DiscoveryRow[];
+    const { rerender } = renderHook(
+      ({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted, onStale),
+      { initialProps: { wanted: drawn } },
+    );
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].omit("c5"));
+    expect(onStale).not.toHaveBeenCalled();
+    rerender({ wanted: [all[5]] });
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
+  });
+
   // A page restored from the back/forward cache is not remounted: `pagehide` stopped the loop,
   // and `pageshow` has to start it again, asking once more for the batch the hide aborted.
   it("starts again when the page is restored from the back/forward cache", async () => {

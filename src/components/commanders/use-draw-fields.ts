@@ -46,12 +46,16 @@ function createFieldsLoop(onLanded: () => void) {
   // a navigation back) is a new list and starts empty, while a ranking served again from the
   // client cache is the same list and keeps what it had. Held weakly, so a list the view has let
   // go takes its fields with it.
-  const lists = new WeakMap<DiscoveryRow[], { store: Map<string, DrawFields>; asked: Set<string> }>();
+  const lists = new WeakMap<
+    DiscoveryRow[],
+    { store: Map<string, DrawFields>; asked: Set<string>; gone: Set<string>; refreshed: boolean }
+  >();
   const forList = (all: DiscoveryRow[]) => {
     let entry = lists.get(all);
     if (!entry) {
       // `asked`: slugs already asked for, whatever came back, so a slug is not asked twice.
-      entry = { store: new Map(), asked: new Set() };
+      // `gone`: slugs the route left out, which only a fresh payload can draw.
+      entry = { store: new Map(), asked: new Set(), gone: new Set(), refreshed: false };
       lists.set(all, entry);
     }
     return entry;
@@ -77,9 +81,18 @@ function createFieldsLoop(onLanded: () => void) {
   };
 
   const pump = () => {
-    if (left || controller || cancelScheduled) return;
+    if (left) return;
     const { sort, all, wanted, wantedKey } = input;
-    const { store, asked } = forList(all);
+    const list = forList(all);
+    const { store, asked } = list;
+    // A row the reader wants that the route left out, whenever it left it out: this payload's
+    // list is stale (a write elsewhere, a catalog refresh), so the page is read again, once.
+    if (!list.refreshed && wanted.some((r) => !isDrawn(r) && list.gone.has(r.slug))) {
+      list.refreshed = true;
+      onStale();
+      return;
+    }
+    if (controller || cancelScheduled) return;
     const needs = (row: DiscoveryRow) =>
       !isDrawn(row) && !store.has(row.slug) && !asked.has(row.slug);
     const waiting = wanted.filter(needs).map((r) => r.slug);
@@ -107,10 +120,9 @@ function createFieldsLoop(onLanded: () => void) {
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
         .then((body: { fields: Record<string, DrawFields> }) => {
           for (const [slug, f] of Object.entries(body.fields)) store.set(slug, f);
-          // The route leaves out a slug its reader's list no longer holds: this page's list is
-          // stale (a write elsewhere, a catalog refresh). A row the reader is waiting on then
-          // never arrives, so the page is read again rather than left busy.
-          if (batch.some((s) => waiting.includes(s) && !Object.hasOwn(body.fields, s))) onStale();
+          // The route leaves out a slug its reader's list no longer holds; `pump` refreshes the
+          // page the moment one of them is wanted, now or later.
+          for (const s of batch) if (!Object.hasOwn(body.fields, s)) forList(all).gone.add(s);
           if (input.all === all && input.wanted.some((r) => !isDrawn(r) && Object.hasOwn(body.fields, r.slug))) onLanded();
         })
         .catch(() => {
