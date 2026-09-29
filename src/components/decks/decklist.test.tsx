@@ -443,6 +443,14 @@ describe("the Shopping footer counts the trip and not where the cards came from"
     expect(screen.getByText(recommendationsCopy.shopping.footer("2"))).toBeInTheDocument();
     expect(screen.queryByText(/ auto$/)).not.toBeInTheDocument();
   });
+
+  // The mixed trip: an unowned auto card beside a second copy. The split footer is three clauses,
+  // and the old one carried a fourth naming how many were auto.
+  it("reads the split footer with no auto clause when the list mixes both kinds of purchase", () => {
+    renderDecklist([rampUnowned, rampSpokenFor]);
+    expect(screen.getByText(recommendationsCopy.shopping.footerSplit("2", "1", "1"))).toBeInTheDocument();
+    expect(screen.queryByText(/auto/)).not.toBeInTheDocument();
+  });
 });
 
 describe("Shopping draws no auto tag", () => {
