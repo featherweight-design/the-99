@@ -596,6 +596,25 @@ describe("undo row lifetime (#185)", () => {
     expect(screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ })).not.toBeInTheDocument();
   });
 
+  // The removal pruned the proxy row, so the card the undo puts back is not a proxy while it waits.
+  it("puts a proxied card back as the server will write it, not proxied", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockReturnValue(deferred<DeckMutationResult>().promise);
+    const proxiedRing = { ...solRing, proxied: true };
+
+    const view = render(shell([proxiedRing, arcaneSignet]));
+    // The fixture draws the mark before the removal, or its absence below proves nothing.
+    expect(screen.getAllByText(proxyCopy.tag.aria).length).toBeGreaterThan(0);
+    await removeFromBuilder("Sol Ring");
+    await act(async () => { view.rerender(shell([arcaneSignet])); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }));
+    });
+
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+    expect(screen.queryByText(proxyCopy.tag.aria)).not.toBeInTheDocument();
+  });
+
   it("survives a tab switch to Consider and back", async () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
 
