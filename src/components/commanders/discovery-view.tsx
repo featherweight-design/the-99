@@ -20,12 +20,14 @@ import {
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
-import { inSets as inSetsOf, ordered, searchRows, upper } from "../../lib/discovery/window";
+import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper } from "../../lib/discovery/window";
 // Not type-only: `decodeDiscovery` runs on the client. Safe to import as a
 // value because `encode.ts` imports nothing but types from `list.ts`, which
 // reaches `src/db/index.ts` (whose body throws when DATABASE_URL is unset), so
 // the database module never comes with it. `window.ts` holds to the same rule.
-import { decodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
+import { decodeDiscovery, type DiscoveryRow, type EncodedDiscovery } from "../../lib/discovery/encode";
+import type { DiscoveryItem } from "../../lib/discovery/list";
+import { useDrawFields } from "./use-draw-fields";
 import { filePrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
 import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
 import { printedInLabel } from "./rack/chip-line";
@@ -66,17 +68,6 @@ const EMPTY_MATCHES: ExcludedMatch[] = [];
 /** One empty selection, so a memo reading it holds still across renders. */
 const NO_SETS: string[] = [];
 
-/**
- * The parameters with `order` corrected to the ranking the server actually
- * returned. Only `new` can be refused — `loadDiscovery` downgrades it when there
- * is no built deck to measure novelty from — and the four orders that ask for
- * the fit ranking always get it, so a mismatch has exactly one meaning and one
- * repair. Returning the same object when nothing moved is what lets the caller
- * skip a set during render.
- */
-function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
-  return discoverSort(p.order) === sort ? p : { ...p, order: "bestfit" };
-}
 
 /**
  * Discovery's list is its own client component rather than an adaptation of
@@ -329,9 +320,28 @@ export function DiscoveryView({
   //
   // A layout effect, and the re-rank announcement above is a plain effect, so a
   // flip's message always lands after this one clears the region.
+  // THE ROWS ON SCREEN, which are not always `filtered.slice(0, shown)`. The page ships draw
+  // fields for its own first window only (list payload plan, PR 3), and the rest arrive in the
+  // background. A reveal or a filter that reaches rows whose fields have not landed yet keeps the
+  // rows already drawn on screen, the list `aria-busy`, until they do: about one round trip, and
+  // no drawn waiting state, which would be a Design question this does not answer.
+  const wanted = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
+  const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted);
+  const resolvedWanted = wanted.map(resolve);
+  const complete = resolvedWanted.every((r) => r !== null);
+  const [held, setHeld] = useState<DiscoveryRow[]>(wanted);
+  if (complete && held !== wanted) setHeld(wanted);
+  const rows = (complete ? resolvedWanted : held.map(resolve)).filter(
+    (r): r is DiscoveryItem => r !== null,
+  );
+  // The window the reader can see, for the reveal's focus and announcement: a row whose fields
+  // are still arriving is not revealed yet, so neither is it announced or focused.
+  const settledShown = complete ? shown : held.length;
+
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const prevShown = useRef(shown);
+  const prevShown = useRef(settledShown);
   useLayoutEffect(() => {
+    const shown = settledShown;
     const before = prevShown.current;
     prevShown.current = shown;
     // Only a reveal widens the window; a filter or flip narrows it back to the
@@ -346,9 +356,10 @@ export function DiscoveryView({
     // preventScroll: revealing must not move the reader's place. The accent ring
     // is the cue that keyboard position advanced, not a jump down the page.
     itemRefs.current[before]?.focus({ preventScroll: true });
-  }, [shown, filtered.length]);
+  }, [settledShown, filtered.length]);
 
-  const remaining = Math.max(0, filtered.length - shown);
+  // Counted from the rows on screen: a reveal still waiting for its rows has not happened yet.
+  const remaining = Math.max(0, filtered.length - settledShown);
   // A list too short to have ever been windowed ends on a plain spacer.
   const wasWindowed = filtered.length > REVEAL_STEP;
 
@@ -767,8 +778,11 @@ export function DiscoveryView({
               />
             ) : null}
 
-            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-              {filtered.slice(0, shown).map((item, i) => (
+            <ul
+              className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0"
+              aria-busy={!complete || undefined}
+            >
+              {rows.map((item, i) => (
                 // Focusable only while the list is windowed, matching the owned
                 // lane: a row that never receives the reveal's focus move has no
                 // reason to be a tab stop between every card.
@@ -834,11 +848,12 @@ export function DiscoveryView({
                     // step that overshoots would otherwise have the live region announce
                     // a negative "more below" and a range past the end of the list.
                     onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
+                    busy={!complete}
                     // The band names ranks in the list the reader is looking at, so it
                     // counts against the filtered length rather than the server's.
                     band={discoveryCopy.window.revealBand(
-                      shown + 1,
-                      Math.min(shown + REVEAL_STEP, filtered.length),
+                      settledShown + 1,
+                      Math.min(settledShown + REVEAL_STEP, filtered.length),
                       filtered.length,
                     )}
                   />

@@ -1510,6 +1510,45 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   reverted against it and both fail: the tile's `sm:h-full` (24.75px spread) and the list's
   bottom padding (0.5px to the bar). Makes no writes; point it at `local-dev`.
 
+- **`/discover` ships whole rows for its first window only** (list payload plan, PR 3). The page
+  cuts every row outside its URL's first 25 down to the list columns (`cutToWindow`), and the rest
+  of each row's draw fields arrive from `GET /api/discovery-fields?sort=&s=` — signed in, at most
+  `MAX_FIELDS_BATCH` (200) slugs, answered `private, no-store` from the same cached payload the
+  page reads (`loadDiscoveryPayload`), so the two cannot disagree about a row. The window is cut
+  at the request and never stored: the cache entry stays keyed on the sort alone. `probe:payload`
+  holds what ships to 0.3MB (the worst account measured 0.253MB for `fit` and 0.133MB for `new`,
+  against 1.104MB for the whole entry), and fails with every row shipped whole.
+
+  **The server's window must be the client's.** The page finds its first 25 through
+  `lib/discovery/window` — the same search, set, order and colour steps the view runs — so a row
+  the view draws on arrival always arrived whole. A row it wants and does not have holds the list
+  under `aria-busy` with the previous rows standing, and `Show more` goes busy and ignores a press;
+  no new visuals (Hugh, option a).
+
+  **The background fetch never renders.** `useDrawFields` keeps its loop outside React state: one
+  batch in flight, the reader's waiting rows first, the rest after `requestIdleCallback`, and a
+  render only when a batch lands a row the reader is waiting on. A link click, the Navigation
+  API's `navigate`, `pagehide` and unmount abort the batch in flight; a `router.push` away is seen
+  only at commit.
+
+  **Measured on the slow profile, the batches cost the next navigation nothing**: pressed at the
+  same moment after landing (20s or 30s), `/discover` → `/commanders` reads 1.3s on main and on
+  this build, with a batch in flight or with the route blocked. What DID move is WHEN a reader can
+  press. The page's document went from 1.41MB (~15.5s to arrive) to 528KB (1.6s), so the page is
+  usable at ~7.5s instead of ~17.7s, and a press that early queues behind the app's own startup
+  downloads (its JS, Clerk's ~600KB UI bundle, the fonts) and arrives at ~24s. That is startup
+  contention, identical with the fields route blocked, and not this feature's cost. It also means
+  a harness that presses "2s after the router exists" compares two different moments on two
+  builds with different load times; press at a fixed time after landing instead.
+
+- `pnpm probe:discover-window` proves that at 1300x900 and 390x844 with the fields route HELD, so
+  nothing arrives in the background while it looks: five URLs, each with its own order, colour
+  and search, draw 25 rows on arrival and are not busy; `Show more` stays busy until the route is
+  released, then draws its rows. Two mutations fail it: the page cutting the DEFAULT window
+  whatever the URL asks for (3 checks, `?o=name` drawing 2 rows), and the fields fetch never
+  sent (the released rows never draw, at both widths). Makes no writes; point it at `local-dev` or a
+  scratch branch.
+
 - `pnpm probe:list-scroll` presses every expandable list on `/commanders/[slug]` at both
   widths and proves each one reopens at its top.
 

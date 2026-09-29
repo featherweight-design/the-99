@@ -13,9 +13,9 @@
 // independently the way the desktop one does. That is drawn consistently across
 // all four mobile frames, so it is built as drawn.
 
-/** Cards revealed per activation. Deliberately > the 24 generals the beta
- *  collection yields, so the control stays unreachable on real data for now. */
-export const REVEAL_STEP = 25;
+import { REVEAL_STEP } from "../../lib/commanders/reveal-step";
+
+export { REVEAL_STEP };
 
 /**
  * What the live region says once a reveal has committed. Both scopes send the
@@ -31,9 +31,17 @@ export function RevealControl({
   remaining,
   onReveal,
   band,
+  busy = false,
 }: {
   remaining: number;
   onReveal: () => void;
+  /**
+   * The rows the last press asked for are still arriving (`/discover`'s withheld draw fields):
+   * said with `aria-busy`, and a press while it holds does nothing. No visual change: the rows
+   * land in about one round trip, and a drawn waiting state is a Design question this does not
+   * answer.
+   */
+  busy?: boolean;
   /** Discovery's rank band, e.g. "ranks 1,026–1,050 of 3,334 · …". Omitted by
       the owned scope: at 242 rows the band was implicit, and at 3,334 it is
       not. */
@@ -65,7 +73,8 @@ export function RevealControl({
   return (
     <button
       type="button"
-      onClick={onReveal}
+      onClick={busy ? undefined : onReveal}
+      aria-busy={busy || undefined}
       aria-label={`Show ${REVEAL_STEP} more commanders, ${remaining.toLocaleString("en-US")} remaining`}
       className={[
         "group w-full rounded-lg flex flex-col items-center min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:justify-center sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]",

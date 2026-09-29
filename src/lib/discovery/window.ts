@@ -5,7 +5,7 @@
 // the rows of the URL's own first window, and a second copy of this logic on the server would
 // drift from the client's a round at a time. One definition, imported by both.
 import { filterByColors, type JoinMode } from "../commanders/filter";
-import type { LaneOrder } from "../commanders/lane-params";
+import { discoverSort, type LaneOrder } from "../commanders/lane-params";
 import { isPrintedIn } from "../sets/printed-in";
 
 /** The figures the client-side orders rank on, and nothing a row only draws. */
@@ -94,4 +94,16 @@ export function discoveryRows<T extends OrderedRow & { slug: string; colorIdenti
 ): T[] {
   const narrowed = inSets(searchRows(rows, p.q), codesBySlug, p.printedIn);
   return ordered(filterByColors(narrowed, upper(p.colors), p.match), p.order);
+}
+
+/**
+ * The parameters with `order` corrected to the ranking the server actually
+ * returned. Only `new` can be refused — `loadDiscovery` downgrades it when there
+ * is no built deck to measure novelty from — and the four orders that ask for
+ * the fit ranking always get it, so a mismatch has exactly one meaning and one
+ * repair. Returning the same object when nothing moved is what lets the caller
+ * skip a set during render.
+ */
+export function settleOrder<P extends { order: LaneOrder }>(p: P, sort: "fit" | "new"): P {
+  return discoverSort(p.order) === sort ? p : { ...p, order: "bestfit" };
 }

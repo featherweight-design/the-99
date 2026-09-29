@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
-import { encodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
+import { cutToWindow, encodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
@@ -498,6 +498,21 @@ describe("DiscoveryView", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(container.textContent).toContain("10 remaining");
     expect(screen.getByText(revealAnnouncement(50, 60, 25))).toBeTruthy();
+  });
+
+  // A reveal whose rows' fields have not arrived has not happened yet: the control keeps counting
+  // the rows on screen and naming the band it is waiting to show, rather than the one after it.
+  it("counts from the rows on screen while a reveal waits for its rows", () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    const whole = list({ items: many(60), candidateCount: 60 });
+    const firstWindow = new Set(many(25).map((r) => r.slug));
+    const { container } = render(<DiscoveryView encoded={cutToWindow(whole, firstWindow)} />);
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    const control = screen.getByRole("button", { name: /Show 25 more commanders, 35 remaining/ });
+    expect(control.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByText(discoveryCopy.window.revealBand(26, 50, 60))).toBeTruthy();
+    expect(container.textContent).not.toContain("10 remaining");
+    vi.unstubAllGlobals();
   });
 
   // A list too short to have been windowed has no window to count, and its rows

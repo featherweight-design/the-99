@@ -3,10 +3,12 @@ import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
-import { discoveryKey, loadDiscoveryWithIds } from "../../lib/discovery/list";
-import { encodeDiscovery } from "../../lib/discovery/encode";
+import { cutToWindow, decodeDiscovery } from "../../lib/discovery/encode";
+import { loadDiscoveryPayload } from "../../lib/discovery/payload";
+import { discoveryRows, settleOrder } from "../../lib/discovery/window";
+import { REVEAL_STEP } from "../../lib/commanders/reveal-step";
+import { filePrintedIn } from "../../lib/sets/printed-in";
 import { lanePrintedInFor } from "../../lib/sets/lane-printed-in";
-import { cacheForUser } from "../../lib/cache/user-lists";
 import { discoverSort, parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { PrimaryButton } from "../../components/ui/button";
@@ -79,16 +81,27 @@ export default async function DiscoverPage({
   // the entry, per request: its read can fail, and a failure filed here would hide the control
   // for the entry's whole life. `loadCommanderPrintings` is memoised per catalog generation, so
   // the per-request cost is the crossing, not the read.
-  const { encoded, oracleIds } = await cacheForUser(userId, discoveryKey(sort), async () => {
-    const { list, oracleIds } = await loadDiscoveryWithIds(userId, { sort });
-    return { encoded: encodeDiscovery(list), oracleIds };
-  });
+  const { encoded, oracleIds } = await loadDiscoveryPayload(userId, sort);
   const printedIn = await lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId })));
+
+  // THE URL'S OWN FIRST WINDOW keeps its draw columns and every other row ships without them
+  // (list payload plan, PR 3): only 25 of about 3,000 rows are drawn on arrival, and the art,
+  // the sentence and the fit parts were 70% of the payload. The window is found by the same
+  // steps the view runs (`lib/discovery/window`), over the same index, with the order settled
+  // against the ranking that actually came back, so the rows the page draws first are the rows
+  // it shipped whole. The rest arrive in the background from `/api/discovery-fields`.
+  const decoded = decodeDiscovery(encoded);
+  const codesBySlug = printedIn
+    ? filePrintedIn(new Map(), decoded.items.map((r) => r.slug), printedIn)
+    : null;
+  const first = discoveryRows(decoded.items, settleOrder(params, decoded.sort), codesBySlug)
+    .slice(0, REVEAL_STEP);
+  const shipped = cutToWindow(encoded, new Set(first.map((r) => r.slug)));
 
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={encoded} printedIn={printedIn} chooseLink={helpMeChooseEnabled()} />
+      <DiscoveryView encoded={shipped} printedIn={printedIn} chooseLink={helpMeChooseEnabled()} />
     </section>
   );
 }
