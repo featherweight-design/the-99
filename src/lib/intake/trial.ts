@@ -48,8 +48,8 @@ export async function trialFill(
   const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
     answers, selectedCosts: await costsOf(card ? [card] : []),
   });
-  // The plan fills a whole body beside the card, so the card's row would make it 100: cap it
-  // exactly as `createDeck` and `fillDeck` do.
+  // The plan is sized to the slots the card leaves (`buildFillPlan` plans body - placed), and the
+  // cap is kept exactly as `createDeck` and `fillDeck` keep it, as the rule the body obeys.
   const rows = capToBody([...(card ? [{ oracleId: card, quantity: 1 }] : []), ...plan.rows], deckBodySize(false));
   const ids = [...new Set(rows.map((r) => r.oracleId))];
 

@@ -78,7 +78,10 @@ export async function loadFillGate(args: {
       .reduce((sum, id) => sum + (priceOf(id) ?? 0), 0);
     gates.push(budgetGate({
       remainingCents: answers.budgetCents - placedCost,
-      buys: (c) => buys(c.oracleId),
+      // THE CARD'S OWN TYPE LINE, not only the candidate list's: the catalog's basics (`planFill`'s
+      // `basics`) are offered to the fill without being candidates, so an id-set test read one as
+      // unowned and unpriced, and the budget refused it. A basic is never a buy, whoever offers it.
+      buys: (c) => !isBasicLand(c.typeLine) && buys(c.oracleId),
       priceOf,
     }));
   }

@@ -359,6 +359,55 @@ describe("planFill", () => {
 
   const boros = { ...FLAT, identity: ["R", "W"] };
 
+  // ---- the catalog's basics, offered whatever the shelf holds ----
+
+  /** The catalog's six basics, as `buildFillPlan` loads them: no collection row behind any. */
+  const catalogBasics = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].map((name) =>
+    c({ oracleId: `cat-${name.toLowerCase()}`, name, typeLine: `Basic Land — ${name}`, oracleText: null, ownedQuantity: 0 }));
+
+  it("finds a Mountain for a Boros deck whose shelf holds none", () => {
+    // Hugh's report, by the other route: the pool is the collection, so with no Mountain row the
+    // split had no red basic to reach, and every basic went to Plains however red the deck.
+    const pool = [
+      ...Array.from({ length: 10 }, (_, i) => c({ oracleId: `r${i}`, manaCost: "{R}{R}", inclusionPct: 90 - i })),
+      basic("plains", 40, "Plains"),
+    ];
+    const without = planFill(pool, { ...boros, commanderCosts: ["{R}{W}"] });
+    expect(without.rows.some((r) => r.oracleId === "cat-mountain")).toBe(false);
+    const plan = planFill(pool, { ...boros, commanderCosts: ["{R}{W}"], basics: catalogBasics });
+    const q = (id: string) => plan.rows.filter((r) => r.oracleId === id).reduce((n, r) => n + r.quantity, 0);
+    // Red is 21 pips to white's 1, so red leads, and nothing but Plains and Mountains is taken.
+    expect(q("cat-mountain")).toBeGreaterThan(q("plains"));
+    expect(q("cat-mountain") + q("plains")).toBe(37);
+    expect(plan.rows.some((r) => r.oracleId === "cat-wastes" || r.oracleId === "cat-forest")).toBe(false);
+  });
+
+  it("takes the player's own basic type before the catalog's", () => {
+    // The player owns Snow-Covered Plains and no Plains. Both tap for white; the owned type is the
+    // pool's own row and comes first, so it takes the white slots and the catalog's Plains none.
+    // With the catalog's basics listed ahead of the pool's, the catalog Plains would take them all.
+    const snow = c({
+      oracleId: "snow-plains", name: "Snow-Covered Plains", typeLine: "Basic Snow Land — Plains",
+      oracleText: "{T}: Add {W}.", ownedQuantity: 3,
+    });
+    const plan = planFill([c({ oracleId: "w0", manaCost: "{W}" }), snow], { ...FLAT, identity: ["W"], basics: catalogBasics });
+    expect(plan.rows.find((r) => r.oracleId === "snow-plains")?.quantity).toBe(37);
+    expect(plan.rows.some((r) => r.oracleId === "cat-plains")).toBe(false);
+  });
+
+  it("never bills a catalog basic", () => {
+    const plan = planFill([c({ oracleId: "r0", manaCost: "{R}" })], { ...FLAT, identity: ["R"], basics: catalogBasics });
+    expect(plan.rows.find((r) => r.oracleId === "cat-mountain")?.quantity).toBe(37);
+    expect(plan.bought).toBe(0);
+  });
+
+  it("puts catalog Wastes only in a colourless deck", () => {
+    const colourless = planFill([c({ oracleId: "x0", manaCost: "{C}" })], { ...FLAT, identity: [], basics: catalogBasics });
+    expect(colourless.rows.find((r) => r.oracleId === "cat-wastes")?.quantity).toBe(37);
+    const coloured = planFill([c({ oracleId: "g0", manaCost: "{G}" })], { ...FLAT, identity: ["G"], basics: catalogBasics });
+    expect(coloured.rows.some((r) => r.oracleId === "cat-wastes")).toBe(false);
+  });
+
   it("never puts Wastes in a coloured deck", () => {
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),

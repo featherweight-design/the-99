@@ -37,6 +37,7 @@ import { planFill, type FillCandidate, type FillPlan, type FillRow } from "../sr
 import type { ProfileSkeleton } from "../src/lib/profile/types";
 import { landTarget } from "../src/lib/decks/deck-size";
 import { loadSkeletonForCommanders } from "../src/lib/profile/load";
+import { loadCatalogBasics } from "../src/lib/decks/catalog-basics";
 import { castFaceText, playableAsLand } from "../src/lib/cards/facet";
 import { classifyRoles, type Role } from "../src/lib/recs/roles";
 import { readSynergyCards } from "../src/app/commanders/[slug]/synergy-read";
@@ -135,8 +136,17 @@ const placeableModal = (
 ): { card: CardRow; plan: FillPlan; row: FillRow } | null => {
   for (const card of candidates) {
     if (!playableAsLand(card.type_line, card.layout)) continue;
-    if (!rolesOf(card).some((x) => x !== "land")) continue;
-    const plan = planFill([fixtureCard(card), ...basePool], { hasPartner: false, skeleton });
+    const own: Role[] = rolesOf(card).filter((x) => x !== "land");
+    if (own.length === 0) continue;
+    // WITHOUT RIVALS FOR ITS ROLES. The card is first in preference, but the role pass's
+    // tie-break hands its slot to any card closing MORE open floors (§2.5a), so on a real pool
+    // the multi-role cards shut the floor before this one is taken and the case measures nothing.
+    // It was never the role pass refusing a land-backed modal card: `classifyRoles` reads the
+    // FRONT face (`isLandFace`), so such a card is a spell there and is taken when a floor is open.
+    const pool = basePool.filter((c) => !classifyRoles({
+      typeLine: c.typeLine, oracleText: castFaceText(c.oracleText, c.layout), keywords: c.keywords,
+    }).some((r) => own.includes(r)));
+    const plan = planFill([fixtureCard(card), ...pool], { hasPartner: false, skeleton });
     const row = plan.rows.find((r) => r.oracleId === card.oracle_id);
     if (row) return { card, plan, row };
   }
@@ -423,7 +433,7 @@ async function main() {
   //
   // WHAT DROPPED RED was the pip census, not the shelf: Thorin's owner had 81 Mountains, and the
   // census saw neither the commanders nor the residual, so red scored zero pips. This fixture
-  // owns **Mountain in ZERO copies** for a separate reason: it checks that the split does not
+  // holds **no Mountain row at all** for a separate reason: it checks that the split does not
   // depend on the shelf either, which is a synthetic case rather than a reproduction of Thorin.
   // Rows are found BY QUERY rather than by a name that rots with the catalog.
   const [plainsRow] = await rows<CardRow>(sql`
@@ -441,13 +451,14 @@ async function main() {
     const borosPool = [
       ...pool400.map((r) => candidate(r)),
       candidate(plainsRow, true, 18),
-      // ZERO copies owned, deliberately: a basic is never a buy, so the shelf must not decide
-      // whether a colour is in the mana base. With the fix reverted this is what vanishes.
-      candidate(mountainRow, true, 0),
+      // NO MOUNTAIN ROW AT ALL, deliberately: the pool is the collection, so a player with none
+      // offers the split no red basic. The catalog's Mountain arrives through `basics`, loaded by
+      // the same `loadCatalogBasics` `buildFillPlan` calls. With that argument dropped this is
+      // what vanishes.
       candidate(wastesRow, true, 9),
     ];
     const boros = planFill(borosPool, {
-      hasPartner: false, skeleton, identity: ["R", "W"],
+      hasPartner: false, skeleton, identity: ["R", "W"], basics: await loadCatalogBasics(),
     });
     const qty = (id: string) => boros.rows
       .filter((r) => r.oracleId === id).reduce((n, r) => n + r.quantity, 0);
@@ -456,7 +467,7 @@ async function main() {
     const wastes = qty(wastesRow.oracle_id);
     console.log(`  Plains ${plains} · Mountain ${mountain} · Wastes ${wastes}`);
     check("8a · no Wastes in a Boros deck", wastes, 0);
-    truthy("8b · Mountains present despite zero owned", mountain > 0);
+    truthy("8b · Mountains present with no Mountain in the collection", mountain > 0);
     truthy("8c · Plains present", plains > 0);
     // THE BASE IS STILL COMPLETE, which is the check the other three cannot make. Excluding
     // Wastes is only half the ruling: a fix that dropped it and left the mana base six lands short

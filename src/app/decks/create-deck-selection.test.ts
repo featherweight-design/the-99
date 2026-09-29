@@ -125,6 +125,9 @@ const stub = vi.hoisted(() => {
   return { db, state };
 });
 
+// The catalog's basics are a separate read the table stubs here do not model; none by default,
+// and a test that needs them sets them.
+vi.mock("../../lib/decks/catalog-basics", () => ({ loadCatalogBasics: vi.fn(async () => []) }));
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {}, updateTag: () => {} }));
@@ -141,6 +144,7 @@ vi.mock("../../lib/edhrec/client", () => ({
 }));
 
 import { createDeck } from "./actions";
+import { loadCatalogBasics } from "../../lib/decks/catalog-basics";
 
 const CMDR = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const VALID = "11111111-1111-4111-8111-111111111111";
@@ -312,6 +316,80 @@ describe("createDeck with a selection", () => {
     stub.state.cards.push(commanderRow(), cardRow(VALID));
     await runCreate("My deck", [CMDR, VALID]);
     expect(insertedIds()).not.toContain(CMDR);
+  });
+
+  it("weights the basics by the selection, not by residual rows the cap would cut", async () => {
+    // Sixty black picks leave the plan thirty-nine slots. Planning the whole body put forty
+    // green residual spells in the pip census although the cap cut them from the deck, and their
+    // 160 green pips outweighed the picks' 60 black. Planning only the slots that survive keeps
+    // every counted row in the finished deck, and the selection's colour wins.
+    const picks = selectionOf(60);
+    const SWAMP = "5000ba51-0000-4000-8000-000000000011";
+    const PLAINS = "5000ba51-0000-4000-8000-000000000012";
+    const FOREST = "5000ba51-0000-4000-8000-000000000013";
+    const basic = (id: string, name: string) => cardRow(id, {
+      name, typeLine: `Basic Land — ${name}`, oracleText: null, manaCost: null, cmc: 0, quantity: 40,
+    });
+    const green = Array.from({ length: 40 }, (_, i) =>
+      cardRow(`6${i.toString().padStart(7, "0")}-1111-4111-8111-111111111111`, {
+        typeLine: "Creature — Elf", oracleText: "Flying", manaCost: "{G}{G}{G}{G}", colorIdentity: ["G"], cmc: 4,
+      }));
+    stub.state.cards.push(
+      commanderRow(),
+      ...picks.map((id) => cardRow(id, { typeLine: "Creature — Rat", oracleText: "Flying", manaCost: "{B}", colorIdentity: ["B"], cmc: 1 })),
+    );
+    stub.state.collectionItems.push(basic(SWAMP, "Swamp"), basic(PLAINS, "Plains"), basic(FOREST, "Forest"), ...green);
+
+    await runCreate("My deck", picks);
+
+    const qty = (id: string) => insertedRows()
+      .filter((r) => r.oracleId === id)
+      .reduce((n, r) => n + (r.quantity as number), 0);
+    expect(qty(SWAMP)).toBeGreaterThan(qty(FOREST) + qty(PLAINS));
+    expect(insertedRows().reduce((n, r) => n + (r.quantity as number), 0)).toBe(99);
+  });
+
+  it("gives an identity colour a basic from the catalog when the shelf holds none", async () => {
+    // THE WIRING, which no test on `planFill` reaches: `buildFillPlan` loads the catalog's basics
+    // and hands them over. Atraxa is W/B/G with one pip each; the player owns Forests only, and
+    // before the catalog was offered, every basic went to Forest.
+    const FOREST = "5000ba51-0000-4000-8000-000000000021";
+    const CAT_SWAMP = "5000ba51-0000-4000-8000-000000000022";
+    const CAT_PLAINS = "5000ba51-0000-4000-8000-000000000023";
+    const land = (id: string, name: string, quantity: number) => cardRow(id, {
+      name, typeLine: `Basic Land — ${name}`, oracleText: null, manaCost: null, cmc: 0, quantity,
+    });
+    vi.mocked(loadCatalogBasics).mockResolvedValueOnce([
+      { ...land(CAT_SWAMP, "Swamp", 0), owned: true, ownedQuantity: 0, inclusionPct: null, layout: "normal" },
+      { ...land(CAT_PLAINS, "Plains", 0), owned: true, ownedQuantity: 0, inclusionPct: null, layout: "normal" },
+    ] as never);
+    stub.state.cards.push(commanderRow());
+    stub.state.collectionItems.push(land(FOREST, "Forest", 40));
+
+    await runCreate("My deck");
+
+    const ids = insertedIds();
+    expect(ids).toContain(CAT_SWAMP);
+    expect(ids).toContain(CAT_PLAINS);
+  });
+
+  it("never plans a second row for a basic the selection already placed", async () => {
+    // `deck_cards` is keyed on the card and the insert does nothing on conflict, so a planned
+    // Plains stack beside a selected Plains is dropped whole and the deck lands dozens short. The
+    // catalog's basics come under the same exclusion as the pool.
+    const PLAINS = "5000ba51-0000-4000-8000-000000000031";
+    const plains = cardRow(PLAINS, {
+      name: "Plains", typeLine: "Basic Land — Plains", oracleText: null, manaCost: null, cmc: 0,
+      colorIdentity: [], quantity: 0,
+    });
+    vi.mocked(loadCatalogBasics).mockResolvedValueOnce([
+      { ...plains, owned: true, ownedQuantity: 0, inclusionPct: null, layout: "normal" },
+    ] as never);
+    stub.state.cards.push(commanderRow(), plains);
+
+    await runCreate("My deck", [PLAINS]);
+
+    expect(insertedRows().filter((r) => r.oracleId === PLAINS)).toHaveLength(1);
   });
 
   it("counts the 99 cap on summed quantity, not on row count", async () => {
