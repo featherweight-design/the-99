@@ -1,5 +1,5 @@
 /**
- * Writes `public/mana/sprite.svg` from the committed per-symbol files, one `<view>` per symbol.
+ * Writes `public/mana/sprite.svg` from the committed per-symbol files, one square cell per symbol.
  * `pnpm fetch:mana` runs this after it writes them; run it by hand after editing one. Touches no
  * database and no network. See `src/lib/cards/mana-sprite.ts` for why the sprite exists.
  */
