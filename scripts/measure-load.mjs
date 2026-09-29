@@ -28,6 +28,11 @@
 //     navigation-pending brief measured, so its table and this one can be read side by side.
 //   - MEASURE_ROUTES=collection,discover: only the routes named (by label), since a slow run of all
 //     six at two widths and three runs takes a long time. The card press needs `deck`.
+//   - MEASURE_WIDTHS=390: only the widths named (1300, 390).
+//   - MEASURE_LOADS=0: skip each route's cold and warm loads (and with them the card press, which
+//     runs on the deck's loaded page) and run only the client navigation pass. The table then
+//     prints the soft figures alone. With MEASURE_ROUTES=discover,home that pass goes Home, /discover, Home, so Home's soft
+//     first visit is the one a /discover list is still mounted under.
 // The table also prints, per route, the card images a cold load ASKED for and the kilobytes that
 // landed, because an image is not in any RSC figure and can still be most of what a page costs.
 //
@@ -73,6 +78,12 @@ const IMAGE_HOSTS = /(^|\.)scryfall\.io\//;
 const PROFILE = process.env.MEASURE_PROFILE ?? "fast";
 const LOAD_CAP_MS = 90_000;
 if (PROFILE !== "fast" && PROFILE !== "slow") throw new Error(`MEASURE_PROFILE is fast or slow, not ${PROFILE}.`);
+const ONLY_WIDTHS = process.env.MEASURE_WIDTHS ? new Set(process.env.MEASURE_WIDTHS.split(",").map((w) => w.trim())) : null;
+const MEASURED_WIDTHS = ONLY_WIDTHS ? WIDTHS.filter((w) => ONLY_WIDTHS.has(w.label)) : WIDTHS;
+if (ONLY_WIDTHS && MEASURED_WIDTHS.length !== ONLY_WIDTHS.size) throw new Error(`MEASURE_WIDTHS takes ${WIDTHS.map((w) => w.label).join(", ")}.`);
+const LOADS_ENV = process.env.MEASURE_LOADS ?? "1";
+if (LOADS_ENV !== "0" && LOADS_ENV !== "1") throw new Error(`MEASURE_LOADS is 0 or 1, not ${LOADS_ENV}.`);
+const LOADS = LOADS_ENV === "1";
 const ONLY = process.env.MEASURE_ROUTES ? new Set(process.env.MEASURE_ROUTES.split(",").map((r) => r.trim())) : null;
 
 /** Chrome DevTools' own Slow 4G preset, and the 4x CPU throttle the brief paired it with. */
@@ -275,7 +286,7 @@ async function cardPress(page, cap, width) {
 async function one(browser, state, width, routes, sql) {
   const result = { routes: {}, soft: {}, card: null };
   const ctx = () => browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
-  for (const route of routes) {
+  for (const route of LOADS ? routes : []) {
     const context = await ctx();
     await context.addInitScript(CONTENT_PROBE);
     const page = await context.newPage();
@@ -326,10 +337,17 @@ const median = (xs) => {
 
 function table(runs, routes) {
   const lines = [];
-  for (const width of WIDTHS) {
+  for (const width of MEASURED_WIDTHS) {
     const per = runs.map((r) => r[width.label]);
     const m = (f) => median(per.map(f));
     lines.push(`\n**${width.label}** (median of ${runs.length})\n`);
+    if (!LOADS) {
+      // MEASURE_LOADS=0 ran no page loads and no card press, so only the soft figures exist.
+      lines.push("| Route | Soft first / revisit |");
+      lines.push("|---|---|");
+      for (const route of routes) lines.push(`| ${route.label} | ${m((p) => p.soft[route.label]?.first)} / ${m((p) => p.soft[route.label]?.revisit)} |`);
+      continue;
+    }
     lines.push("| Route | TTFB cold / warm | Content cold / warm | Stream end warm | First image cold / warm | Soft first / revisit | DB exec warm |");
     lines.push("|---|---|---|---|---|---|---|");
     for (const route of routes) {
@@ -385,7 +403,7 @@ async function main() {
     const runs = [];
     for (let i = 0; i < RUNS; i += 1) {
       const run = {};
-      for (const width of WIDTHS) run[width.label] = await one(browser, state, width, routes, sql);
+      for (const width of MEASURED_WIDTHS) run[width.label] = await one(browser, state, width, routes, sql);
       runs.push(run);
       // Written after EVERY run, not once at the end: a slow-profile run of seven takes over an
       // hour, and a run stopped part-way (to hand a shared machine back) used to lose the raw
