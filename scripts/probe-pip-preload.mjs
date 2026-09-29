@@ -1,6 +1,6 @@
 // Mana pips are painted with their symbol, not an empty box first (Hugh, 2026-09-28: "pips pop in").
 //
-// Every pip is a view in ONE sprite (`src/lib/cards/mana-sprite.ts`) that the root layout preloads.
+// Every pip is a cell of ONE sprite (`src/lib/cards/mana-sprite.ts`) that the root layout preloads.
 // What this proves is timing and paint, which jsdom has neither of:
 //
 //   1. On a cold cache, the sprite has ARRIVED before the page's first contentful paint, on
@@ -12,9 +12,11 @@
 //   2. No pip asks for a per-symbol file: the old `/mana/W.svg` requests are what popped.
 //   3. The card modal's cost draws from the sprite the page already holds: opened after load, the
 //      sprite is not fetched again.
-//   4. The fragment PAINTS, in Chromium and WebKit alike: a `<view>` fragment in a CSS background
-//      is the part of this design an engine could get wrong silently, so each symbol the page
-//      draws is drawn to a canvas through the same URL and must leave opaque pixels.
+//   4. Each pip PAINTS its symbol, in Chromium and WebKit alike. A pip is a window onto the sheet
+//      placed by percentages, and a wrong size draws the whole sheet as a thin strip with markup
+//      identical to a working build: the first design (SVG `<view>` fragments) did exactly that. So
+//      each pip's window is redrawn to a canvas from its own computed size and position, and must
+//      cover most of its box with opaque pixels.
 //
 // Signs in once, then measures in a FRESH context per engine and width, so each run has an empty
 // HTTP cache. Writes only the account's About row (captured and restored). Point it at `local-dev`,
@@ -23,7 +25,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium, webkit } from "playwright";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, openSheet } from "./lib/surface.mjs";
 import { requireEnv } from "./lib/env.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
@@ -71,36 +73,46 @@ async function signIn(page) {
   return userId;
 }
 
-/** Every distinct pip URL the page draws, read off computed backgrounds. */
-const PIP_URLS = () => {
-  const urls = new Set();
+/** Every distinct pip background the page draws: the URL, and the window's computed size and position. */
+const PIPS = () => {
+  const out = new Map();
   for (const el of document.querySelectorAll("*")) {
-    const bg = getComputedStyle(el).backgroundImage;
-    for (const m of bg.matchAll(/url\("?([^")]*\/mana\/[^")]*)"?\)/g)) urls.add(m[1]);
+    const cs = getComputedStyle(el);
+    const m = cs.backgroundImage.match(/url\("?([^")]*\/mana\/[^")]*)"?\)/);
+    if (!m) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) continue;
+    const key = `${cs.backgroundSize}|${cs.backgroundPosition}`;
+    if (!out.has(key)) out.set(key, { url: m[1], w: r.width, h: r.height, size: cs.backgroundSize, pos: cs.backgroundPosition });
   }
-  return [...urls];
+  return [...out.values()];
 };
 
-/** Draws each URL to a canvas through an <img>, and counts opaque pixels. */
-const PAINTED = async (urls) => {
-  const out = {};
-  for (const url of urls) {
-    out[url] = await new Promise((resolve) => {
+/** Redraws each pip's window onto a canvas of its own box, and returns the opaque share of it. */
+const PAINTED = async (pips) => {
+  const pct = (v) => parseFloat(v) / 100;
+  const out = [];
+  for (const p of pips) {
+    out.push(await new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
+        const w = Math.round(p.w), h = Math.round(p.h);
+        const [sx, sy] = p.size.split(" ").map(pct);
+        const [px, py] = p.pos.split(" ").map(pct);
+        const dw = w * sx, dh = h * sy;
         const c = document.createElement("canvas");
-        c.width = 32;
-        c.height = 32;
+        c.width = w;
+        c.height = h;
         const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, 32, 32);
-        const data = ctx.getImageData(0, 0, 32, 32).data;
+        ctx.drawImage(img, (w - dw) * px, (h - dh) * py, dw, dh);
+        const data = ctx.getImageData(0, 0, w, h).data;
         let opaque = 0;
         for (let i = 3; i < data.length; i += 4) if (data[i] > 200) opaque += 1;
-        resolve(opaque);
+        resolve({ ...p, share: opaque / (w * h) });
       };
-      img.onerror = () => resolve(-1);
-      img.src = url;
-    });
+      img.onerror = () => resolve({ ...p, share: -1 });
+      img.src = p.url;
+    }));
   }
   return out;
 };
@@ -108,6 +120,16 @@ const PAINTED = async (urls) => {
 async function measure(browser, storage, engine, vp) {
   const context = await browser.newContext({ storageState: storage, viewport: { width: vp.width, height: vp.height } });
   const page = await context.newPage();
+  // The first moment any element drawing from the sprite exists, stamped by an observer installed
+  // before the document parses, so it sees the server's own markup arrive as well as later mounts.
+  await page.addInitScript(() => {
+    window.__firstPip = null;
+    const hit = (n) => n.nodeType === 1 && ((n.getAttribute("style") ?? "").includes("sprite.svg") || n.querySelector?.('[style*="sprite.svg"]'));
+    new MutationObserver((records) => {
+      if (window.__firstPip !== null) return;
+      for (const r of records) for (const n of r.addedNodes) if (hit(n)) { window.__firstPip = performance.now(); return; }
+    }).observe(document, { childList: true, subtree: true });
+  });
   const where = `${engine} @${vp.label}`;
   const perFile = [];
   const spriteFetches = [];
@@ -122,30 +144,39 @@ async function measure(browser, storage, engine, vp) {
   });
   try {
     await page.goto(`${BASE}/commanders`, { waitUntil: "load" });
+    // Below the rack's width the colour pips live in the filter sheet: open it, which is the first
+    // time they render on the phone. The press waits for the network to settle: with every request
+    // held, `load` fires before hydration, and a press before it opens nothing.
+    if (vp.width < 1000) {
+      await page.waitForLoadState("networkidle");
+      if ((await openSheet(page)) === null) check(`${where}: the filter sheet opens`, false, "no trigger found");
+    }
+    await page.waitForFunction(() => window.__firstPip !== null, null, { timeout: 30_000 }).catch(() => {});
     await page.waitForTimeout(500);
     const timing = await page.evaluate(() => {
-      const fcp = performance.getEntriesByType("paint").find((e) => e.name === "first-contentful-paint");
       const sprite = performance.getEntriesByType("resource").find((e) => e.name.includes("/mana/sprite.svg"));
-      return { fcp: fcp?.startTime ?? null, spriteEnd: sprite?.responseEnd ?? null, initiator: sprite?.initiatorType ?? null };
+      return { pip: window.__firstPip, spriteEnd: sprite?.responseEnd ?? null, initiator: sprite?.initiatorType ?? null };
     });
     check(
-      `${where}: the sprite has arrived by the first contentful paint`,
-      timing.fcp !== null && timing.spriteEnd !== null && timing.spriteEnd <= timing.fcp,
-      `sprite ${timing.spriteEnd?.toFixed(0)}ms (${timing.initiator}), first paint ${timing.fcp?.toFixed(0)}ms`,
+      `${where}: the sprite has arrived before the first pip is drawn`,
+      timing.pip !== null && timing.spriteEnd !== null && timing.spriteEnd <= timing.pip,
+      `sprite ${timing.spriteEnd?.toFixed(0)}ms (${timing.initiator}), first pip ${timing.pip?.toFixed(0)}ms`,
     );
 
-    const urls = await page.evaluate(PIP_URLS);
-    check(`${where}: the page draws pips from the sprite`, urls.length > 0 && urls.every((u) => u.includes("/mana/sprite.svg#m-")),
-      urls.join(", ") || "no pip drawn — NOT a pass");
-    const painted = await page.evaluate(PAINTED, urls);
-    const blank = Object.entries(painted).filter(([, n]) => n <= 50);
-    check(`${where}: every pip's view paints its symbol`, urls.length > 0 && blank.length === 0,
-      blank.length ? `blank: ${blank.map(([u, n]) => `${u.split("#")[1]}=${n}`).join(", ")}` : `${urls.length} views painted`);
+    const pips = await page.evaluate(PIPS);
+    check(`${where}: the page draws pips from the sprite`, pips.length > 0 && pips.every((p) => p.url.endsWith("/mana/sprite.svg")),
+      pips.map((p) => p.url).join(", ") || "no pip drawn — NOT a pass");
+    // A round symbol covers ~78% of its square; the strip the fragment design drew covered ~2%.
+    const painted = await page.evaluate(PAINTED, pips);
+    const blank = painted.filter((p) => p.share < 0.5);
+    check(`${where}: every pip's window paints its symbol`, pips.length > 0 && blank.length === 0,
+      blank.length ? `blank: ${blank.map((p) => `${p.pos}=${p.share.toFixed(2)}`).join(", ")}`
+        : `${pips.length} windows painted, min ${Math.min(...painted.map((p) => p.share)).toFixed(2)}`);
 
     // The modal: open any card from /collection, whose cost draws from the sprite already held.
     await page.goto(`${BASE}/collection?view=rows`, { waitUntil: "load" });
     const before = spriteFetches.length;
-    const trigger = onPage(page, 'button[aria-label^="View details for"]').first();
+    const trigger = onPage(page, "button[aria-busy]").first();
     await trigger.click();
     const cost = page.locator('[data-testid="modal-mana-cost"]').first();
     await cost.waitFor({ state: "visible", timeout: 15_000 });
@@ -157,7 +188,7 @@ async function measure(browser, storage, engine, vp) {
       }
       return urls;
     });
-    check(`${where}: the modal's cost draws from the sprite`, costUrls.length > 0 && costUrls.every((u) => u.includes("/mana/sprite.svg#m-")),
+    check(`${where}: the modal's cost draws from the sprite`, costUrls.length > 0 && costUrls.every((u) => u.endsWith("/mana/sprite.svg")),
       costUrls.join(", ") || "no cost drawn — open a costed card");
     check(`${where}: and does not fetch it again`, spriteFetches.length - before <= 1,
       `${spriteFetches.length - before} sprite request(s) after the page's own`);

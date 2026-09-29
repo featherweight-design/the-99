@@ -3,6 +3,7 @@
 // `/mana/W.svg` where the cost says `{U}` would satisfy any check that only
 // counted backgrounds, and so would one that drew every symbol as the same
 // placeholder.
+import { manaSpriteBackground } from "../../lib/cards/mana-sprite";
 import { describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach } from "vitest";
@@ -14,16 +15,22 @@ afterEach(cleanup);
 
 /** Every `url(...)` a pip asks for, in drawn order. */
 function sources(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<HTMLElement>("span[style*='url(']")].map(
-    (el) => el.style.background.match(/url\(([^)]+)\)/)?.[1]?.replace(/["']/g, "") ?? "",
-  );
+  return [...container.querySelectorAll<HTMLElement>("span[style*='url(']")].map((el) => el.style.background);
+}
+
+/** A symbol's sprite cell, as jsdom reads back the background the component set. Every pip draws the
+ *  same sheet, so the cell's position, not the URL, is what says which symbol it is. */
+function cell(slug: string): string {
+  const probe = document.createElement("span");
+  probe.style.background = manaSpriteBackground(slug) ?? "";
+  return probe.style.background;
 }
 
 describe("ManaCost", () => {
   it("draws each symbol's own art, in cost order", () => {
     const { container } = render(<ManaCost cost="{2}{W}{U}" />);
 
-    expect(sources(container)).toEqual(["/mana/sprite.svg#m-2", "/mana/sprite.svg#m-W", "/mana/sprite.svg#m-U"]);
+    expect(sources(container)).toEqual([cell("2"), cell("W"), cell("U")]);
   });
 
   // The symbols say nothing to a screen reader, where the retired discs at
@@ -41,7 +48,7 @@ describe("ManaCost", () => {
   it("draws hybrid, twobrid and Phyrexian symbols whole", () => {
     const { container } = render(<ManaCost cost="{W/U}{2/R}{G/P}" />);
 
-    expect(sources(container)).toEqual(["/mana/sprite.svg#m-WU", "/mana/sprite.svg#m-2R", "/mana/sprite.svg#m-GP"]);
+    expect(sources(container)).toEqual([cell("WU"), cell("2R"), cell("GP")]);
   });
 
   // Scryfall's symbol list grows with the card pool and these files move only
@@ -51,7 +58,7 @@ describe("ManaCost", () => {
   it("falls back to a lettered pip for a symbol with no committed art", () => {
     const { container } = render(<ManaCost cost="{W}{QQ}" />);
 
-    expect(sources(container)).toEqual(["/mana/sprite.svg#m-W"]);
+    expect(sources(container)).toEqual([cell("W")]);
     expect(container.textContent).toContain("QQ");
   });
 
@@ -70,7 +77,7 @@ describe("ManaCost", () => {
   it("draws both halves of a two-part cost", () => {
     const { container } = render(<ManaCost cost="{3}{B} // {B}" />);
 
-    expect(sources(container)).toEqual(["/mana/sprite.svg#m-3", "/mana/sprite.svg#m-B", "/mana/sprite.svg#m-B"]);
+    expect(sources(container)).toEqual([cell("3"), cell("B"), cell("B")]);
   });
 });
 
@@ -82,11 +89,11 @@ describe("ManaCost — a card with two printed costs", () => {
     const { container } = render(<ManaCost cost="{G/U}{G/U} // {1}{G}{U}" />);
 
     expect(sources(container)).toEqual([
-      "/mana/sprite.svg#m-GU",
-      "/mana/sprite.svg#m-GU",
-      "/mana/sprite.svg#m-1",
-      "/mana/sprite.svg#m-G",
-      "/mana/sprite.svg#m-U",
+      cell("GU"),
+      cell("GU"),
+      cell("1"),
+      cell("G"),
+      cell("U"),
     ]);
   });
 
@@ -129,7 +136,7 @@ describe("ManaCost — a card with two printed costs", () => {
   it("draws one run and no separator when a half is empty", () => {
     const { container } = render(<ManaCost cost="{B} // " />);
 
-    expect(sources(container)).toEqual(["/mana/sprite.svg#m-B"]);
+    expect(sources(container)).toEqual([cell("B")]);
     expect(container.textContent).not.toContain("//");
   });
 });

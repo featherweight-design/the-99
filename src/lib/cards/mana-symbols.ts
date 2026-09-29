@@ -12,7 +12,7 @@
 // its colored discs, which is also what the pip-gap and black-pip probes measure.
 
 import { MANA_SYMBOL_SLUGS } from "./mana-symbol-slugs";
-import { manaSpriteHref } from "./mana-sprite";
+import { manaSpriteBackground } from "./mana-sprite";
 
 /**
  * A cost symbol's stem, without braces. `"W/U"` → `"WU"`, `"2/W"` → `"2W"`,
@@ -34,8 +34,8 @@ export function manaSymbolSlug(symbol: string): string {
  * someone re-runs the fetch. A symbol printed after the last run has no art
  * here, and the caller falls back to a colored pip rather than drawing a gap.
  */
-export function manaSymbolSrc(symbol: string): string | null {
+export function manaSymbolBackground(symbol: string): string | null {
   const slug = manaSymbolSlug(symbol);
-  // The symbol's view in the one preloaded sprite, not its own file: see `mana-sprite.ts`.
-  return MANA_SYMBOL_SLUGS.has(slug) ? manaSpriteHref(slug) : null;
+  // The symbol's cell in the one preloaded sprite, as a whole CSS \`background\`: see \`mana-sprite.ts\`.
+  return MANA_SYMBOL_SLUGS.has(slug) ? manaSpriteBackground(slug) : null;
 }

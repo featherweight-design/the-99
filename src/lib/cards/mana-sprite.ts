@@ -3,33 +3,65 @@
  *
  * Each pip used to be its own file, drawn as a CSS background, so the browser only began to fetch a
  * symbol when a pip carrying it painted, and every pip showed an empty box first (Hugh, 2026-09-28:
- * "pips pop in"). Now the root layout preloads this one file and every pip addresses its symbol by a
- * fragment. The fragment names an SVG `<view>`, which shows one symbol's own box out of the sheet,
- * so the CSS that draws a pip is unchanged apart from its URL.
+ * "pips pop in"). Now the root layout preloads this one file and every pip draws a window onto it.
+ *
+ * A CLASSIC CSS SPRITE, not SVG `<view>` fragments. A fragment changes what the image shows but not
+ * its intrinsic size, so `contain` scaled the whole sheet into the box and every pip drew as a thin
+ * strip, in Chromium and WebKit alike (`probe:pip-preload` found it). Here every symbol sits in its
+ * own square cell of one row, and a pip picks its cell with `background-size` and
+ * `background-position` in percentages, which hold at any box size.
  *
  * Built from the committed per-symbol files by `pnpm build:mana-sprite`, which `pnpm fetch:mana` runs
  * after it writes them. Pure, so the test can build it from fixtures.
  */
+import { MANA_SYMBOL_SLUGS } from "./mana-symbol-slugs";
 
 export const MANA_SPRITE_PATH = "/mana/sprite.svg";
 
-/** An XML id cannot start with a digit, and `2W` and `1000000` are real slugs. */
-export function manaSpriteId(slug: string): string {
-  return `m-${slug}`;
-}
-
-export function manaSpriteHref(slug: string): string {
-  return `${MANA_SPRITE_PATH}#${manaSpriteId(slug)}`;
-}
-
-/** The cells sit this far apart, so a view's edge can never take a pixel of its neighbour. */
+/** Each cell is this square; a symbol of another shape is fitted and centered inside it. */
+const CELL = 100;
+/** Cells sit this far apart, so a scaled pip can never take a pixel of its neighbour. */
 const GAP = 10;
+const STRIDE = CELL + GAP;
 
-export function buildManaSprite(symbols: readonly { slug: string; svg: string }[]): string {
-  let x = 0;
-  let height = 0;
+/** Plain code-unit order, the same in Node and every browser, which `localeCompare` is not. */
+function byCode(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** The sheet's cell order: the manifest's slugs, sorted. The build and the reader share it. */
+export const MANA_SPRITE_ORDER: readonly string[] = [...MANA_SYMBOL_SLUGS].sort(byCode);
+
+const INDEX = new Map(MANA_SPRITE_ORDER.map((slug, i) => [slug, i]));
+
+/**
+ * The CSS `background` that draws one symbol out of the sheet, or null for a slug it does not hold.
+ * Sized in percentages of the pip's own box, so a 12px dot and a 26px pip read the same value.
+ */
+export function manaSpriteBackground(slug: string, order: readonly string[] = MANA_SPRITE_ORDER): string | null {
+  const i = order === MANA_SPRITE_ORDER ? INDEX.get(slug) : order.indexOf(slug);
+  if (i === undefined || i < 0) return null;
+  const width = order.length * STRIDE - GAP;
+  const size = (width / CELL) * 100;
+  // Percentage positions align the same fraction of image and box: the offset that puts cell i at
+  // the box's left edge is i·STRIDE over the sheet's overhang, width − CELL.
+  const x = order.length > 1 ? ((i * STRIDE) / (width - CELL)) * 100 : 0;
+  return `url(${MANA_SPRITE_PATH}) ${round(x)}% 0 / ${round(size)}% 100% no-repeat`;
+}
+
+function round(n: number): string {
+  return String(Math.round(n * 10000) / 10000);
+}
+
+export function buildManaSprite(
+  symbols: readonly { slug: string; svg: string }[],
+  order: readonly string[] = MANA_SPRITE_ORDER,
+): string {
+  const bySlug = new Map(symbols.map((s) => [s.slug, s.svg]));
   const parts: string[] = [];
-  for (const { slug, svg } of [...symbols].sort((a, b) => a.slug.localeCompare(b.slug))) {
+  order.forEach((slug, i) => {
+    const svg = bySlug.get(slug);
+    if (svg === undefined) throw new Error(`mana sprite: no file for ${slug}`);
     const open = svg.match(/<svg\b[^>]*>/);
     const box = open?.[0].match(/viewBox=['"]([^'"]+)['"]/)?.[1];
     const close = svg.lastIndexOf("</svg>");
@@ -37,18 +69,12 @@ export function buildManaSprite(symbols: readonly { slug: string; svg: string }[
     // A reference would resolve against the whole sheet once merged, possibly to another symbol's
     // element. None of the committed files carries one; refuse rather than draw the wrong thing.
     if (/url\(#|href=['"]#/.test(svg)) throw new Error(`mana sprite: ${slug} references an id`);
-    const [, , w, h] = box.trim().split(/[\s,]+/).map(Number);
-    if (!(w > 0 && h > 0)) throw new Error(`mana sprite: ${slug} has an unusable viewBox "${box}"`);
-    // Unreferenced ids (Scryfall's exporter labels paths `Shape`) are dropped, so the sheet holds each
-    // id once: its views'.
+    // Unreferenced ids (Scryfall's exporter labels paths `Shape`) are dropped, so none repeats.
     const inner = svg.slice((open.index ?? 0) + open[0].length, close).replace(/\s+id=(['"])[^'"]*\1/g, "");
-    parts.push(
-      `<view id="${manaSpriteId(slug)}" viewBox="${x} 0 ${w} ${h}"/>`,
-      `<svg x="${x}" y="0" width="${w}" height="${h}" viewBox="${box}">${inner}</svg>`,
-    );
-    x += w + GAP;
-    height = Math.max(height, h);
-  }
-  const width = Math.max(0, x - GAP);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join("")}</svg>\n`;
+    // A nested svg fits its own viewBox into the cell, centered, which is what `contain` did for
+    // the single file.
+    parts.push(`<svg x="${i * STRIDE}" y="0" width="${CELL}" height="${CELL}" viewBox="${box}">${inner}</svg>`);
+  });
+  const width = order.length * STRIDE - GAP;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${CELL}" viewBox="0 0 ${width} ${CELL}">${parts.join("")}</svg>\n`;
 }

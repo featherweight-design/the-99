@@ -97,7 +97,7 @@ import { BuilderTabs } from "../decks/builder-tabs";
 import { StatusPillBadge } from "../decks/status-pill";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
-import { PIP_SRC } from "../../lib/copy/filter-chassis";
+import { PIP_BACKGROUND } from "../../lib/copy/filter-chassis";
 import type { PipCode } from "../../lib/copy/filter-chassis";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
@@ -577,7 +577,7 @@ export function DeckPageFigureBody() {
             <span
               key={code}
               className="h-[8px] w-[8px] rounded-[2px]"
-              style={{ background: `center / contain no-repeat url(${PIP_SRC[code as PipCode]})` }}
+              style={{ background: PIP_BACKGROUND[code as PipCode] }}
             />
           ))}
         </span>

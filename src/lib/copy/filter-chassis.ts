@@ -7,7 +7,7 @@
 // equivalent — neither route captioned its colour control at all.
 
 import { filterCopy } from "./lanes";
-import { manaSpriteHref } from "../cards/mana-sprite";
+import { manaSpriteBackground } from "../cards/mana-sprite";
 import { deckStateMarksCopy } from "./deck-state-marks";
 import { refreshCopy } from "./refresh";
 import type { FilterPanelCopy } from "./collection";
@@ -178,13 +178,14 @@ export const PIP_ORDER = ["W", "U", "B", "R", "G"] as const;
  *
  * Nothing here is client-only, so nothing here needs to be in a client module.
  */
-// Views in the one preloaded sprite rather than five files fetched at paint: see `mana-sprite.ts`.
-export const PIP_SRC: Record<PipCode, string> = {
-  W: manaSpriteHref("W"),
-  U: manaSpriteHref("U"),
-  B: manaSpriteHref("B"),
-  R: manaSpriteHref("R"),
-  G: manaSpriteHref("G"),
+// Each hue's CSS \`background\`: its cell in the one preloaded sprite, not a file fetched at paint.
+// See \`mana-sprite.ts\`.
+export const PIP_BACKGROUND: Record<PipCode, string> = {
+  W: manaSpriteBackground("W") as string,
+  U: manaSpriteBackground("U") as string,
+  B: manaSpriteBackground("B") as string,
+  R: manaSpriteBackground("R") as string,
+  G: manaSpriteBackground("G") as string,
 };
 
 export type PipCode = (typeof PIP_ORDER)[number];

@@ -23,7 +23,7 @@ import { KeyNumeral } from "./numeral";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { setFilterCopy, setPageCopy } from "../../lib/copy/set-collections";
-import { PIP_ORDER, PIP_SRC } from "../../lib/copy/filter-chassis";
+import { PIP_ORDER, PIP_BACKGROUND } from "../../lib/copy/filter-chassis";
 import {
   ImportFigureBody,
   AddCardsFigureBody,
@@ -469,7 +469,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
             <span
               key={code}
               className="h-[16px] w-[16px] rounded-full"
-              style={{ background: `center / contain no-repeat url(${PIP_SRC[code]})` }}
+              style={{ background: PIP_BACKGROUND[code] }}
             />
           ))}
         </span>

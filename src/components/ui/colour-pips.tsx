@@ -12,7 +12,7 @@
 // Parameterised, never flagged: the same rule set collections' own extraction
 // carries. A route passes its state in and gets pips out; no prop names a route.
 
-import { chassisCopy, PIP_ORDER, PIP_SRC, type PipCode } from "../../lib/copy/filter-chassis";
+import { chassisCopy, PIP_ORDER, PIP_BACKGROUND, type PipCode } from "../../lib/copy/filter-chassis";
 
 /**
  * Scryfall's own symbols, committed under `public/mana/`. They are finished
@@ -144,8 +144,8 @@ export function ColourPips({ value, onToggle, form, unavailable, legend }: Colou
             style={{
               width: size,
               height: size,
-              // eslint-disable-next-line no-restricted-syntax -- one of five per-hue URLs; Tailwind cannot compile an interpolated class, and a pip has no hover state for an inline background to outrank
-              background: `center / contain no-repeat url(${PIP_SRC[code]})`,
+              // eslint-disable-next-line no-restricted-syntax -- one of five per-hue sprite cells; Tailwind cannot compile an interpolated class, and a pip has no hover state for an inline background to outrank
+              background: PIP_BACKGROUND[code],
             }}
           />
         );
