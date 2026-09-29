@@ -15,7 +15,7 @@ export function MethodTag({ method, size = "row" }: { method: HowMethod; size?: 
     <span
       data-method={method}
       className={
-        "inline-block whitespace-nowrap rounded-[4px] border border-[color:var(--border-strong)] px-[6px] py-[3px] font-mono leading-none text-[color:var(--fg-muted)] "
+        "inline-block whitespace-nowrap rounded-[4px] border border-[color:var(--border-strong)] px-[6px] py-[3px] font-mono font-normal normal-case tracking-normal leading-none text-[color:var(--fg-muted)] "
         + (size === "key" ? "text-[10.5px]" : "text-[10px]")
       }
     >

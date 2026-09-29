@@ -27,4 +27,12 @@ describe("MethodTag", () => {
     const { container } = render(<MethodTag method="rules" size="key" />);
     expect(container.querySelector("[data-method]")!.className).toContain("text-[10.5px]");
   });
+
+  // The decisions sheet sets its row label in a semibold dt, and the tag sits inside it. A tag that
+  // inherited the weight (or a host's case or tracking) would read one way there and another in the key, which is no parent's.
+  it("sets its own weight, case and tracking rather than taking its host's", () => {
+    const { container } = render(<MethodTag method="rules" />);
+    const cls = container.querySelector("[data-method]")!.className.split(" ");
+    for (const c of ["font-normal", "normal-case", "tracking-normal"]) expect(cls).toContain(c);
+  });
 });
