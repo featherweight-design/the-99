@@ -70,6 +70,7 @@
     "probe:swap-fits-data": "tsx scripts/probe-swap-fits-data.ts",
     "probe:swap-fits": "tsx scripts/probe-swap-fits.ts",
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",
+    "probe:bulk-collection": "node scripts/probe-bulk-collection.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
     "diff:claim-model": "tsx scripts/diff-claim-model.mts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",

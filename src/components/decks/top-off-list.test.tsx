@@ -475,6 +475,46 @@ describe("TopOffList", () => {
     expect(screen.getByText(topOffCopy.list.headMobile("1", "1"))).toBeInTheDocument();
   });
 
+  // Hugh, 2026-09-28: `Select 6 from my collection` ticked nothing. The figure was counted from the
+  // list (every card free to sleeve, capped at the slots) while the press ticked what the PLAN chose
+  // among them. The label and the press now read one source, the plan, so they cannot disagree.
+  it("names the rows the plan will tick, where the list holds more it did not choose", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["owned-1"] }),
+      best: plan({ oracleIds: ["owned-1", "owned-2", "buy-1"] }),
+    });
+    render(<Harness openSlots={3} />);
+
+    const button = await screen.findByRole("button", { name: /from your collection/ });
+    // Two cards are free to sleeve and three slots are open; the plan chose one.
+    expect(button).toHaveTextContent(topOffCopy.bulk.collection("1"));
+    await click(button);
+    expect(screen.getByText(topOffCopy.list.headMobile("1", "3"))).toBeInTheDocument();
+
+    const best = screen.getByRole("button", { name: /this deck needs/ });
+    expect(best).toHaveTextContent(topOffCopy.bulk.best("3"));
+    await click(best);
+    expect(screen.getByText(topOffCopy.list.headMobile("3", "3"))).toBeInTheDocument();
+  });
+
+  // The 0 case of the same rule: a plan that chose none of the cards free to sleeve draws no
+  // collection control at all, rather than a live button that does nothing.
+  it("draws no collection control when its plan would tick nothing", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: [] }),
+      best: plan({ oracleIds: ["buy-1"] }),
+    });
+    render(<Harness openSlots={3} />);
+
+    const best = await screen.findByRole("button", { name: /this deck needs/ });
+    expect(screen.queryByRole("button", { name: /from your collection/ })).not.toBeInTheDocument();
+    expect(best).toHaveTextContent(topOffCopy.bulk.best("1"));
+    await click(best);
+    expect(screen.getByText(topOffCopy.list.headMobile("1", "3"))).toBeInTheDocument();
+  });
+
   // A decline speaks for itself immediately, and it also moves the count, which
   // would otherwise bring the settle effect along 600ms later saying the same
   // act a second time in different words.
