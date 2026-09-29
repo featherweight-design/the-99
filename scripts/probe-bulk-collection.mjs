@@ -72,10 +72,16 @@ async function buildFixture(userId) {
     insert into decks (user_id, name, commander_oracle_id)
     values (${userId}, ${"probe bulk collection"}, ${src.commander_oracle_id}) returning id`;
   let built = 0;
-  for (const r of rows) {
-    if (built + r.quantity > 99 - OPEN) continue;
-    await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${r.oracle_id}, ${r.quantity})`;
-    built += r.quantity;
+  try {
+    for (const r of rows) {
+      if (built + r.quantity > 99 - OPEN) continue;
+      await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${r.oracle_id}, ${r.quantity})`;
+      built += r.quantity;
+    }
+  } catch (error) {
+    // The caller holds no id until this returns, so a half-built deck is deleted here.
+    await sql`delete from decks where id = ${deck.id}`;
+    throw error;
   }
   return { id: deck.id, open: 99 - built };
 }
@@ -146,9 +152,16 @@ async function main() {
       }
     }
   } finally {
-    if (fixture) await sql`delete from decks where id = ${fixture.id}`;
-    await restoreAboutSeen(about);
-    await browser.close();
+    // Each step on its own, so one failing cannot skip the rest.
+    try {
+      if (fixture) await sql`delete from decks where id = ${fixture.id}`;
+    } finally {
+      try {
+        await restoreAboutSeen(about);
+      } finally {
+        await browser.close();
+      }
+    }
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
   return failures;
