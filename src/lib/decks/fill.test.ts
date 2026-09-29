@@ -416,15 +416,38 @@ describe("planFill", () => {
     expect(q("plains")).toBe(36);
   });
 
-  it("never finishes a short base on Wastes", () => {
-    // THE SECOND LOOP. When the split leaves the base short, the fallback sweep takes whatever
-    // land is next unspent — and before this it checked only the ceiling, so it would finish a
-    // Boros base on Wastes. Only three Plains in the pool and no other land, so the base IS short.
+  it("never finishes a short base on Wastes, even when Wastes is next in the pool", () => {
+    // THE SECOND LOOP, and the case that makes it observable. Every pip is white, so red rounds
+    // to zero and takes its floor of one out of white — which leaves the base one short. The
+    // fallback sweep then takes the next unspent land, and POOL ORDER decides which: Wastes sits
+    // ahead of Mountain here, so before the guard this Boros base finished on a Wastes.
+    //
+    // The order is the whole fixture. With Mountain first the fallback lands on Mountain by luck
+    // and the guard looks unnecessary — which is exactly how the hole survived the split's own
+    // tests.
+    const plan = planFill([
+      ...Array.from({ length: 5 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
+      basic("plains", 40, "Plains"), basic("wastes", 40, "Wastes"), basic("mountain", 40, "Mountain"),
+    ], boros as never);
+    expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    expect(q("plains") + q("mountain")).toBe(37);
+  });
+
+  it("leaves the base short rather than finishing it on Wastes", () => {
+    // THE ONLY STATE THAT REACHES THE FALLBACK SWEEP, and it took three attempts to find. With no
+    // capacity cap and a floor that makes the allocation exact, the split always fills the base —
+    // so the fallback runs only when the pool holds NO basic the identity wants. Then it sweeps
+    // `lands`, which still contains Wastes, and before the guard it finished a Boros base on it.
+    //
+    // Close to the real HD - Thorin pool: the deck's own colours missing, Wastes present.
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }),
-      basic("plains", 40, "Plains"), basic("wastes", 40, "Wastes"),
-    ], { ...FLAT, identity: ["W"] } as never);
+      basic("wastes", 40, "Wastes"),
+    ], boros as never);
     expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
+    // And it reports the shortfall rather than hiding it behind a land it must not play.
+    expect(plan.rows.filter((r) => r.role === "land")).toHaveLength(0);
   });
 
   it("counts every HELD spell in the census, not only the ones it chose", () => {
