@@ -1,11 +1,12 @@
 // `short X` everywhere except the deck page (Hugh's deck bug batch, 2026-09-28, item 8).
 //
 // Off the deck page a shortfall always names its count, one included: `short 1`. On the deck page
-// (`/decks/[id]` and `/decks/[id]/changes`) one missing copy keeps its bare `short`, the 09-26
+// (`/decks/[id]`, `/changes` and `/import`) one missing copy keeps its bare `short`, the 09-26
 // ruling. This reads every drawn availability marker whose text begins `short` on `/collection`
 // (the rows view and the grid) and on a deck page, at 390x844 and 1300x900, and asserts which form
-// each surface draws. A surface that draws no `short` marker at all reports that it measured nothing
-// and FAILS, since the fixture is a real account where contested copies exist.
+// each surface draws. Each surface must draw the ONE-copy form it is about (`short 1` off the page,
+// a bare `short` on it), or it measured nothing and FAILS: the fixture is a real account where one
+// missing copy is common.
 //
 // The deck is named with `PROBE_DECK_NAME` (default `HD - Gishath`) and must belong to the signed-in
 // account, so `pull:staging` it into a scratch branch first. Writes only the account's About row
@@ -104,11 +105,11 @@ async function main() {
       for (const [surface, url] of [["/collection rows", "/collection?view=rows"], ["/collection grid", "/collection?view=grid"]]) {
         const texts = await read(page, `${BASE}${url}`);
         check(`${vp.label} ${surface}: draws a shortfall`, texts.length > 0, texts.length ? `${texts.length} markers` : "none drawn — NOT a pass");
-        check(`${vp.label} ${surface}: every one names its count`, texts.length > 0 && texts.every((t) => t !== "short"), summarise(texts));
+        check(`${vp.label} ${surface}: every one names its count, one included`, texts.includes("short 1") && texts.every((t) => t !== "short"), summarise(texts));
       }
       const texts = await read(page, `${BASE}/decks/${deck.id}`);
       check(`${vp.label} deck page: draws a shortfall`, texts.length > 0, texts.length ? `${texts.length} markers` : "none drawn — NOT a pass");
-      check(`${vp.label} deck page: one missing copy reads a bare \`short\``, texts.length > 0 && !texts.includes("short 1"), summarise(texts));
+      check(`${vp.label} deck page: one missing copy reads a bare \`short\``, texts.includes("short") && !texts.includes("short 1"), summarise(texts));
     }
   } finally {
     await restoreAboutSeen(about);
