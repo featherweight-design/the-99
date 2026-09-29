@@ -573,18 +573,20 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   //
   // WHAT THEY CAN TAKE is unbounded when an eligible basic exists (a basic is never capped at the
   // copies owned), and otherwise it is the unspent lands the fallback sweep may still take, one copy
-  // each. Keying the reserve on basic PRESENCE alone reserved nothing for a pool of spells and
+  // each, that the gate admits. Keying the reserve on basic PRESENCE alone reserved nothing for a pool of spells and
   // nonbasic lands with no basic: the residual ate every slot past the utility cap and the deck
   // finished on 12 lands with 28 legal ones unplayed.
   const anyEligibleBasic = lands.some((c) => {
-    if (!isBasicLand(c.typeLine)) return false;
+    if (!isBasicLand(c.typeLine) || !admits(c)) return false;
     const color = basicLandColor(c.name);
     return color !== null && wantsColor(color);
   });
   const sweepCapacity = anyEligibleBasic
     ? Infinity
     : lands.filter((c) => {
-      if (spent.has(c.oracleId)) return false;
+      // What the gate refuses, `takeLand` refuses, and a slot reserved for it is lost: nothing
+      // after the sweep refills what the reserve kept from the residual.
+      if (spent.has(c.oracleId) || !admits(c)) return false;
       const color = isBasicLand(c.typeLine) ? basicLandColor(c.name) : null;
       return color === null || wantsColor(color);
     }).length;

@@ -421,9 +421,11 @@ async function main() {
   // empty and `[].every(…)` is true, and the spare-redistribution loop then handed a capped
   // Plains allocation's leftovers to the only other colour with copies on the shelf.
   //
-  // The fixture is the shape that produced it, not a tidy one: **Mountain owned in ZERO copies**,
-  // which is what dropped red out of the split entirely. Rows are found BY QUERY rather than by a
-  // name that rots with the catalog.
+  // WHAT DROPPED RED was the pip census, not the shelf: Thorin's owner had 81 Mountains, and the
+  // census saw neither the commanders nor the residual, so red scored zero pips. This fixture
+  // owns **Mountain in ZERO copies** for a separate reason: it checks that the split does not
+  // depend on the shelf either, which is a synthetic case rather than a reproduction of Thorin.
+  // Rows are found BY QUERY rather than by a name that rots with the catalog.
   const [plainsRow] = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
     from cards where name = 'Plains' and type_line ilike 'basic land%' limit 1`);

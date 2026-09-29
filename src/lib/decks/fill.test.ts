@@ -222,6 +222,22 @@ describe("planFill", () => {
     expect(plan.shortfalls).not.toContain("land");
   });
 
+  // AND ONLY WHAT THE GATE WILL LET IT TAKE. A land a budget or bracket gate refuses is counted in
+  // no reserve: the sweep's `takeLand` would refuse it, and nothing after the sweep refills the
+  // slot the reserve kept from the residual, so the deck came out a card short.
+  it("reserves no slot for a land the gate will refuse", () => {
+    const pool = [
+      ...Array.from({ length: 90 }, (_, i) =>
+        c({ oracleId: `s${i}`, name: `s${i}`, manaCost: "{R}", inclusionPct: 95 - i / 2 })),
+      ...Array.from({ length: 37 }, (_, i) => nonBasicLand(`nb${i}`)),
+    ];
+    const plan = planFill(pool, {
+      ...FLAT, identity: ["R"], gate: { admits: (x) => x.oracleId !== "nb0", place: () => {} },
+    });
+    expect(plan.rows.some((r) => r.oracleId === "nb0")).toBe(false);
+    expect(plan.rows.reduce((n, r) => n + r.quantity, 0)).toBe(99);
+  });
+
   it("counts a hybrid pip for both of its colours", () => {
     const plan = planFill([
       c({ oracleId: "hybrid", manaCost: "{G/B}" }),
