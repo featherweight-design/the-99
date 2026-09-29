@@ -827,12 +827,18 @@ export function BuilderShell({
   // A refused Undo's message, held here because the receipt that asked has unmounted: see
   // `reportUndoFailure` below.
   const [undoFailure, setUndoFailure] = useState<{ oracleId: string; message: string } | null>(null);
+  // Which removal an Undo belongs to. The ref is what a late report is checked against (the state
+  // it arrives through may be a render behind); the state is what the receipt hands the undo.
+  const removalRef = useRef(0);
+  const [removal, setRemoval] = useState(0);
   const markSpent = useCallback(
     (card: DeckDetailCard) => {
       // One undo row at a time: this removal settles whatever the last one left,
       // including a refused undo's message.
       setSpentSlot(card.quantity <= 1 ? card : null);
       setUndoFailure(null);
+      removalRef.current += 1;
+      setRemoval(removalRef.current);
       // A removal is announced only when it leaves an undo row behind. A stack
       // that decrements keeps its row, and its own count is the receipt.
       if (card.quantity > 1) return;
@@ -890,7 +896,9 @@ export function BuilderShell({
   // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed on
   // the card, and cleared by the next removal rather than by the next server list: a refusal can
   // arrive in the same render as a revalidation, and clearing on that would erase it unread.
-  const reportUndoFailure = useCallback((oracleId: string, message: string) => {
+  const reportUndoFailure = useCallback((oracleId: string, message: string, from: number) => {
+    // An undo pressed before a newer removal answers for a receipt that no longer exists.
+    if (from !== removalRef.current) return;
     setUndoFailure({ oracleId, message });
   }, []);
   const reportRemoveFailure = useCallback((cardName: string) => {
@@ -1039,7 +1047,7 @@ export function BuilderShell({
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
     keep: keepOptimisticCard,
-    undo: { restore: addOptimisticCard, reportFailure: reportUndoFailure, failure: undoFailure },
+    undo: { restore: addOptimisticCard, reportFailure: reportUndoFailure, failure: undoFailure, removal },
   };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the

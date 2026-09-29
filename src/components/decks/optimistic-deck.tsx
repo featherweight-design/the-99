@@ -48,8 +48,12 @@ type AnnounceUndo = (card: DeckDetailCard) => void;
  */
 type UndoSpentSlot = {
   restore: AddOptimisticCard;
-  reportFailure: (oracleId: string, message: string) => void;
+  /** `removal` is the generation the undo was pressed under: a report from an undo that a newer
+   *  removal has since overtaken is dropped, or it would land on that removal's receipt. */
+  reportFailure: (oracleId: string, message: string, removal: number) => void;
   failure: { oracleId: string; message: string } | null;
+  /** Bumped by every removal that leaves a receipt. */
+  removal: number;
 };
 
 /**

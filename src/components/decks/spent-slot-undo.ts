@@ -28,6 +28,7 @@ export function useSpentSlotUndo(deckId: string, card: DeckDetailCard) {
   function undo() {
     // From the click: an announcement made inside the transition waits for the server.
     announceUndo(card);
+    const removal = shell?.removal ?? 0;
     if (!shell) {
       run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
       return;
@@ -38,13 +39,15 @@ export function useSpentSlotUndo(deckId: string, card: DeckDetailCard) {
         try {
           result = await addCardToDeck(deckId, card.oracleId, { relock: true });
         } catch (cause) {
-          shell.reportFailure(card.oracleId, addPanelCopy.undo.failed);
+          shell.reportFailure(card.oracleId, addPanelCopy.undo.failed, removal);
           throw cause;
         }
-        if (!result.ok) shell.reportFailure(card.oracleId, result.message);
+        if (!result.ok) shell.reportFailure(card.oracleId, result.message, removal);
         return result;
       },
-      () => shell.restore(card),
+      // As the server will write it: a fresh add is never auto, and the removal already pruned the
+      // card's proxy. `locked` stays, because `relock` revives it.
+      () => shell.restore({ ...card, auto: false, proxied: false }),
     );
   }
 
