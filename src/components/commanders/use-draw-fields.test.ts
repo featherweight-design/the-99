@@ -115,6 +115,18 @@ describe("useDrawFields", () => {
     await waitFor(() => expect(result.current.resolve(all[0])?.prose).toBe("c0"));
   });
 
+  it("never marks a window chosen after a batch was asked for as failed by that batch", async () => {
+    const drawn = all.slice(0, 2).map((r) => ({ ...r, ...fieldsFor(r.slug) }));
+    const { rerender } = renderHook(({ wanted }: { wanted: DiscoveryRow[] }) => useDrawFields("fit", all, wanted), {
+      initialProps: { wanted: drawn as DiscoveryRow[] },
+    });
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    rerender({ wanted: [all[240]] });
+    await act(async () => net.calls[0].fail());
+    await waitFor(() => expect(net.calls).toHaveLength(2));
+    expect(new URL(net.calls[1].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c240");
+  });
+
   // A page restored from the back/forward cache is not remounted: `pagehide` stopped the loop,
   // and `pageshow` has to start it again, asking once more for the batch the hide aborted.
   it("starts again when the page is restored from the back/forward cache", async () => {

@@ -101,7 +101,8 @@ function createFieldsLoop(onLanded: () => void) {
           // since a page restored from the back/forward cache starts the loop again unmounted.
           for (const s of batch) asked.delete(keyOf(sort, s));
           if (ac.signal.aborted) return;
-          failedAt = input.wantedKey;
+          // The window the batch was asked FOR: a failure never marks a window chosen since.
+          failedAt = wantedKey;
           if (urgent && retries < RETRY_MS.length) {
             const key = failedAt;
             retryTimer = setTimeout(() => {
