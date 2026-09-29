@@ -343,6 +343,24 @@ async function reservationSection() {
     check("and the drafting deck still buys its copy", await free(drafter), -1);
     await clearAssignments();
 
+    // 11b. A BREW IS NEVER SHORT BY MORE THAN IT ASKS (HD - Thorin, staging, created 2026-09-29 UTC). One copy,
+    //      two committed decks holding it, and a brew asking for one. The two committed decks are one
+    //      short between themselves, and that shortfall is theirs: the brew's own page reads short 1,
+    //      not short 2. Off every deck, the collection's reading still counts the over-commitment,
+    //      which is what the cap must NOT touch. And the brew's bill, which already had this floor,
+    //      agrees with its marker.
+    {
+      await clearAssignments();
+      const brew = await makeDeck("A brew", cmdA);
+      await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${brew}, ${card}, 1)`);
+      check("a brew is short by what it asks, not by the seniors' shortfall", await free(brew), -1);
+      const whole = (await loadAvailability(USER_R, { oracleIds: [card] })).get(card)?.free ?? null;
+      check("off every deck the collection still reads the over-commitment", whole, -1);
+      const bill = (await loadDeckBuyRows(USER_R, [brew])).find((r) => r.oracleId === card)?.quantity ?? 0;
+      check("and the brew's bill is the one copy its marker says", bill, 1);
+      await fixture.execute(sql`delete from decks where id = ${brew}`);
+    }
+
     // 12. The row goes with the deck. LAST, because it deletes a deck every case
     //     above depends on.
     await assign(b);

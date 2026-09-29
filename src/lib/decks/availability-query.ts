@@ -488,8 +488,9 @@ export async function loadAvailability(
         sum(case when cd.sleeved then cd.quantity else 0 end)::int as hard,
         -- The unreserved part of the hard total, for the no-vantage and brew-vantage
         -- branches of free, which subtract reserved copies separately. Without the
-        -- split those branches would count a reserved copy twice; with it they come
-        -- out at exactly owned - hard, which is what they have always meant.
+        -- split those branches would count a reserved copy twice. With it the
+        -- no-vantage branch comes out at exactly owned - hard, which is what it has
+        -- always meant; the brew branch caps it at the supply (see free below).
         sum(case when cd.sleeved
                  then greatest(cd.quantity - coalesce(rv.granted, 0), 0)
                  else 0 end)::int as hard_unreserved,
@@ -586,8 +587,8 @@ ${lockedClaim}            -- Whether free COUNTS this claim, which is the same q
       -- copies not sleeved in a committed deck. On a sleeved deck's own
       -- decklist it is (owned − ownClaim) − seniorHard, which is what lands the
       -- deficit on the junior claimant instead of on all of them at once. A
-      -- brew takes the total too: it outranks nothing, so every hard claim is
-      -- ahead of it.
+      -- brew outranks nothing, so every hard claim is ahead of it, but those claims
+      -- are capped at the supply the same way (the brew branch below).
       --
       -- own_claim is the DRAFT's ask, not the version's, so a card the draft
       -- added is measured like any other card this deck is asking for: with a
@@ -626,6 +627,20 @@ ${lockedClaim}            -- Whether free COUNTS this claim, which is the same q
                  coalesce(sh.hard_senior, 0),
                  greatest(o.owned - coalesce(rt.granted_total, 0), 0)
                )
+               -- A BREW'S OWN PAGE takes the same cap. Every hard claim is ahead of it, but
+               -- those decks still cannot take copies that do not exist: twelve committed
+               -- decks wanting eleven Command Towers are one short among THEMSELVES, and that
+               -- shortfall is theirs. Uncapped, it landed on the brew, which read "short 2"
+               -- on a singleton it can only ever need one of (HD - Thorin on staging, created
+               -- 2026-09-29 UTC). With the cap a deck is never short by more than it asks,
+               -- which is "loadDeckBuyRows"' own floor.
+               when exists (select 1 from skip_deck)
+               then least(
+                 coalesce(c.hard_unreserved, 0),
+                 greatest(o.owned - coalesce(rt.granted_total, 0), 0)
+               )
+               -- No vantage deck (/collection and the rest): free is the whole collection's
+               -- reading, and a figure below zero IS the over-commitment across decks.
                else coalesce(c.hard_unreserved, 0)
           end
       )::int as free,
