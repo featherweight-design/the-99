@@ -71,3 +71,14 @@ describe("How the app reaches its answers: the rows", () => {
     expect(subs[4].lines).toEqual([c.tutorsSub]);
   });
 });
+
+describe("introWithAppendix", () => {
+  it("names the appendix at the end of the intro's first sentence", async () => {
+    const { aboutCopy } = await import("./about");
+    const { introWithAppendix } = await import("./how-it-works");
+    expect(introWithAppendix(aboutCopy.pageIntro)).toBe(
+      "Four chapters, in the order you would use them, then how the app reaches its answers. " +
+        "Each entry shows the thing it describes and links to where it lives.",
+    );
+  });
+});

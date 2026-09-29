@@ -18,7 +18,7 @@ import { FLOOR_PCT } from "../discovery/floor";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "../model/allowance-rule";
 import { READY_COUNT, READY_SHOWN } from "../recs/ready-to-build";
 import { POOL_FULL_AT, POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../recs/score";
-import type { HowMethod } from "./about";
+import { howItWorksCopy, type HowMethod } from "./about";
 import { deckAnalysisCopy } from "./deck-analysis";
 
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
@@ -200,19 +200,30 @@ export const howItWorksRowsCopy = {
 } as const;
 
 /**
+ * The page intro with the appendix named, placed after its first sentence ("Four chapters, in the
+ * order you would use them"). Built from `aboutCopy.pageIntro` rather than restating it, so an edit
+ * to the intro reaches both forms. Read only while `HOW_IT_WORKS_ENABLED` is on.
+ */
+export function introWithAppendix(intro: string): string {
+  const end = intro.indexOf(".");
+  return end < 0 ? intro : intro.slice(0, end) + howItWorksRowsCopy.pageIntroClause + intro.slice(end);
+}
+
+/**
  * The Brackets row's five counts, one sub-row each. Four are the sentences "How we make these
  * decisions" shows, read from the same keys, so the page and the sheet cannot disagree about how a
  * count is reached. The fifth is tutors, which the sheet does not carry: no bracket limits them.
  */
-export function bracketSubRows(): { label: string; lines: string[] }[] {
+export function bracketSubRows(): { label: string; methods: readonly HowMethod[]; lines: string[] }[] {
   const d = deckAnalysisCopy.detection;
   const l = deckAnalysisCopy.findings.labels;
+  const m = howItWorksCopy.bracketMethods;
   const lines = (...xs: (string | null)[]) => xs.filter((x): x is string => !!x);
   return [
-    { label: l.gameChangers, lines: lines(d.gameChangers.from) },
-    { label: l.massLandDenial, lines: lines(d.landDenial.from, d.landDenial.misses) },
-    { label: l.extraTurns, lines: lines(d.extraTurns.from, d.extraTurns.misses) },
-    { label: l.twoCardCombos, lines: lines(d.combos.from, d.combos.misses) },
-    { label: l.tutors, lines: lines(howItWorksRowsCopy.tutorsSub) },
+    { label: l.gameChangers, methods: m.gameChangers, lines: lines(d.gameChangers.from) },
+    { label: l.massLandDenial, methods: m.landDenial, lines: lines(d.landDenial.from, d.landDenial.misses) },
+    { label: l.extraTurns, methods: m.extraTurns, lines: lines(d.extraTurns.from, d.extraTurns.misses) },
+    { label: l.twoCardCombos, methods: m.combos, lines: lines(d.combos.from, d.combos.misses) },
+    { label: l.tutors, methods: ["rules"], lines: lines(howItWorksRowsCopy.tutorsSub) },
   ];
 }
