@@ -408,7 +408,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'ANALYSIS_TAB_ENABLED',
     caption:
-      'A deck page has an Analysis tab, second in its row of tabs. Once the deck is full, press Analyze there and we read the whole list against the Commander Format Panel’s bracket rules. The answer is the bracket your cards permit, and sometimes two, when the difference is how you play; then it is yours to say which. Every count opens to the cards behind it, and the lowest rung says what would have to go to come down one. The bracket then rides the deck’s header, its tile on your decks page and its row on Home, and the chip in the header opens the tab. A committed version that reads differently from the one before it says both. The same tab also holds an overview of the deck and Suggested changes.',
+      'Once a deck is full, press Analyze on its Analysis tab, second in the deck page’s row of tabs, and we read the whole list against the Commander Format Panel’s bracket rules. The answer is the bracket your cards permit, and sometimes two, when the difference is how you play; then it is yours to say which. Every count opens to the cards behind it, and the lowest rung says what would have to go to come down one. The bracket then rides the deck’s header, its tile on your decks page and its row on Home, and the chip in the header opens the tab. A committed version that reads differently from the one before it names both readings. The same tab also holds an overview of the deck and Suggested changes.',
     keys: [
       'a range is two brackets the cards allow; the chips under it are the only question on the page.',
       'the climb states, the findings open: every figure with cards behind it is a button, a zero is not.',
