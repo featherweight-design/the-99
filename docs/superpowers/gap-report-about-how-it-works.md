@@ -14,9 +14,22 @@ Every row in scope matched but one, and every state in the coverage table is rea
 
 Two rows of the table quoted canvas wording that copy review (in lane, 2026-09-28) changed before the build: the Themes row's title, now "Card and commander themes", and the tutors sub-row's placeholder, now the shipped sentence. The table now quotes what ships. Wording is `/copy-review`'s rather than a design gap, so neither counted against verify.
 
-## Deferred, by plan
+## PR C: the links, the contents and the sheet line
 
-The `explained in` field (links from each row back to the entries that explain it) ships in PR C with the entries' own link lines, because both need the `entryRow` map. No row draws the pair in PR B.
+The `explained in` field shipped here, as the plan deferred it. Each row lists the entries this
+deployment draws that point at it (`entryRow`), in page order: a column of 44px links at 13.5px on
+the phone, and a wrapping row at 13px from 1000px, in `--accent`. An entry whose switch is off is not
+drawn, so it is not linked. Each entry the appendix explains carries its `How this is decided ↓`
+line, 10px under its keys, in the Analysis sheet opener's quiet tone, and a 44px target on the
+phone.
+
+The contents group follows the handoff's §Contents. The rail puts the group 8px after chapter 04,
+under a 1px `--border` top, with the eight titles in entry-row type; the current row takes
+`--elevated`. On the phone it is a fifth 44px row under a `--border-strong` top, reading `8 rows`, and
+it opens onto eight 44px rows indented 26px. Search counts row titles, and a match opens the group.
+
+The sheet line has no drawn frame. It is set as one more row of the sheet's list, under the titles,
+in `--fg-muted`, so it reads as part of the list rather than as a ninth title.
 
 ## Noted deviation
 

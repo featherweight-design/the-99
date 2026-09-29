@@ -116,6 +116,22 @@ describe("recording the visit (§O4, audit E2)", () => {
     expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 
+  // A reader current on every entry still owes the appendix's id while its switch is on, and owes
+  // nothing once the id is recorded (plan 2026-09-28, PR C).
+  it("records a current reader who has not seen the appendix, while its switch is on", () => {
+    process.env.HOW_IT_WORKS_ENABLED = "true";
+    try {
+      render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+      expect(recordAboutVisit).toHaveBeenCalledOnce();
+      recordAboutVisit.mockClear();
+      document.body.innerHTML = "";
+      render(<AboutPage seen={ABOUT_VERSION} seenIds={["how-it-works"]} sheetMode />);
+      expect(recordAboutVisit).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.HOW_IT_WORKS_ENABLED;
+    }
+  });
+
   it("records nothing with the switch off, where the dismiss still does it", () => {
     render(<AboutPage seen={ABOUT_VERSION - 1} />);
     expect(recordAboutVisit).not.toHaveBeenCalled();

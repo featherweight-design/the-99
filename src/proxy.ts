@@ -13,6 +13,7 @@ import {
   sheetDecision,
 } from "./lib/about/gate";
 import { aboutSheetEnabled } from "./lib/about/flag";
+import { howItWorksEnabled } from "./lib/about/how-it-works-flag";
 import { aboutSeen, aboutVersionSeen } from "./lib/about/read";
 import { visibleEntries, type SeenState } from "./lib/about/visible";
 
@@ -106,7 +107,7 @@ async function sheet(req: NextRequest, userId: string | null) {
     return pass();
   }
 
-  const decision = sheetDecision({ userId, seen, visible });
+  const decision = sheetDecision({ userId, seen, visible, appendix: howItWorksEnabled() });
   if (decision.show) headers.set(SHEET_HEADER, decision.header);
   const response = pass();
   response.cookies.set(SHEET_COOKIE, decision.cookie, {

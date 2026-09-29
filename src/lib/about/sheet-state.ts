@@ -1,4 +1,5 @@
 import { aboutEntries } from "../copy/about";
+import { HOW_IT_WORKS_ID } from "../copy/how-it-works-links";
 import { SHEET_HEADER } from "./gate";
 
 /**
@@ -11,7 +12,7 @@ import { SHEET_HEADER } from "./gate";
 export type SheetState =
   | { kind: "none" }
   | { kind: "firstRun" }
-  | { kind: "behind"; entries: { id: string; title: string }[] };
+  | { kind: "behind"; entries: { id: string; title: string }[]; appendix?: true };
 
 export function readSheetState(h: Pick<Headers, "get">): SheetState {
   const raw = h.get(SHEET_HEADER);
@@ -25,5 +26,8 @@ export function readSheetState(h: Pick<Headers, "get">): SheetState {
   const entries = aboutEntries
     .filter((e) => named.has(e.id))
     .map((e) => ({ id: e.id, title: e.title }));
-  return entries.length === 0 ? { kind: "none" } : { kind: "behind", entries };
+  if (entries.length === 0) return { kind: "none" };
+  // The appendix's line, when the proxy added it. Read only beside entries, so a header naming the
+  // appendix alone draws nothing.
+  return named.has(HOW_IT_WORKS_ID) ? { kind: "behind", entries, appendix: true } : { kind: "behind", entries };
 }

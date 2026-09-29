@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { SheetState } from "../../lib/about/sheet-state";
 import { aboutSheetCopy as copy } from "../../lib/copy/about";
+import { howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { GhostButton, PrimaryButton } from "../ui/button";
 
 /** How many titles the card lists (STATES-about-r6 §N1, §N2): all of them up to
@@ -138,6 +139,14 @@ export function AboutSheet({ state }: { state: SheetState }) {
           {more > 0 && (
             <li className="border-t border-solid border-[color:var(--border)] py-[8px] font-mono text-[11px] text-[color:var(--fg-muted)]">
               {copy.more(more)}
+            </li>
+          )}
+          {shown.kind === "behind" && shown.appendix && (
+            <li
+              data-appendix-line=""
+              className="border-t border-solid border-[color:var(--border)] py-[8px] text-[13.5px] leading-[1.4] text-[color:var(--fg-muted)] max-md:text-[14px]"
+            >
+              {howItWorksLinksCopy.sheetLine}
             </li>
           )}
         </ul>

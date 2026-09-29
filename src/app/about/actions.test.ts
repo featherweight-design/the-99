@@ -85,6 +85,20 @@ describe("recordAboutVisit (R6)", () => {
     }
   });
 
+  // The appendix is seen by its id too, while its switch is on (plan 2026-09-28, PR C).
+  it("records the appendix's id while HOW_IT_WORKS_ENABLED is on, and not while it is off", async () => {
+    process.env.HOW_IT_WORKS_ENABLED = "true";
+    try {
+      await recordAboutVisit();
+      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["how-it-works"]);
+    } finally {
+      delete process.env.HOW_IT_WORKS_ENABLED;
+    }
+    markAboutVisited.mockClear();
+    await recordAboutVisit();
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
+  });
+
   it("never redirects, so the index stays where the reader is reading it", async () => {
     await recordAboutVisit();
     expect(redirect).not.toHaveBeenCalled();

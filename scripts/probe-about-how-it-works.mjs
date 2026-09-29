@@ -4,7 +4,8 @@
 //   PROBE_BASE=http://localhost:3342 PROBE_HOW_IT_WORKS=off pnpm probe:about-how-it-works
 //
 // A switch is read when the server starts, so the two passes need two servers: one started with
-// HOW_IT_WORKS_ENABLED=true and one without it. The pass names which it expects, and fails when
+// HOW_IT_WORKS_ENABLED=true AND ABOUT_SHEET_ENABLED=true (the contents group lives in the R6
+// contents that switch draws), and one without HOW_IT_WORKS_ENABLED. The pass names which it expects, and fails when
 // the page disagrees, so a run against the wrong server cannot report a pass.
 //
 // ON: the method key is one column on the phone and two from 1000px, with a 100px tag column; each
@@ -127,6 +128,47 @@ async function walkOn(page, w) {
   const overflow = await page.evaluate(() => document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth);
   report(`${tag} nothing scrolls sideways`, overflow <= 0, `${overflow}px`);
 
+  // PR C. An entry's link line lands its row open, and Back returns to the entry.
+  await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+  const link = onPage(page, "li#roles [data-entry-link]");
+  if (report(`${tag} the Roles entry carries its link line`, (await link.count()) === 1)) {
+    const h = await link.evaluate((a) => Math.round(a.getBoundingClientRect().height));
+    if (w.label === 390) report(`${tag} the link line is a 44px target`, h >= 44, `${h}px`);
+    await link.scrollIntoViewIfNeeded();
+    const before = await link.evaluate((a) => Math.round(a.getBoundingClientRect().top));
+    await link.click();
+    await page.waitForTimeout(400);
+    const landed = await page.evaluate(() => ({ hash: location.hash, open: !!document.getElementById("how-roles-body") }));
+    report(`${tag} the link opens the Roles row`, landed.hash === "#how-roles" && landed.open, JSON.stringify(landed));
+    const back = await page.evaluate(() => [...document.querySelectorAll("#how-roles-body a[href^='#']")].map((a) => a.getAttribute("href")));
+    report(`${tag} the row links back to the Roles entry`, back.includes("#roles"), back.join(" "));
+    await page.goBack();
+    await page.waitForTimeout(400);
+    // Back restores the scroll the reader pressed from, so the link line is where it was.
+    const after = await link.evaluate((a) => Math.round(a.getBoundingClientRect().top));
+    report(`${tag} Back returns to the link the reader pressed`, Math.abs(after - before) <= 4, `${before}px then ${after}px`);
+  }
+
+  // The contents group: the rail at 1300, the phone list's fifth row at 390.
+  if (w.label === 1300) {
+    const rail = await onPage(page, "nav").evaluateAll((navs) => {
+      const nav = navs.find((n) => getComputedStyle(n).display !== "none" && n.querySelector("a[href='#how-it-works']"));
+      if (!nav) return null;
+      return { rows: nav.querySelectorAll("a[data-entry-row][href^='#how-']").length };
+    });
+    report(`${tag} the rail lists the appendix and its eight rows`, rail?.rows === 8, JSON.stringify(rail));
+  } else {
+    // Counted before it is pressed: the group is drawn only in the R6 contents, and a server
+    // started without ABOUT_SHEET_ENABLED would otherwise end the walk on a locator timeout.
+    const row = onPage(page, "a[href='#how-it-works']").first();
+    if (!report(`${tag} the phone list draws the appendix row`, (await row.count()) === 1, "is ABOUT_SHEET_ENABLED on?")) return;
+    const h = await row.evaluate((a) => Math.round(a.getBoundingClientRect().height));
+    report(`${tag} the list's fifth row is 44px`, h >= 44, `${h}px`);
+    await row.locator("xpath=..").locator("button[aria-expanded]").click();
+    const rows = await onPage(page, "#contents-entries-how-it-works a[data-entry-row]").count();
+    report(`${tag} it opens onto the eight rows`, rows === 8, `${rows}`);
+  }
+
   // The hash landing, on a middle row and the last. The appendix is the page's last section, so a
   // row near the foot cannot scroll to 20px from the top: the document ends first. So each lands
   // 20px from the top OR with the document scrolled to its end, and with its OPENED body on screen,
@@ -167,6 +209,8 @@ async function walkOff(page, w) {
   report(`${tag} no appendix`, (await onPage(page, "#how-it-works").count()) === 0);
   const intro = await onPage(page, "article > p").first().innerText();
   report(`${tag} the intro is production's`, intro.trim().startsWith(INTRO), intro.slice(0, 80));
+  report(`${tag} no entry links to a row`, (await onPage(page, "[data-entry-link]").count()) === 0);
+  report(`${tag} no contents link reaches the appendix`, (await onPage(page, "a[href='#how-it-works'], a[href^='#how-']").count()) === 0);
 }
 
 async function main() {

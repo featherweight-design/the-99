@@ -1,6 +1,6 @@
 {
   "feature": "About, how the app reaches its answers",
-  "note": "Needs a server with HOW_IT_WORKS_ENABLED=true and ANALYSIS_TAB_ENABLED=true, and ANALYSIS_DECK set to a deck the signed-in account owns that holds a stored reading (on local-dev, d0000000-0000-4000-8000-00000000cafe). PR A's row is the first: the Analysis tab's \"How we make these decisions\" sheet, each row now tagged with how its count is reached. The tab is reached by a PRESS: BuilderTabs is client state and has no address. PR B's rows are /about's appendix: the key and the closed rows, Brackets opened by its hash, and the last row landed by its hash.",
+  "note": "Needs a server with HOW_IT_WORKS_ENABLED=true and ANALYSIS_TAB_ENABLED=true, and ANALYSIS_DECK set to a deck the signed-in account owns that holds a stored reading (on local-dev, d0000000-0000-4000-8000-00000000cafe). PR A's row is the first: the Analysis tab's \"How we make these decisions\" sheet, each row now tagged with how its count is reached. The tab is reached by a PRESS: BuilderTabs is client state and has no address. PR B's rows are /about's appendix: the key and the closed rows, Brackets opened by its hash, and the last row landed by its hash. PR C's rows: an entry's link line, a row's explained-in links, and the contents group (the rail at desktop, the phone list's fifth row opened); these need ABOUT_SHEET_ENABLED=true, since the group lives in the R6 contents.",
   "clearAbout": true,
   "rows": [
     {
@@ -65,6 +65,116 @@
           "goto": "/about#how-written",
           "wait": "#how-written [data-jumped]",
           "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "entry-link-line",
+      "label": "/about#roles \u2014 an entry with its How this is decided line",
+      "view": "src/components/about/about-page.tsx",
+      "steps": [
+        {
+          "goto": "/about#roles",
+          "wait": "li#roles [data-entry-link]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "row-explained-in",
+      "label": "/about#how-roles \u2014 the row open, its explained-in links",
+      "view": "src/components/about/how-rows.tsx",
+      "steps": [
+        {
+          "goto": "/about#how-roles",
+          "wait": "#how-roles-body a[href='#roles']",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "contents-rail-group",
+      "label": "/about#how-prices \u2014 the rail's group, Prices current",
+      "view": "src/components/about/contents-r6.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about#how-prices",
+          "wait": "nav a[data-entry-row][href='#how-prices']",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "contents-list-group",
+      "label": "/about \u2014 the phone list's fifth row, open",
+      "view": "src/components/about/contents-r6.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "nav a[href='#how-it-works']",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-label*='How the app reaches its answers']",
+          "settle": 400
+        },
+        {
+          "wait": "#contents-entries-how-it-works",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "contents-search-row-phone",
+      "label": "/about \u2014 the contents search matching a row title",
+      "view": "src/components/about/contents-r6.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "nav:not(.sticky) input",
+          "settle": 800
+        },
+        {
+          "fill": "nav:not(.sticky) input",
+          "text": "prices",
+          "settle": 500
+        },
+        {
+          "wait": "nav:not(.sticky) a[data-entry-row][href='#how-prices']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "contents-search-row-desktop",
+      "label": "/about \u2014 the contents search matching a row title",
+      "view": "src/components/about/contents-r6.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "nav.sticky input",
+          "settle": 800
+        },
+        {
+          "fill": "nav.sticky input",
+          "text": "prices",
+          "settle": 500
+        },
+        {
+          "wait": "nav.sticky a[data-entry-row][href='#how-prices']",
+          "settle": 300
         }
       ]
     }

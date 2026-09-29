@@ -52,6 +52,7 @@ export type HowRowLabels = {
   fields: { from: string; how: string; refresh: string; exact: string };
   verdicts: Record<HowVerdict, string>;
   bracketsLead: string;
+  explainedIn: string;
 };
 
 export const howItWorksRowsCopy = {

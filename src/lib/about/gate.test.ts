@@ -160,6 +160,46 @@ describe("gateDecision", () => {
   });
 });
 
+describe("the appendix's line on the sheet (plan 2026-09-28, PR C)", () => {
+  const all = aboutEntries.filter((e) => !e.switch);
+  const seen = (version: number, ids: string[] = []) => ({ version, ids });
+
+  it("rides a sheet already drawing, after its entries", () => {
+    const d = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9, appendix: true });
+    expect(d.show && d.header.split(",").at(-1)).toBe("how-it-works");
+  });
+
+  it("never summons a sheet on its own", () => {
+    expect(sheetDecision({ userId: "u", seen: seen(9), visible: all, version: 9, appendix: true }).show).toBe(false);
+  });
+
+  // With HOW_IT_WORKS_ENABLED off the proxy's decision is today's, byte for byte, in every state:
+  // the header and cookie a reader gets do not move until the switch does.
+  it("decides exactly as it did before the appendix, with the switch off", () => {
+    const states = [seen(0), seen(8), seen(9), seen(8, ["how-it-works"]), seen(3, ["x"])];
+    for (const s of states) {
+      const off = sheetDecision({ userId: "u", seen: s, visible: all, version: 9, appendix: false });
+      expect(off).toEqual(sheetDecision({ userId: "u", seen: s, visible: all, version: 9 }));
+      const unseen = all.filter((e) => e.since > s.version);
+      const today =
+        s.version === 0 && s.ids.length === 0
+          ? { show: true, header: "0", cookie: "u.9" }
+          : unseen.length === 0
+            ? { show: false, cookie: "u.9" }
+            : { show: true, header: unseen.map((e) => e.id).join(","), cookie: "u.9" };
+      expect(off).toEqual(today);
+    }
+  });
+
+  it("stays off a first-run sheet, a reader who has seen it, and a deployment with the switch off", () => {
+    expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: 9, appendix: true })).toMatchObject({ header: "0" });
+    const seenIt = sheetDecision({ userId: "u", seen: seen(8, ["how-it-works"]), visible: all, version: 9, appendix: true });
+    expect(seenIt.show && seenIt.header).not.toContain("how-it-works");
+    const off = sheetDecision({ userId: "u", seen: seen(8), visible: all, version: 9 });
+    expect(off.show && off.header).not.toContain("how-it-works");
+  });
+});
+
 describe("the sheet (R6)", () => {
   // The page with every feature switch off: an entry tied to one is not drawn.
   const all = aboutEntries.filter((e) => !e.switch);

@@ -6,6 +6,8 @@ import { ABOUT_VERSION } from "../../lib/copy/about";
 import { safeNext } from "../../lib/about/gate";
 import { markAboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
+import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
+import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
  * The dismiss. Records the acknowledgement against the account and sends the
@@ -40,5 +42,7 @@ export async function recordAboutVisit() {
   const userId = await requireUserId();
   // The switched entries THIS deployment draws, decided here and never taken from the client:
   // a visit records what the page could have shown, not what a caller claims it showed.
-  await markAboutVisited(userId, ABOUT_VERSION, switchedIds(visibleEntries()));
+  // The appendix is seen the same way, by its id, while its switch is on (plan 2026-09-28, PR C).
+  const appendix = howItWorksEnabled() ? [HOW_IT_WORKS_ID] : [];
+  await markAboutVisited(userId, ABOUT_VERSION, [...switchedIds(visibleEntries()), ...appendix]);
 }
