@@ -9,6 +9,7 @@ import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { Crown } from "../ui/crown";
+import { replaceCopy } from "../../lib/copy/replace";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -51,18 +52,22 @@ export function ReviewScreen({
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
     <section className={embedded ? "flex flex-col" : "flex flex-col min-h-[calc(100vh-140px)]"}>
-      {/* Mobile page header (Cinzel title + filename) — §Page Header (mobile) / §Mobile Page Title */}
-      <div
-        className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]"
-        style={{ borderBottom: "1px solid var(--border)" }}
-      >
-        <button type="button" onClick={onCancel} disabled={pending} aria-label="Back to upload" className="text-[20px] text-[color:var(--accent)] disabled:opacity-60">‹</button>
-        <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>Review import</span>
-        <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
-      </div>
+      {/* Mobile page header — "Review import" and the filename (first-run redesign D11, 5b).
+          The ‹ is gone: Cancel in the confirm bar is the phone's exit now. Embedded in first
+          run's step-1 card (5a) there is no header at all; the card's own title and its
+          REVIEWING line say where the reader is. */}
+      {!embedded && (
+        <div
+          className="md:hidden flex flex-none items-baseline gap-[12px] p-[18px_18px_14px]"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>Review import</span>
+          <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
+        </div>
+      )}
 
       {/* Desktop content area — §Desktop Content Area (padding 36px 56px 20px, max-width 940px). Cap widened to 1280px per #32 so the review fills the shell content column instead of leaving an empty right column at typical desktop widths. */}
-      <div className="flex-1 md:max-w-[1280px] md:mx-auto md:p-[36px_56px_20px] p-[16px_18px]">
+      <div className={`flex-1 md:max-w-[1280px] md:mx-auto md:p-[36px_56px_20px] ${embedded ? "p-[0_14px]" : "p-[16px_18px]"}`}>
         {/* Desktop step indicator — §Desktop Step Indicator */}
         <p
           className="hidden md:block font-mono text-[11px] tracking-[0.06em]"
@@ -277,9 +282,15 @@ export function ReviewScreen({
         )}
       </div>
 
-      {/* Sticky confirm bar — §Sticky Confirm Bar: border-top 1px --border-strong, bg --surface-rail, padding 14px 18px 22px mobile / 16px 56px desktop */}
+      {/* Confirm bar — §Sticky Confirm Bar: border-top 1px --border-strong, bg --surface-rail.
+          On /collection/replace it is sticky at both widths, and on the phone it sits above the
+          tab bar (D11, 5b). Embedded in first run it is the card's foot, in flow (5a). */}
       <div
-        className={`${embedded ? "" : "md:sticky"} bottom-0 z-10 p-[14px_18px_22px] md:p-[16px_56px] md:flex md:items-center md:gap-[20px]`}
+        className={`${
+          embedded
+            ? "mt-[14px] p-[12px_14px_14px] md:mt-0"
+            : "sticky bottom-[var(--tabbar-h)] md:bottom-0 p-[12px_18px_14px]"
+        } z-10 md:p-[16px_56px] md:flex md:items-center md:gap-[20px]`}
         style={{ background: "var(--surface-rail)", borderTop: "1px solid var(--border-strong)" }}
       >
         {/* Summary sentence — §Sticky Confirm Bar: Summary Sentence */}
@@ -307,23 +318,26 @@ export function ReviewScreen({
           )}
         </p>
 
-        {/* Buttons — mobile: full-width continue only, desktop: cancel + continue right-aligned. md:whitespace-nowrap on Continue keeps the label on one line when the summary sentence eats horizontal space (#32 — was wrapping to "Continue / to / replace"); md:flex-none on the button group blocks flex-shrink so the label + padding stay intact. */}
-        <div className="md:ml-auto md:flex-none flex gap-[12px]">
+        {/* Buttons — Cancel then Continue at both widths (D11: the phone's exit is this Cancel,
+            a 46px hairline left of Continue). md:whitespace-nowrap on Continue keeps the label on
+            one line when the summary sentence eats horizontal space (#32); md:flex-none on the
+            group blocks flex-shrink so the label and padding stay intact. */}
+        <div className="md:ml-auto md:flex-none flex gap-[10px] md:gap-[12px]">
           <GhostButton
             type="button"
             onClick={onCancel}
             // A write already in flight cannot be taken back: leaving the review would not
             // stop it, and its receipt would open anyway (Copilot, #1097).
             disabled={pending}
-            className="hidden md:inline-block text-[14px] px-[20px] py-[12px] disabled:opacity-60"
+            className="flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg px-[18px] md:px-[20px] md:py-[12px] text-[14px] disabled:opacity-60"
           >
-            Cancel
+            {replaceCopy.review.cancel}
           </GhostButton>
           <PrimaryButton
             type="button"
             onClick={onContinue}
             disabled={pending}
-            className="text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px] disabled:opacity-60 disabled:cursor-wait"
+            className="flex-1 md:flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg text-[15px] md:text-[14px] md:whitespace-nowrap md:py-[12px] px-0 md:px-[24px] disabled:opacity-60 disabled:cursor-wait"
           >
             {/* "Importing…" is the confirm modal's own pending label, which this button now
                 carries when a first import skips the modal. */}

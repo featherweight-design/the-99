@@ -34,26 +34,58 @@ describe("ConfirmModal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  // The replace is already running and can't be undone, so dismissing the
-  // dialog would only hide it.
+  // The replace is already running, so dismissing the dialog would only hide it.
   it("refuses Escape while the replace is in flight", () => {
     const { onClose } = renderModal({ pending: true });
     pressEscape();
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("focuses the confirm input on open", () => {
+  it("opens with focus on Keep current, the answer that changes nothing (D9)", () => {
     renderModal();
-    expect(document.activeElement).toBe(screen.getByLabelText(/to confirm/i));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Keep current" }));
   });
 
-  it("arms the confirm button only once the token matches", () => {
+  // Continue and this button are the two deliberate presses; there is no typed third.
+  it("asks for no typed token, and its button is live from the start", () => {
     renderModal();
-    const confirm = screen.getByRole("button", { name: /Replace 40 cards/i });
-    expect(confirm).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/to confirm/i), {
-      target: { value: "REPLACE" },
-    });
-    expect(confirm).toBeEnabled();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByRole("button", { name: "Replace with 120 cards" })).toBeEnabled();
+  });
+
+  // The button names what the player GETS: the matched 120, never the 40 they have now.
+  it("draws the now → after pair from the two counts", () => {
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent(/Now\s*40/);
+    expect(dialog).toHaveTextContent(/After\s*120/);
+    expect(dialog).toHaveTextContent("from collection.csv");
+    expect(dialog).not.toHaveTextContent(/can.t be undone/i);
+  });
+
+  it("holds both buttons while the replace runs, and says so on the primary", () => {
+    renderModal({ pending: true });
+    expect(screen.getByRole("button", { name: "Keep current" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Replacing…" })).toBeDisabled();
+  });
+
+  it("says one card, never one cards", () => {
+    render(
+      <ConfirmModal
+        preview={{ ...preview, matchedCardCount: 1, currentCollectionCount: 1 }}
+        pending={false}
+        error={null}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Replace with 1 card" })).toBeInTheDocument();
+  });
+
+  it("confirms on one press", () => {
+    const onConfirm = vi.fn();
+    render(<ConfirmModal preview={preview} pending={false} error={null} onClose={vi.fn()} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole("button", { name: "Replace with 120 cards" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 });

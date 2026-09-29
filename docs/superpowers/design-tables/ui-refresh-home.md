@@ -906,6 +906,24 @@ Copy: `firstRun.heading`.
 | gap | 12 | 18 |
 | flex | none | — |
 
+#### Step 1 card — while its review is open (state A2, first-run redesign D11, 5a)
+
+The embedded review draws no header of its own, so on the phone the card says what is under
+review. Desktop keeps the rest-state card: 5a is drawn at 390 only, and the fan stays pinned
+beside the growing review (Hugh, 2026-09-28). Design table: `first-run-calm-replace.md` §3a.
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| align-items / text-align | flex-start / left | unchanged |
+| padding / overflow | 0 / hidden (the title block and the review carry a 14px inset, so the confirm bar is the card's flush foot) | unchanged |
+| title size | 17 | 19, unchanged |
+| card-fan mark | hidden | unchanged |
+| body (`firstRun.step1BodyShort`) | hidden | `firstRun.step1Body`, unchanged |
+| REVIEWING line (`firstRun.step1Reviewing(file, rows)`) | mono 10, letter-spacing 0.04em, uppercase, `var(--fg-faint)`, margin-top 4 | — |
+| example | `Reviewing · pasted list · 1,313 rows` | — |
+
+Cancel in the review's bar discards the preview, and the card returns to its rest state.
+
 #### Step 1 — card-fan mark (container)
 
 | Property | Mobile | Desktop |

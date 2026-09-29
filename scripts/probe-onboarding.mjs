@@ -16,6 +16,13 @@
 //      disabled `Importing…`, with no Replace modal. A collection that exists by the confirm
 //      (a second tab imported) makes the server write nothing and the flow open the REPLACE
 //      modal instead: the skip is only as safe as "nothing to lose" is true on the server.
+//   D9 the replace confirm is calm: no typed token, no --danger or --warning anywhere in the
+//      resting dialog (read as resolved colours, not class names), focus on Keep current, a
+//      now → after pair, and a button naming the matched count.
+//   D10 the upload entry's replace note is plain and shows only over a collection.
+//   D11 the phone review's exit is a 46px Cancel left of Continue, and the ‹ is gone. Embedded
+//      in first run the card names the file, the fan steps aside and the bar is the card's
+//      foot; on /collection/replace the bar is sticky above the tab bar.
 //
 // FIXTURE. First run shows only to an account with no collection, and both local-dev fixture
 // accounts own ~2,700 rows, so this signs in as a DEDICATED empty account on Clerk's
@@ -91,15 +98,17 @@ async function signIn(page) {
 // cannot make the probe measure something else.
 async function geometry(page) {
   return page.evaluate(() => {
-    // The card whose first child is the hidden fan carrying the "99". Not the upload input:
-    // the review screen replaces it.
-    const card =
-      [...document.querySelectorAll("main *")].find((el) => {
-        const first = el.firstElementChild;
-        return first?.getAttribute("aria-hidden") === "true" && first.textContent?.includes("99");
-      }) ?? null;
-    const fan = card?.firstElementChild ?? null;
-    const column = fan?.nextElementSibling ?? null;
+    // The step card, found by the hidden fan carrying the "99". Not the upload input: the review
+    // screen replaces it. The fan sits in a `display: contents` wrapper (it steps aside on the
+    // phone while a review is open), so the card is the wrapper's parent and the text column is
+    // the wrapper's next sibling.
+    const fan =
+      [...document.querySelectorAll('main [aria-hidden="true"]')].find(
+        (el) => el.textContent?.includes("99") && el.getBoundingClientRect().height > 0,
+      ) ?? null;
+    const wrapper = fan?.parentElement ?? null;
+    const card = wrapper?.parentElement ?? null;
+    const column = wrapper?.nextElementSibling ?? null;
     const r = (el) => (el ? el.getBoundingClientRect() : null);
     const c = r(card);
     const f = r(fan);
@@ -300,10 +309,151 @@ async function firstImport(browser, vp) {
     const opened = await dialog.waitFor({ timeout: 15_000 }).then(() => true, () => false);
     report(opened, "5a a collection found at the confirm opens the Replace modal instead");
     const warning = opened ? await dialog.innerText() : "";
-    report(/can.t be undone/i.test(warning) && /REPLACE/.test(warning), "5a and it is the REPLACE variant, not the import one", warning.slice(0, 80).replace(/\s+/g, " "));
+    report(/Replace your collection\?/.test(warning) && /Replace with \d/.test(warning), "5a and it is the REPLACE variant, not the import one", warning.slice(0, 80).replace(/\s+/g, " "));
     const rows = await sql`select oracle_id from collection_items where user_id = ${userId}`;
     report(rows.length === 1 && rows[0].oracle_id === card.oracle_id, "5a and the confirm wrote nothing", `${rows.length} rows`);
     report(!/\/summary\//.test(page.url()), "5a and did not navigate to a receipt");
+  } finally {
+    await cleanup(userId);
+    await context.close();
+  }
+}
+
+// ── First-run R3: the calm replace (D9, D10, D11; design table first-run-calm-replace.md).
+// Every rule here is geometry or a resolved style: whether the confirm carries any red or amber,
+// where focus lands, whether the phone's Cancel sits beside Continue at 46px, whether the bar is
+// sticky above the tab bar or in flow as the card's foot, and whether the fan steps aside.
+const redOrAmber = (dialog) =>
+  dialog.evaluate((root) => {
+    const probe = document.createElement("div");
+    document.body.append(probe);
+    const resolve = (v) => {
+      probe.style.color = `var(${v})`;
+      return getComputedStyle(probe).color;
+    };
+    const hot = new Set([resolve("--danger"), resolve("--warning")]);
+    probe.remove();
+    const hits = [];
+    for (const el of [root, ...root.querySelectorAll("*")]) {
+      const cs = getComputedStyle(el);
+      for (const prop of ["color", "backgroundColor", "borderTopColor", "borderLeftColor"]) {
+        if (hot.has(cs[prop]) && el.getBoundingClientRect().width > 0) hits.push(`${el.tagName.toLowerCase()} ${prop}`);
+      }
+    }
+    return hits;
+  });
+
+async function barOf(page) {
+  // The confirm bar is the parent of the row holding Cancel and Continue.
+  return onPageRole(page, "button", "Cancel").evaluate((cancel) => {
+    const bar = cancel.parentElement.parentElement;
+    const cs = getComputedStyle(bar);
+    const tabbar = getComputedStyle(document.documentElement).getPropertyValue("--tabbar-h").trim();
+    return { position: cs.position, bottom: cs.bottom, tabbar };
+  });
+}
+
+async function calmReplace(browser, vp) {
+  console.log(`\n── ${vp.label}: the calm replace`);
+  const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+  const page = await context.newPage();
+  const userId = await signIn(page);
+  try {
+    // A. Embedded in first run (5a).
+    await cleanup(userId);
+    await clearAboutSheet(page, userId);
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await pasteToReview(page, "3 Sol Ring\n1 Command Tower");
+    const card = onPage(page, "[data-reviewing]");
+    const reviewing = onPage(page, "text=/^Reviewing · /i").first();
+    if (vp.phone) {
+      report(await reviewing.isVisible(), "D11 5a the card names what is under review", await reviewing.innerText().catch(() => "none"));
+      const fan = await card.evaluate((el) => {
+        const fanEl = el.querySelector('[aria-hidden="true"]');
+        return fanEl ? fanEl.getBoundingClientRect().width : -1;
+      });
+      report(fan === 0, "D11 5a the fan steps aside while reviewing", `${fan}px`);
+      const align = await card.evaluate((el) => getComputedStyle(el).alignItems);
+      report(align === "flex-start", "D11 5a the card goes left-aligned", align);
+      report(!(await onPage(page, "text=Review import").isVisible().catch(() => false)), "D11 5a the embedded review draws no header of its own");
+      // The bar is the card's FOOT: flush to its sides and bottom, inside its 1px border.
+      const flush = await onPageRole(page, "button", "Cancel").evaluate((c) => {
+        const bar = c.parentElement.parentElement.getBoundingClientRect();
+        const cardEl = c.closest("[data-reviewing]");
+        const box = cardEl.getBoundingClientRect();
+        const b = parseFloat(getComputedStyle(cardEl).borderLeftWidth);
+        return { left: bar.left - box.left - b, right: box.right - b - bar.right, bottom: box.bottom - b - bar.bottom };
+      });
+      report(
+        [flush.left, flush.right, flush.bottom].every((d) => Math.abs(d) <= 0.5),
+        "D11 5a the confirm bar runs flush to the card's sides and foot",
+        `inset ${flush.left.toFixed(1)} / ${flush.right.toFixed(1)} / ${flush.bottom.toFixed(1)}px`,
+      );
+    } else {
+      report(!(await reviewing.isVisible().catch(() => false)), "D11 desktop keeps the card as it was: no REVIEWING line");
+    }
+    const cancel = onPageRole(page, "button", "Cancel");
+    const cont = onPageRole(page, "button", /^Continue to (import|replace)/);
+    const [cb, nb] = [await cancel.boundingBox(), await cont.boundingBox()];
+    report(cb && nb && Math.abs(cb.y - nb.y) < 2 && cb.x < nb.x, "D11 Cancel sits left of Continue on one row", cb && nb ? `cancel ${Math.round(cb.x)},${Math.round(cb.y)} continue ${Math.round(nb.x)},${Math.round(nb.y)}` : "missing");
+    if (vp.phone) report(cb && Math.round(cb.height) === 46, "D11 the phone's Cancel is a 46px hairline", cb ? `${cb.height}px` : "missing");
+    const embeddedBar = await barOf(page);
+    report(embeddedBar.position !== "sticky", "D11 5a the bar is the card's foot, in flow", embeddedBar.position);
+    await shot(page, vp, "calm-embedded-review");
+    await cancel.click();
+    report(await onPageRole(page, "button", "Upload a CSV").isVisible(), "D11 Cancel returns step 1 to its entries");
+    // The flow reports a closed review from an effect, a render after the entries return.
+    const gone = await onPage(page, "[data-reviewing]").waitFor({ state: "detached", timeout: 5000 }).then(() => true, () => false);
+    report(gone, "D11 and the REVIEWING state is gone");
+
+    // B. /collection/replace with nothing to replace: the page is how a collection starts.
+    await page.goto(`${BASE}/collection/replace`, { waitUntil: "networkidle" });
+    report(await onPageRole(page, "heading", "Add your collection").first().isVisible(), "copy the replace page reads Add your collection at 0 cards");
+    report(!(await onPage(page, "text=/replaces your current/").count()), "D10 no replace note over an empty collection");
+
+    // C. /collection/replace over a collection (5b, 4c, 4a/4b).
+    const seeded = await sql`select oracle_id from cards where name in ('Command Tower', 'Arcane Signet') order by name`;
+    for (const r of seeded) {
+      await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${userId}, ${r.oracle_id}, 1, 'cmr')`;
+    }
+    await page.goto(`${BASE}/collection/replace`, { waitUntil: "networkidle" });
+    const note = onPage(page, "text=/replaces your current/").first();
+    report(await note.isVisible(), "D10 the note shows over a collection", await note.innerText().catch(() => "none"));
+    const noteInk = await note.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { bg: cs.backgroundColor, left: cs.borderLeftWidth, text: el.textContent };
+    });
+    report(noteInk.left === "1px" && !/⚠/.test(noteInk.text), "D10 a plain note: no amber rule, no icon", `left border ${noteInk.left}`);
+    await pasteToReview(page, "3 Sol Ring");
+    if (vp.phone) {
+      report(!(await onPageRole(page, "button", "Back to upload").count()), "D11 5b the ‹ is gone");
+      report(await onPage(page, "text=Review import").first().isVisible(), "D11 5b the header reads Review import");
+      report(!(await onPageRole(page, "heading", "Replace collection").isVisible().catch(() => false)), "D11 5b no page header above the review");
+    }
+    const bar = await barOf(page);
+    report(
+      bar.position === "sticky" && (vp.phone ? bar.bottom === bar.tabbar : bar.bottom === "0px"),
+      vp.phone ? "D11 5b the bar is sticky above the tab bar" : "the desktop bar stays sticky at the foot",
+      `${bar.position}, bottom ${bar.bottom}, tab bar ${bar.tabbar}`,
+    );
+    await shot(page, vp, "calm-replace-review");
+    await onPageRole(page, "button", /^Continue to replace/).click();
+    const dialog = onPageRole(page, "dialog");
+    await dialog.waitFor({ timeout: 15_000 });
+    await page.waitForTimeout(250);
+    report(!(await dialog.getByRole("textbox").count()), "D9 no typed token");
+    const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
+    report(focused === "Keep current", "D9 focus opens on Keep current", focused ?? "none");
+    const text = (await dialog.innerText()).replace(/\s+/g, " ");
+    report(/Now 2 cards?/i.test(text) && /After 3/i.test(text), "D9 the now → after pair reads the two counts", text.slice(0, 90));
+    report(/Replace with 3 cards/.test(text), "D9 the button names what the player gets", text.match(/Replace with [^ ]+ \w+/)?.[0] ?? "none");
+    const hot = await redOrAmber(dialog);
+    report(hot.length === 0, "D9 no --danger or --warning anywhere in the resting dialog", hot.slice(0, 3).join(", ") || "none");
+    await shot(page, vp, "calm-confirm");
+    await onPageRole(page, "button", "Keep current").click();
+    report(!(await dialog.isVisible().catch(() => false)), "D9 Keep current closes it");
+    const rows = await sql`select count(*)::int n from collection_items where user_id = ${userId}`;
+    report(rows[0].n === seeded.length, "D9 and writes nothing", `${rows[0].n} rows`);
   } finally {
     await cleanup(userId);
     await context.close();
@@ -381,6 +531,7 @@ async function main() {
   try {
     for (const vp of VIEWPORTS) await walk(browser, vp, csvPath);
     for (const vp of VIEWPORTS) await firstImport(browser, vp);
+    for (const vp of VIEWPORTS) await calmReplace(browser, vp);
     for (const vp of VIEWPORTS) await zeroDecks(browser, vp);
   } finally {
     await browser.close();

@@ -15,14 +15,11 @@ export default async function ReplacePage() {
   const userId = await requireUserId();
   const stats = await getCollectionStats(userId);
   return (
-    // Page header — §Page Title "Replace collection" desktop / mobile back-chevron header
     <section>
-      <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
-        <a href="/collection" aria-label="Back to Collection" className="text-[20px] text-[color:var(--accent)]">‹</a>
-        <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
-      </div>
-      {/* THE DESKTOP HEADING BELONGS TO THE STEP, so `ReplaceFlow` draws it. This page has two
-          layouts — the entry sits in a 760px column, the review in a 1280px one — and a heading
+      {/* THE HEADING BELONGS TO THE STEP, at both widths, so `ReplaceFlow` draws it. On the
+          phone the review has its own `Review import` row and no chevron (first-run redesign
+          D11, 5b), so a page-level row above it would be a second header. On desktop, this page
+          has two layouts — the entry sits in a 760px column, the review in a 1280px one — and a heading
           rendered here could only be centred to one of them. Pinned left it was 102px out of
           step with the review; centred to the entry's column it would have been 252px out. The
           review draws its own `Review import` title, so nothing is lost by letting it go. */}

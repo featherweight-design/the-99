@@ -8,7 +8,7 @@
 // wins, which is why the locked cards are --surface-rail on --border and the
 // step-1 card is --surface-inset.
 
-import { ReplaceFlow } from "../collection/replace-flow";
+import { FirstRunStepOne } from "./first-run-step-one";
 import { refreshCopy } from "../../lib/copy/refresh";
 
 /**
@@ -133,38 +133,9 @@ export function FirstRunChecklist() {
       </div>
 
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px]">
-        {/* Step 1 — live */}
-        <div className="flex flex-none flex-col items-center gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] p-[18px_16px] text-center sm:flex-row sm:items-start sm:gap-[18px] sm:p-[18px] sm:text-left">
-          {/* `sm:items-start` on the card above keeps this pinned while the text
-              column grows by a paste panel or a whole review screen. The
-              handoff's `align-items: center` was drawn for the rest state only;
-              Hugh ruled on 2026-09-28 that the fan stays top-aligned throughout. */}
-          <CardFan />
-          <div className="flex w-full min-w-0 flex-col items-center gap-[12px] sm:w-auto sm:flex-auto sm:items-stretch sm:gap-[7px]">
-            <span className="font-display text-[19px] font-semibold text-[color:var(--fg)]">
-              {c.step1Title}
-            </span>
-            {/* One paragraph, two strings: the phone gets the copy file's own
-                short variant rather than a second copy of the subtree. */}
-            <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:text-[13px]">
-              <span className="sm:hidden">{c.step1BodyShort}</span>
-              <span className="hidden sm:inline">{c.step1Body}</span>
-            </p>
-            {/* ReplaceFlow rather than UploadEntry: preview and confirm are its
-                steps to own, and first run reaches them by the same route the
-                replace page does.
-
-                The wrapper undoes this card's centring for everything the flow
-                draws after its buttons. The card is `items-center` and, on the
-                phone, `text-center`, both drawn for the rest state; left to leak,
-                they shrank the paste panel to its content (a narrow textarea) and
-                centred the review screen's `Unmatched` / `Parse errors` headings
-                over lists that are not. Prod walk 2026-09-28, items 9 and 10. */}
-            <div className="w-full self-stretch text-left">
-              <ReplaceFlow currentCardCount={0} entry="buttons" embedded />
-            </div>
-          </div>
-        </div>
+        {/* Step 1 — live. A client component, because the card changes while its review is
+            open (D11, 5a); the fan is drawn here and handed in. */}
+        <FirstRunStepOne fan={<CardFan />} />
 
         <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />

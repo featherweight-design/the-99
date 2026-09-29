@@ -10,6 +10,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { replaceCopy } from "../../lib/copy/replace";
 
 type Mode = "dropzone" | "paste";
 
@@ -191,39 +192,18 @@ export function UploadEntry({
     // CENTRED: the cap is the handoff's, the alignment was never stated, and left-pinned it left
     // two thirds of a desktop body empty beside it.
     <div className="md:mx-auto md:w-full md:max-w-[760px] md:p-[44px_48px]">
-      {/* Warning banner — §Warning Banner (Replace Warning): bg --elevated-hover, border 1px --border-strong, border-left 3px --warning, radius 8/10px, padding 12/16px, gap 10/12px, margin-top 20px desktop */}
-      <div
-        className="flex items-start gap-[10px] md:gap-[12px] rounded-lg md:rounded-[10px] p-[12px_14px] md:p-[16px_18px] md:mt-[20px]"
-        style={{
-          background: "var(--elevated-hover)",
-          border: "1px solid var(--border-strong)",
-          borderLeft: "3px solid var(--warning)",
-        }}
-      >
-        {/* Warning icon — §Warning Banner Icon: --warning, 15/17px */}
-        <span
-          aria-hidden
-          className="text-[15px] md:text-[17px] leading-[1.3] md:leading-[1.2]"
-          style={{ color: "var(--warning)" }}
-        >
-          ⚠
-        </span>
-        {/* Body — §Warning Banner Body: 12.5/14px, --fg-body, line-height 1.55/1.6 */}
-        <p
-          className="text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6]"
-          style={{ color: "var(--fg-body)" }}
-        >
-          {currentCardCount === 0 ? (
-            "This upload becomes your collection. You’ll see exactly what matched before anything is committed."
-          ) : (
-            <>
-              Uploading a new file replaces your current {currentCardCount.toLocaleString()} cards.
-              There&apos;s no merge. You&apos;ll see exactly what matched before anything is
-              committed.
-            </>
-          )}
+      {/* The replace note (first-run redesign D10; design table first-run-calm-replace.md §2).
+          A plain note, not a warning: --surface-sunken, a 1px --border all round, no ⚠, no amber
+          rule. Drawn only over a collection that exists, since with none there is nothing to
+          replace and nothing for the note to say. The phone takes the same treatment (audit
+          correction 5); only its spacing above stays the page's own. */}
+      {currentCardCount > 0 && (
+        <p className="m-0 md:mt-[20px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px_18px] text-[14px] leading-[1.6] text-pretty text-[color:var(--fg-body)]">
+          {replaceCopy.note.before}
+          <span className="font-semibold text-[color:var(--fg)]">{replaceCopy.note.count(currentCardCount)}</span>
+          {replaceCopy.note.after}
         </p>
-      </div>
+      )}
 
       {mode === "dropzone" ? (
         // Upload Drop Zone — §Upload Drop Zone: border 1.5px dashed --border-dashed, radius 12px, bg --surface-sunken, padding 30px 18px mobile / 40px desktop, mobile centered / desktop flex row (icon left)

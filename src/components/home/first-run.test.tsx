@@ -6,6 +6,14 @@ import { describe, expect, it, vi } from "vitest";
 // tree that throws, and none of these tests navigates.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
+// The review is reached through the real paste path; only the server read is stubbed.
+const previewPaste = vi.fn();
+vi.mock("../../app/collection/actions", () => ({
+  confirmUpload: vi.fn(),
+  previewPaste: (...args: unknown[]) => previewPaste(...args),
+  previewUpload: vi.fn(),
+}));
+
 const { FirstRunChecklist } = await import("./first-run");
 
 describe("FirstRunChecklist", () => {
@@ -92,5 +100,36 @@ describe("FirstRunChecklist", () => {
     // that assertion would fail against a correctly hidden fan. What it meant
     // to check is asserted directly — the numeral sits inside a hidden subtree.
     expect(screen.getByText("99").closest("[aria-hidden='true']")).not.toBeNull();
+  });
+
+  // D11, 5a: the embedded review has no header of its own, so the card says what is under
+  // review; the phone's fan and body step aside; and Cancel is the way back to the two entries.
+  it("names the file under review on the card, and Cancel returns step 1 to its entries", async () => {
+    previewPaste.mockResolvedValueOnce({
+      uploadId: "up_1",
+      matchedCardCount: 3,
+      unmatchedRows: [],
+      skippedByDesignCount: 0,
+      parseErrors: [],
+      currentCollectionCount: 0,
+      filename: "pasted list",
+      rowCount: 1_313,
+    });
+    const { container } = render(<FirstRunChecklist />);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Paste a list/ })[0]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), {
+      target: { value: "3 Sol Ring" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+
+    expect(await screen.findByText("Reviewing · pasted list · 1,313 rows")).toBeInTheDocument();
+    expect(screen.queryByText("Review import")).toBeNull();
+    const card = container.querySelector("[data-reviewing]");
+    expect(card?.className).toContain("items-start");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByText(/^Reviewing ·/)).toBeNull();
+    expect(container.querySelector("[data-reviewing]")).toBeNull();
+    expect(screen.getAllByRole("button", { name: /^Paste a list/ }).length).toBeGreaterThan(0);
   });
 });
