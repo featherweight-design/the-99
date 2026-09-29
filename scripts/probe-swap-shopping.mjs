@@ -9,7 +9,8 @@
  *   - the limit is REMEMBERED: a reload reads the saved figure back, and the deck row holds it.
  *   - the phone's targets are 44px: the figure and `reset to $10`.
  *   - the name keeps its width with `over $X` on the row (audit F12, ruling b): the line costs the
- *     name nothing at 390 and 768, where it takes a line of its own, and the name keeps the 131px
+ *     name nothing at 390 and 768, where it stacks on the buy tag (Hugh, 2026-09-28; it took a line
+ *     of its own at 390 before), and the name keeps the 131px
  *     Design costed for Plateau at 390 and 40px at 1024 and 1300. At 768 an under row stays one line
  *     and an over row keeps its figure beside its name. The room itself at 768 is the grid's.
  *
@@ -52,7 +53,7 @@ const WIDTHS = [
   // row's name must keep, uncut; Design costed Plateau at "about 131px" at 390. None at 768, where
   // the grid itself overflows (see F12 below).
   { label: 390, viewport: { width: 390, height: 844 }, edit: true, maxCost: 0, nameFloor: 131 },
-  // F12, ruling b: up to lg the line takes a row of its own, so at 768 it costs the name nothing.
+  // F12, ruling b: up to lg the line stacks on the buy tag, so at 768 it costs the name nothing.
   // 1024 is the first width that draws it inline.
   { label: 768, viewport: { width: 768, height: 900 }, edit: false, maxCost: 0, nameFloor: null },
   { label: 1024, viewport: { width: 1024, height: 900 }, edit: false, maxCost: 60, nameFloor: 40 },
@@ -236,8 +237,9 @@ try {
     const rows = await readRows(page, all, "$10");
     checkMarks(`${tag} $10:`, rows, [...fx.high, ...fx.mid], fx.low);
     // F12. What this PR owns is the room the `over $X` line takes from the name, so the line is
-    // hidden in place and the name's room read again: the difference is its cost. At 390 the line
-    // sits on the second row and costs nothing; on desktop it is inline and costs its own width.
+    // hidden in place and the name's room read again: the difference is its cost. Below lg it stacks
+    // on the buy tag, no wider than the tag, and costs nothing; on desktop it is inline and costs
+    // its own width.
     // The room itself at 768 is the grid's (logged as `swap-decklist-768-overflow`), so it is
     // printed rather than asserted there.
     if (process.env.PROBE_SHOTS) {

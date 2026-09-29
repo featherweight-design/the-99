@@ -245,7 +245,9 @@ async function run() {
         const outside = overs.filter((r) => r.over.left < r.row.left - 0.5 || r.over.right > r.row.right + 0.5);
         report(`${width}px · the stack stays inside its row`, outside.length === 0,
           outside.length ? `${outside[0].name}: over ${JSON.stringify(outside[0].over)} row ${JSON.stringify(outside[0].row)}` : `${overs.length} rows`);
-        // The names beside a stack, for the before/after in the PR: the stack must not squeeze them.
+        // The names beside a stack, printed for the before/after in the PR. The stack is no wider than
+        // the tag under it, so these read the same as origin/main's (measured 2026-09-29, a long name
+        // such as Heroic Intervention cut on both); the 40px floor above is what is asserted.
         const narrow = overs.map((r) => `${r.name} ${r.nameWidth.toFixed(0)}px${r.nameFull ? "" : " (cut)"}`);
         console.log(`       ${width}px · names beside a stack: ${narrow.slice(0, 6).join("; ")}`);
       }
