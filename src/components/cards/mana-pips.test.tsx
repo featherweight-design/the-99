@@ -23,7 +23,7 @@ describe("ManaCost", () => {
   it("draws each symbol's own art, in cost order", () => {
     const { container } = render(<ManaCost cost="{2}{W}{U}" />);
 
-    expect(sources(container)).toEqual(["/mana/2.svg", "/mana/W.svg", "/mana/U.svg"]);
+    expect(sources(container)).toEqual(["/mana/sprite.svg#m-2", "/mana/sprite.svg#m-W", "/mana/sprite.svg#m-U"]);
   });
 
   // The symbols say nothing to a screen reader, where the retired discs at
@@ -41,7 +41,7 @@ describe("ManaCost", () => {
   it("draws hybrid, twobrid and Phyrexian symbols whole", () => {
     const { container } = render(<ManaCost cost="{W/U}{2/R}{G/P}" />);
 
-    expect(sources(container)).toEqual(["/mana/WU.svg", "/mana/2R.svg", "/mana/GP.svg"]);
+    expect(sources(container)).toEqual(["/mana/sprite.svg#m-WU", "/mana/sprite.svg#m-2R", "/mana/sprite.svg#m-GP"]);
   });
 
   // Scryfall's symbol list grows with the card pool and these files move only
@@ -51,7 +51,7 @@ describe("ManaCost", () => {
   it("falls back to a lettered pip for a symbol with no committed art", () => {
     const { container } = render(<ManaCost cost="{W}{QQ}" />);
 
-    expect(sources(container)).toEqual(["/mana/W.svg"]);
+    expect(sources(container)).toEqual(["/mana/sprite.svg#m-W"]);
     expect(container.textContent).toContain("QQ");
   });
 
@@ -70,7 +70,7 @@ describe("ManaCost", () => {
   it("draws both halves of a two-part cost", () => {
     const { container } = render(<ManaCost cost="{3}{B} // {B}" />);
 
-    expect(sources(container)).toEqual(["/mana/3.svg", "/mana/B.svg", "/mana/B.svg"]);
+    expect(sources(container)).toEqual(["/mana/sprite.svg#m-3", "/mana/sprite.svg#m-B", "/mana/sprite.svg#m-B"]);
   });
 });
 
@@ -82,11 +82,11 @@ describe("ManaCost — a card with two printed costs", () => {
     const { container } = render(<ManaCost cost="{G/U}{G/U} // {1}{G}{U}" />);
 
     expect(sources(container)).toEqual([
-      "/mana/GU.svg",
-      "/mana/GU.svg",
-      "/mana/1.svg",
-      "/mana/G.svg",
-      "/mana/U.svg",
+      "/mana/sprite.svg#m-GU",
+      "/mana/sprite.svg#m-GU",
+      "/mana/sprite.svg#m-1",
+      "/mana/sprite.svg#m-G",
+      "/mana/sprite.svg#m-U",
     ]);
   });
 
@@ -129,7 +129,7 @@ describe("ManaCost — a card with two printed costs", () => {
   it("draws one run and no separator when a half is empty", () => {
     const { container } = render(<ManaCost cost="{B} // " />);
 
-    expect(sources(container)).toEqual(["/mana/B.svg"]);
+    expect(sources(container)).toEqual(["/mana/sprite.svg#m-B"]);
     expect(container.textContent).not.toContain("//");
   });
 });

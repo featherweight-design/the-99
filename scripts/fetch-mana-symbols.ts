@@ -21,6 +21,7 @@
  *   pnpm fetch:mana
  */
 import { writeFile } from "node:fs/promises";
+import { writeManaSprite } from "./build-mana-sprite";
 
 import { manaSymbolSlug } from "../src/lib/cards/mana-symbols";
 import { SCRYFALL_HEADERS } from "../src/lib/scryfall/http";
@@ -74,6 +75,8 @@ async function main(): Promise<void> {
   );
 
   console.log(`Wrote ${slugs.length} symbols to ${OUT_DIR}/ and ${MANIFEST}.`);
+  // The one file the app actually loads, rebuilt from the files just written.
+  console.log(`Rebuilt the sprite from ${await writeManaSprite()} symbols.`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

@@ -2,6 +2,7 @@
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
 import { perfRoute } from "../../../lib/perf/timing";
 import { notFound } from "next/navigation";
+import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
@@ -138,6 +139,13 @@ export default async function DeckBuilderPage({
   const versionsRead = early(perf.timed("versions", () => listVersions(id, userId)));
   const detail = await detailRead;
   if (!detail) notFound();
+  // The commander's art, asked for NOW. The header draws it as a CSS background, which the browser
+  // fetches only once the page's markup has streamed and its style is computed, behind every other
+  // read below. It is the one image above the fold, so it gets a preload at high priority the moment
+  // its URL is known (Hugh, 2026-09-28: it loaded after the cards beneath it).
+  if (detail.commander.artCropUri) {
+    preload(detail.commander.artCropUri, { as: "image", fetchPriority: "high" });
+  }
 
   // STAGE A IS BOUNDED TO THE CRITICAL PATH. These three are awaited only at the very end, behind
   // the last wave's ~450ms, so starting them after the guard costs nothing — and starting them at

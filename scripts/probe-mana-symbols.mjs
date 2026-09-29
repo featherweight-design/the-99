@@ -228,7 +228,7 @@ async function run() {
         const url = new URL(res.url());
         if (!url.pathname.startsWith("/mana/")) return;
         const body = res.status() === 200 ? await res.text().catch(() => "") : "";
-        loaded.set(url.pathname, { status: res.status(), svg: body.includes("<svg") });
+        loaded.set(url.pathname, { status: res.status(), svg: body.includes("<svg"), body });
       });
 
       await signIn(page);
@@ -283,10 +283,18 @@ async function run() {
       // rather than throwing — but a relative value would make `new URL` throw
       // `Invalid URL` and take the whole check down with it, and a base costs
       // nothing to pass and cannot change an already-absolute URL.
+      // Since 2026-09-28 every pip is a VIEW in one sprite (`mana-sprite.ts`), so "its own file" is
+      // its own fragment: the sprite has to have been served, and has to hold a view with that id.
+      // A slug that drifted from the sprite's ids serves the sheet and paints nothing.
       const wanted = [
-        ...new Set((cost ?? []).map((p) => p.url && new URL(p.url, BASE).pathname).filter(Boolean)),
+        ...new Set((cost ?? []).map((p) => p.url && new URL(p.url, BASE)).filter(Boolean)
+          .map((u) => `${u.pathname}${u.hash}`)),
       ];
-      const served = wanted.filter((path) => loaded.get(path)?.status === 200 && loaded.get(path)?.svg);
+      const served = wanted.filter((ref) => {
+        const [path, frag] = ref.split("#");
+        const file = loaded.get(path);
+        return file?.status === 200 && file.svg && Boolean(frag) && file.body.includes(`<view id="${frag}"`);
+      });
       failures += !report(
         `${width}px · the cost's own symbols resolved`,
         wanted.length > 0 && served.length === wanted.length,

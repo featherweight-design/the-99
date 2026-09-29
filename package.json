@@ -128,6 +128,8 @@
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",
     "fetch:mana": "tsx scripts/fetch-mana-symbols.ts",
+    "build:mana-sprite": "tsx scripts/build-mana-sprite.ts",
+    "probe:pip-preload": "node scripts/probe-pip-preload.mjs",
     "probe:nav-cost": "node scripts/probe-nav-cost.mjs",
     "probe:deck-statuses": "node scripts/probe-deck-statuses.mjs",
     "db:seed:combos": "tsx scripts/seed-combos.ts",

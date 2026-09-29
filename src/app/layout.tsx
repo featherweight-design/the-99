@@ -4,6 +4,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Shell from "../components/shell/shell";
 import { clerkAppearance } from "../lib/shell/clerk-appearance";
 import { resolveTheme } from "../lib/theme/server";
+import { preload } from "react-dom";
+import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
 import "./globals.css";
 
 // SELF-HOSTED, not `next/font/google`.
@@ -135,6 +137,10 @@ export default async function RootLayout({
   // already in the chosen theme. A client-side read would paint Amonkhet first
   // and then swap, which is the flash the cookie exists to avoid.
   const theme = await resolveTheme();
+  // Every mana symbol, in one file, asked for in the head of every document: pips are drawn on most
+  // routes and in the card modal that opens from all of them, and a symbol fetched only when its pip
+  // painted showed an empty box first (Hugh, 2026-09-28). See `mana-sprite.ts`.
+  preload(MANA_SPRITE_PATH, { as: "image", type: "image/svg+xml" });
   return (
     <ClerkProvider appearance={clerkAppearance}>
       <html
