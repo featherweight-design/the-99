@@ -30,8 +30,10 @@ export type MarkerOpts = {
   selfExcluded?: boolean;
   /** `/collection` — count-only, no deck name ever. Addendum 2 §3. */
   nameless?: boolean;
-  /** A bare `short` at one copy, rather than `short 1`. The deck page's own list ONLY (Hugh,
-   *  2026-09-28): the default is the count, so a surface added later draws it without asking. */
+  /** A bare `short` at one copy, rather than `short 1`. Only on the deck's own pages (Hugh,
+   *  2026-09-28): `/decks/[id]` and everything it mounts (rows, tiles, suggestions, sheets),
+   *  `/changes` and `/import`, and the card modal opened from them (`deckPage`). The default is the
+   *  count, so a surface added later draws it without asking. */
   bareOne?: boolean;
 };
 
