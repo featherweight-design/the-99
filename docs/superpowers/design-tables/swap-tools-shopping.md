@@ -225,12 +225,12 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 |---|---|---|
 | Copy key | `swapToolsCopy.row.over(figure)`; figure is the formatted limit | same |
 | Rendered when | The row's drawn price is greater than the limit | same |
-| Preceding separator | `·` in `--border-strong` | same |
+| Preceding separator | none: stacked on the buy tag, not on a line | `·` in `--border-strong` from `lg`, after the figure; none on a row with no figure |
 | font-family | mono | mono |
 | font-size | 10px | 10px |
 | color | `--warning` | `--warning` |
 | white-space | nowrap | nowrap |
-| Rule amended | The meta line gains a third item beyond the cost and the figure | same |
+| Rule amended | None: the meta line keeps the cost and the figure only (2026-09-28) | From `lg`, inline after the figure on the name's line |
 | Placement below `lg` | Stacked above the buy tag, right-aligned, `gap 2px`, `leading-none` (2026-09-28) | 768–1023px: the same stack (Hugh, 2026-09-26, which replaced F12 ruling (b)'s own line under the name) |
 
 ### BuyTag (over-limit ring)

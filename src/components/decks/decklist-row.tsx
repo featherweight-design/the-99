@@ -559,6 +559,13 @@ export function DecklistRow({
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
             {factMarks}
+            {overText ? (
+              // A row with no meta line (a land with no EDHREC figure) still owes its `over $X` from
+              // `lg`, where the stack on the buy tag is hidden. No figure, so no `·`.
+              <span className="hidden lg:inline flex-none font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
+                {overText}
+              </span>
+            ) : null}
           </div>
         )}
 
