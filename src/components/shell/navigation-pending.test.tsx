@@ -21,7 +21,7 @@ const { default: Link } = await import("next/link");
 const { NavigationPendingProvider, OVERLAY_AFTER_MS, ShellMain } = await import("./navigation-pending");
 const { usePendingReport } = await import("./pending-report");
 const { OVERLAY_OUT_MS } = await import("./pending-overlay");
-const { use, useEffect, useState } = await import("react");
+const { use, useEffect, useLayoutEffect, useState } = await import("react");
 const { usePendingPush } = await import("./pending-push");
 
 function Reporter({ href }: { href: string }) {
@@ -192,6 +192,28 @@ describe("a code-started push", () => {
       </NavigationPendingProvider>
     );
   }
+
+  it("does not drop a push asked for as the page mounts", async () => {
+    // A layout effect runs before any passive one, as a click replayed during hydration can: the
+    // push must still navigate rather than find no runner and vanish.
+    cleanup();
+    routerPush.mockReset();
+    function Early() {
+      const { go } = usePendingPush();
+      useLayoutEffect(() => go("/discover"), [go]);
+      return null;
+    }
+    await act(async () => {
+      render(
+        <NavigationPendingProvider>
+          <ShellMain className="">
+            <Early />
+          </ShellMain>
+        </NavigationPendingProvider>,
+      );
+    });
+    expect(routerPush).toHaveBeenCalledWith("/discover");
+  });
 
   it("reaches the route's screen at 400ms, and keeps it after the component that started it unmounts", async () => {
     cleanup();

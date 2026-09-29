@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -110,9 +111,21 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   // commits (on Home's first run the import's own revalidation swaps the checklist holding the
   // replace flow for the dashboard), and a report it owned would end with it.
   const runPush = useRef<((href: string) => void) | null>(null);
-  const push = useCallback((href: string) => runPush.current?.(href), []);
+  // A push asked for before `CodePushes` has registered (a click replayed as hydration finishes)
+  // is held and run at registration rather than dropped: the page that asked has already closed
+  // whatever started it, and a lost push would leave the reader nowhere.
+  const queued = useRef<string | null>(null);
+  const push = useCallback((href: string) => {
+    if (runPush.current) runPush.current(href);
+    else queued.current = href;
+  }, []);
   const registerPush = useCallback((run: ((href: string) => void) | null) => {
     runPush.current = run;
+    if (run && queued.current !== null) {
+      const href = queued.current;
+      queued.current = null;
+      run(href);
+    }
   }, []);
   const context = useMemo(() => ({ report, pathname, push }), [report, pathname, push]);
 
@@ -174,7 +187,8 @@ function CodePushes({ register }: { register: (run: ((href: string) => void) | n
   const [pending, startTransition] = useTransition();
   const [target, setTarget] = useState<string | null>(null);
   useReportPending(target ?? "", pending && target !== null);
-  useEffect(() => {
+  // A layout effect, so the runner is in place before any replayed or effect-started push.
+  useLayoutEffect(() => {
     register((href: string) => {
       setTarget(href);
       startTransition(() => router.push(href));
