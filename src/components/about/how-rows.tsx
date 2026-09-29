@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { HowMethod } from "../../lib/copy/about";
-import { howItWorksRowsCopy as copy, type HowRowCopy } from "../../lib/copy/how-it-works";
+import type { HowRowCopy, HowRowLabels } from "../../lib/copy/how-it-works";
 import { MethodTags } from "../ui/method-tag";
 
 type SubRow = { label: string; methods: readonly HowMethod[]; lines: string[] };
@@ -15,7 +15,17 @@ type SubRow = { label: string; methods: readonly HowMethod[]; lines: string[] };
  * until its body is there to scroll past. The wash and the focus are `JumpMark`'s, which finds
  * the row's `data-entry-title` line like any entry's; the page mounts it while this section is on.
  */
-export function HowRows({ rows, subRows }: { rows: readonly HowRowCopy[]; subRows: SubRow[] }) {
+// The labels arrive as a prop rather than an import: the copy module builds every row from the
+// scoring and cadence constants, and none of that belongs in the browser's bundle.
+export function HowRows({
+  rows,
+  subRows,
+  labels,
+}: {
+  rows: readonly HowRowCopy[];
+  subRows: SubRow[];
+  labels: HowRowLabels;
+}) {
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
   const pendingScroll = useRef<string | null>(null);
   const ids = rows.map((r) => r.id).join(" ");
@@ -69,6 +79,7 @@ export function HowRows({ rows, subRows }: { rows: readonly HowRowCopy[]; subRow
           row={r}
           open={open.has(r.id)}
           onToggle={() => toggle(r.id)}
+          labels={labels}
           subRows={r.id === "how-brackets" ? subRows : null}
         />
       ))}
@@ -81,11 +92,13 @@ function HowRow({
   open,
   onToggle,
   subRows,
+  labels: copy,
 }: {
   row: HowRowCopy;
   open: boolean;
   onToggle: () => void;
   subRows: SubRow[] | null;
+  labels: HowRowLabels;
 }) {
   const bodyId = `${row.id}-body`;
   const fields: [label: string, text: string][] = [

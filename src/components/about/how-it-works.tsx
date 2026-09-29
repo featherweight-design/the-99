@@ -45,7 +45,11 @@ export function HowItWorks() {
         </dl>
       </div>
 
-      <HowRows rows={copy.rows} subRows={bracketSubRows()} />
+      <HowRows
+        rows={copy.rows}
+        subRows={bracketSubRows()}
+        labels={{ fields: copy.fields, verdicts: copy.verdicts, bracketsLead: copy.bracketsLead }}
+      />
     </section>
   );
 }

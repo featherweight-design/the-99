@@ -116,3 +116,15 @@ describe("HowItWorks", () => {
     }
   });
 });
+
+// The client rows take their labels as a prop. A value import of the copy module would ship all
+// eight prose rows, and the scoring and cadence constants they are built from, in browser JS.
+describe("HowRows' bundle", () => {
+  it("imports nothing but types from the appendix copy", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(`${process.cwd()}/src/components/about/how-rows.tsx`, "utf8");
+    const lines = src.split("\n").filter((l) => /from ["'][^"']*lib\/copy\/how-it-works["']/.test(l));
+    expect(lines.length).toBeGreaterThan(0);
+    for (const l of lines) expect(l).toMatch(/^import type /);
+  });
+});

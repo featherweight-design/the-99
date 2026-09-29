@@ -47,6 +47,13 @@ export type HowRowCopy = {
   exact: string;
 };
 
+/** The few labels the client rows draw, handed to them as a prop (see `HowRows`). */
+export type HowRowLabels = {
+  fields: { from: string; how: string; refresh: string; exact: string };
+  verdicts: Record<HowVerdict, string>;
+  bracketsLead: string;
+};
+
 export const howItWorksRowsCopy = {
   pageIntroClause: ", then how the app reaches its answers",
   title: "How the app reaches its answers",
