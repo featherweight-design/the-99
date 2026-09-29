@@ -13,7 +13,7 @@ The two combine into one behaviour. A press paints its mark at 120ms. At 400ms, 
      - `PendingPip`, `PendingTrack` and the inline reporter start it from `useLinkStatus().pending`.
      - A code-started navigation starts it from the `router.push` inside `startTransition` (escalation correction 3).
      - A reporter ignores a link whose path is the current one (correction 4).
-   - **Rapid presses.** The clock runs from the first press of a run, and the words follow the last press.
+   - **Rapid presses.** The clock runs from the first press of a run, and the words follow the last press. Only the last-pressed link stays pending, so the provider decides once per commit: a first link's `pending=false` and a second's `pending=true` arriving together must neither end the run nor restart its clock. A fake-timer test presses one target, moves to a second at 300ms, and asserts the screen at 400ms carries the second target's words.
    - **At 400ms**, if the run is still pending and its target is not a kept route, it mounts the overlay.
    - **At commit** (pathname change, or the pending flag clearing), the overlay fades out.
 2. **The overlay.**
@@ -35,6 +35,7 @@ The two combine into one behaviour. A press paints its mark at 120ms. At 400ms, 
    - Its fallback is a client `ShellLoading` that reads `usePathname()`, looks the route up in the same map and draws that `LoadingScreen`. The fallback is keyed on the pathname; the boundary is **not**, since re-keying it would remount it and show the fallback on every client navigation.
    - On a direct load or refresh it streams. On a client navigation the boundary has already resolved, so the old page stays up and the pip, track and overlay carry it.
    - **Proved by probe on the slow profile:** a slow document load of `/collection` shows its screen, and Home to `/commanders` shows the pip and then the overlay.
+   - **The signed-out `/` gets no fallback, on purpose.** `Shell` returns bare children when there is no user, so that branch never meets this boundary. Its page awaits `auth()` alone and then draws a static landing. The root screen it inherited until now read "Setting the table / counting what you've got…", which describes a collection the visitor does not have. A signed-out visitor cannot navigate to any other app route, since each one redirects to sign-in, so nothing else is lost.
 5. **The marks** (parent handoff and parent corrections):
    - **`PendingPip`** is a child of every unlocked `NavSlot` `<Link>`: a 4px diamond in `--fg`.
      - The slot's pending fill comes from the pip through `:has()` (parent correction 4). The rail's `transition-colors` must not fade it out on landing.
@@ -66,7 +67,7 @@ The two combine into one behaviour. A press paints its mark at 120ms. At 400ms, 
 
 ## PR boundaries
 
-Each PR is under ~20 files and ~800 lines. None depends on an unmerged sibling.
+None depends on an unmerged sibling. PRs 2 and 3 are under ~20 files and ~800 lines. **PR 1 is not, deliberately:** it is about 30 files, 13 of them the `loading.tsx` deletions. The deletions, the shell fallback that replaces them, and the provider that escalates to their screens cannot land apart. Deletions without the fallback lose the direct-load screen. The fallback without the deletions is never reached. The provider without either escalates to a screen the boundary has already drawn.
 
 | PR | Contents | Proof |
 |---|---|---|
