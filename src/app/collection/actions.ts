@@ -131,7 +131,7 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
  * on rather than shows: a `firstImport` confirm found a collection already there, so nothing
  * was written and the caller asks the player before replacing it. It carries the collection's
  * size, counted as the preview counts it, because the preview the caller holds says 0 and the
- * modal reads its warning (and its REPLACE token) off that figure.
+ * modal reads its variant and its NOW figure off that figure.
  */
 export type ConfirmOutcome = { needsConfirm: true; currentCollectionCount: number } | void;
 

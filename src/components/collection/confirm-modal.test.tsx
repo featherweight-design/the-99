@@ -63,6 +63,15 @@ describe("ConfirmModal", () => {
     expect(dialog).not.toHaveTextContent(/can.t be undone/i);
   });
 
+  // Replace disables the button that has focus; without the dialog taking it, focus falls to the
+  // body and Tab leaves the dialog for the length of the write.
+  it("keeps focus inside the dialog once the replace is running", () => {
+    const props = { preview, error: null, onClose: vi.fn(), onConfirm: vi.fn() };
+    const { rerender } = render(<ConfirmModal {...props} pending={false} />);
+    rerender(<ConfirmModal {...props} pending />);
+    expect(document.activeElement).toBe(screen.getByRole("dialog"));
+  });
+
   it("holds both buttons while the replace runs, and says so on the primary", () => {
     renderModal({ pending: true });
     expect(screen.getByRole("button", { name: "Keep current" })).toBeDisabled();

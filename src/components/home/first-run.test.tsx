@@ -125,7 +125,7 @@ describe("FirstRunChecklist", () => {
     expect(await screen.findByText("Reviewing · pasted list · 1,313 rows")).toBeInTheDocument();
     expect(screen.queryByText("Review import")).toBeNull();
     const card = container.querySelector("[data-reviewing]");
-    expect(card?.className).toContain("items-start");
+    expect(card?.className.split(/\s+/)).toContain("items-start");
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByText(/^Reviewing ·/)).toBeNull();

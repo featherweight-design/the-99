@@ -3,8 +3,8 @@
 // changes while its review is open (first-run redesign D11, 5a; design table
 // first-run-calm-replace.md §3a): on the phone the fan and the body step aside, the card goes
 // left-aligned, and a mono `Reviewing · file · rows` line under the title says what is under
-// review, since the review itself draws no header when embedded. Desktop keeps its rest-state
-// card throughout: 5a is drawn at 390 only, and Hugh ruled (2026-09-28) that the fan stays
+// review, since the review itself draws no header when embedded. From `md` the card keeps its
+// rest state: 5a is drawn at 390 only, and Hugh ruled (2026-09-28) that the fan stays
 // top-aligned beside a growing review.
 //
 // The fan is handed in from the server file rather than drawn here, so this module carries the
@@ -23,8 +23,10 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
       // While reviewing, the phone's card drops its padding and clips to its corners, so the
       // review's confirm bar runs flush to the card's sides and foot (5a, §3.3 and §3.8); the
       // title block and the review content carry the 14px inset themselves.
-      className={`flex flex-none flex-col gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] sm:flex-row sm:items-start sm:gap-[18px] sm:p-[18px] sm:text-left ${
-        reviewing ? "items-start overflow-hidden p-0 text-left" : "items-center p-[18px_16px] text-center"
+      // Every reviewing override stops at `md`, where the review draws its own filename line and
+      // its desktop bar; below that the card carries the file itself (640px included).
+      className={`flex flex-none flex-col gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] sm:flex-row sm:items-start sm:gap-[18px] sm:text-left ${
+        reviewing ? "items-start overflow-hidden p-0 text-left md:p-[18px]" : "items-center p-[18px_16px] text-center sm:p-[18px]"
       }`}
       data-reviewing={reviewing ? "" : undefined}
     >
@@ -32,19 +34,19 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
           column grows by a paste panel or a whole review screen. The
           handoff's `align-items: center` was drawn for the rest state only;
           Hugh ruled on 2026-09-28 that the fan stays top-aligned throughout. */}
-      <div className={reviewing ? "hidden sm:contents" : "contents"}>{fan}</div>
+      <div className={reviewing ? "hidden md:contents" : "contents"}>{fan}</div>
       <div
         className={`flex w-full min-w-0 flex-col gap-[12px] sm:w-auto sm:flex-auto sm:items-stretch sm:gap-[7px] ${
           reviewing ? "items-stretch" : "items-center"
         }`}
       >
-        <div className={`flex flex-col ${reviewing ? "px-[14px] pt-[14px] sm:p-0" : ""}`}>
+        <div className={`flex flex-col ${reviewing ? "px-[14px] pt-[14px] md:p-0" : ""}`}>
           {/* 17px on the phone while reviewing (5a, §3.5); 19px everywhere else. */}
-          <span className={`font-display font-semibold text-[color:var(--fg)] ${reviewing ? "text-[17px] sm:text-[19px]" : "text-[19px]"}`}>
+          <span className={`font-display font-semibold text-[color:var(--fg)] ${reviewing ? "text-[17px] md:text-[19px]" : "text-[19px]"}`}>
             {c.step1Title}
           </span>
           {reviewing && (
-            <span className="mt-[4px] font-mono text-[10px] tracking-[0.04em] uppercase text-[color:var(--fg-faint)] sm:hidden">
+            <span className="mt-[4px] font-mono text-[10px] tracking-[0.04em] uppercase text-[color:var(--fg-faint)] md:hidden">
               {c.step1Reviewing(reviewing.file, reviewing.rows)}
             </span>
           )}
@@ -52,7 +54,7 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
         {/* One paragraph, two strings: the phone gets the copy file's own
             short variant rather than a second copy of the subtree. While a
             review is open the phone's gives way to the REVIEWING line. */}
-        <p className={`m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:block sm:text-[13px] ${reviewing ? "hidden" : ""}`}>
+        <p className={`m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:text-[13px] ${reviewing ? "hidden md:block" : ""}`}>
           <span className="sm:hidden">{c.step1BodyShort}</span>
           <span className="hidden sm:inline">{c.step1Body}</span>
         </p>

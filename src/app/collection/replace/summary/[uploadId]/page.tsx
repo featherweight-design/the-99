@@ -1,8 +1,8 @@
 // /collection/replace/summary/[uploadId] — what the import did to your decks.
 //
 // Reached by confirming a collection replace, in place of the bounce back to `/collection` the
-// flow used to make. A typed REPLACE is the most destructive action in the app and was the only
-// one with no receipt.
+// flow used to make. A collection replace is the most destructive action in the app and was the
+// only one with no receipt.
 //
 // The upload id is in the URL rather than the page being "the last import", so the receipt is
 // linkable, survives a reload, and an older one still renders its own figures. `loadSummaryView`

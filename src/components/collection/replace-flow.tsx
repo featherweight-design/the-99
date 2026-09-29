@@ -70,8 +70,8 @@ export function ReplaceFlow({
         setConfirming(true);
         return;
       }
-      // The receipt, not the collection. A typed REPLACE is the most destructive action in
-      // the app and was the only one with no receipt; the summary route is keyed on the
+      // The receipt, not the collection. A collection replace is the most destructive action
+      // in the app and was the only one with no receipt; the summary route is keyed on the
       // upload id, so it survives a reload and stays linkable.
       router.push(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {

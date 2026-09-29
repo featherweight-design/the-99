@@ -12,7 +12,7 @@
 //
 // READINESS #5: focus trap + Escape. Initial focus is on Keep current (D9).
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { UploadPreview } from "../../app/collection/actions";
 import { replaceCopy } from "../../lib/copy/replace";
@@ -55,6 +55,11 @@ export function ConfirmModal({
     initialFocusRef: keepRef,
     closeOnEscape: !pending,
   });
+  // Pressing Replace disables the button that has focus, which would drop focus to the body and
+  // let Tab leave the dialog for the length of the write; the dialog takes it instead.
+  useEffect(() => {
+    if (pending) dialogRef.current?.focus();
+  }, [pending]);
 
   return (
     // §1.1 Scrim, mixed against the canvas so the dim tracks the theme

@@ -74,7 +74,7 @@ export const cardAssignmentsCopy = {
       `Was ${fmt(was)}. ${arrived} arrived, ${left} left. Every arrival a committed deck was ` +
       "waiting for had a copy to spare, so there is nothing to decide.",
     /**
-     * Rendered rather than redirecting: a typed REPLACE deserves a sentence, and the
+     * Rendered rather than redirecting: a collection replace deserves a sentence, and the
      * alternative makes the most destructive action in the app the only one with no receipt.
      *
      * This is also the state a lost receipt lands on — `summary_payload` is written after the

@@ -1,7 +1,7 @@
 "use client";
 // Replace Flow — Step 1 (Upload) per property table §Replace Flow — Step 1.
 // The interim inline preview UI from earlier is gone; the parent ReplaceFlow
-// component now owns steps 2 (review) and 3 (type-to-confirm).
+// component now owns steps 2 (review) and 3 (the replace confirm).
 
 import { collectionChassisCopy } from "../../lib/copy/collection";
 import { useMemo, useRef, useState, useTransition } from "react";

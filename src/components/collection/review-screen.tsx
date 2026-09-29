@@ -255,7 +255,7 @@ export function ReviewScreen({
         </div>
 
         {/* Issue CTA strip — Surfaces v2 §Collection. The quiet crown is
-            allowed here because nothing was lost; the type-to-confirm modal
+            allowed here because nothing was lost; the replace confirm
             stays straight. */}
         {skipped > 0 && (
           <div
