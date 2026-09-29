@@ -343,7 +343,7 @@ async function reservationSection() {
     check("and the drafting deck still buys its copy", await free(drafter), -1);
     await clearAssignments();
 
-    // 11b. A BREW IS NEVER SHORT BY MORE THAN IT ASKS (HD - Thorin, staging, 2026-09-29). One copy,
+    // 11b. A BREW IS NEVER SHORT BY MORE THAN IT ASKS (HD - Thorin, staging, created 2026-09-29 UTC). One copy,
     //      two committed decks holding it, and a brew asking for one. The two committed decks are one
     //      short between themselves, and that shortfall is theirs: the brew's own page reads short 1,
     //      not short 2. Off every deck, the collection's reading still counts the over-commitment,
