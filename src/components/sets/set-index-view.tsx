@@ -16,6 +16,7 @@ import { setsIndexCopy } from "../../lib/copy/set-collections";
 import { SetIcon } from "./set-icon";
 import { PendingTrack } from "../shell/pending-track";
 import type { SetIndexRow } from "../../lib/sets/read";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 function CompletionBar({ percent, complete }: { percent: number; complete: boolean }) {
   return (
@@ -205,7 +206,7 @@ export function SetIndexView({
     const trimmed = next.trim();
     if (trimmed === "") live.delete("q"); else live.set("q", trimmed);
     const qs = live.toString();
-    window.history.replaceState(null, "", qs ? `/collection/sets?${qs}` : "/collection/sets");
+    mirrorUrl(qs ? `/collection/sets?${qs}` : "/collection/sets");
     const ticket = ++latest.current;
     // Cleared before the early return, so a failure never describes the request after it.
     setFailed(false);

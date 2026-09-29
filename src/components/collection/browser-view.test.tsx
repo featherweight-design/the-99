@@ -79,6 +79,17 @@ describe("CollectionBrowser — which view it opens as", () => {
     expect(rows()).toHaveAttribute("aria-pressed", "true");
   });
 
+  // The URL mirror runs once after hydration, and on arrival it describes the URL the page came
+  // in on. Writing that again is what Next's router adopted over a pending push, dropping the
+  // reader's navigation (1f's startup diagnostic, 2026-09-29), so a mount writes nothing.
+  it("makes no write on arrival when the URL already says what the page shows", () => {
+    window.history.replaceState(null, "", "/collection?sort=quantity&view=rows");
+    const replace = vi.spyOn(window.history, "replaceState");
+    render(view());
+    expect(replace).not.toHaveBeenCalled();
+    replace.mockRestore();
+  });
+
   // The STORED value stays out of the address bar: a reader who never touched
   // the toggle has an unmarked URL to share, whatever their habit is. Pressing
   // the toggle still writes `?view=`, as it did before storage existed — that

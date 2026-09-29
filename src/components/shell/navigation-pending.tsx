@@ -19,6 +19,7 @@ import { pendingRouteFor, type LoadingKey } from "../../lib/shell/pending-routes
 import { Report, targetOf, useReportPending, type Reporter } from "./pending-report";
 import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
+import { setNavigationPending } from "../../lib/url/mirror";
 
 /**
  * Navigation pending, and its escalation to the full screen (the navigation-pending handoff and its
@@ -80,6 +81,9 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   );
 
   useEffect(() => {
+    // The URL mirrors stand down while a navigation is pending (`lib/url/mirror`): a write the
+    // router adopts mid-navigation drops the navigation.
+    setNavigationPending(pending.current.size > 0);
     if (pending.current.size === 0) {
       if (running.current) end();
       return;

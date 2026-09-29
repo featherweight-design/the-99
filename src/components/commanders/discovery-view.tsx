@@ -57,6 +57,7 @@ import {
   resolveExcludedReport,
   type ColourExcludedMatch,
 } from "../../lib/commanders/excluded-report";
+import { mirrorUrl } from "../../lib/url/mirror";
 
 // The empty-state strings, aliased once: four call sites below name them, and
 // `discoveryCopy.empty.` on each would bury the key that actually differs.
@@ -182,7 +183,7 @@ export function DiscoveryView({
     if (navPending) return;
     const { pathname, search: live } = window.location;
     const next = laneQuery(new URLSearchParams(live), settled, "discover");
-    window.history.replaceState(null, "", `${pathname}${next}`);
+    mirrorUrl(`${pathname}${next}`);
   }, [settled, navPending]);
 
   // The ranking the server actually produced, reconciled during render rather

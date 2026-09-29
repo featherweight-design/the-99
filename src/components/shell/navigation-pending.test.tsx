@@ -23,6 +23,7 @@ const { usePendingReport } = await import("./pending-report");
 const { OVERLAY_OUT_MS } = await import("./pending-overlay");
 const { use, useEffect, useLayoutEffect, useState } = await import("react");
 const { usePendingPush } = await import("./pending-push");
+const { mirrorUrl } = await import("../../lib/url/mirror");
 
 function Reporter({ href }: { href: string }) {
   return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
@@ -154,6 +155,21 @@ describe("NavigationPendingProvider", () => {
     act(() => rerender(<App links={LINKS} />));
     act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS));
     expect(overlay()).toBeNull();
+  });
+});
+
+describe("the URL mirrors stand down while a navigation is pending", () => {
+  // `lib/url/mirror` takes its pending state from this provider alone: a mirror write the router
+  // adopted mid-navigation dropped the navigation on main (1f's startup diagnostic, 2026-09-29).
+  it("holds a mirror write through a pressed link and makes it when the run ends on the page", () => {
+    window.history.replaceState(null, "", "/collection");
+    const replace = vi.spyOn(window.history, "replaceState");
+    press("/commanders");
+    mirrorUrl("/collection?sort=set");
+    expect(replace).not.toHaveBeenCalled();
+    press("/commanders", false);
+    expect(replace).toHaveBeenCalledWith(null, "", "/collection?sort=set");
+    replace.mockRestore();
   });
 });
 

@@ -114,6 +114,9 @@ const replaceState = vi.spyOn(window.history, "replaceState");
 beforeEach(() => {
   vi.unstubAllGlobals();
   search = "";
+  // A write equal to the live URL is not made (`lib/url/mirror`), so each test starts from an
+  // address no write here can equal, rather than whatever the previous test left in the bar.
+  window.history.replaceState(null, "", "/");
   replaceState.mockClear();
   openCard.mockClear();
   setSiblings.mockClear();
