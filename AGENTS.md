@@ -1676,7 +1676,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   to 200 oracle ids, read from the same cached list the page reads (`loadCollectionList`: one
   loader for both, because the data cache keys an entry on the function it wraps). `printedName`,
   `layout` and `manaCost` stay on every card. The browser parses its own first render with the
-  same `parseBrowseParams`, so the cards it draws on arrival are the ones shipped whole.
+  same `parseBrowseParams`, so the cards it draws on arrival are the ones shipped whole. The page
+  cuts through `pageWindowIds`, which JOINS the availability it reads beside the cached list first:
+  that list carries none, and `?avail=` filters on it, so a cut over the bare list called every
+  card free and drew a busy list on every availability URL (the pre-open pass found it).
 
   **A withheld card is marked by the decoder** (`withheld: true`, from the wire card's own shape),
   never by the fields present on a row afterwards, because a printing pick lays an `imageUri` over
@@ -1688,8 +1691,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   153.6KB gzipped, against 1.122MB with every card whole).
 
 - `pnpm probe:collection-window` proves that at 1300x900 and 390x844 with the fields route HELD:
-  five URLs, each with its own view, sort, direction and search, arrive drawn (200 cards, or what
-  a search leaves) and not busy; `Show more` draws nothing new, stays busy, ignores a second
+  six URLs, each with its own view, sort, direction, search and availability, arrive drawn (200
+  cards, or what a search or a filter leaves) and not busy; `Show more` draws nothing new, stays busy, ignores a second
   press, and draws 200 more once the route is released. Two mutations fail it: the browser
   parsing its first render from the defaults rather than the URL (six checks, `?q=the` drawing 14
   cards), and the fields fetch never sent (the released cards never draw, both widths). A card is

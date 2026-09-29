@@ -18,6 +18,7 @@ import { parseTypesParam } from "./type-filter";
 import { parseSetCodesParam } from "./set-filter";
 import { initialAvailability } from "./availability-filter";
 import type { CollectionDrawKey } from "./list-wire";
+import type { AvailabilitySummary } from "../decks/availability";
 
 /** The cards a window draws before `Show more`, and what each press adds. */
 export const PAGE_SIZE = 200;
@@ -51,4 +52,19 @@ type Listed = Omit<BrowseListCard, CollectionDrawKey>;
 export function firstWindowIds(cards: Listed[], params: BrowseParams): Set<string> {
   const shown = sortCards(filterCards(cards as BrowseListCard[], params.filters), params.sort, params.direction);
   return new Set(shown.slice(0, PAGE_SIZE).map((c) => c.oracleId));
+}
+
+/**
+ * The page's cut: the first window of the list it cached, for the URL it was asked for. The cached
+ * list carries no availability (the page reads it alongside, and the wire joins them), so the
+ * window is found over the JOINED cards: `?avail=` filters on it, and a list read without it
+ * would call every card free and cut a different window from the one the browser draws.
+ */
+export function pageWindowIds(
+  cards: Listed[],
+  availability: Map<string, AvailabilitySummary> | null,
+  get: (key: string) => string | null,
+): Set<string> {
+  const joined = cards.map((c) => ({ ...c, availability: availability?.get(c.oracleId) ?? null }));
+  return firstWindowIds(joined, parseBrowseParams(get, availability !== null));
 }

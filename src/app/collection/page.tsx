@@ -12,7 +12,7 @@ import { CardFan } from "../../components/marks";
 import { CollectionClient } from "../../components/collection/collection-client";
 import { cutCollectionWindow, encodeCollection } from "../../lib/collection/list-wire";
 import { loadCollectionList } from "../../lib/collection/payload";
-import { firstWindowIds, parseBrowseParams } from "../../lib/collection/window";
+import { pageWindowIds } from "../../lib/collection/window";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import {
@@ -74,7 +74,7 @@ export default async function CollectionPage({
   // (`lib/collection/window`) over the same list, so the cards it draws first are the ones shipped
   // whole; the rest arrive in the background from `/api/collection-fields`.
   const query = searchParamsToQuery(await searchParams);
-  const keep = firstWindowIds(cards, parseBrowseParams((key) => query.get(key), availability !== null));
+  const keep = pageWindowIds(cards, availability, (key) => query.get(key));
   const wire = cutCollectionWindow(encodeCollection(cards, availability), keep);
 
   const head = <CollectionPlaceHead current="cards" stats={stats} lastUpdated={lastUpdated} />;

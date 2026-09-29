@@ -8,7 +8,8 @@
 //     to the columns filtering and sorting read, using `lib/collection/window`; the browser draws
 //     its first 200 by the same steps. If they disagreed, a card the browser wants on arrival
 //     would have no fields and the list would sit busy. So each URL here, with its own view, sort,
-//     direction and search, must arrive drawn and not busy while the fields route answers nothing.
+//     direction, search and availability, must arrive drawn and not busy while the fields route
+//     answers nothing.
 //   - Show more with its cards' fields not yet arrived draws nothing new and says so: the list and
 //     the control `aria-busy`. Releasing the route draws them.
 //
@@ -88,7 +89,9 @@ async function walk(browser, width, height) {
   try {
     await signIn(page);
     const gate = await holdFields(page);
-    for (const query of ["?view=grid", "?view=rows", "?view=grid&sort=quantity&dir=asc", "?view=rows&sort=rarity", "?view=grid&q=the"]) {
+    // `avail=` is the one filter whose input the page holds apart from the list (it joins the
+    // reading it loads beside the cached list), so a cut that forgot the join fails it here.
+    for (const query of ["?view=grid", "?view=rows", "?view=grid&sort=quantity&dir=asc", "?view=rows&sort=rarity", "?view=grid&q=the", "?view=grid&avail=free"]) {
       await page.goto(`${BASE}/collection${query}`, { waitUntil: "load" });
       if (new URL(page.url()).pathname !== "/collection") throw new Error(`${label}: landed on ${page.url()} (the About gate?)`);
       await onPage(page, 'button[aria-busy="false"]').first().waitFor({ timeout: 30_000 });
@@ -99,7 +102,7 @@ async function walk(browser, width, height) {
       // nothing has been fetched, so every wanted card came whole from the server. A search can
       // leave fewer than 200, so the count is 200 only where nothing narrows the list.
       report(`${label} ${query}: the URL's first window arrives drawn`,
-        n > 0 && busy === 0 && (query.includes("q=") || n === 200),
+        n > 0 && busy === 0 && (query.includes("q=") || query.includes("avail=") || n === 200),
         `${n} drawn, busy lists ${busy}, fields requests held ${gate.count()}`);
     }
 

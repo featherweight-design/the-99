@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { filterCards, sortCards, type BrowseListCard } from "./browse";
-import { PAGE_SIZE, firstWindowIds, parseBrowseParams } from "./window";
+import { PAGE_SIZE, firstWindowIds, pageWindowIds, parseBrowseParams } from "./window";
+import { decodeCollection, encodeCollection } from "./list-wire";
+import type { AvailabilitySummary } from "../decks/availability";
 
 const params = (qs: string, ok = true) => {
   const q = new URLSearchParams(qs);
@@ -48,4 +50,25 @@ describe("firstWindowIds", () => {
   it("names no more than one window", () => {
     expect(firstWindowIds(cards, params("")).size).toBe(PAGE_SIZE);
   });
+});
+
+// THE PAGE'S CUT reads a list with no availability on it and joins the reading the page loaded
+// beside it. `?avail=` is the one filter whose input the two sides hold differently, so the cut is
+// compared with what the BROWSER filters: the decoded wire, which carries the reading on each card.
+describe("pageWindowIds", () => {
+  const cards = Array.from({ length: 450 }, (_, i) => card(i));
+  const summary = (hard: number): AvailabilitySummary => ({ owned: 1, hard, soft: 0, free: hard ? 0 : 1, claims: [] });
+  // Every third card is sleeved into a deck; the rest are free.
+  const availability = new Map(cards.map((c, i) => [c.oracleId, summary(i % 3 === 0 ? 1 : 0)] as const));
+  const decoded = decodeCollection(encodeCollection(cards, availability)) as BrowseListCard[];
+
+  it.each(["avail=inuse", "avail=free&sort=quantity", "avail=inuse&c=G", ""])(
+    "names the browser's own first window for %j",
+    (qs) => {
+      const q = new URLSearchParams(qs);
+      const p = parseBrowseParams((k) => q.get(k), true);
+      const browser = sortCards(filterCards(decoded, p.filters), p.sort, p.direction).slice(0, PAGE_SIZE);
+      expect([...pageWindowIds(cards, availability, (k) => q.get(k))]).toEqual(browser.map((c) => c.oracleId));
+    },
+  );
 });
