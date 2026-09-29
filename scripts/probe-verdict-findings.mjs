@@ -20,7 +20,7 @@
 //     and the card's name keeps clear of it however long the label. That clearance is a measured
 //     reserve (readiness finding 10), so the probe reads the name row's rects against the pill's.
 //     Pressing the pill is the first dismissal on desktop; Escape is the phone's.
-//   · How we make these decisions opens as a SHEET (3c), 560px on desktop, with its four rows.
+//   · How we make these decisions opens as a SHEET (3c), 560px on desktop, with its five rows (tutors the fifth, brief §5.5).
 //   · What would have to go opens from the climb's lower rung as a SHEET (3b): 700px on desktop,
 //     a 43px header on the phone whose sentence is 14px, the target's mark in that header, no
 //     target chips, no decklist link, and a candidate that stacks a card whose way back is the
@@ -156,6 +156,9 @@ async function openAnalysis(page, href) {
   await tab.first().click();
   // `Analyze` before a reading (PR B's label), `Re-analyze` on the banner over a stale one (C2).
   const invite = onPageRole(page, "button", /^Analyze$/);
+  // The tab holds its loader until the whole tab can paint (#1025), so the press is not there the
+  // moment the tab is. Wait for it; a renamed press still times out and fails below.
+  await invite.first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
   if (!report(`the Analyze press is on ${href}`, (await invite.count()) > 0, "none: the press was renamed or removed")) return false;
   await invite.first().click();
   return page.waitForSelector(`${PAGE} [data-testid="findings-block"]`, { timeout: 30_000 })
@@ -318,7 +321,7 @@ async function walk(page, label, width) {
   report(`${label}px · a second Escape closes the receipt`, (await receipt.count()) === 0,
     `receipt ${await receipt.count()}`);
 
-  // PROVENANCE (3c): an opener, and a sheet with four rows, 560 on desktop, closed by Escape.
+  // PROVENANCE (3c): an opener, and a sheet with five rows, 560 on desktop, closed by Escape.
   const opener = onPageRole(page, "button", /How we make these decisions/);
   // Desktop: the head row's right end. Phone: under the findings box. One mount either way.
   const place = await opener.evaluate((b) => {
@@ -336,8 +339,24 @@ async function walk(page, label, width) {
   const sheet = page.locator('[role="dialog"]').filter({ has: page.locator('[data-testid="provenance"]') });
   await sheet.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
   const terms = await sheet.locator("dt").count();
-  report(`${label}px · provenance opens a sheet with four rows`, popup === "dialog" && terms === 4,
+  report(`${label}px · provenance opens a sheet with five rows`, popup === "dialog" && terms === 5,
     `haspopup ${popup}, ${terms} rows`);
+  // Brief §5.5: the fifth row is tutors, its measured basis and the size of the set, and its lines
+  // are not cut at either width. Read by its label, never by position, so a reordered sheet that
+  // drops the row still reads 4 above rather than passing here on another row.
+  const tutors = await sheet.locator("dt").evaluateAll((dts) => {
+    const dt = dts.find((d) => d.textContent.trim().startsWith("Tutors"));
+    // The row is its dt and every dd after it (a from line, then a misses line), up to the next dt.
+    const dds = [];
+    for (let el = dt?.nextElementSibling; el && el.tagName === "DD"; el = el.nextElementSibling) dds.push(el);
+    if (dds.length === 0) return null;
+    const cut = dds.flatMap((dd) => [dd, ...dd.querySelectorAll("*")]).some((el) => el.scrollWidth > el.clientWidth);
+    const h = dds.reduce((sum, dd) => sum + dd.getBoundingClientRect().height, 0);
+    return { text: dds.map((dd) => dd.innerText).join(" "), cut, h };
+  });
+  report(`${label}px · the tutors row states its basis and the set's size, uncut`,
+    !!tutors && /22 cards of a curated set/.test(tutors.text) && /974/.test(tutors.text) && !tutors.cut && tutors.h > 0,
+    tutors ? `cut ${tutors.cut}, ${Math.round(tutors.h)}px, "${tutors.text.slice(0, 60)}…"` : "no tutors row");
   const pbox = await sheet.boundingBox();
   if (phone) {
     report(`${label}px · the provenance sheet starts 52px down`, pbox && Math.abs(pbox.y - 52) <= 1, `top ${pbox?.y}`);
