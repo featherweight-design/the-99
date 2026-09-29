@@ -92,12 +92,6 @@ describe("assembleDiscovery", () => {
       expect(low.measurableTotal).toBe(high.measurableTotal);
     });
 
-    // FIT READS `ownedSupport`, NEVER `collectionSupport`, and the two are equal
-    // in every other fixture here — the helper derives one from the other — so
-    // swapping them passed every assertion above while changing what the row
-    // prints. They differ only when the ranked pool is narrower than the
-    // collection, which is the case this fixture builds by hand.
-    //
     // Brief §5.4: the row's Roles part is graded against the commander's own targets, looked up
     // by oracle id. A row wired to the flat constants reads the same fitRoles either way. Targets
     // of 0 ask for nothing and are met by construction, so they read full marks against a pool
@@ -115,6 +109,12 @@ describe("assembleDiscovery", () => {
       expect(flat!.fitRoles).toBeLessThan(ROLES_WEIGHT);
     });
 
+    // FIT READS `ownedSupport`, NEVER `collectionSupport`, and the two are equal
+    // in every other fixture here — the helper derives one from the other — so
+    // swapping them passed every assertion above while changing what the row
+    // prints. They differ only when the ranked pool is narrower than the
+    // collection, which is the case this fixture builds by hand.
+    //
     // `collectionSupport` is the FLOOR's numerator and `ownedSupport` is Fit's.
     // A row wired to the wrong one agrees with the detail page only while the
     // two pools are the same.
