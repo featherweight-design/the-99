@@ -433,6 +433,12 @@ describe("a basic land never appears in Shopping", () => {
 
 describe("the Shopping footer counts the trip and not where the cards came from", () => {
   it("reads the same whether every to-buy card is auto or not", () => {
+    // Every to-buy card auto: the branch that used to append "all N auto".
+    renderDecklist([rampOwned, rampUnowned]);
+    expect(screen.getByText(recommendationsCopy.shopping.footer("1"))).toBeInTheDocument();
+    expect(screen.queryByText(/ auto$/)).not.toBeInTheDocument();
+    cleanup();
+    // Some auto and some not: the branch that used to append "N auto".
     renderDecklist([drawOwned, drawUnowned, drawUnownedManual]);
     expect(screen.getByText(recommendationsCopy.shopping.footer("2"))).toBeInTheDocument();
     expect(screen.queryByText(/ auto$/)).not.toBeInTheDocument();
