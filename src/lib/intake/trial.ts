@@ -37,7 +37,8 @@ export type TrialFigures = {
 
 export async function trialFill(
   userId: string,
-  commander: { oracleId: string; name: string; colorIdentity: string[] },
+  // `manaCost` feeds the basics pip census in `planFill`; required so a caller cannot omit it.
+  commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
   answers: DeckAnswers,
 ): Promise<TrialFigures> {
   const card = answers.cardOracleId;

@@ -42,10 +42,15 @@ async function main() {
   const { isInfiniteOrGameEnding } = await import("../src/lib/spellbook/combo-features");
   const rows = async <T>(q: ReturnType<typeof sql>) => (await db.execute(q)).rows as T[];
 
-  const [cmd] = await rows<{ oracle_id: string; name: string; color_identity: string[] }>(sql`
-    select oracle_id, name, color_identity from cards where name = ${COMMANDER}`);
+  const [cmd] = await rows<{ oracle_id: string; name: string; color_identity: string[]; mana_cost: string | null }>(sql`
+    select oracle_id, name, color_identity, mana_cost from cards where name = ${COMMANDER}`);
   if (!cmd) throw new Error(`no commander named ${COMMANDER}`);
-  const commanders = [{ oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity }];
+  // `manaCost` feeds the basics pip census. It is a required field precisely so this probe cannot
+  // pass a commander with no cost and quietly measure a deck whose colour signal is missing.
+  const commanders = [{
+    oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity,
+    manaCost: cmd.mana_cost ?? null,
+  }];
 
   const plain = await buildFillPlan(USER, commanders);
   const budgeted = await buildFillPlan(USER, commanders, new Set(), { answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });

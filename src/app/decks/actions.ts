@@ -91,7 +91,11 @@ export async function buildFillPlan(
   // the list rather than a `hasPartner` flag is what keeps those three answers
   // from drifting apart. EDHREC is still asked about the primary — it indexes
   // one commander per page.
-  commanders: { oracleId: string; name: string; colorIdentity: string[]; manaCost?: string | null }[],
+  // `manaCost` is REQUIRED rather than optional, and that is the whole point: it feeds the pip
+  // census, and as an optional field `createDeck` omitted it in silence — so the census fix was
+  // inert on the very path the reported bug came from. A required field makes a caller that
+  // forgets a compile error, which is the rule `layout` on `HeldCard` already documents.
+  commanders: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null }[],
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
@@ -400,9 +404,15 @@ export async function createDeck(
     const plan = await buildFillPlan(
       userId,
       [
-        { oracleId: commanderOracleId, name: commander.name, colorIdentity: commander.colorIdentity },
+        {
+          oracleId: commanderOracleId, name: commander.name,
+          colorIdentity: commander.colorIdentity, manaCost: commander.manaCost,
+        },
         ...(partner
-          ? [{ oracleId: partner.oracleId, name: partner.name, colorIdentity: partner.colorIdentity }]
+          ? [{
+            oracleId: partner.oracleId, name: partner.name,
+            colorIdentity: partner.colorIdentity, manaCost: partner.manaCost,
+          }]
           : []),
       ],
       selectedSet,
