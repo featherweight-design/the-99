@@ -26,6 +26,9 @@
 //   F4d the Analysis tab on fifth: its two entries, named together in page order;
 //   F5  the seven figures draw at 390 and 1300 without overflowing the page;
 //   F6  all off again: none of the seven entries is on the page.
+//   F7  HOW_IT_WORKS_ENABLED: alone it draws no sheet; beside Change commander its one line rides
+//       that sheet, once, after the entry; the /about visit records how-it-works; and once
+//       recorded the next sheet names the entry without the line.
 // It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
 // marks every entry seen and fails F2–F4 on a working build. Re-run before believing that red.
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
@@ -67,6 +70,8 @@
 //   - the proxy's cookie keyed on `<user>.<version>` alone       → F2 and F4: the cookie from before each flip hides the sheet
 //   - the version floor applied to a switched entry too          → F2, F3 and F4: a reader at 9 is never announced either
 //   - `figures()` lighting no SETS RANK                           → F5's Help me choose check at 390 and 1300
+//   - the appendix alone drawing a sheet (the proxy's decision AND the reader's parse both
+//     let it, since either one refusing is enough)                → F7a, a card for a current reader
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -397,6 +402,8 @@ const FIRST_FOUR = SWITCHES.filter((k) => k !== "ANALYSIS_TAB_ENABLED");
 async function startServer(on) {
   const env = { ...process.env, ABOUT_SHEET_ENABLED: "true" };
   for (const k of SWITCHES) env[k] = on.includes(k) ? "true" : "false";
+  // Not an entry's switch, so not in SWITCHES: it keys no cookie and names no entry (F7).
+  env.HOW_IT_WORKS_ENABLED = on.includes("HOW_IT_WORKS_ENABLED") ? "true" : "false";
   const child = spawn("node_modules/.bin/next", ["dev", "-p", String(FLIP_PORT)], {
     env,
     detached: true,
@@ -685,6 +692,42 @@ async function flipWalk(browser, who) {
         ),
     );
     report("F6 switches off again: none of the seven entries is on the page", gone);
+
+    // F7. HOW_IT_WORKS_ENABLED (plan 2026-09-28, PR C). Its one line rides a sheet already
+    // drawing and never draws one of its own. It keys no cookie, so each load clears it.
+    const line = page.locator("[data-appendix-line]");
+    await stopServer(server);
+    server = await startServer(["HOW_IT_WORKS_ENABLED"]);
+    await setSeen(userId, VERSION);
+    await context.clearCookies({ name: "about_sheet" });
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    report("F7a the appendix alone draws no sheet for a current reader", !(await card.isVisible()));
+
+    await stopServer(server);
+    server = await startServer(["HOW_IT_WORKS_ENABLED", "CHANGE_COMMANDER_ENABLED"]);
+    await setSeen(userId, VERSION);
+    await context.clearCookies({ name: "about_sheet" });
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const rides = await sheetTitles(page, card);
+    report(
+      "F7b the line rides the sheet a flip draws, once, after its entry",
+      rides?.[0] === "Change commander" && rides.length === 2 && (await line.count()) === 1,
+      JSON.stringify(rides),
+    );
+
+    await visitAbout(page, userId, "how-it-works");
+    const seenIds = (await readRow(userId))?.about_seen_ids ?? [];
+    report("F7c the /about visit records how-it-works", seenIds.includes("how-it-works"), JSON.stringify(seenIds));
+    await setSeen(userId, VERSION, ["how-it-works"]);
+    await context.clearCookies({ name: "about_sheet" });
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const after = await sheetTitles(page, card);
+    report(
+      "F7d once seen, the next sheet names its entry without the line",
+      JSON.stringify(after) === JSON.stringify(["Change commander"]) && (await line.count()) === 0,
+      JSON.stringify(after),
+    );
     await context.close();
   } finally {
     await stopServer(server);
