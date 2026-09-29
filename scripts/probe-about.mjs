@@ -508,8 +508,13 @@ async function figureFacts(page) {
         limit: standIns.li.querySelectorAll("[data-testid=stand-in-limit]").length,
         // The marked row's ⇄, found by the label it carries only when the row is over the limit.
         door: standIns.li.querySelectorAll("button[aria-label^='Cheaper stand-ins for Plateau']").length,
-        // Five of the group's six rows, then its toggle.
-        rows: standIns.li.querySelectorAll("[data-testid=stand-in-row]").length,
+        // The land group: five of its six rows, then its toggle. Counted INSIDE the land group,
+        // because the figure also draws a spell group beside it (key 3, #1052), whose rows are
+        // `spellRows`.
+        rows: standIns.li.querySelectorAll("[data-stand-in-group] [data-testid=stand-in-row]").length,
+        spellRows:
+          standIns.li.querySelectorAll("[data-testid=stand-in-row]").length -
+          standIns.li.querySelectorAll("[data-stand-in-group] [data-testid=stand-in-row]").length,
         showAll: [...standIns.li.querySelectorAll("button")].filter((b) => /^Show all 6 lands/.test(b.textContent.trim())).length,
       },
       analysis: analysis && { inside: analysis.inside },
@@ -625,8 +630,9 @@ async function flipWalk(browser, who) {
         JSON.stringify(f.locked),
       );
       report(
-        `F5 ${w}: Change commander draws the door and two candidates`,
-        f.change?.door === 1 && f.change.rows === 2,
+        // Three since #1052: yours, the one already in the 99 (key 4's part), and one to buy.
+        `F5 ${w}: Change commander draws the door and three candidates`,
+        f.change?.door === 1 && f.change.rows === 3,
         JSON.stringify(f.change),
       );
       report(
@@ -644,8 +650,8 @@ async function flipWalk(browser, who) {
         JSON.stringify(f.fits),
       );
       report(
-        `F5 ${w}: Cheaper stand-ins draws the limit line, the marked row's door, five rows and Show all`,
-        f.standIns?.limit === 1 && f.standIns.door === 1 && f.standIns.rows === 5 && f.standIns.showAll === 1,
+        `F5 ${w}: Cheaper stand-ins draws the limit line, the marked row's door, five land rows, two spell rows and Show all`,
+        f.standIns?.limit === 1 && f.standIns.door === 1 && f.standIns.rows === 5 && f.standIns.spellRows === 2 && f.standIns.showAll === 1,
         JSON.stringify(f.standIns),
       );
       report(
