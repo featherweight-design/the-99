@@ -17,9 +17,10 @@ const copy = deckAnalysisCopy;
  * no mark, no aside, and the shipped body unchanged. Opened from the findings' head row. Outside
  * links leave the app, and nothing else in the sheet opens anything.
  *
- * FOUR ROWS: where each figure comes from, then what it might miss. Game changers carries no
- * misses line, and that contrast is the point: a reader who sees three caveats beside one flat
- * statement learns which count is exact without being told.
+ * FIVE ROWS, the four bracket rules and tutors (brief §5.5): where each figure comes from, then
+ * what it might miss. Game changers carries no misses line, and that contrast is the point: a
+ * reader who sees four caveats beside one flat statement learns which count is exact without
+ * being told.
  *
  * TWO SOURCES ARE LINKED, and they are the two that ARE someone else's list. The Game Changer
  * list and the bracket rules are Wizards' — a dated blog post, so the row says when it was last

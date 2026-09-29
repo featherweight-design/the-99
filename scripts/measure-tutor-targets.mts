@@ -1,6 +1,8 @@
 // What `classifyTutor` actually does to the live catalog.
 //
-// Read-only: no fixture, no writes, no locks. Point it at `local-dev`.
+// Read-only: no fixture, no writes, no locks. Point it at STAGING: its `tutors` line backs
+// `TUTOR_DETECTION.tutors`, a figure the decisions sheet prints, and a count read off local-dev's
+// fixture catalog is not the catalog readers hold (AGENTS.md: measure against staging).
 //
 // It exists because a classifier built from a named fixture agrees with that fixture and
 // says nothing about the 960 cards nobody listed. §4.2's trap is tuning against the fixture
