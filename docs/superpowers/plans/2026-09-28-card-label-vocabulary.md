@@ -166,6 +166,16 @@ The build itself is the merged run plan's Task 5
 gate**, because that plan was written before the consumer-first ordering and is not sequenced
 against anything here.
 
+- [ ] **Label-aware POOL SELECTION, not only comparison.** `spellPool` picks the cheap-unlisted
+      slice in SQL with `split_part(u.oracle_text, …) ~* roleWords(a.roles)`
+      (`gather.ts:279`) — a regex over oracle text, run **before** `jobOf` or `sameJob` ever see a
+      card. So a card that only its LABEL recognises as the same job **never enters the candidate
+      list**, and a label-driven matcher over a text-selected pool is incomplete by construction.
+      Task 1 must define how the pool admits a label-only candidate, and this task must implement
+      it.
+- [ ] **Test that a label-only candidate reaches the sheet:** a card whose text carries none of
+      the role words, whose label says it does the job, appears as a stand-in. That is the single
+      assertion that distinguishes this feature from a no-op.
 - [ ] Implement label-driven `jobOf` and `sameJob` per Task 1's spec, reading only the fields
       Task 2 built.
 - [ ] `affects` is a **match gate** (ruling 2). `method` feeds the **gives-up line** and is not a
@@ -230,6 +240,13 @@ should be stated rather than discovered.
       three it does not. **All five are owed anyway**, because the gate is a per-job bar and a
       job with no gold cases has no measurable precision or recall — it would pass by being
       unmeasurable, which is the one way a bar can be worse than no bar.
+- [ ] **Field-level bars for every consumer-read field, not only job kind.** The per-job bars
+      score which JOB a card does. `affects` is a hard match gate (ruling 2) and `to`/`method`
+      drive matching or the visible gives-up line — so **a model can pass every per-job bar while
+      systematically mislabelling the fields that decide behaviour.** Each consumer-read field
+      needs its own gold cases, its own precision and recall bar, and its own stop rule.
+      `affects` is the strictest, because it is the only field that silently disqualifies an
+      honest stand-in when wrong.
 - [ ] **Per-job precision and recall bars (Hugh, 2026-09-28): `tutor` ≥0.9, every other job
       ≥0.8.** Tutor is higher because its errors reach beyond stand-ins — tutor agreement feeds
       bracket reach. **Stop rule:** any job under its bar goes back to the prompt before the run. An aggregate figure hides exactly the new jobs this is
@@ -279,9 +296,13 @@ and the ledger reservation.
       overstates about fourfold and shrinks `waveSize`. Both change a safety property. Use the
       provider's token-counting endpoint, which costs nothing, and update the constant to what it
       returns.
-- [ ] **Pin it with a test** that recomputes the count for the current `SYSTEM` and fails when it
-      moves — so the next vocabulary edit cannot leave the constant stale, which is the real
-      failure and the reason this task exists.
+- [ ] **Pin it OFFLINE.** A test that recomputes the provider count cannot run in the normal
+      suite: the counting call needs `ANTHROPIC_API_KEY` and `.github/workflows/ci.yml` runs
+      `pnpm test` without it — so such a test either fails CI or is skipped, and **a skipped
+      guard reports nothing while looking green.** Instead bind the measured constant to a
+      SNAPSHOT of `SYSTEM`: the test hashes the current prompt and fails when the hash moves
+      without the constant being re-measured. The live count happens once, by hand or in the
+      authenticated labels workflow, and the offline test is what stops it going stale.
 - [ ] Re-project the whole-run cost from the re-sample's measured per-card rate, and confirm it
       lands under $50 before dispatching anything.
 
@@ -303,23 +324,34 @@ commander's support list ordered by its figure, the player's own copies, and the
 unlisted cards, the last cut to `UNLISTED_POOL` (600). Plus the deck's own cards, since a cut
 card is one side of every comparison.
 
-**Derive the trial's card set by calling that query, not by writing a predicate that means the
-same thing.** A second copy of a selection rule drifts from the first — `probe:build-from` took
-three review rounds learning exactly this, and the fix was to ask the page rather than restate
-its filter. So: run the real gather for each card in `HD - Gishath` and union the candidates.
+**Derive the trial's card set from the gather's RAW CANDIDATES — which it does not currently
+expose.** My first draft said "run the real gather and union the candidates", citing
+`probe:build-from`'s lesson that a second copy of a selection rule drifts from the first. That
+reasoning was right and the application was wrong: `loadStandIns` returns `StandInsRead`, which is
+post-`sameJob`, post-affordability, post-ranking groups (`gather.ts:68-74`), and `full=true` only
+lifts the display cap. **Unioning its output omits precisely the text-mismatched cards labels
+could newly admit** — the cards the trial exists to evaluate.
+
+So Task 6b needs a **raw-candidate gather** that returns pre-match oracle ids, with the
+`roleWords` filter relaxed, alongside the `cardsNeedingLabels` filter. That is a refactor of
+`gather.ts`, not a flag, and it is shared with Task 2b's label-aware pool selection — the same
+seam both need.
 
 Size, from local-dev: Gishath's `commander_support_cards` holds **245** rows, `UNLISTED_POOL` is
 **600**, the deck is ~99, plus Hugh's owned cards inside the colour identity. **Order 1,500–3,000
 distinct cards.**
 
-### What it needs — ONE change, not two
+### What it needs — two changes, and one of them is shared
 
 - **A card-set filter on `cardsNeedingLabels`.** Today it selects every Commander-legal card.
-  The trial needs it restricted to a supplied set of oracle ids.
+- **A raw-candidate gather** exposing pre-match oracle ids with the `roleWords` filter relaxed
+  (see above). Shared with Task 2b, which needs the same seam to admit a label-only candidate.
 - **The publish needs nothing.** `publishRun(db, runId)` is already scoped to a run id, and its
   gate is `chunks.length === 0` — every chunk of the run done. A small run COMPLETES, so it
   publishes normally. The "all or nothing" that blocks a partial full run is exactly what makes
   a scoped trial publish cleanly.
+
+*(The first draft claimed one change. It was two, and the second is a refactor.)*
 
 ### How the trial's labels relate to the full run
 
@@ -360,7 +392,13 @@ label-driven comparisons live for that pool and the text path everywhere else.
 
 State these before running it, so the trial cannot be rationalised afterwards:
 
-- **A per-job bar missed on the trial's own cards** — `tutor` under 0.9, any other job under 0.8.
+- **A per-job bar missed on a HUMAN-AUDITED subset of the trial's cards.** Precision and recall
+  need ground truth, and the trial's 1,500–3,000 committed outputs are PREDICTIONS, not truth —
+  scoring them against themselves measures nothing. So the stop rule needs one of two things, and
+  the plan must say which before the trial runs: a hand-audited sample of the trial pool with a
+  stated minimum number of cases per job, or the free oracles below, which need no ground truth at
+  all — agreement with `card_bracket_flags` on tutor and mass land denial, counterspells and
+  tappers absent from `removal`, tutors absent from `draw`.
 - **Stand-ins visibly worse than the text path** for a deck Hugh knows well. That is the whole
   point of choosing a deck he has walked before.
 - **`affects` disagreeing with the card in an obvious case** — a self-mill card offered for an
