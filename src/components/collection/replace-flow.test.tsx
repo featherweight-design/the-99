@@ -100,6 +100,20 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     await waitFor(() => expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: false }));
   });
 
+  // The count the server found outlives the preview: back on the upload step, the page must not
+  // call a collection that exists empty (Copilot on #1110).
+  it("keeps the collection the server found after the review is cancelled", async () => {
+    confirmUpload.mockResolvedValueOnce({ needsConfirm: true, currentCollectionCount: 2_933 });
+    const cont = await reachReview(0);
+    await act(async () => fireEvent.click(cont));
+    await screen.findByRole("dialog");
+    fireEvent.click(screen.getByRole("button", { name: "Keep current" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getAllByRole("heading", { name: "Replace collection" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Add your collection" })).toBeNull();
+    expect(screen.getByText("2,933 cards")).toBeInTheDocument();
+  });
+
   it("reports a failed first import in the modal's error slot rather than nowhere", async () => {
     confirmUpload.mockRejectedValueOnce(new Error("Upload has no matched cards"));
     const cont = await reachReview(0);

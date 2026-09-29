@@ -36,6 +36,10 @@ export function ReplaceFlow({
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // The collection's size as the flow last learned it. The prop is the page's read, and a
+  // preview or a server refusal (another tab imported, #1097) can report a newer one; the upload
+  // step a Cancel returns to must draw that one, or a collection that exists reads as empty.
+  const [knownCount, setKnownCount] = useState(currentCardCount);
 
   // Keyed on the upload, not on the preview object: a server refusal re-sets the preview with a
   // corrected count (#1097), and that is the same review still open.
@@ -70,6 +74,7 @@ export function ReplaceFlow({
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
         setPreview({ ...preview, currentCollectionCount: outcome.currentCollectionCount });
+        setKnownCount(outcome.currentCollectionCount);
         setConfirming(true);
         return;
       }
@@ -100,21 +105,22 @@ export function ReplaceFlow({
             {/* The phone's page header, the upload step's alone: the review draws its own. */}
             <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
               <a href="/collection" aria-label="Back to Collection" className="text-[20px] text-[color:var(--accent)]">‹</a>
-              <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(currentCardCount)}</h1>
+              <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(knownCount)}</h1>
             </div>
             <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
               <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
-              <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(currentCardCount)}</h1>
+              <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(knownCount)}</h1>
             </div>
           </>
         )}
         <UploadEntry
-        currentCardCount={currentCardCount}
+        currentCardCount={knownCount}
         entry={entry}
         onPreview={(p) => {
           setConfirmError(null);
           setConfirming(false);
           setPreview(p);
+          setKnownCount(p.currentCollectionCount);
         }}
         />
       </>
