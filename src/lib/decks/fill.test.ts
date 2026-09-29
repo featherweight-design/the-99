@@ -416,6 +416,17 @@ describe("planFill", () => {
     expect(q("plains")).toBe(36);
   });
 
+  it("never finishes a short base on Wastes", () => {
+    // THE SECOND LOOP. When the split leaves the base short, the fallback sweep takes whatever
+    // land is next unspent — and before this it checked only the ceiling, so it would finish a
+    // Boros base on Wastes. Only three Plains in the pool and no other land, so the base IS short.
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }),
+      basic("plains", 40, "Plains"), basic("wastes", 40, "Wastes"),
+    ], { ...FLAT, identity: ["W"] } as never);
+    expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
+  });
+
   it("counts every HELD spell in the census, not only the ones it chose", () => {
     // The case my own harness got wrong: with `inclusionPct` null the candidate order falls back
     // to NAME, so a role cap can take an all-red sample of a mixed pool. The census has to read

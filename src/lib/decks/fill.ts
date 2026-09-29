@@ -626,10 +626,19 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
 
   // The collection had too few basics to finish the base, so the cap lifts and
   // the remaining utility lands take what is left.
+  //
+  // THE IDENTITY RULE BINDS HERE TOO, and this is where the Boros deck's Wastes would otherwise
+  // come back. This sweep takes whatever land is next unspent, checking only the ceiling — so a
+  // base left short by the split could still finish itself on Wastes or on a basic for a colour
+  // the deck cannot cast. Guarding only the split left the same defect alive in a second loop,
+  // which a mutation of the floor rule is what surfaced: the floor looked untested because THIS
+  // sweep was quietly supplying the missing basic.
   for (const candidate of lands) {
     if (counts.land >= landCeilingAfterModals) break;
     if (filledSoFar() >= limit) break;
     if (spent.has(candidate.oracleId)) continue;
+    const basicColor = isBasicLand(candidate.typeLine) ? basicLandColor(candidate.name) : null;
+    if (basicColor !== null && !wantsColor(basicColor)) continue;
     takeLand(candidate, 1);
   }
 
