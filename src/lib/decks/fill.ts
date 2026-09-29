@@ -120,6 +120,22 @@ export type PlanFillArgs = {
    */
   commanderCosts?: readonly (string | null)[];
   /**
+   * THE CATALOG'S BASIC LANDS, one per type, offered to the basics step whatever the shelf holds.
+   *
+   * The candidate pool is the collection (`ownedColorLegalPool` starts at `collection_items`), so a
+   * Boros player with no Mountain row offered the split no `R` basic at all and every basic went to
+   * Plains, however red the deck. A basic is always owned in this app and never a buy
+   * (`draft-state.ts`), so the mana base may take one the player has no row for.
+   *
+   * A DEDICATED ARGUMENT, not more candidates: these reach ONLY the basics step and the reserve's
+   * eligibility test. The role pass, the residual, a `pool: "sleeveable"` narrowing and a caller's
+   * allow-list never see them, and they are never counted as bought. A type the pool already
+   * holds (an owned row) is taken from the pool instead, so the player's own rows keep their
+   * place in the preference order. The identity filter still applies: Wastes only in a colourless
+   * deck.
+   */
+  basics?: readonly FillCandidate[];
+  /**
    * A constraint the deck's owner asked for (Help me choose: a budget, a bracket). A card the gate
    * refuses is passed over wherever it would have been placed, exactly as a card that closes no
    * open floor is, and the fill carries on down its own order; `place` is told each card taken, in
@@ -349,8 +365,9 @@ export function dedupeSelectionFromPool<T extends { oracleId: string }>(
  * room still on the table (two slots left and a stack of four Forests next would spend neither).
  * Quantities are summed, not rows counted, because `planFill` stacks basics.
  *
- * One rule for both paths: the plan fills a whole body on its own, so anything placed ahead of it
- * (a selection, a build-around card) is what the cap takes back off the tail.
+ * One rule for both paths. `buildFillPlan` already sizes the plan to the slots a selection or a
+ * build-around card leaves, so on those paths the cap normally takes nothing; it stays as the
+ * rule the body obeys, for any caller that sizes the plan otherwise.
  */
 export function capToBody<T extends { quantity: number }>(rows: readonly T[], bodySize: number): T[] {
   const capped: T[] = [];
@@ -367,6 +384,7 @@ export function capToBody<T extends { quantity: number }>(rows: readonly T[], bo
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
   const {
     hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate, identity, commanderCosts,
+    basics,
   } = args;
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
@@ -531,6 +549,12 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const lands = [...byOracleId.values()].filter(
     (c) => c.owned && !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
   );
+  /** Every basic the basics step may take: the pool's own, then each catalog basic the pool does
+   *  not already hold (`basics`). Only the basics step and the reserve read this. */
+  const basicSource = [
+    ...lands.filter((c) => isBasicLand(c.typeLine)),
+    ...(basics ?? []).filter((c) => !byOracleId.has(c.oracleId) && isBasicLand(c.typeLine)),
+  ];
   /** Returns what it actually took. THE LIMIT BINDS HERE TOO: `slots` means "fill this many
    *  cards", and a sweep that ignored it made `slots: 5` return 42 — the three land passes
    *  between the role pass and the residual were the only ones not reading it. */
@@ -576,8 +600,8 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   // each, that the gate admits. Keying the reserve on basic PRESENCE alone reserved nothing for a pool of spells and
   // nonbasic lands with no basic: the residual ate every slot past the utility cap and the deck
   // finished on 12 lands with 28 legal ones unplayed.
-  const anyEligibleBasic = lands.some((c) => {
-    if (!isBasicLand(c.typeLine) || !admits(c)) return false;
+  const anyEligibleBasic = basicSource.some((c) => {
+    if (!admits(c)) return false;
     const color = basicLandColor(c.name);
     return color !== null && wantsColor(color);
   });
@@ -692,7 +716,8 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
    * the base then filled to its ceiling, and the residual refused a land-backed modal card that
    * had been earning its slot as a spell — `probe:fill`'s sections 3 and 4, which is how it was
    * caught. An unowned basic is not in the pool to begin with (the staples list carries none), so
-   * `lands`' own `owned` filter costs this nothing.
+   * `lands`' own `owned` filter costs this nothing. A basic type the player owns no row of arrives
+   * through `basics` instead (`basicSource`), and only here.
    *
    * ONLY COLOURS IN THE IDENTITY. A basic for a colour the deck cannot cast is never right, and
    * the pool's own filter admits one whenever the identity is wider than the deck's costs.
@@ -706,8 +731,8 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const landCeilingAfterDrops = Math.max(0, landCeilingAfterModals - residualDrops);
 
   const basicsByColor = new Map<string, FillCandidate[]>();
-  for (const candidate of lands) {
-    if (spent.has(candidate.oracleId) || !isBasicLand(candidate.typeLine)) continue;
+  for (const candidate of basicSource) {
+    if (spent.has(candidate.oracleId)) continue;
     const color = basicLandColor(candidate.name);
     if (!color || !wantsColor(color)) continue;
     basicsByColor.set(color, [...(basicsByColor.get(color) ?? []), candidate]);

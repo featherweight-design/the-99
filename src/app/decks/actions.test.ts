@@ -423,6 +423,9 @@ vi.mock("../../lib/decks/costs-of", async (importActual) => {
   const actual = await importActual<typeof import("../../lib/decks/costs-of")>();
   return { costsOf: vi.fn(actual.costsOf) };
 });
+// The catalog's basics are a separate read the table stubs here do not model; none by default,
+// and a test that needs them sets them.
+vi.mock("../../lib/decks/catalog-basics", () => ({ loadCatalogBasics: vi.fn(async () => []) }));
 vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
 // The pin after a commit (ruling 2) is a whole analysis; what these tests own is that the commit
 // SCHEDULES it, off its own path, for the version it wrote.

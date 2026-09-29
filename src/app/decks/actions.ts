@@ -17,6 +17,7 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { costsOf } from "../../lib/decks/costs-of";
+import { loadCatalogBasics } from "../../lib/decks/catalog-basics";
 import { isUuid } from "../../lib/uuid";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
@@ -101,7 +102,8 @@ export async function buildFillPlan(
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
   /** Passed straight to `planFill`. The bulk control names a slot count and a sleeveable-only
-   *  pool; every other caller fills the whole body from everything. */
+   *  pool; every other caller fills from everything, to the whole body less any cards it places
+   *  beside the plan (`selectedCosts`). */
   options: Pick<PlanFillArgs, "slots" | "pool" | "held"> & {
     /** The deck being filled, so its OWN claims are not counted against it when
      *  `pool: "sleeveable"` narrows to cards with a free copy. */
@@ -291,10 +293,27 @@ export async function buildFillPlan(
   // red and gave a Boros deck one Mountain.
   const commanderCosts = [
     ...commanders.map((c) => c.manaCost ?? null),
-    ...(selectedCosts ?? []),
+    ...selectedCosts,
   ];
+  // THE SLOTS THAT SURVIVE. A caller that places cards beside the plan (a selection, a
+  // build-around card) caps the finished deck with `capToBody`, which cuts the plan's tail — the
+  // residual. Planning the whole body anyway put those cut rows in the pip census, and with a
+  // large `?select=` their pips outweighed the selection's own. Planning only what will be kept
+  // means every row the census counts reaches the deck. A caller naming `slots` decides for itself.
+  const placedBeside = selectedCosts.length;
+  const slots = fillOptions.slots
+    ?? (placedBeside > 0 ? Math.max(0, deckBodySize(hasPartner) - placedBeside) : undefined);
   return planFill(candidates, {
-    hasPartner, skeleton, synergyRank, ...fillOptions, gate, identity, commanderCosts,
+    hasPartner, skeleton, synergyRank, ...fillOptions, slots, gate, identity, commanderCosts,
+    // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
+    // `basics`). Loaded here, beside the pool, so no other pass sees them.
+    //
+    // UNDER THE SAME EXCLUSION AS THE POOL. A basic the caller places itself (a `?select=` pick)
+    // or the deck already holds (the top-off's held rows) is in `excludeOracleIds`, and a planned
+    // row for the same card would collide with it: `deck_cards` is keyed on the card, the insert
+    // does nothing on conflict, and the planned stack would be dropped whole, leaving the deck
+    // dozens short.
+    basics: (await loadCatalogBasics()).filter((b) => !excludeOracleIds.has(b.oracleId)),
   });
 }
 
@@ -780,8 +799,8 @@ export async function fillDeck(deckId: string): Promise<void> {
       ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, failClosed: true, excludeDeckId: deck.id } : {}),
     },
   );
-  // The card first, then as much of the plan as fits: the plan fills a whole body on its own, so
-  // uncapped a stored card made 100.
+  // The card first, then the plan, which is already sized to the slots the card leaves; the cap
+  // stays as the rule the body obeys. Before the plan was sized, an uncapped card made 100.
   const rows = capToBody([
     ...(buildAround ? [{ oracleId: buildAround, quantity: 1, role: "other" as const }] : []),
     ...plan.rows,
@@ -803,8 +822,8 @@ export async function fillDeck(deckId: string): Promise<void> {
       await tx.insert(deckCards).values(
         rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
-      // THE SAME TWO PASSES THE CREATE RECORDS. This path runs the identical whole-body
-      // `planFill`, so recording it as one seed would make the retry's residual non-undoable
+      // THE SAME TWO PASSES THE CREATE RECORDS. This path runs the same `planFill` the create
+      // does (to the body less a build-around card, as the create's is), so recording it as one seed would make the retry's residual non-undoable
       // separately — the same 99-row pass with nothing to undo but all of it that the create
       // was split to avoid, reachable by pressing the banner's retry instead.
       //
