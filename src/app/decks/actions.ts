@@ -46,6 +46,8 @@ import {
 import { type DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { ProfileSkeleton } from "../../lib/profile/types";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
+import { listLastSlotsCandidates } from "../../lib/decks/last-slots";
+import { readDeckSynergy } from "../../lib/decks/deck-synergy";
 import { loadSkeletonForCommanders } from "../../lib/profile/load";
 import {
   capToBody, dedupeSelectionFromPool, planFill,
@@ -131,6 +133,24 @@ export async function buildFillPlan(
      * the basics differently from the create. A caller whose excluded cards arrive another way
      * (`planFromPool`'s held rows ride `held`) passes `[]` and says why. `costsOf` loads them. */
     selectedCosts: readonly (string | null)[];
+    /** THE ONLY CARDS THIS FILL MAY PICK, when the caller has a list on screen.
+     *
+     * The top-off's plan and the list the player is ticking drew from structurally different
+     * pools: the list from `listLastSlotsCandidates`, which is the commander's EDHREC support
+     * list, and the plan from `ownedColorLegalPool`, which is the whole owned collection. So the
+     * plan could — and did — choose a card the list does not contain, and the tick it promised
+     * had nowhere to land.
+     *
+     * It INTERSECTS and can never widen: the filter runs after the pool is assembled and after
+     * `sleeveable` has narrowed it, so a card the player does not own, or has no free copy of,
+     * stays out however the list ranked it. That direction is the point — the list's own
+     * membership is the lenient side, admitting a card whose availability is simply unknown.
+     *
+     * It binds the catalog's basics (`planFill`'s `basics`) as well as the candidates: the controls
+     * answer with ids, and a basic outside the list is a tick with nowhere to land like any card.
+     *
+     * Absent everywhere but the two top-off controls, which fill exactly as before. */
+    onlyOracleIds?: ReadonlySet<string>;
   },
 ): Promise<FillPlan> {
   const commander = commanders[0];
@@ -262,7 +282,7 @@ export async function buildFillPlan(
     excludeOracleIds,
   );
 
-  const { answers, selectedCosts, ...fillOptions } = options;
+  const { answers, selectedCosts, onlyOracleIds, ...fillOptions } = options;
   const candidates: FillCandidate[] = [
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
@@ -277,9 +297,15 @@ export async function buildFillPlan(
       inclusionPct: inclusionOf(c.name),
     })),
   ];
+  // AFTER the pool and the staples, so it can only ever narrow. Applied before the gate, because
+  // a gate built over cards this fill may not pick would answer about candidates that cannot be
+  // chosen — and `loadFillGate` reads claims per candidate, which is work per card besides.
+  const scoped = onlyOracleIds
+    ? candidates.filter((c) => onlyOracleIds.has(c.oracleId))
+    : candidates;
   const gate = answers
     ? await loadFillGate({
-      userId, commanderIds: commanders.map((c) => c.oracleId), answers, candidates,
+      userId, commanderIds: commanders.map((c) => c.oracleId), answers, candidates: scoped,
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
     })
     : undefined;
@@ -303,7 +329,7 @@ export async function buildFillPlan(
   const placedBeside = selectedCosts.length;
   const slots = fillOptions.slots
     ?? (placedBeside > 0 ? Math.max(0, deckBodySize(hasPartner) - placedBeside) : undefined);
-  return planFill(candidates, {
+  return planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, slots, gate, identity, commanderCosts,
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s
     // `basics`). Loaded here, beside the pool, so no other pass sees them.
@@ -313,7 +339,12 @@ export async function buildFillPlan(
     // row for the same card would collide with it: `deck_cards` is keyed on the card, the insert
     // does nothing on conflict, and the planned stack would be dropped whole, leaving the deck
     // dozens short.
-    basics: (await loadCatalogBasics()).filter((b) => !excludeOracleIds.has(b.oracleId)),
+    //
+    // AND UNDER THE ALLOW-LIST, when there is one. The bulk controls answer with ids, and a single
+    // basic taken at quantity 1 (a deck one land short) is an id like any other: offered past the
+    // allow-list, it is a tick the list on screen has no row for.
+    basics: (await loadCatalogBasics()).filter((b) =>
+      !excludeOracleIds.has(b.oracleId) && (!onlyOracleIds || onlyOracleIds.has(b.oracleId))),
   });
 }
 
@@ -2271,12 +2302,32 @@ type FillInputs = NonNullable<Awaited<ReturnType<typeof gatherFillInputs>>>;
  * One plan, from one pool. `sleeveable` is what the collection control offers; `all` is what
  * the deck needs whoever owns it.
  */
+/**
+ * THE ROWS THE TOP-OFF LIST DRAWS, as ids: the plan behind a bulk control may pick only these.
+ *
+ * The list is the commander's EDHREC support list less the deck's own cards and the negative
+ * tail (`listLastSlotsCandidates`), while the plan's pool is the whole owned collection. So a
+ * control could plan cards the list has no row for, name a count, and tick nothing. Read through
+ * the page's own cached read (`readDeckSynergy`) and the page's own filter, so the two are served
+ * the same entry and cannot disagree.
+ */
+async function topOffAllowList(userId: string, inputs: FillInputs): Promise<ReadonlySet<string>> {
+  const { commander, partner, heldIds } = inputs;
+  // THE PAGE'S OWN CACHED READ, not a fresh one: the list on screen is served from that entry, and
+  // a fresh read would disagree with it until the entry lapsed (`readDeckSynergy`).
+  const ranked = await readDeckSynergy(userId, commander.oracleId, partner?.oracleId ?? null);
+  return new Set(
+    listLastSlotsCandidates({ ranked, inDeckOracleIds: new Set(heldIds) }).map((c) => c.oracleId),
+  );
+}
+
 async function planFromPool(
   userId: string,
   deckId: string,
   inputs: FillInputs,
   openSlots: number,
   pool: "all" | "sleeveable",
+  allowed: ReadonlySet<string>,
 ) {
   const { deck, commander, partner, heldIds, heldCount, held } = inputs;
     return await buildFillPlan(
@@ -2289,6 +2340,9 @@ async function planFromPool(
       // that costs.
       {
         pool,
+        // Only the cards the list on screen draws: a planned card with no row there is a tick
+        // with nowhere to land. It binds the catalog's basics as well as the candidates.
+        onlyOracleIds: allowed,
         // Nothing is placed beside this plan: the excluded ids are the deck's own rows, and their
         // pips reach the census through `held`, so listing them here would count them twice.
         selectedCosts: [],
@@ -2382,8 +2436,9 @@ export async function bulkFillOptions(
     // SEQUENTIAL, not `Promise.all`. Both plans read EDHREC through `getEdhrecData` for the
     // same commander, and firing them together races two cold fetches for one answer where
     // the second would have been served from the cache the first fills.
-    const collection = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable");
-    const best = await planFromPool(userId, deckId, inputs, openSlots, "all");
+    const allowed = await topOffAllowList(userId, inputs);
+    const collection = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable", allowed);
+    const best = await planFromPool(userId, deckId, inputs, openSlots, "all", allowed);
 
     return {
       ok: true,
@@ -2420,7 +2475,9 @@ export async function chooseBulkFill(
     const userId = await requireUserId();
     const inputs = await gatherFillInputs(deckId, userId);
     if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
-    const plan = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable");
+    const plan = await planFromPool(
+      userId, deckId, inputs, openSlots, "sleeveable", await topOffAllowList(userId, inputs),
+    );
     // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
     //
     // `planFill` always runs a residual pass after the role and land passes, filling whatever

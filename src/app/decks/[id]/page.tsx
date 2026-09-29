@@ -9,6 +9,7 @@ import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
+import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { BuilderShell } from "../../../components/decks/builder-shell";
@@ -19,7 +20,6 @@ import {
   readUpdateArrival,
   UPDATED_PARAM,
 } from "../../../lib/decks/arrival";
-import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
 import {
   listLastSlotsCandidates,
   poolEmptiedByNegativeCut,
@@ -75,13 +75,8 @@ import { isUuid } from "../../../lib/uuid";
 // be worse than both being stale: the same deck would report different targets on two
 // surfaces whose whole contract is that they are the same five cells.
 const SUGGESTIONS_KEY = ["deck-suggestions", "2"];
-// "2" since the pair branch: `readSynergyCards` now answers from `commander_pair_support_cards`
-// for a two-commander deck, so the payload says something different for UNCHANGED rows. The
-// cache helper's own rule — a deployment that changes what a payload says for unchanged rows is
-// an input to the key — and at the time, without the bump, an entry assembled by the previous
-// deployment would have gone on being served for up to the hour ceiling. The deployment id in
-// the key now covers that; the bump is kept as history.
-const SYNERGY_KEY = ["deck-synergy", "2"];
+// The ranked support list's key and cache live with its reader, `readDeckSynergy`, which the bulk
+// controls' allow-list reads too.
 
 // Suggested changes runs as a Server Action invoked from this page, so the page's limit bounds
 // it: a model call's 110s deadline (MODEL_TIMEOUT_MS) plus the reads and writes either side of it.
@@ -206,22 +201,8 @@ export default async function DeckBuilderPage({
       // passing detail.cards as coveredOracleIds would apply the role-coverage exclusion to them,
       // which is a different exclusion with a different meaning.
       openSlots > 0
-        ? perf.timed("synergy", () => cacheForUser(
-            userId,
-            [
-              ...SYNERGY_KEY,
-              detail.commander.oracleId,
-              detail.partner?.oracleId ?? "-",
-            ],
-            // With images: this is the route whose top-off list draws the hover
-            // preview. `/commanders/[slug]` shares this reader and draws none,
-            // so it takes the default and ships no URLs it cannot use.
-            () => readSynergyCards(
-              userId,
-              [detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : [])],
-              [],
-              true,
-            ),
+        ? perf.timed("synergy", () => readDeckSynergy(
+            userId, detail.commander.oracleId, detail.partner?.oracleId ?? null,
           ))
         : [],
       gamesRead,
