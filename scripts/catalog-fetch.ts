@@ -15,8 +15,7 @@ import {
   type FetchSource, type Manifest, type ManifestFile, type ManifestSource,
 } from "../src/lib/catalog/fetch-dir";
 import { MANAPOOL_HEADERS, MANAPOOL_SINGLES_URL } from "../src/lib/manapool/client";
-import { SCRYFALL_HEADERS } from "../src/lib/scryfall/http";
-import { SETS_INDEX } from "../src/lib/scryfall/seed-sets";
+import { SCRYFALL_HEADERS, SETS_INDEX } from "../src/lib/scryfall/http";
 
 const dir = process.argv[2] ?? process.env.CATALOG_FETCH_DIR;
 if (!dir) throw new Error("usage: catalog:fetch <dir> (or set CATALOG_FETCH_DIR)");

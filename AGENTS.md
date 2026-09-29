@@ -311,8 +311,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm db:catalog-sources verify|record [source ...]` guards a leg that ingests from an artifact,
   against the database `DATABASE_URL` names. `verify`, before any ingest, refuses a file whose
   bytes are not the manifest's, and a source OLDER than what this database last ingested, so a
-  re-run of an old artifact cannot roll the catalog back; a retry of the same artifact goes
-  through as the no-op it is. `record`, after every ingest succeeded, writes each source's
+  re-run of an old artifact cannot roll back what an ARTIFACT ingest recorded; a retry of the same
+  artifact goes through as the no-op it is. An ingest outside the artifact path records nothing
+  (a `Price refresh` dispatch, a local `pnpm db:seed*`), so after one, an older artifact can
+  still be re-run over it: prefer a fresh `Catalog refresh` dispatch to re-running an old leg. `record`, after every ingest succeeded, writes each source's
   `updated_at` and hash to `catalog_sources` (migration 0075). Our own `catalog_refreshes` stamp
   cannot answer this: it moves on every ingest and every copy, and says nothing about how new
   upstream's data was. Both take the sources a run ingests, so a dispatch naming one ingest

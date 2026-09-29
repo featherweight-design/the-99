@@ -2,11 +2,10 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { sets } from "../../db/schema";
 import { fetchDir, readFetchedJson } from "../catalog/fetch-dir";
-import { SCRYFALL_HEADERS } from "./http";
+import { SCRYFALL_HEADERS, SETS_INDEX } from "./http";
 import { toSetRows } from "./transform-sets";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 
-export const SETS_INDEX = "https://api.scryfall.com/sets";
 
 /** The sets list: the file the `fetch` job saved under CATALOG_FETCH_DIR, or Scryfall itself. */
 export async function loadSetsPayload(): Promise<unknown> {
