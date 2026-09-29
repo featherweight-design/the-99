@@ -165,6 +165,23 @@ describe("useDrawFields", () => {
     await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
   });
 
+  // A refresh hands the view a fresh payload of the same ranking: its withheld rows must be asked
+  // for again, never resolved from the fields the previous payload fetched.
+  it("keeps fields to the payload that fetched them", async () => {
+    const { result, rerender } = renderHook(
+      ({ list, wanted }: { list: DiscoveryRow[]; wanted: DiscoveryRow[] }) => useDrawFields("fit", list, wanted),
+      { initialProps: { list: all, wanted: [all[0]] } },
+    );
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].answer());
+    await waitFor(() => expect(result.current.resolve(all[0])?.prose).toBe("c0"));
+
+    const fresh = all.map((r) => ({ ...r }));
+    rerender({ list: fresh, wanted: [fresh[0]] });
+    expect(result.current.resolve(fresh[0])).toBeNull();
+    await waitFor(() => expect(net.calls.at(-1)!.url).toContain("s=c0"));
+  });
+
   // A page restored from the back/forward cache is not remounted: `pagehide` stopped the loop,
   // and `pageshow` has to start it again, asking once more for the batch the hide aborted.
   it("starts again when the page is restored from the back/forward cache", async () => {

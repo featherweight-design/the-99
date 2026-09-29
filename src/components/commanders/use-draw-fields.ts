@@ -15,14 +15,14 @@
 //      other, and so does unmounting: a click on a link to another path, the Navigation API's own
 //      `navigate` event where the browser has it, or the page being hidden.
 //
-// Fields are keyed by sort as well as slug: `rank` and the fit figures belong to a ranking.
+// Fields are held per payload, not per sort: `rank` and the fit figures belong to a ranking, and a
+// fresh payload of the same ranking may have moved them.
 import { useCallback, useEffect, useState } from "react";
 import { isDrawn, type DiscoveryRow, type DrawFields } from "../../lib/discovery/encode";
 import { MAX_FIELDS_BATCH } from "../../lib/discovery/fields-batch";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 
 type Sort = "fit" | "new";
-const keyOf = (sort: Sort, slug: string) => `${sort}:${slug}`;
 
 /** How long the background waits for an idle moment where the browser has no `requestIdleCallback`. */
 const IDLE_FALLBACK_MS = 200;
@@ -42,9 +42,20 @@ type LoopInput = { sort: Sort; all: DiscoveryRow[]; wanted: DiscoveryRow[]; want
  */
 function createFieldsLoop(onLanded: () => void) {
   let onStale = () => {};
-  const store = new Map<string, DrawFields>();
-  // Slugs already asked for, whatever came back: a slug a batch did not answer is not asked again.
-  const asked = new Set<string>();
+  // Fields belong to the PAYLOAD they complete, never to a sort: a fresh server payload (a refresh,
+  // a navigation back) is a new list and starts empty, while a ranking served again from the
+  // client cache is the same list and keeps what it had. Held weakly, so a list the view has let
+  // go takes its fields with it.
+  const lists = new WeakMap<DiscoveryRow[], { store: Map<string, DrawFields>; asked: Set<string> }>();
+  const forList = (all: DiscoveryRow[]) => {
+    let entry = lists.get(all);
+    if (!entry) {
+      // `asked`: slugs already asked for, whatever came back, so a slug is not asked twice.
+      entry = { store: new Map(), asked: new Set() };
+      lists.set(all, entry);
+    }
+    return entry;
+  };
   let controller: AbortController | null = null;
   let cancelScheduled: (() => void) | null = null;
   let left = false;
@@ -68,8 +79,9 @@ function createFieldsLoop(onLanded: () => void) {
   const pump = () => {
     if (left || controller || cancelScheduled) return;
     const { sort, all, wanted, wantedKey } = input;
+    const { store, asked } = forList(all);
     const needs = (row: DiscoveryRow) =>
-      !isDrawn(row) && !store.has(keyOf(sort, row.slug)) && !asked.has(keyOf(sort, row.slug));
+      !isDrawn(row) && !store.has(row.slug) && !asked.has(row.slug);
     const waiting = wanted.filter(needs).map((r) => r.slug);
     const urgent = waiting.length > 0;
     if (failedAt !== null && (failedAt === wantedKey || !urgent)) return;
@@ -89,22 +101,22 @@ function createFieldsLoop(onLanded: () => void) {
       if (left) return;
       const ac = new AbortController();
       controller = ac;
-      for (const s of batch) asked.add(keyOf(sort, s));
+      for (const s of batch) asked.add(s);
       const url = `/api/discovery-fields?sort=${sort}&s=${batch.map(encodeURIComponent).join(",")}`;
       fetch(url, { signal: ac.signal, credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
         .then((body: { fields: Record<string, DrawFields> }) => {
-          for (const [slug, f] of Object.entries(body.fields)) store.set(keyOf(sort, slug), f);
+          for (const [slug, f] of Object.entries(body.fields)) store.set(slug, f);
           // The route leaves out a slug its reader's list no longer holds: this page's list is
           // stale (a write elsewhere, a catalog refresh). A row the reader is waiting on then
           // never arrives, so the page is read again rather than left busy.
           if (batch.some((s) => waiting.includes(s) && !Object.hasOwn(body.fields, s))) onStale();
-          if (input.sort === sort && input.wanted.some((r) => !isDrawn(r) && Object.hasOwn(body.fields, r.slug))) onLanded();
+          if (input.all === all && input.wanted.some((r) => !isDrawn(r) && Object.hasOwn(body.fields, r.slug))) onLanded();
         })
         .catch(() => {
           // Unasked whatever stopped it, so the rows can be asked for again: an abort included,
           // since a page restored from the back/forward cache starts the loop again unmounted.
-          for (const s of batch) asked.delete(keyOf(sort, s));
+          for (const s of batch) asked.delete(s);
           if (ac.signal.aborted) return;
           // Only while the window the batch was asked for is still the reader's: a failure never
           // marks a window chosen since, and a window left behind starts clean when it returns.
@@ -143,7 +155,7 @@ function createFieldsLoop(onLanded: () => void) {
   };
 
   return {
-    get: (sort: Sort, slug: string) => store.get(keyOf(sort, slug)),
+    get: (all: DiscoveryRow[], slug: string) => lists.get(all)?.store.get(slug),
     /** What to do when a batch shows this page's list is stale. */
     onStale(fn: () => void) {
       onStale = fn;
@@ -188,12 +200,12 @@ export function useDrawFields(
   const resolve = useCallback(
     (row: DiscoveryRow): DiscoveryItem | null => {
       if (isDrawn(row)) return row;
-      const f = loop.get(sort, row.slug);
+      const f = loop.get(all, row.slug);
       return f ? { ...row, ...f } : null;
     },
     // `landed` is the render a wanted batch asks for; the loop's store is not React state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loop, sort, landed],
+    [loop, all, landed],
   );
 
   useEffect(() => {
