@@ -276,22 +276,40 @@ export function SuggestionTile({
           oracleId={suggestion.oracleId}
           name={suggestion.name}
           siblings={siblings}
-          className={`relative block w-full overflow-hidden rounded-[7px] p-0 border-none transition-shadow ${
-            // The shadows are classes rather than an inline style so the hover
-            // variant can win: an inline boxShadow outranks group-hover:.
-            applied || noArt
-              ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
-              : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_color-mix(in_oklab,var(--accent)_35%,transparent)]"
-          }`}
+          className="relative block w-full overflow-hidden rounded-[7px] p-0 border-none"
           style={{
             aspectRatio: "63 / 88",
             background: noArt
               ? "linear-gradient(158deg, var(--border-strong) 0%, var(--surface-raised) 62%, var(--surface-sunken) 100%)"
-              : `center / cover no-repeat url(${suggestion.imageUri})`,
+              : "var(--surface-sunken)",
             filter: applied ? "grayscale(.6)" : undefined,
             opacity: applied ? 0.5 : undefined,
           }}
         >
+          {/* AN IMG, LOADED LAZILY, as the Card view's and the /collection grid's (list payload
+              plan): a CSS background is fetched for every tile whether or not it is on screen,
+              so an expanded shelf asked for every candidate's art at once. */}
+          {noArt ? null : (
+            // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
+            <img
+              src={suggestion.imageUri!}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+          )}
+          {/* The shadows, drawn OVER the art: an inset shadow on the box paints under its img.
+              Classes rather than an inline style so the hover variant can win, since an inline
+              boxShadow outranks group-hover:. */}
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute inset-0 rounded-[inherit] transition-shadow ${
+              applied || noArt
+                ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
+                : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_color-mix(in_oklab,var(--accent)_35%,transparent)]"
+            }`}
+          />
           {noArt ? (
             <span
               className="absolute inset-0 flex items-center justify-center text-center font-mono text-[9px] leading-[1.4]"

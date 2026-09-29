@@ -50,6 +50,20 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+// The art loads lazily: a CSS background, or an eager img, is fetched for every tile in the Card
+// view whether or not it is on screen, which on a 99-card deck is every card at once.
+describe("DeckCardTile — art", () => {
+  it("draws its art as a lazy img, not a background", () => {
+    renderTile(<DeckCardTile deckId="d1" card={card} />);
+    const img = document.querySelector("img");
+    expect(img?.getAttribute("src")).toBe(card.imageUri);
+    expect(img?.getAttribute("loading")).toBe("lazy");
+    // And no background beside it, which would fetch eagerly whatever the img does.
+    const box = img?.parentElement as HTMLElement;
+    expect(box.getAttribute("style") ?? "").not.toContain("url(");
+  });
+});
+
 describe("DeckCardTile — the four states of Matrix 2", () => {
   // Owned and free: the marker has nothing to say, so the top-left slot is
   // empty. The `$` chip is the unowned state's, and drawing it here would ask

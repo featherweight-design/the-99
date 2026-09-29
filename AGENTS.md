@@ -2301,8 +2301,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   slow), so a first load asks for rows below the fold by design (66 of 200 at 1300, 22 at 390).
   It also reads the first tile's art as painted, `cover` and centred, under the 1px inner edge,
   which moved onto an overlay because an inset shadow on the art box would paint under its img.
-  And scrolling to the foot must ask for more. `probe:printing-pick` and `probe:card-art-corners`
-  read the grid's art through the img since, scrolled in and loaded first. Makes no writes.
+  And every tile brought into view must paint. `probe:printing-pick` and `probe:card-art-corners`
+  read the grid's art through the img since, scrolled in and loaded first.
+
+  **The deck page's Card view and its Consider shelves are walked too**, and their tiles draw
+  art the same way since the follow-up: a 99-card deck asked for every card's `normal` art at
+  once, and an expanded shelf for every candidate's. The Card view is counted from the press,
+  because the chosen view lives in localStorage and a fresh context opens on the List view, which
+  asks for card images of its own; the shelves from their `Show all` presses. Only the tiles' own
+  images count, since the deck page also asks for its commander's art. The limit is three
+  quarters of the tiles with art rather than half: at 1300 the tiles are small enough that the
+  lazy distance reaches 51 of 88. With the background build put back, all ten Card view checks
+  fail (88 of 88 asked). The shelves skip the request count: a shelf's first tiles load before its
+  `Show all` starts the count, so it reads 14 for the background build against the lazy build's
+  20 and would pass over it; their eight img checks are what fail. Every surface's last check is
+  that every tile brought into view PAINTS, read off the imgs rather than counted as requests. The deck walked is the account's first on `/decks`, or `PROBE_DECK`.
+  `probe:mana-symbols` and `probe:printed-name` read a tile's art as either form. Makes no
+  writes.
 
 - `pnpm probe:payload` holds the big list payloads to budgets, over EVERY account in the database
   it is pointed at: `/discover` and the `/commanders` owned lane against 1.6MB of the data cache's
