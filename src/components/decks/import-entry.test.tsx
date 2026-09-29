@@ -9,6 +9,20 @@ import { DECK_IMPORT_FILE_MAX_BYTES } from "../../lib/upload-limits";
 const importDeck = vi.fn();
 const push = vi.fn();
 
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("../shell/pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
+  return {
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
+    },
+  };
+});
+
 vi.mock("../../app/decks/import-actions", () => ({ importDeck }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
@@ -350,5 +364,6 @@ describe("state 12 — no legendary creature", () => {
     await screen.findByRole("button", { name: "Start from a commander instead →" });
     fireEvent.click(screen.getByRole("button", { name: "Start from a commander instead →" }));
     expect(push).toHaveBeenCalledWith("/decks/new");
+    expect(pushed).toContain("/decks/new");
   });
 });

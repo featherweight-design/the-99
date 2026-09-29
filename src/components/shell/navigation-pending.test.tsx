@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Each fake link reads its pending state from this map, keyed by href, as `useLinkStatus` would
 // from inside its own `<Link>`.
 const state = vi.hoisted(() => ({ path: "/", pending: new Map<string, boolean>() }));
-vi.mock("next/navigation", () => ({ usePathname: () => state.path }));
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ usePathname: () => state.path, useRouter: () => ({ push: routerPush }) }));
 vi.mock("next/link", async () => {
   const { useContext, createContext } = await import("react");
   const Href = createContext("");
@@ -20,6 +21,8 @@ const { default: Link } = await import("next/link");
 const { NavigationPendingProvider, OVERLAY_AFTER_MS, ShellMain } = await import("./navigation-pending");
 const { usePendingReport } = await import("./pending-report");
 const { OVERLAY_OUT_MS } = await import("./pending-overlay");
+const { use, useEffect, useLayoutEffect, useState } = await import("react");
+const { usePendingPush } = await import("./pending-push");
 
 function Reporter({ href }: { href: string }) {
   return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
@@ -151,5 +154,81 @@ describe("NavigationPendingProvider", () => {
     act(() => rerender(<App links={LINKS} />));
     act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS));
     expect(overlay()).toBeNull();
+  });
+});
+
+describe("a code-started push", () => {
+  // What a slow navigation looks like to React: the push's update suspends, so the transition it
+  // runs in stays pending until the new page arrives, which here it never does.
+  const never = new Promise<never>(() => {});
+  const handles: { stall: (on: boolean) => void; go: (href: string) => void } = {
+    stall: () => {},
+    go: () => {},
+  };
+  function Stall({ onReady }: { onReady: (stall: (on: boolean) => void) => void }) {
+    const [on, setOn] = useState(false);
+    useEffect(() => onReady(setOn), [onReady]);
+    if (on) use(never);
+    return null;
+  }
+  function Starter({ onReady }: { onReady: (go: (href: string) => void) => void }) {
+    const { go } = usePendingPush();
+    useEffect(() => onReady(go), [onReady, go]);
+    return null;
+  }
+  const readyStall = (stall: (on: boolean) => void) => {
+    handles.stall = stall;
+  };
+  const readyGo = (go: (href: string) => void) => {
+    handles.go = go;
+  };
+  function Code({ starter }: { starter: boolean }) {
+    return (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          {starter && <Starter onReady={readyGo} />}
+          <Stall onReady={readyStall} />
+        </ShellMain>
+      </NavigationPendingProvider>
+    );
+  }
+
+  it("does not drop a push asked for as the page mounts", async () => {
+    // A layout effect runs before any passive one, as a click replayed during hydration can: the
+    // push must still navigate rather than find no runner and vanish.
+    cleanup();
+    routerPush.mockReset();
+    function Early() {
+      const { go } = usePendingPush();
+      useLayoutEffect(() => go("/discover"), [go]);
+      return null;
+    }
+    await act(async () => {
+      render(
+        <NavigationPendingProvider>
+          <ShellMain className="">
+            <Early />
+          </ShellMain>
+        </NavigationPendingProvider>,
+      );
+    });
+    expect(routerPush).toHaveBeenCalledWith("/discover");
+  });
+
+  it("reaches the route's screen at 400ms, and keeps it after the component that started it unmounts", async () => {
+    cleanup();
+    routerPush.mockImplementation(() => handles.stall(true));
+    const view = render(<Code starter />);
+    await act(async () => handles.go("/commanders"));
+    expect(routerPush).toHaveBeenCalledWith("/commanders");
+    await act(async () => vi.advanceTimersByTime(OVERLAY_AFTER_MS - 1));
+    expect(overlay()).toBeNull();
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(overlay()?.textContent).toContain("Consulting the council");
+    // Home's first run swaps out the replace flow that pressed confirm while the receipt loads.
+    await act(async () => view.rerender(<Code starter={false} />));
+    await act(async () => vi.advanceTimersByTime(1000));
+    expect(overlay()?.textContent).toContain("Consulting the council");
+    expect(overlay()?.className).not.toContain("pointer-events-none");
   });
 });

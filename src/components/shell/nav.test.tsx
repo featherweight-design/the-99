@@ -6,6 +6,20 @@ const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
 
 let pathname = "/collection";
 const push = vi.fn();
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("./pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
+  return {
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
+    },
+  };
+});
+
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push }) }));
 
 afterEach(() => {
@@ -362,6 +376,7 @@ describe("The lock, desktop rail", () => {
     fireEvent.pointerEnter(decks);
     fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
     expect(push).toHaveBeenCalledWith("/collection/replace");
+    expect(pushed).toContain("/collection/replace");
     expect(isOpen(decks)).toBe(false);
   });
 

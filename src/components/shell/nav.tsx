@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
 import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
 import { Padlock } from "./padlock";
 import { PendingPip } from "./pending-pip";
+import { usePendingPush } from "./pending-push";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { nameList } from "../../lib/copy/deck-analysis";
@@ -76,7 +77,8 @@ const TAB_NOTE_INSET = 12;
  * and the replace route is the same flow on its own page.
  */
 function useGoToStep1() {
-  const router = useRouter();
+  // A code-started navigation to a route that is not kept, so it reports its press like a link.
+  const { go } = usePendingPush();
   return useCallback(() => {
     // The upload entry first; while step 1's review is open that entry is unmounted, and the
     // step-1 card itself is the target, so the review in hand is never navigated away from.
@@ -87,9 +89,9 @@ function useGoToStep1() {
       target.scrollIntoView?.({ block: "center" });
       target.focus({ preventScroll: true });
     } else {
-      router.push("/collection/replace");
+      go("/collection/replace");
     }
-  }, [router]);
+  }, [go]);
 }
 
 type OpenNote = { href: NavHref; x: number; y: number } | null;

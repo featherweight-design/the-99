@@ -6,12 +6,12 @@
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
 import { useLayoutEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { confirmUpload, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
 import { ConfirmModal } from "./confirm-modal";
 import { replaceCopy } from "../../lib/copy/replace";
+import { usePendingPush } from "../shell/pending-push";
 
 export function ReplaceFlow({
   currentCardCount,
@@ -31,7 +31,7 @@ export function ReplaceFlow({
   // caller reaching past it for step 1 would have to re-implement them.
   entry?: React.ComponentProps<typeof UploadEntry>["entry"];
 }) {
-  const router = useRouter();
+  const nav = usePendingPush();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
@@ -81,7 +81,7 @@ export function ReplaceFlow({
       // The receipt, not the collection. A collection replace is the most destructive action
       // in the app and was the only one with no receipt; the summary route is keyed on the
       // upload id, so it survives a reload and stays linkable.
-      router.push(`/collection/replace/summary/${preview.uploadId}`);
+      nav.go(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "Confirm failed");
       // A skipped confirm has no surface of its own to say it failed, so it opens the modal,

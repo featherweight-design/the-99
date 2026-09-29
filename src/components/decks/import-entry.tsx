@@ -24,6 +24,7 @@ import { TextField } from "../ui/text-field";
 import { CreatePicker } from "./create-picker";
 import { ImportNoCommander } from "./import-no-commander";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
+import { usePendingPush } from "../shell/pending-push";
 
 type ImportMode = Extract<DeckImportSource, "paste" | "file">;
 
@@ -79,6 +80,7 @@ function formatBytes(bytes: number): string {
  */
 export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
   const router = useRouter();
+  const nav = usePendingPush();
   const [mode, setMode] = useState<ImportMode>("paste");
   const [pasteText, setPasteText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -226,7 +228,7 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
       <ImportNoCommander
         lineCount={commanderStep.lineCount}
         onBack={() => setCommanderStep(null)}
-        onStartFromCommander={() => router.push("/decks/new")}
+        onStartFromCommander={() => nav.go("/decks/new")}
       />
     );
   }

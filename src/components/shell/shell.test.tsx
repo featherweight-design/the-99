@@ -8,6 +8,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let requestHeaders = new Headers();
 vi.mock("next/headers", () => ({ headers: async () => requestHeaders }));
+// The navigation-pending provider runs code-started pushes, so it reads the router; this suite
+// renders it outside an app router, where the real hook throws.
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ push: () => {} }),
+}));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: "user_1" }) }));
 let uniqueCards = 5;
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }) }));

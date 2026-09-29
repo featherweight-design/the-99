@@ -54,6 +54,9 @@ The two combine into one behaviour. A press paints its mark at 120ms. At 400ms, 
      - Their `redirect`-signals-by-throwing comments (`deck-delete-mode.tsx:54`) are rewritten.
    - Five `router.push` sites are wired now: `replace-flow.tsx:41`, `about-sheet.tsx:151`, `update-entry.tsx:213` and `:235`, and `import-entry.tsx:229`.
    - The nine that target kept routes are listed in the PR body and wait for those routes to join.
+   - **As built (PR 3, 2026-09-29).** One hook, `usePendingPush`, hands each push to the provider, which runs it as a transition in a child it mounts and reports it there. The calling component is not the owner, because it can unmount before the new page commits: on Home's first run, the import's own revalidation swaps the checklist holding the replace flow for the dashboard. It is wired at `replace-flow`, `update-entry`'s two `/decks/import` pushes and `import-entry`'s `/decks/new`. It is also wired at two sites this list predates: `nav.tsx`'s Go to step 1 (`/collection/replace`, from first-run PR 2) and the account menu's About (from PR 2's round 1).
+     - **`deleteDeck` is not converted.** Its only caller is the `/decks` tile's menu, so its navigation goes to the page it is already on. The same-page rule would never escalate it, and `redirect()` stays.
+     - **`dismissAbout` and `about-sheet.tsx:151` wait** for the About how-it-works PR C, which fences `about/actions.ts` and `about-sheet.tsx`. They land after it, in this PR if it is still open, or as a small follow-up.
 8. **Stale docs, swept by hand** (parent correction 6): `design-tables/appshell.md:1952-1985`, `LoadingScreen`'s "eight segments" docstring, and `choose-loading.tsx:2-5`.
 
 `shellCopy.loading` keeps every key. No copy changes, so no copy-review item. No About entry: this is perceived-performance chrome (both audits).

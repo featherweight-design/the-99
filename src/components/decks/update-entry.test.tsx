@@ -10,6 +10,20 @@ const previewDeckUpdate = vi.fn();
 const updateDeckFromList = vi.fn();
 const push = vi.fn();
 
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("../shell/pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
+  return {
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
+    },
+  };
+});
+
 vi.mock("../../app/decks/update-actions", () => ({ previewDeckUpdate, updateDeckFromList }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
@@ -185,6 +199,7 @@ describe("the terminal steps", () => {
     compare();
     fireEvent.click(await screen.findByRole("button", { name: copy.conflict.primary }));
     expect(push).toHaveBeenCalledWith("/decks/import");
+    expect(pushed).toContain("/decks/import");
   });
 
   // None of the three terminal screens is an error, so none of them is an alert.

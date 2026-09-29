@@ -28,6 +28,7 @@ import {
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { Crown } from "../ui/crown";
 import { UpdateDiff } from "./update-diff";
+import { usePendingPush } from "../shell/pending-push";
 
 type UpdateMode = Extract<DeckImportSource, "paste" | "file">;
 
@@ -66,6 +67,9 @@ function formatBytes(bytes: number): string {
 
 export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: string }) {
   const router = useRouter();
+  // The two routes out of here that are not kept report their press (`/decks/[id]` is kept: its
+  // own screen commits at press).
+  const nav = usePendingPush();
   const [mode, setMode] = useState<UpdateMode>("paste");
   const [pasteText, setPasteText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -210,7 +214,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
         body={copy.update.conflict.body(step.deckCommander)}
       >
         <PrimaryButton
-          onClick={() => router.push("/decks/import")}
+          onClick={() => nav.go("/decks/import")}
           className="w-full md:w-auto text-[15px] md:text-[14px] py-[13px] md:py-0 md:px-[24px] md:h-[44px] min-h-[44px]"
         >
           {copy.update.conflict.primary}
@@ -232,7 +236,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
         applying={applying}
         onApply={(keep) => apply(keep, step.preview.lockedOut ?? [])}
         onCancel={() => router.push(`/decks/${deckId}`)}
-        onImportAsNew={() => router.push("/decks/import")}
+        onImportAsNew={() => nav.go("/decks/import")}
       />
     );
   }

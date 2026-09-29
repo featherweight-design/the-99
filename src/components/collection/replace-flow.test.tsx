@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 
 const push = vi.fn();
+// Records every code-started navigation the component starts through `usePendingPush`, which is
+// what hands it to the navigation-pending provider (the plan's PR 3). The push still reaches the
+// router mock, so the cases that assert it are unchanged.
+const pushed = vi.hoisted(() => [] as string[]);
+vi.mock("../shell/pending-push", async () => {
+  const { useRouter } = await import("next/navigation");
+  return {
+    usePendingPush: () => {
+      const router = useRouter();
+      return { go: (href: string) => { pushed.push(href); router.push(href); } };
+    },
+  };
+});
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
 
 const confirmUpload = vi.fn();
@@ -54,6 +68,14 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     expect(confirmUpload).toHaveBeenCalledWith("up_1", { firstImport: true });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
+  });
+
+  it("starts the push to the receipt through the navigation-pending hook", async () => {
+    confirmUpload.mockResolvedValueOnce(undefined);
+    pushed.length = 0;
+    const cont = await reachReview(0);
+    await act(async () => fireEvent.click(cont));
+    expect(pushed).toContain("/collection/replace/summary/up_1");
   });
 
   it("holds Continue at Importing… while a first import runs, since no modal carries the wait", async () => {
