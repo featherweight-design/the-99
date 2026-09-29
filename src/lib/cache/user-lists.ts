@@ -20,11 +20,15 @@
  * one of them is derived from the card catalog, which a weekly job rewrites and which no
  * tag can name — so the catalog's generation is part of the KEY. See
  * `catalog-generation.ts`.
+ *
+ * So is the DEPLOYMENT (`deployment.ts`): a build that changes what a payload says for
+ * unchanged rows must not serve the previous build's entries, and the tag cannot see a deploy.
  */
 
 import { unstable_cache, updateTag } from "next/cache";
 
 import { catalogGeneration } from "./catalog-generation";
+import { DEPLOYMENT_ID } from "./deployment";
 
 const CEILING_SECONDS = 60 * 60;
 
@@ -39,13 +43,12 @@ function tagFor(userId: string): string {
  * order, a mode. `unstable_cache` cannot see a closure's variables, so an input
  * left out of the key is an input two different answers get filed under.
  *
- * A DEPLOYMENT that changes what a payload says for unchanged rows is one of
- * those inputs, and the tag does not cover it: the tag is dropped by the reader's
- * own writes, so an entry assembled by the previous deployment goes on being
- * served — for up to the hour ceiling, to a reader who writes nothing — without
- * the loader running at all. Put a version in the key and bump it with the
- * change; the old entry is then simply never asked for again.
- * `commanderRankingsKey` is the worked example.
+ * The DEPLOYMENT is not one you pass: it is added to every key here
+ * (`DEPLOYMENT_ID`), so a build that changes what a payload says for unchanged
+ * rows never serves the previous build's entries. The tag cannot do that job —
+ * it is dropped only by the reader's own writes. The version strings some
+ * callers still carry (`browse-5`, `commanderRankingsKey`) predate this and are
+ * now redundant across deploys; they do no harm, and no new one is needed.
  *
  * The result is stored as JSON, so the loader must return plain data: a `Map`
  * comes back as `{}` and a `Date` as a string. Hand back entries rather than a
@@ -70,8 +73,10 @@ export async function cacheForUser<T>(
   // the tag is per reader, and the weekly refresh has no list of readers to drop. In the key
   // it needs none — an entry built from the previous catalog is simply never asked for
   // again. See `catalog-generation.ts` for what it costs and why it is cached for a minute.
+  // THE DEPLOYMENT TOO, so a build that changes a payload's shape never serves the last
+  // build's entries. That used to be a version each caller had to remember to bump.
   const catalog = await catalogGeneration();
-  return unstable_cache(load, ["user-lists", userId, catalog, ...key], {
+  return unstable_cache(load, ["user-lists", userId, DEPLOYMENT_ID, catalog, ...key], {
     tags: [tagFor(userId)],
     revalidate: CEILING_SECONDS,
   })();

@@ -9,7 +9,7 @@
  * reading a table the trigger is not on, and `probe:list-stamp` proves each trigger moves it.
  *
  * Also in the key, by way of `cacheForUser`: the catalog generation, which retires every entry
- * after an ingest. And here: the DEPLOYMENT, so a build that changes what a payload says for
+ * after an ingest, and the DEPLOYMENT, so a build that changes what a payload says for
  * unchanged rows never serves the previous build's entries.
  *
  * A `load` that returns `store: false` is served and not stored. That is how a degraded
@@ -26,8 +26,6 @@ import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
 import { watchSoftFailures } from "./soft-failure";
 import { userDataStamp } from "./user-data-stamp";
-
-const DEPLOYMENT = process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
 /**
  * The switches that change what these loaders read or draw. A switch is read when the server
@@ -58,7 +56,7 @@ export async function cachePageForUser<T>(
   // Without a stamp there is nothing to say an entry is still true, so nothing is cached.
   if (stamp === null) return (await load()).value;
   try {
-    const text = await cacheForUser(userId, ["page", page, DEPLOYMENT, switches(), String(stamp), ...key], async () => {
+    const text = await cacheForUser(userId, ["page", page, switches(), String(stamp), ...key], async () => {
       const { value: result, fellBack } = await watchSoftFailures(load);
       // Thrown rather than returned: the data cache stores whatever the function returns.
       if (!result.store || fellBack) throw new NotStored(result.value);

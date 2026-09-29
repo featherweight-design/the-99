@@ -267,7 +267,9 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and
-  a stale entry is never asked for rather than hunted down. The stamp is deliberately
+  a stale entry is never asked for rather than hunted down. The DEPLOYMENT rides in the same
+  key (`src/lib/cache/deployment.ts`), so a deploy retires every entry too, and no payload needs
+  a hand-bumped version to stop the previous build's shape being served. The stamp is deliberately
   NON-FATAL — this workflow runs the seed scripts directly and never runs `db:migrate`, so
   a database without the table costs one refresh's staleness and a warning, not a red job
   after a successful ingest.

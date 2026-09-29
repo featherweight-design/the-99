@@ -49,6 +49,10 @@ export default async function CollectionPage() {
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
+    // The version is history: since the deployment joined every `cacheForUser` key
+    // (`cache/deployment.ts`), a deploy retires the previous build's entry on its own, and
+    // a new field needs no new `browse-N`. The record of why each one moved:
+    //
     // "browse-5" because the payload gained `comboOtherPartners`, the figure the marker's
     // tooltip counts. An entry written by the previous deploy carries no such field, so every
     // marker would say `You own both` where it should say `and 3 others` until the hour
@@ -58,7 +62,7 @@ export default async function CollectionPage() {
     // Same reason as "browse-3" before it, which added `facts`, and "browse-2" before that:
     // an entry written by the previous deploy carries no such field, so every card would
     // draw no clause until the hour ceiling expired it, with the loader never running. The
-    // key is the version.
+    // key WAS the version then; the deployment id does that job now.
     //
     // THE DECK-DEPENDENT HALF IS INVALIDATED, and an earlier revision of this comment said
     // the opposite at length. `comboPartner` means "both halves owned AND no single deck

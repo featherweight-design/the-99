@@ -61,7 +61,11 @@ export type CommanderRankings = {
 };
 
 /**
- * Bumped when a deployment changes what this payload SAYS for unchanged rows.
+ * Was bumped when a deployment changed what this payload SAYS for unchanged rows.
+ *
+ * SINCE THE DEPLOYMENT JOINED EVERY `cacheForUser` KEY (`cache/deployment.ts`), a deploy
+ * retires the old entry on its own, so a bump is no longer needed for that. The history
+ * below is kept as the record; no new entry is owed.
  *
  * It rides in the cache key, so a bump is a new entry and the old one is simply
  * never asked for again. The tag is not enough on its own: it is dropped by the
