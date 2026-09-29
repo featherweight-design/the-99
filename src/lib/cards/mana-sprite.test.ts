@@ -62,9 +62,15 @@ describe("the mana sprite", () => {
     expect(sprite).not.toContain("Shape");
   });
 
-  it("refuses a symbol that references an id, which would resolve across the whole sheet", () => {
-    expect(() =>
-      buildManaSprite([{ slug: "X", svg: "<svg viewBox='0 0 10 10'><path fill='url(#g)'/></svg>" }], ["X"]),
-    ).toThrow(/references an id/);
+  it.each([
+    "<path fill='url(#g)'/>",
+    `<path fill="url('#g')"/>`,
+    `<path fill='url( "#g" )'/>`,
+    `<use href = "#g"/>`,
+    `<use xlink:href='#g'/>`,
+  ])("refuses a symbol that references an id, which would resolve across the whole sheet: %s", (body) => {
+    expect(() => buildManaSprite([{ slug: "X", svg: `<svg viewBox='0 0 10 10'>${body}</svg>` }], ["X"])).toThrow(
+      /references an id/,
+    );
   });
 });

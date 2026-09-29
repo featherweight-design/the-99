@@ -93,7 +93,10 @@ export function buildManaSprite(
     if (!open || !box || close < 0) throw new Error(`mana sprite: ${slug} is not an svg with a viewBox`);
     // A reference would resolve against the whole sheet once merged, possibly to another symbol's
     // element. None of the committed files carries one; refuse rather than draw the wrong thing.
-    if (/url\(#|href=['"]#/.test(svg)) throw new Error(`mana sprite: ${slug} references an id`);
+    // Any quoting or spacing: `url(#g)`, `url('#g')`, `href="#g"`, `xlink:href = '#g'`.
+    if (/url\(\s*['"]?\s*#|href\s*=\s*['"]\s*#/i.test(svg)) {
+      throw new Error(`mana sprite: ${slug} references an id`);
+    }
     // Unreferenced ids (Scryfall's exporter labels paths `Shape`) are dropped, so none repeats.
     const inner = svg.slice((open.index ?? 0) + open[0].length, close).replace(/\s+id=(['"])[^'"]*\1/g, "");
     // A nested svg fits its own viewBox into the cell, centered, which is what `contain` did for
