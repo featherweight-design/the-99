@@ -1,6 +1,9 @@
+import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
+import { fetchDir, fetchedPath, readFetchedJson } from "../catalog/fetch-dir";
 import { SCRYFALL_HEADERS } from "./http";
 
 export type BulkType = "oracle_cards" | "default_cards";
@@ -31,7 +34,16 @@ export function parseBulkIndex(payload: unknown): BulkIndex {
   return { jsonlDownloadUri: uri, compressedSize: size };
 }
 
+/**
+ * With `CATALOG_FETCH_DIR` set, the index is the file the `fetch` job saved, and its download
+ * points at the body saved beside it, so `streamBulkEntries` reads the same bytes on every leg.
+ */
 export async function fetchBulkIndex(type: BulkType): Promise<BulkIndex> {
+  const dir = fetchDir();
+  if (dir) {
+    const index = parseBulkIndex(readFetchedJson(dir, `bulk-${type}.json`));
+    return { ...index, jsonlDownloadUri: pathToFileURL(fetchedPath(dir, `bulk-${type}.jsonl.gz`)).href };
+  }
   const res = await fetch(`https://api.scryfall.com/bulk-data/${type}`, {
     headers: SCRYFALL_HEADERS,
     signal: AbortSignal.timeout(30_000),
@@ -54,15 +66,21 @@ export async function* streamBulkEntries(
   // the download running to completion, with any later socket error surfacing unhandled after
   // the generator is gone. Aborting the fetch in the finally below cancels it for real.
   const controller = new AbortController();
-  const res = await fetch(index.jsonlDownloadUri, {
-    headers: SCRYFALL_HEADERS,
-    // The timeout spans the whole request including body streaming. 30 minutes is generous for
-    // the largest bulk and still fails loudly inside the refresh workflow's timeout-minutes: 60.
-    signal: AbortSignal.any([controller.signal, AbortSignal.timeout(1_800_000)]),
-  });
-  if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
-
-  const source = Readable.fromWeb(res.body as import("node:stream/web").ReadableStream);
+  let source: Readable;
+  if (index.jsonlDownloadUri.startsWith("file:")) {
+    // A body the `fetch` job saved (`fetchBulkIndex` under CATALOG_FETCH_DIR): the same pipeline
+    // from here on, over the file's bytes.
+    source = createReadStream(fileURLToPath(index.jsonlDownloadUri));
+  } else {
+    const res = await fetch(index.jsonlDownloadUri, {
+      headers: SCRYFALL_HEADERS,
+      // The timeout spans the whole request including body streaming. 30 minutes is generous for
+      // the largest bulk and still fails loudly inside the refresh workflow's timeout-minutes: 60.
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(1_800_000)]),
+    });
+    if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
+    source = Readable.fromWeb(res.body as import("node:stream/web").ReadableStream);
+  }
   const gunzip = createGunzip();
   // pipe() does not forward errors, so a mid-download network failure would otherwise hang
   // the reader instead of rejecting it.

@@ -294,6 +294,32 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Neon pooler runs in transaction mode. A copy's publish takes the same lock, so a copy never
   interleaves with a catalog refresh on the target: it waits, then re-reads the fingerprint.
 
+- **The catalog is fetched ONCE and ingested into both databases from the same bytes** (plan
+  `2026-09-28-card-data-replicate.md` §4a, Hugh's approval, 2026-09-28). `pnpm catalog:fetch <dir>`
+  downloads Scryfall's sets list, both bulk files (index and body) and ManaPool's singles feed into
+  `<dir>`, about 155MB in 10s, and writes `manifest.json`: each file's URL, byte length and
+  sha256, and each source's `updated_at` (a bulk index's own, or, for the sets list and the price feed,
+  the moment that source's own request started). With `CATALOG_FETCH_DIR=<dir>` set, every ingest reads those files instead
+  of the network, through one seam per read (`fetchBulkIndex`, `streamBulkEntries`,
+  `loadSetsPayload`, `fetchManapoolSingles`); unset, they fetch exactly as before, which is what a
+  local `pnpm db:seed` still does. Everything after the read runs per database, unchanged: each
+  side keeps its own upserts, its own `deck_data_changes` and its own stamp.
+
+  Proved on two scratch branches of staging from one fetch: both ended with the same input
+  fingerprint, the same 103,327 printings by `scryfall_id` md5, and the same 98,095 current prices.
+
+- `pnpm db:catalog-sources verify|record [source ...]` guards a leg that ingests from an artifact,
+  against the database `DATABASE_URL` names. `verify`, before any ingest, refuses a file whose
+  bytes are not the manifest's, and a source OLDER than what this database last ingested, so a
+  re-run of an old artifact cannot roll back what an ARTIFACT ingest recorded; a retry of the same
+  artifact goes through as the no-op it is. An ingest outside the artifact path records nothing
+  (a `Price refresh` dispatch, a local `pnpm db:seed*`), so after one, an older artifact can
+  still be re-run over it: prefer a fresh `Catalog refresh` dispatch to re-running an old leg. `record`, after every ingest succeeded, writes each source's
+  `updated_at` and hash to `catalog_sources` (migration 0075). Our own `catalog_refreshes` stamp
+  cannot answer this: it moves on every ingest and every copy, and says nothing about how new
+  upstream's data was. Both take the sources a run ingests, so a dispatch naming one ingest
+  neither judges nor records the others. The rule is `manifestRefusal`, unit tested.
+
 - `pnpm probe:catalog-copy` proves the harness and `db:copy:combos` against TWO SCRATCH branches
   cut from staging (`PROBE_COPY_SOURCE_URL`/`_BRANCH`, `PROBE_COPY_TARGET_URL`/`_BRANCH`; it
   refuses production, staging and local-dev by id). Every refusal is a fact about what two

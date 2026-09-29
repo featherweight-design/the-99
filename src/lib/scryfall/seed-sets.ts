@@ -1,20 +1,27 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { sets } from "../../db/schema";
-import { SCRYFALL_HEADERS } from "./http";
+import { fetchDir, readFetchedJson } from "../catalog/fetch-dir";
+import { SCRYFALL_HEADERS, SETS_INDEX } from "./http";
 import { toSetRows } from "./transform-sets";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 
-const SETS_INDEX = "https://api.scryfall.com/sets";
 
-/** Ingests the full Scryfall set catalog. Idempotent: upserts on `code`. */
-export async function seedSets(): Promise<{ upserted: number }> {
+/** The sets list: the file the `fetch` job saved under CATALOG_FETCH_DIR, or Scryfall itself. */
+export async function loadSetsPayload(): Promise<unknown> {
+  const dir = fetchDir();
+  if (dir) return readFetchedJson(dir, "sets.json");
   const res = await fetch(SETS_INDEX, {
     headers: SCRYFALL_HEADERS,
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`scryfall /sets ${res.status}`);
-  const rows = toSetRows(await res.json());
+  return res.json();
+}
+
+/** Ingests the full Scryfall set catalog. Idempotent: upserts on `code`. */
+export async function seedSets(): Promise<{ upserted: number }> {
+  const rows = toSetRows((await loadSetsPayload()) as Parameters<typeof toSetRows>[0]);
   if (rows.length === 0) throw new Error("scryfall /sets returned no sets");
 
   for (let i = 0; i < rows.length; i += 500) {

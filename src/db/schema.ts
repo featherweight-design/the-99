@@ -1436,6 +1436,24 @@ export const catalogBuilds = pgTable("catalog_builds", {
 ]);
 
 /**
+ * What this database last ingested of each upstream catalog source, when a `Catalog refresh` leg
+ * ingested it from the files its `fetch` job saved (plan `2026-09-28-card-data-replicate.md`,
+ * §4a). A leg refuses an artifact whose source is OLDER than the row here, so a re-run of an old
+ * artifact cannot roll back what an artifact ingest recorded, while a retry of the same artifact
+ * (same date, same hash) goes through as the no-op it is. An ingest that did not come through an
+ * artifact (a `Price refresh` dispatch, a local seed) records nothing here. Our own `catalog_refreshes` stamp cannot answer that: it moves
+ * on every ingest and every copy, and says nothing about how new upstream's data was.
+ */
+export const catalogSources = pgTable("catalog_sources", {
+  source: text("source").primaryKey(),
+  updatedAt: timestamp("updated_at").notNull(),
+  sha256: text("sha256").notNull(),
+  ingestedAt: timestamp("ingested_at").notNull().defaultNow(),
+}, (t) => [
+  check("catalog_sources_source_check", sql`${t.source} in ('sets', 'oracle_cards', 'default_cards', 'prices')`),
+]);
+
+/**
  * The deck notices change log (sub-project 9): one row per bracket-relevant change the weekly
  * ingests publish under the catalog, on its OWN sequence. `catalog_refreshes` cannot key it: it
  * is one overwritten row, and most of its six writers move nothing a verdict reads.
