@@ -26,3 +26,14 @@ describe("topOffCopy — the deck ceiling", () => {
     expect(topOffCopy.announce.undone("2", "96", pair)).toContain("96 of 98");
   });
 });
+
+describe("the ledger's pass label", () => {
+  // `top-off 1` beside `50 cards you chose…` read as a count of one (Hugh, 2026-09-28).
+  it("names the pass by an ordinal word, never a bare numeral after the noun", () => {
+    const label = topOffCopy.ledger.passLabel;
+    expect(["1", "2", "3", "4", "11", "12", "13", "21", "22", "103"].map(label)).toEqual([
+      "1st top-off", "2nd top-off", "3rd top-off", "4th top-off", "11th top-off",
+      "12th top-off", "13th top-off", "21st top-off", "22nd top-off", "103rd top-off",
+    ]);
+  });
+});

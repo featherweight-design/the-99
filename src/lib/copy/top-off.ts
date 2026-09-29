@@ -13,6 +13,7 @@
  */
 
 import { synergyCopy } from "./synergy-discovery";
+import { ordinal } from "./deck-analysis";
 // TYPE-ONLY, so this copy module still imports no runtime code but the noun table's
 // completeness is the type system's claim rather than a comment's.
 import type { CompositionTargets } from "../profile/types";
@@ -374,7 +375,7 @@ export const topOffCopy = {
   // the player to work out whether the undo has expired. It has not, ever.
   //
   // Every line states a COUNT OF CARDS, never a percentage and never a bare
-  // number: 'the seed' and 'top-off 2' are labels, '68 cards' is the figure.
+  // number: 'the seed' and '2nd top-off' are labels, '68 cards' is the figure.
   ledger: {
     header: (total: string) =>
       total === '1'
@@ -386,9 +387,13 @@ export const topOffCopy = {
     headerMetaOne: (buy: string) => `one pass · ${buy} to buy`,
 
     /** Pass labels. Ordinals are STABLE and never renumber when a pass is
-     *  undone — 'top-off 3' can exist with no 'top-off 1' above it. */
+     *  undone — '3rd top-off' can exist with no '1st top-off' above it.
+     *
+     *  An ordinal WORD, not a bare numeral after the noun: 'top-off 1' sat beside
+     *  '50 cards you chose…' and read as a count of one (Hugh, 2026-09-28). */
     seedLabel: 'the seed',
-    passLabel: (i: string) => `top-off ${i}`,
+    // The app's one ordinal formatter (`deck-analysis.ts`), not a second one to drift from it.
+    passLabel: (i: string) => `${ordinal(Number(i))} top-off`,
 
     /** The seed's sentence — the shipped provenance wording, recast as a line. */
     seedLine: (n: string, buy: string) =>
@@ -448,7 +453,7 @@ export const topOffCopy = {
     markAria: (n: string, pass: string) =>
       `Mark the ${plural(n, 'card', 'cards')} from ${pass} in the deck below`,
     unmarkAria: (pass: string) => `Clear the mark on ${pass}`,
-    /** ENG-ADDED. §14 says a marked row's accessible name gains 'from top-off 1',
+    /** ENG-ADDED. §14 says a marked row's accessible name gains 'from 1st top-off',
      *  and the row has no aria-label to extend — its name is the card's own
      *  button. So this ships as visually-hidden text inside the row, additive to
      *  that button's name rather than a replacement for it. */

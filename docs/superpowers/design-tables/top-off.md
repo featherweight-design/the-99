@@ -829,7 +829,7 @@ Both fixed widths are sized so **no label wraps mid-phrase at three digits**, th
 | Motion | **—** (appears and clears instantly) | **—** |
 | Control | `aria-pressed` toggle | `aria-pressed` toggle |
 | Concurrency | **one pass marked at a time**; marking another moves the mark | same |
-| Accessible name of marked rows | gains *"from top-off 1"* while the mark is up | same |
+| Accessible name of marked rows | gains *"from 1st top-off"* while the mark is up | same |
 | `AutoTag` on those rows | **unchanged** — no ordinal, no second tag | same |
 
 `AutoTag` (drawn on the decklist rows, unchanged): `var(--font-mono)` `9.5px`,
@@ -997,7 +997,7 @@ capped at `n`.
 | # | Triggering condition (data) | Rendered | Copy strings |
 |---|---|---|---|
 | k | No pass currently marked (`markedPassId == null`) | Nothing on the decklist | `ledger.mark(n)` (the untoggled control), `ledger.markAria(n,pass)` |
-| l | `markedPassId == passId` | **3px `var(--accent)` left edge** on that pass's decklist rows. Nothing dimmed, filtered, reordered, collapsed or scrolled to. `aria-pressed="true"`; each marked row's accessible name gains *"from top-off 1"* | `ledger.unmarkAria(pass)`, `announce.marked(n,pass)` |
+| l | `markedPassId == passId` | **3px `var(--accent)` left edge** on that pass's decklist rows. Nothing dimmed, filtered, reordered, collapsed or scrolled to. `aria-pressed="true"`; each marked row's accessible name gains *"from 1st top-off"* | `ledger.unmarkAria(pass)`, `announce.marked(n,pass)` |
 | m | A different line's `Show these` is pressed | The mark **moves** — one pass marked at a time | `announce.marked(n,pass)` |
 | n | Same control tapped again, **or** the pass is undone, **or** the list is committed | The mark clears | `announce.markCleared` |
 
@@ -1118,7 +1118,7 @@ The cost is spoken from the **shipped** `manaCopy.costAria`, read **before** the
 | `ledger.headerMeta(passes, buy)` | `{passes} passes · {buy} to buy` |
 | `ledger.headerMetaOne(buy)` | `one pass · {buy} to buy` |
 | `ledger.seedLabel` | `the seed` |
-| `ledger.passLabel(i)` | `top-off {i}` |
+| `ledger.passLabel(i)` | `{ordinal(i)} top-off` (`1st top-off`) |
 | `ledger.seedLine(n, buy)` | `{n} cards: the roles and the mana base, {buy} to buy.` |
 | `ledger.seedLineNoBuy(n)` | `{n} cards: the roles and the mana base.` |
 | `ledger.seedReversal` | `the sweep reverses it` |
