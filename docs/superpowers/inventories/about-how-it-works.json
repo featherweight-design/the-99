@@ -1,18 +1,71 @@
 {
   "feature": "About, how the app reaches its answers",
-  "note": "Needs a server with HOW_IT_WORKS_ENABLED=true and ANALYSIS_TAB_ENABLED=true, and ANALYSIS_DECK set to a deck the signed-in account owns that holds a stored reading (on local-dev, d0000000-0000-4000-8000-00000000cafe). PR A's row: the Analysis tab's \"How we make these decisions\" sheet, each row now tagged with how its count is reached. The tab is reached by a PRESS: BuilderTabs is client state and has no address.",
+  "note": "Needs a server with HOW_IT_WORKS_ENABLED=true and ANALYSIS_TAB_ENABLED=true, and ANALYSIS_DECK set to a deck the signed-in account owns that holds a stored reading (on local-dev, d0000000-0000-4000-8000-00000000cafe). PR A's row is the first: the Analysis tab's \"How we make these decisions\" sheet, each row now tagged with how its count is reached. The tab is reached by a PRESS: BuilderTabs is client state and has no address. PR B's rows are /about's appendix: the key and the closed rows, Brackets opened by its hash, and the last row landed by its hash.",
   "clearAbout": true,
   "rows": [
     {
       "id": "decisions-sheet-tags",
-      "label": "/decks/[id] Analysis — How we make these decisions, tagged",
+      "label": "/decks/[id] Analysis \u2014 How we make these decisions, tagged",
       "view": "src/components/decks/provenance-panel.tsx",
       "steps": [
-        { "goto": "/decks/${ANALYSIS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
-        { "clickRole": "tab", "name": "Analysis", "settle": 600 },
-        { "wait": "[data-testid='provenance-opener']", "settle": 600 },
-        { "click": "[data-testid='provenance-opener']", "settle": 300 },
-        { "wait": "[data-testid='provenance'] [data-method]", "settle": 500 }
+        {
+          "goto": "/decks/${ANALYSIS_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='provenance-opener']",
+          "settle": 600
+        },
+        {
+          "click": "[data-testid='provenance-opener']",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='provenance'] [data-method]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "appendix-key",
+      "label": "/about \u2014 the appendix: method key and closed rows",
+      "view": "src/components/about/how-it-works.tsx",
+      "steps": [
+        {
+          "goto": "/about#how-it-works",
+          "wait": "#how-it-works",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "appendix-brackets",
+      "label": "/about#how-brackets \u2014 Brackets open, five sub-rows",
+      "view": "src/components/about/how-rows.tsx",
+      "steps": [
+        {
+          "goto": "/about#how-brackets",
+          "wait": "#how-brackets-body",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "appendix-landed",
+      "label": "/about#how-written \u2014 the last row landed, washed",
+      "view": "src/components/about/how-rows.tsx",
+      "steps": [
+        {
+          "goto": "/about#how-written",
+          "wait": "#how-written [data-jumped]",
+          "settle": 800
+        }
       ]
     }
   ]
