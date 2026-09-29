@@ -65,8 +65,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # A dispatch is always due. A chained run asks staging's own sets and ledger: monthly from
-      # the 3rd, or 14 days after an expansion or commander set releases (`indexDue`).
+      # A dispatch is always due. A chained run asks staging's own sets and ledger (`indexDue`):
+      # never while the ledger holds no ok index build (no baseline; the first build is a dispatched
+      # catch-up), and otherwise monthly from the 3rd, or 14 days after an expansion or commander
+      # set releases.
       - id: due
         env:
           EVENT: ${{ github.event_name }}
