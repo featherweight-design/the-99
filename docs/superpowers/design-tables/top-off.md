@@ -190,7 +190,7 @@ Unchanged from shipped. Same position under the provenance ledger, above the dec
 | font-size | `11px` | `11px` |
 | layout | **side by side on one row**, `display:flex; gap:8px; margin-top:11px` | in the head's flex row |
 | Touch target | **44px** | — |
-| aria-label (collection control) | `bulk.collectionAria(tickable, concession)` | same |
+| label and aria-label (both controls) | `bulk.collection(n)` / `bulk.collectionAria(n, concession)` and `bulk.best(n)` / `bulk.bestAria(n, concession)`, where `n` is the rows that control's press ticks (its plan's ids the list allows). A control whose `n` is 0 is not drawn | same |
 
 ## 2c · Ordering note
 
@@ -1033,7 +1033,7 @@ neither ticked nor declined · `{owned}` candidates already in the collection ·
 current selection size · `{total}` deck card count after the act · `{b}` / `{buy}` cards to buy ·
 `{money}` the money total · `{i}` a pass's stable ordinal · `{slots}` the open-slot count the pass
 chose from · `{placed}` the pass's original row count · `{kept}` rows graduated out of the pass ·
-`{removed}` rows removed by hand · `{passes}` number of passes · `{price}` a single card's price ·
+`{removed}` rows removed by hand · `{passes}` number of passes · `{price}` a single card's price · in the four `bulk.*` keys only, `{n}` is the rows that control's press ticks (its plan's ids the list allows), not the open-slot count ·
 `{qty}` copies in the collection · `{name}` a card name · `{pass}` a pass label.
 
 ## strip

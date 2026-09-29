@@ -420,14 +420,12 @@ export function TopOffList({
   const declinedHere = pool.filter((c) => declined.has(c.oracleId)).length;
   const allDeclined = pool.length > 0 && declinedHere === pool.length;
 
-  // WHAT THE TICK-ALL MAY TICK, which is no longer the same as what it will.
-  //
-  // This was the selection: a slice of it, clamped to the open slots. It is now an ALLOW-LIST
-  // intersected against the action's answer, so the count actually ticked can be lower than
-  // `tickable` — the fill leaves a slot open rather than spending it on a card no floor wants.
-  // The figure on the face and in the accessible name is still the number of slots, because
-  // that is what the button offers to fill; what changed is that offering is not promising.
-  // The COLLECTION control reaches for what the SEED reaches for: `canSeed` decides what is
+  // WHAT THE COLLECTION CONTROL MAY TICK: an ALLOW-LIST intersected against the fill plan's answer
+  // (`wouldSelect`). The plan can leave a slot open rather than spend it on a card no floor wants,
+  // so what a press ticks can be fewer than this list holds, down to none. The control's figure is
+  // therefore the count the press will tick, taken from the plan, never from this list: a figure
+  // counted here read `Select 6 from my collection` over a plan that ticked nothing (Hugh,
+  // 2026-09-28). The COLLECTION control reaches for what the SEED reaches for: `canSeed` decides what is
   // eligible, and the server's own fill decides which of those to choose. A card
   // owned with every copy sleeved elsewhere stays in the list and stays tickable by hand; what
   // neither of these does is choose it for the player.
@@ -438,7 +436,6 @@ export function TopOffList({
   const seedableIds = pool
     .filter((c) => canSeed(c) && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
-  const tickable = Math.min(seedableIds.length, Math.max(openSlots, 0));
   // THE ALLOW-LIST IS READ AT PRESS TIME, from render scope, and no ref is needed for it any
   // more. A live handle and a draft generation used to live here because the press itself was
   // asynchronous — it asked the server for a plan and the draft could move in the gap. The
@@ -570,12 +567,17 @@ export function TopOffList({
     return ids.filter((id) => allowed.has(id));
   };
 
-  const applyBulk = (ids: readonly string[], pool_: "collection" | "best") =>
-    onTickedChange(new Set(wouldSelect(ids, pool_)));
+  // WHAT EACH PRESS TICKS, computed once and read by the label, the accessible name, the notes and
+  // the press alike, so the figure a control names and the rows it ticks cannot disagree.
+  const collectionSelection = bulkOptions ? wouldSelect(bulkOptions.collection.oracleIds, "collection") : [];
+  const bestSelectionIds = bulkOptions ? wouldSelect(bulkOptions.best.oracleIds, "best") : [];
+  const applyBulk = (ids: readonly string[]) => onTickedChange(new Set(ids));
 
-  // b9 · the collection control is absent at zero sleevable, and the remaining control keeps
-  // its own label: renaming it `Select 12` would hide that every one of them is a purchase.
-  const bulkShowsCollection = tickable > 0;
+  // b9 · a control whose press would tick nothing is absent, not a live button that does nothing:
+  // the collection control at zero sleevable, or where its plan chose none of them. The remaining
+  // control keeps its own label: renaming it `Select 12` would hide that every one of them is a
+  // purchase.
+  const bulkShowsCollection = collectionSelection.length > 0;
   // b3 · the two pools produced the same rows, so the second control is absent. Compared as
   // SETS rather than by length: two plans of twelve that differ by one card are two different
   // answers, and the player would be choosing between controls that are not the same while
@@ -586,10 +588,8 @@ export function TopOffList({
   // answer wearing two buttons, which is the #361 defect this rule exists to prevent.
   const bulkShowsBest =
     bulkOptions !== null &&
-    !sameSelection(
-      wouldSelect(bulkOptions.collection.oracleIds, "collection"),
-      wouldSelect(bulkOptions.best.oracleIds, "best"),
-    );
+    bestSelectionIds.length > 0 &&
+    !sameSelection(collectionSelection, bestSelectionIds);
 
   // b11 · at the cap with a hand-made selection in the way, replacing it is the WHOLE of what
   // a press would do, and that outranks the figure. Both notes take it, and the figures return
@@ -634,10 +634,8 @@ export function TopOffList({
   // FROM THE SELECTION, not from the plan. A declined unowned row still in the best plan would
   // otherwise be counted and priced here and then dropped by the press, so the note would
   // promise `5 to buy · $34.00` where the commit bar says `4 to buy · $14.00` a moment later.
-  const bestSelection = bulkOptions ? new Set(wouldSelect(bulkOptions.best.oracleIds, "best")) : null;
-  const bestBuying = bestSelection
-    ? pool.filter((c) => bestSelection.has(c.oracleId) && !c.owned)
-    : [];
+  const bestSelection = new Set(bestSelectionIds);
+  const bestBuying = pool.filter((c) => bestSelection.has(c.oracleId) && !c.owned);
   const bestMoney = summarisePrices(
     bestBuying.map((c) => ({ quantity: 1, price: c.price })),
     newestAsOf,
@@ -914,31 +912,30 @@ export function TopOffList({
               {/* b9 · nothing to sleeve. The collection control is ABSENT, not
                   disabled — the surface's standing rule — and the strip's
                   shipped door note already says which of the two zeroes it is. */}
-              {/* THE COLLECTION CONTROL NAMES `tickable`, NOT `openSlots`, and this is the one
-                  place the build departs from the handoff's copy note.
+              {/* EACH CONTROL NAMES THE ROWS ITS PRESS TICKS, not the open slots, and this is
+                  where the build departs from the handoff's copy note.
 
                   That note says "both labels state the same count — the open slots — because
-                  both fills take every one of them". True in b1's own figures (23 sleevable
-                  for 12 open, so the two are the same number) and false exactly where they
-                  differ: a collection holding four candidates for twelve slots cannot take
-                  twelve, and `Select 12 from my collection` would promise eight cards that do
-                  not exist.
+                  both fills take every one of them". True in b1's own figures and false
+                  wherever a plan leaves a slot open: a collection holding four candidates for
+                  twelve slots cannot take twelve, and a plan can choose none of the six a list
+                  holds. `Select 6 from my collection` over a press that ticked nothing is what
+                  shipped (Hugh, 2026-09-28).
 
-                  The surface has already ruled on this shape once. The control this pair
-                  replaces named `tickable` for the same reason, recorded in its own case as
-                  "a button that says two and ticks one is wrong on its face and in its name".
-                  Recorded as errata on the handoff rather than settled quietly. */}
+                  The surface has already ruled on this shape once: "a button that says two
+                  and ticks one is wrong on its face and in its name". Recorded as errata on the
+                  handoff rather than settled quietly. */}
               {bulkShowsCollection && (
                 <BulkControl
                   pool="collection"
-                  label={topOffCopy.bulk.collection(String(tickable))}
+                  label={topOffCopy.bulk.collection(String(collectionSelection.length))}
                   ariaLabel={topOffCopy.bulk.collectionAria(
-                    String(tickable),
+                    String(collectionSelection.length),
                     bulkNote(bulkOptions.collection, !bulkShowsBest),
                   )}
                   note={bulkNote(bulkOptions.collection, !bulkShowsBest)}
                   disabled={inflight}
-                  onPress={() => applyBulk(bulkOptions.collection.oracleIds, "collection")}
+                  onPress={() => applyBulk(collectionSelection)}
                 />
               )}
               {/* b3 · the two fills are the same set, so the second control is
@@ -947,14 +944,14 @@ export function TopOffList({
               {bulkShowsBest && (
                 <BulkControl
                   pool="best"
-                  label={topOffCopy.bulk.best(String(openSlots))}
+                  label={topOffCopy.bulk.best(String(bestSelectionIds.length))}
                   ariaLabel={topOffCopy.bulk.bestAria(
-                    String(openSlots),
+                    String(bestSelectionIds.length),
                     bulkBuyNote,
                   )}
                   note={bulkBuyNote}
                   disabled={inflight}
-                  onPress={() => applyBulk(bulkOptions.best.oracleIds, "best")}
+                  onPress={() => applyBulk(bestSelectionIds)}
                 />
               )}
             </>

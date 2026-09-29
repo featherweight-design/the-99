@@ -457,8 +457,8 @@ describe("TopOffList", () => {
   // than there are slots must be offered the number it will actually tick —
   // a button that says two and ticks one is wrong on its face and in its name.
   it("names the tick-all by what it will tick, not by what is owned", async () => {
-    // The action answers with the one slot's worth; the LABEL is computed from the list's own
-    // `tickable` and is what this case is about.
+    // The action answers with the one slot's worth, and the LABEL names the rows that plan's press
+    // ticks, which is what this case is about.
     actions.bulkOptions.mockResolvedValue({
       ok: true,
       collection: plan({ oracleIds: ["owned-1"] }),
@@ -473,6 +473,46 @@ describe("TopOffList", () => {
 
     await click(button);
     expect(screen.getByText(topOffCopy.list.headMobile("1", "1"))).toBeInTheDocument();
+  });
+
+  // Hugh, 2026-09-28: `Select 6 from my collection` ticked nothing. The figure was counted from the
+  // list (every card free to sleeve, capped at the slots) while the press ticked what the PLAN chose
+  // among them. The label and the press now read one source, the plan, so they cannot disagree.
+  it("names the rows the plan will tick, where the list holds more it did not choose", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["owned-1"] }),
+      best: plan({ oracleIds: ["owned-1", "owned-2", "buy-1"] }),
+    });
+    render(<Harness openSlots={3} />);
+
+    const button = await screen.findByRole("button", { name: /from your collection/ });
+    // Two cards are free to sleeve and three slots are open; the plan chose one.
+    expect(button).toHaveTextContent(topOffCopy.bulk.collection("1"));
+    await click(button);
+    expect(screen.getByText(topOffCopy.list.headMobile("1", "3"))).toBeInTheDocument();
+
+    const best = screen.getByRole("button", { name: /this deck needs/ });
+    expect(best).toHaveTextContent(topOffCopy.bulk.best("3"));
+    await click(best);
+    expect(screen.getByText(topOffCopy.list.headMobile("3", "3"))).toBeInTheDocument();
+  });
+
+  // The 0 case of the same rule: a plan that chose none of the cards free to sleeve draws no
+  // collection control at all, rather than a live button that does nothing.
+  it("draws no collection control when its plan would tick nothing", async () => {
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: [] }),
+      best: plan({ oracleIds: ["buy-1"] }),
+    });
+    render(<Harness openSlots={3} />);
+
+    const best = await screen.findByRole("button", { name: /this deck needs/ });
+    expect(screen.queryByRole("button", { name: /from your collection/ })).not.toBeInTheDocument();
+    expect(best).toHaveTextContent(topOffCopy.bulk.best("1"));
+    await click(best);
+    expect(screen.getByText(topOffCopy.list.headMobile("1", "3"))).toBeInTheDocument();
   });
 
   // A decline speaks for itself immediately, and it also moves the count, which
@@ -739,8 +779,8 @@ describe("TopOffList — the bulk tick", () => {
   // THE COUNTS ARE NOT ASSERTED TO MATCH, and that is deliberate. The handoff's copy comment
   // says "both labels state the same count — the open slots — because both fills take every
   // one of them", which is true in b1's own figures (23 sleevable for 12 open) and false
-  // wherever the collection holds fewer cards than there are slots. The collection control
-  // therefore names `tickable`, what it can actually select; see the note in the component.
+  // wherever the collection holds fewer cards than there are slots. Each control therefore
+  // names the rows its press will tick, from its plan; see the note in the component.
   // This case asserts the two notes, which is what it can see.
   it("draws both controls with the same count and different concessions", async () => {
     actions.bulkOptions.mockResolvedValue({
@@ -780,6 +820,12 @@ describe("TopOffList — the bulk tick", () => {
         </>
       );
     }
+    // A plan that ticks something, so the control is drawn and its arrival can be waited on.
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["owned-1"] }),
+      best: plan({ oracleIds: ["buy-1"] }),
+    });
     render(<Swapper />);
     await screen.findByRole("button", { name: /from your collection/ });
     expect(actions.bulkOptions).toHaveBeenCalledTimes(1);
