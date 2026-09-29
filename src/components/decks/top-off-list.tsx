@@ -1483,7 +1483,7 @@ function CandidateRow({
               // fixed seam draws the canvas colour through a surface-coloured
               // row, which reads as a hairline crack rather than as the join it
               // is — and the hover this round added is what made that reachable.
-              <AvailabilityMarker
+              <AvailabilityMarker bareOne
                 availability={c.availability}
                 seam="var(--row-bg)"
                 nameless

@@ -109,7 +109,7 @@ export function SuggestionCard({
   const addMark = !item.owned ? (
     <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
   ) : marked ? (
-    <AvailabilityMarker
+    <AvailabilityMarker bareOne
       availability={item.availability!}
       nameless
       selfExcluded={selfExcluded}

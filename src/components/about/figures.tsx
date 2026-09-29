@@ -129,6 +129,8 @@ function AvailabilityFigure({ width }: { width: AboutWidth }) {
                   availability={a}
                   density="row"
                   seam="var(--surface-sunken)"
+                  // The decklist row it stands in for draws a bare `short` at one copy.
+                  bareOne
                 />
               </span>
             )}

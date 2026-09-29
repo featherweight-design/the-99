@@ -39,9 +39,13 @@ const spokenForTwice = (n: number) =>
     ? "1 card here is spoken for twice"
     : `${n} cards here are spoken for twice`;
 
-/** `short` for one copy, `short N` for more: the figure is drawn only where it says something. */
-function shortWord(shortBy: number): string {
-  return shortBy > 1 ? `short ${shortBy}` : "short";
+/**
+ * `short N`, the figure always drawn (Hugh, 2026-09-28). `bareOne` is the deck page's own list alone:
+ * a card there is nearly always one copy short, and `short` says it. Everywhere else the reader is
+ * looking across decks or at candidates, and how many copies to find is what they need.
+ */
+function shortWord(shortBy: number, bareOne = false): string {
+  return bareOne && shortBy === 1 ? "short" : `short ${shortBy}`;
 }
 
 export const availabilityCopy = {
@@ -79,14 +83,14 @@ export const availabilityCopy = {
     // "also in" throughout, matching overAlsoIn below: one grammar for the
     // over clause, whether the second claimant is named or counted.
     //
-    // The count is drawn only when it is over one (Hugh, 2026-09-26): one copy short is the
-    // common case and `short` says it; a figure earns its width only where a list asks for many
-    // (basics, Relentless Rats). The aria strings below keep the count whatever it is.
-    over: (shortBy: number) => shortWord(shortBy),
-    overWithDemand: (shortBy: number, deckCount: number) =>
+    // The count is always drawn (Hugh, 2026-09-28), which reverses 2026-09-26's "only above one"
+    // everywhere but the deck page's own list: see `shortWord`. The aria strings below keep the
+    // count whatever the label does.
+    over: (shortBy: number, bareOne = false) => shortWord(shortBy, bareOne),
+    overWithDemand: (shortBy: number, deckCount: number, bareOne = false) =>
       deckCount === 1
-        ? `${shortWord(shortBy)}, also in 1 deck`
-        : `${shortWord(shortBy)}, also in ${deckCount} decks`,
+        ? `${shortWord(shortBy, bareOne)}, also in 1 deck`
+        : `${shortWord(shortBy, bareOne)}, also in ${deckCount} decks`,
     overAria: (shortBy: number, deckCount: number) =>
       deckCount === 1
         ? `1 of your committed decks includes this card and you own ${shortBy} too few`
@@ -97,8 +101,8 @@ export const availabilityCopy = {
     // On a deck's OWN list the current deck is excluded from the marker, so
     // "also in N decks" would count the deck the player is standing in. Name the
     // other claimant instead. Decklist-of-the-holder only.
-    overAlsoIn: (shortBy: number, otherDeck: string) =>
-      `${shortWord(shortBy)}, also in ${otherDeck}`,
+    overAlsoIn: (shortBy: number, otherDeck: string, bareOne = false) =>
+      `${shortWord(shortBy, bareOne)}, also in ${otherDeck}`,
     overAlsoInAria: (otherDeck: string) =>
       `your ${otherDeck} deck also includes this card and you don’t own enough for both`,
 

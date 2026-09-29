@@ -30,6 +30,11 @@ export type MarkerOpts = {
   selfExcluded?: boolean;
   /** `/collection` — count-only, no deck name ever. Addendum 2 §3. */
   nameless?: boolean;
+  /** A bare `short` at one copy, rather than `short 1`. Only on the deck's own pages (Hugh,
+   *  2026-09-28): `/decks/[id]` and everything it mounts (rows, tiles, suggestions, sheets),
+   *  `/changes` and `/import`, and the card modal opened from them (`deckPage`). The default is the
+   *  count, so a surface added later draws it without asking. */
+  bareOne?: boolean;
 };
 
 /** Prose for the accessible name, or null when the card is free. */
@@ -115,12 +120,12 @@ function label(
         : { prefix: c.hardMulti(hard.length) };
     case "over":
       // Collection is count-only here too — the canvas draws a bare `short 1`.
-      if (opts.nameless) return { prefix: c.over(-a.free) };
+      if (opts.nameless) return { prefix: c.over(-a.free, opts.bareOne) };
       // Self-excluded: hardDecks already omits the current deck, so a lone
       // remaining entry is the OTHER claimant. "also in 2 decks" would count
       // the deck the player is standing in.
       if (opts.selfExcluded && hard.length === 1) {
-        return withName(c.overAlsoIn(-a.free, hard[0].name), hard[0]);
+        return withName(c.overAlsoIn(-a.free, hard[0].name, opts.bareOne), hard[0]);
       }
       // One deck CAN be the whole demand — "any number" cards (Relentless
       // Rats, Nazgûl) let a single list claim nine copies of something you own
@@ -128,8 +133,8 @@ function label(
       // so the threshold is one deck, not two; below it there is no name and
       // nothing to count, and the bare `short N` is all that is true.
       return hard.length >= 1
-        ? { prefix: c.overWithDemand(-a.free, hard.length) }
-        : { prefix: c.over(-a.free) };
+        ? { prefix: c.overWithDemand(-a.free, hard.length, opts.bareOne) }
+        : { prefix: c.over(-a.free, opts.bareOne) };
   }
 }
 

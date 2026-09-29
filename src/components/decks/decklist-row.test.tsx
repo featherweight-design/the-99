@@ -255,6 +255,31 @@ describe("DecklistRow availability marker (#43)", () => {
     expect(document.querySelector("[data-deck-name]")).toBeNull();
   });
 
+  // Hugh, 2026-09-28: the deck page is the ONE place a single missing copy reads a bare `short`.
+  // Pinned across two hosts in one test, because the rule is the pair: the same shortfall drawn
+  // by /collection's row reads `short 1`, the default every surface off the deck page takes.
+  it("draws a bare `short` here, where /collection's row draws `short 1`", async () => {
+    const shortOne = avail(-1, ["Atraxa"]);
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: shortOne }} newestAsOf={null} />);
+    expect(screen.getByText("short")).toBeInTheDocument();
+    cleanup();
+    const { RowsView } = await import("../collection/rows-view");
+    render(
+      <RowsView
+        cards={[{
+          oracleId: "o1", name: "Smothering Tithe", typeLine: "Enchantment", manaCost: "{3}{W}",
+          rarity: "rare", colorIdentity: ["W"], imageUri: null, printedName: null,
+          quantity: 1, setCounts: [], primarySetCode: "RVR",
+          availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: shortOne.claims },
+        }]}
+        totalCards={1}
+        onShowMore={() => {}}
+        onOpen={() => {}}
+      />,
+    );
+    expect(screen.getByText("short 1")).toBeInTheDocument();
+  });
+
   // The quiet-failure half of the degraded ruling.
   it("renders exactly like the free state when the availability read failed", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: null }}  newestAsOf={null}/>);

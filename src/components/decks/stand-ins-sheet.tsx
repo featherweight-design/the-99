@@ -172,7 +172,7 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
             {row.free && row.soft > 0 ? (
               // The row sets no meta type for the marker to inherit, so it is given its own: mono 10.5.
               <span className="flex-none font-mono text-[10.5px]">
-                <AvailabilityMarker availability={{ owned: 1, hard: 0, soft: row.soft, free: 1, claims: [] }} seam="var(--surface-raised)" />
+                <AvailabilityMarker bareOne availability={{ owned: 1, hard: 0, soft: row.soft, free: 1, claims: [] }} seam="var(--surface-raised)" />
               </span>
             ) : null}
           </div>

@@ -35,7 +35,7 @@ describe("availabilityCopy", () => {
     expect(availabilityCopy.marker.tileOver(1)).toBe("also in 1 deck");
     expect(availabilityCopy.marker.tileOver(2)).toBe("also in 2 decks");
     expect(availabilityCopy.marker.overAlsoIn(1, "Atraxa")).toBe(
-      "short, also in Atraxa",
+      "short 1, also in Atraxa",
     );
   });
 
@@ -171,14 +171,21 @@ describe("availabilityCopy", () => {
   });
 });
 
-// Hugh, 2026-09-26: one copy short reads `short`; the figure is drawn only when it is over one.
-// The aria strings keep the count, since a screen reader has no glyph to lean on.
+// Hugh, 2026-09-28: `short N` everywhere, `short 1` included, and a bare `short` at one copy on the
+// deck page alone (`bareOne`). The aria strings keep the count, since a screen reader has no glyph.
 describe("the short marker's count", () => {
-  it("drops the count at one and keeps it above one, in every over string", () => {
-    expect(availabilityCopy.marker.over(1)).toBe("short");
+  it("draws the count at one by default, in every over string", () => {
+    expect(availabilityCopy.marker.over(1)).toBe("short 1");
     expect(availabilityCopy.marker.over(2)).toBe("short 2");
-    expect(availabilityCopy.marker.overWithDemand(1, 2)).toBe("short, also in 2 decks");
+    expect(availabilityCopy.marker.overWithDemand(1, 2)).toBe("short 1, also in 2 decks");
     expect(availabilityCopy.marker.overAlsoIn(3, "Atraxa")).toBe("short 3, also in Atraxa");
+  });
+
+  it("drops it at one, and only at one, where the deck page asks", () => {
+    expect(availabilityCopy.marker.over(1, true)).toBe("short");
+    expect(availabilityCopy.marker.over(2, true)).toBe("short 2");
+    expect(availabilityCopy.marker.overWithDemand(1, 2, true)).toBe("short, also in 2 decks");
+    expect(availabilityCopy.marker.overAlsoIn(1, "Atraxa", true)).toBe("short, also in Atraxa");
   });
 
   it("still speaks the count at one", () => {

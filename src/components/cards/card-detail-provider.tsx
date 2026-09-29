@@ -347,6 +347,7 @@ export function CardDetailProvider({
   onArtChange,
   deckId = null,
   deckName = null,
+  deckPage = false,
   deckOracleIds,
   comboDeckOracleIds,
 }: {
@@ -372,6 +373,8 @@ export function CardDetailProvider({
   ) => Promise<BrowseCard | null>;
   /** See `CardDetailContextValue.deckId`. Set by the deck page alone. */
   deckId?: string | null;
+  /** The deck page or its `/changes`: the modal's availability line keeps a bare `short` there. */
+  deckPage?: boolean;
   /** That deck's name, which the control's label and its marked sentence both
    *  spend — a sheet paged through with Prev/Next is easy to lose your place in. */
   deckName?: string | null;
@@ -877,6 +880,7 @@ export function CardDetailProvider({
           key={held.card.oracleId}
           card={held.card}
           deckId={deckId}
+          deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(held.card.oracleId)}
           openAtPrinting={held.openAt?.oracleId === held.card.oracleId ? held.openAt.printing : null}
@@ -901,6 +905,7 @@ export function CardDetailProvider({
           key={card.oracleId}
           card={card}
           deckId={deckId}
+          deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
@@ -957,6 +962,7 @@ export function CardDetailProvider({
           key={`top:${card.oracleId}`}
           card={card}
           deckId={deckId}
+          deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}

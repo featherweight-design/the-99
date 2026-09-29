@@ -133,6 +133,25 @@ describe("the review page's mounting", () => {
   // §Surfaces 2 gives the out column a dot, a name and a cost track, and its
   // header says every row in it goes back to the pool on commit. A `buy` tag there
   // quotes a price for a copy the reader is about to stop needing.
+  // The review page and the update diff are the deck's own pages, so one missing copy reads a bare
+  // `short` there (deck bug batch, 2026-09-28), where every other surface prints `short 1`.
+  it("reads a bare short at one missing copy", () => {
+    const availability = {
+      owned: 1,
+      hard: 2,
+      soft: 0,
+      free: -1,
+      claims: [
+        { id: "d1", name: "Kess Storm", quantity: 1, mature: true, pending: false, commander: false, senior: true },
+        { id: "d2", name: "Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: false },
+      ],
+    };
+    const row = draw(<DiffRowOut review card={card({ owned: true, availability })} />);
+    const marker = Array.from(row.querySelectorAll("span")).find((s) => /^short\b/.test(s.textContent ?? ""));
+    expect(marker?.textContent).toMatch(/^short(,|$)/);
+    expect(row.textContent).not.toContain("short 1");
+  });
+
   it("quotes no price on a card leaving the deck", () => {
     const price = {
       cents: 2840,
