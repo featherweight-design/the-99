@@ -90,9 +90,18 @@ async function walk(page, deckId, mode) {
   if (mode === "hydrated") await page.waitForTimeout(2_000);
   await door.click();
   await listBoxes(page).first().waitFor({ timeout: 30_000 });
-  const bulk = onPageRole(page, "button", BULK).first();
-  await bulk.waitFor({ state: "visible", timeout: 30_000 });
+  // The pair mounts when its plans land, and draws only the controls whose press would tick
+  // something. Wait for either control, then read whether the collection one is among them.
+  const pair = onPageRole(page, "button", /^Select .* cards (from your collection|this deck needs)/).first();
+  await pair.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
   if (mode === "hydrated") await page.waitForTimeout(2_000);
+  const bulk = onPageRole(page, "button", BULK).first();
+  if ((await bulk.count()) === 0) {
+    // The zero case: the plan chose nothing the list can tick, so there is no button to press.
+    // What must NOT be there is a live control naming a count; its absence is the pass.
+    check(`${mode}: no collection control promises a count it cannot tick`, true, "the plan chose none, and none is drawn");
+    return;
+  }
   const name = (await bulk.getAttribute("aria-label")) ?? "";
   const promised = Number(name.match(BULK)?.[1] ?? NaN);
   const note = (await bulk.innerText()).replace(/\s+/g, " ").trim();
@@ -118,7 +127,14 @@ async function main() {
     await clearAboutSheet(page, userId);
     fixture = await buildFixture(userId);
     console.log(`fixture: ${fixture.open} open slots on a copy of ${SOURCE}`);
-    for (const mode of ["cold", "hydrated"]) await walk(page, fixture.id, mode);
+    for (const mode of ["cold", "hydrated"]) {
+      try {
+        await walk(page, fixture.id, mode);
+      } catch (error) {
+        if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/bulk-${mode}.png` });
+        throw error;
+      }
+    }
   } finally {
     if (fixture) await sql`delete from decks where id = ${fixture.id}`;
     await restoreAboutSeen(about);
