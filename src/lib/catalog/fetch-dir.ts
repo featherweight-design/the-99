@@ -39,7 +39,7 @@ export type ManifestFile = { file: string; url: string; bytes: number; sha256: s
 
 /**
  * `updatedAt` is upstream's own date where it gives one (a bulk index's `updated_at`) and the
- * moment of the fetch where it does not (the sets list, ManaPool's feed). `sha256` identifies the
+ * moment that source's own request started where it does not (the sets list, ManaPool's feed). `sha256` identifies the
  * source as a whole: its body's hash, the file whose bytes the ingest reads rows from.
  */
 export type ManifestSource = { source: FetchSource; updatedAt: string; sha256: string; files: ManifestFile[] };

@@ -298,8 +298,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   `2026-09-28-card-data-replicate.md` §4a, Hugh's approval, 2026-09-28). `pnpm catalog:fetch <dir>`
   downloads Scryfall's sets list, both bulk files (index and body) and ManaPool's singles feed into
   `<dir>`, about 155MB in 10s, and writes `manifest.json`: each file's URL, byte length and
-  sha256, and each source's `updated_at` (a bulk index's own, or the fetch time for the sets list
-  and the price feed). With `CATALOG_FETCH_DIR=<dir>` set, every ingest reads those files instead
+  sha256, and each source's `updated_at` (a bulk index's own, or, for the sets list and the price feed,
+  the moment that source's own request started). With `CATALOG_FETCH_DIR=<dir>` set, every ingest reads those files instead
   of the network, through one seam per read (`fetchBulkIndex`, `streamBulkEntries`,
   `loadSetsPayload`, `fetchManapoolSingles`); unset, they fetch exactly as before, which is what a
   local `pnpm db:seed` still does. Everything after the read runs per database, unchanged: each

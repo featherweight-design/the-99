@@ -4,7 +4,8 @@
 // each leg then ingests with CATALOG_FETCH_DIR=<dir> and reads these files instead of the network.
 //
 // The manifest records, per source, every file's URL, byte length and sha256, and the source's
-// `updated_at`: upstream's own where it gives one (a bulk index), the fetch time where it does not.
+// `updated_at`: upstream's own where it gives one (a bulk index), the moment that source's own
+// request started where it does not.
 // `db:catalog-sources verify` checks a leg's copy of the artifact against it before any ingest.
 import "./lib/env.mjs";
 import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -38,7 +39,11 @@ async function bulk(type: "oracle_cards" | "default_cards"): Promise<ManifestSou
   return { source: type, updatedAt: new Date(record.updated_at).toISOString(), sha256: body.sha256, files: [index, body] };
 }
 
-async function single(source: FetchSource, url: string, headers: Record<string, string>, timeoutMs: number, at: string): Promise<ManifestSource> {
+// A source with no upstream date is stamped with the moment ITS OWN request starts, never the run's
+// start: two fetch runs can overlap, and a run that began earlier but reached this source later
+// would otherwise carry an older date over newer bytes, and the rollback guard would take them.
+async function single(source: FetchSource, url: string, headers: Record<string, string>, timeoutMs: number): Promise<ManifestSource> {
+  const at = new Date().toISOString();
   const f = await download(url, FETCH_SOURCES[source].files[0], headers, timeoutMs);
   return { source, updatedAt: at, sha256: f.sha256, files: [f] };
 }
@@ -46,10 +51,10 @@ async function single(source: FetchSource, url: string, headers: Record<string, 
 async function main() {
   const fetchedAt = new Date().toISOString();
   const sources = [
-    await single("sets", SETS_INDEX, SCRYFALL_HEADERS, 30_000, fetchedAt),
+    await single("sets", SETS_INDEX, SCRYFALL_HEADERS, 30_000),
     await bulk("oracle_cards"),
     await bulk("default_cards"),
-    await single("prices", MANAPOOL_SINGLES_URL, MANAPOOL_HEADERS, 5 * 60_000, fetchedAt),
+    await single("prices", MANAPOOL_SINGLES_URL, MANAPOOL_HEADERS, 5 * 60_000),
   ];
   const manifest: Manifest = { fetchedAt, sources };
   writeFileSync(fetchedPath(dir!, MANIFEST_FILE), JSON.stringify(manifest, null, 2));
