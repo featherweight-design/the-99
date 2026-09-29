@@ -1,5 +1,5 @@
 import { COMBO_DETECTION } from "../spellbook/combo-features";
-import { EXTRA_TURN_DETECTION, MLD_DETECTION } from "./oracle-rules";
+import { EXTRA_TURN_DETECTION, MLD_DETECTION, TUTOR_DETECTION } from "./oracle-rules";
 import type { Bracket } from "./types";
 
 /**
@@ -51,7 +51,7 @@ export const COMBO_POLICY = { 1: "forbidden", 2: "forbidden", 3: "earlyGameOnly"
  * §6.5 provenance, re-exported so verdict consumers import one module. The definitions live
  * beside the classifiers and are re-measured whenever a classifier changes.
  */
-export { COMBO_DETECTION, EXTRA_TURN_DETECTION, MLD_DETECTION };
+export { COMBO_DETECTION, EXTRA_TURN_DETECTION, MLD_DETECTION, TUTOR_DETECTION };
 
 /**
  * The permitted range from the three bracket predicates.

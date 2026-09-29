@@ -18,7 +18,7 @@ const row = (id: string) => {
 const prose = (r: (typeof c.rows)[number]) => [r.title, r.from, r.how, r.refresh, r.exact].join(" ");
 const everyString = [
   c.title, c.sub, c.keyHeading, ...Object.values(c.keyDefs), ...Object.values(c.fields),
-  ...Object.values(c.verdicts), c.bracketsLead, c.tutorsSub, ...c.rows.flatMap((r) => [r.title, r.from, r.how, r.refresh, r.exact]),
+  ...Object.values(c.verdicts), c.bracketsLead, ...c.rows.flatMap((r) => [r.title, r.from, r.how, r.refresh, r.exact]),
   ...bracketSubRows().flatMap((s) => [s.label, ...s.lines]),
 ];
 
@@ -88,14 +88,14 @@ describe("How the app reaches its answers: the rows", () => {
     for (const s of everyString) expect(s).not.toContain("—");
   });
 
-  it("reads the Brackets sub-rows from the decisions sheet's own sentences, plus tutors", () => {
+  it("reads all five Brackets sub-rows from the decisions sheet's own sentences", () => {
     const d = deckAnalysisCopy.detection;
     const subs = bracketSubRows();
     expect(subs.map((s) => s.label)).toEqual(Object.values(deckAnalysisCopy.findings.labels));
     expect(subs[0].lines).toEqual([d.gameChangers.from]);
     expect(subs[1].lines).toEqual([d.landDenial.from, d.landDenial.misses].filter(Boolean));
     expect(subs[3].lines).toEqual([d.combos.from, d.combos.misses]);
-    expect(subs[4].lines).toEqual([c.tutorsSub]);
+    expect(subs[4].lines).toEqual([d.tutors.from, d.tutors.misses]);
   });
 });
 

@@ -1,6 +1,8 @@
 // What `classifyTutor` actually does to the live catalog.
 //
-// Read-only: no fixture, no writes, no locks. Point it at `local-dev`.
+// Read-only: no fixture, no writes, no locks. Point it at STAGING: its `tutors` line backs
+// `TUTOR_DETECTION.tutors`, a figure the decisions sheet prints, and a count read off local-dev's
+// fixture catalog is not the catalog readers hold (AGENTS.md: measure against staging).
 //
 // It exists because a classifier built from a named fixture agrees with that fixture and
 // says nothing about the 960 cards nobody listed. §4.2's trap is tuning against the fixture
@@ -15,7 +17,7 @@ import { requireEnv } from "./lib/env.mjs";
 requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
-import { classifyTutor, tutorReaches, type TutorTarget } from "../src/lib/bracket/tutor-targets";
+import { classifyTutor, isTutorTarget, tutorReaches, type TutorTarget } from "../src/lib/bracket/tutor-targets";
 
 /** Every claim in `tutor-targets.ts`'s header, as a card the catalog can be asked about. */
 const EXPECTED: { name: string; want: Partial<TutorTarget> | null; why: string }[] = [
@@ -91,6 +93,10 @@ async function main() {
   const parsed = rows.map((r) => ({ ...r, t: classifyTutor(r.oracle_text) }));
   const tally = {
     matched: rows.length,
+    // What the app calls a tutor (`isTutorTarget`): a search that is not for lands alone. This is
+    // the population the Tutors row on "How we make these decisions" describes; `matched` also
+    // counts every fetch land and ramp spell.
+    tutors: parsed.filter((p) => isTutorTarget(p.t)).length,
     refused: parsed.filter((p) => p.t === null).length,
     any: parsed.filter((p) => p.t?.kinds === "any").length,
     basics: parsed.filter((p) => p.t?.basicOnly).length,
