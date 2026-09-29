@@ -39,9 +39,11 @@
 //     content. A press "N seconds after ready" lands at a different moment on builds that load in
 //     different times, so it cannot compare them; a fixed time can. Ready is HYDRATION, read as a
 //     React fiber on <main>: `window.next.router` exists before the app router's first render, and
-//     a push then throws E668 and never navigates. It also prints what the page downloaded before
-//     it hydrated and what was still arriving at the press, by owner (the app's own JS, Clerk,
-//     fonts, CSS, images, the document) and by who asked for it.
+//     a push then throws E668 and never navigates (a push still refused just after hydration is
+//     retried until the router takes it). It also prints the kilobytes that LANDED before
+//     hydration and during the navigation, by owner (the app's own JS, Clerk's hosted bundles,
+//     fonts, CSS, images, the document, RSC fetches), and the six largest downloads with the
+//     script or document that asked for each. Hydration is read to the poll's 16ms resolution.
 // The table also prints, per route, the card images a cold load ASKED for and the kilobytes that
 // landed, because an image is not in any RSC figure and can still be most of what a page costs.
 //
@@ -223,13 +225,24 @@ function serverSpans(from, pattern) {
 }
 const logSize = () => (SERVER_LOG ? statSync(SERVER_LOG).size : 0);
 
-/** Who a startup request belongs to, for the startup pass's breakdown. */
+/**
+ * Who a startup request belongs to, for the startup pass's breakdown. `clerk` is what Clerk serves
+ * from its own host (clerk-js, its UI bundles, its API calls); the @clerk/nextjs code compiled into
+ * the app's chunks is `app js`, since a chunk cannot be split by module without source maps.
+ */
 function ownerOf(url, type) {
-  if (/(^|\.)clerk\.|clerk\.(accounts\.dev|com)|\/npm\/@clerk\//.test(url) || /clerk/i.test(new URL(url).hostname)) return "clerk";
+  let host = "";
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return "other";
+  }
+  if (/clerk/i.test(host)) return "clerk";
   if (type === "Font" || /\.woff2?(\?|$)/.test(url)) return "fonts";
   if (IMAGE_HOSTS.test(url) || type === "Image") return "images";
   if (type === "Stylesheet") return "css";
-  if (type === "Document" || url.includes("_rsc=")) return "document";
+  if (type === "Document") return "document";
+  if (url.includes("_rsc=")) return "rsc";
   if (url.startsWith(BASE) && type === "Script") return "app js";
   return type === "Script" ? "other js" : "other";
 }
@@ -237,91 +250,144 @@ function ownerOf(url, type) {
 /**
  * The startup pass for one route (MEASURE_PRESS_AT): cold load, hydration, a push at the fixed
  * time, the arrival, and what the page was downloading. Times are page time (ms from the
- * navigation's start); CDP's monotonic timestamps are mapped onto it through each request's
- * `wallTime` and the page's `performance.timeOrigin`.
+ * navigation's start): CDP's monotonic timestamps map onto it through a request's `wallTime` and
+ * the page's `performance.timeOrigin`.
+ *
+ * Bytes are counted by WHEN they arrived, not by when their request started. Each request's wire
+ * size (loadingFinished's encodedDataLength) is spread over its decoded `dataReceived` chunks in
+ * proportion, since a chunk's own encodedDataLength is often reported as 0; a request that never
+ * finished is counted at its decoded size. So "before hydration" is the bytes that had landed by
+ * hydration, and "during the navigation" is the bytes that landed between the press and the
+ * arrival: what the navigation's own fetch competed with.
  */
 async function pressRun(browser, state, width, route) {
   const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
-  await context.addInitScript(CONTENT_PROBE);
-  const page = await context.newPage();
-  const cdp = await context.newCDPSession(page);
-  await cdp.send("Network.enable");
-  await cdp.send("Network.clearBrowserCache");
-  await throttle(cdp);
-  const reqs = new Map();
-  let wallOffset = null;
-  cdp.on("Network.requestWillBeSent", (e) => {
-    if (wallOffset == null && e.wallTime) wallOffset = e.wallTime - e.timestamp;
-    if (reqs.has(e.requestId)) return;
-    const by = e.initiator?.url ?? e.initiator?.stack?.callFrames?.[0]?.url ?? e.initiator?.type ?? null;
-    reqs.set(e.requestId, { url: e.request.url, type: e.type, start: e.timestamp, by });
-  });
-  cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.end = e.timestamp; r.bytes = e.encodedDataLength; } });
-  cdp.on("Network.dataReceived", (e) => { const r = reqs.get(e.requestId); if (r) r.partial = (r.partial ?? 0) + (e.encodedDataLength || e.dataLength); });
-  const target = route.path === PRESS_TO ? "/" : PRESS_TO;
-  await page.goto(`${BASE}${route.path}`, { waitUntil: "commit", timeout: 120_000 });
-  const hydrated = await page
-    .waitForFunction(() => {
-      const main = document.querySelector("main");
-      return main && Object.keys(main).some((k) => k.startsWith("__reactFiber$")) ? performance.now() : null;
-    }, null, { timeout: 120_000, polling: 50 })
-    .then((h) => h.jsonValue(), () => null);
-  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
-  const pageMs = (t) => (t == null || wallOffset == null ? null : Math.round((t + wallOffset) * 1000 - timeOrigin));
-  let pressedAt = null;
-  let arrived = null;
-  if (hydrated != null) {
-    const at = Math.max(PRESS_AT, hydrated);
-    const now = await page.evaluate(() => performance.now());
-    if (at > now) await page.waitForTimeout(at - now);
-    pressedAt = await page.evaluate((u) => {
-      const t = performance.now();
-      window.next.router.push(u);
-      return t;
-    }, target);
-    arrived = await page
-      .waitForFunction((path) => {
+  try {
+    await context.addInitScript(CONTENT_PROBE);
+    const page = await context.newPage();
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Network.clearBrowserCache");
+    await throttle(cdp);
+    const reqs = new Map();
+    let wallOffset = null;
+    cdp.on("Network.requestWillBeSent", (e) => {
+      if (wallOffset == null && e.wallTime) wallOffset = e.wallTime - e.timestamp;
+      const known = reqs.get(e.requestId);
+      // A redirect hop reuses the request id: the owner follows the final URL.
+      if (known) {
+        known.url = e.request.url;
+        return;
+      }
+      const by = e.initiator?.url ?? e.initiator?.stack?.callFrames?.[0]?.url ?? e.initiator?.type ?? null;
+      reqs.set(e.requestId, { url: e.request.url, type: e.type, start: e.timestamp, by, chunks: [] });
+    });
+    cdp.on("Network.dataReceived", (e) => reqs.get(e.requestId)?.chunks.push([e.timestamp, e.dataLength]));
+    cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.end = e.timestamp; r.wire = e.encodedDataLength; } });
+    cdp.on("Network.loadingFailed", (e) => { const r = reqs.get(e.requestId); if (r) { r.end = e.timestamp; r.failed = true; } });
+
+    const target = route.path === PRESS_TO ? (PRESS_TO === "/" ? "/decks" : "/") : PRESS_TO;
+    await page.goto(`${BASE}${route.path}`, { waitUntil: "commit", timeout: 120_000 });
+    const hydrated = await page
+      .waitForFunction(() => {
         const main = document.querySelector("main");
-        return location.pathname === path && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
-          ? performance.now()
-          : null;
-      }, target.split("?")[0], { timeout: 120_000, polling: 16 })
+        return main && Object.keys(main).some((k) => k.startsWith("__reactFiber$")) ? performance.now() : null;
+      }, null, { timeout: 120_000, polling: 16 })
       .then((h) => h.jsonValue(), () => null);
+    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+    const pageMs = (t) => (t == null || wallOffset == null ? null : (t + wallOffset) * 1000 - timeOrigin);
+
+    let pressedAt = null;
+    let arrived = null;
+    if (hydrated != null) {
+      const at = Math.max(PRESS_AT, hydrated);
+      const now = await page.evaluate(() => performance.now());
+      if (at > now) await page.waitForTimeout(at - now);
+      // The fiber is written during hydration's render, before the commit that initializes the
+      // router's action queue, so a push that lands in between throws E668 and navigates nowhere.
+      // It is retried until the router takes it, and the press is timed from the push that took.
+      pressedAt = await page.evaluate(async (u) => {
+        for (let i = 0; i < 600; i += 1) {
+          const t = performance.now();
+          try {
+            window.next.router.push(u);
+            return t;
+          } catch {
+            await new Promise((r) => setTimeout(r, 16));
+          }
+        }
+        return null;
+      }, target);
+      if (pressedAt != null) {
+        arrived = await page
+          .waitForFunction((path) => {
+            const main = document.querySelector("main");
+            return location.pathname === path && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
+              ? performance.now()
+              : null;
+          }, target.split("?")[0], { timeout: 120_000, polling: 16 })
+          .then((h) => h.jsonValue(), () => null);
+      }
+    }
+
+    // Wire bytes a request had received by page time `t` (and after `from`, when given).
+    const wireBetween = (r, from, to) => {
+      const decoded = r.chunks.reduce((n, [, len]) => n + len, 0);
+      const scale = r.wire && decoded ? r.wire / decoded : 1;
+      return r.chunks.reduce((n, [ts, len]) => {
+        const at = pageMs(ts);
+        return at != null && at > from && at <= to ? n + len * scale : n;
+      }, 0);
+    };
+    const all = [...reqs.values()].map((r) => ({ ...r, owner: ownerOf(r.url, r.type) }));
+    const byOwner = (from, to) => {
+      const out = {};
+      for (const r of all) {
+        const kb = wireBetween(r, from, to) / 1024;
+        if (kb > 0) out[r.owner] = (out[r.owner] ?? 0) + kb;
+      }
+      return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Math.round(v)]));
+    };
+    return {
+      hydrated: hydrated == null ? null : Math.round(hydrated),
+      pressedAt: pressedAt == null ? null : Math.round(pressedAt),
+      arrival: arrived == null || pressedAt == null ? null : Math.round(arrived - pressedAt),
+      beforeHydrationKb: hydrated == null ? null : byOwner(-Infinity, hydrated),
+      duringNavigationKb: arrived == null ? null : byOwner(pressedAt, arrived),
+      largest: hydrated == null
+        ? []
+        : all
+            .map((r) => ({ kb: Math.round(wireBetween(r, -Infinity, hydrated) / 1024), owner: r.owner, url: r.url.replace(BASE, ""), by: r.by?.replace(BASE, "") ?? null, failed: r.failed ?? false }))
+            .filter((r) => r.kb > 0)
+            .sort((x, y) => y.kb - x.kb)
+            .slice(0, 12),
+    };
+  } finally {
+    await context.close();
   }
-  const all = [...reqs.values()].map((r) => ({ ...r, startMs: pageMs(r.start), endMs: pageMs(r.end), owner: ownerOf(r.url, r.type) }));
-  const beforeHydration = all.filter((r) => hydrated != null && r.startMs != null && r.startMs <= hydrated);
-  const inFlightAtPress = all.filter((r) => pressedAt != null && r.startMs != null && r.startMs <= pressedAt && (r.endMs == null || r.endMs > pressedAt));
-  const byOwner = (list, bytes) => {
-    const out = {};
-    for (const r of list) out[r.owner] = (out[r.owner] ?? 0) + bytes(r);
-    return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Math.round(v / 1024)]));
-  };
-  await context.close();
-  return {
-    hydrated: hydrated == null ? null : Math.round(hydrated),
-    pressedAt: pressedAt == null ? null : Math.round(pressedAt),
-    arrival: arrived == null || pressedAt == null ? null : Math.round(arrived - pressedAt),
-    beforeHydrationKb: byOwner(beforeHydration, (r) => r.bytes ?? r.partial ?? 0),
-    inFlightAtPressKb: byOwner(inFlightAtPress, (r) => r.bytes ?? 0),
-    largest: beforeHydration
-      .map((r) => ({ kb: Math.round((r.bytes ?? r.partial ?? 0) / 1024), owner: r.owner, url: r.url.replace(BASE, ""), by: r.by?.replace(BASE, "") ?? null, startMs: r.startMs, endMs: r.endMs }))
-      .sort((a, b) => b.kb - a.kb)
-      .slice(0, 12),
-  };
 }
 
 function pressTable(runs, routes) {
   const lines = [];
   for (const width of MEASURED_WIDTHS) {
     const per = runs.map((r) => r[width.label]);
-    const m = (f) => median(per.map(f));
-    lines.push(`\n**${width.label}**, press at ${PRESS_AT}ms or hydration (median of ${runs.length})\n`);
-    lines.push("| Route | Hydrated | Pressed | Arrival after press | KB before hydration, by owner | KB in flight at the press |");
-    lines.push("|---|---|---|---|---|---|");
+    lines.push(`\n**${width.label}**, press at ${PRESS_AT}ms or hydration, whichever is later\n`);
+    lines.push("| Route | Runs | Hydrated | Pressed | Arrival after press | KB landed before hydration, by owner | KB landed during the navigation, by owner |");
+    lines.push("|---|---|---|---|---|---|---|");
     for (const route of routes) {
-      const owners = [...new Set(per.flatMap((p) => Object.keys({ ...p[route.label]?.beforeHydrationKb, ...p[route.label]?.inFlightAtPressKb })))].sort();
-      const kb = (key) => owners.map((o) => [o, m((p) => p[route.label]?.[key]?.[o] ?? 0)]).filter(([, v]) => v).map(([o, v]) => `${o} ${v}`).join(" · ") || "none";
-      lines.push(`| ${route.label} | ${m((p) => p[route.label]?.hydrated)} | ${m((p) => p[route.label]?.pressedAt)} | ${m((p) => p[route.label]?.arrival)} | ${kb("beforeHydrationKb")} | ${kb("inFlightAtPressKb")} |`);
+      // Every figure in a row is a median over the SAME runs: those that hydrated and arrived.
+      const ok = per.map((p) => p[route.label]).filter((r) => r?.hydrated != null && r?.arrival != null);
+      const m = (f) => median(ok.map(f));
+      const owners = [...new Set(ok.flatMap((r) => Object.keys({ ...r.beforeHydrationKb, ...r.duringNavigationKb })))].sort();
+      const kb = (key) => owners.map((o) => [o, m((r) => r[key][o] ?? 0)]).filter(([, v]) => v).map(([o, v]) => `${o} ${v}`).join(" · ") || "none";
+      lines.push(`| ${route.label} | ${ok.length} of ${per.length} | ${m((r) => r.hydrated)} | ${m((r) => r.pressedAt)} | ${m((r) => r.arrival)} | ${ok.length ? kb("beforeHydrationKb") : "—"} | ${ok.length ? kb("duringNavigationKb") : "—"} |`);
+    }
+    // Who asked for the biggest downloads: the first run that hydrated, since a median of URLs means
+    // nothing. The raw JSON holds every run's list.
+    for (const route of routes) {
+      const first = per.map((p) => p[route.label]).find((r) => r?.largest?.length);
+      if (!first) continue;
+      lines.push(`\n${route.label}, largest before hydration (first run): ${first.largest.slice(0, 6).map((r) => `${r.kb}KB ${r.owner} ${r.url.slice(0, 60)} ← ${(r.by ?? "?").slice(0, 50)}`).join(" | ")}`);
     }
   }
   return lines.join("\n");
