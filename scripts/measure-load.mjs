@@ -274,11 +274,15 @@ async function pressRun(browser, state, width, route) {
     cdp.on("Network.requestWillBeSent", (e) => {
       if (wallOffset == null && e.wallTime) wallOffset = e.wallTime - e.timestamp;
       const known = reqs.get(e.requestId);
-      // A redirect hop reuses the request id: the owner follows the final URL.
-      if (known) {
-        known.url = e.request.url;
+      // A redirect hop reuses the request id and reports the completed hop on the NEXT
+      // requestWillBeSent, with no loadingFinished of its own. It is kept as its own record, closed
+      // here with its response's size, and the id starts over for the hop that follows.
+      if (known && e.redirectResponse) {
+        reqs.set(`${e.requestId}#${known.start}`, { ...known, end: e.timestamp, wire: e.redirectResponse.encodedDataLength ?? 0 });
+        reqs.set(e.requestId, { url: e.request.url, type: e.type, start: e.timestamp, by: known.by, chunks: [] });
         return;
       }
+      if (known) return;
       const by = e.initiator?.url ?? e.initiator?.stack?.callFrames?.[0]?.url ?? e.initiator?.type ?? null;
       reqs.set(e.requestId, { url: e.request.url, type: e.type, start: e.timestamp, by, chunks: [] });
     });
@@ -320,18 +324,28 @@ async function pressRun(browser, state, width, route) {
       }, target);
       if (pressedAt != null) {
         arrived = await page
-          .waitForFunction((path) => {
+          .waitForFunction((to) => {
+            // The whole destination, query included: a target that differs from the page only in
+            // its query would otherwise read as arrived before its own state rendered.
+            const want = new URL(to, location.origin);
+            const here = new URLSearchParams(location.search);
+            const sameQuery = [...want.searchParams].every(([k, v]) => here.getAll(k).includes(v));
             const main = document.querySelector("main");
-            return location.pathname === path && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
+            return location.pathname === want.pathname && sameQuery && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
               ? performance.now()
               : null;
-          }, target.split("?")[0], { timeout: 120_000, polling: 16 })
+          }, target, { timeout: 120_000, polling: 16 })
           .then((h) => h.jsonValue(), () => null);
       }
     }
 
     // Wire bytes a request had received by page time `t` (and after `from`, when given).
     const wireBetween = (r, from, to) => {
+      // A response with no body chunks (a redirect hop, a 304) lands whole when it finishes.
+      if (!r.chunks.length) {
+        const at = pageMs(r.end);
+        return r.wire && at != null && at > from && at <= to ? r.wire : 0;
+      }
       const decoded = r.chunks.reduce((n, [, len]) => n + len, 0);
       const scale = r.wire && decoded ? r.wire / decoded : 1;
       return r.chunks.reduce((n, [ts, len]) => {
