@@ -250,3 +250,26 @@ PRs 1–4 are small and between them carry most of the win for card details. PRs
 - Server caches were warm in every timing here. A cold `cacheForUser` entry (the first visit
   after a write, or after a catalog refresh) costs more.
 - No write was made outside the scratch branch. The branch can be deleted when this PR is read.
+
+## 8 · Follow-up, 2026-09-28: the per-reader list caches keep their tag
+
+Home and `/decks` moved to the `user_data_stamps` stamp because eleven write paths wrote a table
+they read without clearing the `user-lists` tag. The same question was asked of every other
+`cacheForUser` payload (`/commanders`, `/discover`, `/collection`, the sets pages, and the deck
+page's suggestions, synergy and mix), and the answer is to **keep the tag**:
+
+- **No write reachable from the UI misses it.** Every writer of the data those payloads use
+  clears the tag, directly or through `revalidateClaims`. The writes that skip it (locks, keep
+  auto, the declared bracket, intent, the shopping limit, notices, folders, games,
+  `deck_profiles`) change only columns no cached payload reads.
+- **The stamp would cost more than it buys.** Every one of those harmless writes would move the
+  stamp and rebuild `/discover` (1.1 to 1.6s), `/commanders` (1.2s) and `/collection` (0.6s), and
+  a cold `/commanders` would build twice, because its own score write moves the stamp.
+- **The one real window was a failed index run.** The index job clears every reader's scores and
+  rewrites the support lists, and its catalog stamp, which retires every `cacheForUser` entry, ran
+  only when the run passed its floors. It now runs on every exit, pass, fail or throw.
+- **Not the index generation in the key.** That generation is built partly from
+  `max(computed_at)` across the index tables, which moves with every commander written, so keying on it would rebuild every warm entry once a minute for
+  a run of up to three hours, each time against a half-written index. Prose writers already stamp
+  the catalog themselves (`prose/generate.ts`, `copy-commander-prose.ts`), and since #1109 the
+  deployment id rides in every `cacheForUser` key.

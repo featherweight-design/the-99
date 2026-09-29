@@ -29,6 +29,7 @@
     "check:copy-drift": "node scripts/check-copy-drift.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
     "db:build:index": "tsx scripts/build-commander-index.ts",
+    "db:stamp:catalog": "tsx scripts/stamp-catalog.ts",
     "db:build:prose": "tsx scripts/generate-commander-prose.ts",
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",

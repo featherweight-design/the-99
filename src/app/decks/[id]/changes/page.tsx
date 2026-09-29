@@ -28,9 +28,10 @@ import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
 //     anywhere in `src/`. A deck's commanders are immutable for its life. **A feature that
 //     lets a player change a commander breaks that, and would have to drop this entry**;
 //     nothing here would fail loudly if it did not.
-//   - The index moves monthly, and `cacheForUser` carries the CATALOG generation only — a
-//     `Commander index` run does not stamp `catalog_refreshes`. So the index generation goes
-//     in the key here, alongside the deck id. The window it closes is an hour once a month,
+//   - The index moves monthly, and `cacheForUser` carries the CATALOG generation, which a
+//     `Commander index` run stamps only when it ENDS (on every exit, since 2026-09-28). The mix
+//     should follow the index as it is written, so the index generation goes in the key here,
+//     alongside the deck id. The window it closes is an hour once a month,
 //     which sounds ignorable until you ask WHICH hour: the first run that writes role
 //     averages flips every deck from an asserted baseline to a measured one, and serving the
 //     old figure through that hour, on the page that explains what changed, is the worst

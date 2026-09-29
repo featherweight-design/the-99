@@ -436,24 +436,22 @@ export async function buildCommanderIndex(
   // whole. Clearing the table leaves every reader with a full set or none, and
   // a miss costs one recompute.
   //
-  // WHAT THIS DOES NOT REACH, stated because it is a real window rather than an
-  // oversight. `/commanders` wraps its payload in `cacheForUser`, so a warm
-  // account can keep receiving the pre-rebuild Fit for up to that cache's hour
-  // ceiling while Commander Details reads the new index. This delete only
-  // guarantees that a cache MISS recomputes correctly.
+  // WHAT THIS DOES NOT REACH, and what does. `/commanders`, `/discover` and the deck page's
+  // synergy list wrap their payloads in `cacheForUser`, so a warm entry keeps the pre-rebuild
+  // answer until something retires it; this delete only guarantees a cache MISS recomputes
+  // correctly. What retires them is the catalog stamp the job's script makes on EVERY exit
+  // (`scripts/build-commander-index.ts`): every `cacheForUser` key carries the catalog
+  // generation. Before 2026-09-28 that stamp ran only when the run passed its checks, so a run
+  // that failed its floors left warm entries standing for up to the hour ceiling.
   //
-  // Accepted rather than closed, on the precedent already in the code: the
-  // rankings cache carries the same hour of staleness after a DEPLOY, and
-  // `rankings.ts` says so in as many words — "survives the deploy for up to the
-  // hour ceiling for every reader who does not write". An index rebuild is the
-  // same class of event on a monthly cadence, so the exposure is one hour a
-  // month against a figure that is itself a monthly snapshot.
-  //
-  // Closing it needs an index-generation token in the cache key, which costs a
-  // read on every request to that route, or a revalidation call this workflow
-  // cannot make — it runs as a script with no Next request context, which is
-  // why nothing here calls `revalidateUserLists`. Both are larger than the
-  // window they would close.
+  // Not an index-generation token in these three keys: that generation
+  // (`cache/index-generation.ts`) is built partly from `max(computed_at)` across the index
+  // tables, which moves with every commander written, so a key on it would rebuild every warm
+  // entry about once a minute for the whole run, each time against a half-written index. During
+  // a run a warm reader of these three keeps the previous index's answer; a miss recomputes
+  // against the index as it stands. The deck page's suggestions and the review page's mix DO key
+  // on the index generation, so they accept that churn for their own reasons (see their pages). This workflow has no Next request context, which is why nothing
+  // here calls `revalidateUserLists`.
   //
   // NOR IS THIS A BARRIER AGAINST A CONCURRENT SCORE WRITE on its own, and that
   // one is a race rather than a staleness window: a request can read the support
