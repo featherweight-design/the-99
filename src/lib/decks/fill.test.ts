@@ -206,6 +206,22 @@ describe("planFill", () => {
     expect(plan.shortfalls).not.toContain("land");
   });
 
+  // THE RESERVE IS SIZED BY WHAT THE FALLBACK SWEEP CAN TAKE, not by whether a basic exists. A
+  // pool with spells AND nonbasic lands and no basic the deck can cast used to reserve nothing, so
+  // the residual filled every slot past the utility cap and the sweep had no room left: the deck
+  // finished on the cap's worth of lands with dozens more legal lands unplayed. The land-only case
+  // above cannot reach this, because a pool with no spells leaves the residual nothing to take.
+  it("keeps room for nonbasic lands when the pool holds spells and no basic", () => {
+    const plan = planFill([
+      ...Array.from({ length: 90 }, (_, i) =>
+        c({ oracleId: `s${i}`, name: `s${i}`, manaCost: "{R}", inclusionPct: 95 - i / 2 })),
+      ...Array.from({ length: 40 }, (_, i) => nonBasicLand(`nb${i}`)),
+    ], { ...FLAT, identity: ["R"] });
+    const lands = plan.rows.filter((r) => r.role === "land").reduce((n, r) => n + r.quantity, 0);
+    expect(lands).toBe(37);
+    expect(plan.shortfalls).not.toContain("land");
+  });
+
   it("counts a hybrid pip for both of its colours", () => {
     const plan = planFill([
       c({ oracleId: "hybrid", manaCost: "{G/B}" }),
@@ -995,7 +1011,7 @@ describe("held", () => {
 });
 
 describe("a gate (Help me choose's budget and bracket)", () => {
-  it("passes over every card it refuses, in every pass, and hears each placement in order", () => {
+  it("passes over every card it refuses, in every pass, and hears each placement once", () => {
     const pool = [
       ...poolOf(120),
       ...Array.from({ length: 40 }, (_, i) => c({ oracleId: `land${i}`, typeLine: "Land", oracleText: "{T}: Add {C}." })),
@@ -1005,7 +1021,11 @@ describe("a gate (Help me choose's budget and bracket)", () => {
     const plan = planFill(pool, { ...FLAT, gate: { admits: (x) => !refused.has(x.oracleId), place: (x) => heard.push(x.oracleId) } });
     const placedIds = plan.rows.map((r) => r.oracleId);
     expect(placedIds.filter((id) => refused.has(id))).toEqual([]);
-    expect(heard).toEqual(placedIds);
+    // Every placed card was heard exactly once. The ORDER differs by design: lands the fallback
+    // sweep takes after the residual are heard when placed and then ordered ahead of it in the rows,
+    // so a truncated tail cuts spells rather than the mana base.
+    expect([...heard].sort()).toEqual([...placedIds].sort());
+    expect(new Set(heard).size).toBe(heard.length);
     // The fill carried on past the refusals rather than stopping short.
     expect(plan.filled).toBe(planFill(pool, FLAT).filled);
   });

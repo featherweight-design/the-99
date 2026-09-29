@@ -567,18 +567,30 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     if (color === "C") return identity.length === 0;
     return identity.includes(color);
   };
-  // BOUNDED BY WHAT BASICS COULD ACTUALLY TAKE, and by the slots the caller asked for. Reserving
-  // the whole mana base unconditionally starved a `slots: 1` top-off: the residual broke on a
-  // negative budget and the plan returned nothing at all. A reserve is only real when there is an
-  // eligible basic to fill it and room left to fill it with.
+  // BOUNDED BY WHAT THE LAND STEPS BELOW COULD ACTUALLY TAKE, and by the slots the caller asked
+  // for. Reserving the whole mana base unconditionally starved a `slots: 1` top-off: the residual
+  // broke on a negative budget and the plan returned nothing at all.
+  //
+  // WHAT THEY CAN TAKE is unbounded when an eligible basic exists (a basic is never capped at the
+  // copies owned), and otherwise it is the unspent lands the fallback sweep may still take, one copy
+  // each. Keying the reserve on basic PRESENCE alone reserved nothing for a pool of spells and
+  // nonbasic lands with no basic: the residual ate every slot past the utility cap and the deck
+  // finished on 12 lands with 28 legal ones unplayed.
   const anyEligibleBasic = lands.some((c) => {
     if (!isBasicLand(c.typeLine)) return false;
     const color = basicLandColor(c.name);
     return color !== null && wantsColor(color);
   });
-  const basicsReserve = anyEligibleBasic
-    ? Math.max(0, Math.min(landCeilingAfterModals - counts.land, limit - filledSoFar()))
-    : 0;
+  const sweepCapacity = anyEligibleBasic
+    ? Infinity
+    : lands.filter((c) => {
+      if (spent.has(c.oracleId)) return false;
+      const color = isBasicLand(c.typeLine) ? basicLandColor(c.name) : null;
+      return color === null || wantsColor(color);
+    }).length;
+  const basicsReserve = Math.max(0, Math.min(
+    landCeilingAfterModals - counts.land, limit - filledSoFar(), sweepCapacity,
+  ));
   /** Where the land rows must end and the residual begin, for the truncation rule below. */
   const residualStart = rows.length;
 
