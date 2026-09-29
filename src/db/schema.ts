@@ -411,8 +411,9 @@ export const deckCards = pgTable("deck_cards", {
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   quantity: integer("quantity").notNull().default(1),
   // A row the fill added that the player has not claimed. Cleared by the keep
-  // control alone — re-sorting, regrouping, or opening the card detail must
-  // leave it set, or the sweep would silently spare cards the player only looked at.
+  // control and by every commit (Hugh, 2026-09-28: committing a list claims all of
+  // it). Re-sorting, regrouping, or opening the card detail must leave it set, or
+  // the sweep would silently spare cards the player only looked at.
   auto: boolean("auto").notNull().default(false),
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
 

@@ -248,7 +248,7 @@ async function main() {
       check("12 · a deck that did not lock it is not marked", otherClaim?.locked, false);
     }
 
-    // 13. A commit retires `auto` (Hugh, 2026-09-28), on every commit and not only the first, and
+    // 13. A commit retires `auto` (Hugh, 2026-09-28), on every commit, the first included, and
     //     only on the deck it commits. Another deck's auto rows are a different player decision.
     {
       const d = await freshDeck("auto");
@@ -263,6 +263,17 @@ async function main() {
       check("13 · and leaves the other deck's auto rows alone", (await autoIds(other.id)).length, 3);
       check("13 · every row is still in the draft", (await fixture.execute(sql`
         select 1 from deck_cards where deck_id = ${d.id}`)).rows.length, 3);
+
+      // The FIRST commit too, which has no previous version to compare against: a clear written
+      // only on the path with a previous version would pass everything above.
+      const { rows: [brew] } = await fixture.execute<{ id: string }>(sql`
+        insert into decks (user_id, name, commander_oracle_id)
+        values (${USER}, 'probe locks · auto-first', ${commander}) returning id`);
+      for (const oid of [X, Y, Z]) await add(brew.id, oid);
+      await fixture.execute(sql`update deck_cards set auto = true where deck_id = ${brew.id}`);
+      check("13 · the unversioned fixture holds three auto rows", (await autoIds(brew.id)).length, 3);
+      await commitVersion(brew.id, null);
+      check("13 · the first commit leaves no auto row", await autoIds(brew.id), []);
     }
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
