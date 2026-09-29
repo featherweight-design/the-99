@@ -459,7 +459,7 @@ export const topOffCopy = {
     markAria: (n: string, pass: string) =>
       `Mark the ${plural(n, 'card', 'cards')} from ${pass} in the deck below`,
     unmarkAria: (pass: string) => `Clear the mark on ${pass}`,
-    /** ENG-ADDED. §14 says a marked row's accessible name gains 'from top-off 1',
+    /** ENG-ADDED. §14 says a marked row's accessible name gains 'from 1st top-off',
      *  and the row has no aria-label to extend — its name is the card's own
      *  button. So this ships as visually-hidden text inside the row, additive to
      *  that button's name rather than a replacement for it. */

@@ -115,20 +115,20 @@ async function walk(page, width) {
   console.log(`[${w}] top-off line drawn: ${passLine > 0}`);
 
   // The mark: press it, count the marked rows in the decklist below.
-  const mark = page.getByRole("button", { name: /^Mark the .* from top-off 1 in the deck below$/ });
+  const mark = page.getByRole("button", { name: /^Mark the .* from 1st top-off in the deck below$/ });
   await mark.click();
   await page.waitForTimeout(300);
   // The control renames itself once pressed, so the pressed state is read off
   // the clear-label locator rather than the one that was clicked.
-  const pressed = page.getByRole("button", { name: /^Clear the mark on top-off 1$/ });
-  const markedRows = await page.locator("text=/^from top-off 1$/").count();
+  const pressed = page.getByRole("button", { name: /^Clear the mark on 1st top-off$/ });
+  const markedRows = await page.locator("text=/^from 1st top-off$/").count();
   console.log(`[${w}] mark pressed: ${await pressed.getAttribute("aria-pressed")} · marked rows: ${markedRows}`);
   await shot(page, `${w}-3-marked`);
 
   // And clears, by the same control.
-  await page.getByRole("button", { name: /^Clear the mark on top-off 1$/ }).click();
+  await page.getByRole("button", { name: /^Clear the mark on 1st top-off$/ }).click();
   await page.waitForTimeout(300);
-  console.log(`[${w}] mark cleared: ${(await page.locator("text=/^from top-off 1$/").count()) === 0}`);
+  console.log(`[${w}] mark cleared: ${(await page.locator("text=/^from 1st top-off$/").count()) === 0}`);
 
   // The recount. A keep clears the auto flag, so the pass's line stops claiming
   // that card and states what became of it instead. Forced in the database so
@@ -150,10 +150,10 @@ async function walk(page, width) {
   await page.route("**/decks/**", (route) =>
     route.request().method() === "POST" ? route.abort() : route.continue(),
   );
-  await page.getByRole("button", { name: /Undo the .* from top-off 1/ }).click();
+  await page.getByRole("button", { name: /Undo the .* from 1st top-off/ }).click();
   await page.waitForTimeout(2000);
   const refusal = await page.locator("text=/couldn’t put those back/").count();
-  const stillThere = await page.getByRole("button", { name: /Undo the .* from top-off 1/ }).count();
+  const stillThere = await page.getByRole("button", { name: /Undo the .* from 1st top-off/ }).count();
   console.log(`[${w}] undo refused and said so: ${refusal > 0} · line survived: ${stillThere > 0}`);
   await shot(page, `${w}-4-undo-refused`);
   await page.unroute("**/decks/**");
@@ -164,7 +164,7 @@ async function walk(page, width) {
     if (route.request().method() === "POST") await new Promise((r) => setTimeout(r, 4000));
     await route.continue();
   });
-  await page.getByRole("button", { name: /Undo the .* from top-off 1/ }).click();
+  await page.getByRole("button", { name: /Undo the .* from 1st top-off/ }).click();
   await page.waitForTimeout(900);
   console.log(`[${w}] in-flight label: ${(await page.locator("text=/Putting .* back…/").count()) > 0}`);
   await shot(page, `${w}-5-undo-inflight`);

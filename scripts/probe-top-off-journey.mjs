@@ -296,12 +296,12 @@ async function forward(page, w) {
 async function reverse(page, w) {
   const scope = `${w}·reverse`;
   await openDeck(page);
-  const mark = page.getByRole("button", { name: /^Mark the .* from top-off 1 in the deck below$/ });
+  const mark = page.getByRole("button", { name: /^Mark the .* from 1st top-off in the deck below$/ });
   const scrollBefore = await page.evaluate(() => window.scrollY);
   const rowsBefore = await decklistRows(page).count();
   await mark.click();
   await page.waitForTimeout(400);
-  const markedRows = await page.locator("text=/^from top-off 1$/").count();
+  const markedRows = await page.locator("text=/^from 1st top-off$/").count();
   const rowsAfter = await decklistRows(page).count();
   const scrollAfter = await page.evaluate(() => window.scrollY);
   check(scope, "step 6: the mark lands on the pass's rows", markedRows > 0, `${markedRows} rows`);
@@ -310,13 +310,13 @@ async function reverse(page, w) {
   check(scope, "step 6: the mark is announced", /marked in the deck\./.test(await announcement(page)));
   await shot(page, `${w}-07-marked`);
 
-  await page.getByRole("button", { name: /^Clear the mark on top-off 1$/ }).click();
+  await page.getByRole("button", { name: /^Clear the mark on 1st top-off$/ }).click();
   await page.waitForTimeout(400);
-  check(scope, "step 7: the same control clears the mark", (await page.locator("text=/^from top-off 1$/").count()) === 0);
+  check(scope, "step 7: the same control clears the mark", (await page.locator("text=/^from 1st top-off$/").count()) === 0);
   check(scope, "step 7: clearing is announced", /Mark cleared\./.test(await announcement(page)));
 
   const before = await deckSize();
-  const undo = page.getByRole("button", { name: /Undo the .* from top-off 1/ });
+  const undo = page.getByRole("button", { name: /Undo the .* from 1st top-off/ });
   let held;
   await page.route("**/decks/**", async (route) => {
     if (route.request().method() === "POST") await new Promise((r) => setTimeout(r, 3500));
@@ -353,7 +353,7 @@ async function repeat(page, w) {
   const lines = await passRows();
   check(scope, "step 9: a second pass gets its own line", lines.filter((l) => l.kind === "top_off").length >= 1, JSON.stringify(lines));
   // Ordinals are per kind: the seed is its own sequence, so a deck's first
-  // top-off is `top-off 1` beneath `the seed` rather than `top-off 2`.
+  // top-off is `1st top-off` beneath `the seed` rather than `2nd top-off`.
   const ordinals = lines.filter((l) => l.kind === "top_off").map((l) => Number(l.ordinal));
   check(scope, "step 9: top-off ordinals are stable and never renumber", ordinals.every((n, i) => i === 0 || n > ordinals[i - 1]), ordinals.join(","));
   await openDeck(page);
