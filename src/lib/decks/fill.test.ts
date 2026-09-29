@@ -473,6 +473,40 @@ describe("planFill", () => {
     expect(q("plains")).toBe(35);
   });
 
+  it("counts the COMMANDERS' pips in the census", () => {
+    // The deck's only coloured pips are the commander's. Without it the census is empty, the split
+    // falls back to even, and a red-heavy commander gets a white-equal base. `{R}{R}{W}` is
+    // asymmetric on purpose: an even split and a pip split give different answers here.
+    const plan = planFill([
+      ...Array.from({ length: 12 }, (_, i) => c({ oracleId: `g${i}`, manaCost: "{2}", inclusionPct: 90 - i })),
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+    ], { ...boros, commanderCosts: ["{R}{R}{W}"] } as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    expect(q("mountain")).toBeGreaterThan(q("plains"));
+    expect(q("mountain") + q("plains")).toBe(37);
+  });
+
+  it("counts the RESIDUAL's pips in the census", () => {
+    // The role rows are white; the red lives in cards that can only reach the deck as residual —
+    // they close no floor. Before the split moved after the residual this deck scored zero red and
+    // gave Mountain its floor of one. `toBeGreaterThan(1)` is the whole point: 1 means the floor
+    // caught it, not the census.
+    const plan = planFill([
+      ...Array.from({ length: 8 }, (_, i) => c({
+        oracleId: `w${i}`, manaCost: "{1}{W}", inclusionPct: 95 - i,
+        typeLine: "Instant", oracleText: "Draw a card.",
+      })),
+      ...Array.from({ length: 20 }, (_, i) => c({
+        oracleId: `r${i}`, manaCost: "{1}{R}", inclusionPct: 60 - i,
+        typeLine: "Creature — Goblin", oracleText: "Haste.",
+      })),
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+    ], boros as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    expect(q("mountain")).toBeGreaterThan(1);
+    expect(q("mountain") + q("plains")).toBe(37);
+  });
+
   it("counts every HELD spell in the census, not only the ones it chose", () => {
     // The case my own harness got wrong: with `inclusionPct` null the candidate order falls back
     // to NAME, so a role cap can take an all-red sample of a mixed pool. The census has to read

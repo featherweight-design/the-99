@@ -91,7 +91,7 @@ export async function buildFillPlan(
   // the list rather than a `hasPartner` flag is what keeps those three answers
   // from drifting apart. EDHREC is still asked about the primary — it indexes
   // one commander per page.
-  commanders: { oracleId: string; name: string; colorIdentity: string[] }[],
+  commanders: { oracleId: string; name: string; colorIdentity: string[]; manaCost?: string | null }[],
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
@@ -264,7 +264,14 @@ export async function buildFillPlan(
   // `ownedColorLegalPool` filters the pool by — so the split cannot want a colour the pool
   // would never have offered.
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
-  return planFill(candidates, { hasPartner, skeleton, synergyRank, ...fillOptions, gate, identity });
+  // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from
+  // support lists that never contain them — but a `{2}{R}{W}` commander is the most reliable
+  // colour signal the deck has, and leaving it out of the pip census scored HD - Thorin at zero
+  // red and gave a Boros deck one Mountain.
+  const commanderCosts = commanders.map((c) => c.manaCost ?? null);
+  return planFill(candidates, {
+    hasPartner, skeleton, synergyRank, ...fillOptions, gate, identity, commanderCosts,
+  });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the

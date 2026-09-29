@@ -109,6 +109,15 @@ export type PlanFillArgs = {
    */
   identity?: readonly string[];
   /**
+   * The commanders' mana costs, for the pip census ONLY.
+   *
+   * They are not in `held` and must not be: role floors come from EDHREC support lists that never
+   * contain the commander, and `actions.ts` documents that at length. But a `{2}{R}{W}` commander
+   * is the most reliable colour signal a deck has, and leaving it out of the CENSUS is what scored
+   * HD - Thorin at zero red pips.
+   */
+  commanderCosts?: readonly (string | null)[];
+  /**
    * A constraint the deck's owner asked for (Help me choose: a budget, a bracket). A card the gate
    * refuses is passed over wherever it would have been placed, exactly as a card that closes no
    * open floor is, and the fill carries on down its own order; `place` is told each card taken, in
@@ -354,7 +363,9 @@ export function capToBody<T extends { quantity: number }>(rows: readonly T[], bo
 }
 
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
-  const { hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate, identity } = args;
+  const {
+    hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate, identity, commanderCosts,
+  } = args;
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
   const landCeiling = landTarget(hasPartner, skeleton);
@@ -542,17 +553,81 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     takeLand(candidate, 1);
   }
 
-  // Basics take the rest, split across the colours the chosen spells actually cost. A basic is
+  // THE BASICS ARE CHOSEN LAST, after every spell, because the split is weighted by the pips of
+  // the FINISHED deck. They used to run here, before the residual — so the census saw the role
+  // rows and nothing else: not the commanders (deliberately absent from `held`) and not the
+  // residual (pushed later). On a fresh Boros deck that is ~29 cards, ramp mostly colourless
+  // artifacts, and HD - Thorin scored ZERO red pips.
+  //
+  // The slots are RESERVED here so the residual cannot eat them, and filled below.
+  const wantsColor = (color: string): boolean => {
+    if (identity === undefined) return true;
+    if (color === "C") return identity.length === 0;
+    return identity.includes(color);
+  };
+  // BOUNDED BY WHAT BASICS COULD ACTUALLY TAKE, and by the slots the caller asked for. Reserving
+  // the whole mana base unconditionally starved a `slots: 1` top-off: the residual broke on a
+  // negative budget and the plan returned nothing at all. A reserve is only real when there is an
+  // eligible basic to fill it and room left to fill it with.
+  const anyEligibleBasic = lands.some((c) => {
+    if (!isBasicLand(c.typeLine)) return false;
+    const color = basicLandColor(c.name);
+    return color !== null && wantsColor(color);
+  });
+  const basicsReserve = anyEligibleBasic
+    ? Math.max(0, Math.min(landCeilingAfterModals - counts.land, limit - filledSoFar()))
+    : 0;
+  /** Where the land rows must end and the residual begin, for the truncation rule below. */
+  const residualStart = rows.length;
+
+  // THE RESIDUAL, AFTER THE LAND SWEEPS. `createDeck` truncates the tail, so a residual placed
+  // with the non-land roles would see the MANA BASE cut on any build carrying a `?select=`
+  // picks list — the deck would arrive with its spells and no way to cast them.
+  //
+  // Ranked on synergy where the caller supplied a ranking, and otherwise left in the pool's own
+  // preference order, which is inclusion. Role `"other"`: these slots close no floor, and
+  // labelling them as one would claim a measurement nobody made.
+  const residualOrder = synergyRank
+    ? [...ordered].sort(
+        (a, b) => (synergyRank.get(b.oracleId) ?? 0) - (synergyRank.get(a.oracleId) ?? 0),
+      )
+    : ordered;
+  // The residual runs AFTER the sweeps, so its own modal cards are land drops the base has
+  // already been built without. Tracked here for the same reason the role pass's are charged
+  // to the ceiling: a target of 36 met by 36 basics plus a residual modal card is 37 drops.
+  let residualDrops = 0;
+  for (const candidate of residualOrder) {
+    // MINUS THE RESERVE, or the residual spends the mana base's slots on spells.
+    if (filledSoFar() >= limit - basicsReserve) break;
+    if (spent.has(candidate.oracleId)) continue;
+    if (rolesOfCandidate(candidate).includes("land")) continue;
+    // A land-capable card is passed over once the base is full. It is not lost — the role pass
+    // above had first refusal on it and took it if a floor was open — and the slot goes to a
+    // card that is only a spell, which is what a deck with its mana base already down wants.
+    if (playableAsLand(candidate.typeLine, candidate.layout)
+      && counts.land + modalDrops + residualDrops >= landCeiling) continue;
+    if (!admits(candidate)) continue;
+    if (playableAsLand(candidate.typeLine, candidate.layout)) residualDrops += 1;
+    spent.add(candidate.oracleId);
+    gate?.place(candidate);
+    placed.push({ typeLine: candidate.typeLine, quantity: 1 });
+    rows.push({ oracleId: candidate.oracleId, quantity: 1, role: "other" });
+  }
+
+  // Basics take the rest, split across the colours the FINISHED deck actually costs. A basic is
   // NOT capped at the copies owned: the app treats a basic as always owned and never a buy, so
   // the mana base asks for what the deck needs and the shopping list bills none of it.
   const pips = new Map<string, number>();
-  // THE DECK'S OWN SPELLS FIRST. The split is proportioned against what the deck will cast,
-  // and a partial fill casts what it already holds as well as what this plan adds — so a deck
-  // of blue spells taking three more lands was splitting them against three costs.
+  // THE COMMANDERS FIRST, census only. Absent from `held` by design (role floors come from
+  // support lists that never contain the commander) and the single most colour-defining cards in
+  // the deck — leaving them out is half of why Thorin scored no red.
+  for (const cost of commanderCosts ?? []) addPips(pips, cost);
   for (const card of held ?? []) {
     if (isLandFace(card.typeLine)) continue;
     for (let i = 0; i < (card.quantity ?? 1); i += 1) addPips(pips, card.manaCost);
   }
+  // EVERY spell row, roles AND residual. The residual is a third of a fresh deck and it used to
+  // be invisible here, because this block ran before it.
   for (const row of rows) {
     if (row.role === "land") continue;
     addPips(pips, byOracleId.get(row.oracleId)?.manaCost ?? null);
@@ -584,11 +659,6 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
    * ONLY COLOURS IN THE IDENTITY. A basic for a colour the deck cannot cast is never right, and
    * the pool's own filter admits one whenever the identity is wider than the deck's costs.
    */
-  const wantsColor = (color: string): boolean => {
-    if (identity === undefined) return true;
-    if (color === "C") return identity.length === 0;
-    return identity.includes(color);
-  };
   const basicsByColor = new Map<string, FillCandidate[]>();
   for (const candidate of lands) {
     if (spent.has(candidate.oracleId) || !isBasicLand(candidate.typeLine)) continue;
@@ -628,19 +698,25 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // colour's weight was zero, which is how a Boros deck's eighteen Plains spilled six Wastes.
     for (const color of colors) {
       let room = allocated.get(color)!;
-      const printings = basicsByColor.get(color)!;
-      for (let i = 0; i < printings.length; i += 1) {
+      const types = basicsByColor.get(color)!;
+      // SPREAD ACROSS THE BASIC TYPES THE PLAYER OWNS, and let the MOST PREFERRED absorb the rest.
+      //
+      // These are distinct ORACLE IDS — `Plains` and `Snow-Covered Plains`, not two printings of
+      // one card; `ownedQuantity` is already summed across printings. `byPreference` orders them
+      // owned-first then inclusion then name, so index 0 is the one the player would rather play.
+      //
+      // Giving the surplus to the LAST element was the first version, and it is the least
+      // preferred: a player owning 10 Plains and 2 Snow-Covered Plains needing 37 white sources
+      // got 27 Snow-Covered and 10 Plains. The surplus belongs on the preferred type.
+      const othersCapacity = types.slice(1)
+        .reduce((n, cand) => n + Math.max(0, cand.ownedQuantity), 0);
+      for (let i = 0; i < types.length; i += 1) {
         if (room <= 0 || filledSoFar() >= limit) break;
-        // SPREAD ACROSS THE PRINTINGS THE PLAYER OWNS, and let the LAST one absorb the rest.
-        //
-        // Each printing takes the copies actually on the shelf, so a deck records what the player
-        // has rather than 37 of whichever printing happened to sort first — the nicety the owned
-        // quantity cap used to give for free, and which removing that cap took away. The last
-        // printing then covers whatever the shelf could not, because a basic is never a buy.
-        const last = i === printings.length - 1;
-        const want = last ? room : Math.min(printings[i].ownedQuantity, room);
+        const want = i === 0
+          ? Math.min(room, Math.max(types[0].ownedQuantity, room - othersCapacity))
+          : Math.min(types[i].ownedQuantity, room);
         if (want <= 0) continue;
-        room -= takeLand(printings[i], want);
+        room -= takeLand(types[i], want);
       }
     }
   }
@@ -663,37 +739,16 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     takeLand(candidate, 1);
   }
 
-  // THE RESIDUAL, AFTER THE LAND SWEEPS. `createDeck` truncates the tail, so a residual placed
-  // with the non-land roles would see the MANA BASE cut on any build carrying a `?select=`
-  // picks list — the deck would arrive with its spells and no way to cast them.
-  //
-  // Ranked on synergy where the caller supplied a ranking, and otherwise left in the pool's own
-  // preference order, which is inclusion. Role `"other"`: these slots close no floor, and
-  // labelling them as one would claim a measurement nobody made.
-  const residualOrder = synergyRank
-    ? [...ordered].sort(
-        (a, b) => (synergyRank.get(b.oracleId) ?? 0) - (synergyRank.get(a.oracleId) ?? 0),
-      )
-    : ordered;
-  // The residual runs AFTER the sweeps, so its own modal cards are land drops the base has
-  // already been built without. Tracked here for the same reason the role pass's are charged
-  // to the ceiling: a target of 36 met by 36 basics plus a residual modal card is 37 drops.
-  let residualDrops = 0;
-  for (const candidate of residualOrder) {
-    if (filledSoFar() >= limit) break;
-    if (spent.has(candidate.oracleId)) continue;
-    if (rolesOfCandidate(candidate).includes("land")) continue;
-    // A land-capable card is passed over once the base is full. It is not lost — the role pass
-    // above had first refusal on it and took it if a floor was open — and the slot goes to a
-    // card that is only a spell, which is what a deck with its mana base already down wants.
-    if (playableAsLand(candidate.typeLine, candidate.layout)
-      && counts.land + modalDrops + residualDrops >= landCeiling) continue;
-    if (!admits(candidate)) continue;
-    if (playableAsLand(candidate.typeLine, candidate.layout)) residualDrops += 1;
-    spent.add(candidate.oracleId);
-    gate?.place(candidate);
-    placed.push({ typeLine: candidate.typeLine, quantity: 1 });
-    rows.push({ oracleId: candidate.oracleId, quantity: 1, role: "other" });
+  // LAND ROWS BEFORE THE RESIDUAL. `createDeck` truncates the tail, so a mana base sitting after
+  // the residual would be the part cut on any build carrying a `?select=` picks list — the deck
+  // would arrive with its spells and no way to cast them. The basics are DECIDED last and ORDERED
+  // first, which is what lets the census see the whole deck without changing what truncation eats.
+  if (rows.length > residualStart) {
+    const landsAfter = rows.splice(residualStart).reduce<{ land: FillRow[]; rest: FillRow[] }>(
+      (acc, r) => { (r.role === "land" ? acc.land : acc.rest).push(r); return acc; },
+      { land: [], rest: [] },
+    );
+    rows.push(...landsAfter.land, ...landsAfter.rest);
   }
 
   // A modal card whose back is a land is a land DROP even when its front was sleeved as draw —
