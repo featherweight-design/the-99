@@ -305,6 +305,20 @@ describe("AccountMenu items", () => {
     expect(reports).toContainEqual(["/about", true]);
   });
 
+  it("only closes the menu when About is pressed on /about", () => {
+    push.mockClear();
+    window.history.replaceState(null, "", "/about");
+    try {
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(push).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
   it("says the About row is unavailable while sign-out is in flight, and means it", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());

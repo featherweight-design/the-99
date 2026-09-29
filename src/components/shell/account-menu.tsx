@@ -369,6 +369,12 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
   const [aboutPending, startAbout] = useTransition();
   useReportPending("/about", aboutPending);
   function onAbout() {
+    // Already on /about, the press navigates nothing: it only closes the menu, and the sheet's
+    // entry has to come back off in the ordinary way or the next Back would land on this page.
+    if (window.location.pathname === "/about") {
+      close();
+      return;
+    }
     // The sheet's release would otherwise step back off its history entry while /about is still
     // loading, and that Back cancels the navigation.
     leaveDialogsForNavigation();
