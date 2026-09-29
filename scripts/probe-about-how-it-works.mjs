@@ -133,6 +133,8 @@ async function walkOn(page, w) {
   if (report(`${tag} the Roles entry carries its link line`, (await link.count()) === 1)) {
     const h = await link.evaluate((a) => Math.round(a.getBoundingClientRect().height));
     if (w.label === 390) report(`${tag} the link line is a 44px target`, h >= 44, `${h}px`);
+    await link.scrollIntoViewIfNeeded();
+    const before = await link.evaluate((a) => Math.round(a.getBoundingClientRect().top));
     await link.click();
     await page.waitForTimeout(400);
     const landed = await page.evaluate(() => ({ hash: location.hash, open: !!document.getElementById("how-roles-body") }));
@@ -141,8 +143,9 @@ async function walkOn(page, w) {
     report(`${tag} the row links back to the Roles entry`, back.includes("#roles"), back.join(" "));
     await page.goBack();
     await page.waitForTimeout(400);
-    const top = await page.evaluate(() => Math.round(document.getElementById("roles").getBoundingClientRect().top));
-    report(`${tag} Back returns to the entry`, top >= -2 && top < 300, `entry top ${top}px`);
+    // Back restores the scroll the reader pressed from, so the link line is where it was.
+    const after = await link.evaluate((a) => Math.round(a.getBoundingClientRect().top));
+    report(`${tag} Back returns to the link the reader pressed`, Math.abs(after - before) <= 4, `${before}px then ${after}px`);
   }
 
   // The contents group: the rail at 1300, the phone list's fifth row at 390.
@@ -202,6 +205,8 @@ async function walkOff(page, w) {
   report(`${tag} no appendix`, (await onPage(page, "#how-it-works").count()) === 0);
   const intro = await onPage(page, "article > p").first().innerText();
   report(`${tag} the intro is production's`, intro.trim().startsWith(INTRO), intro.slice(0, 80));
+  report(`${tag} no entry links to a row`, (await onPage(page, "[data-entry-link]").count()) === 0);
+  report(`${tag} no contents link reaches the appendix`, (await onPage(page, "a[href='#how-it-works'], a[href^='#how-']").count()) === 0);
 }
 
 async function main() {
