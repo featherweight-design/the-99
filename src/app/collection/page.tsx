@@ -54,10 +54,6 @@ export default async function CollectionPage() {
     // (`cache/deployment.ts`), a deploy retires the previous build's entry on its own, and
     // a new field needs no new `browse-N`. The record of why each one moved:
     //
-    // "browse-6" because the list card lost `keywords`, `cmc`, `preferredPrinting`, `setCodes`
-    // and `comboPartner.oracleId` (list payload plan, PR 2). An entry the previous deploy wrote
-    // carried them, which cost nothing here but the size that change existed to cut.
-    //
     // "browse-5" because the payload gained `comboOtherPartners`, the figure the marker's
     // tooltip counts. An entry written by the previous deploy carries no such field, so every
     // marker would say `You own both` where it should say `and 3 others` until the hour
@@ -75,7 +71,7 @@ export default async function CollectionPage() {
     // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
-    cacheForUser(userId, ["browse-6"], () => loadBrowseCards(userId)),
+    cacheForUser(userId, ["browse-5"], () => loadBrowseCards(userId)),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
