@@ -249,6 +249,44 @@ describe("createDeck with a selection", () => {
     expect(insertedIds().filter((id) => id === VALID)).toHaveLength(1);
   });
 
+  it("counts the selection's pips when it weights the basics", async () => {
+    // THE WIRING, which no test on `planFill` can reach. A selected card is inserted beside the
+    // fill's rows and is in `excludeOracleIds`, so it is stripped from the candidate pool and
+    // reaches neither `held` nor `rows` — its pips are in the finished deck and were missing from
+    // the census that weights the mana base. `createDeck` passes them as `selectedCosts`.
+    //
+    // Atraxa is `{G}{W}{B}`: one pip each, so the three basics start level and the selection is
+    // the only thing that can separate them.
+    //
+    // Asserted as black OUTWEIGHING THE OTHER TWO TOGETHER, which is what the four selected pips
+    // buy (weights 5/1/1, so ~26 of 37). A bare `Swamp > Plains` cannot tell the fix from its
+    // absence: with the selection uncounted the three colours are level at one pip each, `colors`
+    // sorts `B` first, and black takes the odd slot — so Swamp leads by one and the assertion
+    // passes on the broken build. Both mutations below were run against it.
+    //
+    // Its ids are fresh rather than the shared constants. The first version gave the Swamp
+    // `VALID`'s uuid — the SELECTED card's — so `dedupeSelectionFromPool` removed it from the
+    // pool exactly as it should, black had no source to be allocated, and the case read
+    // `Forest 19 · Plains 18 · Swamp 1` and looked like a census defect.
+    const SWAMP = "5000ba51-0000-4000-8000-000000000001";
+    const PLAINS = "5000ba51-0000-4000-8000-000000000002";
+    const FOREST = "5000ba51-0000-4000-8000-000000000003";
+    const basic = (id: string, name: string) => cardRow(id, {
+      name, typeLine: `Basic Land — ${name}`, manaCost: null, cmc: 0, quantity: 40,
+    });
+    stub.state.cards.push(
+      commanderRow(),
+      cardRow(VALID, { manaCost: "{B}{B}{B}{B}", colorIdentity: ["B"], cmc: 4 }),
+    );
+    stub.state.collectionItems.push(
+      basic(SWAMP, "Swamp"), basic(PLAINS, "Plains"), basic(FOREST, "Forest"),
+    );
+    await runCreate("My deck", [VALID]);
+    const qty = (id: string) => insertedRows()
+      .filter((r) => r.oracleId === id)
+      .reduce((n, r) => n + (r.quantity as number), 0);
+    expect(qty(SWAMP)).toBeGreaterThan(qty(PLAINS) + qty(FOREST));
+  });
   it("skips a malformed id rather than failing the whole create", async () => {
     stub.state.cards.push(commanderRow(), cardRow(VALID));
     await runCreate("My deck", [NOT_A_UUID, VALID]);
