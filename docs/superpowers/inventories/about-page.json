@@ -210,6 +210,19 @@
       ]
     },
     {
+      "id": "fig-deck-analysis",
+      "label": "/about \u2014 the deck-analysis figure (needs ANALYSIS_TAB_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='deck-analysis']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='deck-analysis']"
+        }
+      ]
+    },
+    {
       "id": "fig-auto-fill",
       "label": "/about \u2014 the auto-fill figure",
       "view": "src/components/about/figures.tsx",
@@ -232,6 +245,19 @@
           "wait": "[data-specimen='marks']",
           "settle": 1200,
           "scrollTo": "[data-specimen='marks']"
+        }
+      ]
+    },
+    {
+      "id": "fig-card-marks",
+      "label": "/about \u2014 the card-marks figure (needs ANALYSIS_TAB_ENABLED on)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='card-marks']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='card-marks']"
         }
       ]
     },

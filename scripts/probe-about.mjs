@@ -23,6 +23,7 @@
 //   F4  Locked cards on LATER: the reader who met the first entry is shown only the second;
 //   F4b Help me choose on third: named alone, though it sits first on the page;
 //   F4c swap tools on fourth: ONE switch announces TWO entries, named together in page order;
+//   F4d the Analysis tab on fifth: its two entries, named together in page order;
 //   F5  the five figures draw at 390 and 1300 without overflowing the page;
 //   F6  all off again: none of the five entries is on the page.
 // It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
@@ -377,7 +378,9 @@ async function walk(browser, width, userIdRef) {
 
 // ── The flip walk (--flip) ──────────────────────────────────────────────────────────────────
 
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED"];
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED"];
+/** The four switches the walk turns on before the Analysis tab's, which it turns on last (F4d). */
+const FIRST_FOUR = SWITCHES.filter((k) => k !== "ANALYSIS_TAB_ENABLED");
 
 /** `next dev` in this worktree with exactly the named switches on; resolves once it serves. */
 async function startServer(on) {
@@ -582,7 +585,7 @@ async function flipWalk(browser, who) {
 
     // F4c. Swap tools on FOURTH: one switch, two entries, named together and in page order.
     await stopServer(server);
-    server = await startServer(SWITCHES);
+    server = await startServer(FIRST_FOUR);
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     const fourth = await sheetTitles(page, card);
     report(
@@ -591,6 +594,19 @@ async function flipWalk(browser, who) {
       JSON.stringify(fourth),
     );
     await visitAbout(page, userId, "stand-ins");
+
+    // F4d. The Analysis tab on FIFTH: one switch, two entries in chapter 03, named together in
+    // page order, and nothing the four earlier flips announced.
+    await stopServer(server);
+    server = await startServer(SWITCHES);
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const fifth = await sheetTitles(page, card);
+    report(
+      "F4d the Analysis tab names both of its entries, in page order",
+      JSON.stringify(fifth) === JSON.stringify(["What bracket this deck is, and why", "Bracket facts on a card"]),
+      JSON.stringify(fifth),
+    );
+    await visitAbout(page, userId, "card-marks");
 
     // F5. The five figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
@@ -636,15 +652,18 @@ async function flipWalk(browser, who) {
     }
     await page.setViewportSize({ width: 1300, height: 820 });
 
-    // F6. All off: none of the five entries is on the page.
+    // F6. All off: none of the seven entries is on the page.
     await stopServer(server);
     server = await startServer([]);
     await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const gone = await page.evaluate(
-      () => ["locked-cards", "change-commander", "help-me-choose", "fits-your-decks", "stand-ins"].every((id) => !document.getElementById(id)),
+      () =>
+        ["locked-cards", "change-commander", "help-me-choose", "fits-your-decks", "stand-ins", "deck-analysis", "card-marks"].every(
+          (id) => !document.getElementById(id),
+        ),
     );
-    report("F6 switches off again: none of the five entries is on the page", gone);
+    report("F6 switches off again: none of the seven entries is on the page", gone);
     await context.close();
   } finally {
     await stopServer(server);

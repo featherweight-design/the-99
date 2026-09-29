@@ -62,6 +62,8 @@ import {
   ImportIssuesFigureBody,
   PartnerSlotFigureBody,
   PostImportFigureBody,
+  DeckAnalysisFigureBody,
+  CardMarksFigureBody,
 } from "./ch01-figures";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
@@ -713,6 +715,24 @@ function DeckPageFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** The Analysis tab's bracket box and climb, on a range the player has not answered. */
+function DeckAnalysisFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="deck-analysis" width={width}>
+      <DeckAnalysisFigureBody />
+    </Specimen>
+  );
+}
+
+/** The decklist's mark key above two rows that carry the four bracket facts between them. */
+function CardMarksFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="card-marks" width={width}>
+      <CardMarksFigureBody />
+    </Specimen>
+  );
+}
+
 function AutoFillFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="auto-fill" width={width}>
@@ -958,6 +978,8 @@ export const FIGURES: Partial<
   discover: DiscoverFigure,
   partners: PartnersFigure,
   "deck-page": DeckPageFigure,
+  "deck-analysis": DeckAnalysisFigure,
+  "card-marks": CardMarksFigure,
   "auto-fill": AutoFillFigure,
   roles: RolesFigure,
   "combo-awareness": ComboAwarenessFigure,

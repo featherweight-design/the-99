@@ -37,6 +37,10 @@ import { identityGradient } from "../collection/gradients";
 // Study` are cards a Commander player reads without stopping.
 
 import type { Availability } from "../decks/availability";
+import { buildDeckProfile, type ProfileCardRow } from "../profile/build";
+import type { BracketPopulation } from "../profile/types";
+import { slotDeck } from "../bracket/slot";
+import { COMBO_DETECTION, EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/rules";
 import type { FitDeck } from "../swaps/fits";
 import type { SheetGroup } from "../swaps/sheet-model";
 import { drawbackText } from "../swaps/sheet-model";
@@ -1022,6 +1026,144 @@ export const DECKLIST_MARK_ROWS: DeckDetailCard[] = [
     availability: null,
   },
 ];
+
+/**
+ * `card-marks` — two decklist rows carrying the four bracket facts between them.
+ *
+ * TWO ROWS, because the order rule (`CARD_FACTS`) only shows on a card with two marks: Demonic
+ * Tutor carries the Game Changer mark and the tutor mark, in that order. Time Warp carries one.
+ * Mass land denial is on neither, so the figure's key names three facts rather than four: a
+ * deck is a closed set, and `buildMarkKeyEntries` glosses only the marks its rows draw.
+ *
+ * Both owned and free, so no availability mark or buy tag competes with the facts.
+ */
+export const CARD_MARK_ROWS: DeckDetailCard[] = [
+  {
+    oracleId: "about-fact-demonic",
+    name: "Demonic Tutor",
+    typeLine: "Sorcery",
+    cardTypeGroup: "Sorceries",
+    role: "other",
+    cmc: 2,
+    owned: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{1}{B}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[0].a,
+    facts: ["gameChanger", "tutor"],
+  },
+  {
+    oracleId: "about-fact-time-warp",
+    name: "Time Warp",
+    typeLine: "Sorcery",
+    cardTypeGroup: "Sorceries",
+    role: "other",
+    cmc: 5,
+    owned: true,
+    quantity: 1,
+    auto: false,
+    manaCost: "{3}{U}{U}",
+    printedName: null,
+    printedSetCode: null,
+    printedCollectorNumber: null,
+    availability: AVAILABILITY[0].a,
+    facts: ["extraTurns"],
+  },
+];
+
+/**
+ * `deck-analysis` — a Yuriko deck whose cards permit Optimized or cEDH, for the Analysis
+ * tab's bracket box and its climb.
+ *
+ * A REAL PROFILE THROUGH THE REAL VERDICT. The profile is built by `buildDeckProfile` and the
+ * verdict by `slotDeck`, never written by hand: a literal can hold a range the rules never
+ * return, and the figure would then teach a deck that cannot exist. Five Game Changers pass
+ * bracket 3's limit of three, which is what makes the range `[4, 5]`.
+ *
+ * UNANSWERED, where the handoff's fixture declared 4. Key line 1 is about the two chips under
+ * the range, and an answered range draws its answer in their place, so the numeral would point
+ * at a control the figure does not show.
+ *
+ * The population is the handoff's: 9,730 Yuriko decks declared a bracket and 3,884 of them said
+ * Optimized. `analyzedAt` is fixed so the date line never moves between renders.
+ */
+const ANALYSIS_CARD = (oracleId: string, name: string, typeLine: string, cmc: number, manaCost: string): ProfileCardRow => ({
+  oracleId,
+  name,
+  layout: "normal",
+  typeLine,
+  oracleText: null,
+  keywords: [],
+  cmc,
+  colorIdentity: [],
+  manaCost,
+  quantity: 1,
+  commanderLegal: true,
+});
+
+const YURIKO = ANALYSIS_CARD("about-yuriko", "Yuriko, the Tiger's Shadow", "Legendary Creature — Human Ninja", 2, "{1}{U}{B}");
+
+const ANALYSIS_POPULATION: BracketPopulation = {
+  counts: { "1": 120, "2": 1406, "3": 3320, "4": 3884, "5": 1000 },
+  declaredTotal: 9730,
+  deckCount: null,
+  of: "commander",
+};
+
+const ANALYSIS_PROFILE = buildDeckProfile({
+  deckId: "about-deck-analysis",
+  fingerprint: "about",
+  cards: [
+    YURIKO,
+    ANALYSIS_CARD("about-rhystic", "Rhystic Study", "Enchantment", 3, "{2}{U}"),
+    ANALYSIS_CARD("about-rift", "Cyclonic Rift", "Instant", 2, "{1}{U}"),
+    ANALYSIS_CARD("about-demonic", "Demonic Tutor", "Sorcery", 2, "{1}{B}"),
+    ANALYSIS_CARD("about-vampiric", "Vampiric Tutor", "Instant", 1, "{B}"),
+    ANALYSIS_CARD("about-mystical", "Mystical Tutor", "Instant", 1, "{U}"),
+    ANALYSIS_CARD("about-diabolic", "Diabolic Intent", "Sorcery", 2, "{1}{B}"),
+    ANALYSIS_CARD("about-merchant", "Merchant Scroll", "Sorcery", 2, "{1}{U}"),
+    ANALYSIS_CARD("about-wishclaw", "Wishclaw Talisman", "Artifact", 2, "{1}{B}"),
+    ANALYSIS_CARD("about-infiltrator", "Dimir Infiltrator", "Creature — Spirit", 2, "{U}{B}"),
+  ],
+  commanderOracleIds: [YURIKO.oracleId],
+  identity: ["U", "B"],
+  condition: "UB",
+  composition: { pair: null, commander: null, identity: null, count: null },
+  roles: { pair: null, commander: null, identity: null, count: null },
+  thinCondition: false,
+  staples: [],
+  commanderDeckCount: null,
+  population: ANALYSIS_POPULATION,
+  mldFlags: new Map(),
+  extraTurnFlags: new Map(),
+  gameChangerIds: new Set(["about-rhystic", "about-rift", "about-demonic", "about-vampiric", "about-mystical"]),
+  twoCardCombos: [],
+  tutorIds: new Set([
+    "about-demonic",
+    "about-vampiric",
+    "about-mystical",
+    "about-diabolic",
+    "about-merchant",
+    "about-wishclaw",
+    "about-infiltrator",
+  ]),
+  detection: {
+    massLandDenial: MLD_DETECTION,
+    extraTurn: EXTRA_TURN_DETECTION,
+    twoCardCombos: COMBO_DETECTION,
+  },
+});
+
+export const DECK_ANALYSIS = {
+  profile: ANALYSIS_PROFILE,
+  verdict: slotDeck(ANALYSIS_PROFILE),
+  analyzedAt: "2026-09-25T12:00:00.000Z",
+  /** The committed version the reading is pinned to. There is no version before it to compare. */
+  version: 3,
+};
 
 /**
  * `roles` — one card per role, quantity-weighted so the strip's five cells

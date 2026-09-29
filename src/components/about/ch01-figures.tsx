@@ -56,6 +56,8 @@ import {
   STAND_INS,
   READY_IN_USE,
   READY_SLICE,
+  CARD_MARK_ROWS,
+  DECK_ANALYSIS,
 } from "../../lib/about/fixtures";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy } from "../../lib/copy/collection";
@@ -131,7 +133,12 @@ import { SwapToolsProvider } from "../../lib/swaps/context";
 import { figures as chooseFigures } from "../../lib/intake/present";
 import { identityGradient } from "../../lib/collection/gradients";
 import { LockCardsProvider, type LockCards } from "../decks/lock-cards";
-import { LockModeLine } from "../decks/decklist";
+import { LockModeLine, buildMarkKeyEntries } from "../decks/decklist";
+import { MarkKey } from "../decks/mark-key";
+import { VerdictBlock } from "../decks/verdict-block";
+import { BracketClimb } from "../decks/bracket-climb";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { declarationCopy } from "../../lib/copy/declaration";
 import { LockModeButton } from "../decks/group-toggle";
 import { ChangeCommanderProvider } from "../decks/change-commander-context";
 import { ChangeCommanderDoor } from "../decks/change-commander-door";
@@ -728,6 +735,93 @@ export function DecklistMarksFigureBody() {
           ))}
         </div>
       </PendingChangeProvider>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `deck-analysis` — the Analysis tab's bracket box, then its climb, for a deck whose cards permit
+ * a range and whose player has not said which.
+ *
+ * STACKED, box first, which is the tab's own phone order. At 1300 the tab puts the two side by
+ * side at 2fr to 1fr, the box in the narrow column; at About's plate width that column is about
+ * 240px, which would squeeze the box into a layout the app never draws at that size. Stacking is
+ * the arrangement the app already has for a narrow row, not a new one.
+ *
+ * Nothing else on the tab is drawn. The findings, the overview and Suggested changes are named in
+ * the caption: a whole-tab figure is what cropped every earlier chapter-03 attempt.
+ *
+ * `onDeclare` is a no-op: `Specimen` is `inert`, so no chip can be pressed.
+ */
+export function DeckAnalysisFigureBody() {
+  const { profile, verdict, analyzedAt, version } = DECK_ANALYSIS;
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <AnchoredNumerals
+        gutter
+        marks={[
+          // 1: the two chips under the range, the page's one question.
+          { n: 1, find: first(`[role="group"][aria-label="${declarationCopy.ask.groupAria}"]`), side: "gutter" },
+          // 2: the climb, whose figures state and never open.
+          { n: 2, find: first('[data-testid="climb-rung"]'), side: "gutter", align: "top" },
+          // 3: the date line, which is what says a reading predates the deck's changes.
+          { n: 3, find: first('[data-testid="verdict-analyzed"]'), side: "gutter" },
+          // 4: the line under the face. A range asks here; a single bracket's lean sits here.
+          { n: 4, find: withText("p", deckAnalysisCopy.verdict.intentHigh, true), side: "gutter", align: "top" },
+        ]}
+      >
+        <div className="flex flex-col gap-[22px]">
+          <VerdictBlock
+            verdict={verdict}
+            profile={profile}
+            analyzedAt={analyzedAt}
+            versionNumber={version}
+            declaration={{ declared: null, version, previous: null, onDeclare: () => {}, refused: false }}
+          />
+          <BracketClimb verdict={verdict} profile={profile} locked={new Set()} />
+        </div>
+      </AnchoredNumerals>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `card-marks` — the decklist's mark key above two real `DecklistRow`s.
+ *
+ * The key's entries come from `buildMarkKeyEntries`, the decklist's own rule, over these two
+ * rows: a deck is a closed set, so the key glosses only the marks its rows draw. Mass land denial
+ * is on neither row and is therefore not in the key; the caption names it.
+ */
+export function CardMarksFigureBody() {
+  const marks = buildMarkKeyEntries({ cards: CARD_MARK_ROWS, filter: "all", inCardView: false });
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <AnchoredNumerals
+        gutter
+        marks={[
+          // 1: the tutor mark, on the card whose search can find anything.
+          { n: 1, find: first('svg[role="img"][data-testid="card-fact-tutor"]'), side: "gutter" },
+          // 2: a row carrying one mark, and so silent about the other three.
+          { n: 2, find: first('svg[role="img"][data-testid="card-fact-extraTurns"]'), side: "gutter" },
+          // 3: the key, which names each fact and counts none of them.
+          { n: 3, find: first('[role="group"]'), side: "gutter" },
+        ]}
+      >
+        <div className="flex flex-col gap-[10px]">
+          <MarkKey marks={marks} />
+          <div className="flex flex-col">
+            {CARD_MARK_ROWS.map((card) => (
+              <DecklistRow
+                key={card.oracleId}
+                deckId="about-figure"
+                card={card}
+                siblings={[]}
+                newestAsOf={PRICES[0].fact.asOf}
+              />
+            ))}
+          </div>
+        </div>
+      </AnchoredNumerals>
     </CardDetailProvider>
   );
 }

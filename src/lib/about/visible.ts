@@ -6,6 +6,7 @@
 // new" is how the sheet announces an entry the page does not mark.
 
 import { changeCommanderEnabled } from "../commander-change/flag";
+import { analysisTabEnabled } from "../decks/analysis-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
@@ -21,6 +22,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
+  ANALYSIS_TAB_ENABLED: analysisTabEnabled,
 };
 
 /** The entries this deployment draws, in page order. An entry with no switch always draws. */

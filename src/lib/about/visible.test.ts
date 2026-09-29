@@ -4,7 +4,7 @@ import { sheetCookieValue, sheetDecision } from "./gate";
 import { readSheetState } from "./sheet-state";
 import { isSeen, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -33,6 +33,8 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
   it("ties exactly the launch entries to their switches, and the version to the rest", () => {
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
       ["help-me-choose", "HELP_ME_CHOOSE_ENABLED"],
+      ["deck-analysis", "ANALYSIS_TAB_ENABLED"],
+      ["card-marks", "ANALYSIS_TAB_ENABLED"],
       ["locked-cards", "NEVER_CUT_ENABLED"],
       ["fits-your-decks", "SWAP_TOOLS_ENABLED"],
       ["stand-ins", "SWAP_TOOLS_ENABLED"],
@@ -79,6 +81,8 @@ describe("an entry tied to a switch", () => {
     expect(launch.map((e) => e.since)).toEqual(launch.map(() => ABOUT_VERSION));
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "help-me-choose",
+      "deck-analysis",
+      "card-marks",
       "locked-cards",
       "fits-your-decks",
       "stand-ins",
