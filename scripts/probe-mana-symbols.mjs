@@ -103,6 +103,10 @@ const READ_COST = () => {
     const r = el.getBoundingClientRect();
     return {
       url: getComputedStyle(el).backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1] ?? null,
+      // The window onto the sprite: its horizontal position and the sheet's drawn width, both
+      // percentages of the pip's own box.
+      x: parseFloat(getComputedStyle(el).backgroundPositionX),
+      size: parseFloat(getComputedStyle(el).backgroundSize),
       // The lettered fallback is the one thing that must not appear here: on a
       // catalog this app has ingested, every cost symbol has committed art.
       text: el.textContent?.trim() ?? "",
@@ -175,8 +179,12 @@ const READ_TILES = (page) => {
  * while reporting a clean sweep.
  */
 async function openCard(page, name) {
-  await page.goto(`${BASE}/collection?view=rows&q=${encodeURIComponent(name)}`, {
-    waitUntil: "networkidle",
+  // Retried once on ERR_ABORTED: the previous card's modal writes the URL as it closes, and a
+  // navigation started under that write can be cancelled by it.
+  const url = `${BASE}/collection?view=rows&q=${encodeURIComponent(name)}`;
+  await page.goto(url, { waitUntil: "networkidle" }).catch(async (error) => {
+    if (!String(error).includes("ERR_ABORTED")) throw error;
+    await page.goto(url, { waitUntil: "networkidle" });
   });
   await page.waitForTimeout(3_000);
   // A role locator with an escaped pattern, not an interpolated attribute
@@ -228,7 +236,7 @@ async function run() {
         const url = new URL(res.url());
         if (!url.pathname.startsWith("/mana/")) return;
         const body = res.status() === 200 ? await res.text().catch(() => "") : "";
-        loaded.set(url.pathname, { status: res.status(), svg: body.includes("<svg"), body });
+        loaded.set(url.pathname, { status: res.status(), svg: body.includes("<svg") });
       });
 
       await signIn(page);
@@ -283,27 +291,27 @@ async function run() {
       // rather than throwing — but a relative value would make `new URL` throw
       // `Invalid URL` and take the whole check down with it, and a base costs
       // nothing to pass and cannot change an already-absolute URL.
-      // Since 2026-09-28 every pip is a VIEW in one sprite (`mana-sprite.ts`), so "its own file" is
-      // its own fragment: the sprite has to have been served, and has to hold a view with that id.
-      // A slug that drifted from the sprite's ids serves the sheet and paints nothing.
-      const wanted = [
-        ...new Set((cost ?? []).map((p) => p.url && new URL(p.url, BASE)).filter(Boolean)
-          .map((u) => `${u.pathname}${u.hash}`)),
-      ];
-      const served = wanted.filter((ref) => {
-        const [path, frag] = ref.split("#");
-        const file = loaded.get(path);
-        return file?.status === 200 && file.svg && Boolean(frag) && file.body.includes(`<view id="${frag}"`);
+      // Since 2026-09-28 every pip is a window onto ONE sprite (`mana-sprite.ts`), so "its own file"
+      // is the sheet, served as SVG, and a window that lands on a whole cell of it. A slug the
+      // manifest does not hold has no cell and falls back to a letter, which the check above fails.
+      // Which cell is the right one is `mana-sprite.test.ts`'s: the build and the reader share one
+      // order, and the committed sheet must be the build of the committed files.
+      const wanted = [...new Set((cost ?? []).map((p) => p.url && new URL(p.url, BASE).pathname).filter(Boolean))];
+      const served = wanted.filter((path) => loaded.get(path)?.status === 200 && loaded.get(path)?.svg);
+      // A sheet of n 100-unit cells 10 apart is drawn at (110n − 10)% of the box, and cell i sits at
+      // i·110 / (110(n − 1)) of the overhang: a whole index, from 0 to n − 1.
+      const cells = (cost ?? []).map((p) => {
+        const n = (p.size + 10) / 110;
+        const i = (p.x / 100) * (n - 1);
+        return { n, i, whole: Number.isInteger(Math.round(n * 1000) / 1000) && Math.abs(i - Math.round(i)) < 0.01 && i >= -0.01 && i <= n - 0.99 };
       });
       failures += !report(
         `${width}px · the cost's own symbols resolved`,
-        wanted.length > 0 && served.length === wanted.length,
+        wanted.length === 1 && served.length === 1 && cells.length > 0 && cells.every((c) => c.whole),
         wanted.length === 0
           ? "the cost asked for no art at all"
-          : `${served.length}/${wanted.length} served as SVG`
-            + (served.length === wanted.length
-              ? ""
-              : `; failed: ${wanted.filter((p) => !served.includes(p)).join(", ")}`),
+          : `${wanted.join(", ")} ${served.length === wanted.length ? "served as SVG" : "NOT served"}; cells `
+            + cells.map((c) => c.i.toFixed(2)).join(", ") + ` of ${cells[0]?.n.toFixed(2)}`,
       );
 
       await page.keyboard.press("Escape");
