@@ -57,7 +57,7 @@ It asserts each renders byte-identical to a render made with the feature's modul
 Every row's `refreshes` field states a schedule, and each is **already true on `main`**. Replicate PR 3 (#1123) set them, and no clock time is stated:
 - **Prices "Daily":** `catalog-refresh.yml` runs `0 9 * * *`, with prices as its last step. `price-refresh.yml` has no schedule of its own.
 - **"Card data refreshes daily and combos weekly":** the daily catalog, and `combo-refresh.yml`, which chains on each scheduled catalog run and builds on Mondays alone.
-- **"Monthly, and about two weeks after each new set":** `commander-index.yml` chains on the catalog and runs only when `db:index-due` says so. That is monthly from the 3rd, or 14 days after an expansion or commander set releases (`src/lib/catalog/index-due.test.ts`).
+- **"Monthly, and about two weeks after each new expansion or Commander set":** `commander-index.yml` chains on the catalog and runs only when `db:index-due` says so. That is monthly from the 3rd, or 14 days after an `expansion` or `commander` set releases (`RELEASE_SET_TYPES`, `src/lib/catalog/index-due.ts`). The copy names those two kinds, because a reprint box or a supplemental set starts no build. And no line promises that a build has already happened: an empty ledger never auto-builds, and the first build is a dispatched catch-up (b1, 2026-09-28).
 
 Replicate PR 4 is the fetch-once download seam and changes no schedule. So B and C are held on nothing but their own review, subject to d9's call.
 
@@ -105,7 +105,7 @@ The line has three PRs, each under ~20 files and ~800 lines, with no stacking: e
 
 | # | Correction | Lands in |
 |---|---|---|
-| 1–3 | Prices "Daily." (no clock time); Brackets "Card data refreshes daily and combos weekly."; Roles, Themes and Recommendations add "and about two weeks after each new set" | PR B, checked against merged crons |
+| 1–3 | Prices "Daily." (no clock time); Brackets "Card data refreshes daily and combos weekly."; Roles, Themes and Recommendations add "and about two weeks after each new expansion or Commander set" (narrowed to `RELEASE_SET_TYPES`) | PR B, checked against `main`'s workflows |
 | 4 | Detection keys are `landDenial` and `combos`. State follows the code's names: `opened`, `data-jumped`, `place` and `current`, never the README's | PR B, PR C |
 | 5 | Tutors | PR B states that the tutor reading has no measured accuracy yet, which is true on `main`. Brief §5.5 (a measured accuracy) is not in this line. When it lands, that PR updates the row. |
 | 6 | Three surfaces use the flat targets | PR B states it as the code does today (brief §5.4). The fix is a scoring change outside this line. Whichever PR fixes it must change the Roles and Recommendations rows in the same diff, and the Roles row carries a comment naming the three call sites so a grep finds it. |
@@ -113,7 +113,7 @@ The line has three PRs, each under ~20 files and ~800 lines, with no stacking: e
 | 8 | Stand-ins also reads the deck's colors (`your input`), and Recommendations' Roles part reads rules text (`rules text`) | PR B |
 | Hugh | The fifth method `published list` on Prices and Game Changers; the key reads "Five ways an answer is reached" | A (tag), B (key, rows) |
 
-The audit's five `/copy-review` notes, and every new string, go through `/copy-review` in lane before PR B opens. Only the result is carried into the copy module.
+Every new or changed string goes through `/copy-review` in lane before the PR that first ships it opens: PR A's five tag labels and its Game Changers sentence, PR B's rows and key (with the audit's five notes), and PR C's link line and sheet line. Only the result is carried into the copy module.
 
 ## Proof
 
@@ -129,7 +129,7 @@ The audit's five `/copy-review` notes, and every new string, go through `/copy-r
   - landing on `#how-roles` from an entry link, open and washed, focus on the `h3`, and Back returning;
   - the rail marking the row current;
   - the phone contents group opening.
-  - It then repeats the off case.
+  - The off case is a separate pass against a server started with the switch unset, because a switch is read when the server starts (`probe:about --flip` owns and restarts its server for the same reason). The probe takes the pass from `PROBE_HOW_IT_WORKS=on|off` and fails if the server it finds draws the other state.
   - It writes only the About row, through `clearAboutSheet` with `captureAboutSeen`/`restoreAboutSeen`.
   - One mutation per fix.
 - **`probe:about --flip`** gains a leg for the new switch: the line rides the next sheet and never draws one alone.
