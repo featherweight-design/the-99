@@ -1118,7 +1118,7 @@ The cost is spoken from the **shipped** `manaCopy.costAria`, read **before** the
 | `ledger.headerMeta(passes, buy)` | `{passes} passes · {buy} to buy` |
 | `ledger.headerMetaOne(buy)` | `one pass · {buy} to buy` |
 | `ledger.seedLabel` | `the seed` |
-| `ledger.passLabel(i)` | `top-off {i}` |
+| `ledger.passLabel(i)` | `{ordinal(i)} top-off` (`1st top-off`) |
 | `ledger.seedLine(n, buy)` | `{n} cards: the roles and the mana base, {buy} to buy.` |
 | `ledger.seedLineNoBuy(n)` | `{n} cards: the roles and the mana base.` |
 | `ledger.seedReversal` | `the sweep reverses it` |
