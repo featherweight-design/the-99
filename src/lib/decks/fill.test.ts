@@ -332,12 +332,12 @@ describe("planFill", () => {
       c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
       basic("wastes", 40, "Wastes"),
-    ], boros as never);
+    ], boros);
     expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
   });
 
   it("puts Wastes in a colourless deck", () => {
-    const plan = planFill([basic("wastes", 40, "Wastes")], { ...FLAT, identity: [] } as never);
+    const plan = planFill([basic("wastes", 40, "Wastes")], { ...FLAT, identity: [] });
     expect(plan.rows.find((r) => r.oracleId === "wastes")!.quantity).toBe(37);
   });
 
@@ -345,7 +345,7 @@ describe("planFill", () => {
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }),
       basic("plains", 40, "Plains"), basic("island", 40, "Island"),
-    ], boros as never);
+    ], boros);
     expect(plan.rows.find((r) => r.oracleId === "island")).toBeUndefined();
   });
 
@@ -353,7 +353,7 @@ describe("planFill", () => {
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
-    ], boros as never);
+    ], boros);
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
     expect(Math.abs(q("plains") - q("mountain"))).toBeLessThanOrEqual(1);
     expect(q("plains") + q("mountain")).toBe(37);
@@ -364,7 +364,7 @@ describe("planFill", () => {
       ...Array.from({ length: 6 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
       c({ oracleId: "r0", manaCost: "{R}", inclusionPct: 50 }),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
-    ], boros as never);
+    ], boros);
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
     expect(q("plains")).toBeGreaterThan(q("mountain"));
     expect(q("mountain")).toBeGreaterThan(0);
@@ -374,7 +374,7 @@ describe("planFill", () => {
   it("gives a mono deck's one colour the whole base", () => {
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }), basic("plains", 40, "Plains"),
-    ], { ...FLAT, identity: ["W"] } as never);
+    ], { ...FLAT, identity: ["W"] });
     expect(plan.rows.find((r) => r.oracleId === "plains")!.quantity).toBe(37);
   });
 
@@ -384,7 +384,7 @@ describe("planFill", () => {
       c({ oracleId: "w0", manaCost: "{W}" }),
       basic("plains", 40, "Plains"), basic("island", 40, "Island"), basic("swamp", 40, "Swamp"),
       basic("mountain", 40, "Mountain"), basic("forest", 40, "Forest"),
-    ], { ...FLAT, identity: ["W", "U", "B", "R", "G"] } as never);
+    ], { ...FLAT, identity: ["W", "U", "B", "R", "G"] });
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     for (const id of ["plains", "island", "swamp", "mountain", "forest"]) {
       expect(q(id)).toBeGreaterThan(0);
@@ -398,7 +398,7 @@ describe("planFill", () => {
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),
       basic("plains", 40, "Plains"), basic("mountain", 0, "Mountain"),
-    ], boros as never);
+    ], boros);
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     expect(q("mountain")).toBeGreaterThan(0);
     expect(q("plains") + q("mountain")).toBe(37);
@@ -410,7 +410,7 @@ describe("planFill", () => {
     const plan = planFill([
       ...Array.from({ length: 5 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
-    ], boros as never);
+    ], boros);
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     expect(q("mountain")).toBe(1);
     expect(q("plains")).toBe(36);
@@ -428,7 +428,7 @@ describe("planFill", () => {
     const plan = planFill([
       ...Array.from({ length: 5 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
       basic("plains", 40, "Plains"), basic("wastes", 40, "Wastes"), basic("mountain", 40, "Mountain"),
-    ], boros as never);
+    ], boros);
     expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     expect(q("plains") + q("mountain")).toBe(37);
@@ -444,7 +444,7 @@ describe("planFill", () => {
     const plan = planFill([
       c({ oracleId: "w0", manaCost: "{W}" }),
       basic("wastes", 40, "Wastes"),
-    ], boros as never);
+    ], boros);
     expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
     // And it reports the shortfall rather than hiding it behind a land it must not play.
     expect(plan.rows.filter((r) => r.role === "land")).toHaveLength(0);
@@ -465,7 +465,7 @@ describe("planFill", () => {
       basic("plains", 40, "Plains"),
       basic("island-a", 40, "Island"), basic("island-b", 40, "Island"),
       basic("swamp", 40, "Swamp"),
-    ], { ...FLAT, identity: ["W", "U", "B"] } as never);
+    ], { ...FLAT, identity: ["W", "U", "B"] });
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     const islands = q("island-a") + q("island-b");
     expect(islands).toBe(1);
@@ -489,10 +489,10 @@ describe("planFill", () => {
       ...Array.from({ length: 30 }, (_, i) =>
         c({ oracleId: `f${i}`, name: `f${i}`, manaCost: "{R}", inclusionPct: 40 - i })),
     ];
-    const flat = planFill(modalPool(), { ...FLAT, identity: ["R"] } as never);
+    const flat = planFill(modalPool(), { ...FLAT, identity: ["R"] });
     const sk36 = planFill(modalPool(), {
       hasPartner: false, skeleton: skeletonWithLand(36), identity: ["R"],
-    } as never);
+    });
     // The COMPOSITION, not just the total: 27 basics and 10 modal drops under the flat ceiling,
     // 26 and 10 under a 36 skeleton. A residual allowed to spend the reserved basic slots reaches
     // the same total on drops alone (0 and 37), which the totals below cannot tell apart.
@@ -515,7 +515,7 @@ describe("planFill", () => {
       ...Array.from({ length: 40 }, (_, i) => nonBasicLand(`nb${i}`)),
       ...Array.from({ length: 30 }, (_, i) =>
         c({ oracleId: `f${i}`, name: `f${i}`, manaCost: "{R}", inclusionPct: 40 - i })),
-    ], { ...FLAT, identity: ["R"] } as never);
+    ], { ...FLAT, identity: ["R"] });
     expect(plan.landCapable).toBeLessThanOrEqual(37);
   });
 
@@ -526,7 +526,7 @@ describe("planFill", () => {
     const plan = planFill([
       ...Array.from({ length: 12 }, (_, i) => c({ oracleId: `g${i}`, manaCost: "{2}", inclusionPct: 90 - i })),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
-    ], { ...boros, commanderCosts: ["{R}{R}{R}{W}"] } as never);
+    ], { ...boros, commanderCosts: ["{R}{R}{R}{W}"] });
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     // A RATIO, not an inequality. `{R}{R}{R}{W}` is 3:1, so the pip split is 28/9 — while the
     // no-pips fallback is an even 19/18, which `mountain > plains` also satisfies. Asserting only
@@ -550,7 +550,7 @@ describe("planFill", () => {
         typeLine: "Creature — Goblin", oracleText: "Haste.",
       })),
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
-    ], boros as never);
+    ], boros);
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     expect(q("mountain")).toBeGreaterThan(1);
     expect(q("mountain") + q("plains")).toBe(37);
@@ -564,8 +564,11 @@ describe("planFill", () => {
       basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
     ], {
       ...boros,
-      held: Array.from({ length: 9 }, () => ({ typeLine: "Instant", manaCost: "{W}", quantity: 1 })),
-    } as never);
+      held: Array.from({ length: 9 }, () => ({
+        typeLine: "Instant", manaCost: "{W}", quantity: 1,
+        oracleText: "Draw a card.", keywords: [], layout: "normal",
+      })),
+    });
     const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
     // Nine white pips held and no red: white takes the base, red keeps its floor of one.
     expect(q("plains")).toBeGreaterThan(q("mountain"));

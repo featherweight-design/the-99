@@ -104,8 +104,10 @@ export type PlanFillArgs = {
    * stand in either: a Boros deck whose spells all cost generic mana has no coloured pips and is
    * still a Boros deck, which may not have Wastes.
    *
-   * Absent, the basics split behaves as it did before: every basic colour in the pool is
-   * eligible. Every caller that does not know the identity is therefore unchanged.
+   * Absent, every basic colour in the pool is eligible, which is the filter this argument adds
+   * and nothing more. It does NOT mean such a caller sees the previous behaviour: the split lost
+   * its `ownedQuantity < 1` gate and its per-colour capacity cap, and gained the one-per-colour
+   * floor, for every caller either way.
    */
   identity?: readonly string[];
   /**
@@ -574,7 +576,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     const color = basicLandColor(c.name);
     return color !== null && wantsColor(color);
   });
-  let basicsReserve = anyEligibleBasic
+  const basicsReserve = anyEligibleBasic
     ? Math.max(0, Math.min(landCeilingAfterModals - counts.land, limit - filledSoFar()))
     : 0;
   /** Where the land rows must end and the residual begin, for the truncation rule below. */
@@ -617,18 +619,19 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     //
     // Both other readings are silent, and both were measured. Dropping the reserve bounds the
     // drops against an empty base, so the residual takes every land slot: 0 basics and 37 drops
-    // where `origin/main` composes 27 and 10. Keeping the reserve but testing `>` with the
-    // decrement below lets the two cancel exactly, so the guard can never fire at all and
-    // `landCapable` reaches 65 against a ceiling of 37.
+    // where `origin/main` composes 27 and 10. Keeping the reserve but decrementing it per drop
+    // under `>` lets the two cancel exactly, so the guard can never fire at all and `landCapable`
+    // reaches 65 against a ceiling of 37.
+    //
+    // A DROP IS THEREFORE ONLY EVER ADMITTED WHEN THE RESERVE IS ALREADY ZERO. The reserve is
+    // `min(landCeilingAfterModals - counts.land, limit - filledSoFar())`: at the first the sum
+    // below already equals the ceiling, and at the second the `limit` break above has fired. So
+    // the only pool that reaches here is one holding no basic this deck can cast — which is the
+    // case `landCeilingAfterDrops` exists for, since the fallback sweep takes any unspent land.
     if (playableAsLand(candidate.typeLine, candidate.layout)
       && counts.land + basicsReserve + modalDrops + residualDrops >= landCeiling) continue;
     if (!admits(candidate)) continue;
-    if (playableAsLand(candidate.typeLine, candidate.layout)) {
-      residualDrops += 1;
-      // The basics need one BODY slot fewer, because this card is one of the land drops they were
-      // reserved to cover. This is the slot budget on `limit`, never the land ceiling above.
-      basicsReserve = Math.max(0, basicsReserve - 1);
-    }
+    if (playableAsLand(candidate.typeLine, candidate.layout)) residualDrops += 1;
     spent.add(candidate.oracleId);
     gate?.place(candidate);
     placed.push({ typeLine: candidate.typeLine, quantity: 1 });

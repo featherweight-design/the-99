@@ -7,14 +7,21 @@
 // more turn on a skeleton assembled from five database reads down a four-rung chain. A fixture
 // that stated those facts would be asserting the answer it was built to check.
 //
-// Seven sections, and the mutation each one exists to catch is in the table at the foot.
+// Eight sections, each naming the mutation it exists to catch in its own block.
 //
 // Section 8 is the basics split, against the real catalog. It reproduces HD - Thorin: a `{R,W}`
 // deck whose top-off produced 18 Plains, 6 Wastes and NO Mountains. Wastes reaches every pool
 // because its colour identity is EMPTY and `[].every(…)` is true, and the spare-redistribution
 // loop then handed a capped Plains allocation's leftovers to the only other colour with copies on
-// the shelf. Its fixture owns ZERO Mountains on purpose — that is what dropped red out of the
-// split, and a tidy fixture would hide it.
+// the shelf. What dropped red out of the split was the CENSUS scoring zero red pips, not the
+// shelf: the basics were chosen before the residual ran, so the pips of the commanders and of
+// every residual row were missing from it.
+//
+// Its fixture owns ZERO Mountains on purpose all the same, to pin a second and separate property
+// — that the shelf quantity does not decide whether a colour is in the mana base. Note this is a
+// state production cannot reach through `ownedColorLegalPool`, which builds the pool
+// `.from(collectionItems)`: a basic the player holds no collection row for is absent from the
+// candidate pool entirely, and no split can supply what it never sees.
 //
 // It writes a fixture under a per-run `user_id` and deletes it in a `finally`. Point it at
 // `local-dev` or a scratch Neon branch, NEVER production.
@@ -392,6 +399,21 @@ async function main() {
   check("and says the floors were not measured", flat.measured, false);
   check("while the measured build says they were", built.measured, true);
 
+  // ---- 7 · landCapable against land on the built deck ------------------------------------
+  console.log("\n7 · the built deck's land-capable count");
+  const landRows = built.rows.filter((r) => r.role === "land")
+    .reduce((n, r) => n + r.quantity, 0);
+  // `>=` is unfalsifiable by construction — landCapable is land plus a non-negative count — so
+  // the check is that the DIFFERENCE equals the modal cards actually placed on non-land roles.
+  // A build that stopped reading `layout` would read 0 there and still satisfy `>=`.
+  const modalPlaced = built.rows.filter((r) => {
+    if (r.role === "land") return false;
+    const c = basePool.find((x) => x.oracleId === r.oracleId);
+    return c ? playableAsLand(c.typeLine, c.layout) : false;
+  }).length;
+  check("landCapable is the land count plus the modal cards sleeved elsewhere",
+    built.landCapable, landRows + modalPlaced);
+
   // ---- 8 · the basics follow the deck's IDENTITY, not the shelf ---------------------------
   console.log("\n8 · a Boros deck's basics");
   // HD - Thorin, reproduced against the real catalog. Its top-off gave a `{R,W}` deck 18 Plains,
@@ -441,25 +463,20 @@ async function main() {
     // fail on its own — a check that restates its neighbours.
     const landTotal = boros.rows
       .filter((r) => r.role === "land").reduce((n, r) => n + r.quantity, 0);
+    // MINUS THE MODAL DROPS, computed the way section 7 computes them. The basics fill to
+    // `landCeiling - modalDrops`, never to the ceiling, so asserting the bare target fails on a
+    // correct build the moment the ordered 400 happens to contain a land-backed modal card placed
+    // on a non-land role. Ordering the pool made that outcome stable per catalog, not correct: a
+    // refresh that inserts such a card into the first 400 flips it.
+    const borosModalDrops = boros.rows.filter((r) => {
+      if (r.role === "land") return false;
+      const card = borosPool.find((x) => x.oracleId === r.oracleId);
+      return card ? playableAsLand(card.typeLine, card.layout) : false;
+    }).length;
     // `measuredLand`, not `landTarget(false)`: this probe passes a real skeleton, so the ceiling is
     // the measured figure and the flat default would be a different number on any indexed database.
-    check("8d · the base is filled to the land target", landTotal, measuredLand);
+    check("8d · the base is filled to the land target", landTotal, measuredLand - borosModalDrops);
   }
-
-  // ---- 7 · landCapable against land on the built deck ------------------------------------
-  console.log("\n7 · the built deck's land-capable count");
-  const landRows = built.rows.filter((r) => r.role === "land")
-    .reduce((n, r) => n + r.quantity, 0);
-  // `>=` is unfalsifiable by construction — landCapable is land plus a non-negative count — so
-  // the check is that the DIFFERENCE equals the modal cards actually placed on non-land roles.
-  // A build that stopped reading `layout` would read 0 there and still satisfy `>=`.
-  const modalPlaced = built.rows.filter((r) => {
-    if (r.role === "land") return false;
-    const c = basePool.find((x) => x.oracleId === r.oracleId);
-    return c ? playableAsLand(c.typeLine, c.layout) : false;
-  }).length;
-  check("landCapable is the land count plus the modal cards sleeved elsewhere",
-    built.landCapable, landRows + modalPlaced);
 }
 
 main()
