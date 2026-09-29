@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
 import { AccountMenu } from "./account-menu";
 import { NavIcon, type NavHref } from "./nav-icons";
+import { Padlock } from "./padlock";
 import { PendingPip } from "./pending-pip";
 import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { nameList } from "../../lib/copy/deck-analysis";
 import type { ThemeKey } from "../../lib/theme/themes";
 
 // ---------------------------------------------------------------------------
@@ -45,34 +48,374 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
+const LOCKABLE = ITEMS.filter((i) => i.lockable);
+
 // ---------------------------------------------------------------------------
-// Lock glyph — the one padlock under the rail's locked items
+// The lock — first-run locked nav
+// Design table: docs/superpowers/design-tables/first-run-locked-nav.md
 // ---------------------------------------------------------------------------
 
-// The handoff writes the locked colour as a bare Amonkhet hex, which would
-// stay Amonkhet under the other five themes. It is spent here as
-// `--fg-disabled`, the token added for exactly this: one step below
-// `--fg-locked` and declared per theme, so each theme dims within its own
-// family rather than towards Low Sun's brass.
+const lockCopy = refreshCopy.firstRun.lock;
 
-// Decorative, because every locked item already carries the reason in words.
-function LockGlyph() {
+// Where the desktop note's caret sits: a 10px square at top 28 of the note's
+// padding box, which starts inside its 1px border, so the caret's centre is 34px
+// below the note's outer top edge (3.9, 3.10). The note is placed against the
+// slot's measured centre, never a row index, so it follows the slot wherever it
+// lays out.
+const RAIL_CARET_CENTRE = 1 + 28 + 5;
+// The note's 1px border: an absolutely placed caret is offset from the padding
+// box, inside it.
+const NOTE_BORDER = 1;
+// The phone note's left inset, which its caret is placed against (5.1, 5.8).
+const TAB_NOTE_INSET = 12;
+
+/**
+ * Where "Go to step 1" goes. On first run the checklist's `Upload a CSV` is on
+ * the page, so it is brought into view and focused; anywhere else (an account
+ * with decks and no collection, or a locked route) there is no step 1 on screen
+ * and the replace route is the same flow on its own page.
+ */
+function useGoToStep1() {
+  const router = useRouter();
+  return useCallback(() => {
+    // The upload entry first; while step 1's review is open that entry is unmounted, and the
+    // step-1 card itself is the target, so the review in hand is never navigated away from.
+    const target =
+      document.querySelector<HTMLElement>("[data-step1-upload]") ??
+      document.querySelector<HTMLElement>("[data-step1-card]");
+    if (target) {
+      target.scrollIntoView?.({ block: "center" });
+      target.focus({ preventScroll: true });
+    } else {
+      router.push("/collection/replace");
+    }
+  }, [router]);
+}
+
+type OpenNote = { href: NavHref; x: number; y: number } | null;
+
+/**
+ * One chrome's locked slots and their notes. Each slot owns a note that is
+ * always in the document (its sentence is the slot's description, so it can
+ * never be empty), and at most one is open at a time.
+ *
+ * Closing on Escape and on a press outside is shared; opening is the chrome's
+ * own. The Escape handler acts only while focus is on a slot, inside the open
+ * note, or nowhere (a note opened by hover): a key pressed inside a dialog is
+ * that dialog's, and this does not fight it.
+ */
+function useLockNotes(place: (slot: HTMLElement) => { x: number; y: number }) {
+  const [open, setOpen] = useState<OpenNote>(null);
+  const slots = useRef(new Map<NavHref, HTMLButtonElement>());
+  const notes = useRef(new Map<NavHref, HTMLDivElement>());
+
+  const show = useCallback(
+    (href: NavHref) => {
+      const slot = slots.current.get(href);
+      if (slot) setOpen({ href, ...place(slot) });
+    },
+    [place],
+  );
+
+  const close = useCallback((href: NavHref, returnFocus: boolean) => {
+    // The focus call fires the slot's open-on-focus, and that update and this close are batched
+    // into one render, the close last: the note ends closed. Pinned by the hover-then-Escape test.
+    if (returnFocus) slots.current.get(href)?.focus();
+    setOpen(null);
+  }, []);
+
+  const inLock = useCallback((node: Node | null, href: NavHref) => {
+    if (!node) return false;
+    if (notes.current.get(href)?.contains(node)) return true;
+    for (const slot of slots.current.values()) if (slot.contains(node)) return true;
+    return false;
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const { href } = open;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!inLock(e.target as Node, href)) setOpen(null);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const active = document.activeElement;
+      const nowhere = !active || active === document.body;
+      if (!nowhere && !inLock(active, href)) return;
+      close(href, true);
+    };
+    const onResize = () => show(href);
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, inLock, close, show]);
+
+  return { open, setOpen, show, close, slots, notes, inLock };
+}
+
+/** The note's sentence, with the slot's own label drawn in `--fg`. */
+function NoteSentence({ id, label, className }: { id: string; label: string; className: string }) {
+  const others = nameList(LOCKABLE.filter((i) => i.label !== label).map((i) => i.label));
+  const sentence = lockCopy.note(label, others);
+  const rest = sentence.startsWith(label) ? sentence.slice(label.length) : null;
   return (
-    <svg
-      width="14"
-      height="16"
-      viewBox="0 0 14 16"
-      fill="none"
-      stroke="var(--fg-disabled)"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
+    <p id={id} className={className}>
+      {rest === null ? (
+        sentence
+      ) : (
+        <>
+          <span className="text-[color:var(--fg)]">{label}</span>
+          {rest}
+        </>
+      )}
+    </p>
+  );
+}
+
+function registerRef<T extends HTMLElement>(map: RefObject<Map<NavHref, T>>, href: NavHref) {
+  return (el: T | null) => {
+    if (el) map.current.set(href, el);
+    else map.current.delete(href);
+  };
+}
+
+function railPlace(slot: HTMLElement) {
+  const r = slot.getBoundingClientRect();
+  const rail = slot.closest("aside")?.getBoundingClientRect();
+  return { x: (rail?.right ?? r.right) + 12, y: r.top + r.height / 2 - RAIL_CARET_CENTRE };
+}
+
+function tabPlace(slot: HTMLElement) {
+  const r = slot.getBoundingClientRect();
+  // The caret's left edge inside the note's padding box: the slot's centre, less
+  // the note's inset, its border and half the 10px caret.
+  return { x: r.left + r.width / 2 - TAB_NOTE_INSET - NOTE_BORDER - 5, y: 0 };
+}
+
+/**
+ * Desktop: the well around the four locked slots, its padlock and LOCKED foot,
+ * and each slot's note (1.x, 1a, 1b, 3.x).
+ *
+ * The note opens on hover, keyboard focus or a click of a slot, and hovering
+ * another slot moves it there. It does NOT close when the pointer leaves the
+ * slot, so the pointer can travel onto it (WCAG 1.4.13); it closes on Escape,
+ * on focus leaving slot and note, and on a press outside both.
+ */
+function RailLock({ pathname }: { pathname: string }) {
+  const { open, show, close, slots, notes, inLock, setOpen } = useLockNotes(railPlace);
+  const goToStep1 = useGoToStep1();
+  const baseId = useId();
+
+  const onBlur = (href: NavHref) => (e: React.FocusEvent) => {
+    if (open?.href !== href) return;
+    if (inLock(e.relatedTarget as Node | null, href)) return;
+    setOpen(null);
+  };
+
+  return (
+    <div
+      data-lock-well
+      className="flex w-[48px] flex-col items-center gap-1 rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] pt-[4px] pb-[9px]"
     >
-      <rect x="1.75" y="6.5" width="10.5" height="8" rx="3" />
-      <path d="M4.5 6.5V4.5a2.5 2.5 0 0 1 5 0v2" />
-    </svg>
+      {LOCKABLE.map(({ href, label }) => {
+        const isOpen = open?.href === href;
+        const noteId = `${baseId}-note-${label}`;
+        const sentenceId = `${noteId}-sentence`;
+        return (
+          <LockedSlotAndNote key={href}>
+            <button
+              type="button"
+              ref={registerRef(slots, href)}
+              data-locked-slot={label}
+              aria-label={refreshCopy.firstRun.lockedItemAria(label)}
+              aria-expanded={isOpen}
+              aria-controls={noteId}
+              aria-describedby={sentenceId}
+              // A locked route still renders (/collection with no cards is its
+              // empty state), so a locked slot can be the current page.
+              aria-current={isActive(pathname, href) ? "page" : undefined}
+              onPointerEnter={() => show(href)}
+              onFocus={() => show(href)}
+              onClick={() => show(href)}
+              onBlur={onBlur(href)}
+              className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-transparent text-[color:var(--fg-locked)] focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none"
+            >
+              <NavIcon href={href} />
+            </button>
+            <div
+              id={noteId}
+              ref={registerRef(notes, href)}
+              data-lock-note={isOpen ? "open" : "closed"}
+              // Focusable (not tabbable) while open, so a press on the note's
+              // text moves focus INTO the note rather than to the page, and the
+              // blur rule does not read it as leaving.
+              tabIndex={isOpen ? -1 : undefined}
+              onBlur={onBlur(href)}
+              className={
+                isOpen
+                  ? "fixed z-10 flex w-[268px] flex-col gap-[8px] rounded-[10px] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[14px_16px_16px] shadow-[0_18px_40px_rgba(0,0,0,.45)] outline-none"
+                  : "sr-only"
+              }
+              style={isOpen ? { left: open.x, top: open.y } : undefined}
+            >
+              {isOpen && (
+                <span
+                  aria-hidden="true"
+                  data-lock-caret
+                  className="absolute top-[28px] left-[-6px] h-[10px] w-[10px] rotate-45 border-b border-l border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
+                />
+              )}
+              {isOpen && (
+                <span className="font-mono text-[10px] tracking-[0.12em] text-[color:var(--fg-faint)] uppercase">
+                  {lockCopy.railLabel}
+                </span>
+              )}
+              <NoteSentence
+                id={sentenceId}
+                label={label}
+                className="m-0 text-[13px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]"
+              />
+              {isOpen && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    goToStep1();
+                    close(href, false);
+                  }}
+                  className="mt-[2px] h-[32px] self-start rounded-[8px] border border-[color:var(--border-strong)] bg-transparent px-[13px] text-[12.5px] text-[color:var(--fg)]"
+                >
+                  {lockCopy.goToStep1}
+                </button>
+              )}
+            </div>
+          </LockedSlotAndNote>
+        );
+      })}
+      {/* The well's foot: decorative, since every slot above names itself
+          locked. */}
+      <div aria-hidden="true" className="mt-[3px] flex flex-col items-center gap-[5px]">
+        <Padlock stroke="var(--fg-locked)" />
+        <span className="font-mono text-[8.5px] tracking-[0.1em] text-[color:var(--fg-locked)] uppercase">
+          {lockCopy.railLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// A slot and its note are siblings in the document, so the note's button is the
+// next tab stop after its slot. The wrapper draws nothing: `contents` leaves the
+// slot a direct flex item of its chrome's row or column.
+function LockedSlotAndNote({ children }: { children: React.ReactNode }) {
+  return <div className="contents">{children}</div>;
+}
+
+/**
+ * Phone: the tab bar's locked slots and their note (4a, 5.x). The note opens on
+ * a TAP only; it closes on a press outside, a second tap on the slot, Go to step
+ * 1, or Escape. Focus stays on the slot, and the note's button is next.
+ */
+function TabLockSlots({ pathname, liveHome }: { pathname: string; liveHome: React.ReactNode }) {
+  const { open, show, close, slots, notes } = useLockNotes(tabPlace);
+  const goToStep1 = useGoToStep1();
+  const baseId = useId();
+
+  return (
+    <div className="flex w-full items-center">
+      {liveHome}
+      {LOCKABLE.map(({ href, label }) => {
+        const isOpen = open?.href === href;
+        const noteId = `${baseId}-note-${label}`;
+        const sentenceId = `${noteId}-sentence`;
+        return (
+          <LockedSlotAndNote key={href}>
+            <button
+              type="button"
+              ref={registerRef(slots, href)}
+              data-locked-slot={label}
+              aria-label={refreshCopy.firstRun.lockedItemAria(label)}
+              aria-expanded={isOpen}
+              aria-controls={noteId}
+              aria-describedby={sentenceId}
+              aria-current={isActive(pathname, href) ? "page" : undefined}
+              onClick={() => (isOpen ? close(href, false) : show(href))}
+              // Tapped: an inset outline, never a fill (4a.7).
+              className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] bg-transparent text-[color:var(--fg-locked)] ${
+                isOpen ? "shadow-[inset_0_0_0_1px_var(--border-strong)]" : ""
+              }`}
+            >
+              <NavIcon href={href} />
+              <span className="font-mono text-[9px] tracking-[0.06em] max-[359px]:text-[8.5px] max-[359px]:tracking-normal">
+                {label}
+              </span>
+            </button>
+            <div
+              id={noteId}
+              ref={registerRef(notes, href)}
+              data-lock-note={isOpen ? "open" : "closed"}
+              className={
+                isOpen
+                  ? "fixed right-[12px] bottom-[calc(var(--tabbar-h)+10px)] left-[12px] flex flex-col gap-[10px] rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[14px_16px_16px] shadow-[0_-12px_36px_rgba(0,0,0,.45)]"
+                  : "sr-only"
+              }
+            >
+              {isOpen && (
+                <span
+                  aria-hidden="true"
+                  data-lock-caret
+                  className="absolute bottom-[-6px] h-[10px] w-[10px] rotate-45 border-r border-b border-[color:var(--border-strong)] bg-[color:var(--surface-raised)]"
+                  style={{ left: open.x }}
+                />
+              )}
+              <NoteSentence
+                id={sentenceId}
+                label={label}
+                className="m-0 text-[14px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]"
+              />
+              {isOpen && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    goToStep1();
+                    close(href, false);
+                  }}
+                  className="flex h-[44px] w-full items-center justify-center rounded-[10px] border border-[color:var(--border-strong)] bg-transparent text-[14px] text-[color:var(--fg)]"
+                >
+                  {lockCopy.goToStep1}
+                </button>
+              )}
+            </div>
+          </LockedSlotAndNote>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The phone's bracket over tabs 2 to 5, carrying the reason in words (4.4-4.11). */
+function TabBracket() {
+  return (
+    // `ml-[20%]`: one slot of the bar's content width (374 at 390 = 5 x 74.8),
+    // so the row spans slots 2 to 5 at any phone width.
+    <div data-lock-bracket className="relative ml-[20%] h-[14px] flex-none">
+      <span
+        aria-hidden="true"
+        data-lock-bracket-box
+        className="absolute top-[7px] right-[8px] left-[8px] h-[6px] rounded-t-[3px] border border-b-0 border-[color:var(--border-strong)]"
+      />
+      <span
+        data-lock-bracket-label
+        className="absolute top-0 left-1/2 inline-flex -translate-x-1/2 items-center gap-[5px] whitespace-nowrap bg-[color:var(--surface-rail)] px-[7px] font-mono text-[9px] leading-[14px] tracking-[0.08em] text-[color:var(--fg-locked)] uppercase"
+      >
+        <Padlock size="bracket" stroke="var(--fg-locked)" />
+        {lockCopy.tabBracket}
+      </span>
+    </div>
   );
 }
 
@@ -81,49 +424,21 @@ function LockGlyph() {
 // §Rail container / §Rail Wordmark area / §Rail Nav section / §Rail Account trigger
 // ---------------------------------------------------------------------------
 
-// A locked item is not a link — the handoff takes it out of the tab order in
-// both chromes, so there is nothing to point an href at. Rendering a <span>
-// with role="link" + aria-disabled keeps the name, the role and the unlock
-// reason in the accessibility tree without a focus stop or a dead navigation,
-// which is what a disabled <Link href="#"> would have been. Discovery is
-// covered in visible copy: the first-run checklist cards state the same unlock
-// condition on the page itself.
+// A live nav slot. Locked slots are not links: they are buttons that open their
+// note (RailLock, TabLockSlots above).
 type NavSlotProps = {
   href: NavHref;
   active: boolean;
   // Where the pending pip sits: 2px up in the 38px rail slot, 1px in the 52px tab slot.
   pipBottom: 1 | 2;
+  // The rail passes its label because it shows none; the tab bar leaves the
+  // name to its visible label.
+  name: string | undefined;
   className: string;
   children: React.ReactNode;
-} & (
-  | // A locked slot has no visible label to fall back on in the rail, and in the
-  // tab bar its visible label omits the reason — so the name is required, and
-  // the union is what stops a future call site from dropping it.
-  { isLocked: true; name: string }
-  // Unlocked, undefined leaves the name to the visible label, which is what the
-  // tab bar wants; the rail passes its label because it shows none.
-  | { isLocked: false; name: string | undefined }
-);
+};
 
-function NavSlot({ isLocked, href, name, active, pipBottom, className, children }: NavSlotProps) {
-  if (isLocked) {
-    return (
-      // A locked route is still reachable — /collection with no cards renders
-      // its empty state rather than redirecting — so a locked slot can be the
-      // current page, and saying so is orthogonal to saying it cannot be
-      // followed.
-      <span
-        role="link"
-        title={name}
-        aria-label={name}
-        aria-disabled="true"
-        aria-current={active ? "page" : undefined}
-        className={className}
-      >
-        {children}
-      </span>
-    );
-  }
+function NavSlot({ href, name, active, pipBottom, className, children }: NavSlotProps) {
   return (
     <Link
       href={href}
@@ -148,7 +463,8 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       // to outrank that column, or content with any positive z-index (the
       // collection filter bar, a rec card's overlay) paints over the open menu.
       // Below the tab bar, the menu backdrop and the modals, which all sit at
-      // 40 or above.
+      // 40 or above. The lock's note is fixed inside it, so it inherits the
+      // same rank over page content.
       className="hidden md:flex md:flex-col items-center w-[62px] shrink-0 h-screen sticky top-0 z-30 py-[14px]"
       style={{
         background: "var(--surface-rail)",
@@ -169,40 +485,21 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       {/* Nav section — icon-only, 38px squares, 4px apart                    */}
       {/* ------------------------------------------------------------------ */}
       <nav className="flex flex-col items-center gap-1" aria-label="Primary">
-        {ITEMS.map(({ href, label, lockable }) => {
-          const isLocked = locked && lockable;
-          // Read off the pathname alone. A locked slot can be the current page,
-          // and that is a fact about where the reader is, not about whether the
-          // slot can be followed; the fill below still lets locked win.
+        {ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {
           const active = isActive(pathname, href);
-          // Spread rather than two props: the union needs `isLocked` narrowed to
-          // a literal before it can vouch for `name`, and a boolean prop is not.
-          const slot = isLocked
-            ? ({ isLocked: true, name: refreshCopy.firstRun.lockedItemAria(label) } as const)
-            : ({ isLocked: false, name: label } as const);
           return (
             <NavSlot
               key={href}
-              {...slot}
+              name={label}
               href={href}
               active={active}
-              // Locked is tested first: a locked slot stays inert-looking even
-              // on its own route, or the active fill would advertise a
-              // destination the reader cannot reach from here.
-              // Locked takes `--fg-locked`, not the dimmer `--fg-disabled` the
-              // handoff names: this colour is the icon, and the icon is the
-              // whole of what a rail slot shows. Only the padlock beside it,
-              // which repeats a state already in the accessible name, is dim
-              // enough to sit under the contrast floor.
               pipBottom={2}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] ${
-                isLocked
-                  ? "bg-transparent text-[color:var(--fg-locked)]"
-                  : active
-                    ? "bg-elevated text-[color:var(--fg)]"
-                    : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)]"
+                active
+                  ? "bg-elevated text-[color:var(--fg)]"
+                  : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)]"
               }`}
             >
               <NavIcon href={href} />
@@ -210,17 +507,9 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
           );
         })}
 
-        {locked && (
-          <>
-            {/* 8px of its own on top of the list's 4px gap, per the frame. */}
-            <span
-              aria-hidden
-              className="my-2 block h-px w-[34px]"
-              style={{ background: "var(--border)" }}
-            />
-            <LockGlyph />
-          </>
-        )}
+        {/* Home stays outside the well, above it (1.1); the well replaces the
+            divider and lone padlock the rail drew before (1.2). */}
+        {locked && <RailLock pathname={pathname} />}
       </nav>
 
       {/* ------------------------------------------------------------------ */}
@@ -241,67 +530,68 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
 export function TabBar({ locked }: { locked: boolean }) {
   const pathname = usePathname();
 
+  const live = ITEMS.filter((i) => !locked || !i.lockable).map(({ href, label }) => {
+    const active = isActive(pathname, href);
+    return (
+      <NavSlot
+        key={href}
+        name={undefined}
+        href={href}
+        active={active}
+        // The active fill is a surface, not a coloured label: locked ruling
+        // 13 reserves colour for status. One `color` on the slot serves both
+        // the icon (currentColor) and the label.
+        pipBottom={1}
+        className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
+          active
+            ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
+            : "bg-transparent text-[color:var(--fg-faint)] has-[[data-pending]]:text-[color:var(--fg)]"
+        }`}
+      >
+        <NavIcon href={href} />
+        {/* A fifth item takes the 390pt bar to 74.8px per slot, which still
+            holds `Commanders` at 9px with 10.4px of air each side. Below
+            360pt it does not: the label drops to 8.5px and gives up its
+            tracking, which buys 3px back and takes 320pt from 3.4px of
+            clearance to 4.9px. Truncation is rejected — `Commanders` and
+            `Collection` share a prefix. */}
+        <span className="font-mono text-[9px] tracking-[0.06em] max-[359px]:text-[8.5px] max-[359px]:tracking-normal">
+          {label}
+        </span>
+      </NavSlot>
+    );
+  });
+
   return (
     <nav
       // Held to --tabbar-h rather than sized by its contents: the bar is fixed,
       // so every surface that has to sit clear of it reserves that height by
       // hand, and an intrinsic height gives them nothing exact to reserve.
       // 8px all round with 14px at the bottom for the home indicator, which
-      // with the 52px item is exactly --tabbar-h.
-      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-[var(--tabbar-h)] items-center px-2 pt-2 pb-[14px]"
+      // with the 52px item is exactly --tabbar-h. While locked the shell sets
+      // --tabbar-h to 88px and the bar stacks the bracket over the tabs, with
+      // 7px on top (4.1, 4.2).
+      className={`md:hidden fixed inset-x-0 bottom-0 z-40 flex h-[var(--tabbar-h)] px-2 pb-[14px] ${
+        locked ? "flex-col pt-[7px]" : "items-center pt-2"
+      }`}
       style={{
         background: "var(--surface-rail)",
         borderTop: "1px solid var(--border)",
       }}
       aria-label="Primary"
     >
-      {ITEMS.map(({ href, label, lockable }) => {
-        const isLocked = locked && lockable;
-        const active = isActive(pathname, href);
-        // Unlocked, the visible label is the name; locked, it is replaced by the
-        // same label plus the reason it cannot be reached.
-        const slot = isLocked
-          ? ({ isLocked: true, name: refreshCopy.firstRun.lockedItemAria(label) } as const)
-          : ({ isLocked: false, name: undefined } as const);
-
-        return (
-          <NavSlot
-            key={href}
-            {...slot}
-            href={href}
-            active={active}
-            // The active fill is a surface, not a coloured label: locked ruling
-            // 13 reserves colour for status. One `color` on the slot serves both
-            // the icon (currentColor) and the label.
-            // Locked first, as in the rail.
-            // `--fg-locked` for the same reason as the rail, and more so: one
-            // `color` serves the icon and a visible label, and a label under
-            // the 3:1 floor is unreadable however truthful its name.
-            pipBottom={1}
-            className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
-              isLocked
-                ? "bg-transparent text-[color:var(--fg-locked)]"
-                : active
-                  ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
-                  : "bg-transparent text-[color:var(--fg-faint)] has-[[data-pending]]:text-[color:var(--fg)]"
-            }`}
-          >
-            <NavIcon href={href} />
-            {/* A fifth item takes the 390pt bar to 74.8px per slot, which still
-                holds `Commanders` at 9px with 10.4px of air each side. Below
-                360pt it does not: the label drops to 8.5px and gives up its
-                tracking, which buys 3px back and takes 320pt from 3.4px of
-                clearance to 4.9px. Truncation is rejected — `Commanders` and
-                `Collection` share a prefix. */}
-            <span className="font-mono text-[9px] tracking-[0.06em] max-[359px]:text-[8.5px] max-[359px]:tracking-normal">
-              {label}
-            </span>
-          </NavSlot>
-        );
-      })}
+      {locked ? (
+        <>
+          <TabBracket />
+          <TabLockSlots pathname={pathname} liveHome={live} />
+        </>
+      ) : (
+        live
+      )}
     </nav>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // MobileHeader — mobile only (md:hidden)

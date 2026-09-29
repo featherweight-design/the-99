@@ -1,14 +1,17 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
 
 const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
 
 let pathname = "/collection";
-vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push }) }));
 
 afterEach(() => {
   pathname = "/collection";
+  push.mockReset();
+  document.body.innerHTML = "";
 });
 
 vi.mock("@clerk/nextjs", () => ({
@@ -72,31 +75,6 @@ describe("NavRail", () => {
     expect(marks[0].compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("states the reason a locked item is locked, in its accessible name", () => {
-    render(<NavRail locked theme="amonkhet" />);
-    const nav = screen.getByRole("navigation", { name: "Primary" });
-    expect(
-      within(nav).getByRole("link", { name: "Decks: unlocks once a collection is read" }),
-    ).toHaveAttribute("aria-disabled", "true");
-    // Home is never lockable.
-    expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-disabled");
-  });
-
-  // /collection with no cards renders its empty state rather than redirecting,
-  // so a locked slot can be the page the reader is on. Being unfollowable and
-  // being current are separate facts, and only the first of them is locked.
-  it("still marks a locked item as the current page when it is one", () => {
-    const { container } = render(<NavRail locked theme="amonkhet" />);
-    const item = screen.getByRole("link", {
-      name: "Collection: unlocks once a collection is read",
-    });
-    expect(item).toHaveAttribute("aria-current", "page");
-    // …without taking the active fill, which would advertise a destination the
-    // reader cannot reach from here.
-    expect(item.className).toContain("bg-transparent");
-    expect(container.querySelector(".bg-elevated")).toBeNull();
-  });
-
   // The two lanes are separate routes, so each marks itself current on its own
   // pathname and neither claims the other's.
   it("marks Discover current on the discover route, and Commanders not", () => {
@@ -107,17 +85,6 @@ describe("NavRail", () => {
       "page",
     );
     expect(screen.getByRole("link", { name: "Commanders" })).not.toHaveAttribute("aria-current");
-  });
-
-  // The handoff takes locked items out of the tab order. An <a> without an
-  // href is not focusable either, but it would still offer a dead navigation
-  // target to a pointer; a <span> offers neither and keeps the name and role.
-  it("does not leave a locked item focusable or navigable", () => {
-    render(<NavRail locked theme="amonkhet" />);
-    const item = screen.getByRole("link", { name: "Decks: unlocks once a collection is read" });
-    expect(item.tagName).toBe("SPAN");
-    expect(item).not.toHaveAttribute("href");
-    expect(item).not.toHaveAttribute("tabindex");
   });
 });
 
@@ -149,13 +116,6 @@ describe("TabBar", () => {
     const label = screen.getByText("Commanders");
     expect(label.className).toContain("max-[359px]:text-[8.5px]");
     expect(label.className).toContain("max-[359px]:tracking-normal");
-  });
-
-  it("states the unlock reason on locked tabs too", () => {
-    render(<TabBar locked />);
-    expect(
-      screen.getByRole("link", { name: "Collection: unlocks once a collection is read" }),
-    ).toHaveAttribute("aria-disabled", "true");
   });
 
   // Only the locked slot may override the name. An unlocked tab already shows
@@ -191,5 +151,316 @@ describe("Nav glyphs", () => {
       expect(svg.getAttribute("viewBox")).toBe("0 0 20 20");
       expect(svg.getAttribute("stroke-width")).toBe("1.5");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The lock (docs/superpowers/design-tables/first-run-locked-nav.md). jsdom lays
+// nothing out, so geometry (the well, the note's placement, the 88px bar) is
+// `probe:locked-nav`'s; these pin the contract and the open/close rules.
+// ---------------------------------------------------------------------------
+
+const DECKS_NOTE = "Decks opens once your cards are in. So do Collection, Commanders and Discover.";
+
+function slot(name: string) {
+  return screen.getByRole("button", { name: `${name}, locked` });
+}
+function noteOf(button: HTMLElement) {
+  return document.getElementById(button.getAttribute("aria-controls")!)!;
+}
+function isOpen(button: HTMLElement) {
+  return button.getAttribute("aria-expanded") === "true";
+}
+
+describe("The lock, desktop rail", () => {
+  it("draws each locked slot as a button that opens a note, not a disabled link", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    for (const label of ["Collection", "Commanders", "Discover", "Decks"]) {
+      const item = within(nav).getByRole("button", { name: `${label}, locked` });
+      expect(item).toHaveAttribute("type", "button");
+      expect(item).toHaveAttribute("aria-expanded", "false");
+      expect(item).not.toHaveAttribute("aria-disabled");
+      expect(item).not.toHaveAttribute("title");
+      // In the tab order.
+      expect(item).not.toHaveAttribute("tabindex");
+      expect(noteOf(item)).toBeInTheDocument();
+    }
+    expect(within(nav).queryByRole("link", { name: /Decks/ })).toBeNull();
+    // Home is never lockable.
+    expect(within(nav).getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
+  });
+
+  it("describes the slot by its note's sentence, which is present while the note is closed", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    const sentence = document.getElementById(decks.getAttribute("aria-describedby")!);
+    expect(sentence?.textContent).toBe(DECKS_NOTE);
+    expect(decks).toHaveAccessibleDescription(DECKS_NOTE);
+    // Closed: visually hidden, and nothing in it takes focus.
+    const note = noteOf(decks);
+    expect(note.className).toContain("sr-only");
+    expect(within(note).queryByRole("button")).toBeNull();
+    expect(within(note).queryByText("Locked")).toBeNull();
+    expect(note).not.toHaveAttribute("role");
+  });
+
+  it("keeps a locked slot current on its own route, without the active fill", () => {
+    const { container } = render(<NavRail locked theme="amonkhet" />);
+    expect(slot("Collection")).toHaveAttribute("aria-current", "page");
+    expect(slot("Decks")).not.toHaveAttribute("aria-current");
+    expect(container.querySelector(".bg-elevated")).toBeNull();
+  });
+
+  it("puts the four locked slots and the LOCKED foot inside one well, with Home outside", () => {
+    const { container } = render(<NavRail locked theme="amonkhet" />);
+    const well = container.querySelector("[data-lock-well]")!;
+    expect(well).not.toBeNull();
+    expect(within(well as HTMLElement).getAllByRole("button", { name: /, locked$/ })).toHaveLength(4);
+    expect(within(well as HTMLElement).getByText("Locked")).toBeInTheDocument();
+    expect(well.contains(screen.getByRole("link", { name: "Home" }))).toBe(false);
+    // The divider and the lone --fg-disabled padlock it replaces are gone.
+    expect(container.querySelector('[stroke="var(--fg-disabled)"]')).toBeNull();
+  });
+
+  it("opens on hover, on focus and on a click", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    const discover = slot("Discover");
+
+    fireEvent.pointerEnter(decks);
+    expect(isOpen(decks)).toBe(true);
+    const note = noteOf(decks);
+    expect(note.className).not.toContain("sr-only");
+    expect(within(note).getByText("Locked")).toBeInTheDocument();
+    expect(within(note).getByRole("button", { name: "Go to step 1" })).toBeInTheDocument();
+
+    // Hovering another slot moves the note there: one at a time.
+    fireEvent.pointerEnter(discover);
+    expect(isOpen(discover)).toBe(true);
+    expect(isOpen(decks)).toBe(false);
+
+    fireEvent.pointerDown(document.body);
+    act(() => decks.focus());
+    expect(isOpen(decks)).toBe(true);
+
+    fireEvent.pointerDown(document.body);
+    act(() => (document.activeElement as HTMLElement).blur());
+    fireEvent.click(discover);
+    expect(isOpen(discover)).toBe(true);
+  });
+
+  it("does not close when the pointer leaves the slot, so it can travel onto the note", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    fireEvent.pointerLeave(decks);
+    expect(isOpen(decks)).toBe(true);
+    // A press on the note's own text is inside it.
+    fireEvent.pointerDown(noteOf(decks));
+    expect(isOpen(decks)).toBe(true);
+  });
+
+  it("closes on Escape and hands focus back to the slot, without reopening", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    act(() => decks.focus());
+    expect(isOpen(decks)).toBe(true);
+    fireEvent.keyDown(decks, { key: "Escape" });
+    expect(isOpen(decks)).toBe(false);
+    expect(document.activeElement).toBe(decks);
+  });
+
+  // The reopen the guard exists for: a note opened by HOVER has focus elsewhere, so Escape's
+  // return of focus to the slot fires its focus handler, which would open the note again.
+  it("does not reopen a hover-opened note when Escape returns focus to its slot", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    expect(isOpen(decks)).toBe(true);
+    expect(document.activeElement).not.toBe(decks);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(document.activeElement).toBe(decks);
+    expect(isOpen(decks)).toBe(false);
+  });
+
+  it("leaves an Escape pressed inside something else alone", () => {
+    render(
+      <>
+        <NavRail locked theme="amonkhet" />
+        <input aria-label="elsewhere" />
+      </>,
+    );
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    const other = screen.getByRole("textbox", { name: "elsewhere" });
+    act(() => other.focus());
+    fireEvent.keyDown(other, { key: "Escape" });
+    expect(isOpen(decks)).toBe(true);
+  });
+
+  it("closes on a press outside slot and note", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    fireEvent.pointerDown(document.body);
+    expect(isOpen(decks)).toBe(false);
+  });
+
+  it("closes when focus leaves both slot and note, and not when it moves between them", () => {
+    render(
+      <>
+        <NavRail locked theme="amonkhet" />
+        <button type="button">after</button>
+      </>,
+    );
+    const decks = slot("Decks");
+    act(() => decks.focus());
+    const go = within(noteOf(decks)).getByRole("button", { name: "Go to step 1" });
+    act(() => go.focus());
+    expect(isOpen(decks)).toBe(true);
+    act(() => screen.getByRole("button", { name: "after" }).focus());
+    expect(isOpen(decks)).toBe(false);
+  });
+
+  it("takes Go to step 1 to the upload entry when it is on the page", () => {
+    render(
+      <>
+        <NavRail locked theme="amonkhet" />
+        <button type="button" data-step1-upload>
+          Upload a CSV
+        </button>
+      </>,
+    );
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Upload a CSV" }));
+    expect(push).not.toHaveBeenCalled();
+    expect(isOpen(decks)).toBe(false);
+  });
+
+  // While step 1's review is open its upload entry is gone; leaving for the replace page would
+  // throw the review away, so the step-1 card takes focus instead.
+  it("takes Go to step 1 to the step-1 card while its review has replaced the entry", () => {
+    render(
+      <>
+        <NavRail locked theme="amonkhet" />
+        <div data-step1-card="" tabIndex={-1} aria-label="Step 1" />
+      </>,
+    );
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
+    expect(document.activeElement).toBe(document.querySelector("[data-step1-card]"));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("routes Go to step 1 to the replace page when no checklist is on screen", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
+    expect(push).toHaveBeenCalledWith("/collection/replace");
+    expect(isOpen(decks)).toBe(false);
+  });
+
+  it("unmounts every part of the lock once unlocked", () => {
+    const { container } = render(<NavRail locked={false} theme="amonkhet" />);
+    expect(container.querySelector("[data-lock-well]")).toBeNull();
+    expect(container.querySelector("[data-lock-note]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /, locked$/ })).toBeNull();
+    for (const item of within(screen.getByRole("navigation", { name: "Primary" })).getAllByRole("link")) {
+      expect(item).not.toHaveAttribute("aria-expanded");
+      expect(item).not.toHaveAttribute("aria-controls");
+    }
+  });
+
+  it("draws nothing with a transition or animation", () => {
+    const { container } = render(<NavRail locked theme="amonkhet" />);
+    fireEvent.pointerEnter(slot("Decks"));
+    // The account trigger below the well has a hover transition of its own; the
+    // lock is the well and everything in it (the open note included).
+    const well = container.querySelector("[data-lock-well]")!;
+    expect(well.className).not.toMatch(/transition|anim/);
+    expect(well.querySelector('[class*="transition"], [class*="anim"]')).toBeNull();
+  });
+});
+
+describe("The lock, phone tab bar", () => {
+  it("draws the bracket over tabs 2 to 5 and stacks it over the tabs, only while locked", () => {
+    const { container, rerender } = render(<TabBar locked />);
+    const bar = screen.getByRole("navigation", { name: "Primary" });
+    const bracket = container.querySelector("[data-lock-bracket]")!;
+    expect(bracket).toHaveTextContent("Open once your cards are in");
+    expect(bracket.className).toContain("ml-[20%]");
+    expect(bar.className).toContain("flex-col");
+    expect(bar.className).toContain("pt-[7px]");
+    expect(bar.className).toContain("h-[var(--tabbar-h)]");
+
+    rerender(<TabBar locked={false} />);
+    expect(container.querySelector("[data-lock-bracket]")).toBeNull();
+    expect(container.querySelector("[data-lock-note]")).toBeNull();
+    expect(bar.className).not.toContain("flex-col");
+    expect(bar.className).toContain("pt-2");
+  });
+
+  it("draws each locked tab as a button under the same contract as the rail", () => {
+    render(<TabBar locked />);
+    const collection = slot("Collection");
+    expect(collection).toHaveAttribute("aria-expanded", "false");
+    expect(collection).toHaveAttribute("aria-current", "page");
+    expect(collection).not.toHaveAttribute("aria-disabled");
+    expect(collection).not.toHaveAttribute("title");
+    expect(collection).toHaveAccessibleDescription(
+      "Collection opens once your cards are in. So do Commanders, Discover and Decks.",
+    );
+    expect(collection.className).toContain("gap-[5px]");
+  });
+
+  it("opens on a tap only, and a second tap closes it", () => {
+    render(<TabBar locked />);
+    const decks = slot("Decks");
+    fireEvent.pointerEnter(decks);
+    act(() => decks.focus());
+    expect(isOpen(decks)).toBe(false);
+
+    fireEvent.click(decks);
+    expect(isOpen(decks)).toBe(true);
+    expect(decks.className).toContain("shadow-[inset_0_0_0_1px_var(--border-strong)]");
+    const note = noteOf(decks);
+    expect(within(note).getByRole("button", { name: "Go to step 1" })).toBeInTheDocument();
+    // No LOCKED label on the phone note.
+    expect(within(note).queryByText("Locked")).toBeNull();
+
+    fireEvent.pointerDown(decks);
+    fireEvent.click(decks);
+    expect(isOpen(decks)).toBe(false);
+    expect(decks.className).not.toContain("shadow-[inset");
+  });
+
+  it("closes on a tap outside, and on Escape with focus back on the slot", () => {
+    render(<TabBar locked />);
+    const decks = slot("Decks");
+    fireEvent.click(decks);
+    fireEvent.pointerDown(document.body);
+    expect(isOpen(decks)).toBe(false);
+
+    act(() => decks.focus());
+    fireEvent.click(decks);
+    const go = within(noteOf(decks)).getByRole("button", { name: "Go to step 1" });
+    act(() => go.focus());
+    fireEvent.keyDown(go, { key: "Escape" });
+    expect(isOpen(decks)).toBe(false);
+    expect(document.activeElement).toBe(decks);
+  });
+
+  it("closes on Go to step 1", () => {
+    render(<TabBar locked />);
+    const decks = slot("Decks");
+    fireEvent.click(decks);
+    fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
+    expect(push).toHaveBeenCalledWith("/collection/replace");
+    expect(isOpen(decks)).toBe(false);
   });
 });

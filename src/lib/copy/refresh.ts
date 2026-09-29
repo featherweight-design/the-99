@@ -247,12 +247,24 @@ export const refreshCopy = {
     // import foot gone this card is the only place a first-run player learns import exists.
     step2Title: 'Pick a commander or import a deck',
     // Locked steps state what unlocks them. Not "coming soon", not blank.
-    step2Locked: 'Unlocks once a collection is read',
+    step2Locked: 'Opens once your cards are in',
     step3Title: 'Build the 99',
-    step3Locked: 'Unlocks with a commander',
-    // Locked rail and tab items are dimmed and inert; the accessible name still
-    // carries the reason.
-    lockedItemAria: (label: string) => `${label}: unlocks once a collection is read`,
+    step3Locked: 'Opens once you pick a commander',
+    // A locked rail or tab slot is a button that opens its note; the name says
+    // it is locked and the note, its description, says why. The name does not
+    // repeat the note (onboarding audit, correction 1).
+    lockedItemAria: (label: string) => `${label}, locked`,
+    // The lock's own words (design table first-run-locked-nav.md).
+    lock: {
+      // Desktop only, under the first-run H1; the phone's bracket carries it.
+      pageLine: 'Collection, Commanders, Discover and Decks open once your cards are in.',
+      // `others` is the other three locked labels, joined by `nameList` ("A, B and C").
+      note: (label: string, others: string) =>
+        `${label} opens once your cards are in. So do ${others}.`,
+      tabBracket: 'Open once your cards are in',
+      railLabel: 'Locked',
+      goToStep1: 'Go to step 1',
+    },
   },
 
   // ── Filters, both surfaces ────────────────────────────────────────────

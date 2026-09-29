@@ -14,8 +14,9 @@ import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
  * mobile header + bottom tabs (< md), and a scrollable main column.
  *
  * `locked` = no cards uploaded yet (uniqueCards === 0). NavRail and TabBar use
- * this to render Collection/Commanders/Decks as non-interactive until the user
- * completes Step 1 of the first-run flow (§Rail Locked state, property table).
+ * this to draw Collection, Commanders, Discover and Decks as locked slots, each
+ * opening a note that says why, until the collection is read
+ * (docs/superpowers/design-tables/first-run-locked-nav.md).
  */
 export default async function Shell({
   children,
@@ -42,6 +43,13 @@ export default async function Shell({
   const sheet = aboutSheetEnabled() ? readSheetState(await headers()) : null;
 
   return (
+    // While locked the phone's tab bar carries the lock's bracket over its tabs and grows to
+    // 88px (first-run-locked-nav 4.1). Set on a `display: contents` wrapper OUTSIDE the pending
+    // provider, so the bar and every surface reserving its height read the same figure: the
+    // main column's padding, the sheets and docks that sit clear of it, and the provider's own
+    // loading overlay, which renders beside the shell rather than inside it. Unlocked it is the
+    // global 74px from globals.css.
+    <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider>
       <div className="flex min-h-screen flex-1">
         <NavRail locked={locked} theme={theme} />
@@ -63,5 +71,6 @@ export default async function Shell({
         {sheet && <AboutSheet state={sheet} />}
       </div>
     </NavigationPendingProvider>
+    </div>
   );
 }

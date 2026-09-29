@@ -85,11 +85,11 @@ Amonkhet, and this app has six themes.
 | color | — | frame: bare Amonkhet hex → **shipped as `var(--fg-locked)`** |
 | background | — | transparent |
 | hover | — | none |
-| focusable | — | no — "not focusable as links" |
-| role | — | link |
-| aria-disabled | — | "true" |
+| focusable | — | yes — a `<button>` in the tab order that opens the lock's note (superseded by first-run-locked-nav.md, O3) |
+| role | — | button, `aria-expanded` / `aria-controls` / `aria-describedby` the note |
+| aria-disabled | — | none |
 | aria-current | — | "page" on its own route — a locked route still renders |
-| accessible name | — | `firstRun.lockedItemAria(label)` — label + the unlock reason |
+| accessible name | — | `firstRun.lockedItemAria(label)`: "{label}, locked"; the reason is the note it describes |
 
 ### Locked divider
 

@@ -29,6 +29,9 @@ export function FirstRunStepOne({ fan }: { fan: React.ReactNode }) {
         reviewing ? "items-start overflow-hidden p-0 text-left md:overflow-visible md:p-[18px]" : "items-center p-[18px_16px] text-center sm:p-[18px]"
       }`}
       data-reviewing={reviewing ? "" : undefined}
+      // The nav's "Go to step 1" lands here when the review has replaced the upload entry.
+      data-step1-card=""
+      tabIndex={-1}
     >
       {/* `sm:items-start` on the card above keeps this pinned while the text
           column grows by a paste panel or a whole review screen. The
