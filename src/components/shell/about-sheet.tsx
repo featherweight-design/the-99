@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { SheetState } from "../../lib/about/sheet-state";
 import { aboutSheetCopy as copy } from "../../lib/copy/about";
 import { howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { usePendingPush } from "./pending-push";
 
 /** How many titles the card lists (STATES-about-r6 §N1, §N2): all of them up to
  *  four, otherwise three and "and N more", so "and 1 more" is never printed. */
@@ -37,7 +38,7 @@ export function AboutSheet({ state }: { state: SheetState }) {
   const [shown] = useState(state);
   const [open, setOpen] = useState(shown.kind !== "none");
   const [announce, setAnnounce] = useState("");
-  const router = useRouter();
+  const { go } = usePendingPush();
   const onAbout = usePathname() === "/about";
   // Reaching /about by ANY route answers the sheet, not only by Show me: a
   // reader who opens About The 99 from the account menu has read what it points
@@ -157,7 +158,8 @@ export function AboutSheet({ state }: { state: SheetState }) {
           className="h-[36px] px-[18px] text-[13px] max-md:h-[44px] max-md:flex-1"
           onClick={() => {
             setOpen(false);
-            router.push("/about");
+            // Reported like a link, so a slow arrival reaches the navigation screen.
+            go("/about");
           }}
         >
           {copy.show}

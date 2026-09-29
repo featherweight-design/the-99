@@ -31,7 +31,9 @@ import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
+import { neon } from "@neondatabase/serverless";
+import { readFileSync } from "node:fs";
+import { captureAboutSeen, clearAboutSheet, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -69,11 +71,13 @@ async function signIn(browser) {
     await window.Clerk.setActive({ session: a.createdSessionId });
     return window.Clerk.user.id;
   }, EMAIL);
-  await markEveryEntrySeen(userId);
-  await context.addCookies([sheetCookie(userId, page.url())]);
+  // Captured BEFORE the first write to it, and put back in the run's `finally`: check 7 sets the
+  // account behind on About, and the dismiss it presses writes the version.
+  const aboutRow = await captureAboutSeen(userId);
+  await clearAboutSheet(page, userId);
   const state = await context.storageState();
   await context.close();
-  return state;
+  return { state, userId, aboutRow };
 }
 
 // Stamps, from the moment it is armed, the first frame each pending signal is PAINTED: the pip or
@@ -110,7 +114,7 @@ async function slowPage(context) {
   return { page, throttle: (on) => cdp.send("Network.emulateNetworkConditions", on ? SLOW_4G : { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 }) };
 }
 
-async function run(browser, state, width) {
+async function run(browser, state, width, userId) {
   console.log(`\n${width.label}px`);
   const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, deviceScaleFactor: 1, storageState: state });
   await context.addInitScript(WATCH);
@@ -249,14 +253,45 @@ async function run(browser, state, width) {
     await page.close();
   }
 
+  // 7. The About dismiss (`Got it`), offered to a reader SENT to /about while behind: the action
+  //    returns the destination and the page navigates there itself, so a slow arrival at a route
+  //    that is not kept escalates to its screen. The account is set one version behind with no
+  //    entry seen, the state the gate sends a reader in from, and marked seen again afterwards.
+  {
+    const sql = neon(requireEnv(["DATABASE_URL"]).DATABASE_URL);
+    const version = JSON.parse(readFileSync(new URL("../src/lib/copy/about.version.json", import.meta.url), "utf8")).version;
+    await sql`update user_prefs set about_version_seen = ${version - 1}, about_seen_ids = ${[]}::text[] where user_id = ${userId}`;
+    try {
+      const { page, throttle } = await slowPage(context);
+      await page.goto(`${BASE}/about?next=${encodeURIComponent("/commanders")}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+      const dismiss = page.getByRole("button", { name: /^Got it/ }).filter({ visible: true }).first();
+      await dismiss.waitFor({ state: "visible", timeout: 120_000 });
+      await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
+      await throttle(true);
+      await page.evaluate(() => window.__navArm());
+      await dismiss.click();
+      await page.waitForURL((u) => u.pathname === "/commanders", { timeout: 120_000 });
+      const nav = await page.evaluate(() => window.__nav);
+      report(nav.overlay != null && nav.overlay >= 390, "the About dismiss escalates to its destination's screen", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
+      await throttle(false);
+      await page.close();
+    } finally {
+      await markEveryEntrySeen(userId);
+    }
+  }
+
   await context.close();
 }
 
 await clerkSetup();
 const browser = await chromium.launch();
 try {
-  const state = await signIn(browser);
-  for (const width of WIDTHS) await run(browser, state, width);
+  const { state, userId, aboutRow } = await signIn(browser);
+  try {
+    for (const width of WIDTHS) await run(browser, state, width, userId);
+  } finally {
+    await restoreAboutSeen(aboutRow);
+  }
 } finally {
   await browser.close();
 }
