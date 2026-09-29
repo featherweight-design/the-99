@@ -1,0 +1,45 @@
+{
+  "feature": "First-run redesign \u2014 an account with a collection and no decks",
+  "note": "Signed in as an account that owns cards and has no decks. Home shows the No decks yet section with its ghost New deck, and /decks shows the same pair. Both draw `DecksZeroActions`: Home through `HomeDecksZero`, which imports it, and /decks through `DecksZero`, which renders it from the module that defines it. There is no `shares` block, because `check:shared` asserts an import in every row's view and /decks' view has none by construction; the sameness is that one definition, and Home's import of it is read by eye.",
+  "rows": [
+    {
+      "id": "home-no-decks",
+      "label": "/ \u2014 collection, no decks: the No decks yet section",
+      "view": "src/components/home/home-decks-zero.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "h1:visible",
+          "settle": 3000
+        },
+        {
+          "scrollTo": "text=No decks yet"
+        }
+      ]
+    },
+    {
+      "id": "decks-zero",
+      "label": "/decks \u2014 zero, the shared pair",
+      "view": "src/components/decks/decks-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "h1:visible",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "replace-banner",
+      "label": "/collection/replace \u2014 the replace note (collection > 0)",
+      "view": "src/components/collection/replace-flow.tsx",
+      "steps": [
+        {
+          "goto": "/collection/replace",
+          "wait": "h1:visible",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}

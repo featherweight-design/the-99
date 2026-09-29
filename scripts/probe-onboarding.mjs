@@ -376,6 +376,22 @@ async function calmReplace(browser, vp) {
       const align = await card.evaluate((el) => getComputedStyle(el).alignItems);
       report(align === "flex-start", "D11 5a the card goes left-aligned", align);
       report(!(await onPage(page, "text=Review import").isVisible().catch(() => false)), "D11 5a the embedded review draws no header of its own");
+      // 5a draws the kicker alone above the card: no page heading, the kicker 10px down, and the
+      // card 8px under it (calm-replace §3.2, §3.3). The heading lives in the server file and the
+      // review state in the step card, so a build that forgets the link keeps the heading.
+      const head = await card.evaluate((el) => {
+        const root = el.closest(".group\\/first-run");
+        const h1 = root?.querySelector("h1");
+        const kicker = root?.querySelector("p.font-mono");
+        const k = kicker?.getBoundingClientRect();
+        return {
+          h1: h1 ? getComputedStyle(h1).display : "missing",
+          kickerPad: kicker ? parseFloat(getComputedStyle(kicker.parentElement).paddingTop) : -1,
+          gap: k ? el.getBoundingClientRect().top - k.bottom : -1,
+        };
+      });
+      report(head.h1 === "none", "D11 5a the page heading steps aside for the review", head.h1);
+      report(head.kickerPad === 10 && Math.abs(head.gap - 8) <= 0.5, "D11 5a the kicker is 10px down and the card 8px under it", `pad ${head.kickerPad}px, gap ${head.gap.toFixed(1)}px`);
       // The bar is the card's FOOT: flush to its sides and bottom, inside its 1px border.
       const flush = await onPageRole(page, "button", "Cancel").evaluate((c) => {
         const bar = c.parentElement.parentElement.getBoundingClientRect();
@@ -400,6 +416,10 @@ async function calmReplace(browser, vp) {
     const [cb, nb] = [await cancel.boundingBox(), await cont.boundingBox()];
     report(cb && nb && Math.abs(cb.y - nb.y) < 2 && cb.x < nb.x, "D11 Cancel sits left of Continue on one row", cb && nb ? `cancel ${Math.round(cb.x)},${Math.round(cb.y)} continue ${Math.round(nb.x)},${Math.round(nb.y)}` : "missing");
     if (vp.phone) report(cb && Math.round(cb.height) === 46, "D11 the phone's Cancel is a 46px hairline", cb ? `${cb.height}px` : "missing");
+    if (vp.phone) {
+      const weight = await cancel.evaluate((el) => getComputedStyle(el).fontWeight);
+      report(weight === "400", "D11 the phone's Cancel is regular weight, as drawn", weight);
+    }
     const embeddedBar = await barOf(page);
     report(embeddedBar.position !== "sticky", "D11 5a the bar is the card's foot, in flow", embeddedBar.position);
     await shot(page, vp, "calm-embedded-review");
@@ -448,6 +468,14 @@ async function calmReplace(browser, vp) {
       `left ${noteInk.left} ${noteInk.leftColor}, --border ${noteInk.border}`,
     );
     report(noteInk.bg === noteInk.sunken, "D10 the note sits on --surface-sunken", `${noteInk.bg} vs ${noteInk.sunken}`);
+    if (!vp.phone) {
+      // Desktop draws the note 20px under the page heading (calm-replace §2.1).
+      const under = await note.evaluate((el) => {
+        const h1 = [...document.querySelectorAll("main h1")].find((h) => h.getBoundingClientRect().height > 0);
+        return h1 ? el.getBoundingClientRect().top - h1.getBoundingClientRect().bottom : -1;
+      });
+      report(Math.abs(under - 20) <= 0.5, "D10 desktop the note sits 20px under the heading", `${under.toFixed(1)}px`);
+    }
     await pasteToReview(page, "3 Sol Ring");
     if (vp.phone) {
       report(!(await onPageRole(page, "button", "Back to upload").count()), "D11 5b the ‹ is gone");

@@ -96,17 +96,21 @@ export function FirstRunChecklist() {
     // The accent wash is a desktop figure: 640×340 at 40% of a 390px frame is
     // the whole screen, which is a tint over the page rather than the light
     // behind the fan the frame draws. Phone gets `--bg` alone.
-    <div className="flex min-w-0 flex-auto flex-col sm:bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
-      <div className="p-[16px_16px_0] sm:p-[26px_28px_0]">
+    <div className="group/first-run flex min-w-0 flex-auto flex-col sm:bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
+      {/* While step 1's review is open on the phone (5a), the page keeps the kicker and gives the
+          heading's room to the review: the card's `data-reviewing` reaches these through `:has`,
+          since the heading is drawn here and the review state lives in the step card. Stops at
+          `md`, with every other reviewing override. */}
+      <div className="p-[16px_16px_0] sm:p-[26px_28px_0] max-md:group-has-[[data-reviewing]]/first-run:pt-[10px]">
         {/* The kicker replaces the shipped "Three steps to your first
             recommendations." — it says the same thing in four words, and the
             copy file has no string for the sentence. */}
-        <p className="m-0 mb-[6px] font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
+        <p className="m-0 mb-[6px] max-md:group-has-[[data-reviewing]]/first-run:mb-0 font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
           {c.step(1, 3)}
         </p>
         {/* No Crown above this: the card fan is the brand moment now, and two
             marks stacked over one heading is one too many. */}
-        <h1 className="m-0 font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
+        <h1 className="m-0 max-md:group-has-[[data-reviewing]]/first-run:hidden font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
           {c.heading}
         </h1>
         {/* The lock's page line (first-run-locked-nav 2.x): desktop only, where
@@ -122,7 +126,7 @@ export function FirstRunChecklist() {
         </p>
       </div>
 
-      <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px]">
+      <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is
             open (D11, 5a); the fan is drawn here and handed in. */}
         <FirstRunStepOne fan={<CardFan />} />

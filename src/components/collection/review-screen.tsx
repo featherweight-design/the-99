@@ -329,7 +329,7 @@ export function ReviewScreen({
             // A write already in flight cannot be taken back: leaving the review would not
             // stop it, and its receipt would open anyway (Copilot, #1097).
             disabled={pending}
-            className="flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg px-[18px] md:px-[20px] md:py-[12px] text-[14px] disabled:opacity-60"
+            className="flex-none h-[46px] md:h-auto rounded-[10px] md:rounded-lg px-[18px] md:px-[20px] md:py-[12px] text-[14px] max-md:font-normal disabled:opacity-60"
           >
             {replaceCopy.review.cancel}
           </GhostButton>
