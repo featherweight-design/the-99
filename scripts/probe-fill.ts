@@ -168,6 +168,11 @@ async function main() {
     from cards
     where commander_legal
       and (color_identity <@ ${`{${cmd.color_identity.join(",")}}`}::text[] or cardinality(color_identity) = 0)
+    -- ORDERED, and that is not tidiness. An unordered limit lets Postgres return any 400 rows, so
+    -- whether a land-backed modal card lands in the pool — and therefore whether the land ceiling
+    -- is the measured figure or one lower — varied between runs on the same database. Check 8d
+    -- asserts that ceiling exactly, so it could fail on a correct build.
+    order by oracle_id
     limit 400`);
   const basics = await rows<CardRow>(sql`
     select oracle_id, name, type_line, oracle_text, keywords, mana_cost, layout
