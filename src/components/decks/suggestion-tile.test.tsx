@@ -95,6 +95,18 @@ function mountTile(
   );
 }
 
+// The art loads lazily: a CSS background, or an eager img, is fetched for every tile of an expanded
+// shelf whether or not it is on screen. The browser probe cannot tell the two builds apart here
+// (a shelf's first tiles load before its `Show all`), so the attribute is pinned where it lives.
+describe("SuggestionTile — art", () => {
+  it("draws its art as a lazy img, not a background", () => {
+    mountTile({ imageUri: "https://cards.example/test.jpg" });
+    const img = document.querySelector("img");
+    expect(img?.getAttribute("src")).toBe("https://cards.example/test.jpg");
+    expect(img?.getAttribute("loading")).toBe("lazy");
+  });
+});
+
 describe("SuggestionTile — lift line", () => {
   it("prints the lift line on an unowned tile", () => {
     mountTile({ owned: false, inclusionPct: 40, lift: 0.12 });

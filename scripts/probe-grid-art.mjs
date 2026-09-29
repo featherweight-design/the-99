@@ -130,12 +130,14 @@ async function openConsider(page, asked) {
   await onPage(page, SURFACES.consider.tile).first().waitFor({ timeout: 60_000 });
   await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   asked.clear();
+  // The FIRST visible `Show all`, found again after every press: a pressed one turns into `Show
+  // fewer`, so a list of locators taken up front shifts under its own clicks and skips shelves.
   let pressed = 0;
-  for (const btn of await onPage(page, 'button[aria-label^="Show all"]').all()) {
-    if (await btn.isVisible()) {
-      await btn.click();
-      pressed += 1;
-    }
+  for (let guard = 0; guard < 20; guard += 1) {
+    const next = onPage(page, 'button[aria-label^="Show all"]').filter({ visible: true }).first();
+    if ((await next.count()) === 0) break;
+    await next.click();
+    pressed += 1;
   }
   if (pressed === 0) throw new Error("the Consider tab drew no Show all to press");
 }
