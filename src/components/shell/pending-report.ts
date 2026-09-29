@@ -1,6 +1,7 @@
 "use client";
 
 import { useLinkStatus } from "next/link";
+import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useId } from "react";
 
 import { pathOf } from "../../lib/shell/pending-routes";
@@ -24,7 +25,12 @@ export function targetOf(href: string, pathname: string): string {
  * Outside the provider (signed-out pages, tests) it reports nothing.
  */
 export function usePendingReport(href: string): boolean {
-  const { pending } = useLinkStatus();
+  const { pending: linkPending } = useLinkStatus();
+  // A link to the page already open (a query or hash change on it) is not a navigation this
+  // feature marks: `useLinkStatus` still reads pending while the page re-renders, so the mark
+  // takes the same rule the provider does, rather than drawing for a press it will not escalate.
+  const pathname = usePathname();
+  const pending = linkPending && targetOf(href, pathname) !== pathname;
   const report = useContext(Report);
   const id = useId();
   useEffect(() => {

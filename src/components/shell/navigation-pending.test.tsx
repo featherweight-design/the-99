@@ -22,8 +22,7 @@ const { usePendingReport } = await import("./pending-report");
 const { OVERLAY_OUT_MS } = await import("./pending-overlay");
 
 function Reporter({ href }: { href: string }) {
-  usePendingReport(href);
-  return null;
+  return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
 }
 
 function App({ links }: { links: string[] }) {
@@ -70,6 +69,8 @@ describe("NavigationPendingProvider", () => {
     act(() => vi.advanceTimersByTime(1));
     expect(overlay()?.textContent).toContain("Consulting the council");
     expect(main().getAttribute("aria-busy")).toBe("true");
+    // Covered, so out of the keyboard's reach too, not only the pointer's.
+    expect(main().inert).toBe(true);
     // A sibling of <main>, never inside it: the screen is a live region.
     expect(main().contains(overlay())).toBe(false);
   });
@@ -108,6 +109,13 @@ describe("NavigationPendingProvider", () => {
     expect(overlay()?.textContent).toContain("Casting a wider net");
   });
 
+  it("reads a link to the page already open as not pending, so its mark never draws", () => {
+    press("/");
+    expect(screen.queryByTestId("mark /")).toBeNull();
+    press("/commanders");
+    expect(screen.queryByTestId("mark /commanders")).not.toBeNull();
+  });
+
   it("never starts a run for a link to the page already open", () => {
     press("/");
     act(() => vi.advanceTimersByTime(2000));
@@ -131,6 +139,7 @@ describe("NavigationPendingProvider", () => {
     press("/commanders", false);
     expect(overlay()?.className).toContain("pointer-events-none");
     expect(main().hasAttribute("aria-busy")).toBe(false);
+    expect(main().inert).toBe(false);
     act(() => vi.advanceTimersByTime(OVERLAY_OUT_MS));
     expect(overlay()).toBeNull();
   });

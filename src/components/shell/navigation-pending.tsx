@@ -111,14 +111,22 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   const lastRoute = target ? pendingRouteFor(target) : null;
   const screen = shown && lastRoute?.kind === "overlay" ? lastRoute.key : shown;
 
-  // `aria-busy` on the shell's own <main>, by ref: two set routes render a nested <main> of their
-  // own, and a selector would find the wrong one (audit correction 2).
+  // `aria-busy` and `inert` on the shell's own <main>, by ref: two set routes render a nested
+  // <main> of their own, and a selector would find the wrong one (audit correction 2). `inert`
+  // because the screen blocks only the pointer: without it a keyboard could still Tab into the
+  // page it covers and press a link there. The rail and tab bar stay live, as a press there moves
+  // the run to its own target.
   const busy = shown !== null && !leaving;
   useEffect(() => {
     const main = mainRef.current;
     if (!main) return;
-    if (busy) main.setAttribute("aria-busy", "true");
-    else main.removeAttribute("aria-busy");
+    if (busy) {
+      main.setAttribute("aria-busy", "true");
+      main.inert = true;
+    } else {
+      main.removeAttribute("aria-busy");
+      main.inert = false;
+    }
   }, [busy]);
 
   useEffect(() => () => {
