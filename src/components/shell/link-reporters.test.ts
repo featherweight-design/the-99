@@ -56,6 +56,13 @@ function links(file: string): { href: string; reports: boolean }[] {
   if (!/from ["']next\/link["']/.test(text)) return [];
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const found: { href: string; reports: boolean }[] = [];
+  // The tag is whatever name this file binds next/link's default export to, never the literal
+  // `Link`: `import AppLink from "next/link"` is valid, and a literal match would skip its links.
+  const linkName = sf.statements
+    .filter(ts.isImportDeclaration)
+    .find((d) => ts.isStringLiteral(d.moduleSpecifier) && d.moduleSpecifier.text === "next/link")
+    ?.importClause?.name?.getText(sf);
+  if (!linkName) return [];
   const tagOf = (n: ts.JsxOpeningLikeElement) => n.tagName.getText(sf);
   const hrefOf = (n: ts.JsxOpeningLikeElement) => {
     const attr = n.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(sf) === "href");
@@ -73,9 +80,9 @@ function links(file: string): { href: string; reports: boolean }[] {
     return hit;
   };
   const visit = (n: ts.Node) => {
-    if (ts.isJsxElement(n) && tagOf(n.openingElement) === "Link") {
+    if (ts.isJsxElement(n) && tagOf(n.openingElement) === linkName) {
       found.push({ href: hrefOf(n.openingElement), reports: hasReporter(n) });
-    } else if (ts.isJsxSelfClosingElement(n) && tagOf(n) === "Link") {
+    } else if (ts.isJsxSelfClosingElement(n) && tagOf(n) === linkName) {
       found.push({ href: hrefOf(n), reports: false });
     }
     ts.forEachChild(n, visit);
