@@ -190,7 +190,9 @@ export const howItWorksRowsCopy = {
         "A stand-in shares a job at the same or lower mana value, and a card with no role gets " +
         "none. Find a deck puts a combo the card completes first, then a theme it joins, then " +
         "EDHREC synergy, then the name. A staple’s decks are listed by name alone.",
-      refresh: "Live.",
+      refresh:
+        "Worked out when you ask, from your deck as it stands. The combos behind it refresh weekly, " +
+        `prices daily, and EDHREC’s synergy ${INDEX_CADENCE}.`,
       exact: "Partial, because it rests on the role and theme readings above.",
     },
     {
@@ -211,7 +213,8 @@ export const howItWorksRowsCopy = {
         "costs you nothing.",
       refresh:
         `The commander sentence updates ${INDEX_CADENCE}. The Overview and Suggested changes are ` +
-        "written when you press, and the Overview is kept until the list changes.",
+        "written when you press, and the Overview is kept until the list changes. Look deeper keeps " +
+        "its answer for the same words, and asks again only when you write something new.",
       exact: "Neither. It is written, not measured.",
     },
   ] as const satisfies readonly HowRowCopy[],

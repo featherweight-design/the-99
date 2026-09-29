@@ -78,6 +78,10 @@ describe("How the app reaches its answers: the rows", () => {
     expect(row("how-availability").how).toMatch(/proxy claims nothing/);
     expect(row("how-prices").how).toMatch(/earlier refresh/);
     expect(row("how-prices").how).not.toMatch(/earlier day/);
+    // Stand-ins read two catalog inputs on their own cadences; Look deeper reuses a stored answer.
+    expect(row("how-stand-ins").refresh).not.toBe("Live.");
+    expect(row("how-stand-ins").refresh).toMatch(/combos behind it refresh weekly/);
+    expect(row("how-written").refresh).toMatch(/Look deeper keeps its answer for the same words/);
   });
 
   it("carries no em-dash in anything it renders", () => {
