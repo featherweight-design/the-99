@@ -878,9 +878,10 @@ export function BuilderShell({
     setRemoveFailure(null);
     // The slot settles on the card being genuinely back in the deck, not on the
     // undo's promise resolving. Settling on success would drop the receipt
-    // before the new HTML landed, flashing the pre-undo list back for a frame;
-    // it would also unmount the row, and a refused undo has to say so from
-    // where the row is. A revalidation that still lacks the card — the removal
+    // before the new HTML landed, flashing the pre-undo list back for a frame
+    // once the optimistic re-add let go. A refusal needs the slot standing too:
+    // the reverted prediction draws the receipt again, and it reads the message
+    // from `undoFailure`. A revalidation that still lacks the card — the removal
     // itself — leaves the slot standing.
     if (spentSlot && deck.cards.some((c) => c.oracleId === spentSlot.oracleId)) {
       setSpentSlot(null);

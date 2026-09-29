@@ -509,7 +509,9 @@ describe("undo row lifetime (#185)", () => {
   // optimistic re-add taking the slot away before the message arrives.
   it("states a refused undo in the row, and withdraws the control", async () => {
     removeCardFromDeck.mockResolvedValue(undefined);
-    addCardToDeck.mockResolvedValue({ ok: false, message: addPanelCopy.undo.failed });
+    // The server's own reason, not the fallback: the receipt must show what the server said.
+    const reason = "That card is locked in another deck.";
+    addCardToDeck.mockResolvedValue({ ok: false, message: reason });
 
     const { revalidate } = renderBuilder();
     await removeFromBuilder("Sol Ring");
@@ -521,7 +523,7 @@ describe("undo row lifetime (#185)", () => {
       );
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent(addPanelCopy.undo.failed);
+    expect(screen.getByRole("alert")).toHaveTextContent(reason);
     expect(
       screen.queryByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
     ).not.toBeInTheDocument();

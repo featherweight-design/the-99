@@ -4,10 +4,10 @@
 //
 // `UndoRow` in `decklist-row.tsx` is the same component for the row shell, and
 // the rules it settled all hold here: undo is a re-add rather than a rollback,
-// it is the one builder mutation with no optimistic prediction (an optimistic
-// re-add would unmount the receipt mid-flight and leave a refusal nowhere to
-// be said), and the control disappears once the undo has been refused, because
-// the message below it says where to go instead.
+// it is optimistic (Hugh, 2026-09-28) with its refusal held by the shell, since
+// the re-add unmounts the receipt before the server answers (`useSpentSlotUndo`),
+// and the control disappears once the undo has been refused, because the message
+// below it says where to go instead.
 //
 // It borrows `TILE_SHELL` and `TILE_ART_RATIO` from the live tile rather than
 // restating them, so a removed card leaves a hole exactly its own size and the
