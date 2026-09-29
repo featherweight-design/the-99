@@ -85,11 +85,21 @@ None depends on an unmerged sibling. PRs 2 and 3 are under ~20 files and ~800 li
 
 | Surface | 390 | 1300 | Shares with |
 |---|---|---|---|
-| Rail / tab bar slot pending (pip) | ☐ | ☐ | `NavSlot` (origin) |
-| Button link pending (track), e.g. Home's "Browse commanders" | ☐ | ☐ | `ui/button.tsx` |
-| Row link pending: commander row, set row | ☐ | ☐ | `PendingTrack` |
-| Overlay over `/collection`, `/commanders`, `/discover`, `/decks`, `/about`, set pages | ☐ | ☐ | `LoadingScreen` |
-| Direct load / refresh of a non-kept route (Suspense fallback) | ☐ | ☐ | `ShellLoading` → `LoadingScreen` |
-| Kept routes: own screen at press, no overlay | ☐ | ☐ | their `loading.tsx` |
+| Rail / tab bar slot pending (pip) | ☑ probe | ☑ probe | `NavSlot` (origin) |
+| Button link pending (track), e.g. Home's "Browse commanders" | ☑ sheet + probe | ☑ probe | `ui/button.tsx` |
+| Row link pending: commander row, set row | ☑ sheet | ☑ sheet | `PendingTrack` |
+| Overlay over `/collection`, `/commanders`, `/discover`, `/decks`, `/about`, set pages | ☑ sheet + probe | ☑ sheet + probe | `LoadingScreen` |
+| Direct load / refresh of a non-kept route (Suspense fallback) | ☑ probe | ☑ probe | `ShellLoading` → `LoadingScreen` |
+| Kept routes: own screen at press, no overlay | ☑ sheet + probe | ☑ sheet + probe | their `loading.tsx` |
 
 The contact sheet rows go in `docs/superpowers/inventories/navigation-pending.json`. Each is reached on the slow profile, since a warm local navigation never shows the overlay.
+
+**Line close-out, 2026-09-29, on main after #1140.** Walked against the handoff (#1087) and its escalation addendum (#1100), on `next start` against local-dev.
+
+- **The contact sheet** covers every row a link inside `<main>` reaches, at both widths: 12 of 12 cells, and all 12 reached their surface.
+  - The overlay rows are `/commanders`, a set page, `/decks` and `/collection`, plus the ghost button's track and a kept deck.
+  - At 1300 the `/commanders` row's navigation committed before the 450ms shot, so that cell shows the landed page.
+- **`probe:nav-pending`** passes all 32 checks, 16 per width. It covers the rows no sheet can hold: the nav slot's pip, the direct-load screen, the escalations to `/discover` and `/about`, and the About dismiss.
+- **No drawn surface after #1108.** PRs 2 to 4 added reporting only, so the property table verified at #1108 (`docs/superpowers/design-tables/navigation-pending.md`) is the design review of record.
+- **Not covered:** a plain `<a href>` to an app route, such as the replace flow's back link. It is a full document load, so it draws the direct-load screen rather than the overlay. That behaviour is correct, and outside the `<Link>` sweep.
+- **About:** no entry, as ruled above. This is perceived-performance chrome, not a capability a reader discovers, which the cosmetic-change rule in AGENTS.md covers.

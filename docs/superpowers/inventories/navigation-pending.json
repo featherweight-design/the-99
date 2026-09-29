@@ -1,6 +1,6 @@
 {
-  "feature": "Navigation pending — the pip, the track and the escalation screen (PR 1)",
-  "note": "Every row is taken on Slow 4G, because on a local server a pending state lasts a frame and the sheet would photograph the page it landed on. The nav slot's pip is not here: it sits in the shell, outside <main>, which no verb in this runner reaches by design; probe:nav-pending presses it at both widths and measures its paint time instead. The direct-load fallback is not here either: a goto resolves at DOMContentLoaded, after the stream has replaced the screen, so the probe reads it with a frame watcher. Screenshot timing inside the 120-400ms window is not reliable enough to hold a row's pip or track, so the row tracks are proved by the probe, which measures their paint time and saves the button's track at DPR 1. The ghost link's row stays because its first frame holds the track at both widths.",
+  "feature": "Navigation pending \u2014 the pip, the track and the escalation screen (PR 1)",
+  "note": "Every row is taken on Slow 4G, because on a local server a pending state lasts a frame and the sheet would photograph the page it landed on. The nav slot's pip is not here: it sits in the shell, outside <main>, which no verb in this runner reaches by design; probe:nav-pending presses it at both widths and measures its paint time instead. The direct-load fallback is not here either: a goto resolves at DOMContentLoaded, after the stream has replaced the screen, so the probe reads it with a frame watcher. Screenshot timing inside the 120-400ms window is not reliable enough to hold a row's pip or track, so the row tracks are proved by the probe, which measures their paint time and saves the button's track at DPR 1. The ghost link's row stays because its first frame holds the track at both widths. The overlay rows cover the routes a link inside <main> reaches: /commanders, a set page, /decks and /collection. /discover and /about are reached only from the shell's own controls, so probe:nav-pending escalates to them instead (checks 5 and 6).",
   "rows": [
     {
       "id": "track-button",
@@ -55,6 +55,44 @@
         },
         {
           "click": "a[href^='/collection/sets/']",
+          "settle": 450
+        }
+      ]
+    },
+    {
+      "id": "overlay-decks-from-home",
+      "label": "Home, 'All decks' pressed on Slow 4G, 450ms in: the decks screen over Home",
+      "view": "src/components/shell/pending-overlay.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "a[href='/decks']",
+          "settle": 1500
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href='/decks']",
+          "settle": 450
+        }
+      ]
+    },
+    {
+      "id": "overlay-collection-from-home",
+      "label": "Home, the commitments card's link pressed on Slow 4G, 450ms in: the collection screen over Home",
+      "view": "src/components/shell/pending-overlay.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "a[href^='/collection?avail']",
+          "settle": 1500
+        },
+        {
+          "throttle": "slow"
+        },
+        {
+          "click": "a[href^='/collection?avail']",
           "settle": 450
         }
       ]
