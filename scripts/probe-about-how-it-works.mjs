@@ -127,6 +127,41 @@ async function walkOn(page, w) {
   const overflow = await page.evaluate(() => document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth);
   report(`${tag} nothing scrolls sideways`, overflow <= 0, `${overflow}px`);
 
+  // PR C. An entry's link line lands its row open, and Back returns to the entry.
+  await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
+  const link = onPage(page, "li#roles [data-entry-link]");
+  if (report(`${tag} the Roles entry carries its link line`, (await link.count()) === 1)) {
+    const h = await link.evaluate((a) => Math.round(a.getBoundingClientRect().height));
+    if (w.label === 390) report(`${tag} the link line is a 44px target`, h >= 44, `${h}px`);
+    await link.click();
+    await page.waitForTimeout(400);
+    const landed = await page.evaluate(() => ({ hash: location.hash, open: !!document.getElementById("how-roles-body") }));
+    report(`${tag} the link opens the Roles row`, landed.hash === "#how-roles" && landed.open, JSON.stringify(landed));
+    const back = await page.evaluate(() => [...document.querySelectorAll("#how-roles-body a[href^='#']")].map((a) => a.getAttribute("href")));
+    report(`${tag} the row links back to the Roles entry`, back.includes("#roles"), back.join(" "));
+    await page.goBack();
+    await page.waitForTimeout(400);
+    const top = await page.evaluate(() => Math.round(document.getElementById("roles").getBoundingClientRect().top));
+    report(`${tag} Back returns to the entry`, top >= -2 && top < 300, `entry top ${top}px`);
+  }
+
+  // The contents group: the rail at 1300, the phone list's fifth row at 390.
+  if (w.label === 1300) {
+    const rail = await onPage(page, "nav").evaluateAll((navs) => {
+      const nav = navs.find((n) => getComputedStyle(n).display !== "none" && n.querySelector("a[href='#how-it-works']"));
+      if (!nav) return null;
+      return { rows: nav.querySelectorAll("a[data-entry-row][href^='#how-']").length };
+    });
+    report(`${tag} the rail lists the appendix and its eight rows`, rail?.rows === 8, JSON.stringify(rail));
+  } else {
+    const row = onPage(page, "a[href='#how-it-works']").first();
+    const h = await row.evaluate((a) => Math.round(a.getBoundingClientRect().height));
+    report(`${tag} the list's fifth row is 44px`, h >= 44, `${h}px`);
+    await row.locator("xpath=..").locator("button[aria-expanded]").click();
+    const rows = await onPage(page, "#contents-entries-how-it-works a[data-entry-row]").count();
+    report(`${tag} it opens onto the eight rows`, rows === 8, `${rows}`);
+  }
+
   // The hash landing, on a middle row and the last. The appendix is the page's last section, so a
   // row near the foot cannot scroll to 20px from the top: the document ends first. So each lands
   // 20px from the top OR with the document scrolled to its end, and with its OPENED body on screen,

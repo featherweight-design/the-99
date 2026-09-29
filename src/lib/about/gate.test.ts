@@ -173,6 +173,24 @@ describe("the appendix's line on the sheet (plan 2026-09-28, PR C)", () => {
     expect(sheetDecision({ userId: "u", seen: seen(9), visible: all, version: 9, appendix: true }).show).toBe(false);
   });
 
+  // With HOW_IT_WORKS_ENABLED off the proxy's decision is today's, byte for byte, in every state:
+  // the header and cookie a reader gets do not move until the switch does.
+  it("decides exactly as it did before the appendix, with the switch off", () => {
+    const states = [seen(0), seen(8), seen(9), seen(8, ["how-it-works"]), seen(3, ["x"])];
+    for (const s of states) {
+      const off = sheetDecision({ userId: "u", seen: s, visible: all, version: 9, appendix: false });
+      expect(off).toEqual(sheetDecision({ userId: "u", seen: s, visible: all, version: 9 }));
+      const unseen = all.filter((e) => e.since > s.version);
+      const today =
+        s.version === 0 && s.ids.length === 0
+          ? { show: true, header: "0", cookie: "u.9" }
+          : unseen.length === 0
+            ? { show: false, cookie: "u.9" }
+            : { show: true, header: unseen.map((e) => e.id).join(","), cookie: "u.9" };
+      expect(off).toEqual(today);
+    }
+  });
+
   it("stays off a first-run sheet, a reader who has seen it, and a deployment with the switch off", () => {
     expect(sheetDecision({ userId: "u", seen: seen(0), visible: all, version: 9, appendix: true })).toMatchObject({ header: "0" });
     const seenIt = sheetDecision({ userId: "u", seen: seen(8, ["how-it-works"]), visible: all, version: 9, appendix: true });

@@ -371,6 +371,17 @@ async function walk(browser, width, userIdRef) {
   await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);
   report(L("a forged x-about-sheet summons nothing"), !(await card.isVisible().catch(() => false)));
+  // The appendix's line is decided by the proxy from HOW_IT_WORKS_ENABLED alone (plan 2026-09-28,
+  // PR C). A client naming it, alone or beside an entry, summons no card and no line.
+  for (const forged of ["how-it-works", "roles,how-it-works"]) {
+    await context.clearCookies({ name: "about_sheet" });
+    await page.setExtraHTTPHeaders({ "x-about-sheet": forged });
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+    const drawn = await card.isVisible().catch(() => false);
+    const line = await page.locator("[data-appendix-line]").count();
+    report(L(`a forged x-about-sheet "${forged}" summons no card and no line`), !drawn && line === 0, `card ${drawn}, line ${line}`);
+  }
   await page.setExtraHTTPHeaders({});
   await context.close();
 }
