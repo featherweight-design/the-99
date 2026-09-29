@@ -4,34 +4,26 @@
 //
 // `UndoRow` in `decklist-row.tsx` is the same component for the row shell, and
 // the rules it settled all hold here: undo is a re-add rather than a rollback,
-// it is the one builder mutation with no optimistic prediction (an optimistic
-// re-add would unmount the receipt mid-flight and leave a refusal nowhere to
-// be said), and the control disappears once the undo has been refused, because
-// the message below it says where to go instead.
+// it is optimistic (Hugh, 2026-09-28) with its refusal held by the shell, since
+// the re-add unmounts the receipt before the server answers (`useSpentSlotUndo`),
+// and the control disappears once the undo has been refused, because the message
+// below it says where to go instead.
 //
 // It borrows `TILE_SHELL` and `TILE_ART_RATIO` from the live tile rather than
 // restating them, so a removed card leaves a hole exactly its own size and the
 // grid does not reflow around the receipt.
 
 import { printedFaceName } from "../../lib/collection/browse";
-import { addCardToDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { MutationError } from "./mutation-error";
 import { CARD_TILE_CAPTION_H } from "../ui/card-tile-caption";
 import { TILE_ART_RATIO, TILE_SHELL } from "./deck-card-tile";
-import { useAnnounceUndo } from "./optimistic-deck";
-import { useDeckMutation } from "./use-deck-mutation";
+import { useSpentSlotUndo } from "./spent-slot-undo";
 
 export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
-  const { isPending, error, run } = useDeckMutation(false, addPanelCopy.undo.failed);
-  const announceUndo = useAnnounceUndo();
-
-  function handleUndo() {
-    announceUndo(card);
-    // `relock` (Locked L1, D2): the card comes back locked if it left locked.
-    run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
-  }
+  // Optimistic, and its refusal held by the shell: see `useSpentSlotUndo`.
+  const { isPending, error, undo: handleUndo } = useSpentSlotUndo(deckId, card);
 
   return (
     <li className="flex flex-col">

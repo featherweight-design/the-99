@@ -745,6 +745,9 @@ export function BuilderShell({
   // things — Undo accepted, the next removal, or leaving the builder route
   // (this component unmounting). Never by a timer.
   const [spentSlot, setSpentSlot] = useState<DeckDetailCard | null>(null);
+  // Whether the server has shown the slot's card GONE since the slot was set: its removal landed.
+  // Only then can the card coming back mean an undo succeeded rather than a list from before it.
+  const [slotLanded, setSlotLanded] = useState(false);
 
   // The swept rows from a clearAutoCards action. Null means no sweep has run
   // (or it has been undone/navigated away). Lives beside spentSlot: it is decklist
@@ -824,10 +827,22 @@ export function BuilderShell({
   // after the server answered, which is the whole window the undo row exists
   // for. So the row calls `markSpent` straight from the click, outside `run`,
   // and leaves only the optimistic dispatch inside it.
+  // A refused Undo's message, held here because the receipt that asked has unmounted: see
+  // `reportUndoFailure` below.
+  const [undoFailure, setUndoFailure] = useState<{ oracleId: string; message: string } | null>(null);
+  // Which removal an Undo belongs to. The ref is what a late report is checked against (the state
+  // it arrives through may be a render behind); the state is what the receipt hands the undo.
+  const removalRef = useRef(0);
+  const [removal, setRemoval] = useState(0);
   const markSpent = useCallback(
     (card: DeckDetailCard) => {
-      // One undo row at a time: this removal settles whatever the last one left.
+      // One undo row at a time: this removal settles whatever the last one left,
+      // including a refused undo's message.
       setSpentSlot(card.quantity <= 1 ? card : null);
+      setSlotLanded(false);
+      setUndoFailure(null);
+      removalRef.current += 1;
+      setRemoval(removalRef.current);
       // A removal is announced only when it leaves an undo row behind. A stack
       // that decrements keeps its row, and its own count is the receipt.
       if (card.quantity > 1) return;
@@ -873,14 +888,27 @@ export function BuilderShell({
     setRemoveFailure(null);
     // The slot settles on the card being genuinely back in the deck, not on the
     // undo's promise resolving. Settling on success would drop the receipt
-    // before the new HTML landed, flashing the pre-undo list back for a frame;
-    // it would also unmount the row, and a refused undo has to say so from
-    // where the row is. A revalidation that still lacks the card — the removal
-    // itself — leaves the slot standing.
-    if (spentSlot && deck.cards.some((c) => c.oracleId === spentSlot.oracleId)) {
-      setSpentSlot(null);
+    // before the new HTML landed, flashing the pre-undo list back for a frame
+    // once the optimistic re-add let go. A refusal needs the slot standing too:
+    // the reverted prediction draws the receipt again, and it reads the message
+    // from `undoFailure`. A revalidation that still lacks the card — the removal
+    // itself — leaves the slot standing. So does a list that holds the card before this slot's own
+    // removal has landed: an undo overtaken by a newer removal answers with the card present, and
+    // settling on that would take the newer receipt away.
+    if (spentSlot) {
+      const back = deck.cards.some((c) => c.oracleId === spentSlot.oracleId);
+      if (!back) setSlotLanded(true);
+      else if (slotLanded) setSpentSlot(null);
     }
   }
+  // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed on
+  // the card, and cleared by the next removal rather than by the next server list: a refusal can
+  // arrive in the same render as a revalidation, and clearing on that would erase it unread.
+  const reportUndoFailure = useCallback((oracleId: string, message: string, from: number) => {
+    // An undo pressed before a newer removal answers for a receipt that no longer exists.
+    if (from !== removalRef.current) return;
+    setUndoFailure({ oracleId, message });
+  }, []);
   const reportRemoveFailure = useCallback((cardName: string) => {
     setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
     // The card never left, so there is nothing to undo. Leaving the slot would
@@ -1027,6 +1055,7 @@ export function BuilderShell({
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
     keep: keepOptimisticCard,
+    undo: { restore: addOptimisticCard, reportFailure: reportUndoFailure, failure: undoFailure, removal },
   };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the

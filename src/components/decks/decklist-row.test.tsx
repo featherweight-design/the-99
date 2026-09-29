@@ -509,7 +509,9 @@ describe("undo row lifetime (#185)", () => {
   // optimistic re-add taking the slot away before the message arrives.
   it("states a refused undo in the row, and withdraws the control", async () => {
     removeCardFromDeck.mockResolvedValue(undefined);
-    addCardToDeck.mockResolvedValue({ ok: false, message: addPanelCopy.undo.failed });
+    // The server's own reason, not the fallback: the receipt must show what the server said.
+    const reason = "That card is locked in another deck.";
+    addCardToDeck.mockResolvedValue({ ok: false, message: reason });
 
     const { revalidate } = renderBuilder();
     await removeFromBuilder("Sol Ring");
@@ -521,13 +523,123 @@ describe("undo row lifetime (#185)", () => {
       );
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent(addPanelCopy.undo.failed);
+    expect(screen.getByRole("alert")).toHaveTextContent(reason);
     expect(
       screen.queryByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
     ).not.toBeInTheDocument();
     // The receipt stays: the card is still out of the deck, and this is the
     // only place that says which one.
     expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+  });
+
+  // Optimistic (Hugh, 2026-09-28): the card is back the moment Undo is pressed, with no wait on
+  // the server and no dimmed control standing in for one.
+  it("puts the card back before the server answers", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockReturnValue(deferred<DeckMutationResult>().promise);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
+  });
+
+  // An undo still in flight when the restored card is removed again answers for a receipt that no
+  // longer exists. Its refusal must not land on the newer receipt and take its Undo away.
+  it("drops a refusal that a newer removal of the same card has overtaken", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    const add = deferred<DeckMutationResult>();
+    addCardToDeck.mockReturnValue(add.promise);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }));
+    });
+    // The restored row is live at once; remove it again before the undo answers.
+    await removeFromBuilder("Sol Ring");
+    await act(async () => {
+      add.resolve({ ok: false, message: "That card is locked in another deck." });
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).toBeInTheDocument();
+  });
+
+  // The success half of the same race: the stale undo's own payload holds the card, and it must not
+  // settle the newer receipt, whose removal has not landed yet.
+  it("keeps a newer removal's receipt when an overtaken undo succeeds", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    const add = deferred<DeckMutationResult>();
+    addCardToDeck.mockReturnValue(add.promise);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }));
+    });
+    await removeFromBuilder("Sol Ring");
+    await act(async () => {
+      add.resolve({ ok: true });
+    });
+    // The undo's payload: the card is back. The removal pressed after it has not landed.
+    await revalidate([solRing, arcaneSignet]);
+    // Then it does.
+    await revalidate([arcaneSignet]);
+
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).toBeInTheDocument();
+  });
+
+  // A fresh add is never auto, so the card the undo puts back draws no auto tag while it waits.
+  it("puts an auto card back as the server will write it, not auto", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockReturnValue(deferred<DeckMutationResult>().promise);
+    const autoRing = { ...solRing, auto: true };
+
+    const view = render(shell([autoRing, arcaneSignet]));
+    await removeFromBuilder("Sol Ring");
+    await act(async () => { view.rerender(shell([arcaneSignet])); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }));
+    });
+
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ })).not.toBeInTheDocument();
+  });
+
+  // The removal pruned the proxy row, so the card the undo puts back is not a proxy while it waits.
+  it("puts a proxied card back as the server will write it, not proxied", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockReturnValue(deferred<DeckMutationResult>().promise);
+    const proxiedRing = { ...solRing, proxied: true };
+
+    const view = render(shell([proxiedRing, arcaneSignet]));
+    // The fixture draws the mark before the removal, or its absence below proves nothing.
+    expect(screen.getAllByText(proxyCopy.tag.aria).length).toBeGreaterThan(0);
+    await removeFromBuilder("Sol Ring");
+    await act(async () => { view.rerender(shell([arcaneSignet])); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }));
+    });
+
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+    expect(screen.queryByText(proxyCopy.tag.aria)).not.toBeInTheDocument();
   });
 
   it("survives a tab switch to Consider and back", async () => {
