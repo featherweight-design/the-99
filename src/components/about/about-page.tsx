@@ -29,6 +29,7 @@ import {
   type AboutChapter,
   type AboutEntry,
 } from "../../lib/copy/about";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const CHAPTERS: AboutChapter[] = ["01", "02", "03", "04"];
 
@@ -142,6 +143,7 @@ function Entry({
           className="font-mono text-[11px] text-[color:var(--accent)] hover:underline min-[1000px]:text-[11.5px]"
         >
           {entry.route}
+          <PendingReporter href={entry.route} />
         </Link>
         {entry.opens && (
           <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{entry.opens}</span>

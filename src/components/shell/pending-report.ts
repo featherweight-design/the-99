@@ -27,7 +27,15 @@ export function targetOf(href: string, pathname: string): string {
  * Outside the provider (signed-out pages, tests) it reports nothing.
  */
 export function usePendingReport(href: string): boolean {
-  const { pending: linkPending } = useLinkStatus();
+  return useReportPending(href, useLinkStatus().pending);
+}
+
+/**
+ * The same report for a navigation a `<Link>` cannot carry to its end: one whose press unmounts
+ * the link (a menu that closes on the way out), so the caller runs it as a transition and reports
+ * the transition's `isPending` from a component that stays mounted.
+ */
+export function useReportPending(href: string, linkPending: boolean): boolean {
   // A link to the page already open (a query or hash change on it) is not a navigation this
   // feature marks: `useLinkStatus` still reads pending while the page re-renders, so the mark
   // takes the same rule the provider does, rather than drawing for a press it will not escalate.

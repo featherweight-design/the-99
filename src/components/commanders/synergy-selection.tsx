@@ -29,6 +29,7 @@ import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { SynergyPanel } from "./synergy-panel";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+import { PendingReporter } from "../shell/pending-reporter";
 
 type SynergySelectionValue = {
   /** Oracle ids currently picked. */
@@ -216,6 +217,7 @@ export function SelectableBuildButton({
   return (
     <Link href={buildHref} className={className}>
       Build this deck →
+      <PendingReporter href={buildHref} />
     </Link>
   );
 }

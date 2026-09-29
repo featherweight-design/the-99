@@ -9,15 +9,17 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
-import { useDialogA11y } from "../../lib/a11y/dialog";
+import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
+import { useReportPending } from "./pending-report";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -48,6 +50,9 @@ type MenuItemsProps = {
    *  the way out — otherwise the popover, or the sheet with its backdrop and
    *  focus trap, stays mounted over the destination. */
   onClose: () => void;
+  /** Leaves for /about. Owned by `AccountMenu`, which outlives the panel: the press closes the
+   *  panel and the link with it, and a link that is gone cannot report its navigation pending. */
+  onAbout: () => void;
 };
 
 /**
@@ -56,7 +61,7 @@ type MenuItemsProps = {
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // One ref per item, sized from the list rather than written out: the row
@@ -122,7 +127,13 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose }: MenuItemsProps)
             e.preventDefault();
             return;
           }
-          onClose();
+          // A modified press opens a new tab and navigates nothing here.
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+            onClose();
+            return;
+          }
+          e.preventDefault();
+          onAbout();
         }}
         className={rowClass(0)}
       >
@@ -351,6 +362,26 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
     setOpen(false);
   }
 
+  // The About row's press closes this menu, which unmounts the row, so its own link status cannot
+  // carry the navigation to the 400ms screen. The navigation runs as a transition here instead,
+  // and this component, which stays mounted, reports it.
+  const router = useRouter();
+  const [aboutPending, startAbout] = useTransition();
+  useReportPending("/about", aboutPending);
+  function onAbout() {
+    // Already on /about, the press navigates nothing: it only closes the menu, and the sheet's
+    // entry has to come back off in the ordinary way or the next Back would land on this page.
+    if (window.location.pathname === "/about") {
+      close();
+      return;
+    }
+    // The sheet's release would otherwise step back off its history entry while /about is still
+    // loading, and that Back cancels the navigation.
+    leaveDialogsForNavigation();
+    close();
+    startAbout(() => router.push("/about"));
+  }
+
   // Table ambiguity 13: the menu dismisses before Clerk's modal mounts, so the
   // focus trap is handed over rather than nested. useDialogA11y returns focus
   // to the trigger on unmount, which is where the handoff wants it after the
@@ -449,6 +480,7 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
             onClose={close}
             onManage={onManage}
             onSignOut={onSignOut}
+            onAbout={onAbout}
           />
         ) : (
           <AccountSheet
@@ -461,6 +493,7 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
             onClose={close}
             onManage={onManage}
             onSignOut={onSignOut}
+            onAbout={onAbout}
           />
         ))}
     </div>

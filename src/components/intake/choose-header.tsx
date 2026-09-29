@@ -1,6 +1,7 @@
 // The choose route's header: the way back, the title and its two subs. Shared by the page and its
 // loading screen, so the screen a reader waits on is the one the page then fills.
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 
 /**
  * The results column: §4's 1080 content (1160 less its 40px sides), CENTERED under the form's 680
@@ -37,6 +38,7 @@ export function ChooseHeader({
     >
       <Link href={back.href} className="self-start font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
         {back.label}
+        <PendingReporter href={back.href} />
       </Link>
       <h1 className="m-0 font-display font-bold text-[20px] md:text-[28px] text-[color:var(--fg)]">{title}</h1>
       <p className="m-0 md:hidden font-mono text-[10px] text-[color:var(--fg-faint)]">{subPhone}</p>

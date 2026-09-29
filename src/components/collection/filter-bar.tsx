@@ -39,6 +39,7 @@ import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { PendingReporter } from "../shell/pending-reporter";
 
 export { useIsDesktop };
 
@@ -293,6 +294,7 @@ export function FilterBar({
               style={{ width: 7, height: 7 }}
             />
             {setPageCopy.entryPoint.label}
+            <PendingReporter href="/collection/sets" />
           </Link>
         ) : null}
         {/* NOT gated on `hasCollection`, unlike `By set` beside it: a set browser
@@ -320,6 +322,7 @@ export function FilterBar({
             className="inline-block h-[7px] w-[7px] rotate-45 border border-[color:var(--fg-locked)]"
           />
           {proxyCopy.entryPoint.label}
+          <PendingReporter href="/collection/proxies" />
         </Link>
         <ViewToggle
           options={COLLECTION_VIEWS}

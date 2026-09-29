@@ -12,6 +12,10 @@
 //      1.5px strip has no whole device pixel there). A screenshot of the button is saved.
 //   4. A kept route (a deck's import page, by its header button, which reports): its own screen
 //      shows and the escalation never does.
+//   5. An inline TEXT link that carries only a PendingReporter (/about's route link to /discover):
+//      a slow press still escalates, and no mark is painted.
+//   6. The account menu's About row, whose press unmounts the link: the menu reports the
+//      navigation, so a slow press still escalates.
 //
 // Mutations it is built to fail: the shell's <Suspense> removed (check 1 reads no screen), and the
 // 400ms gate set to 0 (check 2 reads the screen before the pip).
@@ -199,6 +203,48 @@ async function run(browser, state, width) {
     const nav = await page.evaluate(() => window.__nav);
     report(nav.ownScreen != null, `a kept route (${deckHref}/import) shows its own screen at press`, nav.ownScreen == null ? "none" : `at ${Math.round(nav.ownScreen)}ms`);
     report(nav.mark == null && nav.overlay == null, "and neither the mark nor the escalation", `mark ${nav.mark == null ? "none" : Math.round(nav.mark) + "ms"}, screen ${nav.overlay == null ? "none" : Math.round(nav.overlay) + "ms"}`);
+    await throttle(false);
+    await page.close();
+  }
+
+  // 5. An inline text link with no mark (PR 2's `PendingReporter`): an About entry's route link
+  //    (plain mono text, no chrome) still escalates to its route's screen, and paints no mark of its
+  //    own. /collection's "By set" link is not the subject: it is drawn as a bordered chip.
+  {
+    const { page, throttle } = await slowPage(context);
+    await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const link = page.locator('main a[href="/discover"]').filter({ hasText: "/discover", visible: true }).first();
+    await link.waitFor({ state: "visible", timeout: 120_000 });
+    await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
+    await throttle(true);
+    await page.evaluate(() => window.__navArm());
+    await link.click();
+    await page.waitForURL((u) => u.pathname === "/discover", { timeout: 120_000 });
+    const nav = await page.evaluate(() => window.__nav);
+    report(nav.overlay != null && nav.overlay >= 390, "an inline link's slow press escalates to its screen", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
+    report(nav.mark == null, "and draws no mark of its own", nav.mark == null ? "" : `mark at ${Math.round(nav.mark)}ms`);
+    await throttle(false);
+    await page.close();
+  }
+
+  // 6. The account menu's About row: its press closes the menu and unmounts the link, so the menu
+  //    reports the navigation itself. A slow press still escalates to /about's screen. The trigger
+  //    is the shell's own control, so it is found by its name rather than scoped to the page.
+  {
+    const { page, throttle } = await slowPage(context);
+    await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const trigger = page.getByRole("button", { name: /^Account: / }).filter({ visible: true }).first();
+    await trigger.waitFor({ state: "visible", timeout: 120_000 });
+    await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
+    await trigger.click();
+    const about = page.getByRole("menuitem", { name: "About The 99" });
+    await about.waitFor({ state: "visible", timeout: 30_000 });
+    await throttle(true);
+    await page.evaluate(() => window.__navArm());
+    await about.click();
+    await page.waitForURL((u) => u.pathname === "/about", { timeout: 120_000 });
+    const nav = await page.evaluate(() => window.__nav);
+    report(nav.overlay != null && nav.overlay >= 390, "the account menu's About press escalates after the menu closes", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
     await throttle(false);
     await page.close();
   }

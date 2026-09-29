@@ -1,10 +1,14 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
+import { Report } from "./pending-report";
 
 const openUserProfile = vi.fn();
 // Clerk's signOut is thenable — the component releases `busy` on rejection.
 const signOut = vi.fn(() => Promise.resolve());
+
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
@@ -283,6 +287,36 @@ describe("AccountMenu items", () => {
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("reports the About navigation from the menu, which outlives the row", () => {
+    // The press unmounts the row and its link with it, so a reporter inside the link ends the run
+    // before the 400ms screen could draw. The menu runs the push as a transition and reports it.
+    push.mockClear();
+    const reports: [string, boolean][] = [];
+    render(
+      <Report.Provider value={{ report: (_id, href, pending) => reports.push([href, pending]), pathname: "/" }}>
+        <AccountMenu panel="popover" theme="amonkhet" />
+      </Report.Provider>,
+    );
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+    expect(push).toHaveBeenCalledWith("/about");
+    expect(reports).toContainEqual(["/about", true]);
+  });
+
+  it("only closes the menu when About is pressed on /about", () => {
+    push.mockClear();
+    window.history.replaceState(null, "", "/about");
+    try {
+      render(<AccountMenu panel="popover" theme="amonkhet" />);
+      fireEvent.click(trigger());
+      fireEvent.click(screen.getByRole("menuitem", { name: "About The 99" }));
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(push).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
   });
 
   it("says the About row is unavailable while sign-out is in flight, and means it", () => {
