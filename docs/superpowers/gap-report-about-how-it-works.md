@@ -10,6 +10,10 @@ Every row in scope matched but one, and every state in the coverage table is rea
 |---|---|---|
 | 1 | The Brackets row's head carried `rules text`, `other decks` and `published list`; the table draws two | Fixed: the head carries `rules`, `decks`; `published list` stays on the Game Changers sub-row. `how-rows.test.tsx` pins the head's tags. |
 
+## Copy set in review, recorded in the table
+
+Two rows of the table quoted canvas wording that copy review (in lane, 2026-09-28) changed before the build: the Themes row's title, now "Card and commander themes", and the tutors sub-row's placeholder, now the shipped sentence. The table now quotes what ships. Wording is `/copy-review`'s rather than a design gap, so neither counted against verify.
+
 ## Deferred, by plan
 
 The `explained in` field (links from each row back to the entries that explain it) ships in PR C with the entries' own link lines, because both need the `entryRow` map. No row draws the pair in PR B.

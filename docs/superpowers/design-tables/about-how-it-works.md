@@ -121,7 +121,7 @@ This form is drawn standalone. The README's page spec above follows §2a and §3
 |---|---|---|---|---|
 | Brackets (`brackets`) | rules, decks | partial | yes, 2 | canvas:545, :557 |
 | Roles and targets (`roles`) | rules, decks | partial | yes, 4 | canvas:558, :564 |
-| Themes (`themes`) | decks, rules | exact and partial | yes, 1 | canvas:565-571 |
+| Card and commander themes (`themes`); retitled from the canvas's "Themes" in copy review, because the row covers two different kinds of theme | decks, rules | exact and partial | yes, 1 | canvas:565-571 |
 | Commander recommendations (`recommendations`) | decks, you, plus rules | exact | yes, 4 | canvas:572-578; AUDIT:78-79 |
 | Availability and claims (`availability`) | you | exact | yes, 5 | canvas:579-585 |
 | Prices (`prices`) | list (was untagged) | exact | yes, 3 | canvas:586-592; AUDIT:10-12 |
@@ -222,7 +222,7 @@ The "plus" tags come from AUDIT correction 8. It does not state their order.
 | Label | 12.5px / 600 `--fg` | 12.5px / 600 `--fg` | README:112; canvas:408 |
 | Sentence | block, margin-top 2px (inherits the `dd` type) | block, margin-top 2px | canvas:408 |
 | Game Changers tag | `published list` | same | AUDIT:10-12 |
-| Tutors text | "Not measured yet." is a placeholder, waiting on brief §5.5 | same | README:224-225; AUDIT:67-68 |
+| Tutors text | "Read from the rules text. We have not measured how often it misses." The canvas's "Not measured yet." was a placeholder waiting on brief §5.5; this is the shipped statement of the same fact, set in copy review | same | README:224-225; AUDIT:67-68 |
 
 ## `explained in` field
 

@@ -47,6 +47,8 @@ describe("How the app reaches its answers: the rows", () => {
     expect(recs).toContain(`${FLOOR_PCT}% of the list`);
     expect(recs).toContain(`top ${READY_COUNT}`);
     expect(recs).toContain(`shows ${["zero", "one", "two", "three"][READY_SHOWN] ?? READY_SHOWN} of`);
+    // `dailyPicks` hands back the whole set when it is no larger than the count, with no rotation.
+    expect(recs).toContain(`all of them when ${["zero", "one", "two", "three"][READY_SHOWN] ?? READY_SHOWN} or fewer qualify`);
     expect(roles).toContain(`(${FLAT_TARGETS.land - 1} beside a partner)`);
     expect(row("how-themes").from).toContain(`are ${THEME_ORDER.length} patterns`);
     // The index cadence, from `indexDue`'s own delay: 14 days reads "about two weeks".

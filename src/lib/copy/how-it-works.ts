@@ -139,7 +139,8 @@ export const howItWorksRowsCopy = {
         `Pool is full at ${POOL_FULL_AT} legal cards. Synergy is how much of the commander’s list ` +
         `you own. With no list, the score is out of ${POOL_WEIGHT + ROLES_WEIGHT}. Something new ` +
         `needs you to own ${FLOOR_PCT}% of the list. Ready to build shows ${word(READY_SHOWN)} of ` +
-        `the top ${READY_COUNT}, changing daily at midnight UTC.`,
+        `the top ${READY_COUNT}, changing daily at midnight UTC, and all of them when ` +
+        `${word(READY_SHOWN)} or fewer qualify.`,
       refresh: `Your collection is read live. The lists update ${INDEX_CADENCE}.`,
       exact: "The arithmetic is exact. Its Roles part uses the fallback targets.",
     },
