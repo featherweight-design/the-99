@@ -193,7 +193,9 @@ export function UploadEntry({
     // Desktop content area — §Desktop Content Area: padding 44px 48px, max-width 760px.
     // CENTRED: the cap is the handoff's, the alignment was never stated, and left-pinned it left
     // two thirds of a desktop body empty beside it.
-    <div className="md:mx-auto md:w-full md:max-w-[760px] md:p-[44px_48px]">
+    // With the replace note the column starts at the page's heading, so the note sits the
+    // canvas's 20px under it; the 44px top belongs to a column that opens on the dropzone.
+    <div className={`md:mx-auto md:w-full md:max-w-[760px] ${currentCardCount > 0 ? "md:p-[0_48px_44px]" : "md:p-[44px_48px]"}`}>
       {/* The replace note (first-run redesign D10; design table first-run-calm-replace.md §2).
           A plain note, not a warning: --surface-sunken, a 1px --border all round, no ⚠, no amber
           rule. Drawn only over a collection that exists, since with none there is nothing to
