@@ -617,9 +617,19 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // colour's weight was zero, which is how a Boros deck's eighteen Plains spilled six Wastes.
     for (const color of colors) {
       let room = allocated.get(color)!;
-      for (const candidate of basicsByColor.get(color)!) {
+      const printings = basicsByColor.get(color)!;
+      for (let i = 0; i < printings.length; i += 1) {
         if (room <= 0 || filledSoFar() >= limit) break;
-        room -= takeLand(candidate, room);
+        // SPREAD ACROSS THE PRINTINGS THE PLAYER OWNS, and let the LAST one absorb the rest.
+        //
+        // Each printing takes the copies actually on the shelf, so a deck records what the player
+        // has rather than 37 of whichever printing happened to sort first — the nicety the owned
+        // quantity cap used to give for free, and which removing that cap took away. The last
+        // printing then covers whatever the shelf could not, because a basic is never a buy.
+        const last = i === printings.length - 1;
+        const want = last ? room : Math.min(printings[i].ownedQuantity, room);
+        if (want <= 0) continue;
+        room -= takeLand(printings[i], want);
       }
     }
   }
