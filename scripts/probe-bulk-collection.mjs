@@ -93,15 +93,25 @@ async function walk(page, deckId, mode) {
   // The pair mounts when its plans land, and draws only the controls whose press would tick
   // something. Wait for either control, then read whether the collection one is among them.
   const pair = onPageRole(page, "button", /^Select .* cards (from your collection|this deck needs)/).first();
-  await pair.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+  const mounted = await pair.waitFor({ state: "visible", timeout: 30_000 }).then(() => true, () => false);
+  if (!mounted) {
+    // Neither control drew: the plans were refused, never landed, or both would tick nothing.
+    // Whatever the cause, this run pressed nothing, and it says so rather than passing.
+    check(`${mode}: the bulk pair is drawn`, false, "no bulk control within 30s — NOT a pass");
+    return;
+  }
   if (mode === "hydrated") await page.waitForTimeout(2_000);
   const bulk = onPageRole(page, "button", BULK).first();
   if ((await bulk.count()) === 0) {
-    // The zero case: the plan chose nothing the list can tick, so there is no button to press.
-    // What must NOT be there is a live control naming a count; its absence is the pass.
+    // The zero case, with the pair drawn: the collection plan chose nothing the list can tick,
+    // so the collection control is absent rather than a live button naming a count.
     check(`${mode}: no collection control promises a count it cannot tick`, true, "the plan chose none, and none is drawn");
     return;
   }
+  // The list opens with the seed's own ticks, which come from the same plan. Cleared first, so
+  // what is ticked after the press is what the press ticked, not what the seed left.
+  await onPageRole(page, "button", /^Clear all ticks$/).first().click();
+  await page.waitForTimeout(300);
   const name = (await bulk.getAttribute("aria-label")) ?? "";
   const promised = Number(name.match(BULK)?.[1] ?? NaN);
   const note = (await bulk.innerText()).replace(/\s+/g, " ").trim();

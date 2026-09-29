@@ -271,8 +271,9 @@ export const topOffCopy = {
      * of them". True wherever the collection holds at least as many candidates as the deck
      * has slots, which is b1's own figures, and false exactly where it does not — four
      * sleevable candidates for twelve slots cannot take twelve, and `Select 12 from my
-     * collection` would promise eight cards that do not exist. The collection control takes
-     * `tickable`; the best control takes the open slots. Errata 4 on the handoff.
+     * collection` would promise eight cards that do not exist. Each control takes the number of
+     * rows its own press ticks, from its plan: a figure counted from the list read `Select 6
+     * from my collection` over a press that ticked nothing (2026-09-28). Errata 4 on the handoff.
      */
     collection: (n: string) => `Select ${n} from my collection`,
     best: (n: string) => `Select the ${n} this deck needs`,

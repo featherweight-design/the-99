@@ -190,7 +190,7 @@ Unchanged from shipped. Same position under the provenance ledger, above the dec
 | font-size | `11px` | `11px` |
 | layout | **side by side on one row**, `display:flex; gap:8px; margin-top:11px` | in the head's flex row |
 | Touch target | **44px** | — |
-| aria-label (collection control) | `bulk.collectionAria(tickable, concession)` | same |
+| aria-label (collection control) | `bulk.collectionAria(n, concession)`, where `n` is the rows the press ticks (the plan's ids the list allows). A control whose `n` is 0 is not drawn | same |
 
 ## 2c · Ordering note
 

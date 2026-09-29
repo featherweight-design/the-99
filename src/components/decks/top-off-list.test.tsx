@@ -457,8 +457,8 @@ describe("TopOffList", () => {
   // than there are slots must be offered the number it will actually tick —
   // a button that says two and ticks one is wrong on its face and in its name.
   it("names the tick-all by what it will tick, not by what is owned", async () => {
-    // The action answers with the one slot's worth; the LABEL is computed from the list's own
-    // `tickable` and is what this case is about.
+    // The action answers with the one slot's worth, and the LABEL names the rows that plan's press
+    // ticks, which is what this case is about.
     actions.bulkOptions.mockResolvedValue({
       ok: true,
       collection: plan({ oracleIds: ["owned-1"] }),
@@ -779,8 +779,8 @@ describe("TopOffList — the bulk tick", () => {
   // THE COUNTS ARE NOT ASSERTED TO MATCH, and that is deliberate. The handoff's copy comment
   // says "both labels state the same count — the open slots — because both fills take every
   // one of them", which is true in b1's own figures (23 sleevable for 12 open) and false
-  // wherever the collection holds fewer cards than there are slots. The collection control
-  // therefore names `tickable`, what it can actually select; see the note in the component.
+  // wherever the collection holds fewer cards than there are slots. Each control therefore
+  // names the rows its press will tick, from its plan; see the note in the component.
   // This case asserts the two notes, which is what it can see.
   it("draws both controls with the same count and different concessions", async () => {
     actions.bulkOptions.mockResolvedValue({
