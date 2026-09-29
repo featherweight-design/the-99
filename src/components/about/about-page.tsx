@@ -371,7 +371,11 @@ export function AboutPage({
       </p>
 
       {sheetMode && newEntries.length > 0 && <WhatsNewIndex entries={newEntries} />}
-      {sheetMode && <RecordVisit behind={behind} />}
+      {/* The appendix is recorded by the same visit, and a reader current on every entry who has
+          not seen it still owes the write. Not `behind`: nothing about the appendix is NEW. */}
+      {sheetMode && (
+        <RecordVisit behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))} />
+      )}
       {(sheetMode || howItWorks) && <JumpMark />}
 
       {sheetMode ? (
