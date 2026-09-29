@@ -108,6 +108,15 @@ export type DeckClaim = {
   senior: boolean;
 };
 
+/**
+ * What a MARKER reads of an availability: every figure, and of each claim only its deck and
+ * whether it is sleeved. `Availability` is assignable to it, so every deck surface passes its
+ * full reading unchanged; `/collection` ships only this much (list payload plan, PR 2).
+ */
+export type AvailabilitySummary = Omit<Availability, "claims"> & {
+  claims: Pick<DeckClaim, "id" | "name" | "mature">[];
+};
+
 /** A deck holding a hard claim. The projection every marker string reads. */
 export type HardDeck = { id: string; name: string };
 
@@ -116,7 +125,7 @@ export type HardDeck = { id: string; name: string };
  * than stored: `claims` is the whole truth and a second stored field could
  * disagree with it.
  */
-export function hardDecks(a: Pick<Availability, "claims">): HardDeck[] {
+export function hardDecks(a: Pick<AvailabilitySummary, "claims">): HardDeck[] {
   return a.claims.filter((c) => c.mature).map(({ id, name }) => ({ id, name }));
 }
 

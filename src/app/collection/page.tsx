@@ -11,6 +11,7 @@ import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/
 import { CardFan } from "../../components/marks";
 import { CollectionClient } from "../../components/collection/collection-client";
 import { cacheForUser } from "../../lib/cache/user-lists";
+import { encodeCollection } from "../../lib/collection/list-wire";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import {
   EmptyState,
@@ -81,11 +82,10 @@ export default async function CollectionPage() {
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client
-  // boundary as a prop, and every consumer below wants one card's entry.
-  const cardsWithAvailability = cards.map((c) => ({
-    ...c,
-    availability: availability?.get(c.oracleId) ?? null,
-  }));
+  // boundary as a prop, and every consumer below wants one card's entry. Encoded
+  // on the way (`list-wire.ts`): each deck a claim names crosses once, and each
+  // image as its Scryfall id and stamp. The client decodes it back.
+  const wire = encodeCollection(cards, availability);
 
   // Empty collection — shell's state, kept intact.
   if (stats.uniqueCards === 0) {
@@ -170,7 +170,7 @@ export default async function CollectionPage() {
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
       <CollectionClient
-        cards={cardsWithAvailability}
+        wire={wire}
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
         hasCollection={stats.totalCards > 0}

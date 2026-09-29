@@ -21,7 +21,7 @@ import type { BrowseCard, BrowseListCard } from "../../lib/collection/browse";
 const listCard = (oracleId: string, name: string): BrowseListCard =>
   ({
     oracleId, name, quantity: 1, colorIdentity: ["U"], typeLine: "Instant",
-    setCodes: ["SS1"], setCounts: [["SS1", 1]], primarySetCode: "SS1", rarity: "rare", cmc: 1,
+    setCounts: [["SS1", 1]], primarySetCode: "SS1", rarity: "rare",
   }) as BrowseListCard;
 
 const detail = (oracleId: string, name: string, partners: BrowseCard["comboPartners"] = []): BrowseCard => ({

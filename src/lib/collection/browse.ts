@@ -2,7 +2,7 @@ import { cache } from "react";
 import { and, eq, inArray, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
-import { availabilityState, type Availability, type AvailabilityState } from "../decks/availability";
+import { availabilityState, type Availability, type AvailabilityState, type AvailabilitySummary } from "../decks/availability";
 import { faceNames, isTwoFaced } from "../cards/faces";
 
 /** Rarity ordering for the "rarity" sort key. */
@@ -261,15 +261,35 @@ export type BrowseCard = {
  * a tuple list rather than a record because it serialises smaller, and this
  * type exists to make the payload small.
  */
-export type BrowseListCard = Omit<BrowseCard, "printings" | "oracleText" | "backImageUri" | "prices"> & {
+/**
+ * One card as `/collection` ships it: what the list filters, sorts, searches and draws, and
+ * nothing the modal reads (it fetches its own card). Trimmed field by field against what the
+ * list surfaces actually read, which the compiler enforces through this type
+ * (plans/2026-09-28-list-payload-shrink.md, PR 2): `keywords`, `cmc` and `preferredPrinting`
+ * have no reader here, `setCodes` is `setCounts`' own keys, and the combo clause names its
+ * partner without its id.
+ */
+export type BrowseListCard = Omit<
+  BrowseCard,
+  | "printings" | "oracleText" | "backImageUri" | "prices"
+  | "keywords" | "cmc" | "preferredPrinting" | "setCodes" | "availability" | "comboPartner"
+> & {
   setCounts: [string, number][];
+  /** What the markers read, and nothing a pull or a receipt reads: see `AvailabilitySummary`. */
+  availability?: AvailabilitySummary | null;
+  comboPartner?: { name: string };
 };
 
 /** Drops what only the modal reads, and rolls the printings up into set counts. */
 export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
   return cards.map((card) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured to drop them from `rest`
-    const { printings, oracleText, backImageUri, prices, ...rest } = card;
+    const {
+      /* eslint-disable @typescript-eslint/no-unused-vars -- destructured to drop them from `rest` */
+      printings, oracleText, backImageUri, prices, keywords, cmc, preferredPrinting, setCodes,
+      availability, comboPartner,
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+      ...rest
+    } = card;
     const counts = new Map<string, number>();
     for (const p of printings) {
       // Uppercased here rather than trusted: `buildSetOptions` looks these codes
@@ -278,7 +298,10 @@ export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
       const code = p.setCode.toUpperCase();
       counts.set(code, (counts.get(code) ?? 0) + p.quantity);
     }
-    return { ...rest, setCounts: [...counts] };
+    const list: BrowseListCard = { ...rest, setCounts: [...counts] };
+    // Set only when present: an absent key costs nothing on the wire, and `undefined` does.
+    if (comboPartner) list.comboPartner = { name: comboPartner.name };
+    return list;
   });
 }
 
@@ -850,7 +873,7 @@ export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseLis
     }
     if (
       setCodes.size > 0 &&
-      !c.setCodes.some((s) => setCodes.has(s.toLowerCase()))
+      !c.setCounts.some(([code]) => setCodes.has(code.toLowerCase()))
     ) return false;
     if (f.availability && f.availability.length > 0) {
       // No entry reads as free — an unclaimed card and a failed read are the

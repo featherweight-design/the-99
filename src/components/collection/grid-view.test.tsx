@@ -12,17 +12,14 @@ const card: BrowseListCard = {
   oracleId: "o1",
   name: "Smothering Tithe",
   typeLine: "Enchantment",
-  manaCost: "{3}{W}", cmc: 2,
-  keywords: [],
+  manaCost: "{3}{W}",
   rarity: "rare",
   colorIdentity: ["W"],
   imageUri: null,
   printedName: null,
   quantity: 1,
   setCounts: [],
-  setCodes: ["RVR"],
   primarySetCode: "RVR",
-  preferredPrinting: null,
 };
 
 // `/collection` reads from off every decklist, so `free` really is `owned − hard`

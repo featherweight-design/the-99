@@ -2182,6 +2182,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   And scrolling to the foot must ask for more. `probe:printing-pick` and `probe:card-art-corners`
   read the grid's art through the img since, scrolled in and loaded first. Makes no writes.
 
+- `pnpm probe:payload` holds the big list payloads to budgets, over EVERY account in the database
+  it is pointed at: `/discover` and the `/commanders` owned lane against 1.6MB of the data cache's
+  2MB per-entry ceiling (an entry over it is silently never stored), and since the list payload
+  plan's PR 2, `/collection` twice. Its CACHE ENTRY (the list `cacheForUser` stores) is held to the
+  same 1.6MB. Its SHIPPED WIRE (`encodeCollection`: each deck a claim names crosses once, each image
+  as its Scryfall id and stamp) is held to 1.25MB, a little over the 1.129MB (228.8KB gzipped) the
+  staging-shaped account measured when it landed. The wire budget fails on the pre-trim shape
+  (1.439MB with each card's full availability). Makes no writes.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.
