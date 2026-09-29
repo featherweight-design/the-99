@@ -1439,6 +1439,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   The script asserts per symbol that its slug equals Scryfall's own filename, which is the one
   way a rename would otherwise ship as a silent 404.
 
+- `pnpm build:mana-sprite` rebuilds `public/mana/sprite.svg`, the ONE file every pip draws from:
+  one `<view>` per symbol, addressed as `/mana/sprite.svg#m-<slug>`, and preloaded in the head of
+  every document by the root layout (Hugh, 2026-09-28: pips popped in, because a symbol drawn as a
+  CSS background is fetched only when its pip paints). `fetch:mana` runs it after writing the
+  files; run it by hand after editing one. `mana-sprite.test.ts` fails when the committed sprite is
+  not the build of the committed files, or lacks a view for a manifest slug. The `m-` prefix is
+  because an XML id cannot start with a digit, and `2W` and `1000000` are slugs.
+
+- `pnpm probe:pip-preload` proves the sprite ends the pop, in Chromium AND WebKit at 390x844 and
+  1300x900, each on an empty HTTP cache: on `/commanders` the sprite has arrived by the first
+  contentful paint, every pip draws from it, each view PAINTS (drawn to a canvas through the same
+  URL, since a `<view>` fragment in a CSS background is the part an engine could get wrong
+  silently), no per-symbol file is fetched, and the card modal's cost reuses the sprite. Every
+  request is held 150ms by `page.route`, because on localhost everything lands before the first
+  paint preloaded or not. Writes only the About row, captured and restored. Point it at
+  `local-dev`.
+
 - `pnpm probe:mana-symbols` proves the two pip rulings in a real browser at 1300x900 and
   390x844: that the card modal's cost draws printed symbols at its 26/22px box, and that the
   deck's card view draws none. Both are facts about painted pixels — the unit tests can say
