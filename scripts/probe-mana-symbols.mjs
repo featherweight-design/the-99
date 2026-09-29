@@ -161,7 +161,9 @@ const READ_TILES = (page) => {
     // keeps its pips deliberately, and `PROBE_DECK` is any deck the account
     // owns — so a deck holding one costed card with no image would fail a check
     // that counted every tile, over a component obeying the rule exactly.
-    if (getComputedStyle(art).backgroundImage.includes("url(")) {
+    // The art is a lazy <img> inside the box since the Card view stopped painting it as a
+    // CSS background (list payload plan follow-up); either form counts as drawing art.
+    if (getComputedStyle(art).backgroundImage.includes("url(") || art.querySelector("img[src]")) {
       arted += 1;
       if (overArt.length > 0) pipsOverArt += 1;
     } else if (overArt.length > 0) {

@@ -253,8 +253,9 @@ const tileArt = (page, text) =>
     let container = leaf;
     for (let i = 0; i < 6 && container.parentElement; i += 1) {
       container = container.parentElement;
+      // A CSS background, or a lazy <img> (the /collection grid and the deck Card view).
       const art = [...container.querySelectorAll("*")]
-        .map((n) => getComputedStyle(n).backgroundImage)
+        .map((n) => (n.tagName === "IMG" ? `url("${n.currentSrc || n.getAttribute("src")}")` : getComputedStyle(n).backgroundImage))
         .find((v) => v.startsWith("url("));
       if (art) return art.slice(5, -2);
     }

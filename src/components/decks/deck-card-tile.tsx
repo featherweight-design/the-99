@@ -25,7 +25,7 @@ import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy, spokenManaCost } from "../../lib/copy/card-surfaces";
-import { cssUrl, printedFaceName, printedNameOf } from "../../lib/collection/browse";
+import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -250,18 +250,29 @@ export function DeckCardTile({
                they sit against the caption rather than against the tile's edge, so a
                card whose Scryfall JPEG carries a white corner matte drew a pale notch
                there. The 1px inner edge follows the radius with it. */
-            className={`block w-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)] ${TILE_ART_CLIP}`}
+            className={`relative block w-full overflow-hidden ${TILE_ART_CLIP}`}
             style={{
               aspectRatio: TILE_ART_RATIO,
               // A card with no art draws a plate rather than a colour-identity
               // gradient: the decklist read carries no colour identity, and a
               // gradient guessed from nothing would be a claim about the card.
-              background: card.imageUri
-                ? `center / cover no-repeat ${cssUrl(card.imageUri)}`
-                : "var(--surface-sunken)",
+              background: "var(--surface-sunken)",
             }}
           >
-            {card.imageUri ? null : (
+            {/* AN IMG, LOADED LAZILY, as the /collection grid's (list payload plan): a CSS
+                background is fetched for every tile whether or not it is on screen, so a
+                99-card deck asked for every card's `normal` art at once. `object-cover`
+                centred is exactly what `center / cover` drew. */}
+            {card.imageUri ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
+              <img
+                src={card.imageUri}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            ) : (
               <span
                 className="flex h-full items-center justify-center text-center font-mono text-[9px] leading-[1.4]"
                 style={{ color: "var(--fg-locked)" }}
@@ -269,6 +280,12 @@ export function DeckCardTile({
                 {addPanelCopy.tile.noArt}
               </span>
             )}
+            {/* The 1px inner edge, drawn OVER the art: an inset shadow on this box paints
+                under its img child. `rounded-[inherit]` keeps it on the clipped corners. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+            />
           </CardDetailTrigger>
 
           {/* Outside the trigger: `CardDetailTrigger` carries its own accessible
