@@ -12,7 +12,7 @@
 // THE FLIP WALK. An entry tied to a feature switch is announced by turning the switch on
 // (Hugh, 2026-09-25), and a switch is read when the server starts, so the walk OWNS its server:
 // it starts `next dev` with every switch off, then restarts it with Change commander on, then
-// with Locked cards on as well, then Help me choose, then swap tools, then with all four off. Next 16 allows one `next dev` per project,
+// with Locked cards on as well, then Help me choose, then swap tools, then the Analysis tab, then with all five off. Next 16 allows one `next dev` per project,
 // so stop any dev server running in this worktree first. What it proves, in order:
 //   F1  every switch off: a reader at the current version sees nothing, and the browser is marked
 //       (every returning reader sits there, and each launch entry's \`since\` equals it, so a
@@ -23,8 +23,9 @@
 //   F4  Locked cards on LATER: the reader who met the first entry is shown only the second;
 //   F4b Help me choose on third: named alone, though it sits first on the page;
 //   F4c swap tools on fourth: ONE switch announces TWO entries, named together in page order;
-//   F5  the five figures draw at 390 and 1300 without overflowing the page;
-//   F6  all off again: none of the five entries is on the page.
+//   F4d the Analysis tab on fifth: its two entries, named together in page order;
+//   F5  the seven figures draw at 390 and 1300 without overflowing the page;
+//   F6  all off again: none of the seven entries is on the page.
 // It shares the fixture account with every other probe: one that calls `clearAboutSheet` mid-walk
 // marks every entry seen and fails F2–F4 on a working build. Re-run before believing that red.
 // The database needs migration 0066 (`about_seen_ids`); local-dev may be behind, so point the
@@ -377,7 +378,9 @@ async function walk(browser, width, userIdRef) {
 
 // ── The flip walk (--flip) ──────────────────────────────────────────────────────────────────
 
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED"];
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED"];
+/** The four switches the walk turns on before the Analysis tab's, which it turns on last (F4d). */
+const FIRST_FOUR = SWITCHES.filter((k) => k !== "ANALYSIS_TAB_ENABLED");
 
 /** `next dev` in this worktree with exactly the named switches on; resolves once it serves. */
 async function startServer(on) {
@@ -458,6 +461,8 @@ async function figureFacts(page) {
     const choose = within("help-me-choose");
     const fits = within("fits-your-decks");
     const standIns = within("stand-ins");
+    const analysis = within("deck-analysis");
+    const marks = within("card-marks");
     return {
       locked: locked && {
         inside: locked.inside,
@@ -503,10 +508,17 @@ async function figureFacts(page) {
         limit: standIns.li.querySelectorAll("[data-testid=stand-in-limit]").length,
         // The marked row's ⇄, found by the label it carries only when the row is over the limit.
         door: standIns.li.querySelectorAll("button[aria-label^='Cheaper stand-ins for Plateau']").length,
-        // Five of the group's six rows, then its toggle.
-        rows: standIns.li.querySelectorAll("[data-testid=stand-in-row]").length,
+        // The land group: five of its six rows, then its toggle. Counted INSIDE the land group,
+        // because the figure also draws a spell group beside it (key 3, #1052), whose rows are
+        // `spellRows`.
+        rows: standIns.li.querySelectorAll("[data-stand-in-group] [data-testid=stand-in-row]").length,
+        spellRows:
+          standIns.li.querySelectorAll("[data-testid=stand-in-row]").length -
+          standIns.li.querySelectorAll("[data-stand-in-group] [data-testid=stand-in-row]").length,
         showAll: [...standIns.li.querySelectorAll("button")].filter((b) => /^Show all 6 lands/.test(b.textContent.trim())).length,
       },
+      analysis: analysis && { inside: analysis.inside },
+      marks: marks && { inside: marks.inside },
       pageOverflow: document.documentElement.scrollWidth - innerWidth,
     };
   });
@@ -582,7 +594,7 @@ async function flipWalk(browser, who) {
 
     // F4c. Swap tools on FOURTH: one switch, two entries, named together and in page order.
     await stopServer(server);
-    server = await startServer(SWITCHES);
+    server = await startServer(FIRST_FOUR);
     await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
     const fourth = await sheetTitles(page, card);
     report(
@@ -592,7 +604,20 @@ async function flipWalk(browser, who) {
     );
     await visitAbout(page, userId, "stand-ins");
 
-    // F5. The five figures, drawn by the page's own components, at both widths.
+    // F4d. The Analysis tab on FIFTH: one switch, two entries in chapter 03, named together in
+    // page order, and nothing the four earlier flips announced.
+    await stopServer(server);
+    server = await startServer(SWITCHES);
+    await page.goto(`${BASE}/decks`, { waitUntil: "networkidle" });
+    const fifth = await sheetTitles(page, card);
+    report(
+      "F4d the Analysis tab names both of its entries, in page order",
+      JSON.stringify(fifth) === JSON.stringify(["What bracket this deck is, and why", "Bracket facts on a card"]),
+      JSON.stringify(fifth),
+    );
+    await visitAbout(page, userId, "card-marks");
+
+    // F5. The seven figures, drawn by the page's own components, at both widths.
     for (const viewport of [{ width: 1300, height: 820 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
       await page.goto(`${BASE}/about#locked-cards`, { waitUntil: "networkidle" });
@@ -605,8 +630,9 @@ async function flipWalk(browser, who) {
         JSON.stringify(f.locked),
       );
       report(
-        `F5 ${w}: Change commander draws the door and two candidates`,
-        f.change?.door === 1 && f.change.rows === 2,
+        // Three since #1052: yours, the one already in the 99 (key 4's part), and one to buy.
+        `F5 ${w}: Change commander draws the door and three candidates`,
+        f.change?.door === 1 && f.change.rows === 3,
         JSON.stringify(f.change),
       );
       report(
@@ -624,27 +650,30 @@ async function flipWalk(browser, who) {
         JSON.stringify(f.fits),
       );
       report(
-        `F5 ${w}: Cheaper stand-ins draws the limit line, the marked row's door, five rows and Show all`,
-        f.standIns?.limit === 1 && f.standIns.door === 1 && f.standIns.rows === 5 && f.standIns.showAll === 1,
+        `F5 ${w}: Cheaper stand-ins draws the limit line, the marked row's door, five land rows, two spell rows and Show all`,
+        f.standIns?.limit === 1 && f.standIns.door === 1 && f.standIns.rows === 5 && f.standIns.spellRows === 2 && f.standIns.showAll === 1,
         JSON.stringify(f.standIns),
       );
       report(
         `F5 ${w}: no figure overflows its entry or the page`,
-        f.locked?.inside && f.change?.inside && f.choose?.inside && f.fits?.inside && f.standIns?.inside && f.pageOverflow <= 0,
+        f.locked?.inside && f.change?.inside && f.choose?.inside && f.fits?.inside && f.standIns?.inside && f.analysis?.inside && f.marks?.inside && f.pageOverflow <= 0,
         `overflow ${f.pageOverflow}`,
       );
     }
     await page.setViewportSize({ width: 1300, height: 820 });
 
-    // F6. All off: none of the five entries is on the page.
+    // F6. All off: none of the seven entries is on the page.
     await stopServer(server);
     server = await startServer([]);
     await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
     const gone = await page.evaluate(
-      () => ["locked-cards", "change-commander", "help-me-choose", "fits-your-decks", "stand-ins"].every((id) => !document.getElementById(id)),
+      () =>
+        ["locked-cards", "change-commander", "help-me-choose", "fits-your-decks", "stand-ins", "deck-analysis", "card-marks"].every(
+          (id) => !document.getElementById(id),
+        ),
     );
-    report("F6 switches off again: none of the five entries is on the page", gone);
+    report("F6 switches off again: none of the seven entries is on the page", gone);
     await context.close();
   } finally {
     await stopServer(server);

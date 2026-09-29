@@ -82,9 +82,10 @@ property that produced it does not.
 
 ## Entry count
 
-§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 44. Five are the launch entries `help-me-choose`, `locked-cards`,
+§3's own heading reads **"thirty-three entries, thirty-three figures"**. The code has 46. Seven are the launch entries `help-me-choose`, `locked-cards`,
 `fits-your-decks`, `stand-ins` and `change-commander`, drawn by the
-launch-entries addendum and shown only while their features' switches are on. The six other
+launch-entries addendum, and `deck-analysis` and `card-marks`, from the Analysis tab's
+`ABOUT-entry.md`, all shown only while their features' switches are on. The six other
 extras are `decklist-order`, added after #642 shipped the decklist's sort control;
 `commander-availability`, added by #683; `review-and-commit` and `new-deck`, drawn on the §G
 template as R5 after a coverage sweep found two routes a reader could reach with nothing on the

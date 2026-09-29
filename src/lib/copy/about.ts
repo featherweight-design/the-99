@@ -14,6 +14,13 @@
 // daily, which is the whole argument for the per-feature rule in AGENTS.md.
 // 34 entries.
 //
+// The Analysis tab's pair, 2026-09-28 (`design_handoff_the99_analysis_tab/ABOUT-entry.md`):
+// `deck-analysis` and `card-marks`, both tied to ANALYSIS_TAB_ENABLED and both `since: 9`
+// rather than a bump. A bump redirects every account below the version while the sheet is
+// off (`proxy.ts`), and a switched entry is seen by its id, so the switch is what announces
+// them. `deck-page` is unedited for the same reason: it has no switch, and with the tab off
+// the deck page draws four tabs, so the fifth is named in `deck-analysis` instead.
+//
 // Voice: Kitchen Table. An entry explains a thing the app already does, to a
 // player who has met it and wants to know what it meant.
 //
@@ -45,7 +52,8 @@ export type AboutSwitch =
   | 'NEVER_CUT_ENABLED'
   | 'SWAP_TOOLS_ENABLED'
   | 'HELP_ME_CHOOSE_ENABLED'
-  | 'CHANGE_COMMANDER_ENABLED';
+  | 'CHANGE_COMMANDER_ENABLED'
+  | 'ANALYSIS_TAB_ENABLED';
 
 export interface AboutEntry {
   id: string;
@@ -392,6 +400,26 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'deck-analysis',
+    chapter: '03',
+    title: 'What bracket this deck is, and why',
+    route: '/decks',
+    opens: 'opens a deck',
+    width: 'plate',
+    switch: 'ANALYSIS_TAB_ENABLED',
+    caption:
+      'Once a deck is full, press Analyze on its Analysis tab, second in the deck page’s row of tabs, and we read the whole list against the Commander Format Panel’s bracket rules. The answer is the bracket your cards permit, and sometimes two, when the difference is how you play; then it is yours to say which. Every count opens to the cards behind it, and the lowest rung says what would have to go to come down one. The bracket then rides the deck’s header, its tile on your decks page and its row on Home, and the chip in the header opens the tab. A committed version that reads differently from the one before it names both readings. The same tab also holds an overview of the deck and Suggested changes.',
+    keys: [
+      'a range is two brackets the cards allow; the chips under it are the only question on the page.',
+      'the climb states, the findings open: every figure with cards behind it is a button, a zero is not.',
+      'the date line names the analysis shown. After an edit it adds `before your changes`, the header and the tile keep the last bracket, and the tab offers Re-analyze. It never guesses whether the edit mattered.',
+      'the line under the face says what separates the two. A single bracket carries a lean there instead: the two-card combo that decided it, and whether the deck can find both halves or has to draw them. `see the reasoning` shows what finds each half.',
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    since: 9,
+  },
+  {
     id: 'auto-fill',
     chapter: '03',
     title: 'How much we fill in for you',
@@ -436,6 +464,25 @@ export const aboutEntries: readonly AboutEntry[] = [
       'a bright accent edge answers a different question: you have changed this row and not committed it yet, and the edge goes when you do.',
     ],
     since: 1,
+  },
+  {
+    id: 'card-marks',
+    chapter: '03',
+    title: 'Bracket facts on a card',
+    route: '/collection',
+    width: 'plate',
+    // Tied to the tab's switch though the marks draw without it: key 3 sends the reader to the
+    // Analysis tab, and with the switch off there is no tab to send them to.
+    switch: 'ANALYSIS_TAB_ENABLED',
+    caption:
+      'Four facts a card carries whatever deck it is in: it is on the Game Changer list, it counts as mass land denial, it takes extra turns, or it is a tutor. Each has its own glyph, all four in the same ink, and they sit with the card’s name on your collection, on a decklist and on the cards a deck suggests adding. The key above the cards names them, and a card’s details spell them out under Bracket facts.',
+    keys: [
+      'a tutor is a search that can find something other than a land. A land-only search is ramp, and carries no mark.',
+      'no mark means nothing to report, not a card we checked and cleared. Only the Game Changer list is complete; the other three are detected, and detection can miss a card.',
+      'a mark is about the card and never counts anything. How many a deck holds, and what that does to its bracket, is the Analysis tab’s answer.',
+    ],
+    // The version current when it was written, as `deck-analysis` above.
+    since: 9,
   },
   {
     id: 'locked-cards',

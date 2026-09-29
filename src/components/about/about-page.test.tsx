@@ -16,7 +16,10 @@ import { explainedCopy } from "../../lib/copy/commander-explained";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { collectionChassisCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { spokenFullManaCost, spokenManaCost, twoFacedCopy } from "../../lib/copy/card-surfaces";
-import { COSTS, GAME_SUMMARY } from "../../lib/about/fixtures";
+import { CARD_MARK_ROWS, COSTS, DECK_ANALYSIS, GAME_SUMMARY } from "../../lib/about/fixtures";
+import { cardMarkCopy } from "../../lib/copy/card-mark";
+import { BRACKET_NAMES } from "../../lib/copy/deck-analysis";
+import { declarationCopy } from "../../lib/copy/declaration";
 import { deriveHeadline } from "../../lib/decks/game-headline";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -57,7 +60,7 @@ import { DECK_VERSIONS,
 // Every feature switch ON for this file, so every entry is drawn, figures included. The page with
 // the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
 // `about-page-switch.test.tsx`'s.
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED"] as const;
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED"] as const;
 beforeAll(() => {
   for (const k of SWITCHES) process.env[k] = "true";
 });
@@ -1439,6 +1442,49 @@ describe("what each legend must hold", () => {
     }
     const games = DECK_TABS.find((t) => t.count === undefined)!;
     expect(games.label).toBe(gameLogCopy.tab.label);
+  });
+
+  it("deck-analysis: a range with its two chips, then the climb", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const el = container.querySelector<HTMLElement>('[data-specimen="deck-analysis"]')!;
+    expect(el, "deck-analysis drew no figure").toBeTruthy();
+
+    // The fixture is a real profile through the real verdict, so the range is the rules' answer
+    // and not the fixture's. Five Game Changers pass bracket 3's limit of three.
+    expect(DECK_ANALYSIS.verdict.permits).toEqual([4, 5]);
+    for (const b of DECK_ANALYSIS.verdict.permits) expect(el.textContent).toContain(BRACKET_NAMES[b]);
+
+    // Key line 1: the range is unanswered, so its chips are drawn rather than an answer.
+    const ask = el.querySelector(`[role="group"][aria-label="${declarationCopy.ask.groupAria}"]`);
+    expect(ask, "no declaration chips").not.toBeNull();
+    expect(ask!.querySelectorAll("button")).toHaveLength(2);
+
+    // Key line 2: the climb draws three rungs, the bracket below, this one and the one above.
+    expect(el.querySelectorAll('[data-testid="climb-rung"]')).toHaveLength(3);
+
+    // The population foot the handoff forbids dropping.
+    expect(el.textContent).toContain("9,730");
+  });
+
+  it("card-marks: a key naming only the facts its two rows carry", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const el = container.querySelector<HTMLElement>('[data-specimen="card-marks"]')!;
+    expect(el, "card-marks drew no figure").toBeTruthy();
+
+    for (const card of CARD_MARK_ROWS) expect(el.textContent).toContain(card.name);
+
+    // A deck is a closed set: mass land denial is on neither row, so the key does not name it.
+    const key = el.querySelector('[role="group"]')!;
+    expect(key.textContent).toContain(cardMarkCopy.gameChanger);
+    expect(key.textContent).toContain(cardMarkCopy.extraTurns);
+    expect(key.textContent).toContain(cardMarkCopy.tutor);
+    expect(key.textContent).not.toContain(cardMarkCopy.massLandDenial);
+
+    // The order rule, which only shows on a card with two marks: Game Changer before tutor.
+    const marks = [...el.querySelectorAll('svg[role="img"][data-testid^="card-fact-"]')].map((m) =>
+      m.getAttribute("data-testid"),
+    );
+    expect(marks).toEqual(["card-fact-gameChanger", "card-fact-tutor", "card-fact-extraTurns"]);
   });
 
   it("gives the resume rows all three verbs", () => {
