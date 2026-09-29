@@ -9,17 +9,16 @@
 // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
-import { useReportPending } from "./pending-report";
+import { usePendingPush } from "./pending-push";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -365,9 +364,7 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
   // The About row's press closes this menu, which unmounts the row, so its own link status cannot
   // carry the navigation to the 400ms screen. The navigation runs as a transition here instead,
   // and this component, which stays mounted, reports it.
-  const router = useRouter();
-  const [aboutPending, startAbout] = useTransition();
-  useReportPending("/about", aboutPending);
+  const about = usePendingPush();
   function onAbout() {
     // Already on /about, the press navigates nothing: it only closes the menu, and the sheet's
     // entry has to come back off in the ordinary way or the next Back would land on this page.
@@ -379,7 +376,7 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
     // loading, and that Back cancels the navigation.
     leaveDialogsForNavigation();
     close();
-    startAbout(() => router.push("/about"));
+    about.go("/about");
   }
 
   // Table ambiguity 13: the menu dismisses before Clerk's modal mounts, so the

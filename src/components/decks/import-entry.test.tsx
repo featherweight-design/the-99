@@ -9,6 +9,20 @@ import { DECK_IMPORT_FILE_MAX_BYTES } from "../../lib/upload-limits";
 const importDeck = vi.fn();
 const push = vi.fn();
 
+// Records every report a code-started navigation makes, so the case below can assert the push
+// reached the provider (the navigation-pending plan's PR 3) without mounting it.
+const reports = vi.hoisted(() => [] as [string, boolean][]);
+vi.mock("../shell/pending-report", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../shell/pending-report")>();
+  return {
+    ...real,
+    useReportPending: (href: string, pending: boolean) => {
+      reports.push([href, pending]);
+      return real.useReportPending(href, pending);
+    },
+  };
+});
+
 vi.mock("../../app/decks/import-actions", () => ({ importDeck }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
@@ -350,5 +364,6 @@ describe("state 12 — no legendary creature", () => {
     await screen.findByRole("button", { name: "Start from a commander instead →" });
     fireEvent.click(screen.getByRole("button", { name: "Start from a commander instead →" }));
     expect(push).toHaveBeenCalledWith("/decks/new");
+    expect(reports).toContainEqual(["/decks/new", true]);
   });
 });

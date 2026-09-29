@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 
 const push = vi.fn();
+// Records every report a code-started navigation makes, so the case below can assert the push
+// reached the provider (the navigation-pending plan's PR 3) without mounting it.
+const reports = vi.hoisted(() => [] as [string, boolean][]);
+vi.mock("../shell/pending-report", async (importOriginal) => {
+  const real = await importOriginal<typeof import("../shell/pending-report")>();
+  return {
+    ...real,
+    useReportPending: (href: string, pending: boolean) => {
+      reports.push([href, pending]);
+      return real.useReportPending(href, pending);
+    },
+  };
+});
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
 
 const confirmUpload = vi.fn();
@@ -54,6 +68,14 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     expect(confirmUpload).toHaveBeenCalledWith("up_1", { firstImport: true });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(push).toHaveBeenCalledWith("/collection/replace/summary/up_1");
+  });
+
+  it("reports the push to the receipt, so a slow arrival reaches the navigation screen", async () => {
+    confirmUpload.mockResolvedValueOnce(undefined);
+    reports.length = 0;
+    const cont = await reachReview(0);
+    await act(async () => fireEvent.click(cont));
+    expect(reports).toContainEqual(["/collection/replace/summary/up_1", true]);
   });
 
   it("holds Continue at Importing… while a first import runs, since no modal carries the wait", async () => {
