@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeDiscovery, encodeDiscovery } from "./encode";
+import { cutToWindow, decodeDiscovery, DRAW_KEYS, drawFieldsFor, encodeDiscovery, isDrawn } from "./encode";
 import type { GapSlot } from "../edhrec/gap-slot";
 import type { DiscoveryItem, DiscoveryList } from "./list";
 
@@ -117,7 +117,8 @@ describe("encodeDiscovery", () => {
   ])("round-trips the $kind gap slot", (gapSlot) => {
     const list = listOf([{ ...baseItem, gapSlot }]);
 
-    const back = roundTrip(list).items[0].gapSlot;
+    // A whole row, not a withheld one, so every draw field is present.
+    const back = roundTrip(list).items[0].gapSlot!;
     expect(back).toEqual(gapSlot);
     expect(Object.hasOwn(back, "labels")).toBe(gapSlot.kind !== "noMechanics");
     // `capped` survives as a BOOLEAN, not as the 1/0 it travels as: the wire
@@ -184,5 +185,34 @@ describe("encodeDiscovery", () => {
     const row = encoded.rows[0] as unknown[];
 
     expect(row[encoded.keys.indexOf("artCropUri")]).toBe("0/d/0d-atraxa.jpg");
+  });
+});
+
+describe("cutToWindow / drawFieldsFor (list payload plan, PR 3)", () => {
+  const a = { ...baseItem, slug: "a", name: "A" };
+  const b = { ...baseItem, slug: "b", name: "B", prose: "Another sentence." };
+  const encoded = encodeDiscovery(listOf([a, b]));
+
+  it("ships the kept rows whole and the rest without a single draw field", () => {
+    const [kept, cut] = decodeDiscovery(cutToWindow(encoded, new Set(["a"]))).items;
+    expect(kept).toEqual(a);
+    expect(isDrawn(kept)).toBe(true);
+    expect(isDrawn(cut)).toBe(false);
+    expect(cut).toEqual({
+      slug: "b", name: "B", colorIdentity: b.colorIdentity, releasedAt: b.releasedAt, deckCount: b.deckCount,
+    });
+    for (const key of DRAW_KEYS) expect(Object.hasOwn(cut, key)).toBe(false);
+  });
+
+  it("leaves the cached entry it was given untouched", () => {
+    const before = JSON.stringify(encoded);
+    cutToWindow(encoded, new Set());
+    expect(JSON.stringify(encoded)).toBe(before);
+  });
+
+  it("answers the draw fields of the rows named, and nothing for a slug not in the list", () => {
+    const fields = drawFieldsFor(encoded, new Set(["b", "not-here"]));
+    expect(Object.keys(fields)).toEqual(["b"]);
+    expect({ ...decodeDiscovery(cutToWindow(encoded, new Set())).items[1], ...fields.b }).toEqual(b);
   });
 });

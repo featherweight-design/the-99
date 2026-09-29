@@ -35,11 +35,35 @@ const ART_STEM = "https://cards.scryfall.io/art_crop/front/";
 /** RFC 3986 scheme, which every absolute URL carries and no stripped path does. */
 const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
-const ROW_KEYS = [
-  "slug", "name", "colorIdentity", "artCropUri", "releasedAt", "deckCount",
-  "rank", "price", "prose", "gapSlot", "score", "measurableTotal",
+/**
+ * What every row carries: what the lane searches, filters and orders on (`window.ts`).
+ * FIRST, so a row withheld its draw columns is a prefix of the full tuple.
+ */
+const LIST_KEYS = ["slug", "name", "colorIdentity", "releasedAt", "deckCount"] as const satisfies (keyof DiscoveryItem)[];
+
+/**
+ * What only a DRAWN row reads. The page ships these for the rows of the URL's own first window
+ * and withholds them from the rest, which the client fetches from `/api/discovery-fields` in the
+ * background (plans/2026-09-28-list-payload-shrink.md, PR 3). `rank` is here because it is only
+ * ever drawn: every order reads the list columns, and `rank` is the server's position, carried
+ * whichever order the client applies.
+ */
+export const DRAW_KEYS = [
+  "artCropUri", "rank", "price", "prose", "gapSlot", "score", "measurableTotal",
   "fitPool", "fitRoles", "fitSynergy",
-] satisfies (keyof DiscoveryItem)[];
+] as const satisfies (keyof DiscoveryItem)[];
+
+export type DrawKey = (typeof DRAW_KEYS)[number];
+export type DrawFields = Pick<DiscoveryItem, DrawKey>;
+/** A row as the client holds it: its draw fields present once they have arrived. */
+export type DiscoveryRow = Omit<DiscoveryItem, DrawKey> & Partial<DrawFields>;
+
+/** Whether a row can be drawn: every draw field has arrived. `gapSlot` is never absent on one that has. */
+export function isDrawn(row: DiscoveryRow): row is DiscoveryItem {
+  return row.gapSlot !== undefined;
+}
+
+const ROW_KEYS = [...LIST_KEYS, ...DRAW_KEYS] satisfies (keyof DiscoveryItem)[];
 
 /**
  * The gap slot, as a tag and its label indices.
@@ -170,7 +194,10 @@ export function encodeDiscovery(list: DiscoveryList): EncodedDiscovery {
 }
 
 /** The inverse of `encodeDiscovery`. */
-export function decodeDiscovery(encoded: EncodedDiscovery): DiscoveryList {
+export type DecodedDiscovery = Omit<DiscoveryList, "items"> & { items: DiscoveryRow[] };
+
+/** A withheld row is SHORTER, so only the keys it carries are decoded, and its draw fields stay absent. */
+export function decodeDiscovery(encoded: EncodedDiscovery): DecodedDiscovery {
   const { keys, gapKinds, strings, rows, ...meta } = encoded;
 
   return {
@@ -178,8 +205,38 @@ export function decodeDiscovery(encoded: EncodedDiscovery): DiscoveryList {
     items: rows.map(
       (row) =>
         Object.fromEntries(
-          keys.map((key, i) => [key, decodeValue(key, row[i], strings, gapKinds)]),
-        ) as DiscoveryItem,
+          keys.slice(0, row.length).map((key, i) => [key, decodeValue(key, row[i], strings, gapKinds)]),
+        ) as DiscoveryRow,
     ),
   };
+}
+
+/**
+ * The payload as the page ships it: every row whose slug is not in `keep` cut back to its list
+ * columns. A NEW object: `encoded` is the cached entry, shared by every request for this sort,
+ * whatever its URL, and the window is this request's alone.
+ */
+export function cutToWindow(encoded: EncodedDiscovery, keep: ReadonlySet<string>): EncodedDiscovery {
+  const slugAt = encoded.keys.indexOf("slug");
+  return {
+    ...encoded,
+    rows: encoded.rows.map((row) =>
+      keep.has(row[slugAt] as string) ? row : row.slice(0, LIST_KEYS.length),
+    ),
+  };
+}
+
+/** The draw fields of the rows named, decoded, for the fields route. Rows not in the list answer nothing. */
+export function drawFieldsFor(encoded: EncodedDiscovery, slugs: ReadonlySet<string>): Record<string, DrawFields> {
+  const { keys, gapKinds, strings, rows } = encoded;
+  const slugAt = keys.indexOf("slug");
+  const out: Record<string, DrawFields> = {};
+  for (const row of rows) {
+    const slug = row[slugAt] as string;
+    if (!slugs.has(slug)) continue;
+    out[slug] = Object.fromEntries(
+      DRAW_KEYS.map((key) => [key, decodeValue(key, row[keys.indexOf(key)], strings, gapKinds)]),
+    ) as DrawFields;
+  }
+  return out;
 }

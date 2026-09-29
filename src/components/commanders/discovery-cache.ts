@@ -6,7 +6,7 @@ import { laneQuery, type LaneParams } from "../../lib/commanders/lane-params";
 // reaches `src/db/index.ts`, whose module body throws without DATABASE_URL and
 // pulls the neon driver in with it. A type-only clause is erased at compile
 // time, so none of that reaches the client bundle.
-import type { DiscoveryList } from "../../lib/discovery/list";
+import type { DecodedDiscovery } from "../../lib/discovery/encode";
 
 export type SortKey = "fit" | "new";
 
@@ -35,14 +35,14 @@ export type SortKey = "fit" | "new";
  * staleness answer: a deck built elsewhere invalidates nothing here because
  * there is no "here" to invalidate by the time the reader gets back.
  */
-export function useDiscoveryCache(served: DiscoveryList) {
+export function useDiscoveryCache(served: DecodedDiscovery) {
   // State rather than a ref, so the payload is filed and shown in one pass. A
   // ref would have to be written during render to be readable by the very next
   // click, which is the thing React tells you not to do.
-  const [cache, setCache] = useState<Map<SortKey, DiscoveryList>>(
+  const [cache, setCache] = useState<Map<SortKey, DecodedDiscovery>>(
     () => new Map([[served.sort, served]]),
   );
-  const [view, setView] = useState<DiscoveryList>(served);
+  const [view, setView] = useState<DecodedDiscovery>(served);
 
   // A fresh payload always wins, and is filed on its way past. Adjusted during
   // render rather than in an effect, which is what React prescribes for state

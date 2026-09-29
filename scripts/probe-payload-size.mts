@@ -26,7 +26,9 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
 import { loadDiscovery } from "../src/lib/discovery/list";
-import { encodeDiscovery } from "../src/lib/discovery/encode";
+import { cutToWindow, decodeDiscovery, encodeDiscovery } from "../src/lib/discovery/encode";
+import { discoveryRows } from "../src/lib/discovery/window";
+import { REVEAL_STEP } from "../src/lib/commanders/reveal-step";
 import { loadCommanderRankings } from "../src/lib/commanders/rankings";
 import { loadBrowseCards } from "../src/lib/collection/browse";
 import { encodeCollection } from "../src/lib/collection/list-wire";
@@ -58,6 +60,14 @@ const BUDGET_BYTES = 1_600_000;
  * prints the figure; read it there.
  */
 const COLLECTION_WIRE_BUDGET_BYTES = 1_250_000;
+
+/**
+ * `/discover`'s SHIPPED payload for a URL with no search, colour or set: every row's list columns,
+ * and the draw columns for the first 25 only (list payload plan, PR 3). The cached entry above
+ * holds every column and answers to the ceiling; this is what a reader's connection pays for, set
+ * a little over the worst account measured when it landed. The run prints the figure.
+ */
+const DISCOVER_SHIPPED_BUDGET_BYTES = 300_000;
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -137,6 +147,7 @@ async function main() {
       // account while claiming to cover every one.
       let worstRatio = 0;
       let leastRows = Number.POSITIVE_INFINITY;
+      let worstShipped = 0;
       for (const account of accounts) {
         const list = await loadDiscovery(account.user_id, { sort });
         // A DEGRADED PAYLOAD IS A SMALLER PAYLOAD, so measuring one certifies
@@ -148,7 +159,13 @@ async function main() {
         // dependency, and this script's whole job is to not hide things.
         assertHealthy(`${sort} for one account`, list.priceOk, list.availOk);
         const plain = Buffer.byteLength(JSON.stringify(list));
-        const bytes = Buffer.byteLength(JSON.stringify(encodeDiscovery(list)));
+        const encoded = encodeDiscovery(list);
+        const bytes = Buffer.byteLength(JSON.stringify(encoded));
+        // The page's own cut, for the default URL of this sort: no search, colour or set.
+        const order = sort === "new" ? "new" : "bestfit";
+        const first = discoveryRows(decodeDiscovery(encoded).items, { q: "", colors: [], match: "contains", order, printedIn: [] }, null)
+          .slice(0, REVEAL_STEP);
+        worstShipped = Math.max(worstShipped, Buffer.byteLength(JSON.stringify(cutToWindow(encoded, new Set(first.map((r) => r.slug))))));
         worstRatio = Math.max(worstRatio, bytes / plain);
         leastRows = Math.min(leastRows, list.items.length);
         if (bytes > worst.bytes) {
@@ -166,6 +183,11 @@ async function main() {
         `${sort}: worst of ${accounts.length} — ${worst.rows} rows · ${worst.prose} with a ` +
           `sentence · encoded ${(worst.bytes / 1e6).toFixed(3)} MB of the ` +
           `${(worst.plain / 1e6).toFixed(3)} MB plain form`,
+      );
+      check(
+        `${sort}'s shipped first window is inside its budget`,
+        worstShipped <= DISCOVER_SHIPPED_BUDGET_BYTES,
+        `${(worstShipped / 1e6).toFixed(3)} MB against ${(DISCOVER_SHIPPED_BUDGET_BYTES / 1e6).toFixed(3)} MB`,
       );
       check(
         `${sort} is inside the budget`,

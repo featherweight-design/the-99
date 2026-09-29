@@ -15,22 +15,20 @@ import {
   discoverSort,
   laneQuery,
   parseLaneParams,
-  type LaneOrder,
   type LaneParams,
 } from "../../lib/commanders/lane-params";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
-// Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
-// reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
-// and pulls `ws` and the neon driver in with it. A type-only clause is erased at
-// compile time, so none of that reaches the client bundle.
-import type { DiscoveryItem } from "../../lib/discovery/list";
+import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper } from "../../lib/discovery/window";
 // Not type-only: `decodeDiscovery` runs on the client. Safe to import as a
-// value for the same reason the clause above is not — `encode.ts` imports
-// nothing but types from `list.ts`, so the database module never comes with it.
-import { decodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
-import { filePrintedIn, isPrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
+// value because `encode.ts` imports nothing but types from `list.ts`, which
+// reaches `src/db/index.ts` (whose body throws when DATABASE_URL is unset), so
+// the database module never comes with it. `window.ts` holds to the same rule.
+import { decodeDiscovery, type DiscoveryRow, type EncodedDiscovery } from "../../lib/discovery/encode";
+import type { DiscoveryItem } from "../../lib/discovery/list";
+import { useDrawFields } from "./use-draw-fields";
+import { filePrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
 import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
 import { printedInLabel } from "./rack/chip-line";
 import { FilterRack } from "./rack/filter-rack";
@@ -70,57 +68,6 @@ const EMPTY_MATCHES: ExcludedMatch[] = [];
 /** One empty selection, so a memo reading it holds still across renders. */
 const NO_SETS: string[] = [];
 
-// `filterByColors` matches against `colorIdentity`, which is upper-case
-// throughout the catalog; `lane-params` writes the URL in lower case. The lift
-// happens once, here, exactly as the owned lane does it.
-const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
-
-/**
- * The lane's client-side ordering — three of its five orders, over rows the
- * client already holds. A round trip for a sort of a list in memory is the
- * request this lane's cache exists to avoid, and the payload carries every
- * figure they rank on. None of these touches `rank`, which stays the position in
- * the server's own ranking.
- *
- * The other two, `bestfit` and `new`, fall through untouched: they ARE the
- * server's ranking, and the payload already arrives in that order. That
- * fallthrough is the whole of the fix — the build before this one re-sorted
- * every payload by a separate order control, so the ranking the reader asked for
- * never reached the screen.
- *
- * `popularity` sorts on the EDHREC deck count, which is the figure the row
- * prints under that name. It is NOT the server's own order: the server ranks on
- * support or on novelty, so returning the list untouched here would have printed
- * `Popularity` over whichever of those was active and called it the deck count.
- *
- * A row with no figure sorts last in both figure orders. An undated set and an
- * uncounted commander are absences, and an absence ordered as a zero would be
- * the claim that nobody has built it.
- */
-function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
-  if (order === "name") {
-    return [...rows].sort((a, b) => a.name.localeCompare(b.name, "en"));
-  }
-  if (order === "recent") {
-    return [...rows].sort((a, b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? ""));
-  }
-  if (order === "popularity") {
-    return [...rows].sort((a, b) => (b.deckCount ?? -1) - (a.deckCount ?? -1));
-  }
-  return rows;
-}
-
-/**
- * The parameters with `order` corrected to the ranking the server actually
- * returned. Only `new` can be refused — `loadDiscovery` downgrades it when there
- * is no built deck to measure novelty from — and the four orders that ask for
- * the fit ranking always get it, so a mismatch has exactly one meaning and one
- * repair. Returning the same object when nothing moved is what lets the caller
- * skip a set during render.
- */
-function settleOrder(p: LaneParams, sort: "fit" | "new"): LaneParams {
-  return discoverSort(p.order) === sort ? p : { ...p, order: "bestfit" };
-}
 
 /**
  * Discovery's list is its own client component rather than an adaptation of
@@ -270,15 +217,9 @@ export function DiscoveryView({
   );
 
   // Search narrows before colour, so the colour figures below describe the list
-  // the reader is actually looking at. Name matching only, case-insensitive.
-  // Nothing is trimmed off the middle: a player typing "ur-dragon" has typed
-  // part of a name, and normalising punctuation here would be a second matcher
-  // disagreeing with the server's.
-  const searched = useMemo(() => {
-    const q = params.q.trim().toLowerCase();
-    if (q === "") return discovery.items;
-    return discovery.items.filter((r) => r.name.toLowerCase().includes(q));
-  }, [discovery.items, params.q]);
+  // the reader is actually looking at. The steps live in `lib/discovery/window`,
+  // which the server reads too, to know the URL's first window.
+  const searched = useMemo(() => searchRows(discovery.items, params.q), [discovery.items, params.q]);
 
   // `Printed in` (decision 9). With no index the selection is not applied: there is nothing to
   // apply it against, and the control is not drawn either.
@@ -290,10 +231,7 @@ export function DiscoveryView({
     [codesBySlug, params],
   );
   const inSets = useCallback(
-    <T extends { slug: string }>(rows: T[]): T[] =>
-      setCodes.length === 0 || !codesBySlug
-        ? rows
-        : rows.filter((r) => isPrintedIn(codesBySlug, r.slug, setCodes)),
+    <T extends { slug: string }>(rows: T[]): T[] => inSetsOf(rows, codesBySlug, setCodes),
     [codesBySlug, setCodes],
   );
   // Search, then sets, then colour, so each figure below answers for the control it names.
@@ -382,9 +320,34 @@ export function DiscoveryView({
   //
   // A layout effect, and the re-rank announcement above is a plain effect, so a
   // flip's message always lands after this one clears the region.
+  // THE ROWS ON SCREEN, which are not always `filtered.slice(0, shown)`. The page ships draw
+  // fields for its own first window only (list payload plan, PR 3), and the rest arrive in the
+  // background. A reveal or a filter that reaches rows whose fields have not landed yet keeps the
+  // rows already drawn on screen, the list `aria-busy`, until they do: about one round trip, and
+  // no drawn waiting state, which would be a Design question this does not answer.
+  const wanted = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
+  const refreshStale = useCallback(() => router.refresh(), [router]);
+  const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted, refreshStale);
+  const resolvedWanted = wanted.map(resolve);
+  const complete = resolvedWanted.every((r) => r !== null);
+  // The last rows drawn WHOLE, kept as drawn: a change of order resolves against another
+  // ranking's fields, which the rows on screen may not have.
+  const [held, setHeld] = useState<{ from: DiscoveryRow[]; rows: DiscoveryItem[] }>(() => ({
+    from: wanted,
+    rows: resolvedWanted.filter((r): r is DiscoveryItem => r !== null),
+  }));
+  if (complete && held.from !== wanted) {
+    setHeld({ from: wanted, rows: resolvedWanted as DiscoveryItem[] });
+  }
+  const rows = complete ? (resolvedWanted as DiscoveryItem[]) : held.rows;
+  // The window the reader can see, for the reveal's focus and announcement: a row whose fields
+  // are still arriving is not revealed yet, so neither is it announced or focused.
+  const settledShown = complete ? shown : held.rows.length;
+
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const prevShown = useRef(shown);
+  const prevShown = useRef(settledShown);
   useLayoutEffect(() => {
+    const shown = settledShown;
     const before = prevShown.current;
     prevShown.current = shown;
     // Only a reveal widens the window; a filter or flip narrows it back to the
@@ -399,9 +362,10 @@ export function DiscoveryView({
     // preventScroll: revealing must not move the reader's place. The accent ring
     // is the cue that keyboard position advanced, not a jump down the page.
     itemRefs.current[before]?.focus({ preventScroll: true });
-  }, [shown, filtered.length]);
+  }, [settledShown, filtered.length]);
 
-  const remaining = Math.max(0, filtered.length - shown);
+  // Counted from the rows on screen: a reveal still waiting for its rows has not happened yet.
+  const remaining = Math.max(0, filtered.length - settledShown);
   // A list too short to have ever been windowed ends on a plain spacer.
   const wasWindowed = filtered.length > REVEAL_STEP;
 
@@ -820,8 +784,11 @@ export function DiscoveryView({
               />
             ) : null}
 
-            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-              {filtered.slice(0, shown).map((item, i) => (
+            <ul
+              className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0"
+              aria-busy={!complete || undefined}
+            >
+              {rows.map((item, i) => (
                 // Focusable only while the list is windowed, matching the owned
                 // lane: a row that never receives the reveal's focus move has no
                 // reason to be a tab stop between every card.
@@ -887,11 +854,12 @@ export function DiscoveryView({
                     // step that overshoots would otherwise have the live region announce
                     // a negative "more below" and a range past the end of the list.
                     onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
+                    busy={!complete}
                     // The band names ranks in the list the reader is looking at, so it
                     // counts against the filtered length rather than the server's.
                     band={discoveryCopy.window.revealBand(
-                      shown + 1,
-                      Math.min(shown + REVEAL_STEP, filtered.length),
+                      settledShown + 1,
+                      Math.min(settledShown + REVEAL_STEP, filtered.length),
                       filtered.length,
                     )}
                   />
