@@ -83,11 +83,11 @@ const SHORTS = (scope) => {
 
 /**
  * Opens the card modal from rows whose marker reads `short`, by each row's own trigger, and returns
- * the markers of the first modal that draws any. The modal reads the card across the whole
- * collection, so a row short on the deck page can read `none free` there; the first eight rows are
- * tried. The modal draws its marker through `deckPage`, a separate path from the row's.
+ * the markers of the first modal that draws the one-copy form `want`. The modal reads the card across the whole
+ * collection, so a row short on the deck page can read `none free` or `short 2` there; the first
+ * eight rows are tried. The modal draws its marker through `deckPage`, a separate path from the row's.
  */
-async function modalShorts(page) {
+async function modalShorts(page, want) {
   const dialog = page.locator('[role="dialog"][aria-modal="true"]');
   for (let i = 0; i < 8; i += 1) {
     const found = await page.evaluate((nth) => {
@@ -113,7 +113,7 @@ async function modalShorts(page) {
     const texts = await page.evaluate(SHORTS, '[role="dialog"][aria-modal="true"]');
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "detached", timeout: 10_000 }).catch(() => {});
-    if (texts.length > 0) return texts;
+    if (texts.includes(want)) return texts;
   }
   return [];
 }
@@ -150,14 +150,14 @@ async function main() {
         check(`${vp.label} ${surface}: every one names its count, one included`, texts.includes("short 1") && texts.every((t) => t !== "short"), summarise(texts));
       }
       await read(page, `${BASE}/collection?view=rows`);
-      const offModal = await modalShorts(page);
-      check(`${vp.label} /collection card modal names its count`, offModal !== null && offModal.length > 0 && offModal.every((t) => t !== "short"),
+      const offModal = await modalShorts(page, "short 1");
+      check(`${vp.label} /collection card modal names its count`, offModal !== null && offModal.includes("short 1") && offModal.every((t) => t !== "short"),
         offModal ? summarise(offModal) : "no row with a trigger to open — NOT a pass");
       const texts = await read(page, `${BASE}/decks/${deck.id}`);
       check(`${vp.label} deck page: draws a shortfall`, texts.length > 0, texts.length ? `${texts.length} markers` : "none drawn — NOT a pass");
       check(`${vp.label} deck page: one missing copy reads a bare \`short\``, texts.includes("short") && !texts.includes("short 1"), summarise(texts));
-      const onModal = await modalShorts(page);
-      check(`${vp.label} deck page card modal: a bare \`short\` at one copy`, onModal !== null && onModal.length > 0 && !onModal.includes("short 1"),
+      const onModal = await modalShorts(page, "short");
+      check(`${vp.label} deck page card modal: a bare \`short\` at one copy`, onModal !== null && onModal.includes("short") && !onModal.includes("short 1"),
         onModal ? summarise(onModal) : "no row with a trigger to open — NOT a pass");
     }
   } finally {
