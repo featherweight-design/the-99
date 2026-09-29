@@ -574,7 +574,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     const color = basicLandColor(c.name);
     return color !== null && wantsColor(color);
   });
-  const basicsReserve = anyEligibleBasic
+  let basicsReserve = anyEligibleBasic
     ? Math.max(0, Math.min(landCeilingAfterModals - counts.land, limit - filledSoFar()))
     : 0;
   /** Where the land rows must end and the residual begin, for the truncation rule below. */
@@ -604,14 +604,23 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     // A land-capable card is passed over once the base is full. It is not lost — the role pass
     // above had first refusal on it and took it if a floor was open — and the slot goes to a
     // card that is only a spell, which is what a deck with its mana base already down wants.
-    // PLUS THE RESERVE. `counts.land` no longer holds the basics — they are taken after this loop
-    // now — so without it this guard under-counts the base by the whole reserve and admits modal
-    // cards past the ceiling. Measured against `origin/main` on one pool: `landCapable` 70 against
-    // a ceiling of 36.
+    // PLUS THE RESERVE, and the reserve YIELDS. `counts.land` no longer holds the basics — they
+    // are taken after this loop — so without the reserve here the guard under-counts the base and
+    // admits modal cards past the ceiling (measured: `landCapable` 70 against a ceiling of 36).
+    //
+    // But counting it with `>=` refuses every modal card instead, because the reserve fills the
+    // ceiling exactly by construction. A land-backed modal card IS a land drop, so admitting one
+    // means the basics need one fewer: the reserve gives up a slot rather than the card being
+    // turned away. `>` and the decrement below keep the total at the ceiling either way.
     if (playableAsLand(candidate.typeLine, candidate.layout)
-      && counts.land + basicsReserve + modalDrops + residualDrops >= landCeiling) continue;
+      && counts.land + basicsReserve + modalDrops + residualDrops > landCeiling) continue;
     if (!admits(candidate)) continue;
-    if (playableAsLand(candidate.typeLine, candidate.layout)) residualDrops += 1;
+    if (playableAsLand(candidate.typeLine, candidate.layout)) {
+      residualDrops += 1;
+      // The basics need one slot fewer, because this card is one of the land drops they were
+      // reserved to cover.
+      basicsReserve = Math.max(0, basicsReserve - 1);
+    }
     spent.add(candidate.oracleId);
     gate?.place(candidate);
     placed.push({ typeLine: candidate.typeLine, quantity: 1 });
