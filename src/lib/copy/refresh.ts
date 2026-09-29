@@ -237,6 +237,10 @@ export const refreshCopy = {
     step1Body:
       'Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox. We read owned counts, sets and finishes.',
     step1BodyShort: 'Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox.',
+    // While the embedded review is open, on the phone (first-run redesign D11, 5a). Drawn in mono
+    // uppercase; the count is pinned to en-US like every figure here.
+    step1Reviewing: (file: string, rows: number) =>
+      `Reviewing · ${file} · ${rows === 1 ? '1 row' : `${rows.toLocaleString('en-US')} rows`}`,
     uploadCsv: 'Upload a CSV',
     pasteList: 'Paste a list',
     // Names BOTH paths while it is still locked (first-run ruling 2, 2026-09-28): with the

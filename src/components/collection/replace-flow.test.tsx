@@ -66,7 +66,7 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     const held = screen.getByRole("button", { name: "Importing…" });
     expect(held).toBeDisabled();
     // Nothing leaves the review mid-write, at either width: the write would land anyway.
-    for (const name of ["Cancel", "Back to upload"]) {
+    for (const name of ["Cancel"]) {
       const control = screen.getByRole("button", { name });
       expect(control).toBeDisabled();
       fireEvent.click(control);
@@ -92,14 +92,26 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     // The REPLACE variant, sized by what the server found: the preview drawn at 0 would have
     // asked for IMPORT over a write that deletes a collection.
     expect(dialog).toHaveTextContent("2,933");
-    expect(dialog).toHaveTextContent(/can.t be undone/);
+    expect(dialog).toHaveTextContent("Replace your collection?");
 
     // Answering the modal is a real confirm: it no longer claims to be a first import.
     confirmUpload.mockResolvedValueOnce(undefined);
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "REPLACE" } });
-    const buttons = screen.getAllByRole("button").filter((b) => /Import|Replace/i.test(b.textContent ?? ""));
-    await act(async () => fireEvent.click(buttons[buttons.length - 1]));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Replace with 3 cards" })));
     await waitFor(() => expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: false }));
+  });
+
+  // The count the server found outlives the preview: back on the upload step, the page must not
+  // call a collection that exists empty (Copilot on #1110).
+  it("keeps the collection the server found after the review is cancelled", async () => {
+    confirmUpload.mockResolvedValueOnce({ needsConfirm: true, currentCollectionCount: 2_933 });
+    const cont = await reachReview(0);
+    await act(async () => fireEvent.click(cont));
+    await screen.findByRole("dialog");
+    fireEvent.click(screen.getByRole("button", { name: "Keep current" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getAllByRole("heading", { name: "Replace collection" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Add your collection" })).toBeNull();
+    expect(screen.getByText("2,933 cards")).toBeInTheDocument();
   });
 
   it("reports a failed first import in the modal's error slot rather than nowhere", async () => {
@@ -112,9 +124,7 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     // A retry from that modal is still a first import, so it keeps the server's guard: a
     // collection another tab imported while the error was up must not be replaced unasked.
     confirmUpload.mockResolvedValueOnce(undefined);
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "IMPORT" } });
-    const buttons = screen.getAllByRole("button").filter((b) => /Import/i.test(b.textContent ?? ""));
-    await act(async () => fireEvent.click(buttons[buttons.length - 1]));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Import 3 cards" })));
     await waitFor(() => expect(confirmUpload).toHaveBeenLastCalledWith("up_1", { firstImport: true }));
   });
 });

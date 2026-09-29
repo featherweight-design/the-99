@@ -1,14 +1,21 @@
 "use client";
-// Replace Flow — Step 3 (Type-to-Confirm Modal) per property table.
-// Danger dialog; button disabled at opacity 0.6 until input matches the token.
-// Token branches with currentCollectionCount: initial import gates on IMPORT
-// (nothing is being replaced yet — issue #47); the replace flow keeps REPLACE.
-// READINESS #5: focus trap + Escape + labelled input.
+// Replace Flow — the calm replace confirm (first-run redesign D9; design table
+// `first-run-calm-replace.md` §1). Continue on the review and this dialog's button are two
+// deliberate presses, so there is no typed token, no icon and no --danger or --warning in the
+// resting or pending dialog. The one red on it is the error line a failed confirm writes
+// (audit correction 7). What it shows is a NOW → AFTER pair, and the button names what the
+// player gets: the matched count, where it used to count what they lost.
+//
+// A first import skips this dialog (#1097). The one road to it with nothing to replace is a
+// FAILED first import, reported in the error slot here, so that variant keeps its own title
+// and buttons and draws the same pair from 0.
+//
+// READINESS #5: focus trap + Escape. Initial focus is on Keep current (D9).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { UploadPreview } from "../../app/collection/actions";
-import { TextField } from "../ui/text-field";
+import { replaceCopy } from "../../lib/copy/replace";
 
 export function ConfirmModal({
   preview,
@@ -23,29 +30,45 @@ export function ConfirmModal({
   onClose: () => void;
   onConfirm: () => Promise<void> | void;
 }) {
-  const [value, setValue] = useState("");
+  const c = replaceCopy.confirm;
   const dialogRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
   const isInitialImport = preview.currentCollectionCount === 0;
-  const confirmToken = isInitialImport ? "IMPORT" : "REPLACE";
-  const armed = value === confirmToken;
+  const words = isInitialImport
+    ? {
+        title: replaceCopy.importConfirm.title,
+        body: replaceCopy.importConfirm.body(preview.matchedCardCount, preview.filename),
+        bodyShort: replaceCopy.importConfirm.bodyShort(preview.matchedCardCount, preview.filename),
+        keep: replaceCopy.importConfirm.keep,
+        confirm: replaceCopy.importConfirm.confirm(preview.matchedCardCount),
+        pending: replaceCopy.importConfirm.importing,
+      }
+    : {
+        title: c.title,
+        body: c.body,
+        bodyShort: c.bodyShort,
+        keep: c.keep,
+        confirm: c.replace(preview.matchedCardCount),
+        pending: c.replacing,
+      };
 
-  // Focus trap, Escape, focus-return. Escape is refused while pending: the
-  // replace is already running and can't be undone, so dismissing would only
-  // hide it. The backdrop click below is guarded on pending for the same reason.
+  // Focus trap, Escape, focus-return. Escape is refused while pending: the write is already
+  // running, and dismissing would only hide it. The backdrop is guarded the same way below.
+  // While pending both buttons disable, and the dialog itself holds focus (tabIndex -1).
   useDialogA11y(dialogRef, onClose, {
-    initialFocusRef: inputRef,
+    initialFocusRef: keepRef,
     closeOnEscape: !pending,
   });
-
-  // Both buttons disable while pending, which would drop focus out of the
-  // dialog; the input is the only thing left to hold it.
-  useEffect(() => { if (pending) inputRef.current?.focus(); }, [pending]);
+  // Pressing Replace disables the button that has focus, which would drop focus to the body and
+  // let Tab leave the dialog for the length of the write; the dialog takes it instead.
+  useEffect(() => {
+    if (pending) dialogRef.current?.focus();
+  }, [pending]);
 
   return (
-    // §Backdrop at 0.74 desktop, mixed against the canvas so the dim tracks the theme
+    // §1.1 Scrim, mixed against the canvas so the dim tracks the theme
     <div
-      className="fixed inset-0 z-50 flex items-center md:items-center justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}
     >
@@ -54,130 +77,102 @@ export function ConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
+        aria-busy={pending || undefined}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg --surface-rail, radius 22px 22px 34px 34px, padding 26px 22px 30px)
-        // Desktop: §Desktop: Modal Container: 520px, bg var(--surface-rail), border 1px var(--border-strong), radius 16px, padding 32px 34px 30px, shadow --modal-shadow
-        className="w-full md:w-[520px] rounded-[22px_22px_34px_34px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0 [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)]"
-        style={{
-          background: "var(--surface-rail)",
-          boxShadow: "var(--modal-shadow)",
-        }}
+        // §1.2 — phone: bottom sheet, 12/22/30/22, radius 22 22 0 0, top border only.
+        // Desktop: 520 modal, 30/34, radius 16, border all round.
+        className="w-full md:w-[520px] rounded-[22px_22px_0_0] md:rounded-2xl p-[12px_22px_30px] md:p-[30px_34px] [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)] outline-none"
+        style={{ background: "var(--surface-rail)" }}
       >
-        {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg --border-strong, margin 0 auto 20px */}
-        <div className="md:hidden mx-auto mb-[20px] rounded-full" style={{ width: 40, height: 4, background: "var(--border-strong)" }} />
+        {/* §1.3 Sheet handle, decorative */}
+        <div aria-hidden className="md:hidden mx-auto mb-[18px] h-[4px] w-[40px] rounded-full bg-[color:var(--border-strong)]" />
 
-        {/* Warning icon header — §Warning Icon Header + §Warning Icon */}
-        <div className="flex items-center gap-[12px] md:gap-[14px]">
-          <span
-            aria-hidden
-            className="flex-none rounded-full flex items-center justify-center text-[18px] md:text-[22px] w-[40px] h-[40px] md:w-[48px] md:h-[48px]"
-            style={{
-              background: "color-mix(in oklab, var(--danger) 14%, transparent)",
-              border: "1px solid color-mix(in oklab, var(--danger) 30%, transparent)",
-              color: "var(--danger)",
-            }}
-          >
-            ⚠
-          </span>
-          <h2
-            id="confirm-title"
-            className="font-display font-bold text-[20px] md:text-[25px] m-0"
-            style={{ color: "var(--fg)", lineHeight: 1.15 }}
-          >
-            {isInitialImport ? "Import this collection?" : "Replace your collection?"}
-          </h2>
-        </div>
-
-        {/* Body — §Modal Body Copy: 13.5/15px --fg-body. Numeric counts, filename, and the "This can't be undone" clause are bolded per the mock in #34. Emphasis uses --fg (primary) so it reads against the muted body color. */}
-        <p
-          className="text-[13.5px] md:text-[15px] mt-[16px] md:mt-[18px] leading-[1.6] md:leading-[1.65]"
-          style={{ color: "var(--fg-body)" }}
+        {/* §1.4 Title */}
+        <h2
+          id="confirm-title"
+          className="m-0 font-display font-bold text-[20px] md:text-[25px] leading-[1.15] text-[color:var(--fg)]"
         >
-          {isInitialImport ? (
-            <>
-              <span className="md:hidden">
-                This imports the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong> as your collection.
-              </span>
-              <span className="hidden md:inline">
-                This imports the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong> as your collection. Decks and commander recommendations build from it.
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="md:hidden">
-                This permanently swaps your <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.currentCollectionCount.toLocaleString()}</strong> cards for the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong>. <strong className="font-semibold" style={{ color: "var(--fg)" }}>It can&apos;t be undone.</strong>
-              </span>
-              <span className="hidden md:inline">
-                This permanently swaps your <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.currentCollectionCount.toLocaleString()}</strong> cards for the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong>. Your deck lists stay as they are; recommendations and availability update from the new collection. <strong className="font-semibold" style={{ color: "var(--fg)" }}>This can&apos;t be undone.</strong>
-              </span>
-            </>
-          )}
-        </p>
+          {words.title}
+        </h2>
 
-        {/* Type-to-confirm section — §Type-to-Confirm Section: margin-top 18/22px */}
-        <div className="mt-[18px] md:mt-[22px]">
-          <label
-            htmlFor="confirm-input"
-            className="block font-mono uppercase text-[10px] md:text-[10.5px] tracking-[0.1em] mb-[8px] md:mb-[9px]"
-            style={{ color: "var(--fg-faint)" }}
-          >
-            Type <span style={{ color: "var(--danger)" }}>{confirmToken}</span> to confirm
-          </label>
-          <TextField
-            id="confirm-input"
-            ref={inputRef}
-            autoComplete="off"
-            spellCheck={false}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            // §Confirm Input Field: bg --surface-sunken, border 1px --danger, radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
-            className="w-full font-mono text-[15px] md:text-[16px] tracking-[0.1em] md:tracking-[0.12em] p-[12px_14px] md:p-[13px_16px] border-[color:var(--danger)]"
+        {/* §1.5–1.9 The NOW → AFTER pair */}
+        <div className="mt-[16px] md:mt-[18px] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[12px] md:gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[12px_14px] md:p-[14px_16px]">
+          <Figure
+            label={c.now}
+            value={c.figure(preview.currentCollectionCount)}
+            caption={c.nowCaption(preview.currentCollectionCount)}
+            captionShort={c.nowCaptionShort(preview.currentCollectionCount)}
+          />
+          <span aria-hidden className="font-mono text-[14px] md:text-[15px] text-[color:var(--fg-faint)]">→</span>
+          <Figure
+            label={c.after}
+            value={c.figure(preview.matchedCardCount)}
+            caption={c.afterCaption(preview.matchedCardCount, preview.filename)}
+            captionShort={c.afterCaptionShort(preview.filename)}
           />
         </div>
 
+        {/* §1.10 Body — names how to go back */}
+        <p className="m-0 mt-[16px] md:mt-[18px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65] text-pretty [overflow-wrap:anywhere] text-[color:var(--fg-body)]">
+          <span className="md:hidden">{words.bodyShort}</span>
+          <span className="hidden md:inline">{words.body}</span>
+        </p>
+
+        {/* §1.11 The one red on the dialog, and only on a failed confirm (correction 7) */}
         {error && (
-          <p className="mt-[10px] text-[13px]" style={{ color: "var(--danger)" }}>{error}</p>
+          <p role="alert" className="m-0 mt-[10px] text-[13px] text-[color:var(--danger)]">{error}</p>
         )}
 
-        {/* Button row — §Button Row. Desktop: primary (destructive) on the right, secondary on the left; DOM order is [Secondary][Primary] so keyboard tab flows left→right in the same direction the eye reads. Mobile: flex-col-reverse keeps the primary visually on top of the stack while the DOM order stays consistent across breakpoints (mobile users are tapping, so DOM/visual divergence on the stacked layout is intentional). Initial-import secondary label is "Go back" (nothing to keep yet); replace flow keeps "Keep current". */}
-        <div className="mt-[22px] flex flex-col-reverse md:flex-row gap-[12px]">
+        {/* §1.12 Buttons. DOM order is [Keep][Replace], left to right on desktop; the phone
+            stacks the primary on top with flex-col-reverse, as this dialog always has. */}
+        <div className="mt-[20px] md:mt-[24px] flex flex-col-reverse md:flex-row gap-[10px] md:gap-[12px]">
           <button
+            ref={keepRef}
             type="button"
             onClick={onClose}
             disabled={pending}
-            // §Cancel / Keep Button — mobile text-only --fg-faint, padding 12px 0 0;
-            // desktop outlined 1px --border-strong, padding 13px 22px, accent border on hover
-            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--accent)] text-[color:var(--fg-faint)] bg-transparent"
+            // §1.13 Keep current — the hairline, 44 phone / 46 desktop
+            className="flex h-[44px] md:h-[46px] w-full md:w-auto md:flex-none items-center justify-center rounded-[10px] md:rounded-lg px-[22px] font-sans font-semibold text-[14px] text-[color:var(--fg)] bg-transparent [border:1px_solid_var(--border-strong)] cursor-pointer disabled:cursor-default disabled:opacity-60"
           >
-            {isInitialImport ? (
-              <>
-                <span className="md:hidden">Go back</span>
-                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Go back</span>
-              </>
-            ) : (
-              <>
-                <span className="md:hidden">Keep my current collection</span>
-                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Keep current</span>
-              </>
-            )}
+            {words.keep}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            disabled={!armed || pending}
-            // §Confirm Button — Disabled: a dim wash of --danger, border 1px --danger, color --fg, radius 8px, opacity 0.6; armed → opacity 1
-            className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:flex-1 py-[14px] md:py-[13px] cursor-pointer text-[color:var(--fg)] bg-[color-mix(in_srgb,var(--danger)_22%,var(--bg))] border border-[color:var(--danger)]"
-            style={{ opacity: armed && !pending ? 1 : 0.6 }}
+            disabled={pending}
+            // §1.14 Replace with N cards — the bone fill, 48 phone / 46 desktop
+            className="flex h-[48px] md:h-[46px] w-full md:flex-1 items-center justify-center rounded-[10px] md:rounded-lg font-sans font-semibold text-[15px] md:text-[14px] bg-[color:var(--fg)] text-[color:var(--bg)] cursor-pointer disabled:cursor-wait disabled:opacity-60"
           >
-            {pending
-              ? isInitialImport
-                ? "Importing…"
-                : "Replacing…"
-              : isInitialImport
-                ? `Import ${preview.matchedCardCount.toLocaleString()} cards`
-                : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
+            {pending ? words.pending : words.confirm}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** One side of the pair: a mono label, the figure, and a caption that is short on a phone. */
+function Figure({
+  label,
+  value,
+  caption,
+  captionShort,
+}: {
+  label: string;
+  value: string;
+  caption: string;
+  captionShort: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{label}</div>
+      <div className="mt-[3px] md:mt-[4px] font-mono text-[19px] md:text-[21px] font-semibold text-[color:var(--fg)]">{value}</div>
+      {/* A filename has no length cap and often no spaces, so it breaks anywhere rather than
+          push the pair out of the sheet. */}
+      <div className="mt-[2px] text-[11.5px] md:text-[12px] [overflow-wrap:anywhere] text-[color:var(--fg-muted)]">
+        <span className="md:hidden">{captionShort}</span>
+        <span className="hidden md:inline">{caption}</span>
       </div>
     </div>
   );

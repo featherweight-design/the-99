@@ -5,20 +5,27 @@
 //         replace), straight to confirmUpload() with no step 3.
 // Step 3: ConfirmModal (Task 9). Confirm → confirmUpload() → the receipt.
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmUpload, type UploadPreview } from "../../app/collection/actions";
 import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
 import { ConfirmModal } from "./confirm-modal";
+import { replaceCopy } from "../../lib/copy/replace";
 
 export function ReplaceFlow({
   currentCardCount,
   embedded,
   entry,
+  onReviewing,
 }: {
   currentCardCount: number;
   embedded?: boolean;
+  /**
+   * Told when a review opens and closes, with the file and its row count. First run's step-1
+   * card reads it to hide its fan and name what is under review (D11, 5a); nothing else needs it.
+   */
+  onReviewing?: (reviewing: { file: string; rows: number } | null) => void;
   // Pass-through to step 1. Held here rather than letting a caller render
   // UploadEntry itself, because steps 2 and 3 are this component's to own and a
   // caller reaching past it for step 1 would have to re-implement them.
@@ -29,6 +36,22 @@ export function ReplaceFlow({
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // The collection's size as the flow last learned it. The prop is the page's read, and a
+  // preview or a server refusal (another tab imported, #1097) can report a newer one; the upload
+  // step a Cancel returns to must draw that one, or a collection that exists reads as empty.
+  const [knownCount, setKnownCount] = useState(currentCardCount);
+
+  // Keyed on the upload, not on the preview object: a server refusal re-sets the preview with a
+  // corrected count (#1097), and that is the same review still open.
+  const reviewId = preview?.uploadId ?? null;
+  const reviewFile = preview?.filename;
+  const reviewRows = preview?.rowCount;
+  // A LAYOUT effect: the parent's card changes shape with the review (the fan steps aside, the
+  // padding goes), so its state has to land before the frame paints, or the review opens once
+  // in the rest-state card and closes once in the reviewing one.
+  useLayoutEffect(() => {
+    onReviewing?.(reviewId && reviewFile !== undefined && reviewRows !== undefined ? { file: reviewFile, rows: reviewRows } : null);
+  }, [onReviewing, reviewId, reviewFile, reviewRows]);
 
   // A FIRST import goes straight through: with no collection there is nothing to replace,
   // so the Replace modal would only ask the player to confirm losing nothing (prod walk
@@ -51,11 +74,12 @@ export function ReplaceFlow({
         // The preview was drawn at 0 cards and the modal reads its variant off that figure,
         // so it would ask for IMPORT over a write that replaces a collection. Correct it first.
         setPreview({ ...preview, currentCollectionCount: outcome.currentCollectionCount });
+        setKnownCount(outcome.currentCollectionCount);
         setConfirming(true);
         return;
       }
-      // The receipt, not the collection. A typed REPLACE is the most destructive action in
-      // the app and was the only one with no receipt; the summary route is keyed on the
+      // The receipt, not the collection. A collection replace is the most destructive action
+      // in the app and was the only one with no receipt; the summary route is keyed on the
       // upload id, so it survives a reload and stays linkable.
       router.push(`/collection/replace/summary/${preview.uploadId}`);
     } catch (e) {
@@ -77,18 +101,26 @@ export function ReplaceFlow({
             card, which already has a Welcome heading and is not the collection route — a second
             `Replace collection` title and a `‹ Collection` link back would both be wrong there. */}
         {embedded ? null : (
-          <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
-            <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
-            <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
-          </div>
+          <>
+            {/* The phone's page header, the upload step's alone: the review draws its own. */}
+            <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
+              <a href="/collection" aria-label="Back to Collection" className="text-[20px] text-[color:var(--accent)]">‹</a>
+              <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(knownCount)}</h1>
+            </div>
+            <div className="hidden md:block md:mx-auto md:w-full md:max-w-[760px] md:p-[28px_48px_0]">
+              <a href="/collection" className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">‹ Collection</a>
+              <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>{replaceCopy.pageTitle(knownCount)}</h1>
+            </div>
+          </>
         )}
         <UploadEntry
-        currentCardCount={currentCardCount}
+        currentCardCount={knownCount}
         entry={entry}
         onPreview={(p) => {
           setConfirmError(null);
           setConfirming(false);
           setPreview(p);
+          setKnownCount(p.currentCollectionCount);
         }}
         />
       </>

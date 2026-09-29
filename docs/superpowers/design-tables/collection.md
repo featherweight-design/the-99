@@ -1555,27 +1555,34 @@ literals in the components.
 ## Component: Replace Flow — Step 1 (Upload)
 
 ### Page Header (mobile)
+Drawn by `replace-flow.tsx` for the UPLOAD step only; the review draws its own header (Step 2). Not drawn when the flow is embedded in first run's step-1 card.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
+| renders | upload step, not embedded | — (hidden below `md`; the desktop header is the breadcrumb and title below) |
 | padding | 20px 18px 14px | — |
 | display | flex | — |
 | align-items | center | — |
 | gap | 12px | — |
-| border-bottom | 1px solid #2A241D | — |
+| border-bottom | 1px solid var(--border) | — |
 
 ### Back Chevron "‹"
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| color | #C9A24B | — |
+| element | link to `/collection`, `aria-label="Back to Collection"` | — |
+| color | var(--accent) | — |
 | font-size | 20px | — |
 
-### Page Title "Replace collection"
+### Page Title (`replaceCopy.pageTitle(n)`)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| copy | `Add your collection` at 0 cards; `Replace collection` otherwise | same |
+| element | h1 | h1 |
+| font-family | display (Cinzel) | display (Cinzel) |
 | font-weight | 600 | 700 |
 | font-size | 19px | 30px |
-| color | #EDE6D8 | #EDE6D8 |
+| margin-top | — | 8px (below the breadcrumb) |
+| color | var(--fg) | var(--fg) |
 
 ### Desktop Breadcrumb Link "‹ Collection"
 | Property | Desktop |
@@ -1591,38 +1598,33 @@ literals in the components.
 | padding | 44px 48px |
 | max-width | 760px |
 
-### Warning Banner (Replace Warning)
+### Replace Note
+A plain note, not a warning (calm-replace §2). Drawn by `upload-entry.tsx` above the drop zone. It replaces the retired warning banner, its ⚠ icon and its amber left rule.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | flex | flex |
-| gap | 10px | 12px |
-| align-items | flex-start | flex-start |
-| background | #211C15 | #211C15 |
-| border | 1px solid #3A3229 | 1px solid #3A3229 |
-| border-left | 3px solid #E0913C | 3px solid #E0913C |
-| border-radius | 8px | 10px |
-| padding | 12px 14px | 16px 18px |
-| margin-top | — | 20px |
+| renders | only when `currentCardCount > 0` | only when `currentCardCount > 0` |
+| element | p | p |
+| background | var(--surface-sunken) | var(--surface-sunken) |
+| border | 1px solid var(--border) (all sides, no left rule) | 1px solid var(--border) (all sides, no left rule) |
+| border-radius | 10px | 10px |
+| padding | 14px 18px | 14px 18px |
+| margin-top | 0 | 20px |
+| font-size | 14px | 14px |
+| line-height | 1.6 | 1.6 |
+| color | var(--fg-body) | var(--fg-body) |
+| text-wrap | pretty | pretty |
+| icon | — (none) | — (none) |
+| count span | var(--fg), weight 600 | var(--fg), weight 600 |
 
-### Warning Banner Icon "⚠"
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| color | #E0913C | #E0913C |
-| font-size | 15px | 17px |
-| line-height | 1.3 | 1.2 |
+#### Copy (replace note)
+| Part | Copy |
+|------|------|
+| Before the count (`note.before`) | `A new list replaces your current ` |
+| Count span (`note.count(n)`) | `2,933 cards` (`1 card` at one) |
+| After the count (`note.after`) | `; nothing is merged. You’ll see every match before anything changes.` |
 
-### Warning Banner Body
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 12.5px | 14px |
-| color | #C6B79A | #C6B79A |
-| line-height | 1.55 | 1.6 |
-
-### Copy (warning banner)
-| Context | Copy |
-|---------|------|
-| Mobile | `Uploading a new file replaces your current 2,933 cards. There's no merge — the new export becomes your whole collection.` |
-| Desktop | `Uploading replaces your entire collection. Your current 2,933 cards will be swapped for whatever's in the new file — no merge, no append. You'll see exactly what matched before anything is committed.` |
+Drawn as one sentence, with the count span between the two parts.
 
 ### Upload Drop Zone
 | Property | Mobile | Desktop |
@@ -1728,13 +1730,18 @@ literals in the components.
 ## Component: Replace Flow — Step 2 (Review, 2a — Single Scroll)
 
 ### Page Header (mobile)
+No chevron: Cancel in the confirm bar is the phone's exit (calm-replace §3.20). Not drawn when the review is embedded in first run's step-1 card (calm-replace §3.1).
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| padding | 20px 18px 14px | — |
+| renders | not embedded | — (hidden below `md`) |
+| padding | 18px 18px 14px | — |
 | display | flex | — |
-| align-items | center | — |
+| flex | none | — |
+| align-items | baseline | — |
 | gap | 12px | — |
-| border-bottom | 1px solid #2A241D | — |
+| border-bottom | 1px solid var(--border) | — |
+| back chevron | — (removed) | — |
 
 ### Mobile Page Title "Review import"
 | Property | Mobile | Desktop |
@@ -2034,12 +2041,19 @@ literals in the components.
 | Desktop errors | `Show all 8 errors →` |
 
 ### Sticky Confirm Bar
+Sticky on `/collection/replace` at both widths; embedded in first run it is the card's foot, in flow (calm-replace §3.8, §3.25).
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| border-top | 1px solid #3A3229 | 1px solid #3A3229 |
-| background | #1A160F | #1A160F |
-| padding | 14px 18px 22px | 16px 56px |
-| display | — | flex |
+| position (`/collection/replace`) | sticky, bottom var(--tabbar-h) | sticky, bottom 0 |
+| position (embedded) | in flow | in flow |
+| z-index | 10 | 10 |
+| border-top | 1px solid var(--border-strong) | 1px solid var(--border-strong) |
+| background | var(--surface-rail) | var(--surface-rail) |
+| padding (`/collection/replace`) | 12px 18px 14px | 16px 56px |
+| padding (embedded) | 12px 14px 14px | 16px 56px |
+| margin-top (embedded) | 14px | 0 |
+| display | block | flex |
 | align-items | — | center |
 | gap | — | 20px |
 
@@ -2047,237 +2061,258 @@ literals in the components.
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-size | 11.5px | 13.5px |
-| color | #8E8269 | #C6B79A |
-| text-align | center | — |
-| margin-bottom | 10px | — |
-| line-height | — | 1.5 |
+| color | var(--fg-faint) | var(--fg-body) |
+| text-align | center | left |
+| margin-bottom | 10px | 0 |
 
 ### Copy (sticky confirm bar)
 | Element | Copy |
 |---------|------|
-| Mobile summary | `Skips 29 rows · replaces your 2,933 cards with 2,904` |
-| Desktop summary | `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.` |
-| Mobile CTA | `Continue to replace →` |
-| Desktop CTA | `Continue to replace →` |
-| Desktop cancel | `Cancel` |
+| Mobile summary (replace) | `Skips 29 rows · replaces your 2,933 cards with 2,904` |
+| Desktop summary (replace) | `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.` |
+| Mobile summary (first import) | `Imports 2,904 cards · skips 29 rows` |
+| Desktop summary (first import) | `Importing 2,904 cards and skipping 29.` |
+| CTA (replace) | `Continue to replace →` |
+| CTA (first import) | `Continue to import →` |
+| CTA (first import, pending) | `Importing…` |
+| Cancel (`replaceCopy.review.cancel`, both widths) | `Cancel` |
 
-### Cancel Button
+### Button Row
 | Property | Mobile | Desktop |
 |----------|--------|---------|
+| display | flex (row) | flex (row) |
+| gap | 10px | 12px |
+| margin-left | — | auto |
+| flex | — | none |
+| order | Cancel, then Continue | Cancel, then Continue |
+
+### Cancel Button
+Rendered at BOTH widths. On the phone it is the review's exit, a hairline left of Continue (calm-replace §3.11, §3.28; audit correction 6). It returns to the upload entry on `/collection/replace`, and to step 1's two buttons when embedded. Disabled while a first import is being written.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| component | GhostButton | GhostButton |
 | font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
 | font-weight | 600 | 600 |
-| font-size | — | 14px |
-| color | — | #EDE6D8 |
-| background | — | transparent |
-| border | — | 1px solid #3A3229 |
-| border-radius | — | 8px |
-| padding | — | 12px 20px |
-| cursor | — | pointer |
+| font-size | 14px | 14px |
+| color | var(--fg) | var(--fg) |
+| background | transparent | transparent |
+| border | 1px solid var(--border-strong) | 1px solid var(--border-strong) |
+| border-radius | 10px | 8px |
+| height | 46px | auto |
+| padding | 0 18px | 12px 20px |
+| flex | none | none |
+| cursor | pointer | pointer |
+| disabled | opacity 0.6 | opacity 0.6 |
 
 #### Hover State — Cancel Button
 | Property | Desktop hover |
 |----------|---------------|
-| border-color | #C9A24B |
+| border-color | var(--accent) |
+| color | var(--accent-hover) |
 
 ### Continue Button
 | Property | Mobile | Desktop |
 |----------|--------|---------|
+| component | PrimaryButton | PrimaryButton |
 | font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
 | font-weight | 600 | 600 |
 | font-size | 15px | 14px |
-| color | #14110E | #14110E |
-| background | #C9A24B | #C9A24B |
+| color | var(--bg) | var(--bg) |
+| background | var(--fg) | var(--fg) |
 | border | none | none |
-| border-radius | 8px | 8px |
-| padding | 13px 0 (full width) | 12px 24px |
+| border-radius | 10px | 8px |
+| height | 46px | auto |
+| padding | 0 | 12px 24px |
+| flex | 1 | none |
+| white-space | — | nowrap |
 | cursor | pointer | pointer |
-| width | 100% | — |
+| disabled (first import pending) | opacity 0.6, cursor wait | opacity 0.6, cursor wait |
 
 #### Hover State — Continue Button
 | Property | Desktop hover |
 |----------|---------------|
-| background | #D8B25E |
+| background | var(--fg-body) |
 
 ---
 
-## Component: Replace Flow — Step 3 (Type-to-Confirm Modal)
+## Component: Replace Flow — Step 3 (Replace Confirm)
 
-### Backdrop (mobile)
+Drawn by `confirm-modal.tsx`; the design source is calm-replace §1. Continue on the review and this dialog's button are two deliberate presses, so there is no typed token and no icon, and nothing on the resting or pending dialog is `--danger` or `--warning`. It opens only on a replace (the collection already has cards). A first import skips it; the one road to it with nothing to replace is a FAILED first import, which opens the import variant below.
+
+### Scrim
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| position | absolute inset:0 | absolute inset:0 |
-| background | rgba(8,6,4,0.7) | rgba(8,6,4,0.74) |
+| position | fixed, inset 0 | fixed, inset 0 |
+| z-index | 50 | 50 |
+| background | color-mix(in oklab, var(--bg) 70%, transparent) | color-mix(in oklab, var(--bg) 74%, transparent) |
+| alignment | flex, items end (sheet at the foot) | flex, items center |
+| press | closes when idle; ignored while pending | same |
 
-### Mobile: Bottom Sheet
-| Property | Mobile | Desktop |
+### Container
+| Property | Mobile (bottom sheet) | Desktop (modal) |
 |----------|--------|---------|
-| position | relative | — |
-| background | #1A160F | — |
-| border-top | 1px solid #3A3229 | — |
-| border-radius | 22px 22px 34px 34px | — |
-| padding | 26px 22px 30px | — |
-| box-shadow | 0 -20px 60px rgba(0,0,0,0.5) | — |
+| role | dialog, `aria-modal`, labelled by the title | same |
+| width | 100% | 520px |
+| background | var(--surface-rail) | var(--surface-rail) |
+| border | border-top 1px solid var(--border-strong) only | 1px solid var(--border-strong) |
+| border-radius | 22px 22px 0 0 | 16px |
+| padding | 12px 22px 30px | 30px 34px |
+| box-shadow | 0 -20px 50px rgba(0,0,0,.5) | 0 40px 100px rgba(0,0,0,.7) |
+| icon | — (none) | — (none) |
+| Escape | closes when idle; refused while pending | same |
+| focus | trapped; initial focus on Keep current | same |
 
-### Mobile: Sheet Drag Handle
+### Sheet Handle (mobile)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | width | 40px | — |
 | height | 4px | — |
 | border-radius | 999px | — |
-| background | #3A3229 | — |
-| margin | 0 auto 20px | — |
+| background | var(--border-strong) | — |
+| margin | 0 auto 18px | — |
+| role | decorative (`aria-hidden`), no drag | — |
 
-### Desktop: Modal Container
-| Property | Desktop |
-|----------|---------|
-| position | absolute top:50% left:50% |
-| transform | translate(-50%,-50%) |
-| width | 520px |
-| background | #1A160F |
-| border | 1px solid #3A3229 |
-| border-radius | 16px |
-| box-shadow | 0 40px 100px rgba(0,0,0,0.7) |
-| padding | 32px 34px 30px |
-
-### Warning Icon Header
+### Title
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 12px | 14px |
-
-### Warning Icon
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 40px | 48px |
-| height | 40px | 48px |
-| flex | none | none |
-| border-radius | 999px | 999px |
-| background | rgba(198,83,63,0.14) | rgba(198,83,63,0.14) |
-| border | 1px solid #4A2F28 | 1px solid #4A2F28 |
-| color | #C6533F | #C6533F |
-| display | flex | flex |
-| align-items | center | center |
-| justify-content | center | center |
-| font-size | 18px | 22px |
-
-### Modal Title "Replace your collection?"
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| element | h2 | h2 |
+| font-family | display (Cinzel) | display (Cinzel) |
 | font-weight | 700 | 700 |
 | font-size | 20px | 25px |
+| line-height | 1.15 | 1.15 |
 | margin | 0 | 0 |
-| color | #EDE6D8 | #EDE6D8 |
-| line-height | 1.15 | — |
+| color | var(--fg) | var(--fg) |
 
-### Modal Body Copy
+### NOW → AFTER Figure Pair
+NOW is the current collection count; AFTER is the matched count (calm-replace §1.5 to §1.9).
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| font-size | 13.5px | 15px |
-| color | #C6B79A | #C6B79A |
-| line-height | 1.6 | 1.65 |
-| margin | 16px 0 0 | 18px 0 0 |
+| display | grid, `minmax(0,1fr) auto minmax(0,1fr)`, items center | same |
+| margin-top | 16px | 18px |
+| gap | 12px | 14px |
+| padding | 12px 14px | 14px 16px |
+| border-radius | 10px | 10px |
+| background | var(--surface-sunken) | var(--surface-sunken) |
+| border | 1px solid var(--border) | 1px solid var(--border) |
 
-### Copy (modal body)
-| Context | Copy |
-|---------|------|
-| Mobile | `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.` |
-| Desktop | `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Your deck lists stay as they are; recommendations and availability update from the new collection. This can't be undone.` |
-
-### Type-to-Confirm Section
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin-top | 18px | 22px |
-
-### Confirm Instruction Label
+#### Figure Label (`Now` / `After`)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 10px | 10.5px |
-| letter-spacing | 0.1em | 0.1em |
-| color | #8E8269 | #8E8269 |
+| font-size | 10px | 10px |
+| letter-spacing | 0.12em | 0.12em |
 | text-transform | uppercase | uppercase |
-| margin-bottom | 8px | 9px |
+| color | var(--fg-faint) | var(--fg-faint) |
 
-### Copy (confirm instruction)
-| Context | Copy |
-|---------|------|
-| Label — replace flow | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
-| Label — initial import | `Type IMPORT to confirm` (where "IMPORT" is styled in #C6533F) |
-
-Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to replace on first upload — issue #47); non-zero → `REPLACE`.
-
-### Confirm Input Field
+#### Figure Number
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| background | #181410 | #181410 |
-| border | 1px solid #C6533F | 1px solid #C6533F |
-| border-radius | 8px | 8px |
-| padding | 12px 14px | 13px 16px |
 | font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 15px | 16px |
-| color | #EDE6D8 | #EDE6D8 |
-| letter-spacing | 0.1em | 0.12em |
-
-### Input Cursor
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 1.5px | 2px |
-| height | 18px | 19px |
-| background | #C9A24B | #C9A24B |
-| display | inline-block | inline-block |
-| margin-left | 1px | 2px |
-
-### Confirm Button ("Replace 2,933 cards") — Disabled State
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-size | 19px | 21px |
 | font-weight | 600 | 600 |
-| font-size | 15px | 14px |
-| color | #EDE6D8 | #EDE6D8 |
-| background | #3A2019 | #3A2019 |
-| border | 1px solid #C6533F | 1px solid #C6533F |
-| border-radius | 8px | 8px |
-| padding | 14px 0 | 13px 0 |
-| cursor | pointer | pointer |
-| width | 100% | flex: 1 |
-| margin-top | 16px | — |
-| opacity | 0.6 | 0.6 |
+| margin-top | 3px | 4px |
+| color | var(--fg) | var(--fg) |
 
-### Confirm Button — Armed State (REPLACE typed)
+#### Figure Caption
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| opacity | 1 | 1 |
+| copy | short caption | full caption |
+| font-size | 11.5px | 12px |
+| margin-top | 2px | 2px |
+| color | var(--fg-muted) | var(--fg-muted) |
 
-### Cancel / Keep Button
+#### Arrow "→"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 14px | 15px |
+| color | var(--fg-faint) | var(--fg-faint) |
+| role | decorative (`aria-hidden`) | same |
+
+### Body
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| copy | `bodyShort` | `body` |
+| font-size | 13.5px | 15px |
+| line-height | 1.6 | 1.65 |
+| margin-top | 16px | 18px |
+| color | var(--fg-body) | var(--fg-body) |
+| text-wrap | pretty | pretty |
+
+### Error Line
+The one red on the dialog (calm-replace §1.11; audit correction 7).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| renders | only on a failed confirm | only on a failed confirm |
+| role | alert | alert |
+| font-size | 13px | 13px |
+| margin-top | 10px | 10px |
+| color | var(--danger) | var(--danger) |
+
+### Button Row
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex, column-reverse (Replace on top, Keep current below) | flex, row (Keep current, then Replace) |
+| gap | 10px | 12px |
+| margin-top | 20px | 24px |
+
+### Keep Current Button
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
 | font-weight | 600 | 600 |
 | font-size | 14px | 14px |
-| color | #8E8269 (mobile text-only) | #EDE6D8 |
+| color | var(--fg) | var(--fg) |
 | background | transparent | transparent |
-| border | none | 1px solid #3A3229 |
-| padding | 12px 0 0 | 13px 22px |
-| cursor | pointer | pointer |
-| width | 100% | flex: none |
+| border | 1px solid var(--border-strong) (hairline) | 1px solid var(--border-strong) (hairline) |
+| border-radius | 10px | 8px |
+| height | 44px | 46px |
+| padding | 0 22px | 0 22px |
+| width | 100% | content (flex none) |
+| focus | initial focus on open | initial focus on open |
+| pending | disabled, opacity 0.6 | disabled, opacity 0.6 |
 
-### Button Row (desktop)
-| Property | Desktop |
-|----------|---------|
-| display | flex |
-| gap | 12px |
-| margin-top | 22px |
+### Replace With N Cards Button
+N is the matched count: what the player gets.
 
-### Copy (confirm modal buttons)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | 15px | 14px |
+| color | var(--bg) | var(--bg) |
+| background | var(--fg) (bone fill) | var(--fg) (bone fill) |
+| border | none | none |
+| border-radius | 10px | 8px |
+| height | 48px | 46px |
+| width | 100% | flex: 1 |
+| pending | pending label; disabled, opacity 0.6, cursor wait | same |
+
+### Import Variant
+Reached only by a failed first import (the collection read 0 cards when the preview was built), which opens the dialog with its error line. Same geometry as above, and the pair draws NOW from 0. Title and buttons come from `replaceCopy.importConfirm`.
+
+### Copy (replace confirm)
 | Element | Copy |
 |---------|------|
-| Confirm (disabled) | `Replace 2,933 cards` |
-| Cancel (mobile) | `Keep my current collection` |
-| Cancel (desktop) | `Keep current` |
+| Title | `Replace your collection?` |
+| Figure labels (drawn uppercase) | `Now` / `After` |
+| NOW caption, desktop (n = 2,933) | `cards in your collection` (`card in your collection` at one) |
+| NOW caption, mobile | `cards` (`card` at one) |
+| AFTER caption, desktop (n = 2,904) | `cards from the-vault.csv` (`card from the-vault.csv` at one) |
+| AFTER caption, mobile | `from the-vault.csv` |
+| Body, desktop (`body`) | `Your deck lists stay as they are; recommendations and availability update from the new collection. To go back, replace it again with your previous list.` |
+| Body, mobile (`bodyShort`) | `Deck lists stay as they are. To go back, replace it again with your previous list.` |
+| Keep | `Keep current` |
+| Replace (n = 2,904) | `Replace with 2,904 cards` (`Replace with 1 card` at one) |
+| Replace, pending | `Replacing…` |
+| Import variant title | `Import this collection?` |
+| Import variant keep | `Go back` |
+| Import variant confirm (n = 2,904) | `Import 2,904 cards` |
+| Import variant pending | `Importing…` |
+| Error line | the failed confirm's message; `Confirm failed` when it carries none |
 
 ---
 
@@ -2290,10 +2325,12 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | **Card Detail** | User taps/clicks any card row or grid tile | Card detail modal (full-screen sheet mobile, centered overlay desktop) | `card` object with name/type/manaCost/oracleText/set/rarity/identity/qty, `?card=` URL param, position `n of total` |
 | **Card Detail — Prev/Next** | User clicks `‹ Prev` or `Next ›` in desktop modal | Same modal, different card, position counter updated | `currentIndex`, `totalFiltered`, same card data shape |
 | **No Results** | Search + filter combination returns 0 cards | No results empty state (crab mark + heading + caption + CTAs) | `resultCount = 0`, active filter chips still shown, count label turns #E0913C |
-| **Replace · Step 1** | User clicks `↻ Replace collection` button | Replace upload page (`/collection/replace`) | `currentCardCount` (for warning copy) |
+| **Replace · Step 1** | User clicks `↻ Replace collection` button | Replace upload page (`/collection/replace`) | `currentCardCount` (page title; the replace note renders only when it is > 0) |
 | **Replace · Step 2 (Review)** | CSV uploaded successfully; server returns preview | Review page with summary banner, unmatched rows, parse error rows, sticky confirm bar | `matched`, `unmatched[]` (name + set + line), `errors[]` (line + reason), `currentCount`, filename |
-| **Replace · Step 3 (Confirm)** | User clicks `Continue to replace →` from step 2 | Type-to-confirm modal over dimmed step-2 content | `importCount` (2,904), `currentCount` (2,933), filename; confirm button disabled until input === "REPLACE" |
-| **Type-to-Confirm — Armed** | User has typed exactly `REPLACE` in the input | Confirm button opacity goes from 0.6 → 1 | `inputValue === "REPLACE"` |
+| **Replace · Step 3 (Confirm)** | User clicks `Continue to replace →` from step 2 (the collection has cards) | Replace confirm (sheet on the phone, 520px modal on desktop) over the dimmed review: title, NOW → AFTER pair, body, Keep current + Replace with N cards; focus on Keep current (calm-replace §1) | `matchedCardCount` (N, the AFTER figure), `currentCollectionCount` (NOW), filename |
+| **Replace · Step 3 (Pending)** | Replace pressed, write in flight | Primary reads `Replacing…`; both buttons disabled; Escape and scrim refused | `pending` |
+| **Replace · Step 3 (Error)** | The confirm write fails | 13px `--danger` line under the body; buttons re-enabled | `error` |
+| **First import** | Continue pressed with 0 cards in the collection | No confirm; Continue commits directly (`Importing…`). A failed write opens the import variant of step 3 with its error line | `currentCollectionCount === 0` |
 | **Filter Active (chips shown)** | Any filter applied (color, type, set, or search has value) | Filter chip row visible below filter bar | `activeFilters[]`, `resultCount`, `totalCount` |
 | **Filter Empty (no filters)** | No active filters | Chassis row 2 shows "No filters on" / total count | — |
 
@@ -2303,11 +2340,12 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 
 ### Page Title
 - `Collection`
-- `Replace your collection` (step 1 mobile header)
-- `Replace collection` (desktop button)
+- `Replace collection` (step 1 title with a collection; desktop button)
+- `Add your collection` (step 1 title at 0 cards)
 - `Review import` (step 2 mobile header)
 - `Review before you replace` (step 2 desktop)
-- `Replace your collection?` (step 3 modal title)
+- `Replace your collection?` (step 3 confirm title)
+- `Import this collection?` (step 3 import variant title)
 
 ### Subtitle / Stats
 - `2,933 cards · 1,418 unique`
@@ -2322,9 +2360,11 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - `Keep only search`
 - `Continue to replace →`
 - `Cancel`
-- `Replace 2,933 cards` (disabled until armed; uses real count)
-- `Keep my current collection` (mobile)
-- `Keep current` (desktop)
+- `Continue to import →` (first import)
+- `Replace with 1,212 cards` (step 3; N is the matched count)
+- `Replacing…` (step 3, pending)
+- `Keep current` (step 3, both widths)
+- `Import 1,212 cards` / `Go back` / `Importing…` (step 3 import variant)
 
 ### Filter bar / chips
 - `Search your cards…` (mobile placeholder)
@@ -2349,9 +2389,9 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - `Which, honestly, checks out. Drop the color filter or try another name.` (both breakpoints)
 - `Clear filters` / `Keep only search` (desktop only)
 
-### Replace — Step 1 Warning Banner
-- Mobile: `Uploading a new file replaces your current 2,933 cards. There's no merge — the new export becomes your whole collection.`
-- Desktop: `Uploading replaces your entire collection. Your current 2,933 cards will be swapped for whatever's in the new file — no merge, no append. You'll see exactly what matched before anything is committed.`
+### Replace — Step 1 Note
+Drawn only when the collection has cards; the count span sits between the two parts.
+- `A new list replaces your current ` + `2,933 cards` + `; nothing is merged. You’ll see every match before anything changes.`
 
 ### Replace — Step 2 Copy
 - `STEP 2 OF 3 · the-vault.csv · 2,933 rows`
@@ -2366,6 +2406,10 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - `Show all 21 unmatched →` / `Show all 8 errors →` (desktop)
 - Sticky bar (mobile): `Skips 29 rows · replaces your 2,933 cards with 2,904`
 - Sticky bar (desktop): `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.`
+- Sticky bar, first import (mobile): `Imports 2,904 cards · skips 29 rows`
+- Sticky bar, first import (desktop): `Importing 2,904 cards and skipping 29.`
+- `Cancel` (both widths; the phone's exit)
+- `Continue to replace →` / `Continue to import →` / `Importing…` (first import, pending)
 
 ### Issue CTA Strip (v2)
 | Property | Mobile | Desktop |
@@ -2382,14 +2426,19 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | body | 13px / 1.55, var(--fg-body) | 13.5px / 1.55, var(--fg-body) |
 | CTA | `GhostButton`, full width | `GhostButton`, auto width |
 
-> **Step 3 (type-to-confirm) is deliberately untouched.** Replacing a collection
-> is destructive; the mock states "Type-to-confirm stays dead straight —
-> destructive, no crab." `confirm-modal.tsx` is absent from this change.
+> **Step 3 stays straight: no crown here.** Surfaces v2 left the confirm alone. Its later redraw
+> (first-run redesign D9) removed the typed token and every red and amber, and is recorded in
+> "Component: Replace Flow — Step 3 (Replace Confirm)" above.
 
 ### Replace — Step 3 Copy
-- `Type REPLACE to confirm` (label; "REPLACE" in #C6533F). On initial import (`currentCollectionCount === 0`) the label becomes `Type IMPORT to confirm` — see §Copy (confirm instruction) above.
-- Mobile body: `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.`
-- Desktop body: `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Your deck lists stay as they are; recommendations and availability update from the new collection. This can't be undone.`
+- Title: `Replace your collection?`
+- Figure labels: `Now` / `After` (drawn uppercase)
+- NOW caption: `cards in your collection` (desktop) / `cards` (mobile)
+- AFTER caption: `cards from the-vault.csv` (desktop) / `from the-vault.csv` (mobile)
+- Desktop body: `Your deck lists stay as they are; recommendations and availability update from the new collection. To go back, replace it again with your previous list.`
+- Mobile body: `Deck lists stay as they are. To go back, replace it again with your previous list.`
+- Buttons: `Keep current` / `Replace with 1,212 cards`; pending `Replacing…`
+- Import variant (only after a failed first import): `Import this collection?`, `Go back`, `Import 1,212 cards`; pending `Importing…`
 
 ---
 
@@ -2405,9 +2454,13 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | Card detail modal | Only when a card is selected; URL has `?card=` param |
 | Prev/Next navigation | Only in desktop modal; always shown but can be disabled at boundaries |
 | No results empty state | When `resultCount === 0` |
-| Sticky confirm bar (step 2) | Always visible at bottom of step 2; scrolls with content on mobile |
-| Confirm button disabled (opacity 0.6) | When typed input !== active token (`REPLACE` in replace flow; `IMPORT` on first upload — issue #47) |
-| Confirm button armed (opacity 1) | When typed input === active token exactly |
+| Sticky confirm bar (step 2) | Always visible; sticky at the foot on `/collection/replace` (phone: above the tab bar at var(--tabbar-h)); in flow as the card's foot when embedded |
+| Replace note (step 1) | Only when `currentCardCount > 0` |
+| Back chevron `‹` (step 1 phone header) | Upload step only, not embedded; the review header has none |
+| Review phone header (step 2) | Not when embedded in first run's step-1 card |
+| Replace confirm (step 3) | Only on a replace; a first import skips it unless its write failed |
+| Step 3 buttons disabled (opacity 0.6) | While the confirm is pending |
+| Step 3 error line | Only after a failed confirm |
 | Quantity badge on grid tile | Always shown; value from `card.qty` |
 | Rarity dot in row | Desktop rows only (not mobile) |
 | Type line as sub-line | Mobile rows only (under name in same column) |
