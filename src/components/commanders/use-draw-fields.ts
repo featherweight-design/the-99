@@ -41,6 +41,7 @@ type LoopInput = { sort: Sort; all: DiscoveryRow[]; wanted: DiscoveryRow[]; want
  * state each one re-rendered the whole view about four times.
  */
 function createFieldsLoop(onLanded: () => void) {
+  let onStale = () => {};
   const store = new Map<string, DrawFields>();
   // Slugs already asked for, whatever came back: a slug a batch did not answer is not asked again.
   const asked = new Set<string>();
@@ -94,6 +95,10 @@ function createFieldsLoop(onLanded: () => void) {
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`fields ${r.status}`))))
         .then((body: { fields: Record<string, DrawFields> }) => {
           for (const [slug, f] of Object.entries(body.fields)) store.set(keyOf(sort, slug), f);
+          // The route leaves out a slug its reader's list no longer holds: this page's list is
+          // stale (a write elsewhere, a catalog refresh). A row the reader is waiting on then
+          // never arrives, so the page is read again rather than left busy.
+          if (batch.some((s) => waiting.includes(s) && !Object.hasOwn(body.fields, s))) onStale();
           if (input.sort === sort && input.wanted.some((r) => !isDrawn(r) && Object.hasOwn(body.fields, r.slug))) onLanded();
         })
         .catch(() => {
@@ -139,6 +144,10 @@ function createFieldsLoop(onLanded: () => void) {
 
   return {
     get: (sort: Sort, slug: string) => store.get(keyOf(sort, slug)),
+    /** What to do when a batch shows this page's list is stale. */
+    onStale(fn: () => void) {
+      onStale = fn;
+    },
     /** A change of window, list or order: a background batch still waiting for its idle moment
         gives way, so the rows the reader now wants go first. */
     update(next: LoopInput) {
@@ -165,9 +174,15 @@ function createFieldsLoop(onLanded: () => void) {
   };
 }
 
-export function useDrawFields(sort: Sort, all: DiscoveryRow[], wanted: DiscoveryRow[]) {
+export function useDrawFields(
+  sort: Sort,
+  all: DiscoveryRow[],
+  wanted: DiscoveryRow[],
+  onStale: () => void = () => {},
+) {
   const [landed, setLanded] = useState(0);
   const [loop] = useState(() => createFieldsLoop(() => setLanded((n) => n + 1)));
+  useEffect(() => loop.onStale(onStale), [loop, onStale]);
   const wantedKey = wanted.map((r) => r.slug).join(",");
 
   const resolve = useCallback(

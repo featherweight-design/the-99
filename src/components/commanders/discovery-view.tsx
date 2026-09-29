@@ -326,7 +326,8 @@ export function DiscoveryView({
   // rows already drawn on screen, the list `aria-busy`, until they do: about one round trip, and
   // no drawn waiting state, which would be a Design question this does not answer.
   const wanted = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
-  const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted);
+  const refreshStale = useCallback(() => router.refresh(), [router]);
+  const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted, refreshStale);
   const resolvedWanted = wanted.map(resolve);
   const complete = resolvedWanted.every((r) => r !== null);
   // The last rows drawn WHOLE, kept as drawn: a change of order resolves against another

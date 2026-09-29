@@ -11,7 +11,7 @@ const fieldsFor = (slug: string): DrawFields => ({
 
 /** A fetch the test answers by hand, so what is in flight at any moment is observable. */
 function manualFetch() {
-  const calls: { url: string; signal: AbortSignal; answer: () => void; fail: () => void }[] = [];
+  const calls: { url: string; signal: AbortSignal; answer: () => void; fail: () => void; omit: (gone: string) => void }[] = [];
   const fn = vi.fn((url: string, init: RequestInit) =>
     new Promise<Response>((resolve, reject) => {
       const signal = init.signal as AbortSignal;
@@ -22,6 +22,10 @@ function manualFetch() {
         signal,
         answer: () => resolve(new Response(JSON.stringify({ fields: Object.fromEntries(slugs.map((s) => [s, fieldsFor(s)])) }))),
         fail: () => resolve(new Response("", { status: 500 })),
+        omit: (gone: string) =>
+          resolve(new Response(JSON.stringify({
+            fields: Object.fromEntries(slugs.filter((s) => s !== gone).map((s) => [s, fieldsFor(s)])),
+          }))),
       });
     }),
   );
@@ -141,6 +145,24 @@ describe("useDrawFields", () => {
     // Back on the failed window, well inside the first retry's 1s pause: asked for at once.
     await waitFor(() => expect(net.calls).toHaveLength(3), { timeout: 600 });
     expect(new URL(net.calls[2].url, "http://x").searchParams.get("s")!.split(",")[0]).toBe("c240");
+  });
+
+  // The route leaves out a slug the reader's list no longer holds, so a row the reader is waiting
+  // on would never arrive: the page's list is stale and it is read again.
+  it("reports a stale page when the route leaves out a row the reader is waiting on", async () => {
+    // A row nobody is waiting on going missing is not a stale page.
+    const quiet = vi.fn();
+    const first = renderHook(() => useDrawFields("fit", all, [all[0]], quiet));
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    await act(async () => net.calls[0].omit("c5"));
+    expect(quiet).not.toHaveBeenCalled();
+    first.unmount();
+
+    const onStale = vi.fn();
+    renderHook(() => useDrawFields("fit", all, [all[0]], onStale));
+    await waitFor(() => expect(net.calls.at(-1)!.url).toContain("s=c0"));
+    await act(async () => net.calls.at(-1)!.omit("c0"));
+    await waitFor(() => expect(onStale).toHaveBeenCalledTimes(1));
   });
 
   // A page restored from the back/forward cache is not remounted: `pagehide` stopped the loop,
