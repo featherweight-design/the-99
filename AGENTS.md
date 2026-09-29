@@ -107,6 +107,8 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   successful scheduled `Catalog refresh` and runs four jobs in order:
 
   - `gate` asks staging whether a build is due (`pnpm db:index-due`, the rule `indexDue`):
+    never while the ledger holds no `ok` index build (no baseline: the first build is a
+    dispatched catch-up), and otherwise
     monthly from the 3rd when no `ok` index build has started that month, or 14 days after an
     `expansion` or `commander` set releases when no `ok` build has started since. Reality Fracture
     (released 2026-10-02) comes due on 2026-10-16. A dispatch is always due.
