@@ -120,3 +120,16 @@ describe("an entry tied to a switch", () => {
     expect(sheetDecision({ userId: "u", seen: seen(0), visible: visibleEntries(ON, catalog), version: 9 }).show).toBe(true);
   });
 });
+
+describe("HOW_IT_WORKS_ENABLED", () => {
+  // No entry follows it yet (PR C adds the sheet line), so the map is proved with an entry
+  // built for the purpose: it draws exactly when the switch reads the string 'true'.
+  const how: AboutEntry = { ...aboutEntries[0], id: "how-it-works", since: 10, switch: "HOW_IT_WORKS_ENABLED" };
+  const env = (v?: string) => (v === undefined ? {} : { HOW_IT_WORKS_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
+
+  it("draws an entry tied to it only while it is on", () => {
+    expect(visibleEntries(env("true"), [how])).toEqual([how]);
+    expect(visibleEntries(env("1"), [how])).toEqual([]);
+    expect(visibleEntries(env(), [how])).toEqual([]);
+  });
+});

@@ -7,6 +7,7 @@
 
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
+import { howItWorksEnabled } from "./how-it-works-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
@@ -23,6 +24,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
+  HOW_IT_WORKS_ENABLED: howItWorksEnabled,
 };
 
 /** The entries this deployment draws, in page order. An entry with no switch always draws. */

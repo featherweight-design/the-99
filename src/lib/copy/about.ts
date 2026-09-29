@@ -53,7 +53,8 @@ export type AboutSwitch =
   | 'SWAP_TOOLS_ENABLED'
   | 'HELP_ME_CHOOSE_ENABLED'
   | 'CHANGE_COMMANDER_ENABLED'
-  | 'ANALYSIS_TAB_ENABLED';
+  | 'ANALYSIS_TAB_ENABLED'
+  | 'HOW_IT_WORKS_ENABLED';
 
 export interface AboutEntry {
   id: string;
@@ -925,6 +926,39 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
 ] as const;
+
+// ---- How the app reaches its answers (handoff about_how_it_works, R1) -----
+// Reference rows, not entries: no `since`, no NEW, never in the index. Behind
+// HOW_IT_WORKS_ENABLED. The method tags are shared with the Analysis tab's
+// "How we make these decisions" sheet (Hugh, 2026-09-28: five methods, and the
+// tags appear in both places). All five are drawn identically on purpose:
+// coloring them by trust would be a score.
+export type HowMethod = 'rules' | 'decks' | 'model' | 'you' | 'list';
+
+export const howItWorksCopy = {
+  methods: {
+    rules: { tag: 'rules text' },
+    decks: { tag: 'other decks' },
+    model: { tag: 'model-written' },
+    you: { tag: 'your input' },
+    list: { tag: 'published list' },
+  },
+  /**
+   * Which methods each bracket count uses, read by the decisions sheet (and, once it lands, by
+   * the appendix's Brackets row). Land denial and extra turns combine Commander Spellbook's estimate with our
+   * reading of the rules text (`MLD_DETECTION.methods`, `EXTRA_TURN_DETECTION.methods`); combos
+   * are Spellbook's index alone; Game Changers is Wizards' list, read through Scryfall.
+   */
+  bracketMethods: {
+    gameChangers: ['list'],
+    landDenial: ['rules', 'decks'],
+    extraTurns: ['rules', 'decks'],
+    combos: ['decks'],
+  },
+} as const satisfies {
+  methods: Record<HowMethod, { tag: string }>;
+  bracketMethods: Record<string, readonly HowMethod[]>;
+};
 
 // ---- Account menu ---------------------------------------------------------
 // One row, first, above Manage account. No badge, at any width, ever — the
