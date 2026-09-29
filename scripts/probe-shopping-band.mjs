@@ -12,6 +12,8 @@
 //     `sideways` rule from probe:deck-locks: whether a fixture has a long name is a fact about data);
 //   - below 1024 every row's pips sit on a line under its name, and from 1024 beside it;
 //   - below 1024 an `over $X` sits directly above its row's buy tag, and the figure hugs the word;
+//     since 2026-09-28 that includes the phone (Hugh: "particularly on mobile"), measured at 390 and
+//     360, where it is also drawn once per row and stays inside the row;
 //   - no marker anywhere on the page draws `short 1`.
 // A width with no Shopping row, no pips or no over row reports that it measured nothing and FAILS.
 //
@@ -48,7 +50,7 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const DECK_NAME = process.env.PROBE_DECK_NAME ?? "HD - Gishath";
 const SHOTS = process.env.PROBE_SHOTS ?? null;
 const sql = neon(DATABASE_URL);
-const WIDTHS = [768, 820, 900, 1024, 1300];
+const WIDTHS = [360, 390, 768, 820, 900, 1024, 1300];
 const LG = 1024;
 
 let failures = 0;
@@ -102,7 +104,8 @@ const READ_ROWS = () => {
     if (!row) continue;
     const n = name.getBoundingClientRect();
     const pips = [...row.querySelectorAll("span.rounded-full.font-mono")].filter(drawn).map((p) => p.getBoundingClientRect());
-    const over = [...row.querySelectorAll("span")].find((s) => drawn(s) && /^over \$/.test(s.textContent.trim()) && s.children.length === 0);
+    const overs = [...row.querySelectorAll("span")].filter((s) => drawn(s) && /^over \$/.test(s.textContent.trim()) && s.children.length === 0);
+    const over = overs[0];
     const tag = [...row.querySelectorAll("span")].find((s) => drawn(s) && /^buy/.test(s.textContent.trim()) && s.className.includes("rounded-[4px]"));
     // The figure is the tag's last text span; its box against its own ink is the reserved slot.
     let slack = null;
@@ -126,6 +129,9 @@ const READ_ROWS = () => {
       pipCenter: pips.length ? pips[0].top + pips[0].height / 2 : null,
       nameCenter: n.top + n.height / 2,
       over: over ? over.getBoundingClientRect().toJSON() : null,
+      overCount: overs.length,
+      row: row.getBoundingClientRect().toJSON(),
+      nameFull: name.scrollWidth <= name.clientWidth + 0.5,
       tag: tag ? tag.getBoundingClientRect().toJSON() : null,
       slack,
     });
@@ -232,6 +238,18 @@ async function run() {
           && r.over.right > r.tag.left && r.over.left < r.tag.right));
         report(`${width}px · \`over $X\` stacks on its buy tag`, apart.length === 0,
           apart.length ? `${apart[0].name}: over ${JSON.stringify(apart[0].over)} tag ${JSON.stringify(apart[0].tag)}` : `${overs.length} rows`);
+        // Drawn once (the phone's meta-line copy went when the stack reached it), and inside its row.
+        const twice = overs.filter((r) => r.overCount !== 1);
+        report(`${width}px · \`over $X\` is drawn once per row`, twice.length === 0,
+          twice.length ? `${twice[0].name}: ${twice[0].overCount}` : `${overs.length} rows`);
+        const outside = overs.filter((r) => r.over.left < r.row.left - 0.5 || r.over.right > r.row.right + 0.5);
+        report(`${width}px · the stack stays inside its row`, outside.length === 0,
+          outside.length ? `${outside[0].name}: over ${JSON.stringify(outside[0].over)} row ${JSON.stringify(outside[0].row)}` : `${overs.length} rows`);
+        // The names beside a stack, printed for the before/after in the PR. The stack is no wider than
+        // the tag under it, so these read the same as origin/main's (measured 2026-09-29, a long name
+        // such as Heroic Intervention cut on both); the 40px floor above is what is asserted.
+        const narrow = overs.map((r) => `${r.name} ${r.nameWidth.toFixed(0)}px${r.nameFull ? "" : " (cut)"}`);
+        console.log(`       ${width}px · names beside a stack: ${narrow.slice(0, 6).join("; ")}`);
       }
 
       const slacks = rows.filter((r) => r.slack !== null);

@@ -6,7 +6,7 @@
 3. `Shopping View.dc.html` (the JSX `renderVals` and the markup), for exact values.
 4. `swap-tools · copy strings.ts`, for which key each element renders.
 
-**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300, applies from `md`, 768px, up). **One exception, F12 ruling (b):** a row's `over $X` meta takes the phone's own-line form from `md` up to `lg` (768 to 1023px), and is inline only from `lg`. The row tables below give the `lg` form as Desktop and note the band.
+**Widths:** Mobile is the `phone` prop (390, below `md`). Desktop is `wide` (drawn at 1300). A Shopping row keeps the phone's two-line layout up to `lg` (1024px): its pips and EDHREC figure stay on the meta line under the name at 768–1023px (Hugh, 2026-09-26, #1047), and the desktop one-line form applies from `lg`. **One exception:** below `lg` (1024px), phone included, a row's `over $X` is stacked directly above its buy tag, right-aligned, 2px apart, 10px mono `--warning` (Hugh, 2026-09-26 for 768–1023px; extended to the phone 2026-09-28). It is inline after the figure only from `lg`. This replaced F12 ruling (b)'s own-line form. The row tables below give the `lg` form as Desktop and note the band.
 "same" means the value is identical at both widths. Copy is recorded as the **key rendered**, never as its words.
 
 **R1 → R2 overrides applied in this table:**
@@ -213,10 +213,10 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 | Property | Mobile | Desktop |
 |---|---|---|
 | Name block layout | Column, justify center, gap 3px, `flex: 1 1 auto`, min-width 0 | Row, align center, gap 6px, `flex: 1 1 auto`, min-width 0 |
-| Meta placement | Second line under the name | Inline on the name's line (the `over` item alone drops to its own line from `md` to `lg`; see below) |
+| Meta placement | Second line under the name | Inline on the name's line (the `over` item alone stacks on the buy tag below `lg`; see below) |
 | Meta container | flex, align center, gap 5px, min-width 0, `flex: none` | same |
 | Meta items, under | pips · `·` · figure | figure |
-| Meta items, over | pips · `·` · figure · `·` · over | figure · `·` · over |
+| Meta items, over | pips · `·` · figure (the `over` item stacks on the buy tag instead, 2026-09-28) | figure · `·` · over |
 | Figure item | mono 10px `--fg-faint`, nowrap | same |
 | Name | 12.5px `--fg`, nowrap, ellipsis | 13.5px `--fg`, nowrap, ellipsis |
 
@@ -225,13 +225,13 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 |---|---|---|
 | Copy key | `swapToolsCopy.row.over(figure)`; figure is the formatted limit | same |
 | Rendered when | The row's drawn price is greater than the limit | same |
-| Preceding separator | `·` in `--border-strong` | same |
+| Preceding separator | none: stacked on the buy tag, not on a line | `·` in `--border-strong` from `lg`, after the figure; none on a row with no figure |
 | font-family | mono | mono |
 | font-size | 10px | 10px |
 | color | `--warning` | `--warning` |
 | white-space | nowrap | nowrap |
-| Rule amended | The meta line gains a third item beyond the cost and the figure | same |
-| Placement, `md` to `lg` (768–1023px) | — | F12 ruling (b): on its own line under the name, with no preceding `·`. Only an over row wraps; its figure stays beside the name |
+| Rule amended | None: the meta line keeps the cost and the figure only (2026-09-28) | From `lg`, inline after the figure on the name's line |
+| Placement below `lg` | Stacked above the buy tag, right-aligned, `gap 2px`, `leading-none` (2026-09-28) | 768–1023px: the same stack (Hugh, 2026-09-26, which replaced F12 ruling (b)'s own line under the name) |
 
 ### BuyTag (over-limit ring)
 | Property | Mobile | Desktop |
@@ -308,4 +308,4 @@ Not shipped in PR 3. The key glosses the row's ⇄, and the ⇄ lands with the s
 - **Hover, focus, pressed** on the figure button, reset, Save and cancel.
 - **Placement of `limit.invalid`** (named `tooLow` in the handoff; renamed when the field gained its $100,000 ceiling, the wording owed to /copy-review).
 - **A Save pending state.**
-- **The width cost (F12).** At 390 an over row spends a net 35px (44 − 9) of name width, and on desktop every row spends 22px. Design says Plateau keeps "about 131px" of name at 390. The audit requires a probe of the name's width at 390 and at the narrowest 2-up desktop width, with the `over` meta inline. Ruled (b): the probe found the inline meta costing the name at 768, so it takes its own line up to `lg`; `probe:swap-shopping` reads the cost at 390, 768, 1024 and 1300.
+- **The width cost (F12).** At 390 an over row spends a net 35px (44 − 9) of name width, and on desktop every row spends 22px. Design says Plateau keeps "about 131px" of name at 390. The audit requires a probe of the name's width at 390 and at the narrowest 2-up desktop width, with the `over` meta inline. Ruled (b): the probe found the inline meta costing the name at 768, so it took its own line up to `lg`. Since 2026-09-28 it stacks on the buy tag up to `lg`, the phone included, which costs the name nothing; `probe:swap-shopping` reads the cost at 390, 768, 1024 and 1300.

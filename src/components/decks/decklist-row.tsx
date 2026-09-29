@@ -198,16 +198,17 @@ export function DecklistRow({
   // column of 52px ones. Ragged is the failure the group boundary exists to
   // avoid; a little more space under one name is not.
   const inLandsGroup = card.cardTypeGroup === "Lands";
-  // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and the meta line an
-  // `over $X`. Shopping only, and only where the tools are on (`swapTools` is null otherwise).
+  // Over the deck's Shopping limit (swap tools): the buy tag gains a ring and an `over $X`, stacked
+  // on it below `lg` and beside it from `lg`. Shopping only, and only where the tools are on
+  // (`swapTools` is null otherwise).
   const swapTools = useSwapTools();
   const overLimit = swapTools !== null && inShopping && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
   // From a Shopping row with the swap tools on, the card draws the door to its stand-ins (audit F17).
   const opensDoor = swapTools !== null && inShopping;
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
-  // A land in Shopping over the limit carries the line even with no EDHREC figure to put on it:
-  // the marking is the one thing on it the reader needs.
-  const hasMetaLine = hasShoppingMeta || !inLandsGroup || overLimit;
+  // `over $X` never rides the meta line (it stacks on the buy tag), so being over the limit is no
+  // reason to draw one.
+  const hasMetaLine = hasShoppingMeta || !inLandsGroup;
   const rowShell = hasMetaLine ? (inShopping ? ROW_SHELL_SHOPPING : ROW_SHELL_META) : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
@@ -498,9 +499,8 @@ export function DecklistRow({
               {factMarks}
             </div>
             {/* The phone meta line, and the only things that ever ride it: the
-                cost, then the EDHREC figure, then, on a Shopping row over the
-                deck's limit, `over $X` (below md only: from md it stacks with the buy tag). Nothing
-                else joins it. */}
+                cost, then the EDHREC figure. Nothing else joins it; `over $X`
+                stacks on the buy tag instead. */}
             <span className={`${inShopping ? "lg:hidden" : "md:hidden"} flex items-center gap-[5px] min-w-0`}>
               {cost ? <CostPips cost={cost} size={PIP_SIZE_PHONE} spoken /> : null}
               {cost && hasShoppingMeta ? (
@@ -517,16 +517,6 @@ export function DecklistRow({
                 >
                   {figureTextPhone}
                 </span>
-              ) : null}
-              {overText ? (
-                <>
-                  {cost || hasShoppingMeta ? (
-                    <span aria-hidden className="md:hidden" style={{ color: "var(--border-strong)" }}>·</span>
-                  ) : null}
-                  <span className="md:hidden font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
-                    {overText}
-                  </span>
-                </>
               ) : null}
             </span>
             {hasShoppingMeta ? (
@@ -569,6 +559,13 @@ export function DecklistRow({
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
             {factMarks}
+            {overText ? (
+              // A row with no meta line (a land with no EDHREC figure) still owes its `over $X` from
+              // `lg`, where the stack on the buy tag is hidden. No figure, so no `·`.
+              <span className="hidden lg:inline flex-none font-mono text-[10px] whitespace-nowrap" style={{ color: "var(--warning)" }}>
+                {overText}
+              </span>
+            ) : null}
           </div>
         )}
 
@@ -645,13 +642,13 @@ export function DecklistRow({
             printing this card and that they must buy it is the one state in this
             feature nobody has drawn. */}
         {tag === "proxy" && <ProxyTag variant="row" />}
-        {/* From md to lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
-            (Hugh, 2026-09-26): the name keeps the row's width, and the limit stays beside the
-            price it is about. Below md it rides the meta line, and from lg it sits inline after
-            the figure, so this copy is drawn only in the band between. */}
+        {/* Below lg, `over $X` and the buy tag are ONE group, the limit stacked above the tag
+            (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
+            the name keeps the row's width, and the limit stays beside the price it is about. From
+            lg it sits inline after the figure, so this copy is drawn only below that. */}
         {overText ? (
           <span className="flex flex-none flex-col items-end gap-[2px]">
-            <span className="hidden md:block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
+            <span className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
               {overText}
             </span>
             {tag === "buy" ? buyTag : null}

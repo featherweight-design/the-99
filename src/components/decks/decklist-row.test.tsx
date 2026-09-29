@@ -1172,7 +1172,7 @@ describe("DecklistRow — an owned card this deck prints", () => {
 });
 
 // Swap tools, ruling 4: a Shopping row over the deck's limit gains a ring on its buy tag and an
-// `over $X` on its meta line. Nothing changes with the tools off, or on the All tab.
+// `over $X` stacked on it (beside it from lg). Nothing changes with the tools off, or on the All tab.
 describe("DecklistRow over the Shopping limit (swap tools)", () => {
   const asOf = new Date("2026-09-20T00:00:00Z");
   const priced = (cents: number) => ({ ...(card as DeckDetailCard), owned: false, price: { cents, foilCents: null, etchedCents: null, asOf } });
@@ -1183,7 +1183,19 @@ describe("DecklistRow over the Shopping limit (swap tools)", () => {
   it("rings the tag and says over $10 for a card above the default", () => {
     inTools(<DecklistRow deckId="d1" card={priced(1500)} shoppingFigure={24} inShopping newestAsOf={asOf} />);
     expect(ring()).toHaveLength(1);
-    expect(screen.getAllByText(swapToolsCopy.row.over("$10")).length).toBeGreaterThan(0);
+    // Two copies, one per width: stacked on the tag below lg, beside it from lg. The phone's meta
+    // line no longer carries a third (Hugh, 2026-09-28).
+    expect(screen.getAllByText(swapToolsCopy.row.over("$10"))).toHaveLength(2);
+  });
+
+  it("keeps the desktop over $10 on a land row with no EDHREC figure", () => {
+    // No figure (EDHREC unreachable) and in the Lands group: the row draws no meta line, and the
+    // desktop copy has to live in the plain name block instead, or it vanishes from lg up.
+    const land = { ...priced(1500), cardTypeGroup: "Lands" as const, typeLine: "Land", manaCost: null };
+    inTools(<DecklistRow deckId="d1" card={land} shoppingFigure={undefined} inShopping newestAsOf={asOf} />);
+    const overs = screen.getAllByText(swapToolsCopy.row.over("$10"));
+    expect(overs).toHaveLength(2);
+    expect(overs.some((el) => el.className.includes("lg:inline"))).toBe(true);
   });
 
   it("does not mark a card at the limit exactly, or one under a raised limit", () => {
