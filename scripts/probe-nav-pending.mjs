@@ -277,18 +277,37 @@ async function run(browser, state, width, userId) {
     await throttle(true);
     await page.evaluate(() => window.__navArm());
     await row.click();
+    // Painted, not merely present: the strip has a real box inside the pressed link's own rect, and
+    // its sweeping segment overlaps the strip with a background that is not transparent. A track
+    // with no height, or a segment with no fill, leaves `[data-pending]` in the DOM and draws nothing.
     const inRow = await page
       .waitForFunction((sel) => {
         const nav = window.__nav;
         if (nav.mark == null) return null;
         const link = [...document.querySelectorAll(`main ${sel}`)].find((a) => a.querySelector("[data-pending]"));
-        return { mark: nav.mark, inRow: Boolean(link) };
+        if (!link) return { mark: nav.mark, inRow: false, why: "no track in the pressed row" };
+        const track = link.querySelector("[data-pending]");
+        const seg = track.firstElementChild;
+        const l = link.getBoundingClientRect();
+        const t = track.getBoundingClientRect();
+        const g = seg?.getBoundingClientRect();
+        const overlap = g ? Math.max(0, Math.min(g.right, t.right) - Math.max(g.left, t.left)) * Math.max(0, Math.min(g.bottom, t.bottom) - Math.max(g.top, t.top)) : 0;
+        const fill = seg ? getComputedStyle(seg).backgroundColor : "";
+        const alpha = /rgba\([^)]*,\s*([\d.]+)\)/.exec(fill)?.[1];
+        const visibleFill = fill !== "" && fill !== "transparent" && (alpha == null || Number(alpha) > 0);
+        const withinLink = t.left >= l.left - 0.5 && t.right <= l.right + 0.5 && t.bottom <= l.bottom + 0.5 && t.top >= l.top - 0.5;
+        const ok = t.height > 0 && t.width > 0 && withinLink && overlap > 0 && visibleFill;
+        return {
+          mark: nav.mark,
+          inRow: ok,
+          why: ok ? "" : `track ${t.width.toFixed(0)}x${t.height.toFixed(1)}, within the row ${withinLink}, segment overlap ${overlap.toFixed(1)}, fill ${fill}`,
+        };
       }, selector, { timeout: 5_000, polling: 16 })
       .then((h) => h.jsonValue(), () => null);
     report(
       inRow != null && inRow.inRow && inRow.mark >= 110,
       `a ${path === "/commanders" ? "commander" : "set"} row's track paints inside the row, at 120ms or later`,
-      inRow == null ? "no mark" : `mark at ${Math.round(inRow.mark)}ms, ${inRow.inRow ? "inside the row" : "not inside the row"}`,
+      inRow == null ? "no mark" : `mark at ${Math.round(inRow.mark)}ms${inRow.inRow ? ", painted inside the row" : `, ${inRow.why}`}`,
     );
     await throttle(false);
     await page.close();
