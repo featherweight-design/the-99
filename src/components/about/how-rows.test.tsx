@@ -55,6 +55,9 @@ describe("HowItWorks", () => {
       for (const l of s.lines) expect(body.textContent).toContain(l);
     }
     expect(body.querySelectorAll("[data-method='list']").length).toBe(1);
+    // The head carries the row's two; `published list` is Game Changers' alone.
+    const headTags = [...head("Brackets").querySelectorAll("[data-method]")].map((e) => e.getAttribute("data-method"));
+    expect(headTags).toEqual(["rules", "decks"]);
   });
 
   it("opens the row a hash names and scrolls it into view after it opens", () => {

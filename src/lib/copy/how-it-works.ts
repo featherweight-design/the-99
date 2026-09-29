@@ -67,7 +67,9 @@ export const howItWorksRowsCopy = {
     {
       id: "how-brackets",
       title: "Brackets",
-      methods: ["rules", "decks", "list"],
+      // Two tags, as the handoff draws it: `published list` belongs to Game Changers, and its
+      // sub-row carries it.
+      methods: ["rules", "decks"],
       verdict: "partial",
       from:
         "The Commander Format Panel’s bracket rules, which we transcribe. Game changers are " +
