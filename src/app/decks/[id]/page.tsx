@@ -42,6 +42,8 @@ import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
+import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
+import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
 import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
@@ -472,9 +474,11 @@ export default async function DeckBuilderPage({
       )}
     />
   );
+  // Switches read here and needed several layers down (the decisions sheet's method tags).
+  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{shell}</DeckPageSwitches>;
   const tooled = swapTools ? (
-    <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{shell}</SwapToolsProvider>
-  ) : shell;
+    <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{switched}</SwapToolsProvider>
+  ) : switched;
   // Change commander's door and sheet read this context; without it the deck header draws exactly
   // the card-details trigger it drew before the feature (audit F6).
   return changeCommanderEnabled() ? (

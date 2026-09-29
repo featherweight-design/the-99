@@ -536,7 +536,9 @@ export const deckAnalysisCopy = {
    */
   detection: {
     gameChangers: {
-      from: "Wizards publishes the list, and we check your 99 against it. This count is exact.",
+      // Scryfall is named because it is what we actually read: its card data carries Wizards'
+      // list as a flag on each card (`scryfall/transform.ts`). Brief §5.1, 2026-09-28.
+      from: "Wizards publishes the list, and we check your 99 against Scryfall's copy of it. This count is exact.",
       source: "the Commander Format Panel's bracket rules",
     },
     landDenial: {

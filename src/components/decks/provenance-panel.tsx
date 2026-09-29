@@ -3,8 +3,11 @@
 import { useState } from "react";
 
 import { BRACKET_RULES_SOURCE, SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
+import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { formatDeckDate } from "../../lib/decks/format";
+import { MethodTags } from "../ui/method-tag";
+import { useDeckPageSwitches } from "./deck-page-switches";
 import { ModalChrome } from "./receipt-modal";
 
 const copy = deckAnalysisCopy;
@@ -23,6 +26,10 @@ const copy = deckAnalysisCopy;
  * read against the code — and the combo index is Commander Spellbook's. The land-denial and
  * extra-turn rows combine Spellbook's bracket estimate with our own reading of the rules text,
  * and say so in their sentences; neither is a list to link to.
+ *
+ * METHOD TAGS, behind HOW_IT_WORKS_ENABLED (About's "How the app reaches its answers", Hugh
+ * 2026-09-28): each row names how its count is reached, in the same words the About appendix uses.
+ * Off, the sheet is exactly as it was.
  *
  * LOCAL STATE, NEVER PERSISTED. It is read once, mid-argument, and a sheet that reopened itself
  * on every visit would be a sheet nobody asked to see again.
@@ -67,19 +74,30 @@ export function ProvenanceOpener({
 
 function ProvenanceSheet({ onClose }: { onClose: () => void }) {
   const d = copy.detection;
-  const rows: { key: string; label: string; from: string; misses?: string | null; link?: { name: string; url: string } }[] = [
+  const { howItWorks } = useDeckPageSwitches();
+  const m = howItWorksCopy.bracketMethods;
+  const rows: {
+    key: string;
+    label: string;
+    from: string;
+    methods: readonly HowMethod[];
+    misses?: string | null;
+    link?: { name: string; url: string };
+  }[] = [
     {
       key: "gameChangers",
       label: copy.findings.labels.gameChangers,
       from: d.gameChangers.from,
+      methods: m.gameChangers,
       link: { name: BRACKET_RULES_SOURCE.name, url: BRACKET_RULES_SOURCE.url },
     },
-    { key: "massLandDenial", label: copy.findings.labels.massLandDenial, from: d.landDenial.from, misses: d.landDenial.misses },
-    { key: "extraTurns", label: copy.findings.labels.extraTurns, from: d.extraTurns.from, misses: d.extraTurns.misses },
+    { key: "massLandDenial", label: copy.findings.labels.massLandDenial, from: d.landDenial.from, methods: m.landDenial, misses: d.landDenial.misses },
+    { key: "extraTurns", label: copy.findings.labels.extraTurns, from: d.extraTurns.from, methods: m.extraTurns, misses: d.extraTurns.misses },
     {
       key: "twoCardCombos",
       label: copy.findings.labels.twoCardCombos,
       from: d.combos.from,
+      methods: m.combos,
       misses: d.combos.misses,
       link: { name: SPELLBOOK_SOURCE.name, url: SPELLBOOK_SOURCE.url },
     },
@@ -97,7 +115,10 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
         <dl className="m-0 flex flex-col gap-[10px]">
           {rows.map((row) => (
             <div key={row.key} className="flex flex-col gap-[3px] border-t border-[color:var(--border)] pt-[10px]">
-              <dt className="font-semibold text-[12px]" style={{ color: "var(--fg)" }}>{row.label}</dt>
+              <dt className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px] font-semibold text-[12px]" style={{ color: "var(--fg)" }}>
+                {row.label}
+                {howItWorks ? <MethodTags methods={row.methods} /> : null}
+              </dt>
               <dd className="m-0">
                 {row.from}
                 {row.link ? (
