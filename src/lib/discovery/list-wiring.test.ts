@@ -45,6 +45,15 @@ vi.mock("../decks/availability-query", () => ({
   loadAvailability: (...args: unknown[]) =>
     (loadAvailability as unknown as (...a: unknown[]) => unknown)(...args),
 }));
+// The role-target read is its own module and not what these tests are about: every commander
+// answers the flat targets, as one with nothing measured does.
+vi.mock("../profile/role-targets", async () => {
+  const { ROLE_TARGETS } = await vi.importActual<typeof import("../recs/roles")>("../recs/roles");
+  return {
+    loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
+      new Map(cs.map((c) => [c.oracleId, { of: "flat", targets: { ...ROLE_TARGETS } }])),
+  };
+});
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),

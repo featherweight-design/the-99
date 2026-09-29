@@ -26,7 +26,7 @@ vi.mock("../../db", async () => {
 
 import { ROLE_TARGETS } from "../recs/roles";
 import { countCondition, identityCondition } from "../staples/condition";
-import { loadRoleTargetsForCommanders } from "./load";
+import { loadRoleTargetsForCommanders } from "./role-targets";
 
 const measured = (n: number) => ({ avgRamp: n, avgDraw: n + 1, avgRemoval: n + 2, avgWipes: n + 3 });
 const four = (n: number) => ({ ramp: n, draw: n + 1, removal: n + 2, wipes: n + 3 });

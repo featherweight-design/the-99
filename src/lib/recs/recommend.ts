@@ -7,7 +7,7 @@ import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
-import { loadRoleTargetsForCommanders } from "../profile/load";
+import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {

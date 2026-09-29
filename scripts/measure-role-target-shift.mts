@@ -27,7 +27,7 @@ import { assembleDiscovery } from "../src/lib/discovery/list";
 import { loadCandidates } from "../src/lib/discovery/candidates";
 import { loadPlayedTags } from "../src/lib/discovery/novelty";
 import { readPrices } from "../src/lib/discovery/price";
-import { loadRoleTargetsForCommanders } from "../src/lib/profile/load";
+import { loadRoleTargetsForCommanders } from "../src/lib/profile/role-targets";
 import { buildPoolRollup } from "../src/lib/recs/pool-rollup";
 import { loadCollectionPool } from "../src/lib/recs/recommend";
 import { ROLE_TARGETS } from "../src/lib/recs/roles";
@@ -87,7 +87,7 @@ const owned = await db
 if (owned.length === 0) {
   console.log("\n(no stored scores for this reader: open /commanders once as them, then re-run)");
 } else {
-  const measured = await loadRoleTargetsForCommanders(owned);
+  const measured = await loadRoleTargetsForCommanders(owned.map((r) => ({ oracleId: r.id, colorIdentity: r.colorIdentity })));
   const grade = (targets: (id: string) => Record<RoleName, number>) =>
     owned
       .map((r) => ({

@@ -45,6 +45,15 @@ vi.mock("../edhrec/client", () => ({
 const support = vi.hoisted(() => ({
   lists: new Map<string, { total: number | null; oracleIds: string[] }>(),
 }));
+// The role-target read is its own module and not what these tests are about: every commander
+// answers the flat targets, as one with nothing measured does.
+vi.mock("../profile/role-targets", async () => {
+  const { ROLE_TARGETS } = await vi.importActual<typeof import("./roles")>("./roles");
+  return {
+    loadRoleTargetsForCommanders: async (cs: { oracleId: string }[]) =>
+      new Map(cs.map((c) => [c.oracleId, { of: "flat", targets: { ...ROLE_TARGETS } }])),
+  };
+});
 vi.mock("../edhrec/support-read", () => ({
   loadSupportLists: vi.fn(async () => support.lists),
 }));

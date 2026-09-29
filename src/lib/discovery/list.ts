@@ -6,7 +6,7 @@ import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
 import { computeFit, type RoleName } from "../recs/score";
 import { ROLE_TARGETS } from "../recs/roles";
-import { loadRoleTargetsForCommanders } from "../profile/load";
+import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
 import {

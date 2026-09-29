@@ -12,7 +12,7 @@
 import { cache } from "react";
 import { readEdhrecCache } from "../edhrec/client";
 import { loadSupportLists } from "../edhrec/support-read";
-import { loadRoleTargetsForCommanders } from "../profile/load";
+import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { parseEdhrecPayload } from "../edhrec/parse";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
