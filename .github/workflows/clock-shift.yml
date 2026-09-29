@@ -26,7 +26,7 @@ name: Clock-shifted tests
 on:
   schedule:
     # 04:12 UTC. Off the hour because every scheduled job on the hour contends,
-    # and well clear of the 09:00 catalog refresh and the 13:00 combo refresh.
+    # and well clear of the 09:00 catalog refresh and the jobs that chain on it.
     - cron: "12 4 * * *"
   push:
     branches: [main]

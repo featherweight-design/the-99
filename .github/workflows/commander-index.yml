@@ -1,21 +1,31 @@
 name: Commander index
 
-# ~3,000 serial EDHREC fetches at 250ms apart is a minimum of 13 minutes of
-# sleeping before any parsing, which is well past a Vercel function's 300s
-# maxDuration. Same reasoning as catalog-refresh.yml, which this mirrors.
+# The commander index, built ONCE on staging and copied to production (card-data replicate plan,
+# 2026-09-28). A build is ~4,750 rate-limited EDHREC requests over hours; making them twice for
+# one result was the waste the plan removes.
+#
+# Four jobs, in order: `gate` decides whether a build is due, `build` makes it on staging and
+# records it in the ledger, `prose` writes staging's sentences for it, and `copy` publishes the
+# index and then the sentences to production. Chained on the daily `Catalog refresh` rather than a
+# cron, because the build resolves EDHREC's names against a catalog that must be current.
 on:
-  schedule:
-    # 09:00 UTC on the 3rd — the catalog refreshes every Monday, so by the 3rd
-    # of any month a set released in the previous week has already been ingested
-    # and the name index can resolve it.
-    - cron: '0 9 3 * *'
+  workflow_run:
+    workflows: [Catalog refresh]
+    types: [completed]
   workflow_dispatch:
     inputs:
-      target:
-        description: Which database to index
+      mode:
+        description: Build on staging then copy, or copy staging's last good build only
         type: choice
-        options: [staging, production]
-        default: staging
+        options: [build+copy, copy-only]
+        default: build+copy
+      prose:
+        description: >-
+          Generate staging's sentences after the build, or skip them (a catch-up that copies the
+          index and leaves the sentences to the next scheduled build). A chained run always generates.
+        type: choice
+        options: [generate, skip]
+        default: generate
       resume_since:
         description: >-
           ISO timestamp; commanders recomputed at or after it are skipped. Set this
@@ -23,21 +33,7 @@ on:
         type: string
         default: ''
 
-# WORKFLOW SCOPE, NOT JOB SCOPE, and one group for both targets. Two separate
-# reasons land on the same line.
-#
-# The group is shared because the binding constraint here is EDHREC — one host,
-# however many of our databases are involved. That is where this diverges from
-# catalog and price refresh, which group per target because the thing THEY must
-# not collide on is the database, and the two are independent.
-#
-# The scope is the workflow because a `concurrency` block on a matrix job makes
-# each LEG its own queue item. With the legs serialized, one runs while the other
-# is pending — and GitHub keeps a single pending entry per group, so a newly
-# started run can displace that pending leg even under `cancel-in-progress:
-# false`. The first run would then finish without its production leg and still
-# chain into production prose off an index that was never rebuilt. Queuing the
-# whole run as one unit is what makes `max-parallel: 1` mean what it says.
+# ONE group for the workflow: never a second EDHREC request stream, and never two copies at once.
 concurrency:
   group: commander-index
   cancel-in-progress: false
@@ -46,81 +42,47 @@ permissions:
   contents: read
 
 jobs:
-  # Resolves which databases this run indexes. A scheduled run fans out over both
-  # environments; a manual dispatch indexes only the one it names. This has to be
-  # a separate job because a matrix can only be built from a `needs` output — the
-  # alternative, an expression on `environment`, is what this workflow shipped
-  # with, and it sent every scheduled run to production alone. Catalog refresh hit
-  # it first and price refresh second (#691); this is the third and last.
-  plan:
-    # Kill switch for the schedule; a manual dispatch always runs. Set the
-    # COMMANDER_INDEX_ENABLED repository variable to 'true' or it never fires.
-    if: vars.COMMANDER_INDEX_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+  gate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.COMMANDER_INDEX_ENABLED == 'true' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'schedule')
     runs-on: ubuntu-latest
+    environment: catalog-staging
     outputs:
-      targets: ${{ steps.pick.outputs.targets }}
-    steps:
-      - id: pick
+      due: ${{ steps.due.outputs.due }}
+    defaults:
+      run:
         shell: bash
+    env:
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # A dispatch is always due. A chained run asks staging's own sets and ledger: monthly from
+      # the 3rd, or 14 days after an expansion or commander set releases (`indexDue`).
+      - id: due
         env:
-          # Read through the environment rather than interpolating into the script
-          # body, so the input cannot inject shell. The `case` re-validates what
-          # the `choice` type already constrains, because `github.event.inputs` is
-          # unset — not defaulted — off dispatch.
-          TARGET: ${{ github.event.inputs.target }}
+          EVENT: ${{ github.event_name }}
         run: |
-          case "$TARGET" in
-            staging|production) targets="[\"$TARGET\"]" ;;
-            '') targets='["staging","production"]' ;;
-            *) echo "Unrecognised target: $TARGET" >&2; exit 1 ;;
-          esac
-          echo "targets=$targets" >> "$GITHUB_OUTPUT"
-          echo "Indexing: $targets"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          else
+            pnpm --silent db:index-due | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
 
-  index:
-    needs: plan
-    strategy:
-      matrix:
-        target: ${{ fromJSON(needs.plan.outputs.targets) }}
-      # The two environments are independent databases. A staging build that fails
-      # must not cancel the production one, which is the environment the app
-      # actually serves.
-      fail-fast: false
-      # SERIAL, and this is the one place the catalog/price precedent does NOT
-      # carry. Those legs each pull a single bulk file, so fanning them out adds
-      # one concurrent download. This job makes ~3,000 EDHREC requests spaced by
-      # `DEFAULT_DELAY_MS` (250ms, `src/lib/edhrec/seed-index.ts`), and that delay
-      # is politeness to a host that owes us nothing — two concurrent legs would
-      # silently double the outbound rate to ~8 req/s. One at a time costs wall
-      # clock, which the 180-minute timeout has in hand, and costs EDHREC nothing.
-      # This orders the legs within ONE run; the workflow-level concurrency group
-      # at the top of the file is what stops two runs overlapping.
-      max-parallel: 1
-    # A FAILED STAGING LEG MUST NOT SPEAK FOR THE RUN. `commander-prose.yml` chains
-    # on `workflow_run.conclusion`, which is the AGGREGATE over both legs — so
-    # without this, a staging leg that errors (EDHREC 5xx, a rotated staging
-    # secret) makes the run's conclusion `failure` and production's sentences are
-    # never regenerated that month, even though production's own index succeeded.
-    # That is the same rule as `fail-fast: false` above, extended to the signal
-    # the run emits rather than only to the legs it cancels.
-    #
-    # SCHEDULED RUNS ONLY. On a manual dispatch naming `staging`, that leg is the
-    # whole run and the operator is asking about staging specifically — reporting
-    # green over a failed index would hide the very thing they dispatched to find
-    # out. The exception exists to protect production's prose chain, and a
-    # dispatch has no chain to protect.
-    continue-on-error: ${{ matrix.target == 'staging' && github.event_name == 'schedule' }}
+  build:
+    needs: gate
+    if: needs.gate.outputs.due == 'true' && github.event.inputs.mode != 'copy-only'
     runs-on: ubuntu-latest
-    # Serial-by-design: the wall clock is dominated by the politeness delay, not
-    # by compute. Leave headroom rather than trimming to the expected runtime —
-    # a timeout mid-run leaves a partially rebuilt index, which the resume input
-    # exists to recover.
     timeout-minutes: 180
-    # Reuses the catalog-* environments rather than adding a commander-index-*
-    # pair: this writes to the same database with the same secret, and a second
-    # environment holding an identical value is a second thing to keep in sync
-    # for no benefit.
-    environment: catalog-${{ matrix.target }}
+    environment: catalog-staging
     defaults:
       run:
         shell: bash
@@ -136,6 +98,14 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # Before anything moves staging's index: a legacy prose hash can only be checked against the
+      # inputs its sentence was written from (`db:restamp:prose`, no model call, idempotent).
+      - name: Re-stamp staging's prose
+        env:
+          RESTAMP_TARGET_BRANCH: br-polished-pond-a6e63y0b
+        run: pnpm --silent db:restamp:prose | tee -a "$GITHUB_STEP_SUMMARY"
+      # Both builders record their own ledger rows (`recordBuild`), so the staples row is the
+      # newest and a copy refuses a build whose derivation failed.
       - name: Build the commander index
         id: index
         # Bounded below the job's 180 minutes, so a run that overstays is stopped HERE and the
@@ -146,7 +116,7 @@ jobs:
           {
             echo "## Commander index"
             echo ""
-            echo "- Target: \`catalog-${{ matrix.target }}\`"
+            echo "- Target: \`catalog-staging\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"
@@ -160,21 +130,6 @@ jobs:
         timeout-minutes: 5
         run: pnpm --silent db:stamp:catalog
 
-      # A STEP IN THIS LEG, deliberately, and not a `workflow_run` chain of its own.
-      #
-      # The floors are derived FROM the index this leg just wrote, so they have to run
-      # against the same database — and `workflow_run` fires once per run with no way to
-      # tell which matrix leg it is hearing about. `commander-prose.yml` is pinned to
-      # production for exactly that reason and takes staging's sentences from a copy
-      # instead; there is no copy for this, because the derivation costs one query and
-      # nothing else. A step per leg is the only shape that gives each environment floors
-      # computed from its own index.
-      #
-      # It runs on success only (the step default), so a failed index never publishes
-      # floors derived from a half-written one. The script has its own refusal on top of
-      # that: an empty derivation exits non-zero and leaves the previous floors standing,
-      # because an empty result is either an empty index or a broken query and neither is
-      # a reason to delete a good table.
       - name: Derive the format staples
         run: |
           {
@@ -183,3 +138,102 @@ jobs:
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:staples | tee -a "$GITHUB_STEP_SUMMARY"
+
+  prose:
+    needs: build
+    # A copy-only dispatch skips `build`, and so this; a dispatch can also skip it outright.
+    if: needs.build.result == 'success' && github.event.inputs.prose != 'skip'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    environment: catalog-staging
+    defaults:
+      run:
+        shell: bash
+    env:
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Visible before it spends: how many commanders need a sentence, and the most calls that
+      # could cost. Then the real run under two ceilings, whichever binds first: measured dollars
+      # (PROSE_MAX_USD, default $6, priced from each reply's usage) and commanders
+      # (PROSE_MAX_COMMANDERS, default 2,000). Whatever a ceiling defers waits for the next build.
+      - name: Count the prose to generate
+        run: |
+          {
+            echo "## Commander prose"
+            echo ""
+            echo "- Target: \`catalog-staging\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:prose --dry-run | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Generate commander prose
+        env:
+          PROSE_MAX_COMMANDERS: ${{ vars.PROSE_MAX_COMMANDERS || '2000' }}
+          PROSE_MAX_USD: ${{ vars.PROSE_MAX_USD || '6' }}
+        run: pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
+
+  copy:
+    needs: [gate, build, prose]
+    # `!cancelled()` lets a failed or skipped `prose` through: the index copy never depends on
+    # the sentences, and `db:copy:prose` installs whichever ones exist.
+    if: >-
+      ${{ !cancelled() && needs.gate.outputs.due == 'true' &&
+      (needs.build.result == 'success' ||
+       (github.event.inputs.mode == 'copy-only' && needs.build.result == 'skipped')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: catalog-production
+    defaults:
+      run:
+        shell: bash
+    env:
+      CATALOG_COPY_SOURCE_URL: ${{ secrets.CATALOG_COPY_SOURCE_URL }}
+      CATALOG_COPY_TARGET_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      # Production's Neon branch. A guard, not a credential: the target must report exactly this.
+      CATALOG_COPY_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+      # The score clear's module imports `src/db`, which needs this set; nothing queries it.
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - name: Fail loudly without the copy secret
+        run: |
+          if [ -z "$CATALOG_COPY_SOURCE_URL" ]; then
+            echo "::error::CATALOG_COPY_SOURCE_URL is not set in the catalog-production environment."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # FIRST, and a hard dependency of the index copy: production's sentences are re-stamped
+      # against the inputs they were written from before the copy replaces those inputs. A failed
+      # or refused re-stamp fails this step, and no later step runs.
+      - name: Re-stamp production's prose
+        env:
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+          RESTAMP_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+        run: pnpm --silent db:restamp:prose | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Copy the index to production
+        run: |
+          echo "## Index copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:index 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - name: Copy the sentences to production
+        run: |
+          echo "## Prose copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:prose 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

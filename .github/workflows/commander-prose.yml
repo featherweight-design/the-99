@@ -4,15 +4,12 @@ name: Commander prose
 # model calls with up to three attempts each is well past a Vercel function's
 # 300s maxDuration, so it runs here for the same reason commander-index.yml does.
 #
-# Ordering matters: the prompt and the input hash are built from
-# `commander_support.tags`, which `db:build:index` writes. Generating before the
-# index has been rebuilt spends a model call per commander to produce a sentence
-# about last month's tags, so the scheduled run chains off that workflow rather
-# than racing it on its own cron.
+# DISPATCH ONLY since the card-data replicate plan (2026-09-28). The scheduled sentences are
+# written on staging by the `prose` job inside `Commander index`, straight after the build whose
+# tags they describe, and copied to production by that workflow's `copy` job (`db:copy:prose`), so
+# each sentence costs one model call, once. This workflow stays for generating against one
+# database by hand.
 on:
-  workflow_run:
-    workflows: [Commander index]
-    types: [completed]
   workflow_dispatch:
     inputs:
       target:
@@ -22,7 +19,7 @@ on:
         default: staging
 
 concurrency:
-  group: commander-prose-${{ github.event.inputs.target || 'production' }}
+  group: commander-prose-${{ github.event.inputs.target }}
   cancel-in-progress: false
 
 permissions:
@@ -30,38 +27,7 @@ permissions:
 
 jobs:
   prose:
-    # Two gates, and they are not the same gate.
-    #
-    # A manual dispatch always runs, against whichever target was chosen.
-    #
-    # A chained run fires ONLY off a scheduled index build. `workflow_run` cannot
-    # see the inputs of the run that triggered it, so a manually dispatched index
-    # against `staging` would otherwise chain into a production prose run and
-    # rewrite production sentences from staging's tags.
-    #
-    # `conclusion` here is the index run's AGGREGATE over both matrix legs, which
-    # is why that workflow marks its staging leg `continue-on-error`: a staging
-    # failure must not withhold production's sentences for a month.
-    #
-    # A CHAINED RUN IS ALWAYS PRODUCTION'S — a dispatched one goes wherever its
-    # own `target` says, including staging, as the paragraph above describes. For
-    # the chain, that is now a choice rather than a consequence. It used to follow from the index: a scheduled index run took
-    # that workflow's own `|| 'production'` default, so the fallback below was
-    # true rather than merely usual. Since the index fans out over BOTH databases
-    # on its schedule, a scheduled run is no longer production-only — but
-    # `workflow_run` still cannot tell which matrix leg it is hearing about, and
-    # it fires once per RUN rather than once per leg. So the chain stays pinned to
-    # production deliberately: that is the environment the app serves, and a
-    # sentence costs a model call to produce.
-    #
-    # Staging gets its sentences for free instead, via `pnpm db:copy:prose`, which
-    # installs what production has already generated and pays only for the rows
-    # the two disagree about. Dispatch this workflow directly only to GENERATE for
-    # staging, which is rarely what you want.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'schedule')
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Serial by design, and dominated by model latency rather than compute. A run
     # that times out mid-batch needs no resume input: every sentence is written as
@@ -71,7 +37,7 @@ jobs:
     # Reuses the catalog-* environments for the same reason the index does: same
     # database, same secret, and a third environment holding an identical value is
     # one more thing to keep in sync for no benefit.
-    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    environment: catalog-${{ github.event.inputs.target }}
     defaults:
       run:
         # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the generate step's
@@ -94,7 +60,7 @@ jobs:
           {
             echo "## Commander prose"
             echo ""
-            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ github.event.inputs.target }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"

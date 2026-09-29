@@ -85,53 +85,68 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   every production deploy failed for five hours, across seven deployments and five merged PRs.
   Nothing was down — the running build kept serving — but nothing new shipped either.
 - `GET /api/health` (public, unauthenticated) reports migration state — 200 when the schema matches the build or is ahead of it, 503 when migrations are pending or the ledger is unreadable. Use it to confirm a deploy instead of loading a page that depends on the schema.
-- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily, because the catalog refresh is weekly and an upstream shape change would otherwise go unnoticed until it failed.
+- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily at 07:00, two hours ahead of the daily catalog refresh, so an upstream shape change is known before the ingest that would fail on it.
 - `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
   the `scryfall_id` duplication ratio) without touching a database, and runs daily in that same
   workflow. `/prices/singles` is a documented endpoint of the Mana Pool Public API, but those docs
-  warn v1 "is subject to change without notice" and the ingest is weekly, so a silent shape change
-  would otherwise sit unnoticed for days.
-- `pnpm db:seed:prices` refreshes `printing_prices` from ManaPool. The `Price refresh` workflow runs
-  it 09:00 UTC every Monday against **both** `catalog-staging` and `catalog-production`; it needs
-  the `PRICE_REFRESH_ENABLED` repository variable set to `'true'` to fire on schedule, and a manual
-  dispatch prices only the environment it names. The fan-out is a `plan` job feeding a matrix for
-  the same reason `Catalog refresh` uses one: routing on an expression on `environment` sends every
-  scheduled run to production alone, which left staging's newest `as_of` 9 days behind
-  production's. The feed omits out-of-stock cards rather than listing them at zero, so a
-  printing absent from `printing_prices` has never been stocked in any run so far, and a row with
-  a null `price_cents` but a set `price_cents_foil` is stocked in foil only — neither is "free" or
-  "unknown". The ingest upserts and never deletes, so presence is not the same as being stocked
-  now: a sold-out printing keeps its last row with a frozen `as_of`, and any reader needing "stocked
-  now" compares that `as_of` to the newest one in the table.
-- `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC.
-  The `Commander index` workflow runs it monthly on the 3rd against **both** `catalog-staging`
-  and `catalog-production` — the catalog refreshes every Monday, so by the 3rd a set released
-  in the previous week has already been ingested and the name index can resolve it. Needs the
-  `COMMANDER_INDEX_ENABLED` repository variable set to `'true'` to fire on schedule, and a
-  manual dispatch indexes only the environment it names. It fans out through a `plan` job and
-  a matrix for the same reason `Catalog refresh` and `Price refresh` do; an expression on
-  `environment` sends every scheduled run to production alone, and this was the third and last
-  workflow carrying that bug. Two details differ from those two, both because this job makes
-  ~3,000 rate-limited EDHREC requests rather than pulling one bulk file: the matrix is
-  `max-parallel: 1` under a single workflow-wide concurrency group, so neither two legs nor two
-  runs can put a second request stream on EDHREC; and on a **scheduled** run the staging leg is
-  `continue-on-error`, so a staging failure cannot make the run's aggregate conclusion `failure`
-  and withhold the `Commander prose` chain from production for a month. A dispatched staging run
-  is not excused that way and still reports its own failure, because that is the run an operator
-  dispatched to find out about.
+  warn v1 "is subject to change without notice", and the check runs ahead of the daily ingest so a
+  shape change is known before that ingest fails on it.
+- `pnpm db:seed:prices` refreshes `printing_prices` from ManaPool. It runs as the LAST step of each
+  `Catalog refresh` leg, daily, so a day's prices always follow that day's catalog on both sides
+  (card-data replicate plan, 2026-09-28). The `Price refresh` workflow lost its cron in the same
+  change and stays for a one-off dispatch naming one environment. The feed omits out-of-stock
+  cards rather than listing them at zero, so a printing absent from `printing_prices` has never
+  been stocked in any run so far, and a row with a null `price_cents` but a set `price_cents_foil`
+  is stocked in foil only — neither is "free" or "unknown". The ingest upserts and never deletes,
+  so presence is not the same as being stocked now: a sold-out printing keeps its last row with a
+  frozen `as_of`, and any reader needing "stocked now" compares that `as_of` to the newest one in
+  the table.
+- `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC,
+  about 4,750 rate-limited requests. Since the card-data replicate plan (2026-09-28) it is built
+  ONCE, on staging, and copied to production. The `Commander index` workflow chains on every
+  successful scheduled `Catalog refresh` and runs four jobs in order:
+
+  - `gate` asks staging whether a build is due (`pnpm db:index-due`, the rule `indexDue`):
+    monthly from the 3rd when no `ok` index build has started that month, or 14 days after an
+    `expansion` or `commander` set releases when no `ok` build has started since. Reality Fracture
+    (released 2026-10-02) comes due on 2026-10-16. A dispatch is always due.
+  - `build` first runs `db:restamp:prose` on staging, then `db:build:index` and
+    `db:build:staples`, each of which records its own ledger row; the staples row is the newest,
+    so a copy refuses a build whose derivation failed.
+  - `prose` writes staging's sentences for that build (`db:build:prose`), and runs only when the
+    build succeeded.
+  - `copy`, in `catalog-production`, runs `db:restamp:prose` on production FIRST, then
+    `db:copy:index` and then `db:copy:prose`. The re-stamp is a hard dependency of the index copy:
+    a legacy prose hash can only be checked against the inputs its sentence was written from, so
+    it has to run before the copy replaces them. A refusal fails the job before anything is copied. It runs over a
+    failed or skipped `prose`, because the index copy never depends on the sentences.
+
+  A dispatch takes `mode`: `build+copy`, or `copy-only`, which copies staging's last `ok` build or
+  refuses; and `prose`: `generate`, or `skip`, which builds and copies the index and leaves the
+  sentences to the next scheduled build (readers serve a stale sentence rather than none). The
+  first catch-up after the ledger existed was a `build+copy` with `prose=skip`: a `copy-only`
+  refuses on an empty ledger, and generating then would have been paid again five days later. One workflow-wide concurrency group keeps a second EDHREC request stream, and a second
+  copy, from ever starting. Needs `COMMANDER_INDEX_ENABLED` set to `'true'` to chain.
 - `pnpm db:build:prose` writes one generated sentence per commander into `commander_support.prose`
   — sentence 1 of "Why this commander", and identical for every player, which is why no collection
-  change invalidates it. Needs `ANTHROPIC_API_KEY`. The `Commander prose` workflow chains off a
-  **scheduled** `Commander index` run rather than carrying its own cron, because the prompt and the
-  input hash are built from the tags that job writes. That chain is pinned to **production**, and
-  now deliberately rather than as a consequence of the index's own default: `workflow_run` fires
-  once per run and cannot tell which matrix leg it is hearing about. Staging takes its sentences
-  from `pnpm db:copy:prose` instead, which costs nothing; dispatch this workflow directly only to
-  GENERATE for staging. A row
-  whose stored `prose_input_hash` still matches its inputs is skipped, so a re-run costs nothing for
-  a commander whose tags have not moved, and an interrupted run resumes by being dispatched again.
-  A commander whose every attempt fails the accept contract keeps its null and renders with no
-  paragraph — the state the design draws, and never a truncated sentence nobody wrote.
+  change invalidates it. Needs `ANTHROPIC_API_KEY`. The scheduled run is the `prose` job inside
+  `Commander index`, on staging, straight after the build whose tags the prompt and the input hash
+  are built from; `copy` then installs the sentences on production, so each costs one model call,
+  once. The `Commander prose` workflow is dispatch-only since 2026-09-28, for generating against
+  one database by hand.
+
+  **Every run is bounded by MEASURED DOLLARS** (Hugh, 2026-09-28). Each reply's `usage` is priced
+  through `scripts/eval/lib/pricing.mts` as it lands, and the run stops cleanly once one more
+  commander (three attempts, worst case) could cross `PROSE_MAX_USD`, default $6; a
+  `--max-commanders` / `PROSE_MAX_COMMANDERS` ceiling (default 2,000 in the workflow) stands beside
+  it. What a ceiling defers is written by the next run, since a written row reads as fresh.
+  `--dry-run` counts what a run would generate and calls nothing; the staging job prints that
+  count to its summary before the real run. Its last three runs took 1.15, 1.18 and 1.26 attempts per
+  commander (40 sentences from 46 attempts, 38 from 45, 19 from 24), 1.19 pooled. A row whose stored `prose_input_hash` still matches its inputs is skipped,
+  so a re-run costs nothing for a commander whose tags have not moved, and an interrupted run
+  resumes by being dispatched again. A commander whose every attempt fails the accept contract
+  keeps its null and renders with no paragraph — the state the design draws, and never a truncated
+  sentence nobody wrote.
 - **The prose input hash takes the top eight themes as a SET and the top three IN ORDER**
   (2026-09-28). A theme entering or leaving the eight changes what a sentence may name, and a move
   among the leading three changes what it leads with; a reorder below them changes neither. The
@@ -154,17 +169,30 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   copying the re-stamped production sentences onto staging then installed 536 more, leaving 1,241
   to generate instead of 1,777.
 
-- `pnpm db:copy:prose` installs sentences one database has already generated onto another,
-  reading `PROSE_COPY_SOURCE_URL` and `PROSE_COPY_TARGET_URL` from the environment and taking
-  `--dry-run`. A sentence costs a model call to produce and nothing to move, so a database that
-  has never been generated against takes them from one that has and pays only for the rows the
-  two disagree about. A row is installed only when the hash the source stored equals the hash
-  the *target's* own inputs produce, so a sentence describing themes the target no longer
-  records is never written; those rows keep their null and are picked up by the next
-  `db:build:prose` against that target, which is the run to do afterwards. A suppressed
-  commander is skipped before any of that, exactly as the generator skips it: a source
-  generated before an id joined the list still holds that sentence, so the copy is the one
-  path that could put a pulled sentence back.
+- `pnpm db:copy:prose [--dry-run]` installs sentences staging has generated onto production,
+  through the catalog copy harness: `CATALOG_COPY_SOURCE_URL`, `CATALOG_COPY_TARGET_URL` and the
+  named `CATALOG_COPY_TARGET_BRANCH`, one source snapshot, and one target transaction under the
+  `catalog-ingest` lock with the catalog stamp in it. A sentence costs a model call to produce and
+  nothing to move. A row is installed only when the hash the source stored equals the hash the
+  *target's* own inputs produce, so a sentence describing themes the target no longer records is
+  never written; those rows keep their null and are picked up by the next `db:build:prose` against
+  that target. A suppressed commander is skipped before any of that, exactly as the generator skips
+  it: a source generated before an id joined the list still holds that sentence, so the copy is the
+  one path that could put a pulled sentence back. Nothing is deleted, and there is no build ledger:
+  the input hash is the check that a sentence fits the row it lands on.
+
+- `pnpm db:copy:labels [--dry-run]` installs staging's card labels on production through the same
+  harness and the same three variables. PAY ONCE: it never calls a model. A label is installed only
+  when its input hash equals the hash production's own card text and model produce (`planCopy`),
+  and it never deletes. `Card labels` runs it as a `copy` job in `catalog-production` after every
+  successful `label` job.
+
+- `pnpm db:index-due` prints whether the commander index is due today, read from the database
+  `DATABASE_URL` names, and writes `due=true|false` to `$GITHUB_OUTPUT`. The rule is `indexDue`
+  (`src/lib/catalog/index-due.ts`), pure over the catalog's `sets` and the ledger's `ok` index
+  builds, and unit tested on the Reality Fracture and Star Trek dates. The release set types are
+  one constant, `RELEASE_SET_TYPES`; `draft_innovation` reprint boxes are left out. On an empty
+  ledger every old set reads due, which is the first run's catch-up.
 - **Catalog builds are made once, on staging, and COPIED to production** (plan
   `2026-09-28-card-data-replicate.md`, Hugh 2026-09-28). Fetching the same EDHREC and Spellbook
   data twice was the waste; the copy is what replaces the second fetch. Every copy goes through
@@ -312,7 +340,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   NON-FATAL — this workflow runs the seed scripts directly and never runs `db:migrate`, so
   a database without the table costs one refresh's staleness and a warning, not a red job
   after a successful ingest.
-- The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
+- The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC DAILY and refreshes **both** `catalog-staging` and `catalog-production`, prices last. It is the one root every replicated job hangs off: `Combo refresh` and `Commander index` chain on its successful scheduled runs by `workflow_run`, never by cron spacing, because GitHub runs a cron hours late when it is busy (the Monday crons of 2026-09-28 ran at 17:27Z). A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - `pnpm check:copy-drift` fails when a design table still quotes a string the code stopped
   emitting, in PUNCTUATION or in WORDS. Two checks, and they are built for different drift.
 
@@ -1434,7 +1462,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   draws came from the same place; this is that set extended to the 59 symbols a mana cost can
   contain, filtered on Scryfall's own `appears_in_mana_costs` so tap, energy and loyalty never
   land here. The manifest exists because that list GROWS: a set with a new symbol arrives in the
-  weekly catalog refresh while these files move only when someone runs this, so the large pip
+  daily catalog refresh while these files move only when someone runs this, so the large pip
   falls back to a lettered disc for a symbol it has no art for rather than drawing a 26px hole.
   The script asserts per symbol that its slug equals Scryfall's own filename, which is the one
   way a rename would otherwise ship as a silent 404.
@@ -1962,20 +1990,20 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   measured nothing until the probe grew a fixture holding a mundane pair — 703 of 3,842
   sampled two-card variants produce something that is not counted.
 
-- The `Combo refresh` workflow runs `db:seed:combos` 13:00 UTC every Monday against **both**
-  `catalog-staging` and `catalog-production`, through a `plan` job feeding a matrix for the
-  same reason `Catalog refresh`, `Price refresh` and `Commander index` do — an expression on
-  `environment` sends every scheduled run to production alone. It needs the
-  `COMBO_REFRESH_ENABLED` repository variable set to `'true'` to fire on schedule, and a manual
-  dispatch ingests only the environment it names. 13:00 rather than 09:00 so it lands AFTER the
-  catalog refresh that morning: the ingest resolves against `cards`, and a variant naming a
-  card the catalog does not yet hold is dropped as unresolvable.
+- The `Combo refresh` workflow builds Spellbook's index ONCE, on staging, and copies it to
+  production (card-data replicate plan, 2026-09-28). It chains on every successful scheduled
+  `Catalog refresh` and builds on Mondays alone, judged by the catalog run's own start, so a
+  catalog run GitHub started late is still that day's. Its `build` job runs `db:seed:combos` on
+  staging, which records its own ledger row, and its `copy` job runs `db:copy:combos`
+  in `catalog-production`. A dispatch takes `mode`: `build+copy`, or `copy-only`. One
+  workflow-level concurrency group, `combo-refresh`, keeps two runs' copies from overlapping.
+  Needs `COMBO_REFRESH_ENABLED` set to `'true'` to chain. Chaining on the catalog is also what
+  keeps the ingest after it: variants resolve against `cards`, and a card the catalog does not yet
+  hold is dropped as unresolvable.
 
 - `pnpm db:build:staples` derives `format_staples` and `identity_composition` from the
-  commander index. It runs as a STEP in each `Commander index` matrix leg rather than as a
-  `workflow_run` chain, because the floors are derived from the index that leg just wrote and
-  `workflow_run` fires once per run with no way to tell which leg it is hearing about — the
-  same constraint that pins `Commander prose` to production.
+  commander index. It runs as a STEP in `Commander index`'s staging `build` job, straight after
+  the index it derives from, and is copied to production with it by `db:copy:index`.
 
   **It prints its whole derivation, and that is the point rather than a courtesy**: the bucket
   distribution, where the cut falls in it, the weighted-versus-unweighted delta, both sides of

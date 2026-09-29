@@ -140,37 +140,80 @@ const branchOf = async (db: CopyDb | CopyTx): Promise<string | null> => {
   return branch && branch.length > 0 ? branch : null;
 };
 
+/** Two verified connections: the source, and the target the caller NAMED. */
+export type CopyPair = {
+  source: CopyDb; sourceUrl: string; target: CopyDb; sourceBranch: string; targetBranch: string; dryRun: boolean;
+};
+
 /**
- * Run one copy end to end. Throws `CopyRefused` for every refusal, and rethrows anything else;
- * either way nothing on the target has changed unless this returned.
+ * Opens the pair every copy runs over (items 1 and 2): `CATALOG_COPY_SOURCE_URL`,
+ * `CATALOG_COPY_TARGET_URL` and `CATALOG_COPY_TARGET_BRANCH`, never defaulted, and a target that
+ * reports exactly the named branch. Both pools close when `run` settles, whatever it did.
  */
-export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void = console.log): Promise<void> {
+export async function withCopyPair<T>(run: (pair: CopyPair) => Promise<T>): Promise<T> {
   const env = requireEnv(["CATALOG_COPY_SOURCE_URL", "CATALOG_COPY_TARGET_URL", "CATALOG_COPY_TARGET_BRANCH"]);
-  const dryRun = process.argv.includes("--dry-run");
   const source = connect(env.CATALOG_COPY_SOURCE_URL);
   const target = connect(env.CATALOG_COPY_TARGET_URL);
   try {
     const [sourceBranch, targetBranch] = await Promise.all([branchOf(source.db), branchOf(target.db)]);
     const identity = identityRefusal(sourceBranch, targetBranch, env.CATALOG_COPY_TARGET_BRANCH);
     if (identity) throw new CopyRefused(identity);
+    return await run({
+      source: source.db, sourceUrl: env.CATALOG_COPY_SOURCE_URL, target: target.db,
+      sourceBranch: sourceBranch!, targetBranch: targetBranch!,
+      dryRun: process.argv.includes("--dry-run"),
+    });
+  } finally {
+    await Promise.all([source.pool.end(), target.pool.end()]);
+  }
+}
+
+/**
+ * Every source read as one instant (item 4): repeatable read, read only, and opened only once the
+ * source's `catalog-ingest` lock is held on its own connection. A snapshot is fixed at its first
+ * statement, so a lock taken inside it would wait out an ingest and still read the instant before
+ * it; an ingest publishes in more than one transaction (flags, then variants), and a snapshot taken
+ * between them is a mixed generation the ledger cannot see.
+ */
+export function readSourceSnapshot<T>(
+  { source, sourceUrl }: Pick<CopyPair, "source" | "sourceUrl">,
+  read: (tx: CopyTx) => Promise<T>,
+): Promise<T> {
+  return withCatalogIngestLock(sourceUrl, () =>
+    source.transaction(read, { isolationLevel: "repeatable read", accessMode: "read only" }));
+}
+
+/**
+ * One target transaction under the `catalog-ingest` lock, with the catalog stamp written in it
+ * (items 5 and 9). `write` throws to roll everything back.
+ */
+export function publishOnTarget(target: CopyDb, write: (tx: CopyTx) => Promise<void>): Promise<void> {
+  return target.transaction(async (tx) => {
+    await tx.execute(catalogLockSql);
+    await write(tx);
+    await stampCatalogRefreshIn(tx);
+  });
+}
+
+/**
+ * Run one copy end to end. Throws `CopyRefused` for every refusal, and rethrows anything else;
+ * either way nothing on the target has changed unless this returned.
+ */
+export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void = console.log): Promise<void> {
+  await withCopyPair(async ({ source, sourceUrl, target, sourceBranch, targetBranch, dryRun }) => {
     log(`copy ${spec.kind}: ${sourceBranch} -> ${targetBranch}${dryRun ? " (dry run)" : ""}`);
 
     // ---- the source, as one instant ------------------------------------------------------
-    // Under the source's `catalog-ingest` lock, held on its own connection and taken BEFORE the
-    // read transaction opens: a repeatable-read snapshot is fixed at its first statement, so a
-    // lock taken inside it would wait out an ingest and still read the instant before it. An
-    // ingest publishes in more than one transaction (flags, then variants), and a snapshot taken
-    // between them is a mixed generation the ledger cannot see.
-    const snap = await withCatalogIngestLock(env.CATALOG_COPY_SOURCE_URL, () => source.db.transaction(async (tx) => {
+    const snap = await readSourceSnapshot({ source, sourceUrl }, async (tx) => {
       const build = await latestBuild(tx, spec.kind);
       const fingerprint = fingerprintKey(await readCatalogFingerprint(tx));
       const data = await spec.readSource(tx);
       const figures: Record<string, TableFigure> = {};
       for (const t of spec.tables) figures[t.name] = await readTableFigure(tx, t.name, t.cols);
       return { build, fingerprint, data, figures };
-    }, { isolationLevel: "repeatable read", accessMode: "read only" }));
+    });
 
-    const targetFingerprint = fingerprintKey(await readCatalogFingerprint(target.db));
+    const targetFingerprint = fingerprintKey(await readCatalogFingerprint(target));
     log(`source build: ${describeBuild(snap.build)}`);
     log(`catalog: source ${snap.fingerprint} · target ${targetFingerprint}`);
     log(`source holds: ${spec.describe(snap.data)}`);
@@ -188,8 +231,7 @@ export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void 
     }
 
     // ---- the publish, as one transaction -------------------------------------------------
-    await target.db.transaction(async (tx) => {
-      await tx.execute(catalogLockSql);
+    await publishOnTarget(target, async (tx) => {
       // Re-read UNDER the lock: a catalog refresh that committed after the check above is either
       // finished (and visible here) or waiting on this lock, never interleaved with the writes.
       const now = fingerprintKey(await readCatalogFingerprint(tx));
@@ -201,20 +243,17 @@ export async function runCopy<S>(spec: CopySpec<S>, log: (line: string) => void 
       for (const t of spec.tables) figures[t.name] = await readTableFigure(tx, t.name, t.cols);
       const mismatch = verifyRefusal(snap.figures, figures);
       if (mismatch) throw new CopyRefused(`verification failed, publish rolled back: ${mismatch}`);
-      await stampCatalogRefreshIn(tx);
     });
     log(`copy ${spec.kind}: published and verified`);
-  } finally {
-    await Promise.all([source.pool.end(), target.pool.end()]);
-  }
+  });
 }
 
 const describeBuild = (b: BuildRow | null) =>
   b ? `${b.id} started ${b.startedAt.toISOString()} · ok ${b.ok} · catalog ${b.catalogFingerprint}` : "none";
 
 /** The CLI wrapper every copy script ends with: a refusal exits 2, any other failure 1. */
-export function runCopyCli<S>(spec: CopySpec<S>): void {
-  runCopy(spec).then(
+export function runCopyMain(main: () => Promise<void>): void {
+  main().then(
     () => process.exit(0),
     (error) => {
       if (error instanceof CopyRefused) {
@@ -225,4 +264,8 @@ export function runCopyCli<S>(spec: CopySpec<S>): void {
       process.exit(1);
     },
   );
+}
+
+export function runCopyCli<S>(spec: CopySpec<S>): void {
+  runCopyMain(() => runCopy(spec));
 }
