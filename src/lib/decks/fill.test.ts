@@ -473,6 +473,12 @@ describe("planFill", () => {
     expect(q("plains")).toBe(35);
   });
 
+  // OPEN: modal land drops past the ceiling. A pool of 40 land-backed `modal_dfc` cards reports
+  // `landCapable` 65 against a ceiling of 37 on THIS branch. The excess is placed by the ROLE
+  // pass, not the residual, so the residual's reserve-aware guard does not govern it. Whether
+  // `origin/main` reads 36 on the identical pool — and therefore whether this is a regression here
+  // or a pre-existing hole — is NOT established, and the test that would pin it is deliberately
+  // absent rather than written to pass. See the PR body.
   it("counts the COMMANDERS' pips in the census", () => {
     // The deck's only coloured pips are the commander's. Without it the census is empty, the split
     // falls back to even, and a red-heavy commander gets a white-equal base. `{R}{R}{W}` is
