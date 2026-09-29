@@ -129,6 +129,54 @@
           "settle": 300
         }
       ]
+    },
+    {
+      "id": "contents-search-row-phone",
+      "label": "/about \u2014 the contents search matching a row title",
+      "view": "src/components/about/contents-r6.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "nav:not(.sticky) input",
+          "settle": 800
+        },
+        {
+          "fill": "nav:not(.sticky) input",
+          "text": "prices",
+          "settle": 500
+        },
+        {
+          "wait": "nav:not(.sticky) a[data-entry-row][href='#how-prices']",
+          "settle": 300
+        }
+      ]
+    },
+    {
+      "id": "contents-search-row-desktop",
+      "label": "/about \u2014 the contents search matching a row title",
+      "view": "src/components/about/contents-r6.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "nav.sticky input",
+          "settle": 800
+        },
+        {
+          "fill": "nav.sticky input",
+          "text": "prices",
+          "settle": 500
+        },
+        {
+          "wait": "nav.sticky a[data-entry-row][href='#how-prices']",
+          "settle": 300
+        }
+      ]
     }
   ]
 }
