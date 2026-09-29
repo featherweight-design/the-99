@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { manifestRefusal, sha256File, type Manifest } from "./fetch-dir";
+import { manifestRefusal, manifestShapeRefusal, sha256File, type Manifest } from "./fetch-dir";
 import { fetchBulkIndex, streamBulkEntries } from "../scryfall/bulk";
 import { loadSetsPayload } from "../scryfall/seed-sets";
 import { fetchManapoolSingles } from "../manapool/client";
@@ -47,6 +47,33 @@ describe("manifestRefusal", () => {
     const partial = new Map([["bulk-oracle_cards.json", { bytes: 1, sha256: "a" }]]);
     expect(manifestRefusal(manifest("2026-09-28T09:00:00Z"), partial, new Map()))
       .toEqual(["bulk-oracle_cards.jsonl.gz: missing from the artifact"]);
+  });
+});
+
+describe("the equal-date rule", () => {
+  // Only the identical artifact passes equality: the same date with other bytes is ambiguous.
+  it("refuses the same date with a different hash", () => {
+    expect(manifestRefusal(manifest("2026-09-28T09:00:00Z", "c"), files("c"), ingested("2026-09-28T09:00:00Z", "b")))
+      .toEqual(["oracle_cards: updated 2026-09-28T09:00:00Z, the same date this database already ingested, with a different hash (c, ingested b)"]);
+  });
+});
+
+describe("manifestShapeRefusal", () => {
+  it("passes a manifest that wholly describes the sources asked for", () => {
+    expect(manifestShapeRefusal(manifest("2026-09-28T09:00:00Z"), ["oracle_cards"])).toEqual([]);
+  });
+  it("refuses a source the manifest does not carry", () => {
+    expect(manifestShapeRefusal(manifest("2026-09-28T09:00:00Z"), ["prices"])).toEqual(["prices: 0 manifest entries, expected 1"]);
+  });
+  it("refuses a source listing no files, which would otherwise verify vacuously", () => {
+    const m = manifest("2026-09-28T09:00:00Z");
+    m.sources[0].files = [];
+    expect(manifestShapeRefusal(m, ["oracle_cards"])[0]).toMatch(/lists \[\], expected/);
+  });
+  it("refuses a source hash that is not its body's", () => {
+    const m = manifest("2026-09-28T09:00:00Z");
+    m.sources[0].sha256 = "z";
+    expect(manifestShapeRefusal(m, ["oracle_cards"])).toEqual(["oracle_cards: source hash z is not its body's b"]);
   });
 });
 

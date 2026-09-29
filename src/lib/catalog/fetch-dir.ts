@@ -63,12 +63,39 @@ export function sha256File(path: string): Promise<{ bytes: number; sha256: strin
 export type Ingested = { updatedAt: Date; sha256: string };
 
 /**
+ * Why a manifest is not a whole description of the sources asked for, or an empty list: every
+ * `required` source present, listing exactly the files `FETCH_SOURCES` names for it, with its
+ * source-level hash equal to its BODY's (the last of those files). Without it, a manifest missing
+ * a source, or one listing no files, would verify vacuously and its files would be ingested and
+ * recorded unchecked. `verify` and `record` both run it.
+ */
+export function manifestShapeRefusal(manifest: Manifest, required: readonly FetchSource[]): string[] {
+  const out: string[] = [];
+  for (const name of required) {
+    const entries = manifest.sources.filter((s) => s.source === name);
+    if (entries.length !== 1) { out.push(`${name}: ${entries.length} manifest entries, expected 1`); continue; }
+    const [s] = entries;
+    const want = FETCH_SOURCES[name].files;
+    const got = s.files.map((f) => f.file);
+    if (got.length !== want.length || want.some((f, i) => got[i] !== f)) {
+      out.push(`${name}: lists [${got.join(", ")}], expected [${want.join(", ")}]`);
+      continue;
+    }
+    if (s.sha256 !== s.files[s.files.length - 1].sha256) {
+      out.push(`${name}: source hash ${s.sha256} is not its body's ${s.files[s.files.length - 1].sha256}`);
+    }
+  }
+  return out;
+}
+
+/**
  * Why a leg may not ingest this manifest, or an empty list.
  *
  * - A file whose bytes are not the ones the manifest recorded: a corrupt or swapped artifact.
  * - A source OLDER than what the database already ingested: a re-run of an old artifact would
  *   roll the catalog back. An identical source (same date, same hash) is let through, because a
- *   retry of today's artifact is a no-op, not a rollback.
+ *   retry of today's artifact is a no-op, not a rollback; the same date with a DIFFERENT hash is
+ *   refused, because nothing then says which of the two is newer.
  */
 export function manifestRefusal(
   manifest: Manifest,
@@ -89,6 +116,8 @@ export function manifestRefusal(
     if (Number.isNaN(at.getTime())) out.push(`${source.source}: updated_at ${source.updatedAt} is not a date`);
     else if (last && at.getTime() < last.updatedAt.getTime()) {
       out.push(`${source.source}: updated ${source.updatedAt}, older than the ${last.updatedAt.toISOString()} this database already ingested`);
+    } else if (last && at.getTime() === last.updatedAt.getTime() && source.sha256 !== last.sha256) {
+      out.push(`${source.source}: updated ${source.updatedAt}, the same date this database already ingested, with a different hash (${source.sha256}, ingested ${last.sha256})`);
     }
   }
   return out;

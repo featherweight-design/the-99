@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { catalogSources } from "../src/db/schema";
 import {
-  FETCH_SOURCES, fetchDir, fetchedPath, manifestRefusal, MANIFEST_FILE, sha256File,
+  FETCH_SOURCES, fetchDir, fetchedPath, manifestRefusal, manifestShapeRefusal, MANIFEST_FILE, sha256File,
   type FetchSource, type Ingested, type Manifest,
 } from "../src/lib/catalog/fetch-dir";
 
@@ -27,9 +27,15 @@ async function main() {
   for (const n of named) {
     if (!(n in FETCH_SOURCES)) throw new Error(`unknown source ${n}`);
   }
-  const manifest: Manifest = named.length === 0
-    ? whole
-    : { ...whole, sources: whole.sources.filter((s) => named.includes(s.source)) };
+  const required = (named.length === 0 ? Object.keys(FETCH_SOURCES) : named) as FetchSource[];
+  const manifest: Manifest = { ...whole, sources: whole.sources.filter((s) => required.includes(s.source)) };
+  // Both commands, before anything else: a manifest that does not wholly describe the sources
+  // asked for verifies nothing and records nothing.
+  const shape = manifestShapeRefusal(whole, required);
+  if (shape.length > 0) {
+    console.error(`REFUSED: the manifest is not whole:\n  ${shape.join("\n  ")}`);
+    process.exit(2);
+  }
 
   if (command === "verify") {
     const actual = new Map<string, { bytes: number; sha256: string }>();
