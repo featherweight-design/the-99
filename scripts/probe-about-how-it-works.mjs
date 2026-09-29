@@ -4,7 +4,8 @@
 //   PROBE_BASE=http://localhost:3342 PROBE_HOW_IT_WORKS=off pnpm probe:about-how-it-works
 //
 // A switch is read when the server starts, so the two passes need two servers: one started with
-// HOW_IT_WORKS_ENABLED=true and one without it. The pass names which it expects, and fails when
+// HOW_IT_WORKS_ENABLED=true AND ABOUT_SHEET_ENABLED=true (the contents group lives in the R6
+// contents that switch draws), and one without HOW_IT_WORKS_ENABLED. The pass names which it expects, and fails when
 // the page disagrees, so a run against the wrong server cannot report a pass.
 //
 // ON: the method key is one column on the phone and two from 1000px, with a 100px tag column; each
@@ -157,7 +158,10 @@ async function walkOn(page, w) {
     });
     report(`${tag} the rail lists the appendix and its eight rows`, rail?.rows === 8, JSON.stringify(rail));
   } else {
+    // Counted before it is pressed: the group is drawn only in the R6 contents, and a server
+    // started without ABOUT_SHEET_ENABLED would otherwise end the walk on a locator timeout.
     const row = onPage(page, "a[href='#how-it-works']").first();
+    if (!report(`${tag} the phone list draws the appendix row`, (await row.count()) === 1, "is ABOUT_SHEET_ENABLED on?")) return;
     const h = await row.evaluate((a) => Math.round(a.getBoundingClientRect().height));
     report(`${tag} the list's fifth row is 44px`, h >= 44, `${h}px`);
     await row.locator("xpath=..").locator("button[aria-expanded]").click();
