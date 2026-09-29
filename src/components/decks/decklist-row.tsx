@@ -5,7 +5,7 @@
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { useId } from "react";
-import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
+import { removeCardFromDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
@@ -33,7 +33,6 @@ import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import {
-  useAnnounceUndo,
   useMarkSlotSpent,
   useRemoveOptimisticCard,
   useReportRemoveFailure,
@@ -43,6 +42,7 @@ import { usePendingChange } from "./pending-change";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
+import { useSpentSlotUndo } from "./spent-slot-undo";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -790,25 +790,13 @@ export function DecklistRow({
  * Undo is a re-add rather than a rollback — the same `addCardToDeck` the
  * suggestion tile calls. No new server action and no new server state.
  *
- * The one mutation in the builder with no optimistic prediction, deliberately.
- * An optimistic re-add puts the card straight back into the deck-wide list,
- * which is the decklist's signal to stop drawing the spent slot — so this row
- * would unmount mid-flight and a refused undo would have nowhere to say so.
- * The disabled control carries the wait instead, and the slot settles when the
- * server list actually comes back with the card in it.
+ * Optimistic (Hugh, 2026-09-28): the card is back the moment Undo is pressed,
+ * and this row unmounts under it. A refusal is held by the shell and read back
+ * here when the reverted prediction draws the receipt again; see
+ * `useSpentSlotUndo`.
  */
 function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
-  const { isPending, error, run } = useDeckMutation(false, addPanelCopy.undo.failed);
-  const announceUndo = useAnnounceUndo();
-
-  function handleUndo() {
-    // Announced from the click for the same reason the removal is: see
-    // `handleRemove` above.
-    announceUndo(card);
-    // `relock` (Locked L1, D2): a card that left LOCKED comes back locked. It revives a dormant lock
-    // if the removal left one and does nothing otherwise, so it is passed on every undo.
-    run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
-  }
+  const { isPending, error, undo: handleUndo } = useSpentSlotUndo(deckId, card);
 
   return (
     <div>

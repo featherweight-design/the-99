@@ -530,6 +530,28 @@ describe("undo row lifetime (#185)", () => {
     expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
   });
 
+  // Optimistic (Hugh, 2026-09-28): the card is back the moment Undo is pressed, with no wait on
+  // the server and no dimmed control standing in for one.
+  it("puts the card back before the server answers", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockReturnValue(deferred<DeckMutationResult>().promise);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
+  });
+
   it("survives a tab switch to Consider and back", async () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
 

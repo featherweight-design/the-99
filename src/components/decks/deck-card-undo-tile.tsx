@@ -14,24 +14,16 @@
 // grid does not reflow around the receipt.
 
 import { printedFaceName } from "../../lib/collection/browse";
-import { addCardToDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { MutationError } from "./mutation-error";
 import { CARD_TILE_CAPTION_H } from "../ui/card-tile-caption";
 import { TILE_ART_RATIO, TILE_SHELL } from "./deck-card-tile";
-import { useAnnounceUndo } from "./optimistic-deck";
-import { useDeckMutation } from "./use-deck-mutation";
+import { useSpentSlotUndo } from "./spent-slot-undo";
 
 export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
-  const { isPending, error, run } = useDeckMutation(false, addPanelCopy.undo.failed);
-  const announceUndo = useAnnounceUndo();
-
-  function handleUndo() {
-    announceUndo(card);
-    // `relock` (Locked L1, D2): the card comes back locked if it left locked.
-    run(() => addCardToDeck(deckId, card.oracleId, { relock: true }));
-  }
+  // Optimistic, and its refusal held by the shell: see `useSpentSlotUndo`.
+  const { isPending, error, undo: handleUndo } = useSpentSlotUndo(deckId, card);
 
   return (
     <li className="flex flex-col">

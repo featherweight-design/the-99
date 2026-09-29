@@ -826,8 +826,10 @@ export function BuilderShell({
   // and leaves only the optimistic dispatch inside it.
   const markSpent = useCallback(
     (card: DeckDetailCard) => {
-      // One undo row at a time: this removal settles whatever the last one left.
+      // One undo row at a time: this removal settles whatever the last one left,
+      // including a refused undo's message.
       setSpentSlot(card.quantity <= 1 ? card : null);
+      setUndoFailure(null);
       // A removal is announced only when it leaves an undo row behind. A stack
       // that decrements keeps its row, and its own count is the receipt.
       if (card.quantity > 1) return;
@@ -881,6 +883,13 @@ export function BuilderShell({
       setSpentSlot(null);
     }
   }
+  // A refused Undo outlives the receipt that asked, which the optimistic re-add unmounted. Keyed on
+  // the card, and cleared by the next removal rather than by the next server list: a refusal can
+  // arrive in the same render as a revalidation, and clearing on that would erase it unread.
+  const [undoFailure, setUndoFailure] = useState<{ oracleId: string; message: string } | null>(null);
+  const reportUndoFailure = useCallback((oracleId: string, message: string) => {
+    setUndoFailure({ oracleId, message });
+  }, []);
   const reportRemoveFailure = useCallback((cardName: string) => {
     setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
     // The card never left, so there is nothing to undo. Leaving the slot would
@@ -1027,6 +1036,7 @@ export function BuilderShell({
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
     keep: keepOptimisticCard,
+    undo: { restore: addOptimisticCard, reportFailure: reportUndoFailure, failure: undoFailure },
   };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the

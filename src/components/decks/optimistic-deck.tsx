@@ -33,13 +33,24 @@ type RemoveOptimisticCard = (card: DeckDetailCard) => void;
  * async transition, so the row calls it straight from the click instead.
  */
 type MarkSlotSpent = (card: DeckDetailCard) => void;
-/**
- * Undo's announcement. There is no matching optimistic re-add: predicting it
- * would put the card back in the list below, which is the decklist's cue to
- * stop drawing the spent slot, unmounting the undo row before a refusal could
- * reach it. The slot settles on the server list instead.
- */
+/** Undo's announcement, made from the click rather than inside the transition. */
 type AnnounceUndo = (card: DeckDetailCard) => void;
+
+/**
+ * The spent slot's Undo, which is optimistic (Hugh, 2026-09-28). The re-add puts the card straight
+ * back in the list, which is the decklist's cue to stop drawing the slot, so the receipt unmounts
+ * before the server answers. A refusal therefore needs an owner that outlives it, exactly as a
+ * failed removal does: the shell holds it, keyed on the card, and the receipt the reverted
+ * prediction draws again reads it back.
+ *
+ * `restore` is the bare re-add, not the shell's `add`: that one also announces an add, and it would
+ * land when the transition settles, over the undo's own announcement.
+ */
+type UndoSpentSlot = {
+  restore: AddOptimisticCard;
+  reportFailure: (oracleId: string, message: string) => void;
+  failure: { oracleId: string; message: string } | null;
+};
 
 /**
  * Keeping a card the fill added. The server clears the row's `auto` flag, and
@@ -92,6 +103,7 @@ type DeckEdits = {
   resolveRow: ResolveOptimisticRow;
   deleteRow: DeleteOptimisticRow;
   keep: KeepOptimisticCard;
+  undo?: UndoSpentSlot;
 };
 
 const DeckEditContext = createContext<DeckEdits | null>(null);
@@ -230,6 +242,11 @@ export function useKeepOptimisticCard(): KeepOptimisticCard {
  */
 export function useReportRemoveFailure(): ReportRemoveFailure | null {
   return useContext(DeckEditContext)?.reportRemoveFailure ?? null;
+}
+
+/** Null outside a provider: a receipt with no shell to own its refusal waits on the server. */
+export function useUndoSpentSlot(): UndoSpentSlot | null {
+  return useContext(DeckEditContext)?.undo ?? null;
 }
 
 function noop() {}
