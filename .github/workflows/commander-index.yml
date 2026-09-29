@@ -137,6 +137,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build the commander index
+        id: index
+        # Bounded below the job's 180 minutes, so a run that overstays is stopped HERE and the
+        # stamp step below still has time to run. A job-level timeout kills the whole job, and
+        # no later step, not even an `always()` one, is guaranteed to run after it.
+        timeout-minutes: 170
         run: |
           {
             echo "## Commander index"
@@ -145,6 +150,15 @@ jobs:
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # The script stamps the catalog on every exit it controls (pass, failed floor, throw). A
+      # step killed by its timeout or cancelled never reaches that code, and it has still written
+      # part of an index and may have cleared every reader's scores, so the stamp runs here too.
+      # Only when the build did not succeed: on success the script has already stamped.
+      - name: Retire cached readers after a build that did not finish
+        if: always() && steps.index.outcome != 'success' && steps.index.outcome != 'skipped'
+        timeout-minutes: 5
+        run: pnpm --silent db:stamp:catalog
 
       # A STEP IN THIS LEG, deliberately, and not a `workflow_run` chain of its own.
       #
