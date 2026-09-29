@@ -518,11 +518,6 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const lands = [...byOracleId.values()].filter(
     (c) => c.owned && !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
   );
-  /** Every land candidate, owned or not. The basics split reads this rather than `lands`: a basic
-   *  is never a buy, so ownership is not a reason to leave a colour out of the mana base. */
-  const allCandidates = [...byOracleId.values()].filter(
-    (c) => !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
-  );
   /** Returns what it actually took. THE LIMIT BINDS HERE TOO: `slots` means "fill this many
    *  cards", and a sweep that ignored it made `slots: 5` return 42 — the three land passes
    *  between the role pass and the residual were the only ones not reading it. */
@@ -573,11 +568,18 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
    * surfaces are right to offer it. It is only the MANA BASE that must not choose it for a
    * coloured deck, so the exclusion belongs here and nowhere else.
    *
-   * A BASIC'S ELIGIBILITY DOES NOT DEPEND ON OWNING ONE. The app already treats a basic as
-   * always owned and never a buy — `draft-state.ts` forces `owned` for a basic, and the shopping
-   * figures never bill one. Gating on `ownedQuantity` here contradicted that, and it is what
-   * removed Mountain from a Boros deck's split entirely: a colour with no copies to hand vanished
-   * from the census, and its slots were then handed to whatever colour did have copies.
+   * A BASIC'S ELIGIBILITY DOES NOT DEPEND ON HOW MANY COPIES ARE TO HAND. The app already treats
+   * a basic as always owned and never a buy — `draft-state.ts` forces `owned` for a basic, and the
+   * shopping figures never bill one. Gating on `ownedQuantity` here contradicted that: a colour
+   * with no copies on the shelf vanished from the census, and its slots were handed to whatever
+   * colour did have copies.
+   *
+   * It is the QUANTITY that is dropped, not the `owned` flag. Reading every candidate regardless
+   * of `owned` was the first attempt and it REGRESSED the modal-land case: it added a land colour,
+   * the base then filled to its ceiling, and the residual refused a land-backed modal card that
+   * had been earning its slot as a spell — `probe:fill`'s sections 3 and 4, which is how it was
+   * caught. An unowned basic is not in the pool to begin with (the staples list carries none), so
+   * `lands`' own `owned` filter costs this nothing.
    *
    * ONLY COLOURS IN THE IDENTITY. A basic for a colour the deck cannot cast is never right, and
    * the pool's own filter admits one whenever the identity is wider than the deck's costs.
@@ -588,7 +590,7 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     return identity.includes(color);
   };
   const basicsByColor = new Map<string, FillCandidate[]>();
-  for (const candidate of allCandidates) {
+  for (const candidate of lands) {
     if (spent.has(candidate.oracleId) || !isBasicLand(candidate.typeLine)) continue;
     const color = basicLandColor(candidate.name);
     if (!color || !wantsColor(color)) continue;

@@ -407,10 +407,16 @@ async function main() {
     check("8a · no Wastes in a Boros deck", wastes, 0);
     truthy("8b · Mountains present despite zero owned", mountain > 0);
     truthy("8c · Plains present", plains > 0);
-    // Both colours, which is the ruling: an even split unless the pips tilt. The `pool400` spells
-    // decide the tilt, so the shares are not asserted — only that neither colour is starved, which
-    // is what "0 Mountains" violated.
-    truthy("8d · the base is all identity basics", plains + mountain > 0 && wastes === 0);
+    // THE BASE IS STILL COMPLETE, which is the check the other three cannot make. Excluding
+    // Wastes is only half the ruling: a fix that dropped it and left the mana base six lands short
+    // would pass 8a, 8b and 8c and be worse than the bug. `8d` was first written as
+    // `plains + mountain > 0 && wastes === 0`, which is implied by the three above and could not
+    // fail on its own — a check that restates its neighbours.
+    const landTotal = boros.rows
+      .filter((r) => r.role === "land").reduce((n, r) => n + r.quantity, 0);
+    // `measuredLand`, not `landTarget(false)`: this probe passes a real skeleton, so the ceiling is
+    // the measured figure and the flat default would be a different number on any indexed database.
+    check("8d · the base is filled to the land target", landTotal, measuredLand);
   }
 
   // ---- 7 · landCapable against land on the built deck ------------------------------------
