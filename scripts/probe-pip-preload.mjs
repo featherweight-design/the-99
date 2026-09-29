@@ -12,6 +12,7 @@
 //   2. No pip asks for a per-symbol file: the old `/mana/W.svg` requests are what popped.
 //   3. The card modal's cost draws from the sprite the page already holds: opened after load, the
 //      sprite is not fetched again.
+//   5. The deck page's commander art is asked for by its preload, not found later by style.
 //   4. Each pip PAINTS its symbol, in Chromium and WebKit alike. A pip is a window onto the sheet
 //      placed by percentages, and a wrong size draws the whole sheet as a thin strip with markup
 //      identical to a working build: the first design (SVG `<view>` fragments) did exactly that. So
@@ -193,6 +194,37 @@ async function measure(browser, storage, engine, vp) {
     check(`${where}: and does not fetch it again`, spriteFetches.length - before <= 1,
       `${spriteFetches.length - before} sprite request(s) after the page's own`);
     check(`${where}: no pip asks for a per-symbol file`, perFile.length === 0, perFile.join(", ") || "none");
+
+    // The commander's art, preloaded at high priority by the deck page. Read off the art the header
+    // actually paints: its URL must be a `link` request, asked for before the stylesheet that would
+    // otherwise be what finds it has been applied.
+    await page.goto(`${BASE}/decks`, { waitUntil: "load" });
+    // The list streams in behind the route's loader, after `load` on a held connection.
+    await page.waitForFunction(() => [...document.querySelectorAll("main a[href^='/decks/']")]
+      .some((a) => /^\/decks\/[0-9a-f-]{36}$/.test(a.getAttribute("href"))), null, { timeout: 30_000 }).catch(() => {});
+    const href = await onPage(page, 'a[href^="/decks/"]').evaluateAll((as) =>
+      as.map((a) => a.getAttribute("href")).find((h) => /^\/decks\/[0-9a-f-]{36}$/.test(h)) ?? null);
+    if (!href) {
+      check(`${where}: the commander's art is preloaded`, false, "no deck on the account");
+    } else {
+      await page.goto(`${BASE}${href}`, { waitUntil: "load" });
+      await page.waitForTimeout(500);
+      const art = await page.evaluate(() => {
+        const urls = new Set();
+        for (const el of document.querySelectorAll("main *")) {
+          const m = getComputedStyle(el).backgroundImage.match(/url\("?(https:\/\/[^")]*art_crop[^")]*)"?\)/);
+          if (m) urls.add(m[1]);
+        }
+        const entries = performance.getEntriesByType("resource");
+        return [...urls].map((u) => {
+          const e = entries.find((r) => r.name === u);
+          return { u, initiator: e?.initiatorType ?? null, start: e?.startTime ?? null };
+        });
+      });
+      const link = art.find((a) => a.initiator === "link");
+      check(`${where}: the commander's art is preloaded`, Boolean(link),
+        art.map((a) => `${a.initiator}@${a.start?.toFixed(0)}ms`).join(", ") || "no art drawn on the deck page — NOT a pass");
+    }
   } finally {
     await context.close();
   }
