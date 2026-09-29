@@ -406,6 +406,15 @@ vi.mock("../../lib/edhrec/client", () => ({
 vi.mock("../commanders/[slug]/synergy-read", () => ({
   readSynergyCards: async () => [],
 }));
+// By default the deck's ranked support list holds every card the collection does, so the bulk
+// controls' allow-list (`topOffAllowList`) admits the whole pool and a test is about its own
+// subject. A test about the allow-list narrows it with `mockResolvedValueOnce`. Mocked at this
+// module because the real one reads through `cacheForUser`, which needs a request.
+vi.mock("../../lib/decks/deck-synergy", () => ({
+  readDeckSynergy: vi.fn(async () => stub.state.collectionItems.map((c) => ({
+    oracleId: (c as { oracleId: string }).oracleId, synergyPts: null,
+  }))),
+}));
 
 // The version module and the claim model are mocked rather than served by the
 // stub above. The stub's `where()` returns a thenable carrying only `limit`, so
@@ -475,6 +484,8 @@ import { writePullRelease } from "../../lib/decks/pull-release";
 import { loadDraftState } from "../../lib/decks/draft-state";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DraftState } from "../../lib/decks/draft-shape";
+import { readDeckSynergy } from "../../lib/decks/deck-synergy";
+import { loadCatalogBasics } from "../../lib/decks/catalog-basics";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -2393,6 +2404,46 @@ describe("chooseBulkFill", () => {
         oracleIds: expect.arrayContaining([free.oracleId, claimed.oracleId]),
       }),
     );
+  });
+
+  it("offers only cards the top-off list draws", async () => {
+    // The list is the commander's support list; the plan's pool is the whole collection. A plan
+    // free to pick from the collection named cards the list has no row for, and the press ticked
+    // nothing (Hugh's deck bug batch, item 10). Six ramp cards owned, two on the list.
+    stub.state.decks.push({ id: "bulk-l", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 6 }, (_, i) => rampCard(i)));
+    const listed = [rampCard(4).oracleId as string, rampCard(5).oracleId as string];
+    vi.mocked(readDeckSynergy).mockResolvedValueOnce(
+      listed.map((oracleId) => ({ oracleId, synergyPts: null })) as never,
+    );
+
+    const result = await chooseBulkFill("bulk-l", 3);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds.length).toBeGreaterThan(0);
+    expect(result.oracleIds.every((id) => listed.includes(id))).toBe(true);
+  });
+
+  it("never offers a catalog basic the top-off list does not draw", async () => {
+    // A deck one land short gets one basic, at quantity 1, and the controls answer with ids: past
+    // the allow-list that id is a tick the list has no row for. The catalog's basics are not
+    // candidates, so they need the allow-list applied to them too.
+    stub.state.decks.push({ id: "bulk-b", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    const CAT_FOREST = "cafe0000-0000-4000-8000-000000000f00";
+    vi.mocked(loadCatalogBasics).mockResolvedValueOnce([{
+      oracleId: CAT_FOREST, name: "Forest", typeLine: "Basic Land — Forest", oracleText: null,
+      keywords: [], manaCost: null, layout: "normal", owned: true, ownedQuantity: 0, inclusionPct: null,
+    }]);
+    vi.mocked(readDeckSynergy).mockResolvedValueOnce([] as never);
+
+    const result = await chooseBulkFill("bulk-b", 1);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.oracleIds).not.toContain(CAT_FOREST);
   });
 
   it("never offers a residual card", async () => {
