@@ -31,15 +31,21 @@ export function HowRows({ rows, subRows }: { rows: readonly HowRowCopy[]; subRow
         return;
       }
       if (!known.has(id)) return;
+      // Already open (Back to a row still open, say): no render follows, so scroll now. A pending
+      // id left for the layout effect would fire on the next press of ANY row.
+      if (document.getElementById(`${id}-body`)) {
+        document.getElementById(id)?.scrollIntoView({ block: "start" });
+        return;
+      }
       pendingScroll.current = id;
-      setOpen((s) => (s.has(id) ? s : new Set(s).add(id)));
+      setOpen((s) => new Set(s).add(id));
     };
     land();
     window.addEventListener("hashchange", land);
     return () => window.removeEventListener("hashchange", land);
   }, [ids]);
 
-  // After the render that opened the row, or at once when it was already open.
+  // After the render that opened the row.
   useLayoutEffect(() => {
     const id = pendingScroll.current;
     if (!id) return;

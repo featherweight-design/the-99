@@ -13,7 +13,9 @@
 //
 // Wording passed /copy-review in lane (2026-09-28), with the audit's five notes applied.
 
+import { RELEASE_DELAY_DAYS, RELEASE_SET_TYPES } from "../catalog/index-due";
 import { FLAT_TARGETS } from "../decks/mix";
+import { THEME_ORDER } from "../recs/themes";
 import { FLOOR_PCT } from "../discovery/floor";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "../model/allowance-rule";
 import { READY_COUNT, READY_SHOWN } from "../recs/ready-to-build";
@@ -25,7 +27,10 @@ const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "sev
 const word = (n: number) => NUMBER_WORDS[n] ?? String(n);
 
 /** "monthly, and about two weeks after each new expansion or Commander set": `indexDue`. */
-const INDEX_CADENCE = "monthly, and about two weeks after each new expansion or Commander set";
+const SET_TYPE_NAMES: Record<string, string> = { expansion: "expansion", commander: "Commander set" };
+const INDEX_CADENCE =
+  `monthly, and about ${word(Math.round(RELEASE_DELAY_DAYS / 7))} weeks after each new ` +
+  RELEASE_SET_TYPES.map((t) => SET_TYPE_NAMES[t] ?? `${t} set`).join(" or ");
 
 const f = FLAT_TARGETS;
 
@@ -98,7 +103,7 @@ export const howItWorksRowsCopy = {
         "from the closest group of decks we can measure: your pair, then your commander, then " +
         "decks in your colors, then decks with as many colors. With none, it falls back to " +
         `${f.ramp} ramp, ${f.draw} draw, ${f.removal} removal, ${f.wipes} wipes and ${f.land} ` +
-        "lands, and the strip says which it used.",
+        `lands (${f.land - 1} beside a partner), and the strip says which it used.`,
       // Brief §5.4: whichever PR moves these three surfaces onto the measured targets changes this
       // sentence in the same diff (recs/score.ts, commanders/coverage-section.tsx,
       // recs/weakest-role.ts).
@@ -114,7 +119,7 @@ export const howItWorksRowsCopy = {
       methods: ["decks", "rules"],
       verdict: "mixed",
       from:
-        "Two different things. A commander’s themes are EDHREC’s tags. A card’s themes are 21 " +
+        `Two different things. A commander’s themes are EDHREC’s tags. A card’s themes are ${THEME_ORDER.length} ` +
         "patterns we read from its rules text.",
       how:
         "Commander themes drive Discover’s line, Help me choose and Something new, and what you " +

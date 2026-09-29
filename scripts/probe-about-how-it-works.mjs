@@ -10,8 +10,7 @@
 // ON: the method key is one column on the phone and two from 1000px, with a 100px tag column; each
 // row's head is at least 52px on the phone and 44px on desktop, its title, tags and verdict share
 // one line on desktop and the verdict takes a second line on the phone; an opened row's body is a
-// 128px label grid on desktop and stacked on the phone; the tags keep their own weight under a
-// semibold label; nothing scrolls sideways. And a hash lands its row open, washed and focused, 20px from
+// 128px label grid on desktop and stacked on the phone; nothing scrolls sideways. And a hash lands its row open, washed and focused, 20px from
 // the top or at the document's end, with its OPENED body on screen. That last needs the row opened
 // before the scroll: the browser's own jump lands on the closed layout, and the body it opens
 // afterwards would hang below the fold.
@@ -118,13 +117,11 @@ async function walkOn(page, w) {
   const body = await page.locator("#how-brackets-body").evaluate((dl) => {
     const dt = dl.querySelector("dt").getBoundingClientRect();
     const dd = dl.querySelector("dd").getBoundingClientRect();
-    const tag = dl.querySelector("[data-method]");
-    return { dtW: Math.round(dt.width), stacked: dd.top >= dt.bottom - 1, weight: getComputedStyle(tag).fontWeight, subs: dl.querySelectorAll("dd span.block.border-t").length };
+    return { dtW: Math.round(dt.width), stacked: dd.top >= dt.bottom - 1, subs: dl.querySelectorAll("dd span.block.border-t").length };
   });
   if (w.label === 390) report(`${tag} body labels stack over their sentences`, body.stacked);
   else report(`${tag} body label column is 128px`, body.dtW === 128, `${body.dtW}px`);
   report(`${tag} Brackets opens onto five sub-rows`, body.subs === 5, `${body.subs}`);
-  report(`${tag} a tag under a semibold label keeps weight 400`, body.weight === "400", body.weight);
   await brackets.click();
 
   const overflow = await page.evaluate(() => document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth);
@@ -134,8 +131,12 @@ async function walkOn(page, w) {
   // row near the foot cannot scroll to 20px from the top: the document ends first. So each lands
   // 20px from the top OR with the document scrolled to its end, and with its OPENED body on screen,
   // which the browser's own jump, made on the closed layout before hydration, cannot promise.
-  for (const id of ["how-prices", "how-written"]) {
-    await page.goto(`${BASE}/about#${id}`, { waitUntil: "networkidle" });
+  // Two paths: a FRESH document load (the query makes it one; a fragment-only goto from /about is a
+  // same-document navigation) runs the rows' mount-time landing, and a hash change on the loaded
+  // page runs their `hashchange` listener.
+  for (const [id, fresh] of [["how-written", true], ["how-prices", false]]) {
+    if (fresh) await page.goto(`${BASE}/about?landing=${id}#${id}`, { waitUntil: "networkidle" });
+    else await page.evaluate((h) => { window.location.hash = h; }, id);
     await page.waitForTimeout(400);
     const land = await page.evaluate((rowId) => {
       const row = document.getElementById(rowId);

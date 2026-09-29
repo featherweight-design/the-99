@@ -85,6 +85,29 @@ describe("HowItWorks", () => {
     expect(document.getElementById("how-prices-body")).not.toBeNull();
   });
 
+  // Back to a row still open renders nothing, so the scroll cannot wait for a render; and nothing
+  // may be left pending for the next press of another row to act on.
+  it("scrolls to a row the hash names that is already open, and leaves nothing pending", () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    window.history.replaceState(null, "", "/about#how-prices");
+    render(<HowItWorks />);
+    act(() => {
+      window.history.replaceState(null, "", "/about#how-written");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    scroll.mockClear();
+    act(() => {
+      window.history.replaceState(null, "", "/about#how-prices");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll.mock.instances[0]).toBe(document.getElementById("how-prices"));
+    scroll.mockClear();
+    fireEvent.click(head("Roles and targets"));
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
   it("carries the jump mark's title line on each row, so JumpMark can wash and focus it", () => {
     render(<HowItWorks />);
     for (const r of copy.rows) {

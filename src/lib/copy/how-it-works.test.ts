@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { FLOOR_PCT } from "../discovery/floor";
 import { FLAT_TARGETS } from "../decks/mix";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "../model/allowance-rule";
-import { READY_COUNT } from "../recs/ready-to-build";
+import { READY_COUNT, READY_SHOWN } from "../recs/ready-to-build";
+import { RELEASE_DELAY_DAYS } from "../catalog/index-due";
+import { THEME_ORDER } from "../recs/themes";
 import { POOL_FULL_AT, POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../recs/score";
 import { howItWorksCopy } from "./about";
 import { deckAnalysisCopy } from "./deck-analysis";
@@ -44,6 +46,14 @@ describe("How the app reaches its answers: the rows", () => {
     expect(recs).toContain(`out of ${POOL_WEIGHT + ROLES_WEIGHT}`);
     expect(recs).toContain(`${FLOOR_PCT}% of the list`);
     expect(recs).toContain(`top ${READY_COUNT}`);
+    expect(recs).toContain(`shows ${["zero", "one", "two", "three"][READY_SHOWN] ?? READY_SHOWN} of`);
+    expect(roles).toContain(`(${FLAT_TARGETS.land - 1} beside a partner)`);
+    expect(row("how-themes").from).toContain(`are ${THEME_ORDER.length} patterns`);
+    // The index cadence, from `indexDue`'s own delay: 14 days reads "about two weeks".
+    const weeks = ["zero", "one", "two", "three", "four"][Math.round(RELEASE_DELAY_DAYS / 7)];
+    for (const id of ["how-roles", "how-themes", "how-recommendations", "how-written"]) {
+      expect(row(id).refresh).toContain(`about ${weeks} weeks after each new expansion or Commander set`);
+    }
     const written = row("how-written").how;
     expect(written).toContain(`the owner has ${MODEL_OWNER_DAILY_ALLOWANCE} and friends have ${MODEL_FRIEND_DAILY_ALLOWANCE}`);
   });
