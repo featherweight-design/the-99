@@ -260,7 +260,11 @@ export async function buildFillPlan(
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
     })
     : undefined;
-  return planFill(candidates, { hasPartner, skeleton, synergyRank, ...fillOptions, gate });
+  // The identity the basics split needs. The union of both commanders, which is the same rule
+  // `ownedColorLegalPool` filters the pool by — so the split cannot want a colour the pool
+  // would never have offered.
+  const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
+  return planFill(candidates, { hasPartner, skeleton, synergyRank, ...fillOptions, gate, identity });
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the

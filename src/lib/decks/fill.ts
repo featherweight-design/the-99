@@ -96,6 +96,19 @@ export type PlanFillArgs = {
    */
   held?: readonly HeldCard[];
   /**
+   * The deck's colour identity, for the basics split.
+   *
+   * It has to be passed because nothing in the plan can infer it. The candidate pool is already
+   * identity-filtered, so its union looks like the identity — except that a colourless card
+   * contributes nothing, which is exactly the case that matters here. And the pip census cannot
+   * stand in either: a Boros deck whose spells all cost generic mana has no coloured pips and is
+   * still a Boros deck, which may not have Wastes.
+   *
+   * Absent, the basics split behaves as it did before: every basic colour in the pool is
+   * eligible. Every caller that does not know the identity is therefore unchanged.
+   */
+  identity?: readonly string[];
+  /**
    * A constraint the deck's owner asked for (Help me choose: a budget, a bracket). A card the gate
    * refuses is passed over wherever it would have been placed, exactly as a card that closes no
    * open floor is, and the fill carries on down its own order; `place` is told each card taken, in
@@ -341,7 +354,7 @@ export function capToBody<T extends { quantity: number }>(rows: readonly T[], bo
 }
 
 export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillPlan {
-  const { hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate } = args;
+  const { hasPartner, skeleton, synergyRank, slots, pool = "all", held, gate, identity } = args;
   const admits = (c: FillCandidate) => gate?.admits(c) ?? true;
   const { floors, measured } = roleFloors(skeleton);
   const landCeiling = landTarget(hasPartner, skeleton);
@@ -505,6 +518,11 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   const lands = [...byOracleId.values()].filter(
     (c) => c.owned && !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
   );
+  /** Every land candidate, owned or not. The basics split reads this rather than `lands`: a basic
+   *  is never a buy, so ownership is not a reason to leave a colour out of the mana base. */
+  const allCandidates = [...byOracleId.values()].filter(
+    (c) => !spent.has(c.oracleId) && rolesOfCandidate(c).includes("land"),
+  );
   /** Returns what it actually took. THE LIMIT BINDS HERE TOO: `slots` means "fill this many
    *  cards", and a sweep that ignored it made `slots: 5` return 42 — the three land passes
    *  between the role pass and the residual were the only ones not reading it. */
@@ -529,10 +547,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     takeLand(candidate, 1);
   }
 
-  // Basics take the rest, split across the colours the chosen spells actually
-  // cost. A basic still stacks only to the copies owned — a deck must not
-  // claim eleven Forests off four — so a colour whose basics run out hands its
-  // slots back to the colours that can still fill them.
+  // Basics take the rest, split across the colours the chosen spells actually cost. A basic is
+  // NOT capped at the copies owned: the app treats a basic as always owned and never a buy, so
+  // the mana base asks for what the deck needs and the shopping list bills none of it.
   const pips = new Map<string, number>();
   // THE DECK'S OWN SPELLS FIRST. The split is proportioned against what the deck will cast,
   // and a partial fill casts what it already holds as well as what this plan adds — so a deck
@@ -545,42 +562,64 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
     if (row.role === "land") continue;
     addPips(pips, byOracleId.get(row.oracleId)?.manaCost ?? null);
   }
+  /**
+   * WHICH BASICS MAY BE TAKEN, and it is decided by the deck's IDENTITY rather than by what the
+   * shelf holds. Three rules, each of which was a defect the other way round.
+   *
+   * WASTES ONLY IN A COLOURLESS DECK (Hugh, 2026-09-28). The root cause is that Wastes' colour
+   * identity is EMPTY, and `[].every(…)` is `true` — so it passes every identity filter in the
+   * app by construction, including `ownedColorLegalPool`'s. Nothing upstream can exclude it and
+   * nothing upstream should: Wastes is legal in any deck, and the suggestion and quick-add
+   * surfaces are right to offer it. It is only the MANA BASE that must not choose it for a
+   * coloured deck, so the exclusion belongs here and nowhere else.
+   *
+   * A BASIC'S ELIGIBILITY DOES NOT DEPEND ON OWNING ONE. The app already treats a basic as
+   * always owned and never a buy — `draft-state.ts` forces `owned` for a basic, and the shopping
+   * figures never bill one. Gating on `ownedQuantity` here contradicted that, and it is what
+   * removed Mountain from a Boros deck's split entirely: a colour with no copies to hand vanished
+   * from the census, and its slots were then handed to whatever colour did have copies.
+   *
+   * ONLY COLOURS IN THE IDENTITY. A basic for a colour the deck cannot cast is never right, and
+   * the pool's own filter admits one whenever the identity is wider than the deck's costs.
+   */
+  const wantsColor = (color: string): boolean => {
+    if (identity === undefined) return true;
+    if (color === "C") return identity.length === 0;
+    return identity.includes(color);
+  };
   const basicsByColor = new Map<string, FillCandidate[]>();
-  for (const candidate of lands) {
+  for (const candidate of allCandidates) {
     if (spent.has(candidate.oracleId) || !isBasicLand(candidate.typeLine)) continue;
     const color = basicLandColor(candidate.name);
-    if (!color || candidate.ownedQuantity < 1) continue;
+    if (!color || !wantsColor(color)) continue;
     basicsByColor.set(color, [...(basicsByColor.get(color) ?? []), candidate]);
   }
   const colors = [...basicsByColor.keys()].sort();
   if (colors.length > 0 && counts.land < landCeilingAfterModals) {
-    const capacity = new Map(
-      colors.map((c) => [c, basicsByColor.get(c)!.reduce((n, b) => n + b.ownedQuantity, 0)]),
-    );
-    const allocated = splitByWeight(colors, pips, landCeilingAfterModals - counts.land);
-    // A colour capped below its share leaves slots on the table; they go to
-    // whichever colours still have copies, heaviest first.
-    let spare = 0;
-    for (const color of colors) {
-      const capped = Math.min(allocated.get(color)!, capacity.get(color)!);
-      spare += allocated.get(color)! - capped;
-      allocated.set(color, capped);
+    /**
+     * EVERY IDENTITY COLOUR GETS AT LEAST ONE, where there is room for one (Hugh, 2026-09-28).
+     * A colour whose pips round to a zero share still has to be castable, and a mana base that
+     * omits a colour the deck plays is worse than one that under-weights it.
+     */
+    const slotsForBasics = landCeilingAfterModals - counts.land;
+    const allocated = splitByWeight(colors, pips, slotsForBasics);
+    const zero = colors.filter((c) => allocated.get(c)! === 0);
+    for (const color of zero) {
+      // Taken from the largest allocation, so the floor costs the colour that can spare it.
+      const donor = [...colors].sort((a, b) => allocated.get(b)! - allocated.get(a)!)[0];
+      if (donor === undefined || allocated.get(donor)! <= 1) break;
+      allocated.set(donor, allocated.get(donor)! - 1);
+      allocated.set(color, 1);
     }
-    const byWeight = [...colors].sort(
-      (a, b) => (pips.get(b) ?? 0) - (pips.get(a) ?? 0) || a.localeCompare(b),
-    );
-    while (spare > 0) {
-      const color = byWeight.find((c) => allocated.get(c)! < capacity.get(c)!);
-      if (!color) break;
-      allocated.set(color, allocated.get(color)! + 1);
-      spare--;
-    }
+    // NO CAPACITY CAP, so no spare to redistribute. The loop that used to hand a capped colour's
+    // leftovers to "whichever colours still have copies, heaviest first" is GONE with it — it
+    // checked capacity and pip order only, never the identity and never whether the receiving
+    // colour's weight was zero, which is how a Boros deck's eighteen Plains spilled six Wastes.
     for (const color of colors) {
       let room = allocated.get(color)!;
       for (const candidate of basicsByColor.get(color)!) {
         if (room <= 0 || filledSoFar() >= limit) break;
-        const quantity = Math.min(candidate.ownedQuantity, room);
-        room -= takeLand(candidate, quantity);
+        room -= takeLand(candidate, room);
       }
     }
   }

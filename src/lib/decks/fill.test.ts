@@ -104,10 +104,14 @@ describe("planFill", () => {
     expect(plan.rows).toEqual([{ oracleId: "dual", quantity: 1, role: "draw" }]);
   });
 
-  it("stacks basics up to the copies owned", () => {
+  // WAS "stacks basics up to the copies owned". A basic is never a buy — `draft-state.ts` forces
+  // `owned` for one and the shopping figures bill none — so capping the mana base at the shelf
+  // contradicted the rest of the app, and it is what dropped a colour out of a deck's split
+  // entirely when no copies were to hand.
+  it("stacks a basic to the land target however few copies are owned", () => {
     const plan = planFill([basic("forest", 12)], FLAT);
-    expect(plan.rows).toEqual([{ oracleId: "forest", quantity: 12, role: "land" }]);
-    expect(plan.filled).toBe(12);
+    expect(plan.rows).toEqual([{ oracleId: "forest", quantity: 37, role: "land" }]);
+    expect(plan.filled).toBe(37);
   });
 
   it("never stacks past the land target", () => {
@@ -173,7 +177,12 @@ describe("planFill", () => {
     expect(quantityOf("swamp")).toBe(5);
   });
 
-  it("hands a colour's unreachable slots to a colour that can still fill them", () => {
+  // WAS "hands a colour's unreachable slots to a colour that can still fill them". No colour is
+  // unreachable now, so there are no slots to hand over — and the loop that handed them is gone.
+  // It ordered only by pip weight and checked only capacity, never the identity and never whether
+  // the receiving colour's weight was zero, which is how a Boros deck's capped Plains spilled six
+  // Wastes. The split now follows the pips whatever the shelf holds.
+  it("follows the pips even when a colour's copies run short", () => {
     const plan = planFill([
       ...Array.from({ length: 3 }, (_, i) => c({ oracleId: `g${i}`, manaCost: "{G}{G}" })),
       c({ oracleId: "b0", manaCost: "{B}" }),
@@ -181,15 +190,18 @@ describe("planFill", () => {
       basic("swamp", 60, "Swamp"),
     ], FLAT);
     const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
-    expect(quantityOf("forest")).toBe(3);
-    expect(quantityOf("swamp")).toBe(34);
+    // 6 green pips to 1 black, and three Forests owned no longer caps green at three.
+    expect(quantityOf("forest")).toBe(32);
+    expect(quantityOf("swamp")).toBe(5);
   });
 
-  it("reaches past the utility-land cap when the basics run short", () => {
+  // WAS "reaches past the utility-land cap when the basics run short". Basics cannot run short
+  // any more, so the case that needed the lift is a pool with NO basic at all — which is still
+  // real: a collection with no basics in the deck's colours offers none to the pool.
+  it("reaches past the utility-land cap when the pool holds no basic", () => {
     const utility = Array.from({ length: 40 }, (_, i) => nonBasicLand(`u${i}`));
-    const plan = planFill([...utility, basic("forest", 5)], FLAT);
+    const plan = planFill(utility, FLAT);
     const lands = plan.rows.filter((r) => r.role === "land");
-    expect(lands.find((r) => r.oracleId === "forest")!.quantity).toBe(5);
     expect(lands.reduce((n, r) => n + r.quantity, 0)).toBe(37);
     expect(plan.shortfalls).not.toContain("land");
   });
@@ -306,7 +318,94 @@ describe("planFill", () => {
     ], FLAT);
     expect(plan.rows.filter((r) => r.oracleId === "tower")).toHaveLength(1);
     expect(plan.rows.filter((r) => r.oracleId === "forest")).toHaveLength(1);
-    expect(plan.rows.find((r) => r.oracleId === "forest")!.quantity).toBe(4);
+    // 36, not 4: the dedupe is what this pins, and a basic is no longer capped at copies owned.
+    // 36 rather than 37 because the utility sweep takes the tower first, as it should.
+    expect(plan.rows.find((r) => r.oracleId === "forest")!.quantity).toBe(36);
+  });
+
+  // ---- the basics split, by identity (Hugh, 2026-09-28) ----
+
+  const boros = { ...FLAT, identity: ["R", "W"] };
+
+  it("never puts Wastes in a coloured deck", () => {
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+      basic("wastes", 40, "Wastes"),
+    ], boros as never);
+    expect(plan.rows.find((r) => r.oracleId === "wastes")).toBeUndefined();
+  });
+
+  it("puts Wastes in a colourless deck", () => {
+    const plan = planFill([basic("wastes", 40, "Wastes")], { ...FLAT, identity: [] } as never);
+    expect(plan.rows.find((r) => r.oracleId === "wastes")!.quantity).toBe(37);
+  });
+
+  it("leaves out a basic for a colour outside the identity", () => {
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }),
+      basic("plains", 40, "Plains"), basic("island", 40, "Island"),
+    ], boros as never);
+    expect(plan.rows.find((r) => r.oracleId === "island")).toBeUndefined();
+  });
+
+  it("splits a two-colour deck evenly when the pips are even", () => {
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }), c({ oracleId: "r0", manaCost: "{R}" }),
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+    ], boros as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
+    expect(Math.abs(q("plains") - q("mountain"))).toBeLessThanOrEqual(1);
+    expect(q("plains") + q("mountain")).toBe(37);
+  });
+
+  it("tilts a two-colour deck toward the heavier colour", () => {
+    const plan = planFill([
+      ...Array.from({ length: 6 }, (_, i) => c({ oracleId: `w${i}`, manaCost: "{W}", inclusionPct: 90 - i })),
+      c({ oracleId: "r0", manaCost: "{R}", inclusionPct: 50 }),
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+    ], boros as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
+    expect(q("plains")).toBeGreaterThan(q("mountain"));
+    expect(q("mountain")).toBeGreaterThan(0);
+    expect(q("plains") + q("mountain")).toBe(37);
+  });
+
+  it("gives a mono deck's one colour the whole base", () => {
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }), basic("plains", 40, "Plains"),
+    ], { ...FLAT, identity: ["W"] } as never);
+    expect(plan.rows.find((r) => r.oracleId === "plains")!.quantity).toBe(37);
+  });
+
+  it("gives every colour of a five-colour deck at least one basic", () => {
+    // One pip in white and none elsewhere: four colours round to zero and must still be castable.
+    const plan = planFill([
+      c({ oracleId: "w0", manaCost: "{W}" }),
+      basic("plains", 40, "Plains"), basic("island", 40, "Island"), basic("swamp", 40, "Swamp"),
+      basic("mountain", 40, "Mountain"), basic("forest", 40, "Forest"),
+    ], { ...FLAT, identity: ["W", "U", "B", "R", "G"] } as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    for (const id of ["plains", "island", "swamp", "mountain", "forest"]) {
+      expect(q(id)).toBeGreaterThan(0);
+    }
+    expect(["plains", "island", "swamp", "mountain", "forest"].reduce((n, id) => n + q(id), 0)).toBe(37);
+  });
+
+  it("counts every HELD spell in the census, not only the ones it chose", () => {
+    // The case my own harness got wrong: with `inclusionPct` null the candidate order falls back
+    // to NAME, so a role cap can take an all-red sample of a mixed pool. The census has to read
+    // the deck's held cards too — `planFill` does, and this is what pins it.
+    const plan = planFill([
+      basic("plains", 40, "Plains"), basic("mountain", 40, "Mountain"),
+    ], {
+      ...boros,
+      held: Array.from({ length: 9 }, () => ({ typeLine: "Instant", manaCost: "{W}", quantity: 1 })),
+    } as never);
+    const q = (id: string) => plan.rows.find((r) => r.oracleId === id)?.quantity ?? 0;
+    // Nine white pips held and no red: white takes the base, red keeps its floor of one.
+    expect(q("plains")).toBeGreaterThan(q("mountain"));
+    expect(q("mountain")).toBe(1);
   });
 });
 
