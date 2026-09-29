@@ -11,7 +11,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
-import { useDialogA11y } from "../../lib/a11y/dialog";
+import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { shellCopy } from "../../lib/copy/shell";
@@ -369,6 +369,9 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
   const [aboutPending, startAbout] = useTransition();
   useReportPending("/about", aboutPending);
   function onAbout() {
+    // The sheet's release would otherwise step back off its history entry while /about is still
+    // loading, and that Back cancels the navigation.
+    leaveDialogsForNavigation();
     close();
     startAbout(() => router.push("/about"));
   }

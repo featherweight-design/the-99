@@ -1,7 +1,7 @@
 import { fireEvent, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, useRef } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { useBackDismiss, useDialogA11y } from "./dialog";
+import { leaveDialogsForNavigation, useBackDismiss, useDialogA11y } from "./dialog";
 
 // The trap roots below are appended by hand rather than rendered, so Testing
 // Library's automatic cleanup does not know about them.
@@ -433,6 +433,19 @@ describe("useBackDismiss", () => {
     hook.unmount();
     await settle();
     expect(window.location.pathname).toBe("/elsewhere");
+  });
+
+  it("leaves its entry, and steps nothing back, when its close is a navigation still loading", async () => {
+    // The press that closes the dialog is navigating, but the route commits only when its payload
+    // lands: the path has not moved when the release runs. Without the mark, that reads as a
+    // close "some other way", and the self-pop cancels the navigation.
+    const { hook } = open();
+    const back = vi.spyOn(window.history, "back");
+    leaveDialogsForNavigation();
+    hook.unmount();
+    await settle();
+    expect(back).not.toHaveBeenCalled();
+    back.mockRestore();
   });
 
   it("keeps a URL the dialog wrote while open", async () => {

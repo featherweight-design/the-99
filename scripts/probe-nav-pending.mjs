@@ -14,6 +14,8 @@
 //      shows and the escalation never does.
 //   5. An inline TEXT link that carries only a PendingReporter (/about's route link to /discover):
 //      a slow press still escalates, and no mark is painted.
+//   6. The account menu's About row, whose press unmounts the link: the menu reports the
+//      navigation, so a slow press still escalates.
 //
 // Mutations it is built to fail: the shell's <Suspense> removed (check 1 reads no screen), and the
 // 400ms gate set to 0 (check 2 reads the screen before the pip).
@@ -221,6 +223,28 @@ async function run(browser, state, width) {
     const nav = await page.evaluate(() => window.__nav);
     report(nav.overlay != null && nav.overlay >= 390, "an inline link's slow press escalates to its screen", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
     report(nav.mark == null, "and draws no mark of its own", nav.mark == null ? "" : `mark at ${Math.round(nav.mark)}ms`);
+    await throttle(false);
+    await page.close();
+  }
+
+  // 6. The account menu's About row: its press closes the menu and unmounts the link, so the menu
+  //    reports the navigation itself. A slow press still escalates to /about's screen. The trigger
+  //    is the shell's own control, so it is found by its name rather than scoped to the page.
+  {
+    const { page, throttle } = await slowPage(context);
+    await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    const trigger = page.getByRole("button", { name: /^Account: / }).filter({ visible: true }).first();
+    await trigger.waitFor({ state: "visible", timeout: 120_000 });
+    await page.waitForFunction(() => window.next?.router, null, { timeout: 120_000 });
+    await trigger.click();
+    const about = page.getByRole("menuitem", { name: "About The 99" });
+    await about.waitFor({ state: "visible", timeout: 30_000 });
+    await throttle(true);
+    await page.evaluate(() => window.__navArm());
+    await about.click();
+    await page.waitForURL((u) => u.pathname === "/about", { timeout: 120_000 });
+    const nav = await page.evaluate(() => window.__nav);
+    report(nav.overlay != null && nav.overlay >= 390, "the account menu's About press escalates after the menu closes", nav.overlay == null ? "never" : `screen at ${Math.round(nav.overlay)}ms`);
     await throttle(false);
     await page.close();
   }

@@ -110,6 +110,8 @@ type BackEntry = {
   onHistory: boolean;
   /** A release waiting one task, so a remount in the same tick can reclaim the entry. */
   release: ReturnType<typeof setTimeout> | null;
+  /** Closed by a press that is navigating away; see `leaveDialogsForNavigation`. */
+  leaving: boolean;
 };
 const backStack: BackEntry[] = [];
 /** Entries a dialog left under a navigation it made; a traversal onto one steps past. */
@@ -206,6 +208,17 @@ function listen() {
 }
 
 /**
+ * Called by a press that closes its dialog AND navigates, before it closes: every open dialog's
+ * entry is then left under the new route, as rule 2 leaves one under a link's navigation, rather
+ * than taken back off. The route has not moved yet when the release runs, because a navigation
+ * commits only once its payload arrives, so the release would otherwise read "closed some other
+ * way" and its `back()` would cancel the navigation before it landed.
+ */
+export function leaveDialogsForNavigation() {
+  for (const entry of backStack) entry.leaving = true;
+}
+
+/**
  * Give an open dialog a history entry, so Back closes it rather than the route.
  *
  * The release waits one task, and that is for React rather than for the browser:
@@ -241,6 +254,7 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
         path: "",
         onHistory: false,
         release: null,
+        leaving: false,
       };
       held.current = entry;
       arm(entry);
@@ -265,7 +279,7 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
         entry.onHistory = false;
         const current = currentKey();
         const ours = entry.key === null || current === entry.key;
-        if (!ours || window.location.pathname !== entry.path) {
+        if (entry.leaving || !ours || window.location.pathname !== entry.path) {
           // A link inside the dialog navigated. Its entry stays under the new route,
           // and a traversal back onto it steps past (rule 2). Only when no other
           // dialog is still up: a lower dialog closing under an open one is not
