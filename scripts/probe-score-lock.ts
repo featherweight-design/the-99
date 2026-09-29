@@ -45,7 +45,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { persistScores, SCORE_INDEX_LOCK } from "../src/lib/recs/store";
+import { indexGeneration, persistScores, SCORE_INDEX_LOCK } from "../src/lib/recs/store";
 import { buildCommanderIndex } from "../src/lib/edhrec/seed-index";
 import type { RankedCommander } from "../src/lib/recs/recommend";
 
@@ -119,12 +119,10 @@ const scoreRows = async () => {
   );
   return rows[0]?.n ?? 0;
 };
-const indexGen = async () => {
-  const { rows } = await fixture.execute<{ at: Date | null }>(
-    sql`select max(computed_at) as at from commander_support`,
-  );
-  return rows[0]?.at ? new Date(rows[0].at).getTime() : null;
-};
+// The guard's OWN reading, never a restatement of it: the fingerprint is the whole index
+// token since the fit score reads role targets, and a probe that re-derived it from
+// `max(computed_at)` would test a guard the app no longer runs.
+const indexGen = () => indexGeneration();
 
 // A ROLLBACK BEFORE EVERY RELEASE. A client handed back to the pool while its
 // transaction is aborted stays broken, and the next caller to draw it — here,

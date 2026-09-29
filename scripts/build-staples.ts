@@ -18,13 +18,14 @@ requireEnv(["DATABASE_URL"]);
 import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { latestBuild, phaseReport, recordBuild } from "../src/lib/catalog/builds";
-import { formatStaples, identityComposition } from "../src/db/schema";
+import { formatStaples } from "../src/db/schema";
 import {
   MIN_COMMANDERS_PER_CONDITION, THIN_COLOR_COUNTS, thinCondition,
 } from "../src/lib/staples/condition";
 // Imported, never restated: a literal here goes silently wrong the day the flat targets move,
 // and this line's whole job is to sit beside the derived figures as their baseline.
 import { ROLE_TARGETS } from "../src/lib/recs/roles";
+import { replaceCompositionIn } from "../src/lib/edhrec/seed-index";
 
 /** The ratified cut (spec §4A.1, re-ratified on the identity axis 2026-09-19). */
 const BREADTH = 0.5;
@@ -604,10 +605,7 @@ async function main() {
     // the clear: an upstream shape change that nulls every `avg_*` would otherwise delete
     // every stored composition, print "published 0" and exit 0, dropping the profile to
     // basis "none" for every deck behind a green job.
-    if (compRows.length > 0) {
-      await tx.delete(identityComposition);
-      await tx.insert(identityComposition).values(compRows);
-    }
+    if (compRows.length > 0) await replaceCompositionIn(tx, compRows);
   });
 
   console.log(`\npublished ${stapleRows.length} staple rows across ${byCondition.size} conditions`);

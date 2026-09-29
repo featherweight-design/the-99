@@ -79,9 +79,13 @@ const UNSTAMPED = "0";
  * Epoch millis computed in SQL, because the columns carry no zone and a `Date` built from
  * their rendering takes the reading host's clock with it.
  */
-export async function readIndexGeneration(): Promise<string> {
+export async function readIndexGeneration(
+  /** The connection to read on. `persistScores` passes its own transaction, so the guard's
+   *  re-read happens under the shared score lock it has already taken. */
+  q: Pick<typeof db, "select"> = db,
+): Promise<string> {
   try {
-    const [row] = await db.select({
+    const [row] = await q.select({
       support: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_support)`,
       pair: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_pair_support)`,
       identity: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from identity_composition)`,
@@ -89,6 +93,13 @@ export async function readIndexGeneration(): Promise<string> {
       staplesWeight: sql<string | null>`(select coalesce(sum(commanders), 0) from format_staples)`,
       supportRoles: sql<string | null>`(select count(*) from commander_support where avg_ramp is not null)`,
       pairRoles: sql<string | null>`(select count(*) from commander_pair_support where avg_ramp is not null)`,
+      // THE VALUES, not only their presence. The two counts above move when roles are first
+      // written; a later re-derivation writes new figures onto the SAME rows and moves neither
+      // count nor timestamp, and since the fit score reads these figures (brief 2026-09-28
+      // §5.4) a stored score computed against the previous ones would otherwise pass the
+      // guard. Rounded in SQL so a float's last digits cannot make one token read two ways.
+      supportRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp + avg_draw + avg_removal + avg_wipes), 0)::numeric, 3) from commander_support)`,
+      pairRoleSum: sql<string | null>`(select round(coalesce(sum(avg_ramp + avg_draw + avg_removal + avg_wipes), 0)::numeric, 3) from commander_pair_support)`,
     }).from(sql`(select 1) as _`);
 
     const parts = [
@@ -99,6 +110,8 @@ export async function readIndexGeneration(): Promise<string> {
       generationKey(row?.staplesWeight),
       generationKey(row?.supportRoles),
       generationKey(row?.pairRoles),
+      generationKey(row?.supportRoleSum),
+      generationKey(row?.pairRoleSum),
     ];
     // All of them unstamped is the same answer the whole token gives when nothing has been
     // built, so it collapses to the constant rather than to "0.0.0.0" — one spelling for

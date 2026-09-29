@@ -12,6 +12,8 @@ type Row = {
   staplesWeight: string | null;
   supportRoles: string | null;
   pairRoles: string | null;
+  supportRoleSum: string | null;
+  pairRoleSum: string | null;
 };
 
 const rows = vi.hoisted(() => ({
@@ -53,6 +55,8 @@ describe("readIndexGeneration", () => {
     staplesWeight: "51234",
     supportRoles: "3279",
     pairRoles: "12",
+    supportRoleSum: "72140.512",
+    pairRoleSum: "261.4",
     ...over,
   });
 
@@ -60,7 +64,7 @@ describe("readIndexGeneration", () => {
     rows.throws = false;
     rows.value = [row()];
     expect(await readIndexGeneration())
-      .toBe("1758326400000.1758326400000.1758326400000.777.51234.3279.12");
+      .toBe("1758326400000.1758326400000.1758326400000.777.51234.3279.12.72140.512.261.4");
   });
 
   // THE CASE THE MODULE EXISTS FOR. `deriveAndWriteRoleTargets` sets the four `avg_*`
@@ -85,6 +89,28 @@ describe("readIndexGeneration", () => {
   // legitimate, because no commander carries a composition until the first widened index
   // run. So the staples can be rebuilt with every timestamp in this token standing still,
   // which is exactly the state a composition-timestamp proxy would have missed.
+  // THE CASE THE ROLE SUM IS FOR (brief 2026-09-28 §5.4). A re-derivation writes new role
+  // figures onto the SAME rows, so neither the counts above nor any timestamp moves, and the
+  // fit score reads those figures. A stored score computed against the previous ones would
+  // pass a guard built from this token without the sum.
+  it("moves when a re-derivation changes role figures on the same rows", async () => {
+    rows.throws = false;
+    rows.value = [row({ supportRoles: "3279", supportRoleSum: "72140.512" })];
+    const before = await readIndexGeneration();
+
+    rows.value = [row({ supportRoles: "3279", supportRoleSum: "71988.25" })];
+    expect(await readIndexGeneration()).not.toBe(before);
+  });
+
+  it("moves when only a pair's role figures change", async () => {
+    rows.throws = false;
+    rows.value = [row({ pairRoleSum: "261.4" })];
+    const before = await readIndexGeneration();
+
+    rows.value = [row({ pairRoleSum: "259.9" })];
+    expect(await readIndexGeneration()).not.toBe(before);
+  });
+
   it("moves when the staples are rebuilt and no timestamp changes", async () => {
     rows.throws = false;
     rows.value = [row({ staples: "777", staplesWeight: "51234" })];
@@ -134,6 +160,7 @@ describe("readIndexGeneration", () => {
       support: null, pair: null, identity: null,
       staples: null, staplesWeight: null,
       supportRoles: null, pairRoles: null,
+      supportRoleSum: null, pairRoleSum: null,
     }];
     expect(await readIndexGeneration()).toBe("0");
   });

@@ -10,8 +10,9 @@ const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
 import { buildCommanderIndex,
-  pairNameFilter, pairRunProblem, type BuildIndexResult,
+  pairNameFilter, pairRunProblem, replaceCompositionIn, type BuildIndexResult,
 } from "./seed-index";
+import { commanderScores, identityComposition } from "../../db/schema";
 
 const commander = (name: string, oracleId: string) => ({
   oracleId, name,
@@ -616,5 +617,42 @@ describe("pairRunProblem", () => {
 
   it("passes a run with nothing to attempt", () => {
     expect(pairRunProblem(run({ pairsSkipped: 1717 }))).toBeNull();
+  });
+});
+
+// Brief 2026-09-28 §5.4: the fit score reads the role targets, and the first clear runs
+// BEFORE the role pass writes them. A load between the two persists scores against the old
+// figures, and the role write moves no timestamp that would retire them. So a pass that wrote
+// roles clears again, AFTER writing: the order is the whole point, and is what this asserts.
+it("clears again after the role pass writes targets", async () => {
+  const order: string[] = [];
+  await buildCommanderIndex({
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => { order.push("roles"); return { written: 1, pairsWritten: 0, zeroWipes: 0 }; },
+    loadCommanders: async () => [commander("A", "a")],
+    loadNameIndex: async () => [],
+    fetch: async () => okResult(["Sol Ring"]),
+    write: async () => {},
+    clearScores: async () => { order.push("clear"); },
+    delayMs: 0,
+  });
+  expect(order).toEqual(["clear", "roles", "clear"]);
+});
+
+// And the staples step's half: `db:build:staples` rewrites the identity buckets after the
+// index build's clears, so replacing them retires the scores in the same transaction.
+describe("replaceCompositionIn", () => {
+  it("replaces the buckets and then clears the scores under the exclusive lock, in one transaction", async () => {
+    const steps: string[] = [];
+    const tx = {
+      delete: (t: unknown) => { steps.push(t === identityComposition ? "delete:composition" : t === commanderScores ? "delete:scores" : "delete:?"); return Promise.resolve(); },
+      insert: (t: unknown) => ({ values: async () => { steps.push(t === identityComposition ? "insert:composition" : "insert:?"); } }),
+      execute: async (q: unknown) => {
+        const text = new PgDialect().sqlToQuery(q as Parameters<PgDialect["sqlToQuery"]>[0]).sql;
+        steps.push(text.includes("pg_advisory_xact_lock(") ? "lock:exclusive" : "execute");
+      },
+    };
+    await replaceCompositionIn(tx as never, []);
+    expect(steps).toEqual(["delete:composition", "insert:composition", "lock:exclusive", "delete:scores"]);
   });
 });
