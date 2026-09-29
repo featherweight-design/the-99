@@ -1,5 +1,6 @@
 // The /about gate's pure half — everything the proxy decides before it touches
-// a database, plus the `next` validation the dismiss action repeats.
+// a database, plus the `next` validation the dismiss action repeats before it hands the
+// destination back to the page to navigate to.
 //
 // Pure so it can be tested: the proxy itself needs a request, a session and a
 // Postgres connection, and none of the rules below need any of the three.
@@ -33,7 +34,8 @@ export function cookieIsCurrent(
 }
 
 /**
- * Where the reader was going, made safe to hand to `redirect()`.
+ * Where the reader was going, made safe to navigate to: the dismiss action returns it and the
+ * page pushes it client-side, so it must be a same-origin path either way.
  *
  * The value round-trips through a URL and a form, so it is attacker-controlled.
  * Anything that is not a same-origin relative path falls back to home rather
