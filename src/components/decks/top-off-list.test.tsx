@@ -820,6 +820,12 @@ describe("TopOffList — the bulk tick", () => {
         </>
       );
     }
+    // A plan that ticks something, so the control is drawn and its arrival can be waited on.
+    actions.bulkOptions.mockResolvedValue({
+      ok: true,
+      collection: plan({ oracleIds: ["owned-1"] }),
+      best: plan({ oracleIds: ["buy-1"] }),
+    });
     render(<Swapper />);
     await screen.findByRole("button", { name: /from your collection/ });
     expect(actions.bulkOptions).toHaveBeenCalledTimes(1);
